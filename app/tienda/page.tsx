@@ -1,12 +1,29 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 const categorias = [
-  "Todos",
-  "Convertidores",
-  "Eléctricos",
-  "Comida",
-  "Medicinas",
-  "Bicicletas",
+  {
+    nombre: "Convertidores",
+    imagen: "/products/electrical/ecoflow.webp",
+  },
+  {
+    nombre: "Eléctricos",
+    imagen: "/products/electrical/controlador-solar-1000w.webp",
+  },
+  {
+    nombre: "Comida",
+    imagen: "/products/food/chocolisto-sabor-fresa.webp",
+  },
+  {
+    nombre: "Medicinas",
+    imagen: "/products/medicines/ibuprofeno200.webp",
+  },
+  {
+    nombre: "Bicicletas",
+    imagen: "/products/electrical/bicicleta-electrica48v.webp",
+  },
 ];
 
 const productos = [
@@ -47,7 +64,7 @@ const productos = [
     categoria: "Eléctricos",
     precio: "60.00",
     descripcion: "Olla eléctrica multiusos con vaporera.",
-    imagen: "/products/electrical/olla-electrica-1.5l.webp",
+    imagen: "/products/electrical/olla-electrica-1-5l.webp",
     etiqueta: "POPULAR",
   },
   {
@@ -101,164 +118,177 @@ const productos = [
 ];
 
 export default function TiendaPage() {
-  return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <section className="bg-[#062446] px-6 py-14 text-white">
-        <div className="mx-auto max-w-7xl">
-          <p className="font-black uppercase tracking-[0.3em] text-red-400">
-            Tienda Online
-          </p>
+  const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
 
-          <h1 className="mt-4 max-w-4xl text-4xl font-black md:text-6xl">
-            Productos para enviar a Cuba con Águila Cuba Express
+  const productosFiltrados = categoriaActiva
+    ? productos.filter((producto) => producto.categoria === categoriaActiva)
+    : [];
+
+  return (
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      <section className="bg-white px-5 py-8 shadow-sm">
+        <div className="mx-auto max-w-7xl">
+          <p className="font-black uppercase text-green-600">ABIERTO</p>
+
+          <h1 className="text-3xl font-black text-[#062446] md:text-5xl">
+            AGUILA CUBA EXPRESS
           </h1>
 
-          <p className="mt-5 max-w-2xl text-lg text-white/80">
-            Elige productos, arma tu pedido y coordina la compra directamente por WhatsApp.
-            El precio puede incluir gestión, manejo y envío según disponibilidad.
+          <p className="mt-3 text-slate-600">
+            Tienda de productos para enviar a Cuba.
           </p>
-
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-            <a
-              href="#productos"
-              className="rounded-xl bg-red-600 px-8 py-4 text-center font-bold text-white"
-            >
-              Ver productos
-            </a>
-
-            <a
-              href="https://wa.me/13054974891"
-              target="_blank"
-              className="rounded-xl bg-green-500 px-8 py-4 text-center font-bold text-white"
-            >
-              Consultar por WhatsApp
-            </a>
-          </div>
         </div>
       </section>
 
-      <section className="sticky top-[88px] z-30 border-b bg-white px-6 py-5 shadow-sm">
-        <div className="mx-auto flex max-w-7xl gap-3 overflow-x-auto pb-2">
-          {categorias.map((categoria, index) => (
-            <button
-              key={categoria}
-              className={`shrink-0 rounded-full border px-5 py-3 font-bold ${
-                index === 0
-                  ? "bg-[#062446] text-white"
-                  : "bg-white text-[#062446]"
-              }`}
-            >
-              {categoria}
-            </button>
-          ))}
-        </div>
-      </section>
+      {!categoriaActiva ? (
+        <section className="mx-auto max-w-7xl px-5 py-8">
+          <h2 className="mb-6 text-3xl font-black text-[#062446]">
+            Categorías
+          </h2>
 
-      <section id="productos" className="mx-auto max-w-7xl px-6 py-12">
-        <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <h2 className="text-3xl font-black text-[#062446]">
-              Productos destacados
-            </h2>
-            <p className="mt-2 text-slate-600">
-              Catálogo inicial para pedidos coordinados hacia Cuba.
-            </p>
-          </div>
+          <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+            {categorias.map((categoria) => {
+              const cantidad = productos.filter(
+                (producto) => producto.categoria === categoria.nombre
+              ).length;
 
-          <div className="rounded-full bg-white px-5 py-3 text-sm font-bold shadow-sm">
-            📦 Entrega coordinada por Águila Cuba Express
-          </div>
-        </div>
+              return (
+                <button
+                  key={categoria.nombre}
+                  onClick={() => setCategoriaActiva(categoria.nombre)}
+                  className="overflow-hidden rounded-2xl bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="relative h-44 bg-white p-4">
+                    <Image
+                      src={categoria.imagen}
+                      alt={categoria.nombre}
+                      fill
+                      className="object-contain p-4"
+                    />
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {productos.map((producto) => (
-            <article
-              key={producto.nombre}
-              className="overflow-hidden rounded-3xl bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div className="relative h-56 overflow-hidden bg-white">
-                <Image
-                  src={producto.imagen}
-                  alt={producto.nombre}
-                  fill
-                  className="object-cover transition duration-300 hover:scale-105"
-                />
-
-                <span className="absolute left-4 top-4 rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
-                  {producto.etiqueta}
-                </span>
-              </div>
-
-              <div className="p-5">
-                <p className="text-xs font-black uppercase tracking-wider text-red-600">
-                  {producto.categoria}
-                </p>
-
-                <h3 className="mt-2 min-h-[56px] text-xl font-black leading-tight text-[#062446]">
-                  {producto.nombre}
-                </h3>
-
-                <p className="mt-2 min-h-[48px] text-sm text-slate-600">
-                  {producto.descripcion}
-                </p>
-
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-slate-500">Precio final</p>
-                    <p className="text-2xl font-black text-[#062446]">
-                      {producto.precio} USD
-                    </p>
+                    <span className="absolute left-0 top-0 rounded-br-xl bg-[#2f9e9b] px-3 py-2 text-sm font-black text-white">
+                      {cantidad} Products
+                    </span>
                   </div>
 
-                  <a
-                    href={`https://wa.me/13054974891?text=${encodeURIComponent(
-                      `Hola, estoy interesado en este producto: ${producto.nombre} - ${producto.precio} USD`
-                    )}`}
-                    target="_blank"
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-[#062446] text-2xl font-bold text-white shadow-lg"
-                    aria-label={`Solicitar ${producto.nombre}`}
-                  >
-                    +
-                  </a>
-                </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-black uppercase text-[#062446]">
+                      {categoria.nombre}
+                    </h3>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="sticky top-0 z-40 border-b bg-white px-5 py-4 shadow-sm">
+            <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto">
+              <button
+                onClick={() => setCategoriaActiva(null)}
+                className="shrink-0 rounded-full bg-[#062446] px-5 py-3 font-bold text-white"
+              >
+                Categorías
+              </button>
 
-                <a
-                  href={`https://wa.me/13054974891?text=${encodeURIComponent(
-                    `Hola, quiero más información sobre: ${producto.nombre}`
-                  )}`}
-                  target="_blank"
-                  className="mt-5 block rounded-xl border border-[#062446] px-4 py-3 text-center text-sm font-bold text-[#062446]"
+              {categorias.map((categoria) => (
+                <button
+                  key={categoria.nombre}
+                  onClick={() => setCategoriaActiva(categoria.nombre)}
+                  className={`shrink-0 rounded-full border px-5 py-3 font-bold ${
+                    categoriaActiva === categoria.nombre
+                      ? "bg-red-600 text-white"
+                      : "bg-white text-[#062446]"
+                  }`}
                 >
-                  Ver detalles por WhatsApp
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
+                  {categoria.nombre}
+                </button>
+              ))}
+            </div>
+          </section>
 
-      <section className="mx-auto max-w-7xl px-6 pb-16">
-        <div className="grid gap-8 rounded-[2rem] bg-[#062446] p-8 text-white md:grid-cols-2 md:p-12">
-          <div>
-            <h2 className="text-3xl font-black">
-              ¿Quieres un producto que no aparece aquí?
+          <section className="mx-auto max-w-7xl px-5 py-8">
+            <h2 className="mb-6 text-3xl font-black text-[#062446]">
+              {categoriaActiva}
             </h2>
 
-            <p className="mt-4 text-white/80">
-              Escríbenos por WhatsApp y coordinamos compras especiales, productos
-              por encargo y envíos personalizados hacia Cuba.
-            </p>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {productosFiltrados.map((producto) => (
+                <article
+                  key={producto.nombre}
+                  className="overflow-hidden rounded-2xl bg-white shadow-sm"
+                >
+                  <div className="relative h-44 bg-white">
+                    <Image
+                      src={producto.imagen}
+                      alt={producto.nombre}
+                      fill
+                      className="object-contain p-3"
+                    />
+
+                    <span className="absolute left-2 top-2 rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
+                      {producto.etiqueta}
+                    </span>
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs font-black uppercase text-red-600">
+                      {producto.categoria}
+                    </p>
+
+                    <h3 className="mt-2 line-clamp-2 min-h-[48px] text-lg font-black leading-tight text-[#062446]">
+                      {producto.nombre}
+                    </h3>
+
+                    <p className="mt-2 line-clamp-2 min-h-[40px] text-sm text-slate-500">
+                      {producto.descripcion}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <p className="text-xl font-black text-[#062446]">
+                        {producto.precio} USD
+                      </p>
+
+                      <a
+                        href={`https://wa.me/13054974891?text=${encodeURIComponent(
+                          `Hola, estoy interesado en este producto: ${producto.nombre} - ${producto.precio} USD`
+                        )}`}
+                        target="_blank"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#062446] text-2xl font-bold text-white"
+                      >
+                        +
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      <section className="mt-8 bg-[#062446] px-6 py-12 text-white">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-4xl font-black">AGUILA CUBA EXPRESS</h2>
+          <p className="mt-4 max-w-2xl text-lg text-white/75">
+            El precio de cada producto puede incluir costo, gestión, manejo y envío.
+            Consulta disponibilidad antes de ordenar.
+          </p>
+
+          <div className="mt-8 space-y-4 text-xl font-bold">
+            <p>🕘 Abierto</p>
+            <p>📍 Miami-Dade, Florida</p>
+            <p>📦 Entregamos a domicilio</p>
           </div>
 
-          <div className="flex items-center md:justify-end">
-            <a
-              href="https://wa.me/13054974891"
-              target="_blank"
-              className="rounded-xl bg-red-600 px-8 py-4 font-bold text-white"
-            >
-              Solicitar producto especial
-            </a>
-          </div>
+          <a
+            href="https://wa.me/13054974891"
+            target="_blank"
+            className="mt-8 inline-block rounded-xl bg-green-500 px-8 py-4 font-bold"
+          >
+            WhatsApp
+          </a>
         </div>
       </section>
     </main>
