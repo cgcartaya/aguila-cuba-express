@@ -23,7 +23,7 @@ const productos = [
     categoria: "Convertidores",
     precio: "350.00",
     descripcion: "Convertidor de batería con capacidad de 1000 watts.",
-    imagen: "/products/electrical/convertidor-1000W.webp",
+    imagen: "/products/electrical/convertidor-1000w.webp",
     etiqueta: "POPULAR",
   },
   {
@@ -47,7 +47,7 @@ const productos = [
     categoria: "Eléctricos",
     precio: "60.00",
     descripcion: "Olla eléctrica multiusos con vaporera.",
-    imagen: "/products/electrical/olla-electrica-1.5L.webp",
+    imagen: "/products/electrical/olla-electrica-1.5l.webp",
     etiqueta: "POPULAR",
   },
   {
@@ -55,7 +55,7 @@ const productos = [
     categoria: "Eléctricos",
     precio: "70.00",
     descripcion: "Olla eléctrica para cocinar en casa.",
-    imagen: "/products/electrical/olla-electrica-2L.webp",
+    imagen: "/products/electrical/olla-electrica-2l.webp",
     etiqueta: "POPULAR",
   },
   {
