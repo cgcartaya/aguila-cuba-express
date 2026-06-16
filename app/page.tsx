@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const slides = [
   {
@@ -42,15 +42,15 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setActiveSlide((current) => (current + 1) % slides.length);
-    }, 5000);
-
-    return () => clearInterval(timer);
-  }, []);
-
   const slide = slides[activeSlide];
+
+  const siguienteSlide = () => {
+    setActiveSlide((actual) => (actual + 1) % slides.length);
+  };
+
+  const anteriorSlide = () => {
+    setActiveSlide((actual) => (actual - 1 + slides.length) % slides.length);
+  };
 
   return (
     <main className="min-h-screen bg-white text-slate-900">
@@ -150,13 +150,6 @@ export default function Home() {
               {slide.subtitle}
             </p>
 
-            <div className="mt-6 grid gap-2 text-base font-semibold text-[#062446] md:text-lg">
-              <p>✅ Paquetería segura</p>
-              <p>✅ Compras y entregas coordinadas</p>
-              <p>✅ Rastreo de envíos</p>
-              <p>✅ Atención personalizada</p>
-            </div>
-
             <div className="mt-8 flex flex-col gap-4 sm:flex-row">
               <a
                 href={slide.buttonHref}
@@ -177,17 +170,15 @@ export default function Home() {
         </div>
 
         <button
-          onClick={() =>
-            setActiveSlide((activeSlide - 1 + slides.length) % slides.length)
-          }
-          className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 rounded-full bg-white/80 text-2xl font-black text-[#062446] shadow-lg md:block"
+          onClick={anteriorSlide}
+          className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-3xl font-black text-[#062446] shadow-lg"
         >
           ‹
         </button>
 
         <button
-          onClick={() => setActiveSlide((activeSlide + 1) % slides.length)}
-          className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 rounded-full bg-white/80 text-2xl font-black text-[#062446] shadow-lg md:block"
+          onClick={siguienteSlide}
+          className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-3xl font-black text-[#062446] shadow-lg"
         >
           ›
         </button>
@@ -197,7 +188,7 @@ export default function Home() {
             <button
               key={item.image}
               onClick={() => setActiveSlide(index)}
-              className={`h-3 w-3 rounded-full ${
+              className={`h-3 w-8 rounded-full transition ${
                 activeSlide === index ? "bg-red-600" : "bg-white/70"
               }`}
             />
@@ -205,32 +196,56 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-6 py-14">
-        <h3 className="text-center text-3xl font-black text-[#062446]">
-          ACCESOS RÁPIDOS
-        </h3>
+      <section className="bg-slate-50 px-6 py-12">
+        <div className="mx-auto grid max-w-7xl gap-6 md:grid-cols-2">
+          <div className="rounded-[2rem] bg-white p-8 shadow-sm">
+            <p className="font-black uppercase tracking-[0.3em] text-red-600">
+              Recogida a domicilio
+            </p>
 
-        <div className="mx-auto mt-3 h-1 w-20 rounded bg-red-600" />
+            <h3 className="mt-4 text-3xl font-black text-[#062446]">
+              Vamos a tu casa a recoger tu paquete en todo Miami
+            </h3>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ["📦", "Paquetería", "/servicios"],
-            ["🛒", "Tienda", "/tienda"],
-            ["🔎", "Rastrear", "/rastrear"],
-            ["📲", "WhatsApp", "https://wa.me/13054974891"],
-          ].map(([icon, title, href]) => (
+            <p className="mt-4 text-slate-600">
+              Coordinamos la recogida de tus paquetes directamente en tu casa y
+              los preparamos para enviar a Cuba.
+            </p>
+
             <a
-              key={title}
-              href={href}
-              target={title === "WhatsApp" ? "_blank" : undefined}
-              className="rounded-3xl border bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              href="https://wa.me/13054974891?text=Hola,%20quiero%20solicitar%20recogida%20a%20domicilio%20para%20un%20paquete."
+              target="_blank"
+              className="mt-6 inline-block rounded-xl bg-green-500 px-7 py-4 font-bold text-white"
             >
-              <div className="text-5xl">{icon}</div>
-              <h4 className="mt-4 text-xl font-black text-[#062446]">
-                {title}
-              </h4>
+              Solicitar recogida
             </a>
-          ))}
+          </div>
+
+          <div className="rounded-[2rem] bg-[#062446] p-8 text-white shadow-sm">
+            <p className="font-black uppercase tracking-[0.3em] text-red-400">
+              Próxima salida
+            </p>
+
+            <h3 className="mt-4 text-3xl font-black">
+              Salida hacia Cuba
+            </h3>
+
+            <div className="mt-6 rounded-2xl bg-white/10 p-6">
+              <p className="text-lg text-white/70">Día de salida</p>
+              <p className="mt-2 text-4xl font-black">Viernes</p>
+              <p className="mt-3 text-white/70">
+                Recibimos paquetes hasta el jueves.
+              </p>
+            </div>
+
+            <a
+              href="https://wa.me/13054974891?text=Hola,%20quiero%20información%20sobre%20la%20próxima%20salida%20hacia%20Cuba."
+              target="_blank"
+              className="mt-6 inline-block rounded-xl bg-red-600 px-7 py-4 font-bold text-white"
+            >
+              Consultar salida
+            </a>
+          </div>
         </div>
       </section>
 
@@ -279,7 +294,7 @@ export default function Home() {
           {[
             ["📦", "Envío de paquetes", "Envíos seguros y rápidos a toda Cuba."],
             ["🛍️", "Compras en USA", "Compramos por ti y lo enviamos a Cuba."],
-            ["🚚", "Carga y contenedores", "Envíos de carga a mayor escala."],
+            ["💸", "Envío de dinero", "Envía dinero a tus familiares de forma rápida."],
             ["🛡️", "Seguridad garantizada", "Tu envío protegido de principio a fin."],
           ].map(([icon, title, text]) => (
             <div key={title} className="rounded-2xl border bg-white p-6 shadow-sm">
@@ -291,26 +306,57 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-[#062446]">
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-6 py-12 md:grid-cols-2">
-          <div className="text-white">
-            <h3 className="text-3xl font-black">RASTREA TU ENVÍO</h3>
-            <p className="mt-3 text-lg text-white/80">
-              Ingresa tu código de rastreo y conoce el estado de tu paquete.
+      <section className="bg-slate-50 px-6 py-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8">
+            <p className="font-black uppercase tracking-[0.3em] text-red-600">
+              Ubicación
+            </p>
+
+            <h3 className="mt-3 text-4xl font-black text-[#062446]">
+              Visítanos en North Miami
+            </h3>
+
+            <p className="mt-3 text-lg text-slate-600">
+              2150 Sans Souci Blvd, North Miami, FL 33181
             </p>
           </div>
 
-          <div className="flex overflow-hidden rounded-xl bg-white">
-            <input
-              placeholder="Ingresa tu código de rastreo"
-              className="w-full px-5 py-4 outline-none"
-            />
-            <a
-              href="/rastrear"
-              className="bg-red-600 px-8 py-4 font-bold text-white"
-            >
-              Rastrear
-            </a>
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
+              <iframe
+                src="https://www.google.com/maps?q=2150%20Sans%20Souci%20Blvd%20North%20Miami%20FL%2033181&output=embed"
+                className="h-[420px] w-full border-0"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            <div className="rounded-[2rem] bg-white p-8 shadow-sm">
+              <h4 className="text-3xl font-black text-[#062446]">
+                Águila Cuba Express
+              </h4>
+
+              <p className="mt-4 text-slate-600">
+                Estamos ubicados en North Miami. También ofrecemos recogida a
+                domicilio en Miami para mayor comodidad.
+              </p>
+
+              <div className="mt-6 space-y-4 text-lg font-bold text-[#062446]">
+                <p>📍 2150 Sans Souci Blvd</p>
+                <p>🏙️ North Miami, FL 33181</p>
+                <p>📦 Envíos a Cuba</p>
+                <p>🚚 Recogida a domicilio en Miami</p>
+              </div>
+
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=2150%20Sans%20Souci%20Blvd%20North%20Miami%20FL%2033181"
+                target="_blank"
+                className="mt-8 inline-block rounded-xl bg-[#062446] px-8 py-4 font-bold text-white"
+              >
+                Cómo llegar
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -328,7 +374,7 @@ export default function Home() {
             <h5 className="font-bold">Servicios</h5>
             <p className="mt-3 text-white/70">Paquetería</p>
             <p className="text-white/70">Compras en USA</p>
-            <p className="text-white/70">Carga y contenedores</p>
+            <p className="text-white/70">Envío de dinero</p>
           </div>
 
           <div>
@@ -343,7 +389,8 @@ export default function Home() {
 
           <div>
             <h5 className="font-bold">Contacto</h5>
-            <p className="mt-3 text-white/70">📍 Miami, Florida</p>
+            <p className="mt-3 text-white/70">📍 2150 Sans Souci Blvd</p>
+            <p className="text-white/70">North Miami, FL 33181</p>
             <a
               href="https://wa.me/13054974891"
               target="_blank"

@@ -3,552 +3,294 @@
 import Image from "next/image";
 import { useState } from "react";
 
-const slides = [
+const categorias = [
   {
-    image: "/hero-banner.png",
-    label: "Envíos a Cuba",
-    title: "ENVÍOS A CUBA",
-    subtitle: "Tu puente confiable entre Miami y Cuba.",
-    buttonText: "📦 Rastrear envío",
-    buttonHref: "/rastrear",
+    nombre: "Convertidores",
+    imagen: "/products/electrical/ecoflow.webp",
   },
   {
-    image: "/slide-store.png",
-    label: "Compras en USA",
-    title: "COMPRAS EN USA",
-    subtitle: "Tú eliges el producto, nosotros lo compramos y lo llevamos hasta tu familia en Cuba.",
-    buttonText: "🛒 Ir a la tienda",
-    buttonHref: "/tienda",
+    nombre: "Eléctricos",
+    imagen: "/products/electrical/controlador-solar-1000w.webp",
   },
   {
-    image: "/slide-tracking.png",
-    label: "Rastreo en línea",
-    title: "RASTREA TU ENVÍO",
-    subtitle: "Consulta el estado de tu paquete en cualquier momento.",
-    buttonText: "🔎 Rastrear ahora",
-    buttonHref: "/rastrear",
+    nombre: "Comida",
+    imagen: "/products/food/chocolisto-sabor-fresa.webp",
+  },
+  {
+    nombre: "Medicinas",
+    imagen: "/products/medicines/ibuprofeno200.webp",
+  },
+  {
+    nombre: "Bicicletas",
+    imagen: "/products/electrical/bicicleta-electrica48v.webp",
   },
 ];
 
-const links = [
-  ["INICIO", "/"],
-  ["SERVICIOS", "/servicios"],
-  ["TIENDA", "/tienda"],
-  ["RASTREAR ENVÍO", "/rastrear"],
-  ["CONTACTO", "/contacto"],
+const productos = [
+  {
+    nombre: "Ecoflow Delta 3 Classic",
+    categoria: "Convertidores",
+    precio: "700.00",
+    descripcion: "Estación de energía portátil ideal para apagones.",
+    imagen: "/products/electrical/ecoflow.webp",
+    etiqueta: "POPULAR",
+  },
+  {
+    nombre: "Convertidor Eléctrico 1000W",
+    categoria: "Convertidores",
+    precio: "350.00",
+    descripcion: "Convertidor de batería con capacidad de 1000 watts.",
+    imagen: "/products/electrical/convertidor-1000w.webp",
+    etiqueta: "POPULAR",
+  },
+  {
+    nombre: "Controlador Solar 1000W",
+    categoria: "Eléctricos",
+    precio: "120.00",
+    descripcion: "Controlador solar ideal para paneles y sistemas eléctricos.",
+    imagen: "/products/electrical/controlador-solar-1000w.webp",
+    etiqueta: "NUEVO",
+  },
+  {
+    nombre: "Bicicleta Eléctrica 48V",
+    categoria: "Bicicletas",
+    precio: "900.00",
+    descripcion: "Bicicleta eléctrica para transporte diario.",
+    imagen: "/products/electrical/bicicleta-electrica48v.webp",
+    etiqueta: "NUEVO",
+  },
+  {
+    nombre: "Olla Eléctrica 1.5L",
+    categoria: "Eléctricos",
+    precio: "60.00",
+    descripcion: "Olla eléctrica multiusos con vaporera.",
+    imagen: "/products/electrical/olla-electrica-1-5l.webp",
+    etiqueta: "POPULAR",
+  },
+  {
+    nombre: "Olla Eléctrica 2L",
+    categoria: "Eléctricos",
+    precio: "70.00",
+    descripcion: "Olla eléctrica para cocinar en casa.",
+    imagen: "/products/electrical/olla-electrica-2l.webp",
+    etiqueta: "POPULAR",
+  },
+  {
+    nombre: "Chocolisto Sabor Fresa",
+    categoria: "Comida",
+    precio: "7.00",
+    descripcion: "Producto alimenticio sabor fresa.",
+    imagen: "/products/food/chocolisto-sabor-fresa.webp",
+    etiqueta: "NUEVO",
+  },
+  {
+    nombre: "Galletas de Mantequilla",
+    categoria: "Comida",
+    precio: "5.00",
+    descripcion: "Lata de galletas de mantequilla.",
+    imagen: "/products/food/lata-galletas-mantequilla.webp",
+    etiqueta: "NUEVO",
+  },
+  {
+    nombre: "Zuko Limón",
+    categoria: "Comida",
+    precio: "2.00",
+    descripcion: "Refresco instantáneo sabor limón.",
+    imagen: "/products/food/refresco-zuco-limon.webp",
+    etiqueta: "NUEVO",
+  },
+  {
+    nombre: "Ibuprofeno 200mg",
+    categoria: "Medicinas",
+    precio: "10.00",
+    descripcion: "Frasco de tabletas de ibuprofeno 200mg.",
+    imagen: "/products/medicines/ibuprofeno200.webp",
+    etiqueta: "DISPONIBLE",
+  },
+  {
+    nombre: "Acetaminophen 500mg",
+    categoria: "Medicinas",
+    precio: "8.00",
+    descripcion: "Extra fuerte, ideal para dolor y fiebre.",
+    imagen: "/products/medicines/acetaminophen.webp",
+    etiqueta: "DISPONIBLE",
+  },
 ];
 
-export default function Home() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSlide, setActiveSlide] = useState(0);
+export default function TiendaPage() {
+  const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
 
-  const slide = slides[activeSlide];
-
-  const siguienteSlide = () => {
-    setActiveSlide((actual) => (actual + 1) % slides.length);
-  };
-
-  const anteriorSlide = () => {
-    setActiveSlide((actual) =>
-      (actual - 1 + slides.length) % slides.length
-    );
-  };
+  const productosFiltrados = categoriaActiva
+    ? productos.filter((producto) => producto.categoria === categoriaActiva)
+    : [];
 
   return (
-    <main className="min-h-screen bg-white text-slate-900">
+    <main className="min-h-screen bg-slate-100 text-slate-900">
+      <section className="bg-white px-5 py-8 shadow-sm">
+        <div className="mx-auto max-w-7xl">
+          <p className="font-black uppercase text-green-600">ABIERTO</p>
 
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-[#062446] text-white shadow-lg">
+          <h1 className="text-3xl font-black text-[#062446] md:text-5xl">
+            AGUILA CUBA EXPRESS
+          </h1>
 
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
+          <p className="mt-3 text-slate-600">
+            Tienda de productos para enviar a Cuba.
+          </p>
+        </div>
+      </section>
 
-          <a href="/" className="flex items-center gap-3">
+      {!categoriaActiva ? (
+        <section className="mx-auto max-w-7xl px-5 py-8">
+          <h2 className="mb-6 text-3xl font-black text-[#062446]">
+            Categorías
+          </h2>
 
-            <Image
-              src="/logo.png"
-              alt="Águila Cuba Express"
-              width={70}
-              height={70}
-              className="h-14 w-14 object-contain md:h-16 md:w-16"
-            />
+          <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
+            {categorias.map((categoria) => {
+              const cantidad = productos.filter(
+                (producto) => producto.categoria === categoria.nombre
+              ).length;
 
-            <div>
-              <h1 className="text-lg font-black md:text-2xl">
-                ÁGUILA{" "}
-                <span className="text-red-500">
-                  CUBA EXPRESS
-                </span>
-              </h1>
+              return (
+                <button
+                  key={categoria.nombre}
+                  onClick={() => setCategoriaActiva(categoria.nombre)}
+                  className="overflow-hidden rounded-2xl bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                >
+                  <div className="relative h-44 bg-white p-4">
+                    <Image
+                      src={categoria.imagen}
+                      alt={categoria.nombre}
+                      fill
+                      className="object-contain p-4"
+                    />
 
-              <p className="text-[10px] tracking-[0.28em] md:text-sm">
-                ENVÍOS A CUBA
-              </p>
-            </div>
+                    <span className="absolute left-0 top-0 rounded-br-xl bg-[#2f9e9b] px-3 py-2 text-sm font-black text-white">
+                      {cantidad} Products
+                    </span>
+                  </div>
 
-          </a>
-
-
-          {/* MENÚ DESKTOP */}
-          <nav className="hidden gap-8 font-bold lg:flex">
-
-            {links.map(([label, href]) => (
-
-              <a
-                key={label}
-                href={href}
-                className="hover:text-red-400"
+                  <div className="p-4">
+                    <h3 className="text-lg font-black uppercase text-[#062446]">
+                      {categoria.nombre}
+                    </h3>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : (
+        <>
+          <section className="sticky top-0 z-40 border-b bg-white px-5 py-4 shadow-sm">
+            <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto">
+              <button
+                onClick={() => setCategoriaActiva(null)}
+                className="shrink-0 rounded-full bg-[#062446] px-5 py-3 font-bold text-white"
               >
-                {label}
-              </a>
+                Categorías
+              </button>
 
-            ))}
+              {categorias.map((categoria) => (
+                <button
+                  key={categoria.nombre}
+                  onClick={() => setCategoriaActiva(categoria.nombre)}
+                  className={`shrink-0 rounded-full border px-5 py-3 font-bold ${
+                    categoriaActiva === categoria.nombre
+                      ? "bg-red-600 text-white"
+                      : "bg-white text-[#062446]"
+                  }`}
+                >
+                  {categoria.nombre}
+                </button>
+              ))}
+            </div>
+          </section>
 
-          </nav>
+          <section className="mx-auto max-w-7xl px-5 py-8">
+            <h2 className="mb-6 text-3xl font-black text-[#062446]">
+              {categoriaActiva}
+            </h2>
 
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {productosFiltrados.map((producto) => (
+                <article
+                  key={producto.nombre}
+                  className="overflow-hidden rounded-2xl bg-white shadow-sm"
+                >
+                  <div className="relative h-44 bg-white">
+                    <Image
+                      src={producto.imagen}
+                      alt={producto.nombre}
+                      fill
+                      className="object-contain p-3"
+                    />
 
-          {/* BOTÓN WHATSAPP DESKTOP */}
+                    <span className="absolute left-2 top-2 rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
+                      {producto.etiqueta}
+                    </span>
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-xs font-black uppercase text-red-600">
+                      {producto.categoria}
+                    </p>
+
+                    <h3 className="mt-2 line-clamp-2 min-h-[48px] text-lg font-black leading-tight text-[#062446]">
+                      {producto.nombre}
+                    </h3>
+
+                    <p className="mt-2 line-clamp-2 min-h-[40px] text-sm text-slate-500">
+                      {producto.descripcion}
+                    </p>
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <p className="text-xl font-black text-[#062446]">
+                        {producto.precio} USD
+                      </p>
+
+                      <a
+                        href={`https://wa.me/13054974891?text=${encodeURIComponent(
+                          `Hola, estoy interesado en este producto: ${producto.nombre} - ${producto.precio} USD`
+                        )}`}
+                        target="_blank"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#062446] text-2xl font-bold text-white"
+                      >
+                        +
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      <section className="mt-8 bg-[#062446] px-6 py-12 text-white">
+        <div className="mx-auto max-w-7xl">
+          <h2 className="text-4xl font-black">AGUILA CUBA EXPRESS</h2>
+          <p className="mt-4 max-w-2xl text-lg text-white/75">
+            El precio de cada producto puede incluir costo, gestión, manejo y envío.
+            Consulta disponibilidad antes de ordenar.
+          </p>
+
+          <div className="mt-8 space-y-4 text-xl font-bold">
+            <p>🕘 Abierto</p>
+            <p>📍 Miami-Dade, Florida</p>
+            <p>📦 Entregamos a domicilio</p>
+          </div>
+
           <a
             href="https://wa.me/13054974891"
             target="_blank"
-            className="hidden rounded-xl bg-green-500 px-6 py-3 font-bold lg:block"
+            className="mt-8 inline-block rounded-xl bg-green-500 px-8 py-4 font-bold"
           >
             WhatsApp
           </a>
-
-
-          {/* MENÚ MÓVIL */}
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="rounded-lg border border-white/20 px-3 py-2 text-2xl lg:hidden"
-          >
-            ☰
-          </button>
-
-        </div>
-
-
-        {menuOpen && (
-
-          <div className="bg-[#03172d] px-6 py-4 lg:hidden">
-
-            <nav className="flex flex-col gap-4 font-bold">
-
-              {links.map(([label, href]) => (
-
-                <a
-                  key={label}
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {label}
-                </a>
-
-              ))}
-
-
-              <a
-                href="https://wa.me/13054974891"
-                target="_blank"
-                className="rounded-xl bg-green-500 px-5 py-3 text-center"
-              >
-                WhatsApp
-              </a>
-
-            </nav>
-
-          </div>
-
-        )}
-
-      </header>
-
-
-      {/* SLIDER PRINCIPAL */}
-      <section className="relative min-h-[560px] overflow-hidden">
-
-        {slides.map((item, index) => (
-
-          <Image
-            key={item.image}
-            src={item.image}
-            alt={item.label}
-            fill
-            priority
-            className={`object-cover transition-opacity duration-700 ${
-              activeSlide === index
-                ? "opacity-100"
-                : "opacity-0"
-            }`}
-          />
-
-        ))}
-
-        <div className="absolute inset-0 bg-gradient-to-r from-white/90 to-transparent" />
-                <div className="relative z-10 mx-auto flex min-h-[560px] max-w-7xl items-center px-6">
-          <div className="max-w-xl">
-            <p className="mb-4 font-black uppercase tracking-[0.35em] text-red-600">
-              {slide.label}
-            </p>
-
-            <h2 className="text-4xl font-black leading-none text-[#062446] sm:text-5xl md:text-7xl">
-              {slide.title}
-            </h2>
-
-            <p className="mt-6 text-xl font-bold text-[#062446] md:text-2xl">
-              {slide.subtitle}
-            </p>
-
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-              <a
-                href={slide.buttonHref}
-                className="rounded-xl bg-red-600 px-8 py-4 text-center font-bold text-white shadow-lg"
-              >
-                {slide.buttonText}
-              </a>
-
-              <a
-                href="https://wa.me/13054974891"
-                target="_blank"
-                className="rounded-xl bg-[#062446] px-8 py-4 text-center font-bold text-white shadow-lg"
-              >
-                WhatsApp
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={anteriorSlide}
-          className="absolute left-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-3xl font-black text-[#062446] shadow-lg"
-        >
-          ‹
-        </button>
-
-        <button
-          onClick={siguienteSlide}
-          className="absolute right-4 top-1/2 z-20 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-3xl font-black text-[#062446] shadow-lg"
-        >
-          ›
-        </button>
-
-        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-3">
-          {slides.map((item, index) => (
-            <button
-              key={item.image}
-              onClick={() => setActiveSlide(index)}
-              className={`h-3 w-8 rounded-full transition ${
-                activeSlide === index ? "bg-red-600" : "bg-white/70"
-              }`}
-            />
-          ))}
         </div>
       </section>
-
-      {/* ACCESOS RÁPIDOS */}
-      <section className="mx-auto max-w-7xl px-6 py-14">
-        <h3 className="text-center text-3xl font-black text-[#062446]">
-          ACCESOS RÁPIDOS
-        </h3>
-
-        <div className="mx-auto mt-3 h-1 w-20 rounded bg-red-600" />
-
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            ["🛒", "Tienda Online", "Compra productos para enviar a Cuba.", "/tienda"],
-            ["🔎", "Rastrear Envío", "Consulta el estado de tu paquete.", "/rastrear"],
-            ["💬", "WhatsApp", "Habla directamente con nosotros.", "https://wa.me/13054974891"],
-          ].map(([icon, title, text, href]) => (
-            <a
-              key={title}
-              href={href}
-              target={title === "WhatsApp" ? "_blank" : undefined}
-              className="rounded-3xl border bg-white p-8 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-            >
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-[#062446] text-4xl text-white">
-                {icon}
-              </div>
-
-              <h4 className="mt-5 text-xl font-black text-[#062446]">
-                {title}
-              </h4>
-
-              <p className="mt-2 text-slate-600">{text}</p>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      {/* RECOGIDA A DOMICILIO */}
-      <section className="bg-slate-50 px-6 py-16">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 rounded-[2rem] bg-white p-8 shadow-sm md:grid-cols-2 md:p-12">
-          <div>
-            <p className="font-black uppercase tracking-[0.3em] text-red-600">
-              Recogida a domicilio
-            </p>
-
-            <h3 className="mt-4 text-4xl font-black text-[#062446]">
-              Vamos a tu casa a recoger tu paquete en todo Miami
-            </h3>
-
-            <p className="mt-4 text-lg text-slate-600">
-              No tienes que desplazarte. Coordinamos la recogida de tus paquetes
-              directamente en tu casa y los preparamos para enviar a Cuba.
-            </p>
-
-            <a
-              href="https://wa.me/13054974891?text=Hola,%20quiero%20solicitar%20recogida%20a%20domicilio%20para%20un%20paquete."
-              target="_blank"
-              className="mt-8 inline-block rounded-xl bg-green-500 px-8 py-4 font-bold text-white"
-            >
-              Solicitar recogida por WhatsApp
-            </a>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="rounded-2xl bg-[#062446] p-6 text-white">
-              <p className="text-4xl">🚚</p>
-              <h4 className="mt-3 text-2xl font-black">Cobertura en Miami</h4>
-              <p className="mt-2 text-white/75">
-                Coordinamos recogidas en diferentes zonas de Miami.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-red-600 p-6 text-white">
-              <p className="text-4xl">📦</p>
-              <h4 className="mt-3 text-2xl font-black">Fácil y rápido</h4>
-              <p className="mt-2 text-white/80">
-                Escríbenos, coordinamos horario y recogemos tu paquete.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-            {/* PRÓXIMAS SALIDAS */}
-      <section className="mx-auto max-w-7xl px-6 py-14">
-        <div className="rounded-[2rem] bg-[#062446] p-8 text-white md:p-12">
-          <p className="font-black uppercase tracking-[0.3em] text-red-400">
-            Próximas salidas
-          </p>
-
-          <h3 className="mt-4 text-4xl font-black">
-            Planificación de salidas hacia Cuba
-          </h3>
-
-          <p className="mt-4 max-w-3xl text-white/75">
-            Consulta nuestras próximas salidas y coordina tu envío con tiempo.
-            Las fechas pueden variar según disponibilidad y logística.
-          </p>
-
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
-            {[
-              ["✈️", "Próxima salida", "Viernes", "Paquetes recibidos hasta el jueves."],
-              ["📍", "Destino principal", "Cienfuegos", "Entregas en zonas coordinadas."],
-              ["⏱️", "Tiempo estimado", "7 a 15 días", "Según disponibilidad y destino."],
-            ].map(([icon, title, value, text]) => (
-              <div key={title} className="rounded-2xl bg-white/10 p-6">
-                <p className="text-4xl">{icon}</p>
-                <h4 className="mt-4 font-bold text-white/70">{title}</h4>
-                <p className="mt-2 text-2xl font-black">{value}</p>
-                <p className="mt-2 text-white/70">{text}</p>
-              </div>
-            ))}
-          </div>
-
-          <a
-            href="https://wa.me/13054974891?text=Hola,%20quiero%20información%20sobre%20las%20próximas%20salidas%20hacia%20Cuba."
-            target="_blank"
-            className="mt-8 inline-block rounded-xl bg-red-600 px-8 py-4 font-bold text-white"
-          >
-            Consultar próxima salida
-          </a>
-        </div>
-      </section>
-
-      {/* TIENDA DESTACADA */}
-      <section className="mx-auto max-w-7xl px-6 py-10">
-        <div className="grid items-center overflow-hidden rounded-[2rem] bg-[#062446] md:grid-cols-2">
-          <div className="p-8 text-white md:p-12">
-            <p className="font-black uppercase tracking-[0.35em] text-red-400">
-              Tienda Online
-            </p>
-
-            <h3 className="mt-4 text-4xl font-black">
-              Compra productos y nosotros los enviamos a Cuba
-            </h3>
-
-            <p className="mt-4 text-lg text-white/80">
-              Selecciona productos, consulta disponibilidad y coordina la entrega
-              con Águila Cuba Express.
-            </p>
-
-            <a
-              href="/tienda"
-              className="mt-8 inline-block rounded-xl bg-red-600 px-8 py-4 font-bold text-white"
-            >
-              Ir a la tienda
-            </a>
-          </div>
-
-          <Image
-            src="/services-boxes.png"
-            alt="Tienda Águila Cuba Express"
-            width={800}
-            height={500}
-            className="h-full w-full object-cover"
-          />
-        </div>
-      </section>
-
-      {/* SERVICIOS */}
-      <section className="mx-auto max-w-7xl px-6 py-14">
-        <h3 className="text-center text-3xl font-black text-[#062446]">
-          NUESTROS SERVICIOS
-        </h3>
-
-        <div className="mx-auto mt-3 h-1 w-20 rounded bg-red-600" />
-
-        <div className="mt-10 grid gap-6 md:grid-cols-4">
-          {[
-            ["📦", "Envío de paquetes", "Envíos seguros y rápidos a toda Cuba."],
-            ["🛍️", "Compras en USA", "Compramos por ti y lo enviamos a Cuba."],
-            ["💸", "Envío de dinero", "Envía dinero a tus familiares de forma rápida."],
-            ["🛡️", "Seguridad garantizada", "Tu envío protegido de principio a fin."],
-          ].map(([icon, title, text]) => (
-            <div key={title} className="rounded-2xl border bg-white p-6 shadow-sm">
-              <div className="mb-4 text-4xl">{icon}</div>
-              <h4 className="font-black text-[#062446]">{title}</h4>
-              <p className="mt-2 text-slate-600">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* MAPA */}
-      <section className="bg-slate-50 px-6 py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8">
-            <p className="font-black uppercase tracking-[0.3em] text-red-600">
-              Ubicación
-            </p>
-
-            <h3 className="mt-3 text-4xl font-black text-[#062446]">
-              Visítanos en North Miami
-            </h3>
-
-            <p className="mt-3 text-lg text-slate-600">
-              2150 Sans Souci Blvd, North Miami, FL 33181
-            </p>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="overflow-hidden rounded-[2rem] bg-white shadow-sm">
-              <iframe
-                src="https://www.google.com/maps?q=2150%20Sans%20Souci%20Blvd%20North%20Miami%20FL%2033181&output=embed"
-                className="h-[420px] w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-
-            <div className="rounded-[2rem] bg-white p-8 shadow-sm">
-              <h4 className="text-3xl font-black text-[#062446]">
-                Águila Cuba Express
-              </h4>
-
-              <p className="mt-4 text-slate-600">
-                Estamos ubicados en North Miami. También ofrecemos recogida a
-                domicilio en Miami para mayor comodidad.
-              </p>
-
-              <div className="mt-6 space-y-4 text-lg font-bold text-[#062446]">
-                <p>📍 2150 Sans Souci Blvd</p>
-                <p>🏙️ North Miami, FL 33181</p>
-                <p>📦 Envíos a Cuba</p>
-                <p>🚚 Recogida a domicilio en Miami</p>
-              </div>
-
-              <a
-                href="https://www.google.com/maps/search/?api=1&query=2150%20Sans%20Souci%20Blvd%20North%20Miami%20FL%2033181"
-                target="_blank"
-                className="mt-8 inline-block rounded-xl bg-[#062446] px-8 py-4 font-bold text-white"
-              >
-                Cómo llegar
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* RASTREO */}
-      <section className="bg-[#062446]">
-        <div className="mx-auto grid max-w-7xl items-center gap-8 px-6 py-12 md:grid-cols-2">
-          <div className="text-white">
-            <h3 className="text-3xl font-black">RASTREA TU ENVÍO</h3>
-            <p className="mt-3 text-lg text-white/80">
-              Ingresa tu código de rastreo y conoce el estado de tu paquete.
-            </p>
-          </div>
-
-          <div className="flex overflow-hidden rounded-xl bg-white">
-            <input
-              placeholder="Ingresa tu código de rastreo"
-              className="w-full px-5 py-4 outline-none"
-            />
-            <a
-              href="/rastrear"
-              className="bg-red-600 px-8 py-4 font-bold text-white"
-            >
-              Rastrear
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-[#03172d] px-6 py-10 text-white">
-        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-4">
-          <div>
-            <h4 className="text-xl font-black">ÁGUILA CUBA EXPRESS</h4>
-            <p className="mt-3 text-white/70">
-              Envíos a Cuba rápidos, seguros y confiables.
-            </p>
-          </div>
-
-          <div>
-            <h5 className="font-bold">Servicios</h5>
-            <p className="mt-3 text-white/70">Paquetería</p>
-            <p className="text-white/70">Compras en USA</p>
-            <p className="text-white/70">Envío de dinero</p>
-          </div>
-
-          <div>
-            <h5 className="font-bold">Navegación</h5>
-            <div className="mt-3 flex flex-col gap-2 text-white/70">
-              <a href="/servicios">Servicios</a>
-              <a href="/tienda">Tienda</a>
-              <a href="/rastrear">Rastrear</a>
-              <a href="/contacto">Contacto</a>
-            </div>
-          </div>
-
-          <div>
-            <h5 className="font-bold">Contacto</h5>
-            <p className="mt-3 text-white/70">📍 2150 Sans Souci Blvd</p>
-            <p className="text-white/70">North Miami, FL 33181</p>
-            <a
-              href="https://wa.me/13054974891"
-              target="_blank"
-              className="mt-4 inline-block rounded-xl bg-green-500 px-5 py-3 font-bold"
-            >
-              WhatsApp
-            </a>
-          </div>
-        </div>
-
-        <div className="mx-auto mt-8 max-w-7xl border-t border-white/10 pt-6 text-center text-sm text-white/50">
-          © 2026 Águila Cuba Express. Todos los derechos reservados.
-        </div>
-      </footer>
     </main>
   );
 }
