@@ -115,7 +115,7 @@ export default function TiendaPage() {
 
         {/* BANNER PRINCIPAL */}
 {/* BANNER PRINCIPAL */}
-<section className="relative h-[255px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10">
+<section className="relative h-[285px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10">
   <div className="relative z-10 w-[48%] md:w-[45%]">
     <h2 className="text-[28px] font-black leading-[1.05] text-[#061b3a] md:text-5xl">
       ENVÍA MÁS,
@@ -146,7 +146,7 @@ export default function TiendaPage() {
 
     <a
       href="#ofertas"
-      className="mt-4 inline-flex rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm"
+     className="mt-3 inline-flex rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm"
     >
       Ver ofertas ❯
     </a>
