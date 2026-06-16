@@ -115,8 +115,8 @@ export default function TiendaPage() {
 
         {/* BANNER PRINCIPAL */}
 {/* BANNER PRINCIPAL */}
-<section className="relative overflow-hidden rounded-3xl bg-[#f4f7fb] px-6 py-7 shadow-sm md:px-10 md:py-8">
-  <div className="relative z-10 w-[55%] md:w-[45%]">
+<section className="relative h-[310px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-6 shadow-sm md:h-[420px] md:px-10 md:py-10">
+  <div className="relative z-10 w-[52%] md:w-[45%]">
     <h2 className="text-[32px] font-black leading-[1.05] text-[#061b3a] md:text-5xl">
       ENVÍA MÁS,
       <br />
@@ -152,22 +152,15 @@ export default function TiendaPage() {
     </a>
   </div>
 
-  <Image
-    src="/logo-tienda.png"
-    alt="Productos para enviar a Cuba"
-    width={850}
-    height={520}
-    priority
-    className="absolute bottom-3 right-2 h-auto w-[58%] object-contain md:bottom-0 md:right-0 md:w-[62%]"
-  />
+<Image
+  src="/logo-tienda.png"
+  alt="Productos para enviar a Cuba"
+  width={850}
+  height={520}
+  priority
+ className="absolute bottom-2 right-4 h-auto w-[58%] object-contain md:bottom-4 md:right-8 md:w-[52%]"
+/>
 
-  <button className="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
-    ‹
-  </button>
-
-  <button className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
-    ›
-  </button>
 
   <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
     <span className="h-2 w-6 rounded-full bg-red-600" />
