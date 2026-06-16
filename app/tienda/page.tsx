@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 const productosDestacados = [
   {
@@ -60,6 +61,12 @@ const categorias = [
 ];
 
 export default function TiendaPage() {
+const [busqueda, setBusqueda] = useState("");
+
+const productosBuscados = productosDestacados.filter((producto) =>
+  producto.nombre.toLowerCase().includes(busqueda.toLowerCase())
+);
+
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
       {/* HEADER */}
@@ -95,27 +102,10 @@ export default function TiendaPage() {
       </header>
 
       <div className="mx-auto max-w-7xl px-4">
-        {/* BUSCADOR */}
-        <section className="py-4">
-          <div className="flex gap-3">
-            <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
-              <span className="text-xl">🔍</span>
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-              />
-            </div>
 
-            <button className="rounded-xl bg-[#061b3a] px-5 py-2.5 font-black text-white shadow-sm">
-
-              Filtrar
-            </button>
-          </div>
-        </section>
 
         {/* BANNER PRINCIPAL */}
-<section className="relative h-[255px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10">
+<section className="relative h-[285px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10">
   <div className="relative z-10 w-[48%] md:w-[45%]">
     <h2 className="text-[28px] font-black leading-[1.05] text-[#061b3a] md:text-5xl">
       ENVÍA MÁS,
@@ -189,6 +179,21 @@ export default function TiendaPage() {
 </div>
         </section>
 
+        {/* BUSCADOR DE PRODUCTOS */}
+<section className="py-4">
+  <div className="flex items-center rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+    <span className="text-xl mr-3">🔍</span>
+
+    <input
+      type="text"
+      placeholder="Buscar productos..."
+      value={busqueda}
+      onChange={(e) => setBusqueda(e.target.value)}
+      className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+    />
+  </div>
+</section>
+
         {/* PRODUCTOS DESTACADOS */}
         <section className="mt-6">
           <div className="mb-3 flex items-center justify-between">
@@ -197,7 +202,7 @@ export default function TiendaPage() {
           </div>
 
 <div className="flex gap-4 overflow-x-auto pb-3">
-  {productosDestacados.map((producto) => (
+  {productosBuscados.map((producto) => (
     <article
       key={producto.nombre}
       className="min-w-[165px] shrink-0 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm md:min-w-[210px]"
