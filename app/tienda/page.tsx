@@ -98,7 +98,7 @@ export default function TiendaPage() {
         {/* BUSCADOR */}
         <section className="py-4">
           <div className="flex gap-3">
-            <div className="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+            <div className="flex flex-1 items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
               <span className="text-xl">🔍</span>
               <input
                 type="text"
@@ -107,15 +107,15 @@ export default function TiendaPage() {
               />
             </div>
 
-            <button className="rounded-2xl bg-[#061b3a] px-5 py-3 font-black text-white shadow-sm">
+            <button className="rounded-xl bg-[#061b3a] px-5 py-2.5 font-black text-white shadow-sm">
+
               Filtrar
             </button>
           </div>
         </section>
 
         {/* BANNER PRINCIPAL */}
-{/* BANNER PRINCIPAL */}
-<section className="relative h-[285px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10">
+<section className="relative h-[255px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10">
   <div className="relative z-10 w-[48%] md:w-[45%]">
     <h2 className="text-[28px] font-black leading-[1.05] text-[#061b3a] md:text-5xl">
       ENVÍA MÁS,
@@ -146,7 +146,7 @@ export default function TiendaPage() {
 
     <a
       href="#ofertas"
-     className="mt-3 inline-flex rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm"
+      className="mt-4 inline-flex rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm"
     >
       Ver ofertas ❯
     </a>
@@ -167,6 +167,7 @@ export default function TiendaPage() {
     <span className="h-2 w-4 rounded-full bg-slate-300" />
   </div>
 </section>
+
 
         {/* CATEGORÍAS */}
         <section className="mt-6">
@@ -316,13 +317,13 @@ export default function TiendaPage() {
         </section>
 
         {/* WHATSAPP */}
-        <section className="mt-6 rounded-2xl bg-[#061b3a] p-4 text-white">
-          <div className="flex items-center justify-between gap-4">
+        <section className="mt-5 rounded-2xl bg-[#061b3a] px-4 py-3 text-white">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="text-4xl">🟢</div>
+              <div className="text-3xl">🟢</div>
               <div>
-                <h3 className="font-black">¿Necesitas ayuda con tu pedido?</h3>
-                <p className="text-sm text-white/70">
+                <h3 className="text-sm font-black">¿Necesitas ayuda con tu pedido?</h3>
+                <p className="text-xs text-white/70">
                   Escríbenos por WhatsApp y te ayudamos de inmediato.
                 </p>
               </div>
@@ -331,7 +332,7 @@ export default function TiendaPage() {
             <a
               href="https://wa.me/13054974891"
               target="_blank"
-              className="rounded-xl bg-white px-5 py-3 font-black text-[#061b3a]"
+              className="rounded-xl bg-white px-4 py-2 text-sm font-black text-[#061b3a]"
             >
               Escribir ahora ❯
             </a>
