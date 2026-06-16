@@ -183,7 +183,7 @@ export default function TiendaPage() {
             <button className="text-sm font-bold">Ver todas ❯</button>
           </div>
 
-<div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+<div className="flex gap-3 overflow-x-auto pb-2">
   {categorias.map((cat) => (
     <button
       key={cat.nombre}
