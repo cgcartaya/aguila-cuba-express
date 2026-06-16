@@ -183,17 +183,17 @@ export default function TiendaPage() {
             <button className="text-sm font-bold">Ver todas ❯</button>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
-            {categorias.map((cat) => (
-              <button
-                key={cat.nombre}
-                className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm"
-              >
-                <div className="text-4xl">{cat.icono}</div>
-                <p className="mt-2 text-xs font-black">{cat.nombre}</p>
-              </button>
-            ))}
-          </div>
+<div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+  {categorias.map((cat) => (
+    <button
+      key={cat.nombre}
+      className="min-w-[110px] shrink-0 rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm"
+    >
+      <div className="text-4xl">{cat.icono}</div>
+      <p className="mt-2 text-xs font-black">{cat.nombre}</p>
+    </button>
+  ))}
+</div>
         </section>
 
         {/* PRODUCTOS DESTACADOS */}
