@@ -1,296 +1,326 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import Link from "next/link";
 
-const categorias = [
+const productosDestacados = [
   {
-    nombre: "Convertidores",
+    nombre: "EcoFlow Delta 3",
+    precio: "700.00",
     imagen: "/products/electrical/ecoflow.webp",
   },
   {
-    nombre: "Eléctricos",
-    imagen: "/products/electrical/controlador-solar-1000w.webp",
+    nombre: "Olla eléctrica 2L",
+    precio: "70.00",
+    imagen: "/products/electrical/olla-electrica-2l.webp",
   },
   {
-    nombre: "Comida",
-    imagen: "/products/food/chocolisto-sabor-fresa.webp",
-  },
-  {
-    nombre: "Medicinas",
-    imagen: "/products/medicines/ibuprofeno200.webp",
-  },
-  {
-    nombre: "Bicicletas",
+    nombre: "Bicicleta eléctrica",
+    precio: "900.00",
     imagen: "/products/electrical/bicicleta-electrica48v.webp",
+  },
+  {
+    nombre: "Convertidor 1000W",
+    precio: "350.00",
+    imagen: "/products/electrical/convertidor-1000w.webp",
   },
 ];
 
-const productos = [
+const ofertas = [
   {
-    nombre: "Ecoflow Delta 3 Classic",
-    categoria: "Convertidores",
-    precio: "700.00",
-    descripcion: "Estación de energía portátil ideal para apagones.",
-    imagen: "/products/electrical/ecoflow.webp",
-    etiqueta: "POPULAR",
-  },
-  {
-    nombre: "Convertidor Eléctrico 1000W",
-    categoria: "Convertidores",
-    precio: "350.00",
-    descripcion: "Convertidor de batería con capacidad de 1000 watts.",
-    imagen: "/products/electrical/convertidor-1000w.webp",
-    etiqueta: "POPULAR",
-  },
-  {
-    nombre: "Controlador Solar 1000W",
-    categoria: "Eléctricos",
+    nombre: "Controlador solar",
+    precioAntes: "150.00",
     precio: "120.00",
-    descripcion: "Controlador solar ideal para paneles y sistemas eléctricos.",
+    descuento: "-20%",
     imagen: "/products/electrical/controlador-solar-1000w.webp",
-    etiqueta: "NUEVO",
   },
   {
-    nombre: "Bicicleta Eléctrica 48V",
-    categoria: "Bicicletas",
-    precio: "900.00",
-    descripcion: "Bicicleta eléctrica para transporte diario.",
-    imagen: "/products/electrical/bicicleta-electrica48v.webp",
-    etiqueta: "NUEVO",
-  },
-  {
-    nombre: "Olla Eléctrica 1.5L",
-    categoria: "Eléctricos",
-    precio: "60.00",
-    descripcion: "Olla eléctrica multiusos con vaporera.",
-    imagen: "/products/electrical/olla-electrica-1-5l.webp",
-    etiqueta: "POPULAR",
-  },
-  {
-    nombre: "Olla Eléctrica 2L",
-    categoria: "Eléctricos",
-    precio: "70.00",
-    descripcion: "Olla eléctrica para cocinar en casa.",
-    imagen: "/products/electrical/olla-electrica-2l.webp",
-    etiqueta: "POPULAR",
-  },
-  {
-    nombre: "Chocolisto Sabor Fresa",
-    categoria: "Comida",
-    precio: "7.00",
-    descripcion: "Producto alimenticio sabor fresa.",
+    nombre: "Combo de alimentos",
+    precioAntes: "25.00",
+    precio: "18.00",
+    descuento: "-15%",
     imagen: "/products/food/chocolisto-sabor-fresa.webp",
-    etiqueta: "NUEVO",
-  },
-  {
-    nombre: "Galletas de Mantequilla",
-    categoria: "Comida",
-    precio: "5.00",
-    descripcion: "Lata de galletas de mantequilla.",
-    imagen: "/products/food/lata-galletas-mantequilla.webp",
-    etiqueta: "NUEVO",
-  },
-  {
-    nombre: "Zuko Limón",
-    categoria: "Comida",
-    precio: "2.00",
-    descripcion: "Refresco instantáneo sabor limón.",
-    imagen: "/products/food/refresco-zuco-limon.webp",
-    etiqueta: "NUEVO",
   },
   {
     nombre: "Ibuprofeno 200mg",
-    categoria: "Medicinas",
+    precioAntes: "12.00",
     precio: "10.00",
-    descripcion: "Frasco de tabletas de ibuprofeno 200mg.",
+    descuento: "-10%",
     imagen: "/products/medicines/ibuprofeno200.webp",
-    etiqueta: "DISPONIBLE",
-  },
-  {
-    nombre: "Acetaminophen 500mg",
-    categoria: "Medicinas",
-    precio: "8.00",
-    descripcion: "Extra fuerte, ideal para dolor y fiebre.",
-    imagen: "/products/medicines/acetaminophen.webp",
-    etiqueta: "DISPONIBLE",
   },
 ];
 
+const categorias = [
+  { nombre: "Electrónicos", icono: "📱" },
+  { nombre: "Hogar", icono: "🛋️" },
+  { nombre: "Alimentos", icono: "🧺" },
+  { nombre: "Deportes", icono: "🏋️" },
+  { nombre: "Medicinas", icono: "💊" },
+  { nombre: "Más", icono: "•••" },
+];
+
 export default function TiendaPage() {
-  const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
-
-  const productosFiltrados = categoriaActiva
-    ? productos.filter((producto) => producto.categoria === categoriaActiva)
-    : [];
-
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-900">
-      <section className="bg-white px-5 py-8 shadow-sm">
-        <div className="mx-auto max-w-7xl">
-          <p className="font-black uppercase text-green-600">ABIERTO</p>
+    <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-white px-4 py-3 shadow-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
+          <button className="text-3xl font-black">☰</button>
 
-          <h1 className="text-3xl font-black text-[#062446] md:text-5xl">
-            AGUILA CUBA EXPRESS
-          </h1>
-
-          <p className="mt-3 text-slate-600">
-            Tienda de productos para enviar a Cuba.
-          </p>
-        </div>
-      </section>
-
-      {!categoriaActiva ? (
-        <section className="mx-auto max-w-7xl px-5 py-8">
-          <h2 className="mb-6 text-3xl font-black text-[#062446]">
-            Categorías
-          </h2>
-
-          <div className="grid grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4">
-            {categorias.map((categoria) => {
-              const cantidad = productos.filter(
-                (producto) => producto.categoria === categoria.nombre
-              ).length;
-
-              return (
-                <button
-                  key={categoria.nombre}
-                  onClick={() => setCategoriaActiva(categoria.nombre)}
-                  className="overflow-hidden rounded-2xl bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <div className="relative h-44 bg-white p-4">
-                    <Image
-                      src={categoria.imagen}
-                      alt={categoria.nombre}
-                      fill
-                      className="object-contain p-4"
-                    />
-
-                    <span className="absolute left-0 top-0 rounded-br-xl bg-[#2f9e9b] px-3 py-2 text-sm font-black text-white">
-                      {cantidad} Products
-                    </span>
-                  </div>
-
-                  <div className="p-4">
-                    <h3 className="text-lg font-black uppercase text-[#062446]">
-                      {categoria.nombre}
-                    </h3>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : (
-        <>
-          <section className="sticky top-0 z-40 border-b bg-white px-5 py-4 shadow-sm">
-            <div className="mx-auto flex max-w-7xl items-center gap-3 overflow-x-auto">
-              <button
-                onClick={() => setCategoriaActiva(null)}
-                className="shrink-0 rounded-full bg-[#062446] px-5 py-3 font-bold text-white"
-              >
-                Categorías
-              </button>
-
-              {categorias.map((categoria) => (
-                <button
-                  key={categoria.nombre}
-                  onClick={() => setCategoriaActiva(categoria.nombre)}
-                  className={`shrink-0 rounded-full border px-5 py-3 font-bold ${
-                    categoriaActiva === categoria.nombre
-                      ? "bg-red-600 text-white"
-                      : "bg-white text-[#062446]"
-                  }`}
-                >
-                  {categoria.nombre}
-                </button>
-              ))}
+          <div className="flex items-center gap-2">
+            <Image
+              src="/logo.png"
+              alt="Águila Cuba Express"
+              width={52}
+              height={52}
+              className="rounded-full"
+            />
+            <div className="leading-tight">
+              <h1 className="text-lg font-black uppercase md:text-2xl">
+                ÁGUILA CUBA EXPRESS
+              </h1>
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                Envíos a Cuba
+              </p>
             </div>
-          </section>
-
-          <section className="mx-auto max-w-7xl px-5 py-8">
-            <h2 className="mb-6 text-3xl font-black text-[#062446]">
-              {categoriaActiva}
-            </h2>
-
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {productosFiltrados.map((producto) => (
-                <article
-                  key={producto.nombre}
-                  className="overflow-hidden rounded-2xl bg-white shadow-sm"
-                >
-                  <div className="relative h-44 bg-white">
-                    <Image
-                      src={producto.imagen}
-                      alt={producto.nombre}
-                      fill
-                      className="object-contain p-3"
-                    />
-
-                    <span className="absolute left-2 top-2 rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
-                      {producto.etiqueta}
-                    </span>
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-xs font-black uppercase text-red-600">
-                      {producto.categoria}
-                    </p>
-
-                    <h3 className="mt-2 line-clamp-2 min-h-[48px] text-lg font-black leading-tight text-[#062446]">
-                      {producto.nombre}
-                    </h3>
-
-                    <p className="mt-2 line-clamp-2 min-h-[40px] text-sm text-slate-500">
-                      {producto.descripcion}
-                    </p>
-
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                      <p className="text-xl font-black text-[#062446]">
-                        {producto.precio} USD
-                      </p>
-
-                      <a
-                        href={`https://wa.me/13054974891?text=${encodeURIComponent(
-                          `Hola, estoy interesado en este producto: ${producto.nombre} - ${producto.precio} USD`
-                        )}`}
-                        target="_blank"
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#062446] text-2xl font-bold text-white"
-                      >
-                        +
-                      </a>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
-
-      <section className="mt-8 bg-[#062446] px-6 py-12 text-white">
-        <div className="mx-auto max-w-7xl">
-          <h2 className="text-4xl font-black">AGUILA CUBA EXPRESS</h2>
-          <p className="mt-4 max-w-2xl text-lg text-white/75">
-            El precio de cada producto puede incluir costo, gestión, manejo y envío.
-            Consulta disponibilidad antes de ordenar.
-          </p>
-
-          <div className="mt-8 space-y-4 text-xl font-bold">
-            <p>🕘 Abierto</p>
-            <p>📍 Miami-Dade, Florida</p>
-            <p>📦 Entregamos a domicilio</p>
           </div>
 
-          <a
-            href="https://wa.me/13054974891"
-            target="_blank"
-            className="mt-8 inline-block rounded-xl bg-green-500 px-8 py-4 font-bold"
-          >
-            WhatsApp
+          <a href="https://wa.me/13054974891" target="_blank" className="relative text-3xl">
+            🛒
+            <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-black text-white">
+              2
+            </span>
           </a>
         </div>
-      </section>
+      </header>
+
+      <div className="mx-auto max-w-7xl px-4">
+        {/* BUSCADOR */}
+        <section className="py-4">
+          <div className="flex gap-3">
+            <div className="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+              <span className="text-xl">🔍</span>
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+              />
+            </div>
+
+            <button className="rounded-2xl bg-[#061b3a] px-5 py-3 font-black text-white shadow-sm">
+              Filtrar
+            </button>
+          </div>
+        </section>
+
+        {/* BANNER PRINCIPAL */}
+        <section className="relative overflow-hidden rounded-3xl bg-[#f4f7fb] px-6 py-8 shadow-sm md:px-10">
+          <div className="relative z-10 max-w-[48%]">
+            <h2 className="text-3xl font-black leading-tight md:text-5xl">
+              ENVÍA MÁS,
+              <br />
+              <span className="text-red-600">PAGA MENOS</span>
+            </h2>
+
+            <p className="mt-4 text-sm font-semibold text-slate-700 md:text-base">
+              Miles de productos para tu familia en Cuba
+            </p>
+
+            <div className="mt-6 grid grid-cols-3 gap-3 text-center text-[10px] font-bold text-slate-700">
+              <div>
+                <div className="mx-auto mb-1 text-2xl">🛡️</div>
+                100% Seguro
+              </div>
+              <div>
+                <div className="mx-auto mb-1 text-2xl">🕒</div>
+                Entrega rápida
+              </div>
+              <div>
+                <div className="mx-auto mb-1 text-2xl">📍</div>
+                Cobertura
+              </div>
+            </div>
+
+            <button className="mt-6 rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-sm">
+              Ver ofertas ❯
+            </button>
+          </div>
+
+          <Image
+            src="/logo-tienda.png"
+            alt="Productos para enviar a Cuba"
+            width={850}
+            height={520}
+            priority
+            className="absolute bottom-0 right-0 h-full w-[65%] object-contain object-right-bottom"
+          />
+
+          <button className="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
+            ‹
+          </button>
+          <button className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
+            ›
+          </button>
+
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+            <span className="h-2 w-6 rounded-full bg-red-600" />
+            <span className="h-2 w-4 rounded-full bg-slate-300" />
+            <span className="h-2 w-4 rounded-full bg-slate-300" />
+          </div>
+        </section>
+
+        {/* CATEGORÍAS */}
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xl font-black">Explora por categorías</h2>
+            <button className="text-sm font-bold">Ver todas ❯</button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 md:grid-cols-6">
+            {categorias.map((cat) => (
+              <button
+                key={cat.nombre}
+                className="rounded-2xl border border-slate-100 bg-white p-4 text-center shadow-sm"
+              >
+                <div className="text-4xl">{cat.icono}</div>
+                <p className="mt-2 text-xs font-black">{cat.nombre}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* PRODUCTOS DESTACADOS */}
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xl font-black">Productos destacados</h2>
+            <button className="text-sm font-bold">Ver todas ❯</button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {productosDestacados.map((producto) => (
+              <article key={producto.nombre} className="rounded-2xl border border-slate-100 bg-white p-3 shadow-sm">
+                <div className="relative h-32">
+                  <Image src={producto.imagen} alt={producto.nombre} fill className="object-contain" />
+                  <span className="absolute right-1 top-1 text-xl">♡</span>
+                </div>
+
+                <h3 className="mt-3 line-clamp-2 min-h-[40px] text-sm font-black">{producto.nombre}</h3>
+                <p className="mt-1 text-xs text-yellow-500">★★★★★ <span className="text-slate-500">(64)</span></p>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="font-black">${producto.precio}</p>
+                  <a
+                    href={`https://wa.me/13054974891?text=${encodeURIComponent(
+                      `Hola, estoy interesado en: ${producto.nombre}`
+                    )}`}
+                    target="_blank"
+                    className="rounded-lg bg-red-600 px-3 py-2 text-white"
+                  >
+                    🛒
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* BANNER ENTREGA */}
+        <section className="relative mt-6 overflow-hidden rounded-3xl bg-[#eef3fb] px-6 py-6 shadow-sm">
+          <div className="relative z-10 max-w-[45%]">
+            <h2 className="text-3xl font-black leading-none">
+              ENTREGA EN
+              <br />
+              24-48 HORAS
+            </h2>
+            <p className="mt-2 text-sm font-semibold text-slate-700">
+              En la mayoría de las provincias de Cuba
+            </p>
+            <button className="mt-4 rounded-xl bg-[#061b3a] px-5 py-3 text-sm font-black text-white">
+              Conoce más ❯
+            </button>
+          </div>
+
+          <Image
+            src="/carro-cajas-mapa.png"
+            alt="Entrega en Cuba"
+            width={900}
+            height={300}
+            className="absolute bottom-0 right-0 h-full w-[65%] object-contain object-right"
+          />
+        </section>
+
+        {/* OFERTAS */}
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xl font-black">Ofertas de la semana</h2>
+            <button className="text-sm font-bold">Ver todas ❯</button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {ofertas.map((producto) => (
+              <article key={producto.nombre} className="relative rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                <span className="absolute left-3 top-3 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
+                  {producto.descuento}
+                </span>
+
+                <div className="relative h-36">
+                  <Image src={producto.imagen} alt={producto.nombre} fill className="object-contain" />
+                </div>
+
+                <h3 className="mt-3 font-black">{producto.nombre}</h3>
+                <p className="mt-2">
+                  <span className="mr-2 text-sm text-slate-400 line-through">${producto.precioAntes}</span>
+                  <span className="text-lg font-black">${producto.precio}</span>
+                </p>
+
+                <a
+                  href={`https://wa.me/13054974891?text=${encodeURIComponent(
+                    `Hola, quiero esta oferta: ${producto.nombre}`
+                  )}`}
+                  target="_blank"
+                  className="mt-3 inline-block rounded-lg border border-red-200 px-4 py-2 text-sm font-black text-red-600"
+                >
+                  Agregar al carrito
+                </a>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* WHATSAPP */}
+        <section className="mt-6 rounded-2xl bg-[#061b3a] p-4 text-white">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl">🟢</div>
+              <div>
+                <h3 className="font-black">¿Necesitas ayuda con tu pedido?</h3>
+                <p className="text-sm text-white/70">
+                  Escríbenos por WhatsApp y te ayudamos de inmediato.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://wa.me/13054974891"
+              target="_blank"
+              className="rounded-xl bg-white px-5 py-3 font-black text-[#061b3a]"
+            >
+              Escribir ahora ❯
+            </a>
+          </div>
+        </section>
+      </div>
+
+      {/* BARRA INFERIOR */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white px-4 py-2 shadow-lg">
+        <div className="mx-auto grid max-w-2xl grid-cols-5 text-center text-xs font-bold text-slate-500">
+          <Link href="/">🏠<br />Inicio</Link>
+          <Link href="/rastrear">📦<br />Rastrear</Link>
+          <Link href="/tienda" className="text-red-600">🛍️<br />Tienda</Link>
+          <Link href="/">🗓️<br />Salidas</Link>
+          <a href="https://wa.me/13054974891" target="_blank" className="text-green-600">💬<br />WhatsApp</a>
+        </div>
+      </nav>
     </main>
   );
 }
