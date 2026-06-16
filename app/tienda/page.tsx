@@ -114,60 +114,67 @@ export default function TiendaPage() {
         </section>
 
         {/* BANNER PRINCIPAL */}
-        <section className="relative overflow-hidden rounded-3xl bg-[#f4f7fb] px-6 py-8 shadow-sm md:px-10">
-          <div className="relative z-10 max-w-[48%]">
-            <h2 className="text-3xl font-black leading-tight md:text-5xl">
-              ENVÍA MÁS,
-              <br />
-              <span className="text-red-600">PAGA MENOS</span>
-            </h2>
+{/* BANNER PRINCIPAL */}
+<section className="relative overflow-hidden rounded-3xl bg-[#f4f7fb] px-6 py-7 shadow-sm md:px-10 md:py-8">
+  <div className="relative z-10 w-[55%] md:w-[45%]">
+    <h2 className="text-[32px] font-black leading-[1.05] text-[#061b3a] md:text-5xl">
+      ENVÍA MÁS,
+      <br />
+      <span className="text-red-600">PAGA MENOS</span>
+    </h2>
 
-            <p className="mt-4 text-sm font-semibold text-slate-700 md:text-base">
-              Miles de productos para tu familia en Cuba
-            </p>
+    <p className="mt-4 max-w-[210px] text-sm font-bold leading-snug text-slate-700 md:text-base">
+      Miles de productos para tu familia en Cuba
+    </p>
 
-            <div className="mt-6 grid grid-cols-3 gap-3 text-center text-[10px] font-bold text-slate-700">
-              <div>
-                <div className="mx-auto mb-1 text-2xl">🛡️</div>
-                100% Seguro
-              </div>
-              <div>
-                <div className="mx-auto mb-1 text-2xl">🕒</div>
-                Entrega rápida
-              </div>
-              <div>
-                <div className="mx-auto mb-1 text-2xl">📍</div>
-                Cobertura
-              </div>
-            </div>
+    <div className="mt-5 grid max-w-[260px] grid-cols-3 gap-3 text-center text-[10px] font-bold text-slate-700">
+      <div>
+        <div className="mb-1 text-2xl">🛡️</div>
+        100% Seguro
+      </div>
 
-            <button className="mt-6 rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-sm">
-              Ver ofertas ❯
-            </button>
-          </div>
+      <div>
+        <div className="mb-1 text-2xl">🕒</div>
+        Entrega rápida
+      </div>
 
-          <Image
-            src="/logo-tienda.png"
-            alt="Productos para enviar a Cuba"
-            width={850}
-            height={520}
-            priority
-            className="absolute bottom-0 right-0 h-full w-[65%] object-contain object-right-bottom"
-          />
+      <div>
+        <div className="mb-1 text-2xl">📍</div>
+        Cobertura
+      </div>
+    </div>
 
-          <button className="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
-            ‹
-          </button>
-          <button className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
-            ›
-          </button>
+    <a
+      href="#ofertas"
+      className="mt-5 inline-flex rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-sm"
+    >
+      Ver ofertas ❯
+    </a>
+  </div>
 
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-            <span className="h-2 w-6 rounded-full bg-red-600" />
-            <span className="h-2 w-4 rounded-full bg-slate-300" />
-            <span className="h-2 w-4 rounded-full bg-slate-300" />
-          </div>
-        </section>
+  <Image
+    src="/logo-tienda.png"
+    alt="Productos para enviar a Cuba"
+    width={850}
+    height={520}
+    priority
+    className="absolute bottom-3 right-2 h-auto w-[58%] object-contain md:bottom-0 md:right-0 md:w-[62%]"
+  />
+
+  <button className="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
+    ‹
+  </button>
+
+  <button className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white shadow">
+    ›
+  </button>
+
+  <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+    <span className="h-2 w-6 rounded-full bg-red-600" />
+    <span className="h-2 w-4 rounded-full bg-slate-300" />
+    <span className="h-2 w-4 rounded-full bg-slate-300" />
+  </div>
+</section>
 
         {/* CATEGORÍAS */}
         <section className="mt-6">
@@ -225,32 +232,34 @@ export default function TiendaPage() {
         </section>
 
         {/* BANNER ENTREGA */}
-        <section className="relative mt-6 overflow-hidden rounded-3xl bg-[#eef3fb] px-6 py-6 shadow-sm">
-          <div className="relative z-10 max-w-[45%]">
-            <h2 className="text-3xl font-black leading-none">
-              ENTREGA EN
-              <br />
-              24-48 HORAS
-            </h2>
-            <p className="mt-2 text-sm font-semibold text-slate-700">
-              En la mayoría de las provincias de Cuba
-            </p>
-            <button className="mt-4 rounded-xl bg-[#061b3a] px-5 py-3 text-sm font-black text-white">
-              Conoce más ❯
-            </button>
-          </div>
+<section className="relative mt-6 overflow-hidden rounded-3xl bg-[#eef3fb] px-5 py-5 shadow-sm md:h-[190px] md:px-8 md:py-6">
+  <div className="relative z-10 w-[42%] md:w-[35%]">
+    <h2 className="text-2xl font-black leading-[0.95] text-[#061b3a] md:text-4xl">
+      ENTREGA EN
+      <br />
+      24-48 HORAS
+    </h2>
 
-          <Image
-            src="/carro-cajas-mapa.png"
-            alt="Entrega en Cuba"
-            width={900}
-            height={300}
-            className="absolute bottom-0 right-0 h-full w-[65%] object-contain object-right"
-          />
-        </section>
+    <p className="mt-2 text-xs font-semibold leading-snug text-slate-700 md:text-sm">
+      En la mayoría de las provincias de Cuba
+    </p>
+
+    <button className="mt-4 rounded-xl bg-[#061b3a] px-4 py-3 text-xs font-black text-white md:text-sm">
+      Conoce más ❯
+    </button>
+  </div>
+
+  <Image
+    src="/carro-cajas-mapa.png"
+    alt="Entrega en Cuba"
+    width={900}
+    height={300}
+    className="absolute bottom-0 right-0 h-full w-[68%] object-contain object-right md:w-[72%]"
+  />
+</section>
 
         {/* OFERTAS */}
-        <section className="mt-6">
+        <section id="ofertas" className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-black">Ofertas de la semana</h2>
             <button className="text-sm font-bold">Ver todas ❯</button>
