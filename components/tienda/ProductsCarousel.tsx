@@ -1,13 +1,21 @@
+"use client";
+
 import Image from "next/image";
+import { ShoppingCart } from "lucide-react";
 
 type Product = {
-  id: string | number;
+  id: number;
   name: string;
+  category: string;
+  description: string;
   price: number;
   image_url: string;
+  stock: number;
+  is_active: boolean;
+  tag?: string | null;
 };
 
-type ProductsCarouselProps = {
+type Props = {
   productos: Product[];
   agregarAlCarrito: (producto: Product) => void;
 };
@@ -15,51 +23,60 @@ type ProductsCarouselProps = {
 export default function ProductsCarousel({
   productos,
   agregarAlCarrito,
-}: ProductsCarouselProps) {
+}: Props) {
+  if (productos.length === 0) {
+    return (
+      <div className="py-8 text-center text-gray-500">
+        No se encontraron productos.
+      </div>
+    );
+  }
+
   return (
     <section className="mt-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xl font-black">Productos destacados</h2>
-        <button className="text-sm font-bold">Ver todas ❯</button>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-bold text-[#061b3a]">
+          Productos destacados
+        </h2>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {productos.map((producto) => (
-          <article
+          <div
             key={producto.id}
-            className="min-w-[165px] shrink-0 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm md:min-w-[210px]"
+            className="rounded-2xl border bg-white p-3 shadow-sm transition hover:shadow-md"
           >
-            <div className="relative h-32 md:h-36">
+            <div className="relative mb-3 h-40 w-full overflow-hidden rounded-xl bg-gray-100">
               <Image
                 src={producto.image_url}
                 alt={producto.name}
                 fill
-                className="object-contain"
+                className="object-cover"
               />
-              <span className="absolute right-1 top-1 text-xl">♡</span>
             </div>
 
-            <h3 className="mt-3 line-clamp-2 min-h-[40px] text-sm font-black text-[#061b3a]">
+            <h3 className="line-clamp-2 font-semibold text-gray-900">
               {producto.name}
             </h3>
 
-            <p className="mt-1 text-xs text-yellow-500">
-              ★★★★★ <span className="text-slate-500">(64)</span>
+            <p className="mt-1 text-lg font-bold text-[#061b3a]">
+              ${Number(producto.price).toFixed(2)}
             </p>
 
-            <div className="mt-3 flex items-center justify-between">
-              <p className="font-black">
-                ${Number(producto.price).toFixed(2)}
-              </p>
+            {producto.tag && (
+              <span className="mt-2 inline-block rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">
+                {producto.tag}
+              </span>
+            )}
 
-              <button
-                onClick={() => agregarAlCarrito(producto)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 text-white"
-              >
-                🛒
-              </button>
-            </div>
-          </article>
+            <button
+              onClick={() => agregarAlCarrito(producto)}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
+            >
+              <ShoppingCart size={16} />
+              Agregar
+            </button>
+          </div>
         ))}
       </div>
     </section>
