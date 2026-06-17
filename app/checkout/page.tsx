@@ -89,14 +89,16 @@ const total = cart.reduce(
 
       if (orderError) throw orderError;
 
-      const orderItems = cart.map((item) => ({
-        order_id: order.id,
-        product_id: item.id,
-        product_name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        subtotal: item.price * item.quantity,
-      }));
+const orderItems = cart.map(
+  (item: { id: number; name: string; price: number; quantity: number }) => ({
+    order_id: order.id,
+    product_id: item.id,
+    product_name: item.name,
+    quantity: item.quantity,
+    price: item.price,
+    subtotal: item.price * item.quantity,
+  })
+);
 
       const { error: itemsError } = await supabase
         .from("order_items")
