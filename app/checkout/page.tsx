@@ -230,11 +230,11 @@ const orderItems = cart.map(
             </h2>
 
             <div className="space-y-3">
-              {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
+{cart.map((item: { id: number; name: string; price: number; quantity: number }) => (
+  <div
+    key={item.id}
+    className="flex items-center justify-between gap-3 text-sm"
+  >
                   <div>
                     <p className="font-medium text-gray-900">{item.name}</p>
                     <p className="text-gray-500">Cantidad: {item.quantity}</p>
