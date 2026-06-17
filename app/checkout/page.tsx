@@ -11,7 +11,7 @@ export default function CheckoutPage() {
   const router = useRouter();
 const { items, cartItems, clearCart } = useCart() as any;
 
-const currentCartItems = items || cartItems || [];
+const cart = items || cartItems || [];
 
   const [form, setForm] = useState({
     name: "",
@@ -28,7 +28,7 @@ const currentCartItems = items || cartItems || [];
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const total = currentCartItems.reduce(
+  const total = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
@@ -45,7 +45,7 @@ const currentCartItems = items || cartItems || [];
   const handleSubmit = async () => {
     setError("");
 
-    if (currentCartItems.length === 0) {
+    if (cart.length === 0) {
       setError("Tu carrito está vacío.");
       return;
     }
@@ -88,7 +88,7 @@ const currentCartItems = items || cartItems || [];
 
       if (orderError) throw orderError;
 
-      const orderItems = currentCartItems.map((item) => ({
+      const orderItems = cart.map((item) => ({
         order_id: order.id,
         product_id: item.id,
         product_name: item.name,
@@ -227,7 +227,7 @@ const currentCartItems = items || cartItems || [];
             </h2>
 
             <div className="space-y-3">
-              {currentCartItems.map((item) => (
+              {cart.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between gap-3 text-sm"
