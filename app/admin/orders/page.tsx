@@ -85,15 +85,15 @@ export default async function AdminOrdersPage() {
                     Cliente
                   </div>
 
-                  <p>{order.customers?.name}</p>
+                  <p>{order.customers?.[0]?.name}</p>
                   <p className="text-sm text-gray-500">
-                    {order.customers?.email}
+                    {order.customers?.[0]?.email}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {order.customers?.phone}
+                    {order.customers?.[0]?.phone}
                   </p>
                   <p className="text-sm text-gray-500">
-                    {order.customers?.city}
+                    {order.customers?.[0]?.phone}
                   </p>
                 </div>
 
