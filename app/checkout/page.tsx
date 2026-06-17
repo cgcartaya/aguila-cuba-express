@@ -28,10 +28,11 @@ const cart = items || cartItems || [];
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const total = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+const total = cart.reduce(
+  (sum: number, item: { price: number; quantity: number }) =>
+    sum + item.price * item.quantity,
+  0
+);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
