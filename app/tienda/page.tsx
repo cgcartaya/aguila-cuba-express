@@ -11,8 +11,28 @@ import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import OffersCarousel from "@/components/tienda/OffersCarousel";
 import HelpCard from "@/components/tienda/HelpCard";
 import BottomNavigation from "@/components/tienda/BottomNavigation";
-import {  Smartphone,  Sofa,  ShoppingBasket,  Dumbbell,  Pill,  Ellipsis,} from "lucide-react";
+import {
+  Smartphone,
+  Sofa,
+  ShoppingBasket,
+  Dumbbell,
+  Pill,
+  Ellipsis,
+} from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+
+type Product = {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  price: number;
+  image_url: string;
+  stock: number;
+  is_active: boolean;
+  tag?: string | null;
+  created_at?: string;
+};
 
 const ofertas = [
   {
@@ -49,72 +69,60 @@ const categorias = [
 
 export default function TiendaPage() {
   const [busqueda, setBusqueda] = useState("");
-  const [productos, setProductos] = useState<any[]>([]);
+  const [productos, setProductos] = useState<Product[]>([]);
   const { cart, addToCart } = useCart();
 
-useEffect(() => {
-  const cargarProductos = async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("is_active", true);
+  useEffect(() => {
+    const cargarProductos = async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true);
 
-    if (error) {
-      console.log("Error cargando productos:", error);
-      return;
-    }
+      if (error) {
+        console.log("Error cargando productos:", error);
+        return;
+      }
 
-    console.log("Productos cargados:", data);
-    setProductos(data || []);
-  };
+      setProductos((data as Product[]) || []);
+    };
 
-  cargarProductos();
-}, []);
+    cargarProductos();
+  }, []);
 
-const productosBuscados = productos.filter((producto) =>
-  producto.name.toLowerCase().includes(busqueda.toLowerCase())
-);
+  const productosBuscados = productos.filter((producto) =>
+    producto.name.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const cartCount = cart.reduce(
+    (total: number, item: { quantity: number }) => total + item.quantity,
+    0
+  );
 
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
-      {/* HEADER */}
-     <Header
-  cartCount={cart.reduce((total, item) => total + item.quantity, 0)}
-/>
+      <Header cartCount={cartCount} />
 
       <div className="mx-auto max-w-7xl px-4">
+        <MainBanner />
 
+        <Categories categorias={categorias} />
 
-        {/* BANNER PRINCIPAL */}
-<MainBanner />
+        <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
 
+        <ProductsCarousel
+          productos={productosBuscados}
+          agregarAlCarrito={addToCart}
+        />
 
-        {/* CATEGORÍAS */}
-<Categories categorias={categorias} />
+        <DeliveryBanner />
 
-        {/* BUSCADOR DE PRODUCTOS */}
-<ProductSearch 
-  busqueda={busqueda}
-  setBusqueda={setBusqueda}
-/>
+        <OffersCarousel ofertas={ofertas} />
 
-        {/* PRODUCTOS DESTACADOS */}
-<ProductsCarousel
-  productos={productosBuscados}
-  agregarAlCarrito={addToCart}
-/>
-{/* BANNER ENTREGA */}
-<DeliveryBanner />
-
-        {/* OFERTAS */}
-<OffersCarousel ofertas={ofertas} />
-
-        {/* WHATSAPP */}
-<HelpCard />
+        <HelpCard />
       </div>
 
-      {/* BARRA INFERIOR */}
-<BottomNavigation />
+      <BottomNavigation />
     </main>
   );
 }
