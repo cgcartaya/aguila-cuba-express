@@ -56,21 +56,23 @@ export default function MobileStats({
         return (
           <div
             key={card.title}
-            className="rounded-[1.5rem] border bg-white p-4 shadow-sm"
+            className="rounded-[1.35rem] border bg-white p-3.5 shadow-sm"
           >
             <div
-              className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl ${card.bg}`}
+              className={`mb-2.5 flex h-10 w-10 items-center justify-center rounded-2xl ${card.bg}`}
             >
-              <Icon size={22} className={card.color} />
+              <Icon size={21} className={card.color} />
             </div>
 
-            <p className="text-sm font-medium text-gray-500">{card.title}</p>
+            <p className="text-sm font-medium leading-tight text-gray-500">
+              {card.title}
+            </p>
 
-            <h3 className="mt-1 text-3xl font-black leading-none text-[#061b3a]">
+            <h3 className="mt-1 text-2xl font-black leading-none text-[#061b3a]">
               {card.value}
             </h3>
 
-            <p className={`mt-2 text-xs font-bold ${card.color}`}>
+            <p className={`mt-1.5 text-xs font-bold ${card.color}`}>
               {card.extra}
             </p>
           </div>

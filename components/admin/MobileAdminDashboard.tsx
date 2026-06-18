@@ -26,7 +26,7 @@ export default function MobileAdminDashboard({
   recentOrders,
 }: Props) {
   return (
-    <main className="min-h-screen bg-gray-50 px-4 pb-24 pt-5">
+    <main className="min-h-screen bg-gray-50 px-4 pb-36 pt-5">
       <section className="mb-5">
         <p className="text-sm font-bold text-gray-500">Bienvenido, Admin</p>
 
