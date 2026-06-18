@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LogoutButton from "@/components/admin/LogoutButton";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -79,6 +80,9 @@ export default function AdminNav() {
           Ver tienda
         </Link>
       </div>
+	  <div className="mt-4">
+  <LogoutButton />
+</div>
     </aside>
   );
 }
