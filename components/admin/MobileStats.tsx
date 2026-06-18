@@ -1,9 +1,4 @@
-import {
-  ShoppingCart,
-  DollarSign,
-  Package,
-  Users,
-} from "lucide-react";
+import { ShoppingCart, DollarSign, Package, Users } from "lucide-react";
 
 type Props = {
   orders: number;
@@ -61,26 +56,21 @@ export default function MobileStats({
         return (
           <div
             key={card.title}
-            className="rounded-3xl bg-white p-4 shadow-sm border"
+            className="rounded-[1.5rem] border bg-white p-4 shadow-sm"
           >
             <div
-              className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl ${card.bg}`}
+              className={`mb-3 flex h-11 w-11 items-center justify-center rounded-2xl ${card.bg}`}
             >
-              <Icon
-                size={24}
-                className={card.color}
-              />
+              <Icon size={22} className={card.color} />
             </div>
 
-            <p className="text-sm text-gray-500">
-              {card.title}
-            </p>
+            <p className="text-sm font-medium text-gray-500">{card.title}</p>
 
-            <h3 className="text-3xl font-black text-[#061b3a]">
+            <h3 className="mt-1 text-3xl font-black leading-none text-[#061b3a]">
               {card.value}
             </h3>
 
-            <p className={`text-xs font-bold ${card.color}`}>
+            <p className={`mt-2 text-xs font-bold ${card.color}`}>
               {card.extra}
             </p>
           </div>

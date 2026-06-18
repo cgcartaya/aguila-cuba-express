@@ -1,8 +1,6 @@
 import MobileStats from "@/components/admin/MobileStats";
 import MobileQuickActions from "@/components/admin/MobileQuickActions";
 import MobileRecentOrders from "@/components/admin/MobileRecentOrders";
-import { Store } from "lucide-react";
-import Link from "next/link";
 
 type RecentOrder = {
   id: string;
@@ -28,23 +26,12 @@ export default function MobileAdminDashboard({
 }: Props) {
   return (
     <main className="min-h-screen bg-gray-50 px-4 pb-24 pt-5">
-      <section className="mb-5 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-bold text-gray-500">
-            Panel administrativo
-          </p>
+      <section className="mb-5">
+        <p className="text-sm font-bold text-gray-500">Bienvenido, Admin</p>
 
-          <h1 className="text-2xl font-black text-[#061b3a]">
-            Águila Admin
-          </h1>
-        </div>
-
-        <Link
-          href="/tienda"
-          className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm border"
-        >
-          <Store size={22} className="text-[#061b3a]" />
-        </Link>
+        <h1 className="text-3xl font-black text-[#061b3a]">
+          Resumen de tu tienda
+        </h1>
       </section>
 
       <MobileStats
@@ -54,9 +41,13 @@ export default function MobileAdminDashboard({
         customers={customersCount}
       />
 
-      <MobileQuickActions />
+      <div className="mt-7">
+        <MobileQuickActions />
+      </div>
 
-      <MobileRecentOrders orders={recentOrders} />
+      <div className="mt-7">
+        <MobileRecentOrders orders={recentOrders} />
+      </div>
     </main>
   );
 }
