@@ -1,6 +1,7 @@
 import MobileStats from "@/components/admin/MobileStats";
 import MobileQuickActions from "@/components/admin/MobileQuickActions";
 import MobileRecentOrders from "@/components/admin/MobileRecentOrders";
+import MobileAdminBottomNav from "@/components/admin/MobileAdminBottomNav";
 
 type RecentOrder = {
   id: string;
@@ -48,6 +49,7 @@ export default function MobileAdminDashboard({
       <div className="mt-7">
         <MobileRecentOrders orders={recentOrders} />
       </div>
+      <MobileAdminBottomNav />
     </main>
   );
 }
