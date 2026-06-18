@@ -2,18 +2,7 @@
 
 import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
-
-type Product = {
-  id: number;
-  name: string;
-  category: string;
-  description: string;
-  price: number;
-  image_url: string;
-  stock: number;
-  is_active: boolean;
-  tag?: string | null;
-};
+import type { Product } from "@/types/cart";
 
 type Props = {
   productos: Product[];
@@ -59,7 +48,13 @@ export default function ProductsCarousel({
               {producto.name}
             </h3>
 
-            <p className="mt-1 text-lg font-bold text-[#061b3a]">
+            {producto.description && (
+              <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                {producto.description}
+              </p>
+            )}
+
+            <p className="mt-2 text-lg font-bold text-[#061b3a]">
               ${Number(producto.price).toFixed(2)}
             </p>
 
@@ -74,7 +69,7 @@ export default function ProductsCarousel({
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
             >
               <ShoppingCart size={16} />
-              Agregar
+              Agregar al carrito
             </button>
           </div>
         ))}

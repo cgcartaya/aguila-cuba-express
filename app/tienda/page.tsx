@@ -20,19 +20,7 @@ import {
   Ellipsis,
 } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-
-type Product = {
-  id: number;
-  name: string;
-  category: string;
-  description: string;
-  price: number;
-  image_url: string;
-  stock: number;
-  is_active: boolean;
-  tag?: string | null;
-  created_at?: string;
-};
+import type { Product } from "@/types/cart";
 
 const ofertas = [
   {
@@ -95,7 +83,7 @@ export default function TiendaPage() {
   );
 
   const cartCount = cart.reduce(
-    (total: number, item: { quantity: number }) => total + item.quantity,
+    (total, item) => total + item.quantity,
     0
   );
 
