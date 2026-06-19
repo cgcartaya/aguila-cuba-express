@@ -84,8 +84,8 @@ export default async function AdminDashboardPage() {
 
   return (
     <>
-      <div className="lg:hidden">
-        <MobileAdminDashboard
+      <div className="lg:hidden pb-24">
+         <MobileAdminDashboard
           ordersCount={ordersCount || 0}
           sales={totalSales}
           productsCount={activeProductsCount || 0}

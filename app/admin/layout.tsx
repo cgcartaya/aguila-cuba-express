@@ -1,5 +1,6 @@
 import AdminNav from "@/components/admin/AdminNav";
 import AdminAuthGuard from "@/components/admin/AdminAuthGuard";
+import AdminBottomNav from "@/components/admin/AdminBottomNav";
 
 export default function AdminLayout({
   children,
@@ -9,17 +10,15 @@ export default function AdminLayout({
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50 lg:flex">
-        
-        {/* Sidebar solo escritorio */}
         <div className="hidden lg:block">
           <AdminNav />
         </div>
 
-        {/* Contenido */}
-        <div className="flex-1">
-          {children}
-        </div>
+        <div className="flex-1 pb-24 lg:pb-0">{children}</div>
 
+        <div className="lg:hidden">
+          <AdminBottomNav />
+        </div>
       </div>
     </AdminAuthGuard>
   );
