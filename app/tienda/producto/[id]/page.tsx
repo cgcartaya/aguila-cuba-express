@@ -100,10 +100,10 @@ export default function ProductDetailPage({ params }: PageProps) {
       );
 
       if (productData.category) {
-        const { data: relatedData } = await getRelatedProducts(
-          productData.category,
-          productData.id
-        );
+       const { data: relatedData } = await getRelatedProducts(
+  productData.category,
+  String(productData.id)
+);
 
         setRelatedProducts((relatedData as Product[]) || []);
       }
