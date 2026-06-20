@@ -4,21 +4,35 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import ImageUpload from "@/components/admin/ImageUpload";
+import ProductImageManager from "@/components/admin/products/ProductImageManager";
+
+import {
+  getProductById,
+  updateProduct,
+} from "@/lib/services/products";
+
+/* =========================================================
+   EDIT PRODUCT PAGE
+   ---------------------------------------------------------
+   Página para editar la información principal del producto.
+   También incluye la nueva galería de imágenes múltiples.
+========================================================= */
 
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
 
+  /* =========================================================
+     FORM STATE
+  ========================================================= */
+
   const [form, setForm] = useState({
     name: "",
     category: "",
     description: "",
     price: "",
-    image_url: "",
-    stock: "",
+     stock: "",
     tag: "",
     is_active: true,
   });
@@ -27,15 +41,15 @@ export default function EditProductPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  /* =========================================================
+     LOAD PRODUCT
+  ========================================================= */
+
   useEffect(() => {
     async function loadProduct() {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", productId)
-        .single();
+      const { data, error } = await getProductById(productId);
 
-      if (error) {
+      if (error || !data) {
         setError("No se pudo cargar el producto.");
         setLoading(false);
         return;
@@ -46,7 +60,6 @@ export default function EditProductPage() {
         category: data.category || "",
         description: data.description || "",
         price: String(data.price || ""),
-        image_url: data.image_url || "",
         stock: String(data.stock || ""),
         tag: data.tag || "",
         is_active: data.is_active ?? true,
@@ -57,6 +70,10 @@ export default function EditProductPage() {
 
     if (productId) loadProduct();
   }, [productId]);
+
+  /* =========================================================
+     FORM HANDLERS
+  ========================================================= */
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -75,6 +92,10 @@ export default function EditProductPage() {
       is_active: e.target.checked,
     }));
   };
+
+  /* =========================================================
+     SAVE PRODUCT
+  ========================================================= */
 
   const handleSubmit = async () => {
     setError("");
@@ -100,19 +121,15 @@ export default function EditProductPage() {
     try {
       setSaving(true);
 
-      const { error } = await supabase
-        .from("products")
-        .update({
-          name: form.name,
-          category: form.category,
-          description: form.description,
-          price,
-          image_url: form.image_url,
-          stock,
-          tag: form.tag,
-          is_active: form.is_active,
-        })
-        .eq("id", productId);
+      const { error } = await updateProduct(productId, {
+        name: form.name,
+        category: form.category,
+        description: form.description,
+        price,
+        stock,
+        tag: form.tag,
+        is_active: form.is_active,
+      });
 
       if (error) throw error;
 
@@ -125,6 +142,10 @@ export default function EditProductPage() {
       setSaving(false);
     }
   };
+
+  /* =========================================================
+     LOADING STATE
+  ========================================================= */
 
   if (loading) {
     return (
@@ -140,6 +161,7 @@ export default function EditProductPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-4xl">
+        {/* Header */}
         <Link
           href="/admin/products"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
@@ -157,6 +179,7 @@ export default function EditProductPage() {
           </p>
         </div>
 
+        {/* Información principal */}
         <div className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
             <Input
@@ -201,17 +224,10 @@ export default function EditProductPage() {
               placeholder="Ej: Oferta, Nuevo"
             />
 
-<div className="md:col-span-2">
-  <ImageUpload
-    value={form.image_url}
-    onChange={(url) =>
-      setForm((prev) => ({
-        ...prev,
-        image_url: url,
-      }))
-    }
-  />
-</div>
+            {/* Imagen antigua / temporal.
+                La mantenemos para no romper la tienda pública actual.
+                Más adelante la tienda usará product_images.is_main. */}
+
 
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-bold text-gray-700">
@@ -250,6 +266,7 @@ export default function EditProductPage() {
             </div>
           )}
 
+          {/* Acciones */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link
               href="/admin/products"
@@ -277,10 +294,19 @@ export default function EditProductPage() {
             </button>
           </div>
         </div>
+
+        {/* Galería nueva de imágenes múltiples */}
+        <div className="mt-6">
+          <ProductImageManager productId={productId} />
+        </div>
       </div>
     </main>
   );
 }
+
+/* =========================================================
+   INPUT REUTILIZABLE
+========================================================= */
 
 function Input({
   label,

@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Package } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import {
+  getLowStockProducts,
+  getInactiveProducts,
+} from "@/lib/services/products";
 import ProductCard from "@/components/admin/products/ProductCard";
 import type { Product } from "@/components/admin/products/types";
 
@@ -28,19 +31,10 @@ export default function ProductsStatusPage({
   async function fetchProducts() {
     setLoading(true);
 
-    let query = supabase.from("products").select("*");
-
-    if (filter === "low-stock") {
-      query = query.lte("stock", 5);
-    }
-
-    if (filter === "inactive") {
-      query = query.eq("is_active", false);
-    }
-
-    const { data, error } = await query.order("created_at", {
-      ascending: false,
-    });
+  const { data, error } =
+  filter === "low-stock"
+    ? await getLowStockProducts()
+    : await getInactiveProducts();
 
     if (error) {
       console.error(error.message);

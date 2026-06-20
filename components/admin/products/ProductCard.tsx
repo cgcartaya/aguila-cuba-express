@@ -14,12 +14,13 @@ export default function ProductCard({ product, children }: Props) {
       <div className="flex gap-3">
         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
           {product.image_url ? (
-            <Image
-              src={product.image_url}
-              alt={product.name}
-              fill
-              className="object-cover"
-            />
+<Image
+  src={product.image_url}
+  alt={product.name}
+  fill
+  unoptimized
+  className="object-cover"
+/>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <Package size={26} className="text-slate-400" />

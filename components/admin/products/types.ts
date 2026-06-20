@@ -11,3 +11,22 @@ export type Product = {
   is_active: boolean;
   created_at?: string;
 };
+
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  image_url: string;
+  is_main: boolean;
+  position: number;
+  created_at?: string;
+};
+
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  image_url: string;
+  storage_path?: string | null;
+  is_main: boolean;
+  position: number;
+  created_at?: string;
+};

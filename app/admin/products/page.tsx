@@ -1,24 +1,50 @@
 "use client";
 
+/* =========================================================
+   IMPORTS
+========================================================= */
+
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { Plus, Upload } from "lucide-react";
+
 import {
-  Plus,
-  Search,
-  Package,
-  ArrowUpDown,
-  Filter,
-  Upload,
-} from "lucide-react";
-import { supabase } from "@/lib/supabase";
+  getProducts,
+  toggleProductStatus as toggleProductStatusService,
+  deleteProductForever as deleteProductForeverService,
+} from "@/lib/services/products";
+
 import ProductCard from "@/components/admin/products/ProductCard";
 import ProductActionsMenu from "@/components/admin/products/ProductActionsMenu";
 import ProductStats from "@/components/admin/products/ProductStats";
+import ProductFilters from "@/components/admin/products/ProductFilters";
+import ProductPagination from "@/components/admin/products/ProductPagination";
+import ProductsEmptyState from "@/components/admin/products/ProductsEmptyState";
+
 import type { Product } from "@/components/admin/products/types";
+
+/* =========================================================
+   TIPOS - IMÁGENES DEL PRODUCTO
+========================================================= */
+
+type ProductImage = {
+  image_url: string;
+  is_main: boolean;
+  position: number | null;
+};
+
+type ProductWithImages = Product & {
+  product_images?: ProductImage[];
+};
+
+/* =========================================================
+   ADMIN PRODUCTS PAGE
+========================================================= */
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
@@ -30,6 +56,10 @@ export default function AdminProductsPage() {
 
   const pageSize = 8;
 
+  /* =========================================================
+     PRODUCTOS - CARGA INICIAL
+  ========================================================= */
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -37,26 +67,52 @@ export default function AdminProductsPage() {
   async function fetchProducts() {
     setLoading(true);
 
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await getProducts();
 
     if (error) {
       console.error("Error cargando productos:", error.message);
       setProducts([]);
-    } else {
-      setProducts(data || []);
+      setLoading(false);
+      return;
     }
 
+    /*
+      ADMIN - IMAGEN PRINCIPAL
+
+      El admin ahora usa el nuevo sistema de imágenes:
+      product_images.is_main
+
+      Fallback:
+      Si el producto aún tiene image_url antiguo,
+      lo usamos temporalmente para no romper productos anteriores.
+    */
+
+    const productsWithMainImage =
+      (data as ProductWithImages[])?.map((product) => {
+        const mainImage =
+          product.product_images?.find((img) => img.is_main) ||
+          product.product_images
+            ?.slice()
+            .sort(
+              (a, b) => (a.position ?? 0) - (b.position ?? 0)
+            )[0];
+
+        return {
+          ...product,
+          image_url: mainImage?.image_url || product.image_url,
+        };
+      }) || [];
+
+    setProducts(productsWithMainImage);
     setLoading(false);
   }
 
+  /* =========================================================
+     PRODUCTOS - ACTIVAR / DESACTIVAR
+  ========================================================= */
+
   async function toggleProductStatus(product: Product) {
-    const { error } = await supabase
-      .from("products")
-      .update({ is_active: !product.is_active })
-      .eq("id", product.id);
+    const { error } = await toggleProductStatusService(product);
 
     if (error) {
       alert("Error actualizando el producto");
@@ -72,6 +128,10 @@ export default function AdminProductsPage() {
     setOpenMenuId(null);
   }
 
+  /* =========================================================
+     PRODUCTOS - ELIMINAR DEFINITIVAMENTE
+  ========================================================= */
+
   async function deleteProductForever(id: string) {
     const confirmed = confirm(
       "Esto eliminará el producto definitivamente. ¿Seguro?"
@@ -79,7 +139,7 @@ export default function AdminProductsPage() {
 
     if (!confirmed) return;
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await deleteProductForeverService(id);
 
     if (error) {
       alert("Error eliminando producto");
@@ -90,30 +150,39 @@ export default function AdminProductsPage() {
     setOpenMenuId(null);
   }
 
+  /* =========================================================
+     FILTROS RÁPIDOS
+  ========================================================= */
+
   function applyQuickFilter(type: "all" | "active") {
     setSearch("");
     setCategory("all");
     setStockFilter("all");
     setPage(1);
 
-    if (type === "all") {
-      setStatus("all");
-    }
-
-    if (type === "active") {
-      setStatus("active");
-    }
+    setStatus(type === "active" ? "active" : "all");
   }
 
+  /* =========================================================
+     CATEGORÍAS DISPONIBLES
+  ========================================================= */
+
   const categories = useMemo(() => {
-    return Array.from(new Set(products.map((p) => p.category).filter(Boolean)));
+    return Array.from(
+      new Set(products.map((p) => p.category).filter(Boolean))
+    );
   }, [products]);
+
+  /* =========================================================
+     PRODUCTOS - FILTRADO Y ORDENAMIENTO
+  ========================================================= */
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
 
     if (search.trim()) {
       const q = search.toLowerCase();
+
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
@@ -142,11 +211,16 @@ export default function AdminProductsPage() {
       if (sortBy === "price-low") return a.price - b.price;
       if (sortBy === "stock-high") return b.stock - a.stock;
       if (sortBy === "stock-low") return a.stock - b.stock;
+
       return 0;
     });
 
     return result;
   }, [products, search, category, status, sortBy, stockFilter]);
+
+  /* =========================================================
+     PAGINACIÓN
+  ========================================================= */
 
   const totalPages = Math.ceil(filteredProducts.length / pageSize);
 
@@ -159,98 +233,63 @@ export default function AdminProductsPage() {
     setPage(1);
   }, [search, category, status, sortBy, stockFilter]);
 
+  /* =========================================================
+     CONTADOR DE FILTROS ACTIVOS
+  ========================================================= */
+
   const activeFilters =
     (category !== "all" ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
     (stockFilter === "low" ? 1 : 0);
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
+
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
       <section className="mx-auto max-w-6xl px-4 py-5">
+        {/* HEADER */}
+
         <div className="mb-5">
           <p className="text-sm text-slate-500">Administración</p>
-          <h1 className="text-3xl font-bold text-slate-900">Productos</h1>
+
+          <h1 className="text-3xl font-bold text-slate-900">
+            Productos
+          </h1>
+
           <p className="text-sm text-slate-500">
             Gestiona tu catálogo, stock y disponibilidad.
           </p>
         </div>
 
-        <ProductStats products={products} onQuickFilter={applyQuickFilter} />
+        {/* ESTADÍSTICAS */}
 
-        <div className="mb-4 rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Search size={18} className="text-slate-400" />
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setStockFilter("all");
-              }}
-              placeholder="Buscar producto..."
-              className="w-full bg-transparent text-sm outline-none"
-            />
+        <ProductStats
+          products={products}
+          onQuickFilter={applyQuickFilter}
+        />
 
-            <button
-              onClick={() => setShowFilters((prev) => !prev)}
-              className="flex items-center gap-1 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700"
-            >
-              <Filter size={15} />
-              Filtros {activeFilters > 0 ? `(${activeFilters})` : ""}
-            </button>
-          </div>
+        {/* FILTROS */}
 
-          {showFilters && (
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
-                <Filter size={16} className="text-slate-400" />
-                <select
-                  value={category}
-                  onChange={(e) => {
-                    setCategory(e.target.value);
-                    setStockFilter("all");
-                  }}
-                  className="w-full bg-transparent text-sm outline-none"
-                >
-                  <option value="all">Todas las categorías</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        <ProductFilters
+          search={search}
+          setSearch={setSearch}
+          category={category}
+          setCategory={setCategory}
+          status={status}
+          setStatus={setStatus}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          stockFilter={stockFilter}
+          setStockFilter={setStockFilter}
+          categories={categories}
+          showFilters={showFilters}
+          setShowFilters={setShowFilters}
+          activeFilters={activeFilters}
+        />
 
-              <select
-                value={status}
-                onChange={(e) => {
-                  setStatus(e.target.value);
-                  setStockFilter("all");
-                }}
-                className="rounded-xl border px-3 py-2 text-sm outline-none"
-              >
-                <option value="all">Todos los estados</option>
-                <option value="active">Activos</option>
-                <option value="inactive">Inactivos</option>
-              </select>
-
-              <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
-                <ArrowUpDown size={16} className="text-slate-400" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full bg-transparent text-sm outline-none"
-                >
-                  <option value="newest">Más recientes</option>
-                  <option value="name">Nombre A-Z</option>
-                  <option value="price-high">Precio mayor</option>
-                  <option value="price-low">Precio menor</option>
-                  <option value="stock-high">Stock mayor</option>
-                  <option value="stock-low">Stock menor</option>
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* ACCIONES PRINCIPALES */}
 
         <div className="mb-4 flex gap-3">
           <Link
@@ -270,20 +309,14 @@ export default function AdminProductsPage() {
           </Link>
         </div>
 
+        {/* LISTADO */}
+
         {loading ? (
           <div className="rounded-2xl bg-white p-8 text-center text-slate-500 shadow-sm">
             Cargando productos...
           </div>
         ) : paginatedProducts.length === 0 ? (
-          <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
-            <Package className="mx-auto mb-3 text-slate-400" size={36} />
-            <h2 className="font-semibold text-slate-800">
-              No hay productos encontrados
-            </h2>
-            <p className="text-sm text-slate-500">
-              Prueba cambiando los filtros o agrega un producto nuevo.
-            </p>
-          </div>
+          <ProductsEmptyState />
         ) : (
           <div className="space-y-3">
             {paginatedProducts.map((product) => (
@@ -300,29 +333,13 @@ export default function AdminProductsPage() {
           </div>
         )}
 
-        {totalPages > 1 && (
-          <div className="mt-5 flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-xl border px-4 py-2 text-sm font-medium disabled:opacity-40"
-            >
-              Anterior
-            </button>
+        {/* PAGINACIÓN */}
 
-            <p className="text-sm text-slate-500">
-              {page} / {totalPages}
-            </p>
-
-            <button
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              className="rounded-xl border px-4 py-2 text-sm font-medium disabled:opacity-40"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
+        <ProductPagination
+          page={page}
+          totalPages={totalPages}
+          setPage={setPage}
+        />
       </section>
     </main>
   );
