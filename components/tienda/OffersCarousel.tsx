@@ -1,4 +1,12 @@
+"use client";
+
+/* =========================================================
+   OFFERS CAROUSEL - TIENDA PÚBLICA
+   Sección visual para ofertas de la semana
+========================================================= */
+
 import Image from "next/image";
+import { ShoppingCart } from "lucide-react";
 
 type Oferta = {
   nombre: string;
@@ -12,59 +20,71 @@ type OffersCarouselProps = {
   ofertas: Oferta[];
 };
 
-export default function OffersCarousel({
-  ofertas,
-}: OffersCarouselProps) {
+export default function OffersCarousel({ ofertas }: OffersCarouselProps) {
+  if (!ofertas || ofertas.length === 0) return null;
+
   return (
-    <section id="ofertas" className="mt-6">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-xl font-black">
+    <section id="ofertas" className="mt-8">
+      {/* HEADER */}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-2xl font-black text-[#061b3a]">
           Ofertas de la semana
         </h2>
 
-        <button className="text-sm font-bold">
+        <button className="text-sm font-black text-[#061b3a]">
           Ver todas ❯
         </button>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-3">
+      {/* CARRUSEL HORIZONTAL */}
+      <div className="flex gap-4 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {ofertas.map((producto) => (
           <article
             key={producto.nombre}
-            className="relative min-w-[190px] shrink-0 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm md:min-w-[260px]"
+            className="group relative min-w-[185px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg md:min-w-[240px]"
           >
-            <span className="absolute left-3 top-3 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
+            {/* DESCUENTO */}
+            <span className="absolute left-3 top-3 z-10 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white shadow-sm">
               {producto.descuento}
             </span>
 
-            <div className="relative h-32 md:h-36">
+            {/* IMAGEN */}
+            <div className="relative h-[155px] w-full bg-white p-4 md:h-[190px]">
               <Image
                 src={producto.imagen}
                 alt={producto.nombre}
                 fill
-                className="object-contain"
+                unoptimized
+                className="object-contain p-4 transition duration-300 group-hover:scale-105"
               />
             </div>
 
-            <h3 className="mt-3 line-clamp-2 min-h-[40px] text-sm font-black">
-              {producto.nombre}
-            </h3>
+            {/* CONTENIDO */}
+            <div className="p-4 pt-1">
+              <h3 className="line-clamp-2 min-h-[44px] text-base font-black leading-tight text-[#061b3a]">
+                {producto.nombre}
+              </h3>
 
-            <p className="mt-2">
-              <span className="mr-2 text-sm text-slate-400 line-through">
-                ${producto.precioAntes}
-              </span>
+              {/* PRECIOS */}
+              <div className="mt-4 flex items-end gap-2">
+                <span className="text-sm font-semibold text-slate-400 line-through">
+                  ${producto.precioAntes}
+                </span>
 
-              <span className="text-lg font-black">
-                ${producto.precio}
-              </span>
-            </p>
+                <span className="text-xl font-black text-[#061b3a]">
+                  ${producto.precio}
+                </span>
+              </div>
 
-            <button
-              className="mt-3 rounded-lg border border-red-200 px-4 py-2 text-xs font-black text-red-600"
-            >
-              Agregar al carrito
-            </button>
+              {/* BOTÓN */}
+              <button
+                type="button"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-3 text-sm font-black text-red-600 transition hover:bg-red-600 hover:text-white"
+              >
+                <ShoppingCart size={17} />
+                Agregar
+              </button>
+            </div>
           </article>
         ))}
       </div>
