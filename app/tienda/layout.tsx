@@ -37,9 +37,9 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
   ========================================================= */
 
   const hideMainBanner =
-    pathname.startsWith("/tienda/producto") ||
-    pathname.startsWith("/tienda/carrito") ||
-    pathname.startsWith("/tienda/checkout");
+  pathname.startsWith("/tienda/producto/") ||
+  pathname.startsWith("/tienda/cart") ||
+  pathname.startsWith("/tienda/checkout");
 
   /* =========================================================
      PÁGINAS DONDE NO QUEREMOS MOSTRAR EL MENÚ INFERIOR

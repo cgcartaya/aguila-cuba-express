@@ -75,12 +75,12 @@ const ofertas = [
 ========================================================= */
 
 const categorias = [
-  { nombre: "Electrónicos", icono: Smartphone },
-  { nombre: "Hogar", icono: Sofa },
-  { nombre: "Alimentos", icono: ShoppingBasket },
-  { nombre: "Deportes", icono: Dumbbell },
-  { nombre: "Medicinas", icono: Pill },
-  { nombre: "Más", icono: Ellipsis },
+  { nombre: "Electrónicos", icono: Smartphone, color: "text-blue-600" },
+  { nombre: "Hogar", icono: Sofa, color: "text-orange-500" },
+  { nombre: "Alimentos", icono: ShoppingBasket, color: "text-green-600" },
+  { nombre: "Deportes", icono: Dumbbell, color: "text-red-600" },
+  { nombre: "Medicinas", icono: Pill, color: "text-purple-600" },
+  { nombre: "Más", icono: Ellipsis, color: "text-slate-500" },
 ];
 
 /* =========================================================
