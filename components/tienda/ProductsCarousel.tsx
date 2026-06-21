@@ -36,9 +36,12 @@ export default function ProductsCarousel({
           Productos destacados
         </h2>
 
-        <button className="text-sm font-black text-[#061b3a]">
-          Ver todas ❯
-        </button>
+<Link
+  href="/tienda/productos-destacados"
+  className="text-sm font-black text-[#061b3a]"
+>
+  Ver todos ❯
+</Link>
       </div>
 
       {/* CARRUSEL HORIZONTAL */}

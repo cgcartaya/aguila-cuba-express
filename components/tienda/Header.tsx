@@ -32,7 +32,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </div>
         </div>
 
-<Link href="/cart" className="relative text-3xl" suppressHydrationWarning>
+<Link href="/tienda/carrito" className="relative text-3xl" suppressHydrationWarning>
   🛒
   <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs font-black text-white">
     {cartCount}
