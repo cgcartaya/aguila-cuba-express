@@ -107,7 +107,7 @@ const orderItems = cart.map(
       if (itemsError) throw itemsError;
 
       clearCart();
-      router.push(`/success?order=${order.id}`);
+      router.push(`/tienda/success?order=${order.id}`);
     } catch (err) {
       console.error(err);
       setError("Ocurrió un error al crear la orden.");
@@ -120,9 +120,9 @@ const orderItems = cart.map(
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <Link
-          href="/cart"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
-        >
+  href="/tienda/cart"
+  className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
+>
           <ArrowLeft size={18} />
           Volver al carrito
         </Link>

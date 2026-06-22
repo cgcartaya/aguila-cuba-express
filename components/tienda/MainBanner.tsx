@@ -29,14 +29,14 @@ const banners = [
     href: "/tienda/productos-destacados",
     buttonText: "Ver productos",
   },
-  {
-    id: 3,
-    title: "Combos para tu familia",
-    description: "Alimentos, hogar, medicinas y más",
-    image: "/products/food/chocolisto-sabor-fresa.webp",
-    href: "/tienda/productos-destacados",
-    buttonText: "Comprar ahora",
-  },
+{
+  id: 3,
+  title: "Combos para tu familia",
+  description: "Alimentos, hogar, medicinas y más",
+  image: "/combos-banner-nuevo.png",
+  href: "/tienda/combos",
+  buttonText: "Ver combos",
+},
 ];
 
 export default function MainBanner() {

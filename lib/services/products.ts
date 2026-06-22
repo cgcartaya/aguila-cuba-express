@@ -26,6 +26,28 @@ export async function getActiveProducts() {
     .order("created_at", { ascending: false });
 }
 
+/* =========================================================
+   ADMIN - PRODUCTOS PARA COMBOS
+
+   Obtiene productos activos con sus imágenes para
+   construir combos desde el panel de administración.
+========================================================= */
+
+export async function getProductsForCombos() {
+  return supabase
+    .from("products")
+    .select(`
+      *,
+      product_images (
+        image_url,
+        is_main,
+        position
+      )
+    `)
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+}
+
 // Obtener productos inactivos
 export async function getInactiveProducts() {
   return supabase

@@ -64,11 +64,12 @@ export default function CartPage() {
                   <div className="flex gap-4">
                     <div className="relative h-24 w-24 shrink-0">
                       <Image
-                        src={product.image_url}
-                        alt={product.name}
-                        fill
-                        className="object-contain"
-                      />
+  src={product.image_url || "/placeholder-product.png"}
+  alt={product.name}
+  fill
+  unoptimized
+  className="object-contain"
+/>
                     </div>
 
                     <div className="flex flex-1 flex-col justify-between">
@@ -132,7 +133,7 @@ export default function CartPage() {
               </div>
 
               <Link
-                href="/checkout"
+                href="/tienda/checkout"
                 className="mt-5 block w-full rounded-xl bg-red-600 py-4 text-center font-black text-white"
               >
                 Proceder al pago

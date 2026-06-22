@@ -1,14 +1,15 @@
 "use client";
 
 /* =========================================================
-   IMPORTS
+   PRODUCT DETAIL PAGE
+   El Header y BottomNavigation son manejados por:
+   app/tienda/layout.tsx
 ========================================================= */
 
 import Image from "next/image";
 import { use, useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-import ProductHeader from "@/components/tienda/product-detail/ProductHeader";
 import ProductGallery from "@/components/tienda/product-detail/ProductGallery";
 import ProductInfo from "@/components/tienda/product-detail/ProductInfo";
 import RelatedProducts from "@/components/tienda/product-detail/RelatedProducts";
@@ -43,12 +44,13 @@ type PageProps = {
 };
 
 /* =========================================================
-   PRODUCT DETAIL PAGE
+   COMPONENT
 ========================================================= */
 
 export default function ProductDetailPage({ params }: PageProps) {
   const { id } = use(params);
-  const { cart, addToCart } = useCart();
+
+  const { addToCart } = useCart();
 
   const [product, setProduct] = useState<StoreProduct | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -57,16 +59,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [isZoomOpen, setIsZoomOpen] = useState(false);
 
   /* =========================================================
-     CART COUNT
-  ========================================================= */
-
-  const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
-
-  /* =========================================================
-     LOAD PRODUCT
+     CARGAR PRODUCTO DESDE SUPABASE
   ========================================================= */
 
   useEffect(() => {
@@ -83,9 +76,7 @@ export default function ProductDetailPage({ params }: PageProps) {
       const orderedImages =
         productData.product_images
           ?.slice()
-          .sort(
-            (a, b) => (a.position ?? 0) - (b.position ?? 0)
-          ) || [];
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
 
       const mainImage =
         orderedImages.find((img) => img.is_main) ||
@@ -99,13 +90,20 @@ export default function ProductDetailPage({ params }: PageProps) {
           "/placeholder-product.png"
       );
 
-      if (productData.category) {
-       const { data: relatedData } = await getRelatedProducts(
-  productData.category,
-  String(productData.id)
-);
+      /* =====================================================
+         CARGAR PRODUCTOS RELACIONADOS
+      ===================================================== */
 
-        setRelatedProducts((relatedData as Product[]) || []);
+      if (productData.category) {
+        const { data: relatedData } =
+          await getRelatedProducts(
+            productData.category,
+            String(productData.id)
+          );
+
+        setRelatedProducts(
+          (relatedData as Product[]) || []
+        );
       }
     }
 
@@ -113,33 +111,27 @@ export default function ProductDetailPage({ params }: PageProps) {
   }, [id]);
 
   /* =========================================================
-     LOADING STATE
+     LOADING
   ========================================================= */
 
   if (!product) {
     return (
-      <main className="min-h-screen bg-white text-[#061b3a]">
-        <ProductHeader cartCount={cartCount} />
-
-        <div className="px-4 py-10">
-          <p className="text-center text-sm text-slate-500">
-            Cargando producto...
-          </p>
-        </div>
-      </main>
+      <div className="px-4 py-10">
+        <p className="text-center text-sm text-slate-500">
+          Cargando producto...
+        </p>
+      </div>
     );
   }
 
   /* =========================================================
-     PRODUCT IMAGES
+     ORGANIZAR IMÁGENES DEL PRODUCTO
   ========================================================= */
 
   const productImages =
     product.product_images
       ?.slice()
-      .sort(
-        (a, b) => (a.position ?? 0) - (b.position ?? 0)
-      ) || [];
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
 
   const imagesToShow =
     productImages.length > 0
@@ -148,14 +140,15 @@ export default function ProductDetailPage({ params }: PageProps) {
           {
             id: "fallback",
             image_url:
-              product.image_url || "/placeholder-product.png",
+              product.image_url ||
+              "/placeholder-product.png",
             is_main: true,
             position: 0,
           },
         ];
 
   /* =========================================================
-     ADD TO CART
+     AGREGAR AL CARRITO
   ========================================================= */
 
   const handleAddToCart = () => {
@@ -178,9 +171,9 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
-      <ProductHeader cartCount={cartCount} />
-
       <div className="mx-auto max-w-6xl px-4 py-5">
+        
+        {/* INFORMACIÓN PRINCIPAL DEL PRODUCTO */}
         <div className="grid gap-8 md:grid-cols-2">
           <ProductGallery
             productName={product.name}
@@ -202,10 +195,13 @@ export default function ProductDetailPage({ params }: PageProps) {
           />
         </div>
 
+        {/* PRODUCTOS RELACIONADOS */}
         <RelatedProducts products={relatedProducts} />
       </div>
 
-      {/* MODAL DE ZOOM */}
+      {/* =====================================================
+          MODAL ZOOM DE LA IMAGEN
+      ===================================================== */}
 
       {isZoomOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
@@ -219,7 +215,10 @@ export default function ProductDetailPage({ params }: PageProps) {
 
           <div className="relative h-[80vh] w-full max-w-4xl">
             <Image
-              src={selectedImage || "/placeholder-product.png"}
+              src={
+                selectedImage ||
+                "/placeholder-product.png"
+              }
               alt={product.name}
               fill
               unoptimized
