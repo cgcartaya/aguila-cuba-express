@@ -3,8 +3,11 @@
 /* =========================================================
    COMBO FORM - COMBOS ADMIN
 
-   Formulario principal para crear combos.
-   Une:
+   Formulario reutilizable para:
+   - Crear combos
+   - Editar combos
+
+   Maneja:
    - Datos generales
    - Imagen
    - Productos seleccionados
@@ -20,7 +23,12 @@ import ProductSelector from "./ProductSelector";
 import ComboPriceCalculator from "./ComboPriceCalculator";
 import ComboImageUploader from "./ComboImageUploader";
 
-import { createCombo, addProductToCombo } from "@/lib/services/combos";
+import {
+  createCombo,
+  updateCombo,
+  addProductToCombo,
+  removeProductFromCombo,
+} from "@/lib/services/combos";
 
 import type {
   ComboFormData,
@@ -30,78 +38,179 @@ import type {
 
 type ComboFormProps = {
   products: ComboProduct[];
+
+  mode?: "create" | "edit";
+
+  comboId?: string;
+
+  initialData?: ComboFormData;
+
+  initialProducts?: SelectedComboProduct[];
 };
 
-export default function ComboForm({ products }: ComboFormProps) {
+export default function ComboForm({
+  products,
+  mode = "create",
+  comboId,
+  initialData,
+  initialProducts = [],
+}: ComboFormProps) {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
-  const [selectedProducts, setSelectedProducts] = useState<
-    SelectedComboProduct[]
-  >([]);
 
-  const [formData, setFormData] = useState<ComboFormData>({
-    name: "",
-    description: "",
-    price: 0,
-    image_url: "",
-    is_active: true,
-  });
+  const [selectedProducts, setSelectedProducts] =
+    useState<SelectedComboProduct[]>(initialProducts);
+
+  const [formData, setFormData] = useState<ComboFormData>(
+    initialData || {
+      name: "",
+      description: "",
+      price: 0,
+      image_url: "",
+      is_active: true,
+    }
+  );
 
   /* =========================================================
-     VALIDACIÓN Y GUARDADO DEL COMBO
+     VALIDACIÓN GENERAL
   ========================================================= */
 
-  const handleSubmit = async () => {
+  const validateForm = () => {
     if (!formData.name.trim()) {
       alert("Escribe el nombre del combo.");
-      return;
+      return false;
     }
 
     if (selectedProducts.length === 0) {
       alert("Agrega al menos un producto al combo.");
-      return;
+      return false;
     }
 
     if (Number(formData.price) <= 0) {
       alert("El precio del combo debe ser mayor que 0.");
+      return false;
+    }
+
+    if (mode === "edit" && !comboId) {
+      alert("No se encontró el ID del combo.");
+      return false;
+    }
+
+    return true;
+  };
+
+  /* =========================================================
+     CREAR COMBO
+  ========================================================= */
+
+  const handleCreate = async () => {
+    const { data: combo, error: comboError } = await createCombo({
+      name: formData.name,
+      description: formData.description,
+      image_url: formData.image_url || "",
+      price: Number(formData.price),
+      is_active: formData.is_active,
+    });
+
+    if (comboError || !combo) {
+      console.error("Error creando combo:", comboError);
+      alert("No se pudo crear el combo.");
       return;
     }
+
+    for (const item of selectedProducts) {
+      const { error } = await addProductToCombo({
+        combo_id: combo.id,
+        product_id: item.product.id,
+        quantity: item.quantity,
+      });
+
+      if (error) {
+        console.error("Error agregando producto al combo:", error);
+        alert("El combo se creó, pero ocurrió un error agregando productos.");
+        return;
+      }
+    }
+
+    router.push("/admin/combos");
+  };
+
+  /* =========================================================
+     EDITAR COMBO
+
+     Estrategia simple y segura:
+     1. Actualizamos la tabla combos.
+     2. Eliminamos los combo_items actuales.
+     3. Insertamos nuevamente los productos seleccionados.
+
+     Esto evita problemas de sincronización cuando:
+     - Se quita un producto
+     - Se agrega otro
+     - Se cambia la cantidad
+  ========================================================= */
+
+  const handleEdit = async () => {
+    if (!comboId) return;
+
+    const { error: comboError } = await updateCombo(comboId, {
+      name: formData.name,
+      description: formData.description,
+      image_url: formData.image_url || "",
+      price: Number(formData.price),
+      is_active: formData.is_active,
+    });
+
+    if (comboError) {
+      console.error("Error actualizando combo:", comboError);
+      alert("No se pudo actualizar el combo.");
+      return;
+    }
+
+    for (const item of initialProducts) {
+      if (item.combo_item_id) {
+        const { error } = await removeProductFromCombo(item.combo_item_id);
+
+        if (error) {
+          console.error("Error eliminando producto anterior:", error);
+          alert("No se pudieron actualizar los productos del combo.");
+          return;
+        }
+      }
+    }
+
+    for (const item of selectedProducts) {
+      const { error } = await addProductToCombo({
+        combo_id: comboId,
+        product_id: item.product.id,
+        quantity: item.quantity,
+      });
+
+      if (error) {
+        console.error("Error agregando producto actualizado:", error);
+        alert("No se pudieron guardar los productos del combo.");
+        return;
+      }
+    }
+
+    router.push("/admin/combos");
+  };
+
+  /* =========================================================
+     SUBMIT GENERAL
+  ========================================================= */
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
 
-      /* Crear combo principal */
-      const { data: combo, error: comboError } = await createCombo({
-        name: formData.name,
-        description: formData.description,
-        image_url: formData.image_url || "",
-        price: Number(formData.price),
-        is_active: formData.is_active,
-      });
-
-      if (comboError || !combo) {
-        console.error("Error creando combo:", comboError);
-        alert("No se pudo crear el combo.");
-        return;
+      if (mode === "edit") {
+        await handleEdit();
+      } else {
+        await handleCreate();
       }
-
-      /* Crear productos incluidos */
-      for (const item of selectedProducts) {
-        const { error } = await addProductToCombo({
-          combo_id: combo.id,
-          product_id: item.product.id,
-          quantity: item.quantity,
-        });
-
-        if (error) {
-          console.error("Error agregando producto al combo:", error);
-          alert("El combo se creó, pero ocurrió un error agregando productos.");
-          return;
-        }
-      }
-
-      router.push("/admin/combos");
     } finally {
       setLoading(false);
     }
@@ -122,11 +231,13 @@ export default function ComboForm({ products }: ComboFormProps) {
             </Link>
 
             <h1 className="text-3xl font-black">
-              Crear nuevo combo
+              {mode === "edit" ? "Editar combo" : "Crear nuevo combo"}
             </h1>
 
             <p className="mt-1 text-sm font-semibold text-slate-500">
-              Selecciona productos existentes y define un precio final.
+              {mode === "edit"
+                ? "Actualiza la información, productos e imagen del combo."
+                : "Selecciona productos existentes y define un precio final."}
             </p>
           </div>
 
@@ -137,7 +248,11 @@ export default function ComboForm({ products }: ComboFormProps) {
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-red-700 disabled:opacity-60"
           >
             <Save size={18} />
-            {loading ? "Guardando..." : "Guardar combo"}
+            {loading
+              ? "Guardando..."
+              : mode === "edit"
+              ? "Actualizar combo"
+              : "Guardar combo"}
           </button>
         </div>
 

@@ -60,6 +60,12 @@ export type SelectedComboProduct = {
   product: ComboProduct;
 
   quantity: number;
+
+  /*
+    ID del registro en combo_items.
+    Solo existe cuando estamos editando un combo ya creado.
+  */
+  combo_item_id?: string;
 };
 
 
