@@ -1,63 +1,180 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
-import type { Product, CartItem } from "@/types/cart";
+/* =========================================================
+   CART CONTEXT
+
+   Soporta:
+   - Productos
+   - Combos
+
+   Arquitectura SaaS profesional.
+========================================================= */
+
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+} from "react";
+
+import type {
+  Product,
+  Combo,
+  CartItem,
+} from "@/types/cart";
 
 type CartContextType = {
   cart: CartItem[];
+
   addToCart: (product: Product) => void;
-  increaseQuantity: (productId: number) => void;
-  decreaseQuantity: (productId: number) => void;
-  removeFromCart: (productId: number) => void;
+
+  addComboToCart: (combo: Combo) => void;
+
+  increaseQuantity: (itemId: string) => void;
+
+  decreaseQuantity: (itemId: string) => void;
+
+  removeFromCart: (itemId: string) => void;
+
   clearCart: () => void;
 };
 
-const CartContext = createContext<CartContextType | null>(null);
+const CartContext = createContext<CartContextType | null>(
+  null
+);
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  const addToCart = (product: Product) => {
-    setCart((prevCart) => {
-      const existingProduct = prevCart.find((item) => item.id === product.id);
+  /* =========================================================
+     PRODUCTOS
+  ========================================================= */
 
-      if (existingProduct) {
+  const addToCart = (product: Product) => {
+    const cartId = `product-${product.id}`;
+
+    setCart((prevCart) => {
+      const existing = prevCart.find(
+        (item) => item.id === cartId
+      );
+
+      if (existing) {
         return prevCart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+          item.id === cartId
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
             : item
         );
       }
 
-      return [...prevCart, { ...product, quantity: 1 }];
+      return [
+        ...prevCart,
+        {
+          id: cartId,
+          name: product.name,
+          price: Number(product.price),
+          image_url:
+            product.image_url ||
+            "/placeholder-product.png",
+          quantity: 1,
+          type: "product",
+        },
+      ];
     });
   };
 
-  const increaseQuantity = (productId: number) => {
+  /* =========================================================
+     COMBOS
+  ========================================================= */
+
+  const addComboToCart = (combo: Combo) => {
+    const cartId = `combo-${combo.id}`;
+
+    setCart((prevCart) => {
+      const existing = prevCart.find(
+        (item) => item.id === cartId
+      );
+
+      if (existing) {
+        return prevCart.map((item) =>
+          item.id === cartId
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
+            : item
+        );
+      }
+
+      return [
+        ...prevCart,
+        {
+          id: cartId,
+          name: combo.name,
+          price: Number(combo.price),
+          image_url:
+            combo.image_url ||
+            "/placeholder-product.png",
+          quantity: 1,
+          type: "combo",
+        },
+      ];
+    });
+  };
+
+  /* =========================================================
+     CANTIDADES
+  ========================================================= */
+
+  const increaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
       prevCart.map((item) =>
-        item.id === productId
-          ? { ...item, quantity: item.quantity + 1 }
+        item.id === itemId
+          ? {
+              ...item,
+              quantity: item.quantity + 1,
+            }
           : item
       )
     );
   };
 
-  const decreaseQuantity = (productId: number) => {
+  const decreaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
       prevCart
         .map((item) =>
-          item.id === productId
-            ? { ...item, quantity: item.quantity - 1 }
+          item.id === itemId
+            ? {
+                ...item,
+                quantity: item.quantity - 1,
+              }
             : item
         )
         .filter((item) => item.quantity > 0)
     );
   };
 
-  const removeFromCart = (productId: number) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== productId));
+  /* =========================================================
+     ELIMINAR
+  ========================================================= */
+
+  const removeFromCart = (itemId: string) => {
+    setCart((prevCart) =>
+      prevCart.filter(
+        (item) => item.id !== itemId
+      )
+    );
   };
+
+  /* =========================================================
+     LIMPIAR
+  ========================================================= */
 
   const clearCart = () => {
     setCart([]);
@@ -67,10 +184,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     <CartContext.Provider
       value={{
         cart,
+
         addToCart,
+
+        addComboToCart,
+
         increaseQuantity,
         decreaseQuantity,
+
         removeFromCart,
+
         clearCart,
       }}
     >
@@ -79,11 +202,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/* =========================================================
+   HOOK
+========================================================= */
+
 export function useCart() {
   const context = useContext(CartContext);
 
   if (!context) {
-    throw new Error("useCart debe usarse dentro de CartProvider");
+    throw new Error(
+      "useCart debe usarse dentro de CartProvider"
+    );
   }
 
   return context;

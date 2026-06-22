@@ -1,21 +1,15 @@
 "use client";
 
-/* =========================================================
-   STORE COMBO CARD - VERSIÓN PROFESIONAL
-
-   Utilizada en:
-   - Home de tienda
-   - Página /tienda/combos
-
-   Diseño:
-   - Mobile first
-   - Desktop optimizado
-   - Badge de ahorro
-   - Imagen más grande
-========================================================= */
-
 import Image from "next/image";
-import { Package, ShoppingCart, BadgePercent } from "lucide-react";
+import Link from "next/link";
+import { useCart } from "@/contexts/CartContext";
+
+import {
+  Package,
+  ShoppingCart,
+  BadgePercent,
+  CheckCircle2,
+} from "lucide-react";
 
 type ComboItem = {
   id: string;
@@ -41,6 +35,8 @@ type Props = {
 };
 
 export default function StoreComboCard({ combo }: Props) {
+  const { addComboToCart } = useCart();
+
   const normalPrice =
     combo.combo_items?.reduce((total, item) => {
       return (
@@ -51,113 +47,102 @@ export default function StoreComboCard({ combo }: Props) {
     }, 0) || 0;
 
   const comboPrice = Number(combo.price || 0);
-
-  const savings = Math.max(
-    normalPrice - comboPrice,
-    0
-  );
-
-  const totalProducts =
-    combo.combo_items?.reduce((total, item) => {
-      return total + Number(item.quantity || 0);
-    }, 0) || 0;
+  const savings = Math.max(normalPrice - comboPrice, 0);
+  const visibleItems = combo.combo_items?.slice(0, 3) || [];
 
   return (
-    <article
-      className="
-        group
-        overflow-hidden
-        rounded-3xl
-        border
-        border-slate-200
-        bg-white
-        shadow-sm
-        transition-all
-        duration-300
-        hover:-translate-y-1
-        hover:shadow-xl
-      "
-    >
-      {/* IMAGEN */}
-      <div className="relative h-[180px] bg-white md:h-[220px]">
-        {combo.image_url ? (
-          <Image
-            src={combo.image_url}
-            alt={combo.name}
-            fill
-            unoptimized
-            className="object-cover transition duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-slate-50 text-slate-400">
-            <Package size={50} />
-          </div>
-        )}
-
-        {savings > 0 && (
-          <div className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-green-600 px-3 py-1 text-xs font-black text-white shadow-lg">
-            <BadgePercent size={14} />
-            Ahorra ${savings.toFixed(0)}
-          </div>
-        )}
-      </div>
-
-      {/* CONTENIDO */}
-      <div className="p-4">
-        <h3 className="line-clamp-2 text-lg font-black text-[#061b3a]">
-          {combo.name}
-        </h3>
-
-        <p className="mt-1 line-clamp-2 min-h-[40px] text-sm font-semibold text-slate-500">
-          {combo.description || "Combo preparado para tu familia."}
-        </p>
-
-        {/* PRODUCTOS */}
-        <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2">
-          <span className="text-xs font-black text-slate-600">
-            {totalProducts} productos incluidos
-          </span>
-        </div>
-
-        {/* PRECIOS */}
-        <div className="mt-4">
-          {normalPrice > 0 && (
-            <p className="text-sm font-bold text-slate-400 line-through">
-              ${normalPrice.toFixed(2)}
-            </p>
+    <article className="group relative min-w-[165px] max-w-[165px] shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:min-w-[185px] sm:max-w-[185px]">
+      <Link href={`/tienda/combos/${combo.id}`}>
+        <div className="relative h-[135px] w-full bg-white p-3">
+          {combo.image_url ? (
+            <Image
+              src={combo.image_url}
+              alt={combo.name}
+              fill
+              unoptimized
+              className="object-contain p-3 transition duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-xl bg-slate-50 text-slate-400">
+              <Package size={36} />
+            </div>
           )}
 
-          <div className="flex items-end gap-2">
-            <span className="text-3xl font-black text-red-600">
-              ${comboPrice.toFixed(2)}
-            </span>
+          {savings > 0 && (
+            <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-[10px] font-black text-white shadow-sm">
+              <BadgePercent size={11} />
+              Ahorra ${savings.toFixed(0)}
+            </div>
+          )}
+        </div>
+      </Link>
+
+      <div className="p-3 pt-1">
+        <Link href={`/tienda/combos/${combo.id}`}>
+          <h3 className="line-clamp-2 min-h-[38px] text-sm font-black leading-tight text-[#061b3a]">
+            {combo.name}
+          </h3>
+        </Link>
+
+        <div className="mt-2 border-t border-slate-100 pt-2">
+          <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-slate-400">
+            Incluye
+          </p>
+
+          <div className="space-y-1">
+            {visibleItems.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-start gap-1 text-[10px] font-semibold text-slate-600"
+              >
+                <CheckCircle2
+                  size={12}
+                  className="mt-[1px] shrink-0 text-green-600"
+                />
+
+                <span className="line-clamp-1">
+                  {item.products?.name || "Producto incluido"}
+                  {item.quantity > 1 && (
+                    <strong className="text-[#061b3a]">
+                      {" "}
+                      x{item.quantity}
+                    </strong>
+                  )}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* BOTÓN */}
-        <button
-          type="button"
-          className="
-            mt-4
-            flex
-            w-full
-            items-center
-            justify-center
-            gap-2
-            rounded-2xl
-            bg-red-600
-            px-4
-            py-3
-            text-sm
-            font-black
-            text-white
-            transition
-            hover:bg-red-700
-          "
-        >
-          <ShoppingCart size={18} />
-          Agregar combo
-        </button>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <div>
+            {normalPrice > 0 && (
+              <p className="text-xs font-semibold text-slate-400 line-through">
+                ${normalPrice.toFixed(2)}
+              </p>
+            )}
+
+            <p className="text-lg font-black text-[#061b3a]">
+              ${comboPrice.toFixed(2)}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() =>
+              addComboToCart({
+                id: combo.id,
+                name: combo.name,
+                price: combo.price,
+                image_url: combo.image_url || "",
+              })
+            }
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm transition hover:bg-red-700"
+            aria-label="Agregar combo al carrito"
+          >
+            <ShoppingCart size={18} />
+          </button>
+        </div>
       </div>
     </article>
   );
