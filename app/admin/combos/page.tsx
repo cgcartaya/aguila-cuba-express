@@ -2,20 +2,20 @@
 
 /* =========================================================
    ADMIN - COMBOS
-   Página principal para gestionar combos de productos
+   Página principal para gestionar combos de productos.
 
-   Próxima refactorización recomendada:
-   components/admin/combos/
-   ├── ComboCard.tsx
-   ├── ComboFormModal.tsx
-   ├── ComboProductsList.tsx
-   └── ComboEmptyState.tsx
+   Esta vista ahora usa ComboCard para mantener:
+   - Código más limpio
+   - Cards compactas
+   - 2 columnas en móvil
+   - Mejor escalabilidad del admin
 ========================================================= */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Package, Pencil, Trash2 } from "lucide-react";
+import { Plus, Package } from "lucide-react";
 
+import ComboCard from "@/components/admin/combos/ComboCard";
 import { getCombos, deleteCombo } from "@/lib/services/combos";
 
 /* =========================================================
@@ -161,140 +161,14 @@ export default function AdminCombosPage() {
 
         {/* GRID DE COMBOS */}
         {!loading && combos.length > 0 && (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {combos.map((combo) => {
-              const normalPrice =
-                combo.combo_items?.reduce((total, item) => {
-                  return (
-                    total +
-                    Number(item.products?.price || 0) *
-                      Number(item.quantity || 1)
-                  );
-                }, 0) || 0;
-
-              const savings = normalPrice - Number(combo.price || 0);
-
-              return (
-                <article
-                  key={combo.id}
-                  className="overflow-hidden rounded-3xl bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                >
-                  {/* IMAGEN */}
-                  <div className="flex h-40 items-center justify-center bg-slate-100">
-                    {combo.image_url ? (
-                      <img
-                        src={combo.image_url}
-                        alt={combo.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Package size={48} className="text-slate-400" />
-                    )}
-                  </div>
-
-                  {/* CONTENIDO */}
-                  <div className="p-5">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        <h2 className="text-lg font-black">
-                          {combo.name}
-                        </h2>
-
-                        <p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-500">
-                          {combo.description || "Sin descripción"}
-                        </p>
-                      </div>
-
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs font-black ${
-                          combo.is_active
-                            ? "bg-green-50 text-green-600"
-                            : "bg-slate-100 text-slate-500"
-                        }`}
-                      >
-                        {combo.is_active ? "Activo" : "Inactivo"}
-                      </span>
-                    </div>
-
-                    {/* PRECIOS */}
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-bold text-slate-500">
-                          Precio normal
-                        </span>
-                        <span className="font-black line-through text-slate-400">
-                          ${normalPrice.toFixed(2)}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-sm font-bold text-slate-500">
-                          Precio combo
-                        </span>
-                        <span className="text-xl font-black text-red-600">
-                          ${Number(combo.price || 0).toFixed(2)}
-                        </span>
-                      </div>
-
-                      {savings > 0 && (
-                        <p className="mt-2 text-xs font-black text-green-600">
-                          Ahorro: ${savings.toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* PRODUCTOS INCLUIDOS */}
-                    <div className="mt-4">
-                      <h3 className="mb-2 text-sm font-black">
-                        Productos incluidos
-                      </h3>
-
-                      <div className="space-y-2">
-                        {combo.combo_items?.length ? (
-                          combo.combo_items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm"
-                            >
-                              <span className="font-semibold">
-                                {item.products?.name || "Producto eliminado"}
-                              </span>
-
-                              <span className="font-black text-slate-500">
-                                x{item.quantity}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-sm font-semibold text-slate-400">
-                            Sin productos agregados.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* ACCIONES */}
-                    <div className="mt-5 flex gap-2">
-                      <Link
-                        href={`/admin/combos/${combo.id}/edit`}
-                        className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-4 py-3 text-sm font-black text-white"
-                      >
-                        <Pencil size={16} />
-                        Editar
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(combo.id)}
-                        className="flex items-center justify-center rounded-2xl bg-red-50 px-4 py-3 text-red-600 transition hover:bg-red-100"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+            {combos.map((combo) => (
+              <ComboCard
+                key={combo.id}
+                combo={combo}
+                onDelete={handleDelete}
+              />
+            ))}
           </div>
         )}
       </div>

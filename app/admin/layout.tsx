@@ -3,17 +3,18 @@
 /* =========================================================
    ADMIN LAYOUT
 
-   Layout principal del panel administrativo.
-
    Desktop:
-   - Sidebar fijo AdminNav
+   - Sidebar normal
 
    Mobile:
-   - Bottom Navigation
-   - Drawer lateral AdminMobileMenu
+   - Botón hamburguesa flotante
+   - Drawer lateral
+   - Bottom nav
 ========================================================= */
 
 import { useState } from "react";
+import { Menu } from "lucide-react";
+
 import AdminNav from "@/components/admin/AdminNav";
 import AdminAuthGuard from "@/components/admin/AdminAuthGuard";
 import AdminBottomNav from "@/components/admin/AdminBottomNav";
@@ -29,33 +30,32 @@ export default function AdminLayout({
   return (
     <AdminAuthGuard>
       <div className="min-h-screen bg-gray-50 lg:flex">
-        {/* Sidebar desktop */}
+        {/* SIDEBAR DESKTOP */}
         <div className="hidden lg:block">
           <AdminNav />
         </div>
 
-        {/* Contenido */}
-        <div className="flex-1 pb-24 lg:pb-0">
-          {/* Botón menú móvil */}
-          <div className="sticky top-0 z-40 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
-            <button
-              type="button"
-              onClick={() => setMenuOpen(true)}
-              className="rounded-2xl bg-[#061b3a] px-4 py-2 text-sm font-black text-white"
-            >
-              ☰ Menú admin
-            </button>
-          </div>
+        {/* CONTENIDO */}
+        <div className="relative flex-1 pb-24 lg:pb-0">
+          {/* BOTÓN HAMBURGUESA MÓVIL */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Abrir menú admin"
+            className="fixed right-4 top-4 z-50 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#061b3a] text-white shadow-lg lg:hidden"
+          >
+            <Menu size={24} />
+          </button>
 
           {children}
         </div>
 
-        {/* Bottom nav móvil */}
+        {/* BOTTOM NAV MÓVIL */}
         <div className="lg:hidden">
           <AdminBottomNav />
         </div>
 
-        {/* Drawer móvil */}
+        {/* DRAWER MÓVIL */}
         <AdminMobileMenu
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
