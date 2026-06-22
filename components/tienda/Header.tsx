@@ -15,6 +15,7 @@ import {
   ShoppingBag,
   Star,
   Tags,
+  Gift,
   PackageSearch,
   CalendarDays,
   MessageCircle,
@@ -42,6 +43,11 @@ const menuItems = [
     icon: Star,
   },
   {
+    label: "Combos",
+    href: "/tienda/combos",
+    icon: Gift,
+  },
+  {
     label: "Ofertas",
     href: "/tienda/ofertas",
     icon: Tags,
@@ -65,7 +71,6 @@ export default function Header({ cartCount }: HeaderProps) {
     <>
       <header className="sticky top-0 z-50 bg-white px-4 py-3 shadow-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          {/* BOTÓN HAMBURGUESA */}
           <button
             type="button"
             onClick={() => setOpen(true)}
@@ -75,7 +80,6 @@ export default function Header({ cartCount }: HeaderProps) {
             <Menu size={30} strokeWidth={2.5} />
           </button>
 
-          {/* LOGO */}
           <Link href="/tienda" className="flex items-center gap-2">
             <Image
               src="/logo.png"
@@ -95,7 +99,6 @@ export default function Header({ cartCount }: HeaderProps) {
             </div>
           </Link>
 
-          {/* CARRITO */}
           <Link
             href="/tienda/cart"
             className="relative text-[#061b3a]"
@@ -109,7 +112,6 @@ export default function Header({ cartCount }: HeaderProps) {
         </div>
       </header>
 
-      {/* FONDO OSCURO */}
       {open && (
         <button
           type="button"
@@ -119,7 +121,6 @@ export default function Header({ cartCount }: HeaderProps) {
         />
       )}
 
-      {/* MENÚ LATERAL */}
       <aside
         className={`fixed left-0 top-0 z-[70] h-full w-[82%] max-w-[330px] bg-white shadow-2xl transition-transform duration-300 ${
           open ? "translate-x-0" : "-translate-x-full"

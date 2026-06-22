@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { getStoreProducts } from "@/lib/services/products";
-
+import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
 import Categories from "@/components/tienda/Categories";
 import ProductSearch from "@/components/tienda/ProductSearch";
 import ProductsCarousel from "@/components/tienda/ProductsCarousel";
@@ -160,6 +160,8 @@ export default function TiendaPage() {
         productos={productosBuscados}
         agregarAlCarrito={addToCart}
       />
+
+      <StoreCombosSection />
 
       <DeliveryBanner />
 
