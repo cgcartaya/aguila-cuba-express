@@ -76,15 +76,24 @@ export default function TiendaPage() {
     producto.name.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  const categorias = useMemo(() => {
-    return Array.from(
-      new Set(
-        productosBuscados
-          .map((producto) => producto.category)
-          .filter(Boolean)
-      )
-    );
-  }, [productosBuscados]);
+/* =========================================================
+   OBTENER CATEGORÍAS ÚNICAS
+
+   Filtramos categorías vacías/undefined y le indicamos
+   explícitamente a TypeScript que el resultado es string[].
+========================================================= */
+const categorias = useMemo(() => {
+  return Array.from(
+    new Set(
+      productosBuscados
+        .map((producto) => producto.category)
+        .filter(
+          (categoria): categoria is string =>
+            categoria !== undefined && categoria !== null
+        )
+    )
+  );
+}, [productosBuscados]);
 
   const productosPorCategoria = useMemo(() => {
     return categorias.map((categoria) => ({
