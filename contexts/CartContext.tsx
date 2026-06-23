@@ -7,6 +7,7 @@
    - Productos
    - Combos
    - Persistencia con localStorage
+   - Validación de stock
 ========================================================= */
 
 import {
@@ -38,7 +39,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartLoaded, setCartLoaded] = useState(false);
 
   /* =========================================================
-     CARGAR CARRITO DESDE LOCAL STORAGE
+     CARGAR CARRITO
   ========================================================= */
 
   useEffect(() => {
@@ -56,32 +57,56 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /* =========================================================
-     GUARDAR CARRITO EN LOCAL STORAGE
-
-     Evitamos guardar antes de cargar para no sobrescribir
-     el carrito existente con un array vacío.
+     GUARDAR CARRITO
   ========================================================= */
 
   useEffect(() => {
     if (!cartLoaded) return;
 
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify(cart)
+    );
   }, [cart, cartLoaded]);
 
   /* =========================================================
-     PRODUCTOS
+     AGREGAR PRODUCTO
   ========================================================= */
 
   const addToCart = (product: Product) => {
     const cartId = `product-${product.id}`;
 
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === cartId);
+      const existing = prevCart.find(
+        (item) => item.id === cartId
+      );
+
+      /* STOCK AGOTADO */
+
+      if (
+        Number(product.stock || 0) <= 0
+      ) {
+        return prevCart;
+      }
+
+      /* YA EXISTE EN CARRITO */
 
       if (existing) {
+        /* NO SUPERAR STOCK */
+
+        if (
+          existing.quantity >=
+          Number(product.stock)
+        ) {
+          return prevCart;
+        }
+
         return prevCart.map((item) =>
           item.id === cartId
-            ? { ...item, quantity: item.quantity + 1 }
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
             : item
         );
       }
@@ -92,28 +117,38 @@ export function CartProvider({ children }: { children: ReactNode }) {
           id: cartId,
           name: product.name,
           price: Number(product.price),
-          image_url: product.image_url || "/placeholder-product.png",
+          image_url:
+            product.image_url ||
+            "/placeholder-product.png",
           quantity: 1,
           type: "product",
+
+          /* Guardamos stock actual */
+          stock: product.stock,
         },
       ];
     });
   };
 
   /* =========================================================
-     COMBOS
+     AGREGAR COMBO
   ========================================================= */
 
   const addComboToCart = (combo: Combo) => {
     const cartId = `combo-${combo.id}`;
 
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === cartId);
+      const existing = prevCart.find(
+        (item) => item.id === cartId
+      );
 
       if (existing) {
         return prevCart.map((item) =>
           item.id === cartId
-            ? { ...item, quantity: item.quantity + 1 }
+            ? {
+                ...item,
+                quantity: item.quantity + 1,
+              }
             : item
         );
       }
@@ -124,7 +159,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           id: cartId,
           name: combo.name,
           price: Number(combo.price),
-          image_url: combo.image_url || "/placeholder-product.png",
+          image_url:
+            combo.image_url ||
+            "/placeholder-product.png",
           quantity: 1,
           type: "combo",
         },
@@ -133,25 +170,62 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   /* =========================================================
-     CANTIDADES
+     AUMENTAR CANTIDAD
   ========================================================= */
 
   const increaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === itemId
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
+      prevCart.map((item) => {
+        /* Solo validar stock en productos */
+
+        if (
+          item.id === itemId &&
+          item.type === "product"
+        ) {
+          const maxStock = Number(
+            item.stock || 999999
+          );
+
+          if (item.quantity >= maxStock) {
+            return item;
+          }
+
+          return {
+            ...item,
+            quantity: item.quantity + 1,
+          };
+        }
+
+        /* Combos sin límite */
+
+        if (
+          item.id === itemId &&
+          item.type === "combo"
+        ) {
+          return {
+            ...item,
+            quantity: item.quantity + 1,
+          };
+        }
+
+        return item;
+      })
     );
   };
+
+  /* =========================================================
+     DISMINUIR CANTIDAD
+  ========================================================= */
 
   const decreaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
       prevCart
         .map((item) =>
           item.id === itemId
-            ? { ...item, quantity: item.quantity - 1 }
+            ? {
+                ...item,
+                quantity: item.quantity - 1,
+              }
             : item
         )
         .filter((item) => item.quantity > 0)
@@ -163,7 +237,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   ========================================================= */
 
   const removeFromCart = (itemId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
+    setCart((prevCart) =>
+      prevCart.filter(
+        (item) => item.id !== itemId
+      )
+    );
   };
 
   /* =========================================================
@@ -195,7 +273,9 @@ export function useCart() {
   const context = useContext(CartContext);
 
   if (!context) {
-    throw new Error("useCart debe usarse dentro de CartProvider");
+    throw new Error(
+      "useCart debe usarse dentro de CartProvider"
+    );
   }
 
   return context;

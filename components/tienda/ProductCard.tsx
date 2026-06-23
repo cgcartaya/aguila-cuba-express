@@ -2,7 +2,16 @@
 
 /* =========================================================
    PRODUCT CARD - TIENDA PÚBLICA
-   Tarjeta profesional reutilizable para productos
+
+   Tarjeta profesional reutilizable para productos.
+
+   Incluye:
+   - Imagen
+   - Nombre
+   - Rating visual
+   - Precio
+   - Botón carrito
+   - Estado agotado por stock
 ========================================================= */
 
 import Image from "next/image";
@@ -21,18 +30,29 @@ export default function ProductCard({
   onAddToCart,
 }: ProductCardProps) {
   const price = Number(product.price || 0).toFixed(2);
+  const outOfStock = Number(product.stock || 0) <= 0;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
       {/* IMAGEN */}
       <Link href={`/tienda/producto/${product.id}`}>
         <div className="relative h-[150px] w-full bg-white p-3 md:h-[190px]">
+          {outOfStock && (
+            <div className="absolute left-3 top-3 z-10 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white shadow">
+              AGOTADO
+            </div>
+          )}
+
           <Image
             src={product.image_url || "/placeholder-product.png"}
             alt={product.name}
             fill
             unoptimized
-            className="object-contain p-3 transition duration-300 group-hover:scale-105"
+            className={`object-contain p-3 transition duration-300 ${
+              outOfStock
+                ? "opacity-50 grayscale"
+                : "group-hover:scale-105"
+            }`}
           />
         </div>
       </Link>
@@ -68,9 +88,18 @@ export default function ProductCard({
 
           <button
             type="button"
+            disabled={outOfStock}
             onClick={() => onAddToCart(product)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm transition hover:bg-red-700"
-            aria-label="Agregar al carrito"
+            className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm transition ${
+              outOfStock
+                ? "cursor-not-allowed bg-slate-300"
+                : "bg-red-600 hover:bg-red-700"
+            }`}
+            aria-label={
+              outOfStock
+                ? "Producto agotado"
+                : "Agregar al carrito"
+            }
           >
             <ShoppingCart size={18} />
           </button>

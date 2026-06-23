@@ -36,9 +36,8 @@ export type CartItem = {
   image_url: string;
   quantity: number;
 
-  /*
-    product -> producto normal
-    combo   -> combo
-  */
+  /* stock actual del producto */
+  stock?: number;
+
   type: "product" | "combo";
 };

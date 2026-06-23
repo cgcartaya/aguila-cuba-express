@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  processOrderInventory,
+  validateOrderStock,
+} from "@/lib/services/inventory";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -107,6 +111,22 @@ export default function CheckoutPage() {
         customer = newCustomer;
       }
 
+      const orderItemsBase = cart.map((item) => {
+        const originalId = getOriginalId(item.id);
+
+        return {
+          item_type: item.type,
+          product_id: item.type === "product" ? originalId : null,
+          combo_id: item.type === "combo" ? originalId : null,
+          product_name: item.name,
+          quantity: item.quantity,
+          price: Number(item.price),
+          subtotal: Number(item.price) * item.quantity,
+        };
+      });
+
+      await validateOrderStock(orderItemsBase);
+
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
@@ -124,26 +144,18 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError;
 
-      const orderItems = cart.map((item) => {
-        const originalId = getOriginalId(item.id);
-
-        return {
-          order_id: order.id,
-          item_type: item.type,
-          product_id: item.type === "product" ? originalId : null,
-          combo_id: item.type === "combo" ? originalId : null,
-          product_name: item.name,
-          quantity: item.quantity,
-          price: Number(item.price),
-          subtotal: Number(item.price) * item.quantity,
-        };
-      });
+      const orderItems = orderItemsBase.map((item) => ({
+        ...item,
+        order_id: order.id,
+      }));
 
       const { error: itemsError } = await supabase
         .from("order_items")
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      await processOrderInventory(orderItems);
 
       clearCart();
       router.push(`/tienda/success?order=${order.id}`);
