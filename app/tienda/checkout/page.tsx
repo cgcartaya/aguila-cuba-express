@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  CreditCard,
+  Loader2,
+  Package,
+  ShoppingBag,
+} from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/contexts/CartContext";
 
 export default function CheckoutPage() {
   const router = useRouter();
-const { items, cartItems, clearCart } = useCart() as any;
-
-const cart = items || cartItems || [];
+  const { cart, clearCart } = useCart();
 
   const [form, setForm] = useState({
     name: "",
@@ -28,19 +32,22 @@ const cart = items || cartItems || [];
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-const total = cart.reduce(
-  (sum: number, item: { price: number; quantity: number }) =>
-    sum + item.price * item.quantity,
-  0
-);
+  const total = cart.reduce(
+    (sum, item) => sum + Number(item.price) * item.quantity,
+    0
+  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setForm({
-      ...form,
+    setForm((current) => ({
+      ...current,
       [e.target.name]: e.target.value,
-    });
+    }));
+  };
+
+  const getOriginalId = (cartId: string) => {
+    return cartId.replace("product-", "").replace("combo-", "");
   };
 
   const handleSubmit = async () => {
@@ -59,18 +66,46 @@ const total = cart.reduce(
     try {
       setLoading(true);
 
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .insert({
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-          city: form.city,
-        })
-        .select()
-        .single();
+      let customer = null;
 
-      if (customerError) throw customerError;
+      const { data: existingCustomer, error: existingCustomerError } =
+        await supabase
+          .from("customers")
+          .select("*")
+          .eq("email", form.email)
+          .maybeSingle();
+
+      if (existingCustomerError) throw existingCustomerError;
+
+      if (existingCustomer) {
+        customer = existingCustomer;
+
+        const { error: updateCustomerError } = await supabase
+          .from("customers")
+          .update({
+            name: form.name,
+            phone: form.phone,
+            city: form.city,
+          })
+          .eq("id", existingCustomer.id);
+
+        if (updateCustomerError) throw updateCustomerError;
+      } else {
+        const { data: newCustomer, error: customerError } = await supabase
+          .from("customers")
+          .insert({
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+            city: form.city,
+          })
+          .select()
+          .single();
+
+        if (customerError) throw customerError;
+
+        customer = newCustomer;
+      }
 
       const { data: order, error: orderError } = await supabase
         .from("orders")
@@ -89,16 +124,20 @@ const total = cart.reduce(
 
       if (orderError) throw orderError;
 
-const orderItems = cart.map(
-  (item: { id: number; name: string; price: number; quantity: number }) => ({
-    order_id: order.id,
-    product_id: item.id,
-    product_name: item.name,
-    quantity: item.quantity,
-    price: item.price,
-    subtotal: item.price * item.quantity,
-  })
-);
+      const orderItems = cart.map((item) => {
+        const originalId = getOriginalId(item.id);
+
+        return {
+          order_id: order.id,
+          item_type: item.type,
+          product_id: item.type === "product" ? originalId : null,
+          combo_id: item.type === "combo" ? originalId : null,
+          product_name: item.name,
+          quantity: item.quantity,
+          price: Number(item.price),
+          subtotal: Number(item.price) * item.quantity,
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from("order_items")
@@ -108,9 +147,9 @@ const orderItems = cart.map(
 
       clearCart();
       router.push(`/tienda/success?order=${order.id}`);
-    } catch (err) {
-      console.error(err);
-      setError("Ocurrió un error al crear la orden.");
+    } catch (err: any) {
+      console.error("ERROR CHECKOUT:", err);
+      setError(err?.message || "Ocurrió un error al crear la orden.");
     } finally {
       setLoading(false);
     }
@@ -120,9 +159,9 @@ const orderItems = cart.map(
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <Link
-  href="/tienda/cart"
-  className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
->
+          href="/tienda/cart"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
+        >
           <ArrowLeft size={18} />
           Volver al carrito
         </Link>
@@ -137,38 +176,10 @@ const orderItems = cart.map(
               </h2>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  name="name"
-                  placeholder="Nombre completo *"
-                  value={form.name}
-                  onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
-
-                <input
-                  name="email"
-                  type="email"
-                  placeholder="Email *"
-                  value={form.email}
-                  onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
-
-                <input
-                  name="phone"
-                  placeholder="Teléfono *"
-                  value={form.phone}
-                  onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
-
-                <input
-                  name="city"
-                  placeholder="Ciudad *"
-                  value={form.city}
-                  onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
+                <input name="name" placeholder="Nombre completo *" value={form.name} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
+                <input name="email" type="email" placeholder="Email *" value={form.email} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
+                <input name="phone" placeholder="Teléfono *" value={form.phone} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
+                <input name="city" placeholder="Ciudad *" value={form.city} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
               </div>
             </div>
 
@@ -178,48 +189,15 @@ const orderItems = cart.map(
               </h2>
 
               <div className="grid gap-4">
-                <input
-                  name="address"
-                  placeholder="Dirección *"
-                  value={form.address}
-                  onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
+                <input name="address" placeholder="Dirección *" value={form.address} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <input
-                    name="state"
-                    placeholder="Estado"
-                    value={form.state}
-                    onChange={handleChange}
-                    className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                  />
-
-                  <input
-                    name="zip_code"
-                    placeholder="ZIP Code"
-                    value={form.zip_code}
-                    onChange={handleChange}
-                    className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                  />
-
-                  <input
-                    name="country"
-                    placeholder="País"
-                    value={form.country}
-                    onChange={handleChange}
-                    className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                  />
+                  <input name="state" placeholder="Estado" value={form.state} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
+                  <input name="zip_code" placeholder="ZIP Code" value={form.zip_code} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
+                  <input name="country" placeholder="País" value={form.country} onChange={handleChange} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
                 </div>
 
-                <textarea
-                  name="notes"
-                  placeholder="Notas adicionales"
-                  value={form.notes}
-                  onChange={handleChange}
-                  rows={4}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
+                <textarea name="notes" placeholder="Notas adicionales" value={form.notes} onChange={handleChange} rows={4} className="rounded-xl border px-4 py-3 outline-none focus:border-black" />
               </div>
             </div>
           </section>
@@ -230,18 +208,26 @@ const orderItems = cart.map(
             </h2>
 
             <div className="space-y-3">
-{cart.map((item: { id: number; name: string; price: number; quantity: number }) => (
-  <div
-    key={item.id}
-    className="flex items-center justify-between gap-3 text-sm"
-  >
+              {cart.map((item) => (
+                <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
                   <div>
+                    <span
+                      className={`mb-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black ${
+                        item.type === "combo"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {item.type === "combo" ? <Package size={11} /> : <ShoppingBag size={11} />}
+                      {item.type === "combo" ? "Combo" : "Producto"}
+                    </span>
+
                     <p className="font-medium text-gray-900">{item.name}</p>
                     <p className="text-gray-500">Cantidad: {item.quantity}</p>
                   </div>
 
                   <p className="font-semibold">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    ${(Number(item.price) * item.quantity).toFixed(2)}
                   </p>
                 </div>
               ))}

@@ -26,6 +26,7 @@ import {
   ClipboardList,
   Store,
   Settings,
+  Users,
 } from "lucide-react";
 
 type AdminMobileMenuProps = {
@@ -59,6 +60,11 @@ const adminLinks = [
     href: "/admin/orders",
     icon: ClipboardList,
   },
+  {
+  label: "Clientes",
+  href: "/admin/customers",
+  icon: Users,
+},
   {
     label: "Configuración",
     href: "/admin/settings",

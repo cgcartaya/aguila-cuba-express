@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Store,
   Plus,
+  Users,
 } from "lucide-react";
 
 const links = [
@@ -27,6 +28,11 @@ const links = [
     label: "Órdenes",
     icon: ShoppingCart,
   },
+  {
+  href: "/admin/customers",
+  label: "Clientes",
+  icon: Users,
+},
 ];
 
 export default function AdminNav() {

@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useCart } from "@/contexts/CartContext";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -49,6 +50,7 @@ type ComboDetail = {
 
 export default function StoreComboDetailPage() {
   const params = useParams();
+  const { addComboToCart } = useCart();
   const comboId = params.id as string;
 
   const [combo, setCombo] = useState<ComboDetail | null>(null);
@@ -226,13 +228,21 @@ export default function StoreComboDetailPage() {
           </div>
 
           {/* BOTÓN */}
-          <button
-            type="button"
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-base font-black text-white shadow-sm transition hover:bg-red-700"
-          >
-            <ShoppingCart size={20} />
-            Agregar combo
-          </button>
+<button
+  type="button"
+  onClick={() =>
+    addComboToCart({
+      id: combo.id,
+      name: combo.name,
+      price: combo.price,
+      image_url: combo.image_url || "",
+    })
+  }
+  className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-base font-black text-white shadow-sm transition hover:bg-red-700"
+>
+  <ShoppingCart size={20} />
+  Agregar combo
+</button>
         </div>
       </section>
     </main>

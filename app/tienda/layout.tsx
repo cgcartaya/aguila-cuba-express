@@ -27,10 +27,9 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
      Se muestra en el header de todas las páginas de tienda
   ========================================================= */
 
-  const cartCount = cart.reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
+const cartCount = cart.reduce((total, item) => {
+  return total + item.quantity;
+}, 0);
 
   /* =========================================================
      PÁGINAS DONDE NO QUEREMOS MOSTRAR EL BANNER PRINCIPAL
