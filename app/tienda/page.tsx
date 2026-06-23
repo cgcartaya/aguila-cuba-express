@@ -2,35 +2,30 @@
 
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
-   El Header, MainBanner y BottomNavigation ahora viven en:
-   app/tienda/layout.tsx
+
+   Nueva estructura tipo app moderna:
+
+   - Buscador
+   - Combos destacados
+   - Categorías sticky
+   - Productos agrupados por categoría
+   - Banner envío
+   - Ayuda
 ========================================================= */
 
-import { useEffect, useState } from "react";
-import { getStoreProducts } from "@/lib/services/products";
-import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
-import Categories from "@/components/tienda/Categories";
-import ProductSearch from "@/components/tienda/ProductSearch";
-import ProductsCarousel from "@/components/tienda/ProductsCarousel";
-import DeliveryBanner from "@/components/tienda/DeliveryBanner";
-import OffersCarousel from "@/components/tienda/OffersCarousel";
-import HelpCard from "@/components/tienda/HelpCard";
+import { useEffect, useMemo, useState } from "react";
 
-import {
-  Smartphone,
-  Sofa,
-  ShoppingBasket,
-  Dumbbell,
-  Pill,
-  Ellipsis,
-} from "lucide-react";
+import { getStoreProducts } from "@/lib/services/products";
+
+import ProductSearch from "@/components/tienda/ProductSearch";
+import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
+import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
+import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
+import DeliveryBanner from "@/components/tienda/DeliveryBanner";
+import HelpCard from "@/components/tienda/HelpCard";
 
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
-
-/* =========================================================
-   TIPOS - IMÁGENES DE PRODUCTO
-========================================================= */
 
 type ProductImage = {
   image_url: string;
@@ -42,60 +37,11 @@ type ProductFromSupabase = Product & {
   product_images?: ProductImage[];
 };
 
-/* =========================================================
-   DATA TEMPORAL - OFERTAS
-========================================================= */
-
-const ofertas = [
-  {
-    nombre: "Controlador solar",
-    precioAntes: "150.00",
-    precio: "120.00",
-    descuento: "-20%",
-    imagen: "/products/electrical/controlador-solar-1000w.webp",
-  },
-  {
-    nombre: "Combo de alimentos",
-    precioAntes: "25.00",
-    precio: "18.00",
-    descuento: "-15%",
-    imagen: "/products/food/chocolisto-sabor-fresa.webp",
-  },
-  {
-    nombre: "Ibuprofeno 200mg",
-    precioAntes: "12.00",
-    precio: "10.00",
-    descuento: "-10%",
-    imagen: "/products/medicines/ibuprofeno200.webp",
-  },
-];
-
-/* =========================================================
-   DATA TEMPORAL - CATEGORÍAS
-========================================================= */
-
-const categorias = [
-  { nombre: "Electrónicos", icono: Smartphone, color: "text-blue-600" },
-  { nombre: "Hogar", icono: Sofa, color: "text-orange-500" },
-  { nombre: "Alimentos", icono: ShoppingBasket, color: "text-green-600" },
-  { nombre: "Deportes", icono: Dumbbell, color: "text-red-600" },
-  { nombre: "Medicinas", icono: Pill, color: "text-purple-600" },
-  { nombre: "Más", icono: Ellipsis, color: "text-slate-500" },
-];
-
-/* =========================================================
-   PÁGINA PRINCIPAL - TIENDA
-========================================================= */
-
 export default function TiendaPage() {
   const [busqueda, setBusqueda] = useState("");
   const [productos, setProductos] = useState<Product[]>([]);
 
   const { addToCart } = useCart();
-
-  /* =========================================================
-     PRODUCTOS - CARGA DESDE SUPABASE
-  ========================================================= */
 
   useEffect(() => {
     const cargarProductos = async () => {
@@ -105,18 +51,6 @@ export default function TiendaPage() {
         console.log("Error cargando productos:", error);
         return;
       }
-
-      /*
-        TIENDA PÚBLICA - TRANSFORMACIÓN DE IMÁGENES
-
-        El servicio devuelve el producto con la relación:
-        product_images
-
-        Buscamos:
-        1. La imagen marcada como principal.
-        2. Si no existe, la primera por posición.
-        3. Si no tiene imágenes nuevas, usamos image_url antiguo.
-      */
 
       const productosConImagenPrincipal =
         (data as ProductFromSupabase[])?.map((producto) => {
@@ -138,35 +72,61 @@ export default function TiendaPage() {
     cargarProductos();
   }, []);
 
-  /* =========================================================
-     PRODUCTOS - BÚSQUEDA LOCAL
-  ========================================================= */
-
   const productosBuscados = productos.filter((producto) =>
     producto.name.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
+  const categorias = useMemo(() => {
+    return Array.from(
+      new Set(
+        productosBuscados
+          .map((producto) => producto.category)
+          .filter(Boolean)
+      )
+    );
+  }, [productosBuscados]);
+
+  const productosPorCategoria = useMemo(() => {
+    return categorias.map((categoria) => ({
+      categoria,
+      productos: productosBuscados.filter(
+        (producto) => producto.category === categoria
+      ),
+    }));
+  }, [categorias, productosBuscados]);
 
   return (
     <>
-      <Categories categorias={categorias} />
-
-      <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
-
-      <ProductsCarousel
-        productos={productosBuscados}
-        agregarAlCarrito={addToCart}
+      {/* BUSCADOR */}
+      <ProductSearch
+        busqueda={busqueda}
+        setBusqueda={setBusqueda}
       />
 
+      {/* COMBOS */}
       <StoreCombosSection />
 
+      {/* CATEGORÍAS STICKY */}
+      {categorias.length > 0 && (
+        <StickyCategoryTabs categories={categorias} />
+      )}
+
+      {/* PRODUCTOS AGRUPADOS */}
+      <div className="mt-2">
+        {productosPorCategoria.map((grupo) => (
+          <CategoryProductsSection
+            key={grupo.categoria}
+            title={grupo.categoria}
+            products={grupo.productos}
+            onAddToCart={addToCart}
+          />
+        ))}
+      </div>
+
+      {/* ENVÍOS */}
       <DeliveryBanner />
 
-      <OffersCarousel ofertas={ofertas} />
-
+      {/* AYUDA */}
       <HelpCard />
     </>
   );
