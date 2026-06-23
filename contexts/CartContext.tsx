@@ -20,14 +20,38 @@ import {
 
 import type { Product, Combo, CartItem } from "@/types/cart";
 
+/* =========================================================
+   CONTEXTO DEL CARRITO
+
+   Expone todas las funciones disponibles para
+   cualquier componente de la aplicación.
+========================================================= */
 type CartContextType = {
+  /* Estado global del carrito */
   cart: CartItem[];
+
+  /* Agregar productos normales */
   addToCart: (product: Product) => void;
+
+  /* Agregar combos */
   addComboToCart: (combo: Combo) => void;
+
+  /* Controles de cantidad */
   increaseQuantity: (itemId: string) => void;
   decreaseQuantity: (itemId: string) => void;
+
+  /* Eliminar / limpiar carrito */
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
+
+  /*
+    Permite saber cuántas unidades de un producto
+    existen actualmente en el carrito.
+
+    Será utilizado por ProductCard V2
+    estilo Instacart/Walmart.
+  */
+  getItemQuantity: (productId: number) => number;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -170,6 +194,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   /* =========================================================
+   OBTENER CANTIDAD DE UN PRODUCTO EN CARRITO
+========================================================= */
+
+const getItemQuantity = (productId: number) => {
+  const cartId = `product-${productId}`;
+
+  const item = cart.find(
+    (item) => item.id === cartId
+  );
+
+  return item?.quantity || 0;
+};
+
+  /* =========================================================
      AUMENTAR CANTIDAD
   ========================================================= */
 
@@ -254,15 +292,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        addComboToCart,
-        increaseQuantity,
-        decreaseQuantity,
-        removeFromCart,
-        clearCart,
-      }}
+ value={{
+  cart,
+  addToCart,
+  addComboToCart,
+  increaseQuantity,
+  decreaseQuantity,
+  removeFromCart,
+  clearCart,
+
+  // NUEVO
+  getItemQuantity,
+}}
     >
       {children}
     </CartContext.Provider>

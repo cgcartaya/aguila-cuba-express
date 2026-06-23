@@ -1,22 +1,30 @@
 "use client";
 
 /* =========================================================
-   PRODUCT CARD - TIENDA PÚBLICA
+   PRODUCT CARD V2 - INSTACART / WALMART STYLE
 
-   Tarjeta profesional reutilizable para productos.
+   Características:
 
-   Incluye:
    - Imagen
    - Nombre
    - Rating visual
    - Precio
-   - Botón carrito
-   - Estado agotado por stock
+   - Botón Agregar
+   - Controles [-] cantidad [+]
+   - Validación de stock
+   - Integración completa con CartContext
 ========================================================= */
 
 import Image from "next/image";
 import Link from "next/link";
-import { ShoppingCart, Star } from "lucide-react";
+
+import {
+  Minus,
+  Plus,
+  Star,
+} from "lucide-react";
+
+import { useCart } from "@/contexts/CartContext";
 
 import type { Product } from "@/types/cart";
 
@@ -29,8 +37,26 @@ export default function ProductCard({
   product,
   onAddToCart,
 }: ProductCardProps) {
+  const {
+    getItemQuantity,
+    increaseQuantity,
+    decreaseQuantity,
+  } = useCart();
+
   const price = Number(product.price || 0).toFixed(2);
-  const outOfStock = Number(product.stock || 0) <= 0;
+
+  const outOfStock =
+    Number(product.stock || 0) <= 0;
+
+  // ======================================================
+  // CANTIDAD ACTUAL EN CARRITO
+  // ======================================================
+
+  const quantity = getItemQuantity(
+    Number(product.id)
+  );
+
+  const cartItemId = `product-${product.id}`;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
@@ -44,7 +70,10 @@ export default function ProductCard({
           )}
 
           <Image
-            src={product.image_url || "/placeholder-product.png"}
+            src={
+              product.image_url ||
+              "/placeholder-product.png"
+            }
             alt={product.name}
             fill
             unoptimized
@@ -65,7 +94,7 @@ export default function ProductCard({
           </h3>
         </Link>
 
-        {/* RATING VISUAL */}
+        {/* RATING */}
         <div className="mt-2 flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((item) => (
             <Star
@@ -80,29 +109,86 @@ export default function ProductCard({
           </span>
         </div>
 
-        {/* PRECIO + CARRITO */}
-        <div className="mt-3 flex items-center justify-between gap-2">
+        {/* PRECIO + CONTROLES */}
+        <div className="mt-3">
           <p className="text-lg font-black text-[#061b3a]">
             ${price}
           </p>
 
-          <button
-            type="button"
-            disabled={outOfStock}
-            onClick={() => onAddToCart(product)}
-            className={`flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm transition ${
-              outOfStock
-                ? "cursor-not-allowed bg-slate-300"
-                : "bg-red-600 hover:bg-red-700"
-            }`}
-            aria-label={
-              outOfStock
-                ? "Producto agotado"
-                : "Agregar al carrito"
-            }
-          >
-            <ShoppingCart size={18} />
-          </button>
+          {/* PRODUCTO AGOTADO */}
+          {outOfStock ? (
+            <button
+              disabled
+              className="
+                mt-3 w-full rounded-xl
+                bg-slate-300 py-3
+                font-black text-white
+              "
+            >
+              Agotado
+            </button>
+          ) : quantity === 0 ? (
+            /* BOTÓN AGREGAR */
+            <button
+              type="button"
+              onClick={() => onAddToCart(product)}
+              className="
+                mt-3 w-full rounded-xl
+                bg-red-600 py-3
+                font-black text-white
+                transition hover:bg-red-700
+              "
+            >
+              Agregar
+            </button>
+          ) : (
+            /* CONTROLES INSTACART */
+            <div
+              className="
+                mt-3 flex items-center
+                justify-between rounded-xl
+                border border-slate-200
+                bg-slate-50 p-1
+              "
+            >
+              <button
+                onClick={() =>
+                  decreaseQuantity(cartItemId)
+                }
+                className="
+                  flex h-10 w-10 items-center
+                  justify-center rounded-lg
+                  bg-white shadow-sm
+                "
+              >
+                <Minus size={18} />
+              </button>
+
+              <span className="text-lg font-black">
+                {quantity}
+              </span>
+
+              <button
+                onClick={() =>
+                  increaseQuantity(cartItemId)
+                }
+                disabled={
+                  quantity >=
+                  Number(product.stock)
+                }
+                className="
+                  flex h-10 w-10 items-center
+                  justify-center rounded-lg
+                  bg-red-600 text-white
+                  shadow-sm transition
+                  hover:bg-red-700
+                  disabled:bg-slate-300
+                "
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </article>
