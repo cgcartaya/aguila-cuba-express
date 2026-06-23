@@ -1,6 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+/* =========================================================
+   STICKY CATEGORY TABS
+
+   Características:
+
+   - Sticky horizontal.
+   - Scroll suave.
+   - Detecta automáticamente la sección visible.
+   - Mantiene sincronizada la pestaña activa.
+========================================================= */
+
+import { useEffect, useState } from "react";
 
 type Props = {
   categories: string[];
@@ -12,43 +23,61 @@ export default function StickyCategoryTabs({
   const [activeCategory, setActiveCategory] =
     useState(categories[0]);
 
-  const observerRef = useRef<IntersectionObserver | null>(
-    null
-  );
+  /* =========================================================
+     DETECTAR SECCIÓN VISIBLE
+  ========================================================= */
 
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveCategory(entry.target.id);
-          }
-        });
-      },
-      {
-        rootMargin: "-150px 0px -60% 0px",
-      }
+    const handleScroll = () => {
+      let currentCategory = categories[0];
+
+      categories.forEach((category) => {
+        const element =
+          document.getElementById(category);
+
+        if (!element) return;
+
+        const rect =
+          element.getBoundingClientRect();
+
+        /*
+          La sección activa será la última que
+          haya sobrepasado aproximadamente el
+          header sticky.
+        */
+
+        if (rect.top <= 220) {
+          currentCategory = category;
+        }
+      });
+
+      setActiveCategory(currentCategory);
+    };
+
+    window.addEventListener(
+      "scroll",
+      handleScroll
     );
 
-    categories.forEach((category) => {
-      const element = document.getElementById(
-        category
-      );
-
-      if (element) {
-        observerRef.current?.observe(element);
-      }
-    });
+    handleScroll();
 
     return () => {
-      observerRef.current?.disconnect();
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
     };
   }, [categories]);
 
-  const scrollToCategory = (category: string) => {
-    const section = document.getElementById(
-      category
-    );
+  /* =========================================================
+     SCROLL HACIA CATEGORÍA
+  ========================================================= */
+
+  const scrollToCategory = (
+    category: string
+  ) => {
+    const section =
+      document.getElementById(category);
 
     if (!section) return;
 
