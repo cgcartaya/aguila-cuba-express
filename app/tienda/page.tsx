@@ -6,8 +6,8 @@
    Nueva estructura tipo app moderna:
 
    - Buscador
-   - Combos destacados
-   - Categorías sticky
+   - Categorías sticky incluyendo Combos
+   - Combos como primera sección
    - Productos agrupados por categoría
    - Banner envío
    - Ayuda
@@ -76,24 +76,33 @@ export default function TiendaPage() {
     producto.name.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-/* =========================================================
-   OBTENER CATEGORÍAS ÚNICAS
+  /* =========================================================
+     OBTENER CATEGORÍAS ÚNICAS
+  ========================================================= */
 
-   Filtramos categorías vacías/undefined y le indicamos
-   explícitamente a TypeScript que el resultado es string[].
-========================================================= */
-const categorias = useMemo(() => {
-  return Array.from(
-    new Set(
-      productosBuscados
-        .map((producto) => producto.category)
-        .filter(
-          (categoria): categoria is string =>
-            categoria !== undefined && categoria !== null
-        )
-    )
-  );
-}, [productosBuscados]);
+  const categorias = useMemo(() => {
+    return Array.from(
+      new Set(
+        productosBuscados
+          .map((producto) => producto.category)
+          .filter(
+            (categoria): categoria is string =>
+              categoria !== undefined && categoria !== null
+          )
+      )
+    );
+  }, [productosBuscados]);
+
+  /* =========================================================
+     COMBOS COMO UNA CATEGORÍA MÁS
+
+     Esto permite que el menú sticky muestre:
+     Combos | Electrónicos | Alimentos | Medicinas...
+  ========================================================= */
+
+  const categoriasConCombos = useMemo(() => {
+    return ["Combos", ...categorias];
+  }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
     return categorias.map((categoria) => ({
@@ -112,13 +121,13 @@ const categorias = useMemo(() => {
         setBusqueda={setBusqueda}
       />
 
-      {/* COMBOS */}
-      <StoreCombosSection />
-
       {/* CATEGORÍAS STICKY */}
-      {categorias.length > 0 && (
-        <StickyCategoryTabs categories={categorias} />
+      {categoriasConCombos.length > 0 && (
+        <StickyCategoryTabs categories={categoriasConCombos} />
       )}
+
+      {/* COMBOS COMO PRIMERA CATEGORÍA */}
+      <StoreCombosSection />
 
       {/* PRODUCTOS AGRUPADOS */}
       <div className="mt-2">
