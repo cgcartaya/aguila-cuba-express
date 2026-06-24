@@ -8,13 +8,14 @@
    - Combos
    - Persistencia con localStorage
    - Validación de stock
+   - Consulta de cantidad por itemId
 ========================================================= */
 
 import {
   createContext,
   useContext,
-  useState,
   useEffect,
+  useState,
   ReactNode,
 } from "react";
 
@@ -22,36 +23,26 @@ import type { Product, Combo, CartItem } from "@/types/cart";
 
 /* =========================================================
    CONTEXTO DEL CARRITO
-
-   Expone todas las funciones disponibles para
-   cualquier componente de la aplicación.
 ========================================================= */
+
 type CartContextType = {
-  /* Estado global del carrito */
   cart: CartItem[];
 
-  /* Agregar productos normales */
   addToCart: (product: Product) => void;
-
-  /* Agregar combos */
   addComboToCart: (combo: Combo) => void;
 
-  /* Controles de cantidad */
   increaseQuantity: (itemId: string) => void;
   decreaseQuantity: (itemId: string) => void;
 
-  /* Eliminar / limpiar carrito */
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
 
   /*
-    Permite saber cuántas unidades de un producto
-    existen actualmente en el carrito.
-
-    Será utilizado por ProductCard V2
-    estilo Instacart/Walmart.
+    Ahora recibe directamente el ID real del carrito:
+    product-123
+    combo-456
   */
-  getItemQuantity: (productId: number) => number;
+  getItemQuantity: (itemId: string) => number;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -87,10 +78,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!cartLoaded) return;
 
-    localStorage.setItem(
-      CART_STORAGE_KEY,
-      JSON.stringify(cart)
-    );
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   }, [cart, cartLoaded]);
 
   /* =========================================================
@@ -101,27 +89,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const cartId = `product-${product.id}`;
 
     setCart((prevCart) => {
-      const existing = prevCart.find(
-        (item) => item.id === cartId
-      );
+      const existing = prevCart.find((item) => item.id === cartId);
 
-      /* STOCK AGOTADO */
-
-      if (
-        Number(product.stock || 0) <= 0
-      ) {
+      if (Number(product.stock || 0) <= 0) {
         return prevCart;
       }
 
-      /* YA EXISTE EN CARRITO */
-
       if (existing) {
-        /* NO SUPERAR STOCK */
-
-        if (
-          existing.quantity >=
-          Number(product.stock)
-        ) {
+        if (existing.quantity >= Number(product.stock)) {
           return prevCart;
         }
 
@@ -141,13 +116,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
           id: cartId,
           name: product.name,
           price: Number(product.price),
-          image_url:
-            product.image_url ||
-            "/placeholder-product.png",
+          image_url: product.image_url || "/placeholder-product.png",
           quantity: 1,
           type: "product",
-
-          /* Guardamos stock actual */
           stock: product.stock,
         },
       ];
@@ -162,9 +133,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const cartId = `combo-${combo.id}`;
 
     setCart((prevCart) => {
-      const existing = prevCart.find(
-        (item) => item.id === cartId
-      );
+      const existing = prevCart.find((item) => item.id === cartId);
 
       if (existing) {
         return prevCart.map((item) =>
@@ -183,9 +152,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           id: cartId,
           name: combo.name,
           price: Number(combo.price),
-          image_url:
-            combo.image_url ||
-            "/placeholder-product.png",
+          image_url: combo.image_url || "/placeholder-product.png",
           quantity: 1,
           type: "combo",
         },
@@ -194,18 +161,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   /* =========================================================
-   OBTENER CANTIDAD DE UN PRODUCTO EN CARRITO
-========================================================= */
+     OBTENER CANTIDAD POR ID DEL CARRITO
+  ========================================================= */
 
-const getItemQuantity = (productId: number) => {
-  const cartId = `product-${productId}`;
+  const getItemQuantity = (itemId: string) => {
+    const item = cart.find((item) => item.id === itemId);
 
-  const item = cart.find(
-    (item) => item.id === cartId
-  );
-
-  return item?.quantity || 0;
-};
+    return item?.quantity || 0;
+  };
 
   /* =========================================================
      AUMENTAR CANTIDAD
@@ -214,15 +177,8 @@ const getItemQuantity = (productId: number) => {
   const increaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
       prevCart.map((item) => {
-        /* Solo validar stock en productos */
-
-        if (
-          item.id === itemId &&
-          item.type === "product"
-        ) {
-          const maxStock = Number(
-            item.stock || 999999
-          );
+        if (item.id === itemId && item.type === "product") {
+          const maxStock = Number(item.stock || 999999);
 
           if (item.quantity >= maxStock) {
             return item;
@@ -234,12 +190,7 @@ const getItemQuantity = (productId: number) => {
           };
         }
 
-        /* Combos sin límite */
-
-        if (
-          item.id === itemId &&
-          item.type === "combo"
-        ) {
+        if (item.id === itemId && item.type === "combo") {
           return {
             ...item,
             quantity: item.quantity + 1,
@@ -271,19 +222,15 @@ const getItemQuantity = (productId: number) => {
   };
 
   /* =========================================================
-     ELIMINAR
+     ELIMINAR PRODUCTO / COMBO
   ========================================================= */
 
   const removeFromCart = (itemId: string) => {
-    setCart((prevCart) =>
-      prevCart.filter(
-        (item) => item.id !== itemId
-      )
-    );
+    setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
   };
 
   /* =========================================================
-     LIMPIAR
+     LIMPIAR CARRITO
   ========================================================= */
 
   const clearCart = () => {
@@ -292,31 +239,31 @@ const getItemQuantity = (productId: number) => {
 
   return (
     <CartContext.Provider
- value={{
-  cart,
-  addToCart,
-  addComboToCart,
-  increaseQuantity,
-  decreaseQuantity,
-  removeFromCart,
-  clearCart,
-
-  // NUEVO
-  getItemQuantity,
-}}
+      value={{
+        cart,
+        addToCart,
+        addComboToCart,
+        increaseQuantity,
+        decreaseQuantity,
+        removeFromCart,
+        clearCart,
+        getItemQuantity,
+      }}
     >
       {children}
     </CartContext.Provider>
   );
 }
 
+/* =========================================================
+   HOOK DEL CARRITO
+========================================================= */
+
 export function useCart() {
   const context = useContext(CartContext);
 
   if (!context) {
-    throw new Error(
-      "useCart debe usarse dentro de CartProvider"
-    );
+    throw new Error("useCart debe usarse dentro de CartProvider");
   }
 
   return context;

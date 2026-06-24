@@ -34,9 +34,8 @@ export default function ProductCard({
 
   const price = Number(product.price || 0).toFixed(2);
   const outOfStock = Number(product.stock || 0) <= 0;
-  const quantity = getItemQuantity(Number(product.id));
-  const cartItemId = `product-${product.id}`;
-
+const cartItemId = `product-${product.id}`;
+const quantity = getItemQuantity(cartItemId);
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       {/* IMAGEN MÁS COMPACTA */}
