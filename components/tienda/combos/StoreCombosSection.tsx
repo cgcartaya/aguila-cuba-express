@@ -3,12 +3,7 @@
 /* =========================================================
    STORE COMBOS SECTION - TIENDA PÚBLICA
 
-   Sección de combos en la home de la tienda.
-
-   Diseño:
-   - Header comercial
-   - Carrusel horizontal móvil
-   - Tarjetas visualmente unificadas con productos
+   Combos integrados como una categoría más.
 ========================================================= */
 
 import { useEffect, useState } from "react";
@@ -44,7 +39,6 @@ export default function StoreCombosSection() {
 
   return (
     <section id="Combos" className="scroll-mt-[170px] py-6">
-      {/* HEADER */}
       <div className="mb-4 flex items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-[#061b3a] md:text-3xl">
@@ -65,13 +59,9 @@ export default function StoreCombosSection() {
         </Link>
       </div>
 
-      {/* CARRUSEL */}
       <div className="flex gap-4 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {combos.slice(0, 6).map((combo) => (
-          <StoreComboCard
-            key={combo.id}
-            combo={combo}
-          />
+          <StoreComboCard key={combo.id} combo={combo} />
         ))}
       </div>
     </section>
