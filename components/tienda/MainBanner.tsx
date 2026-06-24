@@ -87,10 +87,10 @@ export default function MainBanner() {
             <div key={banner.id} className="min-w-0 flex-[0_0_100%]">
               <Link
                 href={banner.href}
-                className="relative block h-[285px] overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-[420px] md:px-10 md:py-10"
+                className="relative block h-190px overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-280px md:px-10 md:py-10"
               >
-                <div className="relative z-10 w-[48%] md:w-[45%]">
-                  <h2 className="text-[28px] font-black uppercase leading-[1.05] text-[#061b3a] md:text-5xl">
+                <div className="relative z-10 w-[50%] md:w-[45%]">
+                  <h2 className="text-[20px] font-black uppercase leading-[1.05] text-[#061b3a] md:text-4xl">
                     {banner.title.split(",")[0]}
                     {banner.title.includes(",") && (
                       <>
@@ -103,11 +103,11 @@ export default function MainBanner() {
                     )}
                   </h2>
 
-                  <p className="mt-3 max-w-[190px] text-xs font-bold leading-snug text-slate-700 md:text-base">
+                  <p className="mt-2 max-w-180px text-11px text-xs font-bold leading-snug text-slate-700 md:text-base">
                     {banner.description}
                   </p>
 
-                  <span className="mt-5 inline-flex rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm">
+                  <span className="mt-3 inline-flex rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm">
                     {banner.buttonText} ❯
                   </span>
                 </div>
@@ -118,7 +118,7 @@ export default function MainBanner() {
                   width={850}
                   height={520}
                   priority={banner.id === 1}
-                  className="absolute bottom-6 right-[-18px] h-auto w-[60%] object-contain md:bottom-4 md:right-8 md:w-[52%]"
+                  className="absolute bottom-2 right-[-10px] h-auto w-[48%] object-contain md:bottom-2 md:right-6 md:w-[45%]"
                 />
               </Link>
             </div>
