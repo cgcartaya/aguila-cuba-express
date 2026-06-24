@@ -118,7 +118,7 @@ export default function MainBanner() {
                   width={850}
                   height={520}
                   priority={banner.id === 1}
-                  className="absolute bottom-2 right-[-10px] h-auto w-[48%] object-contain md:bottom-2 md:right-6 md:w-[45%]"
+                  className="absolute bottom-0 right-[-10px] h-auto w-[48%] object-contain md:bottom-[-18px] md:right-8 md:w-[34%] lg:bottom-[-22px] lg:right-12 lg:w-[32%]"
                 />
               </Link>
             </div>
