@@ -23,6 +23,7 @@ import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
+import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
 
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
@@ -120,6 +121,9 @@ export default function TiendaPage() {
         busqueda={busqueda}
         setBusqueda={setBusqueda}
       />
+
+      {/* CARRUSEL DE CATEGORÍAS ESTILO AMAZON */}
+<CategoriesShowcaseCarousel groups={productosPorCategoria} />
 
       {/* CATEGORÍAS STICKY */}
       {categoriasConCombos.length > 0 && (

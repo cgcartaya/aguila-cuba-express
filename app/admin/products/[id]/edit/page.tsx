@@ -1,9 +1,21 @@
 "use client";
 
+/* =========================================================
+   EDIT PRODUCT PAGE
+   ---------------------------------------------------------
+   Página para editar la información principal del producto.
+   También incluye la nueva galería de imágenes múltiples.
+
+   Mejoras:
+   - Selector profesional de categorías.
+   - Categorías centralizadas.
+========================================================= */
+
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
+
 import ProductImageManager from "@/components/admin/products/ProductImageManager";
 
 import {
@@ -11,12 +23,7 @@ import {
   updateProduct,
 } from "@/lib/services/products";
 
-/* =========================================================
-   EDIT PRODUCT PAGE
-   ---------------------------------------------------------
-   Página para editar la información principal del producto.
-   También incluye la nueva galería de imágenes múltiples.
-========================================================= */
+import { PRODUCT_CATEGORIES } from "@/constants/categories";
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -32,7 +39,7 @@ export default function EditProductPage() {
     category: "",
     description: "",
     price: "",
-     stock: "",
+    stock: "",
     tag: "",
     is_active: true,
   });
@@ -86,7 +93,18 @@ export default function EditProductPage() {
     }));
   };
 
-  const handleActiveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCategoryChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      category: e.target.value,
+    }));
+  };
+
+  const handleActiveChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setForm((prev) => ({
       ...prev,
       is_active: e.target.checked,
@@ -161,7 +179,7 @@ export default function EditProductPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-4xl">
-        {/* Header */}
+        {/* HEADER */}
         <Link
           href="/admin/products"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
@@ -174,12 +192,13 @@ export default function EditProductPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             Editar producto
           </h1>
+
           <p className="mt-2 text-gray-500">
             Actualiza la información del producto.
           </p>
         </div>
 
-        {/* Información principal */}
+        {/* INFORMACIÓN PRINCIPAL */}
         <div className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
             <Input
@@ -190,12 +209,9 @@ export default function EditProductPage() {
               placeholder="Ej: Arroz Gallo"
             />
 
-            <Input
-              name="category"
-              label="Categoría *"
+            <CategorySelect
               value={form.category}
-              onChange={handleChange}
-              placeholder="Ej: food"
+              onChange={handleCategoryChange}
             />
 
             <Input
@@ -224,15 +240,11 @@ export default function EditProductPage() {
               placeholder="Ej: Oferta, Nuevo"
             />
 
-            {/* Imagen antigua / temporal.
-                La mantenemos para no romper la tienda pública actual.
-                Más adelante la tienda usará product_images.is_main. */}
-
-
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-bold text-gray-700">
                 Descripción
               </label>
+
               <textarea
                 name="description"
                 value={form.description}
@@ -252,7 +264,10 @@ export default function EditProductPage() {
               />
 
               <div>
-                <p className="font-bold text-gray-900">Producto activo</p>
+                <p className="font-bold text-gray-900">
+                  Producto activo
+                </p>
+
                 <p className="text-sm text-gray-500">
                   Si está activo, aparecerá en la tienda.
                 </p>
@@ -266,7 +281,7 @@ export default function EditProductPage() {
             </div>
           )}
 
-          {/* Acciones */}
+          {/* ACCIONES */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link
               href="/admin/products"
@@ -295,7 +310,7 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* Galería nueva de imágenes múltiples */}
+        {/* GALERÍA DE IMÁGENES */}
         <div className="mt-6">
           <ProductImageManager productId={productId} />
         </div>
@@ -337,6 +352,43 @@ function Input({
         placeholder={placeholder}
         className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
       />
+    </div>
+  );
+}
+
+/* =========================================================
+   SELECTOR DE CATEGORÍAS
+========================================================= */
+
+function CategorySelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-bold text-gray-700">
+        Categoría *
+      </label>
+
+      <select
+        name="category"
+        value={value}
+        onChange={onChange}
+        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black"
+      >
+        <option value="">
+          Selecciona una categoría
+        </option>
+
+        {PRODUCT_CATEGORIES.map((category) => (
+          <option key={category} value={category}>
+            {category}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }

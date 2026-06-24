@@ -1,11 +1,24 @@
 "use client";
 
+/* =========================================================
+   AGREGAR PRODUCTO - ADMIN
+
+   Flujo profesional:
+   1. Primero se crea el producto.
+   2. Luego se redirige a la pantalla de edición.
+   3. En edición se administran múltiples imágenes,
+      imagen principal y eliminación.
+
+   Esto evita usar el uploader antiguo de una sola imagen.
+========================================================= */
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Images, Loader2, Save } from "lucide-react";
+
 import { supabase } from "@/lib/supabase";
-import ImageUpload from "@/components/admin/ImageUpload";
+import { PRODUCT_CATEGORIES } from "@/constants/categories";
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -15,7 +28,6 @@ export default function NewProductPage() {
     category: "",
     description: "",
     price: "",
-    image_url: "",
     stock: "",
     tag: "",
     is_active: true,
@@ -35,7 +47,18 @@ export default function NewProductPage() {
     }));
   };
 
-  const handleActiveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCategoryChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      category: e.target.value,
+    }));
+  };
+
+  const handleActiveChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setForm((prev) => ({
       ...prev,
       is_active: e.target.checked,
@@ -66,20 +89,30 @@ export default function NewProductPage() {
     try {
       setLoading(true);
 
-      const { error } = await supabase.from("products").insert({
-        name: form.name,
-        category: form.category,
-        description: form.description,
-        price,
-        image_url: form.image_url,
-        stock,
-        tag: form.tag,
-        is_active: form.is_active,
-      });
+      const { data, error } = await supabase
+        .from("products")
+        .insert({
+          name: form.name,
+          category: form.category,
+          description: form.description,
+          price,
+          stock,
+          tag: form.tag,
+          is_active: form.is_active,
+
+          /*
+            IMPORTANTE:
+            Ya no usamos image_url al crear.
+            Las imágenes se gestionan después desde ProductImageManager.
+          */
+          image_url: "",
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
-      router.push("/admin/products");
+      router.push(`/admin/products/${data.id}/edit`);
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -104,8 +137,9 @@ export default function NewProductPage() {
           <h1 className="text-3xl font-bold text-gray-900">
             Agregar producto
           </h1>
+
           <p className="mt-2 text-gray-500">
-            Crea un nuevo producto para la tienda.
+            Crea primero el producto. Luego podrás subir varias imágenes.
           </p>
         </div>
 
@@ -119,12 +153,9 @@ export default function NewProductPage() {
               placeholder="Ej: Arroz Gallo"
             />
 
-            <Input
-              name="category"
-              label="Categoría *"
+            <CategorySelect
               value={form.category}
-              onChange={handleChange}
-              placeholder="Ej: food"
+              onChange={handleCategoryChange}
             />
 
             <Input
@@ -153,22 +184,27 @@ export default function NewProductPage() {
               placeholder="Ej: Oferta, Nuevo"
             />
 
-<div className="md:col-span-2">
-  <ImageUpload
-    value={form.image_url}
-    onChange={(url) =>
-      setForm((prev) => ({
-        ...prev,
-        image_url: url,
-      }))
-    }
-  />
-</div>
+            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">
+                <Images size={24} />
+              </div>
+
+              <p className="font-bold text-gray-900">
+                Las imágenes se agregan después de crear el producto
+              </p>
+
+              <p className="mt-2 text-sm text-gray-500">
+                Al guardar, irás automáticamente a la pantalla de edición,
+                donde podrás subir varias imágenes, escoger la principal y
+                eliminar las que no necesites.
+              </p>
+            </div>
 
             <div className="md:col-span-2">
               <label className="mb-2 block text-sm font-bold text-gray-700">
                 Descripción
               </label>
+
               <textarea
                 name="description"
                 value={form.description}
@@ -186,8 +222,12 @@ export default function NewProductPage() {
                 onChange={handleActiveChange}
                 className="h-5 w-5"
               />
+
               <div>
-                <p className="font-bold text-gray-900">Producto activo</p>
+                <p className="font-bold text-gray-900">
+                  Producto activo
+                </p>
+
                 <p className="text-sm text-gray-500">
                   Si está activo, aparecerá en la tienda.
                 </p>
@@ -217,12 +257,12 @@ export default function NewProductPage() {
               {loading ? (
                 <>
                   <Loader2 className="animate-spin" size={20} />
-                  Guardando...
+                  Creando...
                 </>
               ) : (
                 <>
                   <Save size={20} />
-                  Guardar producto
+                  Crear producto
                 </>
               )}
             </button>
@@ -253,6 +293,7 @@ function Input({
       <label className="mb-2 block text-sm font-bold text-gray-700">
         {label}
       </label>
+
       <input
         name={name}
         type={type}
@@ -261,6 +302,37 @@ function Input({
         placeholder={placeholder}
         className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
       />
+    </div>
+  );
+}
+
+function CategorySelect({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-bold text-gray-700">
+        Categoría *
+      </label>
+
+      <select
+        name="category"
+        value={value}
+        onChange={onChange}
+        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black"
+      >
+        <option value="">Selecciona una categoría</option>
+
+        {PRODUCT_CATEGORIES.map((category) => (
+          <option key={category} value={category}>
+            {category}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
