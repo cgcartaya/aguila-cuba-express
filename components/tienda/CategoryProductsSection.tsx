@@ -148,37 +148,42 @@ export default function CategoryProductsSection({
           px-5 py-4 shadow-sm
         `}
       >
-        {/* IMAGEN DE FONDO INTEGRADA */}
-        {categoryImage && (
-          <>
-            <img
-              src={categoryImage}
-              alt=""
-              aria-hidden="true"
-              className="
-                pointer-events-none
-                absolute inset-y-0 right-0
-                hidden h-full w-[52%]
-                object-cover object-right
-                opacity-45
-                md:block
-              "
-            />
+  
+    {/* IMAGEN DE FONDO INTEGRADA */}
+{categoryImage && (
+  <>
+    <img
+      src={categoryImage}
+      alt=""
+      aria-hidden="true"
+      className="
+        pointer-events-none
+        absolute inset-y-0 right-0
+        h-full w-[70%]
+        object-cover object-right
+        opacity-25
+        md:w-[52%]
+        md:opacity-45
+      "
+    />
 
-            <div
-              className="
-                pointer-events-none
-                absolute inset-y-0 right-0
-                hidden w-[65%]
-                bg-gradient-to-r
-                from-white/95
-                via-white/55
-                to-white/5
-                md:block
-              "
-            />
-          </>
-        )}
+    <div
+      className="
+        pointer-events-none
+        absolute inset-y-0 right-0
+        w-full
+        bg-gradient-to-r
+        from-white/95
+        via-white/75
+        to-white/20
+        md:w-[65%]
+        md:from-white/95
+        md:via-white/55
+        md:to-white/5
+      "
+    />
+  </>
+)}
 
         <div className="relative z-10 flex items-start justify-between gap-4">
           <div className="flex gap-4">
