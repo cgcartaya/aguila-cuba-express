@@ -11,16 +11,16 @@ import Autoplay from "embla-carousel-autoplay";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-
+import AnimatedBannerImage from "./AnimatedBannerImage";
 const banners = [
-  {
-    id: 1,
-    title: "Envía más, paga menos",
-    description: "Miles de productos para tu familia en Cuba",
-    image: "/logo-tienda.png",
-    href: "#ofertas",
-    buttonText: "Ver ofertas",
-  },
+{
+  id: 1,
+  title: "Envía más, paga menos",
+  description: "Miles de productos disponibles para tu familia en Cuba",
+  image: "/logo-tienda.png",
+  href: "#Alimentos",
+  buttonText: "Ver productos",
+},
   {
     id: 2,
     title: "Entrega en 24-48 horas",
@@ -112,14 +112,12 @@ export default function MainBanner() {
                   </span>
                 </div>
 
-                <Image
-                  src={banner.image}
-                  alt={banner.title}
-                  width={850}
-                  height={520}
-                  priority={banner.id === 1}
-                  className="absolute bottom-0 right-[-10px] h-auto w-[48%] object-contain md:bottom-[-18px] md:right-8 md:w-[34%] lg:bottom-[-22px] lg:right-12 lg:w-[32%]"
-                />
+                <AnimatedBannerImage
+  src={banner.image}
+  alt={banner.title}
+  priority={banner.id === 1}
+  className="absolute bottom-0 right-[-10px] w-[48%] md:bottom-[-18px] md:right-8 md:w-[34%] lg:bottom-[-22px] lg:right-12 lg:w-[32%]"
+/>
               </Link>
             </div>
           ))}
