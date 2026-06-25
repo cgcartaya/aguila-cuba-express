@@ -30,45 +30,44 @@ export default function CategoriesShowcaseCarousel({
          HEADER SUPERIOR
       ========================================================= */}
 
-      <div className="mb-5 rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-blue-600 p-5 shadow-lg">
+<div className="mb-4 rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-blue-600 p-4 shadow-lg">
 
-        <div className="flex items-center gap-4">
+  <div className="flex items-center gap-3">
 
-          {/* Icono */}
+    {/* Icono */}
 
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
-            <Grid3X3 className="h-7 w-7 text-white" />
-          </div>
+    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
+      <Grid3X3 className="h-6 w-6 text-white" />
+    </div>
 
-          {/* Texto */}
+    {/* Texto */}
 
-          <div className="flex-1">
-            <h2 className="text-2xl font-black text-white">
-              Explora por categoría
-            </h2>
+    <div className="flex-1">
+      <h2 className="text-xl font-black leading-tight text-white">
+        Explora por categoría
+      </h2>
 
-            <p className="mt-1 text-sm font-medium text-blue-50">
-              Encuentra rápidamente todo lo que tu familia necesita.
-            </p>
-          </div>
-        </div>
+      <p className="mt-1 text-sm text-blue-50">
+        Encuentra rápidamente todo lo que tu familia necesita.
+      </p>
+    </div>
+  </div>
 
-        {/* Badges */}
+  {/* Badges */}
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-            🚚 Entregas rápidas
-          </span>
+  <div className="mt-3 flex flex-wrap gap-2">
 
-          <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-            🛡️ Compra segura
-          </span>
+    <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+      🚚 Entregas rápidas
+    </span>
 
-          <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-            📦 {visibleGroups.length} categorías
-          </span>
-        </div>
-      </div>
+    <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+      📦 {visibleGroups.length} categorías
+    </span>
+
+  </div>
+
+</div>
 
       {/* =========================================================
          CARRUSEL DE CATEGORÍAS
