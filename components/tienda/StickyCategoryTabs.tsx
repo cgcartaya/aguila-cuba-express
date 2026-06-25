@@ -3,13 +3,16 @@
 /* =========================================================
    STICKY CATEGORY TABS
 
-   Estilo tipo Amazon:
-   - Cada categoría tiene su propio color.
-   - Botones grandes, redondeados y llamativos.
-   - La categoría activa resalta más.
+   Características:
+
+   - Sticky horizontal.
+   - Scroll suave.
+   - Detecta automáticamente la sección visible.
+   - Mantiene sincronizada la pestaña activa.
+   - Hace scroll automático de las pestañas.
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   categories: string[];
@@ -25,21 +28,37 @@ const categoryStyles: Record<string, string> = {
   Aseo: "bg-cyan-500 text-white",
 };
 
-export default function StickyCategoryTabs({ categories }: Props) {
-  const [activeCategory, setActiveCategory] = useState(categories[0]);
+export default function StickyCategoryTabs({
+  categories,
+}: Props) {
+  const [activeCategory, setActiveCategory] =
+    useState(categories[0]);
+
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+
+  /* =========================================================
+     DETECTAR SECCIÓN VISIBLE
+  ========================================================= */
 
   useEffect(() => {
     const handleScroll = () => {
       let currentCategory = categories[0];
 
       categories.forEach((category) => {
-        const element = document.getElementById(category);
+        const element =
+          document.getElementById(category);
 
         if (!element) return;
 
-        const rect = element.getBoundingClientRect();
+        const rect =
+          element.getBoundingClientRect();
 
-        if (rect.top <= 220) {
+        /*
+          Ajusta este valor si cambias la altura
+          del header sticky.
+        */
+
+        if (rect.top <= 250) {
           currentCategory = category;
         }
       });
@@ -47,17 +66,53 @@ export default function StickyCategoryTabs({ categories }: Props) {
       setActiveCategory(currentCategory);
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener(
+      "scroll",
+      handleScroll
+    );
 
     handleScroll();
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener(
+        "scroll",
+        handleScroll
+      );
     };
   }, [categories]);
 
-  const scrollToCategory = (category: string) => {
-    const section = document.getElementById(category);
+  /* =========================================================
+     SCROLL AUTOMÁTICO DE LAS TABS
+  ========================================================= */
+
+  useEffect(() => {
+    const container = tabsContainerRef.current;
+
+    if (!container) return;
+
+    const activeButton =
+      container.querySelector<HTMLButtonElement>(
+        `[data-category="${activeCategory}"]`
+      );
+
+    if (!activeButton) return;
+
+    activeButton.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [activeCategory]);
+
+  /* =========================================================
+     SCROLL HACIA CATEGORÍA
+  ========================================================= */
+
+  const scrollToCategory = (
+    category: string
+  ) => {
+    const section =
+      document.getElementById(category);
 
     if (!section) return;
 
@@ -69,18 +124,27 @@ export default function StickyCategoryTabs({ categories }: Props) {
 
   return (
     <div className="sticky top-[72px] z-30 -mx-4 border-y bg-white px-4 py-3 shadow-sm">
-      <div className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        ref={tabsContainerRef}
+        className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         {categories.map((category) => {
           const colorClass =
-            categoryStyles[category] || "bg-slate-600 text-white";
+            categoryStyles[category] ||
+            "bg-slate-600 text-white";
 
-          const isActive = activeCategory === category;
+          const isActive =
+            activeCategory === category;
 
           return (
             <button
               key={category}
-              onClick={() => scrollToCategory(category)}
+              data-category={category}
+              onClick={() =>
+                scrollToCategory(category)
+              }
               className={`
+                shrink-0
                 whitespace-nowrap
                 rounded-2xl
                 px-6
@@ -88,8 +152,8 @@ export default function StickyCategoryTabs({ categories }: Props) {
                 text-sm
                 font-black
                 shadow-md
-                transition
-                duration-200
+                transition-all
+                duration-300
                 ${colorClass}
                 ${
                   isActive
