@@ -9,6 +9,7 @@
    - Cantidad de productos
    - Imagen de fondo integrada
    - Botón Ver todos
+   - Animación simple y segura con Tailwind
 ========================================================= */
 
 import Link from "next/link";
@@ -140,57 +141,58 @@ export default function CategoryProductsSection({
 
   return (
     <section id={title} className="scroll-mt-[170px] py-6">
-      {/* HEADER PREMIUM */}
       <div
         className={`
-          relative mb-5 overflow-hidden rounded-3xl border border-slate-200
+          relative mb-5 overflow-hidden rounded-3xl
+          border border-slate-200
           bg-gradient-to-r ${meta.bg}
           px-5 py-4 shadow-sm
         `}
       >
-  
-    {/* IMAGEN DE FONDO INTEGRADA */}
-{categoryImage && (
-  <>
-    <img
-      src={categoryImage}
-      alt=""
-      aria-hidden="true"
-      className="
-        pointer-events-none
-        absolute inset-y-0 right-0
-        h-full w-[70%]
-        object-cover object-right
-        opacity-25
-        md:w-[52%]
-        md:opacity-45
-      "
-    />
+        {categoryImage && (
+          <>
+            <img
+              src={categoryImage}
+              alt=""
+              aria-hidden="true"
+              className="
+                pointer-events-none
+                absolute inset-y-0 right-0
+                h-full w-[70%]
+                object-cover object-right
+                opacity-25
+                md:w-[52%]
+                md:opacity-45
+              "
+            />
 
-    <div
-      className="
-        pointer-events-none
-        absolute inset-y-0 right-0
-        w-full
-        bg-gradient-to-r
-        from-white/95
-        via-white/75
-        to-white/20
-        md:w-[65%]
-        md:from-white/95
-        md:via-white/55
-        md:to-white/5
-      "
-    />
-  </>
-)}
+            <div
+              className="
+                pointer-events-none
+                absolute inset-y-0 right-0
+                w-full
+                bg-gradient-to-r
+                from-white/95
+                via-white/75
+                to-white/20
+                md:w-[65%]
+                md:from-white/95
+                md:via-white/55
+                md:to-white/5
+              "
+            />
+          </>
+        )}
 
         <div className="relative z-10 flex items-start justify-between gap-4">
           <div className="flex gap-4">
             <div
               className={`
                 flex h-12 w-12 shrink-0 items-center justify-center
-                rounded-2xl shadow-sm ${meta.iconBg}
+                rounded-2xl shadow-sm
+                transition-transform duration-300
+                hover:-translate-y-1
+                ${meta.iconBg}
               `}
             >
               <Icon size={24} />
@@ -221,7 +223,6 @@ export default function CategoryProductsSection({
         </div>
       </div>
 
-      {/* GRID */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {previewProducts.map((product) => (
           <ProductCard
