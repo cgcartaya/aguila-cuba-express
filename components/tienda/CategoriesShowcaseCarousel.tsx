@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck, ShoppingBag, Sparkles, Truck } from "lucide-react";
+import { ArrowRight, Grid3X3, ShieldCheck, Truck } from "lucide-react";
 
 import CategoryShowcaseCard from "./CategoryShowcaseCard";
 import type { Product } from "@/types/cart";
@@ -21,65 +21,47 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
 
   return (
     <section className="py-4">
-      <div className="mb-5 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-[#061b3a] via-[#0b2f63] to-[#144a96] p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 animate-category-icon items-center justify-center rounded-2xl bg-white/10 text-white backdrop-blur">
-              <ShoppingBag size={28} />
+      <div className="mb-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 shadow-sm">
+            <Grid3X3 size={28} />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-blue-700">
+              Compra organizada
             </div>
 
-            <div>
-              <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-wide text-white/90">
-                <Sparkles size={13} />
-                Compra organizada
-              </div>
+            <h2 className="text-3xl font-black leading-tight text-[#061b3a]">
+              Explora por categoría
+            </h2>
 
-              <h2 className="text-2xl font-black text-white md:text-3xl">
-                Explora por categoría
-              </h2>
+            <p className="mt-2 max-w-[520px] text-sm font-semibold leading-relaxed text-slate-500">
+              Encuentra rápido alimentos, medicinas, hogar y más para enviar a
+              tu familia en Cuba.
+            </p>
 
-              <p className="mt-2 max-w-[460px] text-xs font-medium leading-relaxed text-blue-100 md:text-sm">
-                Encuentra rápidamente alimentos, medicinas, artículos del hogar
-                y mucho más para enviar a tu familia en Cuba.
-              </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                <Truck size={13} />
+                Entregas rápidas
+              </span>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white">
-                  <Truck size={13} />
-                  Entregas rápidas
-                </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                <ShieldCheck size={13} />
+                Compra segura
+              </span>
 
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white">
-                  <ShieldCheck size={13} />
-                  Compra segura
-                </span>
-
-                <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-[11px] font-bold text-white">
-                  <Sparkles size={13} />
-                  Productos verificados
-                </span>
-              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                {visibleGroups.length} categorías
+              </span>
             </div>
           </div>
 
-          <div className="hidden rounded-2xl bg-white/10 px-4 py-3 text-right backdrop-blur md:block">
-            <p className="text-xs font-bold uppercase tracking-wide text-blue-100">
-              Disponible
-            </p>
-
-            <p className="text-2xl font-black text-white">
-              {visibleGroups.length}
-            </p>
-
-            <p className="text-xs font-semibold text-blue-100">
-              Categorías
-            </p>
+          <div className="hidden shrink-0 items-center gap-2 text-sm font-black text-red-600 sm:flex">
+            Desliza
+            <ArrowRight size={18} />
           </div>
-        </div>
-
-        <div className="mt-4 flex items-center gap-2 text-xs font-bold text-blue-100 md:text-sm">
-          <span>👉</span>
-          <span>Desliza para descubrir más categorías</span>
         </div>
       </div>
 
@@ -92,23 +74,6 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
           />
         ))}
       </div>
-
-      <style jsx>{`
-        .animate-category-icon {
-          animation: categoryIconFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes categoryIconFloat {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-
-          50% {
-            transform: translateY(-4px);
-          }
-        }
-      `}</style>
     </section>
   );
 }
