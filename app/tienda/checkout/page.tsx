@@ -4,30 +4,59 @@
    CHECKOUT - TIENDA PÚBLICA
 
    Incluye:
-   - Creación de cliente
-   - Creación de orden
+   - Información del cliente que compra
+   - Información de la persona que recibe en Cuba
+   - Municipio y zona de entrega
+   - Dirección exacta
+   - Reglas reales de domicilio por zona
    - Validación de inventario
-   - Reglas reales de domicilio desde Admin → Ajustes → Domicilio
+   - Creación de orden
 ========================================================= */
 
-import { useEffect, useState } from "react";
-import {
-  processOrderInventory,
-  validateOrderStock,
-} from "@/lib/services/inventory";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   CreditCard,
   Loader2,
+  MapPin,
   Package,
+  Phone,
   ShoppingBag,
   Truck,
+  UserRound,
 } from "lucide-react";
-import Link from "next/link";
+
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/contexts/CartContext";
-import { getStoreSettings } from "@/lib/services/settings";
+import {
+  getActiveDeliveryZones,
+  type DeliveryZone,
+} from "@/lib/services/settings";
+import {
+  processOrderInventory,
+  validateOrderStock,
+} from "@/lib/services/inventory";
+
+/* =========================================================
+   MUNICIPIOS FIJOS DE CIENFUEGOS
+
+   Aunque un municipio todavía no tenga zonas creadas,
+   se muestra en el checkout para que el usuario vea todas
+   las opciones reales de la provincia.
+========================================================= */
+
+const MUNICIPALITIES = [
+  "Cienfuegos",
+  "Aguada de Pasajeros",
+  "Rodas",
+  "Palmira",
+  "Lajas",
+  "Cruces",
+  "Cumanayagua",
+  "Abreus",
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -37,65 +66,118 @@ export default function CheckoutPage() {
     name: "",
     email: "",
     phone: "",
-    city: "",
-    address: "",
-    state: "",
-    zip_code: "",
-    country: "USA",
+
+    recipient_name: "",
+    recipient_phone: "",
+    recipient_phone_alt: "",
+
+    municipality: "",
+    delivery_zone_id: "",
+    exact_address: "",
     notes: "",
   });
 
+  const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const [minimumOrder, setMinimumOrder] = useState(0);
-  const [deliveryFee, setDeliveryFee] = useState(0);
-  const [freeDeliveryFrom, setFreeDeliveryFrom] = useState(0);
-  const [deliveryMessage, setDeliveryMessage] = useState("");
+  const [loadingZones, setLoadingZones] = useState(true);
 
   useEffect(() => {
-    async function loadSettings() {
-      const { data } = await getStoreSettings();
+    async function loadZones() {
+      try {
+        setLoadingZones(true);
 
-      if (!data) return;
+        const { data, error } = await getActiveDeliveryZones();
 
-      setMinimumOrder(Number(data.minimum_order || 0));
-      setDeliveryFee(Number(data.delivery_fee || 0));
-      setFreeDeliveryFrom(Number(data.free_delivery_from || 0));
-      setDeliveryMessage(data.delivery_message || "");
+        if (error) throw error;
+
+        setZones(data || []);
+      } catch (err: any) {
+        console.error("ERROR CARGANDO ZONAS:", err);
+        setError("No se pudieron cargar las zonas de entrega.");
+      } finally {
+        setLoadingZones(false);
+      }
     }
 
-    loadSettings();
+    loadZones();
   }, []);
+
+  const availableZones = useMemo(() => {
+    if (!form.municipality) return [];
+
+    return zones.filter((zone) => zone.municipality === form.municipality);
+  }, [zones, form.municipality]);
+
+  const selectedZone = useMemo(() => {
+    return zones.find((zone) => zone.id === form.delivery_zone_id) || null;
+  }, [zones, form.delivery_zone_id]);
 
   const subtotal = cart.reduce(
     (sum, item) => sum + Number(item.price) * item.quantity,
     0
   );
 
-  const shippingCost =
-    freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom ? 0 : deliveryFee;
+  const minimumOrder = Number(selectedZone?.minimum_order || 0);
+  const baseDeliveryFee = Number(selectedZone?.delivery_fee || 0);
+  const freeDeliveryFrom = Number(selectedZone?.free_delivery_from || 0);
+
+  const hasFreeDelivery =
+    Boolean(selectedZone) && freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom;
+
+  const shippingCost = selectedZone
+    ? hasFreeDelivery
+      ? 0
+      : baseDeliveryFee
+    : 0;
 
   const finalTotal = subtotal + shippingCost;
-
-  const canCheckout = minimumOrder <= 0 || subtotal >= minimumOrder;
-
   const missingAmount = Math.max(minimumOrder - subtotal, 0);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setForm((current) => ({
-      ...current,
-      [e.target.name]: e.target.value,
-    }));
-  };
+  const municipalityHasNoZones =
+    Boolean(form.municipality) && !loadingZones && availableZones.length === 0;
 
-  const getOriginalId = (cartId: string) => {
+  const canCheckout =
+    cart.length > 0 &&
+    Boolean(selectedZone) &&
+    subtotal >= minimumOrder &&
+    Boolean(form.name) &&
+    Boolean(form.email) &&
+    Boolean(form.phone) &&
+    Boolean(form.recipient_name) &&
+    Boolean(form.recipient_phone) &&
+    Boolean(form.municipality) &&
+    Boolean(form.delivery_zone_id) &&
+    Boolean(form.exact_address);
+
+  function handleChange(
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) {
+    const { name, value } = e.target;
+
+    setForm((current) => {
+      if (name === "municipality") {
+        return {
+          ...current,
+          municipality: value,
+          delivery_zone_id: "",
+        };
+      }
+
+      return {
+        ...current,
+        [name]: value,
+      };
+    });
+  }
+
+  function getOriginalId(cartId: string) {
     return cartId.replace("product-", "").replace("combo-", "");
-  };
+  }
 
-  const handleSubmit = async () => {
+  async function handleSubmit() {
     setError("");
 
     if (cart.length === 0) {
@@ -103,17 +185,31 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!canCheckout) {
+    if (!selectedZone) {
+      setError("Selecciona una zona de entrega.");
+      return;
+    }
+
+    if (subtotal < minimumOrder) {
       setError(
-        `La compra mínima para domicilio es de $${minimumOrder.toFixed(
+        `La compra mínima para esta zona es de $${minimumOrder.toFixed(
           2
         )}. Te faltan $${missingAmount.toFixed(2)}.`
       );
       return;
     }
 
-    if (!form.name || !form.email || !form.phone || !form.address || !form.city) {
-      setError("Completa los campos obligatorios.");
+    if (
+      !form.name ||
+      !form.email ||
+      !form.phone ||
+      !form.recipient_name ||
+      !form.recipient_phone ||
+      !form.municipality ||
+      !form.delivery_zone_id ||
+      !form.exact_address
+    ) {
+      setError("Completa todos los campos obligatorios.");
       return;
     }
 
@@ -139,7 +235,7 @@ export default function CheckoutPage() {
           .update({
             name: form.name,
             phone: form.phone,
-            city: form.city,
+            city: form.municipality,
           })
           .eq("id", existingCustomer.id);
 
@@ -151,7 +247,7 @@ export default function CheckoutPage() {
             name: form.name,
             email: form.email,
             phone: form.phone,
-            city: form.city,
+            city: form.municipality,
           })
           .select()
           .single();
@@ -181,21 +277,26 @@ export default function CheckoutPage() {
         .from("orders")
         .insert({
           customer_id: customer.id,
-          total: finalTotal,
-          status: "pending",
-          address: form.address,
-          state: form.state,
-          zip_code: form.zip_code,
-          country: form.country,
-          notes: form.notes,
 
-          /*
-            IMPORTANTE:
-            Estos campos solo funcionarán si existen en la tabla orders.
-            Si no existen, bórralos o agrégalos en Supabase.
-          */
+          status: "pending",
+
           subtotal,
           delivery_fee: shippingCost,
+          total: finalTotal,
+
+          country: "Cuba",
+          state: "Cienfuegos",
+          municipality: form.municipality,
+          delivery_zone_id: selectedZone.id,
+          zone_name: selectedZone.zone_name,
+          exact_address: form.exact_address,
+
+          recipient_name: form.recipient_name,
+          recipient_phone: form.recipient_phone,
+          recipient_phone_alt: form.recipient_phone_alt,
+
+          address: form.exact_address,
+          notes: form.notes,
         })
         .select()
         .single();
@@ -223,7 +324,7 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 pb-24">
@@ -241,7 +342,8 @@ export default function CheckoutPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           <section className="space-y-6 lg:col-span-2">
             <div className="rounded-3xl bg-white p-5 shadow-sm">
-              <h2 className="mb-4 text-lg font-bold text-gray-900">
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+                <UserRound size={20} />
                 Información del cliente
               </h2>
 
@@ -268,62 +370,134 @@ export default function CheckoutPage() {
                   placeholder="Teléfono *"
                   value={form.phone}
                   onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
-
-                <input
-                  name="city"
-                  placeholder="Ciudad *"
-                  value={form.city}
-                  onChange={handleChange}
-                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+                  className="rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
                 />
               </div>
             </div>
 
             <div className="rounded-3xl bg-white p-5 shadow-sm">
-              <h2 className="mb-4 text-lg font-bold text-gray-900">
-                Dirección de entrega
+              <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+                <Phone size={20} />
+                Persona que recibe en Cuba
               </h2>
 
-              <div className="grid gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <input
-                  name="address"
-                  placeholder="Dirección *"
-                  value={form.address}
+                  name="recipient_name"
+                  placeholder="Nombre del destinatario *"
+                  value={form.recipient_name}
                   onChange={handleChange}
                   className="rounded-xl border px-4 py-3 outline-none focus:border-black"
                 />
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <input
-                    name="state"
-                    placeholder="Estado"
-                    value={form.state}
-                    onChange={handleChange}
-                    className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                  />
+                <input
+                  name="recipient_phone"
+                  placeholder="Teléfono principal *"
+                  value={form.recipient_phone}
+                  onChange={handleChange}
+                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+                />
 
-                  <input
-                    name="zip_code"
-                    placeholder="ZIP Code"
-                    value={form.zip_code}
-                    onChange={handleChange}
-                    className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                  />
+                <input
+                  name="recipient_phone_alt"
+                  placeholder="Teléfono alternativo"
+                  value={form.recipient_phone_alt}
+                  onChange={handleChange}
+                  className="rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
+                />
+              </div>
 
-                  <input
-                    name="country"
-                    placeholder="País"
-                    value={form.country}
-                    onChange={handleChange}
-                    className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-                  />
+              <p className="mt-3 text-sm text-gray-500">
+                Estos datos son de la persona que recibirá el pedido en Cuba.
+              </p>
+            </div>
+
+            <div className="rounded-3xl bg-white p-5 shadow-sm">
+              <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-900">
+                <MapPin size={20} />
+                ¿Dónde la entregamos?
+              </h2>
+
+              <p className="mb-5 text-sm text-gray-500">
+                País fijo: Cuba · Provincia fija: Cienfuegos
+              </p>
+
+              <div className="grid gap-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="rounded-xl border bg-gray-50 px-4 py-3">
+                    <p className="text-xs font-semibold text-gray-500">País</p>
+                    <p className="font-bold text-gray-900">Cuba</p>
+                  </div>
+
+                  <div className="rounded-xl border bg-gray-50 px-4 py-3">
+                    <p className="text-xs font-semibold text-gray-500">
+                      Provincia
+                    </p>
+                    <p className="font-bold text-gray-900">Cienfuegos</p>
+                  </div>
                 </div>
+
+                <select
+                  name="municipality"
+                  value={form.municipality}
+                  onChange={handleChange}
+                  disabled={loadingZones}
+                  className="rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
+                >
+                  <option value="">
+                    {loadingZones
+                      ? "Cargando municipios..."
+                      : "Selecciona un municipio *"}
+                  </option>
+
+                  {MUNICIPALITIES.map((municipality) => (
+                    <option key={municipality} value={municipality}>
+                      {municipality}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  name="delivery_zone_id"
+                  value={form.delivery_zone_id}
+                  onChange={handleChange}
+                  disabled={!form.municipality || municipalityHasNoZones}
+                  className="rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
+                >
+                  <option value="">
+                    {form.municipality
+                      ? municipalityHasNoZones
+                        ? "Este municipio no tiene zonas configuradas"
+                        : "Selecciona una zona *"
+                      : "Primero selecciona un municipio"}
+                  </option>
+
+                  {availableZones.map((zone) => (
+                    <option key={zone.id} value={zone.id}>
+                      {zone.zone_name}
+                    </option>
+                  ))}
+                </select>
+
+                {municipalityHasNoZones && (
+                  <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">
+                    Este municipio todavía no tiene zonas activas. Agrégalas
+                    desde Administración → Ajustes → Zonas de entrega.
+                  </div>
+                )}
+
+                <textarea
+                  name="exact_address"
+                  placeholder="Tu dirección exacta *"
+                  value={form.exact_address}
+                  onChange={handleChange}
+                  rows={4}
+                  className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+                />
 
                 <textarea
                   name="notes"
-                  placeholder="Notas adicionales"
+                  placeholder="¿Quieres aclararnos algo? Ej: Toque el timbre varias veces..."
                   value={form.notes}
                   onChange={handleChange}
                   rows={4}
@@ -386,26 +560,41 @@ export default function CheckoutPage() {
                 </span>
 
                 <span className="font-bold">
-                  {shippingCost === 0 ? "Gratis" : `$${shippingCost.toFixed(2)}`}
+                  {!selectedZone
+                    ? "Selecciona zona"
+                    : shippingCost === 0
+                    ? "Gratis"
+                    : `$${shippingCost.toFixed(2)}`}
                 </span>
               </div>
 
-              {freeDeliveryFrom > 0 && subtotal < freeDeliveryFrom && (
-                <div className="rounded-xl bg-amber-50 p-3 text-xs font-medium text-amber-700">
-                  Te faltan ${(freeDeliveryFrom - subtotal).toFixed(2)} para
-                  domicilio gratis.
+              {selectedZone && (
+                <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
+                  Zona:{" "}
+                  <strong>
+                    {form.municipality} / {selectedZone.zone_name}
+                  </strong>
                 </div>
               )}
 
-              {deliveryMessage && (
-                <div className="rounded-xl bg-blue-50 p-3 text-xs font-medium text-blue-700">
-                  {deliveryMessage}
+              {selectedZone &&
+                freeDeliveryFrom > 0 &&
+                subtotal < freeDeliveryFrom && (
+                  <div className="rounded-xl bg-amber-50 p-3 text-xs font-medium text-amber-700">
+                    Te faltan ${(freeDeliveryFrom - subtotal).toFixed(2)} para
+                    domicilio gratis en esta zona.
+                  </div>
+                )}
+
+              {selectedZone && hasFreeDelivery && (
+                <div className="rounded-xl bg-green-50 p-3 text-xs font-bold text-green-700">
+                  🎉 ¡Tu domicilio es GRATIS!
                 </div>
               )}
 
-              {!canCheckout && (
+              {selectedZone && subtotal < minimumOrder && (
                 <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600">
-                  La compra mínima para domicilio es de $
+                  La compra mínima para esta zona es de $
                   {minimumOrder.toFixed(2)}. Te faltan $
                   {missingAmount.toFixed(2)}.
                 </div>

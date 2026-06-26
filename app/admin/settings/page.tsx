@@ -6,6 +6,7 @@ import {
   Image,
   Store,
   ArrowRight,
+  MapPinned,
 } from "lucide-react";
 
 const settingsCards = [
@@ -29,6 +30,13 @@ const settingsCards = [
       "Define compra mínima, costo de entrega, domicilio gratis y mensaje visible al cliente.",
     href: "/admin/settings/delivery",
     icon: Truck,
+  },
+  {
+    title: "Zonas de entrega",
+    description:
+      "Administra municipios, zonas, costos de entrega y reglas reales de domicilio.",
+    href: "/admin/settings/delivery-zones",
+    icon: MapPinned,
   },
   {
     title: "Banners",
