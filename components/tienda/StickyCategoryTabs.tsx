@@ -3,36 +3,30 @@
 /* =========================================================
    STICKY CATEGORY TABS
 
-   Características:
+   Ahora las categorías son totalmente dinámicas.
 
-   - Sticky horizontal.
-   - Scroll suave.
-   - Detecta automáticamente la sección visible.
-   - Mantiene sincronizada la pestaña activa.
-   - Hace scroll automático de las pestañas.
+   - Categorías creadas desde Admin.
+   - Colores controlados desde Supabase.
+   - Scroll automático.
+   - Detección automática de sección activa.
 ========================================================= */
 
 import { useEffect, useRef, useState } from "react";
 
-type Props = {
-  categories: string[];
+export type StickyCategory = {
+  name: string;
+  color?: string | null;
 };
 
-const categoryStyles: Record<string, string> = {
-  Combos: "bg-[#061b3a] text-white",
-  Alimentos: "bg-green-500 text-white",
-  Electrónicos: "bg-blue-500 text-white",
-  Medicinas: "bg-purple-600 text-white",
-  Hogar: "bg-orange-500 text-white",
-  Ropa: "bg-pink-500 text-white",
-  Aseo: "bg-cyan-500 text-white",
+type Props = {
+  categories: StickyCategory[];
 };
 
 export default function StickyCategoryTabs({
   categories,
 }: Props) {
   const [activeCategory, setActiveCategory] =
-    useState(categories[0]);
+    useState(categories[0]?.name || "");
 
   const tabsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -41,25 +35,23 @@ export default function StickyCategoryTabs({
   ========================================================= */
 
   useEffect(() => {
+    if (categories.length === 0) return;
+
     const handleScroll = () => {
-      let currentCategory = categories[0];
+      let currentCategory =
+        categories[0]?.name || "";
 
       categories.forEach((category) => {
         const element =
-          document.getElementById(category);
+          document.getElementById(category.name);
 
         if (!element) return;
 
         const rect =
           element.getBoundingClientRect();
 
-        /*
-          Ajusta este valor si cambias la altura
-          del header sticky.
-        */
-
         if (rect.top <= 250) {
-          currentCategory = category;
+          currentCategory = category.name;
         }
       });
 
@@ -73,16 +65,15 @@ export default function StickyCategoryTabs({
 
     handleScroll();
 
-    return () => {
+    return () =>
       window.removeEventListener(
         "scroll",
         handleScroll
       );
-    };
   }, [categories]);
 
   /* =========================================================
-     SCROLL AUTOMÁTICO DE LAS TABS
+     CENTRAR TAB ACTIVA
   ========================================================= */
 
   useEffect(() => {
@@ -105,7 +96,7 @@ export default function StickyCategoryTabs({
   }, [activeCategory]);
 
   /* =========================================================
-     SCROLL HACIA CATEGORÍA
+     SCROLL A CATEGORÍA
   ========================================================= */
 
   const scrollToCategory = (
@@ -129,20 +120,20 @@ export default function StickyCategoryTabs({
         className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {categories.map((category) => {
-          const colorClass =
-            categoryStyles[category] ||
-            "bg-slate-600 text-white";
-
           const isActive =
-            activeCategory === category;
+            activeCategory === category.name;
 
           return (
             <button
-              key={category}
-              data-category={category}
+              key={category.name}
+              data-category={category.name}
               onClick={() =>
-                scrollToCategory(category)
+                scrollToCategory(category.name)
               }
+              style={{
+                backgroundColor:
+                  category.color || "#475569",
+              }}
               className={`
                 shrink-0
                 whitespace-nowrap
@@ -151,10 +142,10 @@ export default function StickyCategoryTabs({
                 py-3
                 text-sm
                 font-black
+                text-white
                 shadow-md
                 transition-all
                 duration-300
-                ${colorClass}
                 ${
                   isActive
                     ? "scale-105 ring-4 ring-black/10"
@@ -162,7 +153,7 @@ export default function StickyCategoryTabs({
                 }
               `}
             >
-              {category}
+              {category.name}
             </button>
           );
         })}

@@ -10,29 +10,15 @@ import {
   Store,
   Plus,
   Users,
+  Settings,
 } from "lucide-react";
 
 const links = [
-  {
-    href: "/admin",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    href: "/admin/products",
-    label: "Productos",
-    icon: Package,
-  },
-  {
-    href: "/admin/orders",
-    label: "Órdenes",
-    icon: ShoppingCart,
-  },
-  {
-  href: "/admin/customers",
-  label: "Clientes",
-  icon: Users,
-},
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/products", label: "Productos", icon: Package },
+  { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
+  { href: "/admin/customers", label: "Clientes", icon: Users },
+  { href: "/admin/settings", label: "Ajustes", icon: Settings },
 ];
 
 export default function AdminNav() {
@@ -65,9 +51,7 @@ export default function AdminNav() {
               key={link.href}
               href={link.href}
               className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition ${
-                active
-                  ? "bg-black text-white"
-                  : "text-gray-700 hover:bg-gray-100"
+                active ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
               }`}
             >
               <Icon size={20} />
@@ -86,9 +70,10 @@ export default function AdminNav() {
           Ver tienda
         </Link>
       </div>
-	  <div className="mt-4">
-  <LogoutButton />
-</div>
+
+      <div className="mt-4">
+        <LogoutButton />
+      </div>
     </aside>
   );
 }

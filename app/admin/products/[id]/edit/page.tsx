@@ -2,13 +2,10 @@
 
 /* =========================================================
    EDIT PRODUCT PAGE
-   ---------------------------------------------------------
-   Página para editar la información principal del producto.
-   También incluye la nueva galería de imágenes múltiples.
 
    Mejoras:
-   - Selector profesional de categorías.
-   - Categorías centralizadas.
+   - Categorías dinámicas desde Supabase.
+   - Integración completa con Ajustes → Categorías.
 ========================================================= */
 
 import { useEffect, useState } from "react";
@@ -23,7 +20,11 @@ import {
   updateProduct,
 } from "@/lib/services/products";
 
-import { PRODUCT_CATEGORIES } from "@/constants/categories";
+import {
+  getActiveCategories,
+} from "@/lib/services/settings";
+
+import type { Category } from "@/components/admin/settings/types";
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -33,6 +34,8 @@ export default function EditProductPage() {
   /* =========================================================
      FORM STATE
   ========================================================= */
+
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -49,33 +52,41 @@ export default function EditProductPage() {
   const [error, setError] = useState("");
 
   /* =========================================================
-     LOAD PRODUCT
+     LOAD PRODUCT + CATEGORIES
   ========================================================= */
 
   useEffect(() => {
-    async function loadProduct() {
-      const { data, error } = await getProductById(productId);
+    async function loadData() {
+      const [{ data: product, error }, { data: categoriesData }] =
+        await Promise.all([
+          getProductById(productId),
+          getActiveCategories(),
+        ]);
 
-      if (error || !data) {
+      setCategories(categoriesData || []);
+
+      if (error || !product) {
         setError("No se pudo cargar el producto.");
         setLoading(false);
         return;
       }
 
       setForm({
-        name: data.name || "",
-        category: data.category || "",
-        description: data.description || "",
-        price: String(data.price || ""),
-        stock: String(data.stock || ""),
-        tag: data.tag || "",
-        is_active: data.is_active ?? true,
+        name: product.name || "",
+        category: product.category || "",
+        description: product.description || "",
+        price: String(product.price || ""),
+        stock: String(product.stock || ""),
+        tag: product.tag || "",
+        is_active: product.is_active ?? true,
       });
 
       setLoading(false);
     }
 
-    if (productId) loadProduct();
+    if (productId) {
+      loadData();
+    }
   }, [productId]);
 
   /* =========================================================
@@ -162,7 +173,7 @@ export default function EditProductPage() {
   };
 
   /* =========================================================
-     LOADING STATE
+     LOADING
   ========================================================= */
 
   if (loading) {
@@ -179,7 +190,6 @@ export default function EditProductPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-6">
       <div className="mx-auto max-w-4xl">
-        {/* HEADER */}
         <Link
           href="/admin/products"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
@@ -198,7 +208,6 @@ export default function EditProductPage() {
           </p>
         </div>
 
-        {/* INFORMACIÓN PRINCIPAL */}
         <div className="rounded-3xl bg-white p-6 shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
             <Input
@@ -211,6 +220,7 @@ export default function EditProductPage() {
 
             <CategorySelect
               value={form.category}
+              categories={categories}
               onChange={handleCategoryChange}
             />
 
@@ -281,7 +291,6 @@ export default function EditProductPage() {
             </div>
           )}
 
-          {/* ACCIONES */}
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
             <Link
               href="/admin/products"
@@ -310,7 +319,6 @@ export default function EditProductPage() {
           </div>
         </div>
 
-        {/* GALERÍA DE IMÁGENES */}
         <div className="mt-6">
           <ProductImageManager productId={productId} />
         </div>
@@ -319,9 +327,7 @@ export default function EditProductPage() {
   );
 }
 
-/* =========================================================
-   INPUT REUTILIZABLE
-========================================================= */
+/* ========================================================= */
 
 function Input({
   label,
@@ -356,15 +362,13 @@ function Input({
   );
 }
 
-/* =========================================================
-   SELECTOR DE CATEGORÍAS
-========================================================= */
-
 function CategorySelect({
   value,
+  categories,
   onChange,
 }: {
   value: string;
+  categories: Category[];
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }) {
   return (
@@ -383,9 +387,9 @@ function CategorySelect({
           Selecciona una categoría
         </option>
 
-        {PRODUCT_CATEGORIES.map((category) => (
-          <option key={category} value={category}>
-            {category}
+        {categories.map((category) => (
+          <option key={category.id} value={category.name}>
+            {category.name}
           </option>
         ))}
       </select>

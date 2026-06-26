@@ -3,25 +3,26 @@
 /* =========================================================
    AGREGAR PRODUCTO - ADMIN
 
-   Flujo profesional:
-   1. Primero se crea el producto.
-   2. Luego se redirige a la pantalla de edición.
-   3. En edición se administran múltiples imágenes,
-      imagen principal y eliminación.
-
-   Esto evita usar el uploader antiguo de una sola imagen.
+   Categorías dinámicas:
+   - Las categorías ya no vienen de constants/categories.
+   - Ahora se cargan desde Supabase.
+   - Si el cliente crea una categoría en Ajustes → Categorías,
+     aparece automáticamente aquí.
 ========================================================= */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Images, Loader2, Save } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
-import { PRODUCT_CATEGORIES } from "@/constants/categories";
+import { getActiveCategories } from "@/lib/services/settings";
+import type { Category } from "@/components/admin/settings/types";
 
 export default function NewProductPage() {
   const router = useRouter();
+
+  const [categories, setCategories] = useState<Category[]>([]);
 
   const [form, setForm] = useState({
     name: "",
@@ -35,6 +36,17 @@ export default function NewProductPage() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    async function loadCategories() {
+      const { data } = await getActiveCategories();
+      setCategories(data || []);
+      setLoadingCategories(false);
+    }
+
+    loadCategories();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -47,18 +59,14 @@ export default function NewProductPage() {
     }));
   };
 
-  const handleCategoryChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setForm((prev) => ({
       ...prev,
       category: e.target.value,
     }));
   };
 
-  const handleActiveChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleActiveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({
       ...prev,
       is_active: e.target.checked,
@@ -99,12 +107,6 @@ export default function NewProductPage() {
           stock,
           tag: form.tag,
           is_active: form.is_active,
-
-          /*
-            IMPORTANTE:
-            Ya no usamos image_url al crear.
-            Las imágenes se gestionan después desde ProductImageManager.
-          */
           image_url: "",
         })
         .select("id")
@@ -155,6 +157,8 @@ export default function NewProductPage() {
 
             <CategorySelect
               value={form.category}
+              categories={categories}
+              loading={loadingCategories}
               onChange={handleCategoryChange}
             />
 
@@ -184,7 +188,7 @@ export default function NewProductPage() {
               placeholder="Ej: Oferta, Nuevo"
             />
 
-            <div className="md:col-span-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center md:col-span-2">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">
                 <Images size={24} />
               </div>
@@ -224,10 +228,7 @@ export default function NewProductPage() {
               />
 
               <div>
-                <p className="font-bold text-gray-900">
-                  Producto activo
-                </p>
-
+                <p className="font-bold text-gray-900">Producto activo</p>
                 <p className="text-sm text-gray-500">
                   Si está activo, aparecerá en la tienda.
                 </p>
@@ -251,7 +252,7 @@ export default function NewProductPage() {
 
             <button
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={loading || categories.length === 0}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-black px-5 py-3 font-bold text-white disabled:opacity-60"
             >
               {loading ? (
@@ -308,9 +309,13 @@ function Input({
 
 function CategorySelect({
   value,
+  categories,
+  loading,
   onChange,
 }: {
   value: string;
+  categories: Category[];
+  loading: boolean;
   onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }) {
   return (
@@ -323,16 +328,25 @@ function CategorySelect({
         name="category"
         value={value}
         onChange={onChange}
-        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black"
+        disabled={loading || categories.length === 0}
+        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black disabled:bg-gray-100 disabled:text-gray-400"
       >
-        <option value="">Selecciona una categoría</option>
+        <option value="">
+          {loading ? "Cargando categorías..." : "Selecciona una categoría"}
+        </option>
 
-        {PRODUCT_CATEGORIES.map((category) => (
-          <option key={category} value={category}>
-            {category}
+        {categories.map((category) => (
+          <option key={category.id} value={category.name}>
+            {category.name}
           </option>
         ))}
       </select>
+
+      {!loading && categories.length === 0 && (
+        <p className="mt-2 text-xs font-medium text-red-500">
+          No hay categorías activas. Ve a Ajustes → Categorías para crear una.
+        </p>
+      )}
     </div>
   );
 }

@@ -3,19 +3,18 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
 
-   Nueva estructura tipo app moderna:
-
-   - Buscador
-   - Categorías sticky incluyendo Combos
-   - Combos como primera sección
-   - Productos agrupados por categoría
-   - Banner envío
-   - Ayuda
+   Categorías 100% dinámicas:
+   - Se cargan desde Supabase.
+   - Se ordenan por sort_order.
+   - Respetan is_active.
+   - Usan color configurado desde Admin.
+   - Aparecen en sticky aunque todavía no tengan productos.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
 
 import { getStoreProducts } from "@/lib/services/products";
+import { getActiveCategories } from "@/lib/services/settings";
 
 import ProductSearch from "@/components/tienda/ProductSearch";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
@@ -27,6 +26,7 @@ import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCa
 
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
+import type { Category } from "@/components/admin/settings/types";
 
 type ProductImage = {
   image_url: string;
@@ -41,20 +41,21 @@ type ProductFromSupabase = Product & {
 export default function TiendaPage() {
   const [busqueda, setBusqueda] = useState("");
   const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<Category[]>([]);
 
   const { addToCart } = useCart();
 
   useEffect(() => {
-    const cargarProductos = async () => {
-      const { data, error } = await getStoreProducts();
+    async function cargarDatos() {
+      const [{ data: productsData, error }, { data: categoriesData }] =
+        await Promise.all([getStoreProducts(), getActiveCategories()]);
 
       if (error) {
         console.log("Error cargando productos:", error);
-        return;
       }
 
       const productosConImagenPrincipal =
-        (data as ProductFromSupabase[])?.map((producto) => {
+        (productsData as ProductFromSupabase[])?.map((producto) => {
           const imagenPrincipal =
             producto.product_images?.find((img) => img.is_main) ||
             producto.product_images
@@ -68,72 +69,51 @@ export default function TiendaPage() {
         }) || [];
 
       setProductos(productosConImagenPrincipal);
-    };
+      setCategorias(categoriesData || []);
+    }
 
-    cargarProductos();
+    cargarDatos();
   }, []);
 
   const productosBuscados = productos.filter((producto) =>
     producto.name.toLowerCase().includes(busqueda.toLowerCase())
   );
 
-  /* =========================================================
-     OBTENER CATEGORÍAS ÚNICAS
-  ========================================================= */
-
-  const categorias = useMemo(() => {
-    return Array.from(
-      new Set(
-        productosBuscados
-          .map((producto) => producto.category)
-          .filter(
-            (categoria): categoria is string =>
-              categoria !== undefined && categoria !== null
-          )
-      )
-    );
-  }, [productosBuscados]);
-
-  /* =========================================================
-     COMBOS COMO UNA CATEGORÍA MÁS
-
-     Esto permite que el menú sticky muestre:
-     Combos | Electrónicos | Alimentos | Medicinas...
-  ========================================================= */
-
   const categoriasConCombos = useMemo(() => {
-    return ["Combos", ...categorias];
+    return [
+      {
+        name: "Combos",
+        color: "#061b3a",
+      },
+      ...categorias.map((categoria) => ({
+        name: categoria.name,
+        color: categoria.color,
+      })),
+    ];
   }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
     return categorias.map((categoria) => ({
-      categoria,
+      categoria: categoria.name,
+      color: categoria.color,
       productos: productosBuscados.filter(
-        (producto) => producto.category === categoria
+        (producto) => producto.category === categoria.name
       ),
     }));
   }, [categorias, productosBuscados]);
 
   return (
     <>
-      {/* BUSCADOR */}
-      <ProductSearch
-        busqueda={busqueda}
-        setBusqueda={setBusqueda}
-      />
+      <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
 
-      {/* CARRUSEL DE CATEGORÍAS ESTILO AMAZON */}
-<CategoriesShowcaseCarousel groups={productosPorCategoria} />
+      <CategoriesShowcaseCarousel groups={productosPorCategoria} />
 
-      {/* CATEGORÍAS STICKY */}
       {categoriasConCombos.length > 0 && (
         <StickyCategoryTabs categories={categoriasConCombos} />
       )}
 
-      {/* COMBOS COMO PRIMERA CATEGORÍA */}
       <StoreCombosSection />
 
-      {/* PRODUCTOS AGRUPADOS */}
       <div className="mt-2">
         {productosPorCategoria.map((grupo) => (
           <CategoryProductsSection
@@ -145,10 +125,8 @@ export default function TiendaPage() {
         ))}
       </div>
 
-      {/* ENVÍOS */}
       <DeliveryBanner />
 
-      {/* AYUDA */}
       <HelpCard />
     </>
   );
