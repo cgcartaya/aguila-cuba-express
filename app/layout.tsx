@@ -13,14 +13,53 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata = {
-  title: "Águila Cuba Express",
-  description: "Envíos, compras y entregas para Cuba desde Miami.",
+export const metadata: Metadata = {
+  metadataBase: new URL("https://aguilacubaexpress.com"),
+
+  title: {
+    default: "Águila Cuba Express | Envíos de Miami a Cienfuegos",
+    template: "%s | Águila Cuba Express",
+  },
+
+  description:
+    "Agencia de envíos desde Miami hacia Cienfuegos, Cuba. Servicio de paquetería, compras y entregas rápidas y seguras.",
+
+  keywords: [
+    "envíos a Cuba",
+    "envíos a Cienfuegos",
+    "paquetería Cuba",
+    "agencia de envíos Miami",
+    "compras para Cuba",
+    "envíos Miami Cienfuegos",
+    "Águila Cuba Express",
+    "paquetes a Cuba",
+    "mensajería Cuba",
+  ],
+
+  authors: [{ name: "Águila Cuba Express" }],
+  creator: "Águila Cuba Express",
+  publisher: "Águila Cuba Express",
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+
   openGraph: {
     title: "Águila Cuba Express",
-    description: "Envíos, compras y entregas para Cuba desde Miami.",
-    url: "https://www.aguilacubaexpress.com",
+    description:
+      "Envíos, compras y entregas desde Miami hacia Cienfuegos, Cuba.",
+
+    url: "https://aguilacubaexpress.com",
     siteName: "Águila Cuba Express",
+
     images: [
       {
         url: "/og-image.png",
@@ -29,8 +68,21 @@ export const metadata = {
         alt: "Águila Cuba Express",
       },
     ],
+
     locale: "es_US",
     type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Águila Cuba Express",
+    description:
+      "Envíos, compras y entregas desde Miami hacia Cienfuegos, Cuba.",
+    images: ["/og-image.png"],
+  },
+
+  alternates: {
+    canonical: "https://aguilacubaexpress.com",
   },
 };
 
