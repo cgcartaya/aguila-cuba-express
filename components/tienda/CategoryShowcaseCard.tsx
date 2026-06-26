@@ -3,11 +3,9 @@
 /* =========================================================
    CATEGORY SHOWCASE CARD
 
-   Diseño inspirado en Walmart:
-   - Encabezado coloreado por categoría.
-   - Fondo suave según categoría.
-   - Productos en mini cards individuales.
-   - Compatible con móvil y desktop.
+   Versión SaaS:
+   - Color dinámico desde Supabase.
+   - Compatible con categorías creadas por el cliente.
 ========================================================= */
 
 import Image from "next/image";
@@ -18,70 +16,32 @@ import type { Product } from "@/types/cart";
 
 type Props = {
   category: string;
+  color?: string | null;
   products: Product[];
-};
-
-/* =========================================================
-   COLORES DEL ENCABEZADO
-========================================================= */
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Combos: "bg-[#061b3a] text-white",
-  Alimentos: "bg-green-500 text-white",
-  Electrónicos: "bg-blue-500 text-white",
-  Medicinas: "bg-purple-600 text-white",
-  Hogar: "bg-orange-500 text-white",
-  Aseo: "bg-cyan-500 text-white",
-  Carnicería: "bg-emerald-700 text-white",
-  Bebidas: "bg-yellow-400 text-[#061b3a]",
-  Congelados: "bg-sky-500 text-white",
-  Mascotas: "bg-amber-500 text-white",
-  Bebés: "bg-pink-500 text-white",
-  Ropa: "bg-fuchsia-500 text-white",
-};
-
-/* =========================================================
-   FONDO SUAVE DE LA CUADRÍCULA
-========================================================= */
-
-const CATEGORY_BACKGROUNDS: Record<string, string> = {
-  Combos: "bg-blue-50",
-  Alimentos: "bg-green-50",
-  Electrónicos: "bg-blue-50",
-  Medicinas: "bg-purple-50",
-  Hogar: "bg-orange-50",
-  Aseo: "bg-cyan-50",
-  Carnicería: "bg-emerald-50",
-  Bebidas: "bg-yellow-50",
-  Congelados: "bg-sky-50",
-  Mascotas: "bg-amber-50",
-  Bebés: "bg-pink-50",
-  Ropa: "bg-fuchsia-50",
 };
 
 export default function CategoryShowcaseCard({
   category,
+  color,
   products,
 }: Props) {
   const previewProducts = products.slice(0, 4);
-  const categorySlug = encodeURIComponent(category.toLowerCase());
 
-  const colorClass =
-    CATEGORY_COLORS[category] || "bg-blue-500 text-white";
-
-  const backgroundClass =
-    CATEGORY_BACKGROUNDS[category] || "bg-slate-50";
+  const categorySlug = encodeURIComponent(
+    category.toLowerCase()
+  );
 
   return (
     <Link
       href={`/tienda/categorias/${categorySlug}`}
-      className={`
+      className="
         min-w-[85%]
         snap-start
         overflow-hidden
         rounded-2xl
         border
         border-slate-200
+        bg-slate-50
         p-2
         shadow-sm
         transition-all
@@ -89,15 +49,14 @@ export default function CategoryShowcaseCard({
         hover:-translate-y-1
         hover:shadow-lg
         sm:min-w-[420px]
-        ${backgroundClass}
-      `}
+      "
     >
       {/* =====================================================
           ENCABEZADO
       ===================================================== */}
 
       <div
-        className={`
+        className="
           mb-2
           flex
           items-center
@@ -105,8 +64,11 @@ export default function CategoryShowcaseCard({
           rounded-xl
           px-4
           py-3
-          ${colorClass}
-        `}
+          text-white
+        "
+        style={{
+          backgroundColor: color || "#3b82f6",
+        }}
       >
         <h3 className="text-lg font-black">
           {category}
@@ -122,37 +84,36 @@ export default function CategoryShowcaseCard({
       ===================================================== */}
 
       <div
-  className={`
-    grid
-    grid-cols-2
-    gap-3
-    rounded-xl
-    p-3
-    ${backgroundClass}
-  `}
->
+        className="grid grid-cols-2 gap-3 rounded-xl p-3"
+        style={{
+          backgroundColor: `${color || "#f8fafc"}15`,
+        }}
+      >
         {previewProducts.map((product) => (
           <div
             key={product.id}
-           className="
-  overflow-hidden
-  rounded-xl
-  border
-  border-slate-200
-  bg-white
-  p-3
-  shadow-sm
-  transition-all
-  duration-300
-  hover:-translate-y-1
-  hover:shadow-md
-"
+            className="
+              overflow-hidden
+              rounded-xl
+              border
+              border-slate-200
+              bg-white
+              p-3
+              shadow-sm
+              transition-all
+              duration-300
+              hover:-translate-y-1
+              hover:shadow-md
+            "
           >
             {/* IMAGEN */}
 
             <div className="relative h-24 w-full rounded-lg bg-white">
               <Image
-                src={product.image_url || "/placeholder-product.png"}
+                src={
+                  product.image_url ||
+                  "/placeholder-product.png"
+                }
                 alt={product.name}
                 fill
                 unoptimized
@@ -168,11 +129,22 @@ export default function CategoryShowcaseCard({
 
             {/* TEXTO PROMOCIONAL */}
 
-            <p className="mt-1 text-sm font-black text-red-600">
+            <p
+              className="mt-1 text-sm font-black"
+              style={{
+                color: color || "#2563eb",
+              }}
+            >
               Ahorra más
             </p>
           </div>
         ))}
+
+        {previewProducts.length === 0 && (
+          <div className="col-span-2 rounded-xl bg-white p-8 text-center text-sm text-gray-500">
+            Próximamente productos en esta categoría.
+          </div>
+        )}
       </div>
     </Link>
   );
