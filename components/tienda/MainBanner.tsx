@@ -130,41 +130,43 @@ export default function MainBanner() {
          BOTÓN ANTERIOR
       ===================================================== */}
 
-      <button
-        type="button"
-        onClick={scrollPrev}
-        className="
-          absolute left-2 top-1/2 z-20
-          flex h-10 w-10 -translate-y-1/2
-          items-center justify-center
-          rounded-full bg-white/90
-          text-[#061b3a]
-          shadow-md
-          backdrop-blur
-        "
-      >
-        <ChevronLeft size={20} />
-      </button>
+  <button
+  type="button"
+  onClick={scrollPrev}
+  className="
+    absolute left-3 top-1/2 z-20
+    hidden h-10 w-10 -translate-y-1/2
+    items-center justify-center
+    rounded-full bg-white/90
+    text-[#061b3a]
+    shadow-md
+    backdrop-blur
+    md:flex
+  "
+>
+  <ChevronLeft size={20} />
+</button>
 
       {/* =====================================================
          BOTÓN SIGUIENTE
       ===================================================== */}
 
-      <button
-        type="button"
-        onClick={scrollNext}
-        className="
-          absolute right-2 top-1/2 z-20
-          flex h-10 w-10 -translate-y-1/2
-          items-center justify-center
-          rounded-full bg-white/90
-          text-[#061b3a]
-          shadow-md
-          backdrop-blur
-        "
-      >
-        <ChevronRight size={20} />
-      </button>
+  <button
+  type="button"
+  onClick={scrollNext}
+  className="
+    absolute right-3 top-1/2 z-20
+    hidden h-10 w-10 -translate-y-1/2
+    items-center justify-center
+    rounded-full bg-white/90
+    text-[#061b3a]
+    shadow-md
+    backdrop-blur
+    md:flex
+  "
+>
+  <ChevronRight size={20} />
+</button>
 
       {/* =====================================================
          INDICADORES
