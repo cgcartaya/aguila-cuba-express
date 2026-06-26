@@ -20,13 +20,27 @@ const banners = [
   {
     id: 1,
     image: "/banners/combo-1.jpg",
-    href: "/tienda/categorias/aseo",
+    href: "/tienda/combos",
   },
-
   {
     id: 2,
     image: "/banners/carniceria.png",
     href: "/tienda/categorias/carnicería",
+  },
+  {
+    id: 3,
+    image: "/banners/cafe.png",
+    href: "/tienda/categorias/alimentos",
+  },
+  {
+    id: 4,
+    image: "/banners/entregas.jpg",
+    href: "/servicios",
+  },
+  {
+    id: 5,
+    image: "/banners/mosquitos.png",
+    href: "/tienda/categorias/aseo",
   },
 ];
 
@@ -47,10 +61,6 @@ export default function MainBanner() {
     ]
   );
 
-  /* =========================================================
-     CONTROLES DEL CARRUSEL
-  ========================================================= */
-
   const scrollPrev = useCallback(() => {
     emblaApi?.scrollPrev();
   }, [emblaApi]);
@@ -58,10 +68,6 @@ export default function MainBanner() {
   const scrollNext = useCallback(() => {
     emblaApi?.scrollNext();
   }, [emblaApi]);
-
-  /* =========================================================
-     INDICADOR ACTIVO
-  ========================================================= */
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -71,7 +77,6 @@ export default function MainBanner() {
     };
 
     onSelect();
-
     emblaApi.on("select", onSelect);
 
     return () => {
@@ -81,22 +86,10 @@ export default function MainBanner() {
 
   return (
     <section className="relative mt-4">
-
-      {/* =====================================================
-         CONTENEDOR DEL CARRUSEL
-      ===================================================== */}
-
-      <div
-        ref={emblaRef}
-        className="overflow-hidden rounded-3xl"
-      >
+      <div ref={emblaRef} className="overflow-hidden rounded-3xl">
         <div className="flex">
-
           {banners.map((banner) => (
-            <div
-              key={banner.id}
-              className="min-w-0 flex-[0_0_100%]"
-            >
+            <div key={banner.id} className="min-w-0 flex-[0_0_100%]">
               <Link
                 href={banner.href}
                 className="
@@ -122,58 +115,44 @@ export default function MainBanner() {
               </Link>
             </div>
           ))}
-
         </div>
       </div>
 
-      {/* =====================================================
-         BOTÓN ANTERIOR
-      ===================================================== */}
+      <button
+        type="button"
+        onClick={scrollPrev}
+        className="
+          absolute left-3 top-1/2 z-20
+          hidden h-10 w-10 -translate-y-1/2
+          items-center justify-center
+          rounded-full bg-white/90
+          text-[#061b3a]
+          shadow-md
+          backdrop-blur
+          md:flex
+        "
+      >
+        <ChevronLeft size={20} />
+      </button>
 
-  <button
-  type="button"
-  onClick={scrollPrev}
-  className="
-    absolute left-3 top-1/2 z-20
-    hidden h-10 w-10 -translate-y-1/2
-    items-center justify-center
-    rounded-full bg-white/90
-    text-[#061b3a]
-    shadow-md
-    backdrop-blur
-    md:flex
-  "
->
-  <ChevronLeft size={20} />
-</button>
-
-      {/* =====================================================
-         BOTÓN SIGUIENTE
-      ===================================================== */}
-
-  <button
-  type="button"
-  onClick={scrollNext}
-  className="
-    absolute right-3 top-1/2 z-20
-    hidden h-10 w-10 -translate-y-1/2
-    items-center justify-center
-    rounded-full bg-white/90
-    text-[#061b3a]
-    shadow-md
-    backdrop-blur
-    md:flex
-  "
->
-  <ChevronRight size={20} />
-</button>
-
-      {/* =====================================================
-         INDICADORES
-      ===================================================== */}
+      <button
+        type="button"
+        onClick={scrollNext}
+        className="
+          absolute right-3 top-1/2 z-20
+          hidden h-10 w-10 -translate-y-1/2
+          items-center justify-center
+          rounded-full bg-white/90
+          text-[#061b3a]
+          shadow-md
+          backdrop-blur
+          md:flex
+        "
+      >
+        <ChevronRight size={20} />
+      </button>
 
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-
         {banners.map((banner, index) => (
           <button
             key={banner.id}
@@ -190,7 +169,6 @@ export default function MainBanner() {
             `}
           />
         ))}
-
       </div>
     </section>
   );
