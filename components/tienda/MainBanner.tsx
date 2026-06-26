@@ -1,8 +1,8 @@
 "use client";
 
 /* =========================================================
-   HEADER BANNER CAROUSEL - TIENDA PÚBLICA
-   Carrusel principal de anuncios usando Embla Carousel
+   MAIN BANNER - TIENDA PÚBLICA
+   Carrusel principal usando banners gráficos completos
 ========================================================= */
 
 import Image from "next/image";
@@ -11,32 +11,23 @@ import Autoplay from "embla-carousel-autoplay";
 import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import AnimatedBannerImage from "./AnimatedBannerImage";
+
+/* =========================================================
+   BANNERS PRINCIPALES
+========================================================= */
+
 const banners = [
-{
-  id: 1,
-  title: "Envía más, paga menos",
-  description: "Miles de productos disponibles para tu familia en Cuba",
-  image: "/logo-tienda.png",
-  href: "#Alimentos",
-  buttonText: "Ver productos",
-},
+  {
+    id: 1,
+    image: "/banners/combo-1.jpg",
+    href: "/tienda/categorias/aseo",
+  },
+
   {
     id: 2,
-    title: "Entrega en 24-48 horas",
-    description: "Cobertura en la mayoría de las provincias de Cuba",
-    image: "/carro-cajas-mapa.png",
-    href: "/tienda/productos-destacados",
-    buttonText: "Ver productos",
+    image: "/banners/carniceria.png",
+    href: "/tienda/categorias/carnicería",
   },
-{
-  id: 3,
-  title: "Combos para tu familia",
-  description: "Alimentos, hogar, medicinas y más",
-  image: "/combos-banner-nuevo.png",
-  href: "/tienda/combos",
-  buttonText: "Ver combos",
-},
 ];
 
 export default function MainBanner() {
@@ -49,12 +40,16 @@ export default function MainBanner() {
     },
     [
       Autoplay({
-        delay: 4500,
+        delay: 5000,
         stopOnInteraction: false,
         stopOnMouseEnter: true,
       }),
     ]
   );
+
+  /* =========================================================
+     CONTROLES DEL CARRUSEL
+  ========================================================= */
 
   const scrollPrev = useCallback(() => {
     emblaApi?.scrollPrev();
@@ -64,6 +59,10 @@ export default function MainBanner() {
     emblaApi?.scrollNext();
   }, [emblaApi]);
 
+  /* =========================================================
+     INDICADOR ACTIVO
+  ========================================================= */
+
   useEffect(() => {
     if (!emblaApi) return;
 
@@ -72,6 +71,7 @@ export default function MainBanner() {
     };
 
     onSelect();
+
     emblaApi.on("select", onSelect);
 
     return () => {
@@ -81,79 +81,114 @@ export default function MainBanner() {
 
   return (
     <section className="relative mt-4">
-      <div ref={emblaRef} className="overflow-hidden rounded-3xl">
+
+      {/* =====================================================
+         CONTENEDOR DEL CARRUSEL
+      ===================================================== */}
+
+      <div
+        ref={emblaRef}
+        className="overflow-hidden rounded-3xl"
+      >
         <div className="flex">
+
           {banners.map((banner) => (
-            <div key={banner.id} className="min-w-0 flex-[0_0_100%]">
+            <div
+              key={banner.id}
+              className="min-w-0 flex-[0_0_100%]"
+            >
               <Link
                 href={banner.href}
-                className="relative block h-190px overflow-hidden rounded-3xl bg-[#f4f7fb] px-5 py-5 shadow-sm md:h-280px md:px-10 md:py-10"
+                className="
+                  relative block
+                  aspect-[16/9]
+                  overflow-hidden
+                  rounded-3xl
+                  shadow-md
+                "
               >
-                <div className="relative z-10 w-[50%] md:w-[45%]">
-                  <h2 className="text-[20px] font-black uppercase leading-[1.05] text-[#061b3a] md:text-4xl">
-                    {banner.title.split(",")[0]}
-                    {banner.title.includes(",") && (
-                      <>
-                        ,
-                        <br />
-                        <span className="text-red-600">
-                          {banner.title.split(",")[1].trim()}
-                        </span>
-                      </>
-                    )}
-                  </h2>
-
-                  <p className="mt-2 max-w-180px text-11px text-xs font-bold leading-snug text-slate-700 md:text-base">
-                    {banner.description}
-                  </p>
-
-                  <span className="mt-3 inline-flex rounded-xl bg-red-600 px-4 py-2 text-xs font-black text-white shadow-sm md:px-5 md:py-3 md:text-sm">
-                    {banner.buttonText} ❯
-                  </span>
-                </div>
-
-                <AnimatedBannerImage
-  src={banner.image}
-  alt={banner.title}
-  priority={banner.id === 1}
-  className="absolute bottom-0 right-[-10px] w-[48%] md:bottom-[-18px] md:right-8 md:w-[34%] lg:bottom-[-22px] lg:right-12 lg:w-[32%]"
-/>
+                <Image
+                  src={banner.image}
+                  alt="Banner promocional"
+                  fill
+                  priority={banner.id === 1}
+                  className="
+                    object-cover
+                    transition-transform
+                    duration-500
+                    hover:scale-[1.02]
+                  "
+                />
               </Link>
             </div>
           ))}
+
         </div>
       </div>
+
+      {/* =====================================================
+         BOTÓN ANTERIOR
+      ===================================================== */}
 
       <button
         type="button"
         onClick={scrollPrev}
-        className="absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#061b3a] shadow-md"
+        className="
+          absolute left-2 top-1/2 z-20
+          flex h-10 w-10 -translate-y-1/2
+          items-center justify-center
+          rounded-full bg-white/90
+          text-[#061b3a]
+          shadow-md
+          backdrop-blur
+        "
       >
         <ChevronLeft size={20} />
       </button>
 
+      {/* =====================================================
+         BOTÓN SIGUIENTE
+      ===================================================== */}
+
       <button
         type="button"
         onClick={scrollNext}
-        className="absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#061b3a] shadow-md"
+        className="
+          absolute right-2 top-1/2 z-20
+          flex h-10 w-10 -translate-y-1/2
+          items-center justify-center
+          rounded-full bg-white/90
+          text-[#061b3a]
+          shadow-md
+          backdrop-blur
+        "
       >
         <ChevronRight size={20} />
       </button>
 
+      {/* =====================================================
+         INDICADORES
+      ===================================================== */}
+
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+
         {banners.map((banner, index) => (
           <button
             key={banner.id}
             type="button"
             onClick={() => emblaApi?.scrollTo(index)}
-            className={`h-2 rounded-full transition-all ${
-              selectedIndex === index
-                ? "w-6 bg-red-600"
-                : "w-4 bg-slate-300"
-            }`}
             aria-label={`Ir al banner ${index + 1}`}
+            className={`
+              h-2 rounded-full transition-all
+              ${
+                selectedIndex === index
+                  ? "w-6 bg-red-600"
+                  : "w-4 bg-white/70"
+              }
+            `}
           />
         ))}
+
       </div>
     </section>
   );
