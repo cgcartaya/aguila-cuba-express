@@ -2,7 +2,7 @@
 
 /* =========================================================
    TIENDA - SALIDAS
-   Diseño mobile-first + desktop premium
+   Diseño premium mobile-first + desktop
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -49,6 +49,7 @@ export default function StoreDeparturesPage() {
         setLoading(true);
 
         const { data, error } = await getActiveDepartures();
+
         if (error) throw error;
 
         setDepartures(data || []);
@@ -93,6 +94,7 @@ export default function StoreDeparturesPage() {
           Volver a la tienda
         </Link>
 
+        {/* HERO */}
         <section className="relative min-h-[245px] overflow-hidden rounded-[1.75rem] bg-sky-100 shadow-sm sm:min-h-[330px] md:min-h-[420px]">
           <Image
             src="/departures/departures-hero.png"
@@ -122,6 +124,7 @@ export default function StoreDeparturesPage() {
           </div>
         </section>
 
+        {/* CONTADOR */}
         {nextDeparture && countdown && (
           <section className="mt-4 rounded-[1.75rem] bg-white p-4 shadow-sm sm:mt-5 sm:p-5">
             <div className="flex items-center gap-4">
@@ -161,6 +164,7 @@ export default function StoreDeparturesPage() {
           </section>
         )}
 
+        {/* LISTA */}
         <section className="mt-6 sm:mt-7">
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="flex items-center gap-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
@@ -216,12 +220,20 @@ function DepartureCard({ departure }: { departure: Departure }) {
   );
 }
 
+/* =========================================================
+   CARD MÓVIL
+   Más parecida al diseño original:
+   - fecha lateral
+   - fondo Cienfuegos visible
+   - origen/destino compacto
+========================================================= */
+
 function MobileDepartureCard({ departure }: { departure: Departure }) {
   const date = getDateParts(departure.departure_date);
 
   return (
-    <article className="relative overflow-hidden rounded-[1.75rem] bg-white p-4 shadow-sm ring-1 ring-black/5 md:hidden">
-      <div className="absolute inset-0 opacity-20">
+    <article className="relative overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-black/5 md:hidden">
+      <div className="absolute inset-0">
         <Image
           src="/departures/cienfuegos-bg.png"
           alt="Cienfuegos"
@@ -231,86 +243,102 @@ function MobileDepartureCard({ departure }: { departure: Departure }) {
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/70" />
+      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/35" />
 
-      <div className="relative z-10">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="rounded-2xl bg-blue-50 px-4 py-3 text-center">
-            <p className="text-xs font-black uppercase text-blue-700">
-              {date.month}
-            </p>
+      <div className="relative z-10 grid grid-cols-[92px_1fr]">
+        <div className="bg-blue-50/85 p-4 text-center backdrop-blur-[1px]">
+          <p className="text-xs font-black uppercase text-blue-700">
+            {date.weekday}
+          </p>
 
-            <p className="text-4xl font-black leading-none text-slate-950">
-              {date.day}
-            </p>
-          </div>
+          <p className="mt-2 text-5xl font-black leading-none text-slate-950">
+            {date.day}
+          </p>
 
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-black ${
-              statusStyles[departure.status]
-            }`}
-          >
-            {statusLabels[departure.status]}
-          </span>
-        </div>
-
-        <h3 className="text-2xl font-black leading-tight text-slate-950">
-          {departure.title}
-        </h3>
-
-        <div className="mt-3 space-y-2 text-sm font-bold text-slate-500">
-          <div className="flex items-center gap-2">
-            <CalendarDays size={16} />
-            {formatDate(departure.departure_date)}
-          </div>
+          <p className="mt-2 text-sm font-black uppercase text-slate-600">
+            {date.month}
+          </p>
 
           {departure.departure_time && (
-            <div className="flex items-center gap-2">
-              <Clock size={16} />
+            <div className="mt-4 rounded-2xl bg-blue-600 px-2 py-2 text-xs font-black leading-tight text-white shadow">
               {departure.departure_time}
             </div>
           )}
         </div>
 
-        <div className="mt-4 rounded-2xl bg-slate-50/95 p-4">
-          <div className="flex items-center gap-3">
-            <MapPin className="text-slate-500" size={20} />
+        <div className="p-4">
+          <div className="mb-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-black ${
+                statusStyles[departure.status]
+              }`}
+            >
+              {statusLabels[departure.status]}
+            </span>
+          </div>
 
-            <div>
-              <p className="text-xs font-black uppercase text-slate-400">
-                Origen
-              </p>
+          <h3 className="text-2xl font-black leading-tight text-slate-950">
+            {departure.title}
+          </h3>
 
-              <p className="text-lg font-black text-slate-950">
-                {departure.origin}
-              </p>
+          <div className="mt-3 space-y-2 text-sm font-bold text-slate-500">
+            <div className="flex items-center gap-2">
+              <CalendarDays size={16} />
+              {formatDate(departure.departure_date)}
+            </div>
+
+            {departure.departure_time && (
+              <div className="flex items-center gap-2">
+                <Clock size={16} />
+                {departure.departure_time}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 grid gap-3 rounded-2xl bg-white/75 p-4 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <MapPin className="text-slate-500" size={20} />
+
+              <div>
+                <p className="text-xs font-black uppercase text-slate-400">
+                  Origen
+                </p>
+
+                <p className="text-lg font-black text-slate-950">
+                  {departure.origin}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="text-slate-500" size={20} />
+
+              <div>
+                <p className="text-xs font-black uppercase text-slate-400">
+                  Destino
+                </p>
+
+                <p className="text-lg font-black text-slate-950">
+                  {departure.destination}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
-            <CheckCircle2 className="text-slate-500" size={20} />
-
-            <div>
-              <p className="text-xs font-black uppercase text-slate-400">
-                Destino
-              </p>
-
-              <p className="text-lg font-black text-slate-950">
-                {departure.destination}
-              </p>
-            </div>
-          </div>
+          {departure.description && (
+            <p className="mt-4 text-sm leading-6 text-slate-600">
+              {departure.description}
+            </p>
+          )}
         </div>
-
-        {departure.description && (
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            {departure.description}
-          </p>
-        )}
       </div>
     </article>
   );
 }
+
+/* =========================================================
+   CARD DESKTOP
+========================================================= */
 
 function DesktopDepartureCard({ departure }: { departure: Departure }) {
   const date = getDateParts(departure.departure_date);
@@ -339,7 +367,7 @@ function DesktopDepartureCard({ departure }: { departure: Departure }) {
         </div>
 
         <div className="relative overflow-hidden p-6">
-          <div className="absolute inset-y-0 right-0 w-[42%] opacity-25">
+          <div className="absolute inset-y-0 right-0 w-[42%] opacity-45">
             <Image
               src="/departures/cienfuegos-bg.png"
               alt="Cienfuegos"
@@ -348,6 +376,8 @@ function DesktopDepartureCard({ departure }: { departure: Departure }) {
               className="object-cover object-right"
             />
           </div>
+
+          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/30" />
 
           <div className="relative z-10">
             <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -378,7 +408,7 @@ function DesktopDepartureCard({ departure }: { departure: Departure }) {
               )}
             </div>
 
-            <div className="mt-6 grid gap-4 rounded-2xl bg-slate-50/95 p-5 md:grid-cols-2">
+            <div className="mt-6 grid gap-4 rounded-2xl bg-white/75 p-5 backdrop-blur-sm md:grid-cols-2">
               <div className="flex items-center gap-4">
                 <MapPin className="text-slate-500" size={22} />
 
