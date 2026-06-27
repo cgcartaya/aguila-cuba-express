@@ -32,14 +32,7 @@ export function calculateCheckoutTotals(
   const hasFreeDelivery =
     Boolean(selectedZone) && freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom;
 
-  const shippingCost = selectedZone
-    ? hasFreeDelivery
-      ? 0
-      : baseDeliveryFee
-    : 0;
-
-  const finalTotal = subtotal + shippingCost;
-  const missingAmount = Math.max(minimumOrder - subtotal, 0);
+  const shippingCost = selectedZone ? (hasFreeDelivery ? 0 : baseDeliveryFee) : 0;
 
   return {
     subtotal,
@@ -48,8 +41,8 @@ export function calculateCheckoutTotals(
     freeDeliveryFrom,
     hasFreeDelivery,
     shippingCost,
-    finalTotal,
-    missingAmount,
+    finalTotal: subtotal + shippingCost,
+    missingAmount: Math.max(minimumOrder - subtotal, 0),
   };
 }
 
@@ -79,7 +72,6 @@ export function getOriginalCartItemId(cartId: string) {
 }
 
 export function buildWhatsappOrderMessage({
-  orderId,
   orderNumber,
   form,
   cart,
@@ -87,41 +79,48 @@ export function buildWhatsappOrderMessage({
   subtotal,
   shippingCost,
   finalTotal,
+  orderUrl,
 }: {
-  orderId: string;
-  orderNumber?: string;
+  orderNumber: string;
   form: CheckoutForm;
   cart: CheckoutCartItem[];
   selectedZone: DeliveryZone;
   subtotal: number;
   shippingCost: number;
   finalTotal: number;
+  orderUrl: string;
 }) {
-  const friendlyOrder = orderNumber || orderId;
+  const productsText = cart
+    .map((item) => {
+      const label = item.type === "combo" ? "Combo" : "Producto";
+      const lineTotal = Number(item.price) * item.quantity;
 
-  const orderSummary = cart
-    .map((item, index) => {
-      const icon = item.type === "combo" ? "🍱" : "📦";
-
-      return `${index + 1}. ${icon} *${item.name}*
-Cantidad: ${item.quantity}
-Subtotal: $${(Number(item.price) * item.quantity).toFixed(2)}`;
+      return `${item.quantity}x ${item.name} (${label}): $${lineTotal.toFixed(
+        2
+      )}`;
     })
-    .join("\n\n");
+    .join("\n");
+
+  const date = new Date().toLocaleString("es-US", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
 
   return encodeURIComponent(`
-🦅 *ÁGUILA CUBA EXPRESS*
+AGUILA CUBA EXPRESS
+--------------------
 
-━━━━━━━━━━━━━━
+PEDIDO NUEVO
 
-📦 *PEDIDO NUEVO*
+Orden:
+${orderNumber}
 
-🆔 *Orden:*
-${friendlyOrder}
+Fecha:
+${date}
 
-━━━━━━━━━━━━━━
+--------------------
 
-👤 *CLIENTE*
+CLIENTE
 
 Nombre:
 ${form.name}
@@ -132,9 +131,9 @@ ${form.phone}
 Email:
 ${form.email}
 
-━━━━━━━━━━━━━━
+--------------------
 
-🎁 *DESTINATARIO EN CUBA*
+DESTINATARIO EN CUBA
 
 Nombre:
 ${form.recipient_name}
@@ -148,12 +147,9 @@ ${
     : ""
 }
 
-━━━━━━━━━━━━━━
+--------------------
 
-📍 *ENTREGA*
-
-País:
-Cuba
+ENTREGA
 
 Provincia:
 Cienfuegos
@@ -167,30 +163,36 @@ ${selectedZone.zone_name}
 Dirección:
 ${form.exact_address}
 
-━━━━━━━━━━━━━━
+--------------------
 
-🛒 *PRODUCTOS*
+PRODUCTOS
 
-${orderSummary}
+${productsText}
 
-━━━━━━━━━━━━━━
+--------------------
 
-💰 *RESUMEN*
+RESUMEN
 
 Subtotal: $${subtotal.toFixed(2)}
 Domicilio: $${shippingCost.toFixed(2)}
 
-*TOTAL: $${finalTotal.toFixed(2)}*
+TOTAL: $${finalTotal.toFixed(2)}
 
-━━━━━━━━━━━━━━
+Estado:
+Pendiente
 
-📝 *NOTAS*
+Pago:
+Pendiente de confirmar
+
+--------------------
+
+NOTAS
 
 ${form.notes || "Sin notas"}
 
-━━━━━━━━━━━━━━
+--------------------
 
-Estado inicial:
-🟡 Pendiente
+Ver pedido:
+${orderUrl}
 `);
 }

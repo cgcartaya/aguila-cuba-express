@@ -3,13 +3,13 @@
 /* =========================================================
    CHECKOUT - TIENDA PÚBLICA
 
-   Archivo principal refactorizado:
-   - Coordina estado general
-   - Carga zonas y configuración del negocio
-   - Crea cliente, orden e items
-   - Abre WhatsApp con el resumen
-
-   La UI y cálculos viven en componentes/utilidades.
+   Refactor profesional:
+   - Crea cliente
+   - Crea orden
+   - Guarda items
+   - Descuenta inventario
+   - Genera mensaje compacto para WhatsApp
+   - Abre WhatsApp app en móvil y WhatsApp Web en escritorio
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -84,9 +84,7 @@ export default function CheckoutPage() {
         setZones(zonesResponse.data || []);
 
         if (settingsResponse.data?.whatsapp) {
-          setBusinessWhatsapp(
-            settingsResponse.data.whatsapp.replace(/\D/g, "")
-          );
+          setBusinessWhatsapp(settingsResponse.data.whatsapp.replace(/\D/g, ""));
         }
       } catch (err: any) {
         console.error("ERROR CARGANDO CHECKOUT:", err);
@@ -203,13 +201,14 @@ export default function CheckoutPage() {
     });
   }
 
-  async function createOrder(customerId: string, selectedZone: DeliveryZone) {
+  async function createOrder(customerId: string, zone: DeliveryZone) {
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         customer_id: customerId,
 
         status: "pending",
+        payment_status: "pending",
 
         subtotal: totals.subtotal,
         delivery_fee: totals.shippingCost,
@@ -218,8 +217,8 @@ export default function CheckoutPage() {
         country: "Cuba",
         state: "Cienfuegos",
         municipality: form.municipality,
-        delivery_zone_id: selectedZone.id,
-        zone_name: selectedZone.zone_name,
+        delivery_zone_id: zone.id,
+        zone_name: zone.zone_name,
         exact_address: form.exact_address,
 
         recipient_name: form.recipient_name,
@@ -235,6 +234,27 @@ export default function CheckoutPage() {
     if (orderError) throw orderError;
 
     return order;
+  }
+
+  function openWhatsappByDevice(whatsappMessage: string, orderNumber: string) {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      window.location.href = `whatsapp://send?phone=${businessWhatsapp}&text=${whatsappMessage}`;
+
+      setTimeout(() => {
+        router.push(`/pedido/${orderNumber}`);
+      }, 2000);
+
+      return;
+    }
+
+    window.open(
+      `https://web.whatsapp.com/send?phone=${businessWhatsapp}&text=${whatsappMessage}`,
+      "_blank"
+    );
+
+    router.push(`/pedido/${orderNumber}`);
   }
 
   async function handleSubmit() {
@@ -268,7 +288,6 @@ export default function CheckoutPage() {
       setLoading(true);
 
       const customer = await createOrUpdateCustomer();
-
       const orderItemsBase = buildOrderItemsBase();
 
       await validateOrderStock(orderItemsBase);
@@ -288,25 +307,23 @@ export default function CheckoutPage() {
 
       await processOrderInventory(orderItems);
 
-  const whatsappMessage = buildWhatsappOrderMessage({
-  orderId: order.id,
-  orderNumber: order.order_number,
-  form,
-  cart,
-  selectedZone,
-  subtotal: totals.subtotal,
-  shippingCost: totals.shippingCost,
-  finalTotal: totals.finalTotal,
-});
+      const orderNumber = order.order_number || order.id;
+      const origin = window.location.origin;
+      const orderUrl = `${origin}/pedido/${orderNumber}`;
+
+      const whatsappMessage = buildWhatsappOrderMessage({
+        orderNumber,
+        form,
+        cart,
+        selectedZone,
+        subtotal: totals.subtotal,
+        shippingCost: totals.shippingCost,
+        finalTotal: totals.finalTotal,
+        orderUrl,
+      });
 
       clearCart();
-
-      window.open(
-        `https://wa.me/${businessWhatsapp}?text=${whatsappMessage}`,
-        "_blank"
-      );
-
-      router.push(`/tienda/success?order=${order.id}`);
+      openWhatsappByDevice(whatsappMessage, orderNumber);
     } catch (err: any) {
       console.error("ERROR CHECKOUT:", err);
       setError(err?.message || "Ocurrió un error al crear la orden.");
