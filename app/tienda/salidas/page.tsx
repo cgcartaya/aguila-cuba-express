@@ -3,10 +3,12 @@
 /* =========================================================
    TIENDA - SALIDAS
 
-   Página pública profesional para mostrar próximas salidas.
-   Usa imágenes desde:
-   - /public/images/departures/departures-hero.png
-   - /public/images/departures/cienfuegos-bg.png
+   Página pública profesional y mobile-first para mostrar
+   próximas salidas.
+
+   Imágenes usadas:
+   - /public/departures/departures-hero.png
+   - /public/departures/cienfuegos-bg.png
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -92,35 +94,35 @@ export default function StoreDeparturesPage() {
       <div className="mx-auto max-w-5xl px-4 py-5">
         <Link
           href="/tienda"
-          className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500"
+          className="mb-4 inline-flex items-center gap-2 text-sm font-black text-slate-500"
         >
           <ArrowLeft size={18} />
           Volver a la tienda
         </Link>
 
-        <section className="relative min-h-[350px] overflow-hidden rounded-[2rem] bg-sky-100 shadow-sm md:min-h-[420px]">
+        <section className="relative min-h-[230px] overflow-hidden rounded-[1.75rem] bg-sky-100 shadow-sm sm:min-h-[320px] md:min-h-[420px]">
           <Image
             src="/departures/departures-hero.png"
             alt="Próximas salidas de Águila Cuba Express"
             fill
             priority
             sizes="(max-width: 768px) 100vw, 1024px"
-            className="object-cover object-center"
+            className="object-cover object-[58%_center] sm:object-center"
           />
 
-          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/35 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/65 to-white/10 sm:from-white/80 sm:via-white/35 sm:to-transparent" />
 
-          <div className="relative z-10 p-7 md:p-10">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow">
-              <Plane size={15} />
+          <div className="relative z-10 max-w-[70%] p-5 sm:max-w-md sm:p-7 md:p-10">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-white shadow sm:mb-5 sm:px-4 sm:text-xs">
+              <Plane size={14} />
               Envíos a Cuba
             </div>
 
-            <h1 className="max-w-sm text-5xl font-black leading-none text-slate-950 md:text-6xl">
+            <h1 className="text-4xl font-black leading-none text-slate-950 sm:text-5xl md:text-6xl">
               Próximas <span className="text-blue-600">salidas</span>
             </h1>
 
-            <p className="mt-5 max-w-md text-lg font-medium leading-8 text-slate-700">
+            <p className="mt-3 max-w-xs text-sm font-semibold leading-6 text-slate-700 sm:mt-5 sm:max-w-md sm:text-lg sm:leading-8">
               Consulta las próximas fechas programadas para los envíos hacia
               Cuba.
             </p>
@@ -128,19 +130,26 @@ export default function StoreDeparturesPage() {
         </section>
 
         {nextDeparture && countdown && (
-          <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
+          <section className="mt-4 rounded-[1.75rem] bg-white p-4 shadow-sm sm:mt-5 sm:p-5">
             <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-600 text-white">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white">
                 <CalendarDays size={26} />
               </div>
 
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                   Próxima salida en
                 </p>
 
                 <p className="text-2xl font-black text-slate-950">
                   {countdown.days} {countdown.label}
+                </p>
+
+                <p className="mt-1 text-xs font-bold text-slate-500 sm:hidden">
+                  {formatDate(nextDeparture.departure_date)}
+                  {nextDeparture.departure_time
+                    ? ` · ${nextDeparture.departure_time}`
+                    : ""}
                 </p>
               </div>
 
@@ -159,15 +168,15 @@ export default function StoreDeparturesPage() {
           </section>
         )}
 
-        <section className="mt-7">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-2xl font-black text-slate-950">
+        <section className="mt-6 sm:mt-7">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="flex items-center gap-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
               <Rocket size={24} />
               Salidas programadas
             </h2>
 
-            <span className="rounded-full border bg-white px-4 py-2 text-sm font-black text-slate-600">
-              {departures.length} salidas
+            <span className="shrink-0 rounded-full border bg-white px-4 py-2 text-sm font-black text-slate-600">
+              {departures.length}
             </span>
           </div>
 
@@ -209,9 +218,9 @@ function DepartureCard({ departure }: { departure: Departure }) {
   const date = getDateParts(departure.departure_date);
 
   return (
-    <article className="overflow-hidden rounded-[2rem] bg-white shadow-sm ring-1 ring-black/5">
-      <div className="grid grid-cols-[96px_1fr] md:grid-cols-[170px_1fr]">
-        <div className="bg-gradient-to-b from-blue-50 to-white p-4 text-center md:p-5">
+    <article className="overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-black/5 sm:rounded-[2rem]">
+      <div className="grid grid-cols-[86px_1fr] sm:grid-cols-[110px_1fr] md:grid-cols-[170px_1fr]">
+        <div className="bg-gradient-to-b from-blue-50 to-white p-3 text-center sm:p-4 md:p-5">
           <p className="text-xs font-black uppercase text-blue-700 md:text-sm">
             {date.weekday}
           </p>
@@ -225,13 +234,13 @@ function DepartureCard({ departure }: { departure: Departure }) {
           </p>
 
           {departure.departure_time && (
-            <div className="mt-4 rounded-2xl bg-blue-600 px-2 py-2 text-xs font-black text-white shadow md:mt-6 md:px-4 md:py-3 md:text-lg">
+            <div className="mt-4 rounded-2xl bg-blue-600 px-2 py-2 text-xs font-black leading-tight text-white shadow md:mt-6 md:px-4 md:py-3 md:text-lg">
               {departure.departure_time}
             </div>
           )}
         </div>
 
-        <div className="relative overflow-hidden p-5 md:p-6">
+        <div className="relative overflow-hidden p-4 sm:p-5 md:p-6">
           <div className="absolute inset-y-0 right-0 hidden w-[42%] opacity-20 sm:block">
             <Image
               src="/departures/cienfuegos-bg.png"
@@ -253,11 +262,11 @@ function DepartureCard({ departure }: { departure: Departure }) {
               </span>
             </div>
 
-            <h3 className="text-2xl font-black leading-tight text-slate-950 md:text-4xl">
+            <h3 className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl md:text-4xl">
               {departure.title}
             </h3>
 
-            <div className="mt-3 flex flex-wrap items-center gap-4 text-sm font-bold text-slate-500 md:mt-4 md:gap-6">
+            <div className="mt-3 space-y-2 text-sm font-bold text-slate-500 sm:flex sm:flex-wrap sm:items-center sm:gap-5 sm:space-y-0 md:mt-4">
               <div className="flex items-center gap-2">
                 <CalendarDays size={16} />
                 {formatDate(departure.departure_date)}
@@ -271,7 +280,7 @@ function DepartureCard({ departure }: { departure: Departure }) {
               )}
             </div>
 
-            <div className="mt-5 grid gap-3 rounded-2xl bg-slate-50/95 p-4 md:mt-6 md:grid-cols-2 md:p-5">
+            <div className="mt-4 grid gap-3 rounded-2xl bg-slate-50/95 p-4 md:mt-6 md:grid-cols-2 md:p-5">
               <div className="flex items-center gap-3 md:gap-4">
                 <MapPin className="text-slate-500" size={21} />
 
