@@ -233,43 +233,48 @@ function MobileDepartureCard({ departure }: { departure: Departure }) {
 
   return (
     <article className="relative overflow-hidden rounded-[1.75rem] bg-white shadow-sm ring-1 ring-black/5 md:hidden">
-      <div className="absolute inset-0">
+
+      {/* IMAGEN DE FONDO */}
+      <div className="absolute inset-y-0 right-0 w-[42%] opacity-80">
         <Image
           src="/departures/cienfuegos-bg.png"
           alt="Cienfuegos"
           fill
-          sizes="100vw"
+          sizes="250px"
           className="object-cover object-right"
         />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/35" />
+      {/* DEGRADADO MÁS SUAVE */}
+      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/92 to-white/55" />
 
-      <div className="relative z-10 grid grid-cols-[92px_1fr]">
-        <div className="bg-blue-50/85 p-4 text-center backdrop-blur-[1px]">
-          <p className="text-xs font-black uppercase text-blue-700">
+      <div className="relative z-10 flex">
+        {/* FECHA LATERAL */}
+        <div className="w-[95px] shrink-0 bg-gradient-to-b from-blue-50 to-white p-4 text-center">
+          <p className="text-sm font-black uppercase text-blue-700">
             {date.weekday}
           </p>
 
-          <p className="mt-2 text-5xl font-black leading-none text-slate-950">
+          <p className="mt-3 text-6xl font-black leading-none text-slate-950">
             {date.day}
           </p>
 
-          <p className="mt-2 text-sm font-black uppercase text-slate-600">
+          <p className="mt-3 text-lg font-black uppercase text-slate-600">
             {date.month}
           </p>
 
           {departure.departure_time && (
-            <div className="mt-4 rounded-2xl bg-blue-600 px-2 py-2 text-xs font-black leading-tight text-white shadow">
+            <div className="mt-5 rounded-2xl bg-blue-600 px-2 py-3 text-sm font-black text-white shadow">
               {departure.departure_time}
             </div>
           )}
         </div>
 
-        <div className="p-4">
-          <div className="mb-3">
+        {/* CONTENIDO */}
+        <div className="flex-1 p-5">
+          <div className="mb-4">
             <span
-              className={`rounded-full px-3 py-1 text-xs font-black ${
+              className={`rounded-full px-4 py-2 text-xs font-black ${
                 statusStyles[departure.status]
               }`}
             >
@@ -277,25 +282,26 @@ function MobileDepartureCard({ departure }: { departure: Departure }) {
             </span>
           </div>
 
-          <h3 className="text-2xl font-black leading-tight text-slate-950">
+          <h3 className="text-[2rem] font-black leading-tight text-slate-950">
             {departure.title}
           </h3>
 
-          <div className="mt-3 space-y-2 text-sm font-bold text-slate-500">
+          <div className="mt-4 space-y-3 text-sm font-bold text-slate-500">
             <div className="flex items-center gap-2">
-              <CalendarDays size={16} />
+              <CalendarDays size={17} />
               {formatDate(departure.departure_date)}
             </div>
 
             {departure.departure_time && (
               <div className="flex items-center gap-2">
-                <Clock size={16} />
+                <Clock size={17} />
                 {departure.departure_time}
               </div>
             )}
           </div>
 
-          <div className="mt-4 grid gap-3 rounded-2xl bg-white/75 p-4 backdrop-blur-sm">
+          {/* ORIGEN Y DESTINO */}
+          <div className="mt-5 rounded-2xl bg-white/80 p-4 backdrop-blur-sm">
             <div className="flex items-center gap-3">
               <MapPin className="text-slate-500" size={20} />
 
@@ -304,11 +310,13 @@ function MobileDepartureCard({ departure }: { departure: Departure }) {
                   Origen
                 </p>
 
-                <p className="text-lg font-black text-slate-950">
+                <p className="text-xl font-black text-slate-950">
                   {departure.origin}
                 </p>
               </div>
             </div>
+
+            <div className="my-4 h-px bg-slate-200" />
 
             <div className="flex items-center gap-3">
               <CheckCircle2 className="text-slate-500" size={20} />
@@ -318,7 +326,7 @@ function MobileDepartureCard({ departure }: { departure: Departure }) {
                   Destino
                 </p>
 
-                <p className="text-lg font-black text-slate-950">
+                <p className="text-xl font-black text-slate-950">
                   {departure.destination}
                 </p>
               </div>

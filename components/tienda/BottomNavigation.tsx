@@ -66,9 +66,9 @@ export default function BottomNavigation() {
             SALIDAS
         ========================================================= */}
         <Link
-          href="/tienda/salidas"
+          href="/salidas"
           className={itemClass(
-            pathname.startsWith("/tienda/salidas")
+            pathname.startsWith("/salidas")
           )}
         >
           <CalendarDays size={21} />
