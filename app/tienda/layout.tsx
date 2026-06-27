@@ -20,7 +20,6 @@ type StoreLayoutProps = {
 
 export default function StoreLayout({ children }: StoreLayoutProps) {
   const pathname = usePathname();
-
   const { cart } = useCart();
 
   const cartCount = cart.reduce((total, item) => {
@@ -30,15 +29,13 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
   const hideMainBanner =
     pathname.startsWith("/tienda/producto/") ||
     pathname.startsWith("/tienda/cart") ||
-    pathname.startsWith("/tienda/checkout") ||
-    
+    pathname.startsWith("/tienda/checkout");
 
   const hideBottomNavigation = pathname.startsWith("/tienda/checkout");
 
   const hideFloatingCart =
     pathname.startsWith("/tienda/cart") ||
-    pathname.startsWith("/tienda/checkout") ||
-   
+    pathname.startsWith("/tienda/checkout");
 
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
