@@ -31,14 +31,14 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
     pathname.startsWith("/tienda/producto/") ||
     pathname.startsWith("/tienda/cart") ||
     pathname.startsWith("/tienda/checkout") ||
-    pathname.startsWith("/tienda/salidas");
+    
 
   const hideBottomNavigation = pathname.startsWith("/tienda/checkout");
 
   const hideFloatingCart =
     pathname.startsWith("/tienda/cart") ||
     pathname.startsWith("/tienda/checkout") ||
-    pathname.startsWith("/tienda/salidas");
+   
 
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">

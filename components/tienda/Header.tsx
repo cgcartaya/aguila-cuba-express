@@ -14,7 +14,6 @@ import {
   Home,
   ShoppingBag,
   Star,
-  Tags,
   Gift,
   PackageSearch,
   CalendarDays,
@@ -32,7 +31,6 @@ const menuItems = [
   { label: "Tienda", href: "/tienda", icon: ShoppingBag },
   { label: "Productos destacados", href: "/tienda/productos-destacados", icon: Star },
   { label: "Combos", href: "/tienda/combos", icon: Gift },
-  { label: "Ofertas", href: "/tienda/ofertas", icon: Tags },
   { label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch },
   { label: "Salidas", href: "/tienda/salidas", icon: CalendarDays },
 ];
