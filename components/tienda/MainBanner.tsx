@@ -2,7 +2,6 @@
 
 /* =========================================================
    MAIN BANNER - TIENDA PÚBLICA
-   Carrusel principal usando banners gráficos completos
 ========================================================= */
 
 import Image from "next/image";
@@ -77,6 +76,7 @@ export default function MainBanner() {
     };
 
     onSelect();
+
     emblaApi.on("select", onSelect);
 
     return () => {
@@ -86,18 +86,33 @@ export default function MainBanner() {
 
   return (
     <section className="relative mt-4">
-      <div ref={emblaRef} className="overflow-hidden rounded-3xl">
+      <div
+        ref={emblaRef}
+        className="
+          overflow-hidden
+          rounded-3xl
+          max-w-6xl
+          mx-auto
+        "
+      >
         <div className="flex">
           {banners.map((banner) => (
-            <div key={banner.id} className="min-w-0 flex-[0_0_100%]">
+            <div
+              key={banner.id}
+              className="min-w-0 flex-[0_0_100%]"
+            >
               <Link
                 href={banner.href}
                 className="
                   relative block
-                  aspect-[16/9]
                   overflow-hidden
                   rounded-3xl
                   shadow-md
+
+                  h-[220px]
+                  sm:h-[280px]
+                  md:h-[360px]
+                  lg:h-[420px]
                 "
               >
                 <Image
@@ -106,10 +121,11 @@ export default function MainBanner() {
                   fill
                   priority={banner.id === 1}
                   className="
-                    object-cover
+                    object-contain
+                    bg-white
                     transition-transform
                     duration-500
-                    hover:scale-[1.02]
+                    hover:scale-[1.01]
                   "
                 />
               </Link>
@@ -117,6 +133,8 @@ export default function MainBanner() {
           ))}
         </div>
       </div>
+
+      {/* Flecha izquierda */}
 
       <button
         type="button"
@@ -135,6 +153,8 @@ export default function MainBanner() {
         <ChevronLeft size={20} />
       </button>
 
+      {/* Flecha derecha */}
+
       <button
         type="button"
         onClick={scrollNext}
@@ -151,6 +171,8 @@ export default function MainBanner() {
       >
         <ChevronRight size={20} />
       </button>
+
+      {/* Indicadores */}
 
       <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2">
         {banners.map((banner, index) => (
