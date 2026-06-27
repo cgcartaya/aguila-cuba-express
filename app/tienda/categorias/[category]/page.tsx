@@ -45,9 +45,25 @@ export default function CategoryPage({ params }: Props) {
   const [productos, setProductos] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-const { category } = use(params);
+  const { category } = use(params);
 
-const categoryName = decodeURIComponent(category);
+  const categoryName = decodeURIComponent(category);
+
+  /* =========================================================
+     NORMALIZAR TEXTO
+     Elimina tildes y convierte a minúsculas
+  ========================================================= */
+
+  const normalizarTexto = (texto: string = "") =>
+    texto
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+
+  /* =========================================================
+     CARGAR PRODUCTOS
+  ========================================================= */
 
   useEffect(() => {
     const cargarProductos = async () => {
@@ -56,7 +72,11 @@ const categoryName = decodeURIComponent(category);
       const { data, error } = await getStoreProducts();
 
       if (error) {
-        console.log("Error cargando productos por categoría:", error);
+        console.log(
+          "Error cargando productos por categoría:",
+          error
+        );
+
         setLoading(false);
         return;
       }
@@ -64,14 +84,21 @@ const categoryName = decodeURIComponent(category);
       const productosConImagenPrincipal =
         (data as ProductFromSupabase[])?.map((producto) => {
           const imagenPrincipal =
-            producto.product_images?.find((img) => img.is_main) ||
+            producto.product_images?.find(
+              (img) => img.is_main
+            ) ||
             producto.product_images
               ?.slice()
-              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
+              .sort(
+                (a, b) =>
+                  (a.position ?? 0) - (b.position ?? 0)
+              )[0];
 
           return {
             ...producto,
-            image_url: imagenPrincipal?.image_url || producto.image_url,
+            image_url:
+              imagenPrincipal?.image_url ||
+              producto.image_url,
           };
         }) || [];
 
@@ -82,14 +109,19 @@ const categoryName = decodeURIComponent(category);
     cargarProductos();
   }, []);
 
+  /* =========================================================
+     FILTRAR PRODUCTOS
+  ========================================================= */
+
   const productosFiltrados = useMemo(() => {
     return productos.filter((producto) => {
       const mismaCategoria =
-        producto.category?.toLowerCase() === categoryName.toLowerCase();
+        normalizarTexto(producto.category) ===
+        normalizarTexto(categoryName);
 
-      const coincideBusqueda = producto.name
-        .toLowerCase()
-        .includes(busqueda.toLowerCase());
+      const coincideBusqueda = normalizarTexto(
+        producto.name
+      ).includes(normalizarTexto(busqueda));
 
       return mismaCategoria && coincideBusqueda;
     });
@@ -97,14 +129,66 @@ const categoryName = decodeURIComponent(category);
 
   return (
     <main className="pb-28">
+      {/* =====================================================
+          CABECERA
+      ===================================================== */}
+
       <div className="px-4 pt-5">
-        <Link
-          href="/tienda"
-          className="mb-4 inline-flex items-center gap-2 text-sm font-bold text-slate-500"
-        >
-          <ArrowLeft size={18} />
-          Volver a tienda
-        </Link>
+        {/* =====================================================
+            BOTÓN VOLVER A LA TIENDA
+        ===================================================== */}
+
+        <div className="mb-6">
+          <Link
+            href="/tienda"
+            className="
+              inline-flex
+              items-center
+              gap-3
+              rounded-2xl
+              border
+              border-slate-200
+              bg-white
+              px-5
+              py-3
+              shadow-sm
+              transition-all
+              duration-300
+              hover:-translate-y-0.5
+              hover:border-[#2563eb]
+              hover:shadow-md
+            "
+          >
+            <div
+              className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                bg-blue-50
+                text-[#2563eb]
+              "
+            >
+              <ArrowLeft size={20} />
+            </div>
+
+            <div className="text-left">
+              <p className="text-xs font-semibold uppercase text-slate-400">
+                Navegación
+              </p>
+
+              <p className="font-black text-[#061b3a]">
+                Volver a la tienda
+              </p>
+            </div>
+          </Link>
+        </div>
+
+        {/* =====================================================
+            TÍTULO DE CATEGORÍA
+        ===================================================== */}
 
         <h1 className="text-4xl font-black capitalize text-[#061b3a]">
           {categoryName}
@@ -115,10 +199,18 @@ const categoryName = decodeURIComponent(category);
         </p>
       </div>
 
+      {/* =====================================================
+          BUSCADOR
+      ===================================================== */}
+
       <ProductSearch
         busqueda={busqueda}
         setBusqueda={setBusqueda}
       />
+
+      {/* =====================================================
+          PRODUCTOS
+      ===================================================== */}
 
       <section className="px-4">
         {loading ? (
@@ -136,17 +228,47 @@ const categoryName = decodeURIComponent(category);
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
+          <div
+            className="
+              rounded-2xl border border-dashed
+              border-slate-300 bg-white p-8
+              text-center
+            "
+          >
             <h2 className="text-xl font-black text-[#061b3a]">
               No hay productos disponibles
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              No encontramos productos activos para esta categoría.
+              No encontramos productos activos para esta
+              categoría.
             </p>
           </div>
         )}
       </section>
+
+      {/* =====================================================
+          BOTÓN INFERIOR
+      ===================================================== */}
+
+      <div className="mt-10 flex justify-center px-4">
+        <Link
+          href="/tienda"
+          className="
+            rounded-full
+            bg-[#061b3a]
+            px-8
+            py-3
+            text-sm
+            font-bold
+            text-white
+            transition
+            hover:bg-[#0d2b57]
+          "
+        >
+          Seguir comprando
+        </Link>
+      </div>
     </main>
   );
 }

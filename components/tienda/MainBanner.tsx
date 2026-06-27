@@ -24,7 +24,7 @@ const banners = [
   {
     id: 2,
     image: "/banners/carniceria.png",
-    href: "/tienda/categorias/carnicería",
+    href: "/tienda/categorias/carniceria",
   },
   {
     id: 3,
