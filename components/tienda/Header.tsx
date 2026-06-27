@@ -32,7 +32,7 @@ const menuItems = [
   { label: "Productos destacados", href: "/tienda/productos-destacados", icon: Star },
   { label: "Combos", href: "/tienda/combos", icon: Gift },
   { label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch },
-  { label: "Salidas", href: "/tienda/salidas", icon: CalendarDays },
+  { label: "Salidas", href: "/salidas", icon: CalendarDays },
 ];
 
 export default function Header({ cartCount }: HeaderProps) {
