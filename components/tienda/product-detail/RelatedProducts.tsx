@@ -1,7 +1,14 @@
 "use client";
 
 /* =========================================================
-   IMPORTS
+   RELATED PRODUCTS
+
+   Muestra productos relacionados en la página de detalle.
+
+   IMPORTANTE:
+   - Soporta productos con imagen antigua en products.image_url.
+   - Soporta productos nuevos con imágenes en product_images.
+   - Usa imagen principal si existe.
 ========================================================= */
 
 import Image from "next/image";
@@ -12,12 +19,22 @@ import type { Product } from "@/types/cart";
    TYPES
 ========================================================= */
 
+type ProductImage = {
+  image_url: string;
+  is_main: boolean;
+  position?: number | null;
+};
+
+type RelatedProduct = Product & {
+  product_images?: ProductImage[];
+};
+
 type RelatedProductsProps = {
-  products: Product[];
+  products: RelatedProduct[];
 };
 
 /* =========================================================
-   RELATED PRODUCTS
+   COMPONENT
 ========================================================= */
 
 export default function RelatedProducts({
@@ -32,31 +49,53 @@ export default function RelatedProducts({
       </h2>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        {products.map((item) => (
-          <Link
-            key={item.id}
-            href={`/tienda/producto/${item.id}`}
-            className="rounded-2xl border bg-white p-3 shadow-sm transition hover:shadow-md"
-          >
-            <div className="relative h-36 rounded-xl bg-slate-100">
-              <Image
-                src={item.image_url || "/placeholder-product.png"}
-                alt={item.name}
-                fill
-                unoptimized
-                className="object-contain p-2"
-              />
-            </div>
+        {products.map((item) => {
+          const orderedImages =
+            item.product_images
+              ?.slice()
+              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
 
-            <h3 className="mt-3 line-clamp-2 text-sm font-bold">
-              {item.name}
-            </h3>
+          const mainImage =
+            orderedImages.find((img) => img.is_main)?.image_url ||
+            orderedImages[0]?.image_url ||
+            item.image_url ||
+            "/placeholder-product.png";
 
-            <p className="mt-1 font-black text-red-600">
-              ${Number(item.price).toFixed(2)}
-            </p>
-          </Link>
-        ))}
+          return (
+            <Link
+              key={item.id}
+              href={`/tienda/producto/${item.id}`}
+              className="
+                rounded-2xl
+                border
+                border-slate-200
+                bg-white
+                p-3
+                shadow-sm
+                transition
+                hover:shadow-md
+              "
+            >
+              <div className="relative h-36 overflow-hidden rounded-xl bg-slate-100">
+                <Image
+                  src={mainImage}
+                  alt={item.name}
+                  fill
+                  unoptimized
+                  className="object-contain p-2"
+                />
+              </div>
+
+              <h3 className="mt-3 line-clamp-2 text-sm font-bold text-[#061b3a]">
+                {item.name}
+              </h3>
+
+              <p className="mt-1 font-black text-red-600">
+                ${Number(item.price).toFixed(2)}
+              </p>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );
