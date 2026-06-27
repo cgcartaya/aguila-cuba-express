@@ -42,7 +42,7 @@ export default function Header({ cartCount }: HeaderProps) {
 
   return (
     <>
-      <header className="relative z-50 bg-gradient-to-r from-[#061b3a] via-[#0c2d63] to-[#0f6bff] shadow-md">
+      <header className="sticky top-0 z-50 bg-gradient-to-r from-[#061b3a] via-[#0c2d63] to-[#0f6bff] shadow-md">
         <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-4">
           <button
             type="button"
