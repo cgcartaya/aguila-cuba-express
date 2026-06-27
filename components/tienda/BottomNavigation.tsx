@@ -33,7 +33,7 @@ export default function BottomNavigation() {
     }`;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white px-4 py-2 shadow-lg md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white px-4 py-2 shadow-lg xl:hidden">
       <div className="mx-auto grid max-w-2xl grid-cols-5 text-center text-xs font-bold">
         {/* =========================================================
             INICIO

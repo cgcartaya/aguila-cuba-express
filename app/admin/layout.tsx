@@ -3,13 +3,13 @@
 /* =========================================================
    ADMIN LAYOUT
 
-   Desktop:
-   - Sidebar normal
+   Desktop grande:
+   - Sidebar lateral
 
-   Mobile:
-   - Botón hamburguesa flotante
+   Móvil + Tablet:
+   - Botón hamburguesa
    - Drawer lateral
-   - Bottom nav
+   - Bottom navigation
 ========================================================= */
 
 import { useState } from "react";
@@ -29,20 +29,39 @@ export default function AdminLayout({
 
   return (
     <AdminAuthGuard>
-      <div className="min-h-screen bg-gray-50 lg:flex">
-        {/* SIDEBAR DESKTOP */}
-        <div className="hidden lg:block">
+      <div className="min-h-screen bg-gray-50 xl:flex">
+        {/* =====================================================
+            SIDEBAR SOLO EN PANTALLAS MUY GRANDES
+        ===================================================== */}
+        <div className="hidden xl:block">
           <AdminNav />
         </div>
 
-        {/* CONTENIDO */}
-        <div className="relative flex-1 pb-24 lg:pb-0">
-          {/* BOTÓN HAMBURGUESA MÓVIL */}
+        {/* =====================================================
+            CONTENIDO PRINCIPAL
+        ===================================================== */}
+        <div className="relative flex-1 pb-24 xl:pb-0">
+          {/* Botón hamburguesa móvil + tablet */}
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
             aria-label="Abrir menú admin"
-            className="fixed right-4 top-4 z-50 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#061b3a] text-white shadow-lg lg:hidden"
+            className="
+              fixed
+              right-4
+              top-4
+              z-50
+              flex
+              h-12
+              w-12
+              items-center
+              justify-center
+              rounded-2xl
+              bg-[#061b3a]
+              text-white
+              shadow-lg
+              xl:hidden
+            "
           >
             <Menu size={24} />
           </button>
@@ -50,12 +69,16 @@ export default function AdminLayout({
           {children}
         </div>
 
-        {/* BOTTOM NAV MÓVIL */}
-        <div className="lg:hidden">
+        {/* =====================================================
+            BOTTOM NAV PARA MÓVIL Y TABLET
+        ===================================================== */}
+        <div className="xl:hidden">
           <AdminBottomNav />
         </div>
 
-        {/* DRAWER MÓVIL */}
+        {/* =====================================================
+            MENÚ LATERAL MÓVIL/TABLET
+        ===================================================== */}
         <AdminMobileMenu
           open={menuOpen}
           onClose={() => setMenuOpen(false)}
