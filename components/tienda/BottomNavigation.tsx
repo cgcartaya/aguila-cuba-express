@@ -35,35 +35,58 @@ export default function BottomNavigation() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white px-4 py-2 shadow-lg md:hidden">
       <div className="mx-auto grid max-w-2xl grid-cols-5 text-center text-xs font-bold">
+        {/* =========================================================
+            INICIO
+        ========================================================= */}
         <Link href="/" className={itemClass(pathname === "/")}>
           <House size={21} />
           <span>Inicio</span>
         </Link>
 
-        <Link href="/rastrear" className={itemClass(pathname.startsWith("/rastrear"))}>
+        {/* =========================================================
+            RASTREAR
+        ========================================================= */}
+        <Link
+          href="/rastrear"
+          className={itemClass(pathname.startsWith("/rastrear"))}
+        >
           <Package size={21} />
           <span>Rastrear</span>
         </Link>
 
+        {/* =========================================================
+            TIENDA
+        ========================================================= */}
         <Link href="/tienda" className={itemClass(isActive("/tienda"))}>
           <ShoppingBag size={21} />
           <span>Tienda</span>
         </Link>
 
-        <Link href="/salidas" className={itemClass(pathname.startsWith("/salidas"))}>
+        {/* =========================================================
+            SALIDAS
+        ========================================================= */}
+        <Link
+          href="/tienda/salidas"
+          className={itemClass(
+            pathname.startsWith("/tienda/salidas")
+          )}
+        >
           <CalendarDays size={21} />
           <span>Salidas</span>
         </Link>
 
-<a
-  href="https://wa.me/13054974891"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="flex flex-col items-center gap-1 text-green-600 transition"
->
-  <MessageCircle size={21} />
-  <span>Ayuda</span>
-</a>
+        {/* =========================================================
+            AYUDA (WHATSAPP)
+        ========================================================= */}
+        <a
+          href="https://wa.me/13054974891"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-col items-center gap-1 text-green-600 transition"
+        >
+          <MessageCircle size={21} />
+          <span>Ayuda</span>
+        </a>
       </div>
     </nav>
   );

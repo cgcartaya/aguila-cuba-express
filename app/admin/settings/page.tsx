@@ -7,6 +7,7 @@ import {
   Store,
   ArrowRight,
   MapPinned,
+  CalendarDays,
 } from "lucide-react";
 
 const settingsCards = [
@@ -37,6 +38,13 @@ const settingsCards = [
       "Administra municipios, zonas, costos de entrega y reglas reales de domicilio.",
     href: "/admin/settings/delivery-zones",
     icon: MapPinned,
+  },
+  {
+    title: "Salidas",
+    description:
+      "Administra próximas salidas, fechas, horarios, origen y destino.",
+    href: "/admin/settings/departures",
+    icon: CalendarDays,
   },
   {
     title: "Banners",
