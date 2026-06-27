@@ -114,7 +114,7 @@ export default function StickyCategoryTabs({
   };
 
   return (
-    <div className="sticky top-[72px] z-30 -mx-4 border-y bg-white px-4 py-3 shadow-sm">
+    <div className="sticky top-[76px] z-40 -mx-4 border-y bg-white px-4 py-3 shadow-sm">
       <div
         ref={tabsContainerRef}
         className="flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
