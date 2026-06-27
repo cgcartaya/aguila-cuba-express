@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Agencia de envíos desde Miami hacia Cienfuegos, Cuba. Servicio de paquetería, compras y entregas rápidas y seguras.",
+    "Envíos, compras y entregas desde Miami hacia Cienfuegos, Cuba.",
 
   keywords: [
     "envíos a Cuba",
@@ -53,32 +53,30 @@ export const metadata: Metadata = {
   },
 
   openGraph: {
-    title: "Águila Cuba Express",
+    title: "Águila Cuba Express | Envíos de Miami a Cienfuegos",
     description:
       "Envíos, compras y entregas desde Miami hacia Cienfuegos, Cuba.",
-
     url: "https://aguilacubaexpress.com",
     siteName: "Águila Cuba Express",
-
     images: [
       {
-        url: "/og-image.png",
+        url: "https://aguilacubaexpress.com/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Águila Cuba Express",
+        type: "image/jpeg",
       },
     ],
-
     locale: "es_US",
     type: "website",
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Águila Cuba Express",
+    title: "Águila Cuba Express | Envíos de Miami a Cienfuegos",
     description:
       "Envíos, compras y entregas desde Miami hacia Cienfuegos, Cuba.",
-    images: ["/og-image.png"],
+    images: ["https://aguilacubaexpress.com/og-image.jpg"],
   },
 
   alternates: {
@@ -97,10 +95,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body>
-  <CartProvider>
-    {children}
-  </CartProvider>
-</body>
+        <CartProvider>{children}</CartProvider>
+      </body>
     </html>
   );
 }
