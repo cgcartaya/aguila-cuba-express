@@ -3,10 +3,11 @@
 /* =========================================================
    CATEGORY SHOWCASE CARD
 
-   Correcciones:
-   - Mejor ancho mobile.
-   - Evita que el carrusel rompa la pantalla en iPhone.
-   - Mantiene colores dinámicos desde Supabase.
+   Corrección final:
+   - Ancho móvil 78vw para que se vea una tarjeta
+     y un pedacito de la siguiente.
+   - shrink-0 evita que se aplaste.
+   - max-w mantiene buen diseño en tablet.
 ========================================================= */
 
 import Image from "next/image";
@@ -31,10 +32,10 @@ export default function CategoryShowcaseCard({
   const categorySlug = encodeURIComponent(category.toLowerCase());
 
   return (
- <Link
-  href={`/tienda/categorias/${categorySlug}`}
-  className="w-[78vw] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[420px]"
->
+    <Link
+      href={`/tienda/categorias/${categorySlug}`}
+      className="w-[78vw] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[420px]"
+    >
       <div
         className="mb-2 flex items-center justify-between rounded-xl px-4 py-3 text-white"
         style={{

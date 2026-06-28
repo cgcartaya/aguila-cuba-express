@@ -3,10 +3,12 @@
 /* =========================================================
    CATEGORIES SHOWCASE CAROUSEL
 
-   Correcciones:
-   - Mejor responsive para iPhone.
-   - Padding lateral seguro.
-   - Evita desbordes horizontales.
+   Corrección final:
+   - El section NO tiene padding lateral.
+   - El banner sí tiene margen lateral.
+   - El carrusel sí tiene padding lateral.
+   - Mantiene el efecto: una tarjeta + pedacito de la siguiente.
+   - Evita barras blancas raras laterales.
 ========================================================= */
 
 import { Grid3X3 } from "lucide-react";
@@ -28,8 +30,8 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
   if (!groups || groups.length === 0) return null;
 
   return (
-    <section className="w-full overflow-hidden px-4 py-4">
-      <div className="mb-4 rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-blue-600 p-4 shadow-lg">
+    <section className="w-full overflow-hidden py-4">
+      <div className="mx-4 mb-4 rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-blue-600 p-4 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
             <Grid3X3 className="h-6 w-6 text-white" />
@@ -57,7 +59,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
         </div>
       </div>
 
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {groups.map((group) => (
           <CategoryShowcaseCard
             key={group.categoria}
