@@ -31,10 +31,10 @@ export default function CategoryShowcaseCard({
   const categorySlug = encodeURIComponent(category.toLowerCase());
 
   return (
-    <Link
-      href={`/tienda/categorias/${categorySlug}`}
-     className="w-[calc(100vw-2rem)] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-    >
+ <Link
+  href={`/tienda/categorias/${categorySlug}`}
+  className="w-[78vw] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[420px]"
+>
       <div
         className="mb-2 flex items-center justify-between rounded-xl px-4 py-3 text-white"
         style={{
