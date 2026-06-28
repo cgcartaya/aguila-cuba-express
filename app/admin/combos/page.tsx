@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Plus, Package } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 import ComboCard from "@/components/admin/combos/ComboCard";
 import { getCombos, deleteCombo } from "@/lib/services/combos";
@@ -60,7 +61,23 @@ export default function AdminCombosPage() {
   const loadCombos = async () => {
     setLoading(true);
 
-    const { data, error } = await getCombos();
+    const { data, error } = await supabase
+  .from("combos")
+  .select(`
+    *,
+    combo_items (
+      id,
+      quantity,
+      product_id,
+      products (
+        id,
+        name,
+        price
+      )
+    )
+  `)
+  .is("deleted_at", null)
+  .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error cargando combos:", error);
@@ -87,7 +104,12 @@ export default function AdminCombosPage() {
 
     if (!confirmDelete) return;
 
-    const { error } = await deleteCombo(comboId);
+   const { error } = await supabase
+  .from("combos")
+  .update({
+    deleted_at: new Date().toISOString(),
+  })
+  .eq("id", comboId);
 
     if (error) {
       console.error("Error eliminando combo:", error);

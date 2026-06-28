@@ -6,14 +6,24 @@ export default async function AdminOrdersPage() {
     .from("orders")
     .select(`
       id,
+      order_number,
       total,
+      subtotal,
+      delivery_fee,
       status,
+      payment_status,
       address,
+      exact_address,
+      municipality,
+      zone_name,
       state,
       zip_code,
       country,
       notes,
       created_at,
+      recipient_name,
+      recipient_phone,
+      recipient_phone_alt,
       customers (
         name,
         email,
@@ -33,8 +43,10 @@ export default async function AdminOrdersPage() {
 
   if (error) {
     return (
-      <main className="min-h-screen p-6">
-        Error cargando órdenes
+      <main className="min-h-screen bg-gray-50 p-6">
+        <p className="font-bold text-red-600">
+          Error cargando órdenes: {error.message}
+        </p>
       </main>
     );
   }
@@ -43,12 +55,10 @@ export default async function AdminOrdersPage() {
     <main className="min-h-screen bg-gray-50 p-4 pb-28 text-[#061b3a] md:p-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6">
-          <h1 className="text-3xl font-black">
-            Órdenes
-          </h1>
+          <h1 className="text-3xl font-black">Órdenes</h1>
 
           <p className="mt-1 text-sm font-semibold text-slate-500">
-            Panel administrativo de pedidos.
+            Busca, filtra, actualiza estados y gestiona pedidos.
           </p>
         </div>
 

@@ -7,6 +7,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Upload } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 import {
   getProducts,
@@ -67,7 +68,18 @@ export default function AdminProductsPage() {
   async function fetchProducts() {
     setLoading(true);
 
-    const { data, error } = await getProducts();
+    const { data, error } = await supabase
+  .from("products")
+  .select(`
+    *,
+    product_images (
+      image_url,
+      is_main,
+      position
+    )
+  `)
+  .is("deleted_at", null)
+  .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error cargando productos:", error.message);
@@ -132,23 +144,29 @@ export default function AdminProductsPage() {
      PRODUCTOS - ELIMINAR DEFINITIVAMENTE
   ========================================================= */
 
-  async function deleteProductForever(id: string) {
-    const confirmed = confirm(
-      "Esto eliminará el producto definitivamente. ¿Seguro?"
-    );
+async function deleteProductForever(id: string) {
+  const confirmed = confirm(
+    "¿Enviar este producto a la papelera?"
+  );
 
-    if (!confirmed) return;
+  if (!confirmed) return;
 
-    const { error } = await deleteProductForeverService(id);
+  const { error } = await supabase
+    .from("products")
+    .update({
+      deleted_at: new Date().toISOString(),
+    })
+    .eq("id", id);
 
-    if (error) {
-      alert("Error eliminando producto");
-      return;
-    }
-
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-    setOpenMenuId(null);
+  if (error) {
+    alert("Error enviando producto a la papelera");
+    return;
   }
+
+  setProducts((prev) => prev.filter((p) => p.id !== id));
+
+  setOpenMenuId(null);
+}
 
   /* =========================================================
      FILTROS RÁPIDOS

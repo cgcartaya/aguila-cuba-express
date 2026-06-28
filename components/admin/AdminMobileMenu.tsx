@@ -1,20 +1,5 @@
 "use client";
 
-/* =========================================================
-   ADMIN MOBILE MENU
-
-   Drawer lateral para el panel administrativo.
-   Se usa en móvil para no saturar el Bottom Navigation.
-
-   Incluye accesos a:
-   - Dashboard
-   - Productos
-   - Categorías
-   - Combos
-   - Órdenes
-   - Tienda pública
-========================================================= */
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -35,59 +20,24 @@ type AdminMobileMenuProps = {
 };
 
 const adminLinks = [
-  {
-    label: "Dashboard",
-    href: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Productos",
-    href: "/admin/products",
-    icon: Package,
-  },
-  {
-    label: "Categorías",
-    href: "/admin/categories",
-    icon: Tags,
-  },
-  {
-    label: "Combos",
-    href: "/admin/combos",
-    icon: Boxes,
-  },
-  {
-    label: "Órdenes",
-    href: "/admin/orders",
-    icon: ClipboardList,
-  },
-  {
-  label: "Clientes",
-  href: "/admin/customers",
-  icon: Users,
-},
-  {
-    label: "Configuración",
-    href: "/admin/settings",
-    icon: Settings,
-  },
-  {
-    label: "Ver tienda pública",
-    href: "/tienda",
-    icon: Store,
-  },
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Productos", href: "/admin/products", icon: Package },
+  { label: "Inventario", href: "/admin/inventory", icon: Boxes },
+  { label: "Categorías", href: "/admin/categories", icon: Tags },
+  { label: "Combos", href: "/admin/combos", icon: Boxes },
+  { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
+  { label: "Clientes", href: "/admin/customers", icon: Users },
+  { label: "Configuración", href: "/admin/settings", icon: Settings },
+  { label: "Ver tienda pública", href: "/tienda", icon: Store },
 ];
 
-export default function AdminMobileMenu({
-  open,
-  onClose,
-}: AdminMobileMenuProps) {
+export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
   const pathname = usePathname();
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] lg:hidden">
-      {/* Fondo oscuro */}
+    <div className="fixed inset-0 z-[100] xl:hidden">
       <button
         type="button"
         aria-label="Cerrar menú"
@@ -95,14 +45,10 @@ export default function AdminMobileMenu({
         className="absolute inset-0 bg-black/45"
       />
 
-      {/* Drawer */}
       <aside className="relative h-full w-[82%] max-w-sm bg-white shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5">
           <div>
-            <h2 className="text-xl font-black text-[#061b3a]">
-              Admin
-            </h2>
+            <h2 className="text-xl font-black text-[#061b3a]">Admin</h2>
             <p className="text-sm font-bold text-slate-500">
               Águila Cuba Express
             </p>
@@ -117,15 +63,12 @@ export default function AdminMobileMenu({
           </button>
         </div>
 
-        {/* Links */}
         <nav className="grid gap-2 px-4 py-5">
           {adminLinks.map((item) => {
             const Icon = item.icon;
-
             const isActive =
               pathname === item.href ||
-              (item.href !== "/admin" &&
-                pathname.startsWith(item.href));
+              (item.href !== "/admin" && pathname.startsWith(item.href));
 
             return (
               <Link

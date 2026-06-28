@@ -11,11 +11,13 @@ import {
   Plus,
   Users,
   Settings,
+  Boxes,
 } from "lucide-react";
 
 const links = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Productos", icon: Package },
+  { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
   { href: "/admin/customers", label: "Clientes", icon: Users },
   { href: "/admin/settings", label: "Ajustes", icon: Settings },
@@ -25,7 +27,7 @@ export default function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden min-h-screen w-72 bg-[#0B1F4D] p-5 text-white shadow-xl lg:block">
+    <aside className="hidden min-h-screen w-72 bg-[#0B1F4D] p-5 text-white shadow-xl xl:block">
       <div className="mb-8">
         <h1 className="text-xl font-bold text-white">Águila Admin</h1>
         <p className="text-sm text-blue-200">Panel de control</p>
@@ -42,7 +44,6 @@ export default function AdminNav() {
       <nav className="space-y-2">
         {links.map((link) => {
           const Icon = link.icon;
-
           const active =
             pathname === link.href ||
             (link.href !== "/admin" && pathname.startsWith(link.href));
