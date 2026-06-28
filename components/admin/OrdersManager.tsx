@@ -17,8 +17,6 @@ import {
   PackageCheck,
   Clock,
   Truck,
-  CheckCircle2,
-  XCircle,
 } from "lucide-react";
 
 const STATUSES = [
@@ -94,7 +92,6 @@ export default function OrdersManager({
       pendientes: orders.filter((o) => o.status === "Pendiente").length,
       preparando: orders.filter((o) => o.status === "Preparando").length,
       transito: orders.filter((o) => o.status === "En tránsito").length,
-      entregadas: orders.filter((o) => o.status === "Entregada").length,
       ventas: totalSales,
     };
   }, [orders]);
@@ -134,45 +131,37 @@ export default function OrdersManager({
   }, [orders, filter, search]);
 
   async function updateStatus(id: string, status: string) {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("orders")
-.update({
-  deleted_at: new Date().toISOString(),
-})
+      .update({ status })
+      .eq("id", id);
 
     if (error) {
       alert(`Error actualizando estado: ${error.message}`);
       return;
     }
 
-    if (!data || data.length === 0) {
-      alert("No se pudo actualizar. Revisa RLS o permisos de Supabase.");
-      return;
-    }
-
     setOrders((prev) =>
-      prev.map((order) => (order.id === id ? { ...order, status } : order))
+      prev.map((order) =>
+        order.id === id ? { ...order, status } : order
+      )
     );
   }
 
   async function deleteOrder(id: string) {
-    const ok = confirm("¿Seguro que deseas eliminar esta orden?");
+    const ok = confirm("¿Seguro que deseas enviar esta orden a la papelera?");
 
     if (!ok) return;
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("orders")
-      .delete()
-      .eq("id", id)
-      .select();
+      .update({
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", id);
 
     if (error) {
       alert(`Error eliminando orden: ${error.message}`);
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      alert("No se pudo eliminar. Revisa RLS o permisos de Supabase.");
       return;
     }
 
@@ -251,9 +240,11 @@ export default function OrdersManager({
       {filteredOrders.length === 0 ? (
         <div className="rounded-3xl bg-white p-10 text-center shadow-sm">
           <ClipboardList className="mx-auto mb-3 text-slate-400" size={42} />
+
           <h2 className="text-xl font-black text-[#061b3a]">
             No hay órdenes para mostrar
           </h2>
+
           <p className="mt-2 text-sm font-semibold text-slate-500">
             Cambia el filtro o prueba otra búsqueda.
           </p>
@@ -296,7 +287,9 @@ export default function OrdersManager({
 
                       <select
                         value={order.status}
-                        onChange={(e) => updateStatus(order.id, e.target.value)}
+                        onChange={(e) =>
+                          updateStatus(order.id, e.target.value)
+                        }
                         className="rounded-xl border border-slate-300 bg-white p-2 text-sm font-bold text-slate-700"
                       >
                         {STATUSES.filter((status) => status !== "Todas").map(
@@ -316,7 +309,7 @@ export default function OrdersManager({
                         type="button"
                         onClick={() => deleteOrder(order.id)}
                         className="rounded-xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100"
-                        aria-label="Eliminar orden"
+                        aria-label="Enviar orden a la papelera"
                       >
                         <Trash2 size={18} />
                       </button>
