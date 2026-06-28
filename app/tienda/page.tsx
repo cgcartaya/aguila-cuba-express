@@ -113,7 +113,7 @@ export default function TiendaPage() {
   }, [categorias, productosBuscados, hayBusqueda]);
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden pb-[calc(6rem+env(safe-area-inset-bottom))]">
+    <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
       <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
 
       {!hayBusqueda && (
