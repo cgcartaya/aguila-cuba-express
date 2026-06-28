@@ -14,7 +14,7 @@
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-
+import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProducts } from "@/lib/services/products";
 import ProductCard from "@/components/tienda/ProductCard";
 import ProductSearch from "@/components/tienda/ProductSearch";
@@ -119,9 +119,8 @@ export default function CategoryPage({ params }: Props) {
         normalizarTexto(producto.category) ===
         normalizarTexto(categoryName);
 
-      const coincideBusqueda = normalizarTexto(
-        producto.name
-      ).includes(normalizarTexto(busqueda));
+      const coincideBusqueda =
+  productMatchesSearch(producto, busqueda);
 
       return mismaCategoria && coincideBusqueda;
     });

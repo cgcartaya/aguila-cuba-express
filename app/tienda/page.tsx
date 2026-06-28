@@ -12,7 +12,7 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
-
+import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProducts } from "@/lib/services/products";
 import { getActiveCategories } from "@/lib/services/settings";
 
@@ -75,9 +75,9 @@ export default function TiendaPage() {
     cargarDatos();
   }, []);
 
-  const productosBuscados = productos.filter((producto) =>
-    producto.name.toLowerCase().includes(busqueda.toLowerCase())
-  );
+const productosBuscados = productos.filter((producto) =>
+  productMatchesSearch(producto, busqueda)
+);
 
   const categoriasConCombos = useMemo(() => {
     return [
