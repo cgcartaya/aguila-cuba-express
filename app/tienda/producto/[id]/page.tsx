@@ -7,8 +7,9 @@
 ========================================================= */
 
 import Image from "next/image";
+import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 
 import ProductGallery from "@/components/tienda/product-detail/ProductGallery";
 import ProductInfo from "@/components/tienda/product-detail/ProductInfo";
@@ -21,10 +22,6 @@ import {
 
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
-
-/* =========================================================
-   TYPES
-========================================================= */
 
 type ProductImage = {
   id: string;
@@ -43,13 +40,8 @@ type PageProps = {
   }>;
 };
 
-/* =========================================================
-   COMPONENT
-========================================================= */
-
 export default function ProductDetailPage({ params }: PageProps) {
   const { id } = use(params);
-
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState<StoreProduct | null>(null);
@@ -57,10 +49,6 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [selectedImage, setSelectedImage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
-
-  /* =========================================================
-     CARGAR PRODUCTO DESDE SUPABASE
-  ========================================================= */
 
   useEffect(() => {
     async function loadProduct() {
@@ -79,8 +67,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
 
       const mainImage =
-        orderedImages.find((img) => img.is_main) ||
-        orderedImages[0];
+        orderedImages.find((img) => img.is_main) || orderedImages[0];
 
       setProduct(productData);
 
@@ -90,29 +77,18 @@ export default function ProductDetailPage({ params }: PageProps) {
           "/placeholder-product.png"
       );
 
-      /* =====================================================
-         CARGAR PRODUCTOS RELACIONADOS
-      ===================================================== */
-
       if (productData.category) {
-        const { data: relatedData } =
-          await getRelatedProducts(
-            productData.category,
-            String(productData.id)
-          );
-
-        setRelatedProducts(
-          (relatedData as Product[]) || []
+        const { data: relatedData } = await getRelatedProducts(
+          productData.category,
+          String(productData.id)
         );
+
+        setRelatedProducts((relatedData as Product[]) || []);
       }
     }
 
     loadProduct();
   }, [id]);
-
-  /* =========================================================
-     LOADING
-  ========================================================= */
 
   if (!product) {
     return (
@@ -123,10 +99,6 @@ export default function ProductDetailPage({ params }: PageProps) {
       </div>
     );
   }
-
-  /* =========================================================
-     ORGANIZAR IMÁGENES DEL PRODUCTO
-  ========================================================= */
 
   const productImages =
     product.product_images
@@ -139,17 +111,11 @@ export default function ProductDetailPage({ params }: PageProps) {
       : [
           {
             id: "fallback",
-            image_url:
-              product.image_url ||
-              "/placeholder-product.png",
+            image_url: product.image_url || "/placeholder-product.png",
             is_main: true,
             position: 0,
           },
         ];
-
-  /* =========================================================
-     AGREGAR AL CARRITO
-  ========================================================= */
 
   const handleAddToCart = () => {
     if (Number(product.stock) <= 0) return;
@@ -158,21 +124,25 @@ export default function ProductDetailPage({ params }: PageProps) {
       addToCart({
         ...product,
         image_url:
-          selectedImage ||
-          product.image_url ||
-          "/placeholder-product.png",
+          selectedImage || product.image_url || "/placeholder-product.png",
       });
     }
   };
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
-
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
       <div className="mx-auto max-w-6xl px-4 py-5">
-        
+        {/* BOTÓN VOLVER A TIENDA */}
+        <div className="mb-5">
+          <Link
+            href="/tienda"
+            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#061b3a] shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md"
+          >
+            <ArrowLeft size={18} />
+            Volver a tienda
+          </Link>
+        </div>
+
         {/* INFORMACIÓN PRINCIPAL DEL PRODUCTO */}
         <div className="grid gap-8 md:grid-cols-2">
           <ProductGallery
@@ -199,10 +169,6 @@ export default function ProductDetailPage({ params }: PageProps) {
         <RelatedProducts products={relatedProducts} />
       </div>
 
-      {/* =====================================================
-          MODAL ZOOM DE LA IMAGEN
-      ===================================================== */}
-
       {isZoomOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
           <button
@@ -215,10 +181,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
           <div className="relative h-[80vh] w-full max-w-4xl">
             <Image
-              src={
-                selectedImage ||
-                "/placeholder-product.png"
-              }
+              src={selectedImage || "/placeholder-product.png"}
               alt={product.name}
               fill
               unoptimized

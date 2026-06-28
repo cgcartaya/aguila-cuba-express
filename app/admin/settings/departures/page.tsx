@@ -2,20 +2,10 @@
 
 /* =========================================================
    ADMIN - SALIDAS
-
-   Permite al jefe administrar las próximas salidas:
-   - Fecha
-   - Hora
-   - Origen
-   - Destino
-   - Estado
-   - Activa/inactiva
 ========================================================= */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
-  ArrowLeft,
   CalendarDays,
   Loader2,
   Pencil,
@@ -23,6 +13,10 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
+
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import AdminBackButton from "@/components/admin/ui/AdminBackButton";
+import AdminButton from "@/components/admin/ui/AdminButton";
 
 import {
   createDeparture,
@@ -93,7 +87,9 @@ export default function AdminDeparturesPage() {
   }
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) {
     const target = e.target;
 
@@ -207,37 +203,23 @@ export default function AdminDeparturesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-[#F8FAFC] p-6">
       <div className="mx-auto max-w-7xl">
-        <Link
-          href="/admin/settings"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-black"
-        >
-          <ArrowLeft size={18} />
-          Volver a ajustes
-        </Link>
+        <AdminBackButton />
 
-        <section className="mb-8 rounded-[2rem] bg-black p-8 text-white shadow-sm">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm">
-            <CalendarDays size={16} />
-            Calendario operativo
-          </div>
-
-          <h1 className="text-3xl font-bold md:text-5xl">
-            Próximas salidas
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-white/70">
-            Administra las fechas de salida que verán los clientes en la tienda.
-          </p>
-        </section>
+        <AdminPageHeader
+          title="Próximas salidas"
+          description="Administra las fechas de salida que verán los clientes en la tienda."
+          badge="Calendario operativo"
+          icon={CalendarDays}
+        />
 
         <section className="grid gap-6 lg:grid-cols-[420px_1fr]">
           <form
             onSubmit={handleSubmit}
-            className="h-fit rounded-3xl bg-white p-6 shadow-sm"
+            className="h-fit rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
           >
-            <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900">
+            <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-[#0B1F4D]">
               {editingId ? (
                 <>
                   <Pencil size={20} />
@@ -260,19 +242,13 @@ export default function AdminDeparturesPage() {
                 placeholder="Ej: Salida aérea semanal"
               />
 
-              <div>
-                <label className="mb-1 block text-sm font-bold text-gray-700">
-                  Fecha de salida
-                </label>
-
-                <input
-                  type="date"
-                  name="departure_date"
-                  value={form.departure_date}
-                  onChange={handleChange}
-                  className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black"
-                />
-              </div>
+              <Input
+                label="Fecha de salida"
+                name="departure_date"
+                type="date"
+                value={form.departure_date}
+                onChange={handleChange}
+              />
 
               <Input
                 label="Hora aproximada"
@@ -299,7 +275,7 @@ export default function AdminDeparturesPage() {
               />
 
               <div>
-                <label className="mb-1 block text-sm font-bold text-gray-700">
+                <label className="mb-1 block text-sm font-bold text-[#0B1F4D]">
                   Estado
                 </label>
 
@@ -307,7 +283,7 @@ export default function AdminDeparturesPage() {
                   name="status"
                   value={form.status}
                   onChange={handleChange}
-                  className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 >
                   {statusOptions.map((status) => (
                     <option key={status.value} value={status.value}>
@@ -318,7 +294,7 @@ export default function AdminDeparturesPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-bold text-gray-700">
+                <label className="mb-1 block text-sm font-bold text-[#0B1F4D]">
                   Descripción
                 </label>
 
@@ -328,7 +304,7 @@ export default function AdminDeparturesPage() {
                   onChange={handleChange}
                   rows={4}
                   placeholder="Ej: Recibimos órdenes hasta el día anterior."
-                  className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 />
               </div>
 
@@ -340,7 +316,7 @@ export default function AdminDeparturesPage() {
                 onChange={handleChange}
               />
 
-              <label className="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold text-gray-700">
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-blue-50/40 px-4 py-3 text-sm font-semibold text-[#0B1F4D]">
                 <input
                   name="is_active"
                   type="checkbox"
@@ -365,68 +341,63 @@ export default function AdminDeparturesPage() {
             )}
 
             <div className="mt-6 flex gap-3">
-              <button
+              <AdminButton
                 type="submit"
                 disabled={saving}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-black px-5 py-3 font-bold text-white disabled:opacity-60"
+                icon={saving ? Loader2 : Save}
+                className="flex-1"
               >
-                {saving ? (
-                  <>
-                    <Loader2 className="animate-spin" size={18} />
-                    Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Save size={18} />
-                    {editingId ? "Guardar cambios" : "Crear salida"}
-                  </>
-                )}
-              </button>
+                {saving
+                  ? "Guardando..."
+                  : editingId
+                    ? "Guardar cambios"
+                    : "Crear salida"}
+              </AdminButton>
 
               {editingId && (
-                <button
+                <AdminButton
                   type="button"
                   onClick={resetForm}
-                  className="rounded-2xl border px-5 py-3 font-bold text-gray-700 hover:bg-gray-50"
+                  variant="secondary"
                 >
                   Cancelar
-                </button>
+                </AdminButton>
               )}
             </div>
           </form>
 
-          <section className="rounded-3xl bg-white p-6 shadow-sm">
+          <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-[#0B1F4D]">
                   Salidas configuradas
                 </h2>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-slate-500">
                   Estas fechas se mostrarán en la tienda pública.
                 </p>
               </div>
 
-              <span className="rounded-full bg-gray-100 px-4 py-2 text-sm font-bold text-gray-700">
+              <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700">
                 {departures.length} salidas
               </span>
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center gap-2 rounded-2xl bg-gray-50 p-10 text-gray-500">
+              <div className="flex items-center justify-center gap-2 rounded-2xl bg-slate-50 p-10 text-slate-500">
                 <Loader2 className="animate-spin" size={20} />
                 Cargando salidas...
               </div>
             ) : departures.length === 0 ? (
-              <div className="rounded-2xl border border-dashed p-10 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-300 p-10 text-center">
                 <CalendarDays
-                  className="mx-auto mb-3 text-gray-400"
+                  className="mx-auto mb-3 text-slate-400"
                   size={36}
                 />
-                <h3 className="font-bold text-gray-900">
+                <h3 className="font-bold text-[#0B1F4D]">
                   Todavía no hay salidas
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-slate-500">
                   Crea la primera fecha para mostrarla en la tienda.
                 </p>
               </div>
@@ -435,12 +406,12 @@ export default function AdminDeparturesPage() {
                 {departures.map((departure) => (
                   <article
                     key={departure.id}
-                    className="rounded-2xl border p-4 transition hover:bg-gray-50"
+                    className="rounded-2xl border border-slate-200 p-4 transition hover:border-blue-200 hover:bg-blue-50/20"
                   >
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div>
                         <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <h3 className="text-lg font-bold text-gray-900">
+                          <h3 className="text-lg font-bold text-[#0B1F4D]">
                             {departure.title}
                           </h3>
 
@@ -448,7 +419,7 @@ export default function AdminDeparturesPage() {
                             className={`rounded-full px-3 py-1 text-xs font-bold ${
                               departure.is_active
                                 ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-500"
+                                : "bg-slate-100 text-slate-500"
                             }`}
                           >
                             {departure.is_active ? "Activa" : "Inactiva"}
@@ -457,19 +428,19 @@ export default function AdminDeparturesPage() {
                           <StatusBadge status={departure.status} />
                         </div>
 
-                        <p className="font-semibold text-gray-700">
+                        <p className="font-semibold text-slate-700">
                           {formatDate(departure.departure_date)}
                           {departure.departure_time
                             ? ` · ${departure.departure_time}`
                             : ""}
                         </p>
 
-                        <p className="mt-1 text-sm text-gray-500">
-                          {departure.origin} → {departure.destination}
+                        <p className="mt-1 text-sm text-slate-500">
+                          {departure.origin} ? {departure.destination}
                         </p>
 
                         {departure.description && (
-                          <p className="mt-2 text-sm text-gray-600">
+                          <p className="mt-2 text-sm text-slate-600">
                             {departure.description}
                           </p>
                         )}
@@ -479,7 +450,7 @@ export default function AdminDeparturesPage() {
                         <button
                           type="button"
                           onClick={() => handleEdit(departure)}
-                          className="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold text-gray-700 hover:bg-white"
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-[#0B1F4D] hover:bg-blue-50"
                         >
                           <Pencil size={15} />
                           Editar
@@ -523,7 +494,7 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-bold text-gray-700">
+      <label className="mb-1 block text-sm font-bold text-[#0B1F4D]">
         {label}
       </label>
 
@@ -533,7 +504,7 @@ function Input({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-xl border px-4 py-3 outline-none focus:border-black"
+        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
       />
     </div>
   );

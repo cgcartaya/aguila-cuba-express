@@ -2,31 +2,15 @@
 
 /* =========================================================
    AJUSTES DE BANNERS - ADMIN
-
-   Aquí el administrador controla los banners/promociones
-   de la tienda:
-   - título
-   - subtítulo
-   - imagen URL
-   - texto del botón
-   - link del botón
-   - orden
-   - activo / inactivo
-
-   Nota:
-   En esta primera versión usamos image_url manual.
-   Luego podemos mejorarlo con subida directa a Supabase Storage.
 ========================================================= */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import {
-  ArrowLeft,
-  Image,
-  Loader2,
-  Plus,
-  Trash2,
-} from "lucide-react";
+import { Image, Loader2, Plus, Trash2 } from "lucide-react";
+
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import AdminBackButton from "@/components/admin/ui/AdminBackButton";
+import AdminButton from "@/components/admin/ui/AdminButton";
+import AdminInput from "@/components/admin/ui/AdminInput";
 
 import {
   createBanner,
@@ -34,6 +18,7 @@ import {
   getBanners,
   updateBanner,
 } from "@/lib/services/settings";
+
 import type { Banner } from "@/components/admin/settings/types";
 
 export default function AdminBannersSettingsPage() {
@@ -119,39 +104,24 @@ export default function AdminBannersSettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-[#F8FAFC] p-6">
       <div className="mx-auto max-w-6xl">
-        <Link
-          href="/admin/settings"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
-        >
-          <ArrowLeft size={18} />
-          Volver a ajustes
-        </Link>
+        <AdminBackButton />
 
-        <section className="mb-8 rounded-[2rem] bg-black p-8 text-white">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm">
-            <Image size={16} />
-            Promociones
-          </div>
+        <AdminPageHeader
+          title="Banners"
+          description="Crea y administra banners promocionales para la tienda sin tocar código."
+          badge="Promociones"
+          icon={Image}
+        />
 
-          <h1 className="text-3xl font-bold md:text-5xl">
-            Banners
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-white/70">
-            Crea y administra banners promocionales para la tienda sin tocar
-            código.
-          </p>
-        </section>
-
-        <section className="mb-8 rounded-3xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-bold text-gray-900">
+        <section className="mb-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-5 text-xl font-bold text-[#0B1F4D]">
             Nuevo banner
           </h2>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Input
+            <AdminInput
               label="Título"
               value={form.title}
               onChange={(value) =>
@@ -160,7 +130,7 @@ export default function AdminBannersSettingsPage() {
               placeholder="Ej: Envíos semanales a Cienfuegos"
             />
 
-            <Input
+            <AdminInput
               label="Subtítulo"
               value={form.subtitle}
               onChange={(value) =>
@@ -169,7 +139,7 @@ export default function AdminBannersSettingsPage() {
               placeholder="Recibe tus productos rápido y seguro"
             />
 
-            <Input
+            <AdminInput
               label="URL de imagen"
               value={form.image_url}
               onChange={(value) =>
@@ -178,7 +148,7 @@ export default function AdminBannersSettingsPage() {
               placeholder="/banners/banner-1.jpg"
             />
 
-            <Input
+            <AdminInput
               label="Texto del botón"
               value={form.button_text}
               onChange={(value) =>
@@ -187,7 +157,7 @@ export default function AdminBannersSettingsPage() {
               placeholder="Ver productos"
             />
 
-            <Input
+            <AdminInput
               label="Link del botón"
               value={form.button_link}
               onChange={(value) =>
@@ -196,7 +166,7 @@ export default function AdminBannersSettingsPage() {
               placeholder="/tienda"
             />
 
-            <Input
+            <AdminInput
               label="Orden"
               type="number"
               value={form.sort_order}
@@ -206,7 +176,7 @@ export default function AdminBannersSettingsPage() {
               placeholder="0"
             />
 
-            <label className="flex items-center gap-3 rounded-2xl border px-4 py-3 md:col-span-2">
+            <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-blue-50/40 px-4 py-3 md:col-span-2">
               <input
                 type="checkbox"
                 checked={form.is_active}
@@ -220,10 +190,8 @@ export default function AdminBannersSettingsPage() {
               />
 
               <div>
-                <p className="font-bold text-gray-900">
-                  Banner activo
-                </p>
-                <p className="text-sm text-gray-500">
+                <p className="font-bold text-[#0B1F4D]">Banner activo</p>
+                <p className="text-sm text-slate-500">
                   Si está activo, podrá mostrarse en la tienda.
                 </p>
               </div>
@@ -231,7 +199,7 @@ export default function AdminBannersSettingsPage() {
           </div>
 
           {form.image_url && (
-            <div className="mt-5 overflow-hidden rounded-3xl border bg-gray-50">
+            <div className="mt-5 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50">
               <img
                 src={form.image_url}
                 alt="Vista previa del banner"
@@ -240,37 +208,29 @@ export default function AdminBannersSettingsPage() {
             </div>
           )}
 
-          <button
-            onClick={handleCreate}
-            disabled={saving || !form.title}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-black px-5 py-3 font-bold text-white disabled:opacity-60"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="animate-spin" size={20} />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Plus size={20} />
-                Crear banner
-              </>
-            )}
-          </button>
+          <div className="mt-5">
+            <AdminButton
+              onClick={handleCreate}
+              disabled={saving || !form.title}
+              icon={saving ? Loader2 : Plus}
+            >
+              {saving ? "Guardando..." : "Crear banner"}
+            </AdminButton>
+          </div>
         </section>
 
-        <section className="rounded-3xl bg-white p-6 shadow-sm">
-          <h2 className="mb-5 text-xl font-bold text-gray-900">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-5 text-xl font-bold text-[#0B1F4D]">
             Banners existentes
           </h2>
 
           {loading ? (
-            <div className="flex items-center gap-2 text-gray-500">
+            <div className="flex items-center gap-2 text-slate-500">
               <Loader2 className="animate-spin" size={20} />
               Cargando banners...
             </div>
           ) : banners.length === 0 ? (
-            <p className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-500">
+            <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-500">
               Todavía no hay banners creados.
             </p>
           ) : (
@@ -278,10 +238,10 @@ export default function AdminBannersSettingsPage() {
               {banners.map((banner) => (
                 <div
                   key={banner.id}
-                  className="rounded-3xl border p-4"
+                  className="rounded-3xl border border-slate-200 bg-white p-4 transition hover:border-blue-200 hover:shadow-md"
                 >
                   {banner.image_url && (
-                    <div className="mb-4 overflow-hidden rounded-2xl bg-gray-100">
+                    <div className="mb-4 overflow-hidden rounded-2xl bg-slate-100">
                       <img
                         src={banner.image_url}
                         alt={banner.title}
@@ -291,7 +251,7 @@ export default function AdminBannersSettingsPage() {
                   )}
 
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <Input
+                    <AdminInput
                       label="Título"
                       value={banner.title}
                       onChange={(value) =>
@@ -299,7 +259,7 @@ export default function AdminBannersSettingsPage() {
                       }
                     />
 
-                    <Input
+                    <AdminInput
                       label="Subtítulo"
                       value={banner.subtitle || ""}
                       onChange={(value) =>
@@ -307,7 +267,7 @@ export default function AdminBannersSettingsPage() {
                       }
                     />
 
-                    <Input
+                    <AdminInput
                       label="Imagen"
                       value={banner.image_url || ""}
                       onChange={(value) =>
@@ -315,7 +275,7 @@ export default function AdminBannersSettingsPage() {
                       }
                     />
 
-                    <Input
+                    <AdminInput
                       label="Texto botón"
                       value={banner.button_text || ""}
                       onChange={(value) =>
@@ -323,7 +283,7 @@ export default function AdminBannersSettingsPage() {
                       }
                     />
 
-                    <Input
+                    <AdminInput
                       label="Link botón"
                       value={banner.button_link || ""}
                       onChange={(value) =>
@@ -331,22 +291,19 @@ export default function AdminBannersSettingsPage() {
                       }
                     />
 
-                    <Input
+                    <AdminInput
                       label="Orden"
                       type="number"
                       value={String(banner.sort_order || 0)}
                       onChange={(value) =>
-                        handleUpdate(
-                          banner.id,
-                          "sort_order",
-                          Number(value)
-                        )
+                        handleUpdate(banner.id, "sort_order", Number(value))
                       }
                     />
                   </div>
 
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-end">
                     <button
+                      type="button"
                       onClick={() =>
                         handleUpdate(
                           banner.id,
@@ -354,18 +311,19 @@ export default function AdminBannersSettingsPage() {
                           !banner.is_active
                         )
                       }
-                      className={`rounded-2xl px-5 py-3 font-bold ${
+                      className={`rounded-2xl px-5 py-3 font-bold transition ${
                         banner.is_active
-                          ? "bg-green-50 text-green-700"
-                          : "bg-gray-100 text-gray-500"
+                          ? "bg-green-50 text-green-700 hover:bg-green-100"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                       }`}
                     >
                       {banner.is_active ? "Activo" : "Inactivo"}
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleDelete(banner.id)}
-                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-50 px-5 py-3 font-bold text-red-600"
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-50 px-5 py-3 font-bold text-red-600 transition hover:bg-red-100"
                     >
                       <Trash2 size={18} />
                       Eliminar
@@ -378,35 +336,5 @@ export default function AdminBannersSettingsPage() {
         </section>
       </div>
     </main>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-gray-700">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
-      />
-    </div>
   );
 }

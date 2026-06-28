@@ -2,20 +2,15 @@
 
 /* =========================================================
    AJUSTES GENERALES - ADMIN
-
-   Aquí el administrador controla datos principales
-   del negocio:
-   - nombre
-   - slogan
-   - teléfono / WhatsApp
-   - email
-   - dirección
-   - redes sociales
 ========================================================= */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Store } from "lucide-react";
+import { Loader2, Save, Store } from "lucide-react";
+
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import AdminBackButton from "@/components/admin/ui/AdminBackButton";
+import AdminButton from "@/components/admin/ui/AdminButton";
+import AdminInput from "@/components/admin/ui/AdminInput";
 
 import {
   getStoreSettings,
@@ -63,10 +58,7 @@ export default function AdminGeneralSettingsPage() {
     loadSettings();
   }, []);
 
-  const handleChange = (
-    field: keyof typeof form,
-    value: string
-  ) => {
+  const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({
       ...prev,
       [field]: value,
@@ -88,8 +80,8 @@ export default function AdminGeneralSettingsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto flex max-w-5xl items-center gap-2 text-gray-500">
+      <main className="min-h-screen bg-[#F8FAFC] p-6">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 text-slate-500">
           <Loader2 className="animate-spin" size={20} />
           Cargando configuración...
         </div>
@@ -98,70 +90,55 @@ export default function AdminGeneralSettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-[#F8FAFC] p-6">
       <div className="mx-auto max-w-5xl">
-        <Link
-          href="/admin/settings"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
-        >
-          <ArrowLeft size={18} />
-          Volver a ajustes
-        </Link>
+        <AdminBackButton />
 
-        <section className="mb-8 rounded-[2rem] bg-black p-8 text-white">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm">
-            <Store size={16} />
-            Negocio
-          </div>
+        <AdminPageHeader
+          title="Configuración general"
+          description="Datos principales que usará la tienda para mostrar información del negocio y canales de contacto."
+          badge="Negocio"
+          icon={Store}
+        />
 
-          <h1 className="text-3xl font-bold md:text-5xl">
-            Configuración general
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-white/70">
-            Datos principales que usará la tienda para mostrar información del
-            negocio y canales de contacto.
-          </p>
-        </section>
-
-        <section className="rounded-3xl bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-5 md:grid-cols-2">
-            <Input
+            <AdminInput
               label="Nombre de la tienda"
               value={form.store_name}
               onChange={(value) => handleChange("store_name", value)}
               placeholder="Águila Cuba Express"
             />
 
-            <Input
+            <AdminInput
               label="Eslogan"
               value={form.slogan}
               onChange={(value) => handleChange("slogan", value)}
               placeholder="Envíos rápidos y seguros hacia Cuba"
             />
 
-            <Input
+            <AdminInput
               label="Teléfono"
               value={form.phone}
               onChange={(value) => handleChange("phone", value)}
               placeholder="+1 305..."
             />
 
-            <Input
+            <AdminInput
               label="WhatsApp"
               value={form.whatsapp}
               onChange={(value) => handleChange("whatsapp", value)}
               placeholder="+1 305..."
             />
 
-            <Input
+            <AdminInput
               label="Correo electrónico"
               value={form.email}
               onChange={(value) => handleChange("email", value)}
               placeholder="info@aguilacubaexpress.com"
             />
 
-            <Input
+            <AdminInput
               label="Ciudad"
               value={form.city}
               onChange={(value) => handleChange("city", value)}
@@ -169,7 +146,7 @@ export default function AdminGeneralSettingsPage() {
             />
 
             <div className="md:col-span-2">
-              <Input
+              <AdminInput
                 label="Dirección"
                 value={form.address}
                 onChange={(value) => handleChange("address", value)}
@@ -177,14 +154,14 @@ export default function AdminGeneralSettingsPage() {
               />
             </div>
 
-            <Input
+            <AdminInput
               label="Facebook"
               value={form.facebook}
               onChange={(value) => handleChange("facebook", value)}
               placeholder="https://facebook.com/..."
             />
 
-            <Input
+            <AdminInput
               label="Instagram"
               value={form.instagram}
               onChange={(value) => handleChange("instagram", value)}
@@ -199,53 +176,12 @@ export default function AdminGeneralSettingsPage() {
           )}
 
           <div className="mt-6 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-2xl bg-black px-5 py-3 font-bold text-white disabled:opacity-60"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save size={20} />
-                  Guardar cambios
-                </>
-              )}
-            </button>
+            <AdminButton onClick={handleSave} disabled={saving} icon={Save}>
+              {saving ? "Guardando..." : "Guardar cambios"}
+            </AdminButton>
           </div>
         </section>
       </div>
     </main>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-gray-700">
-        {label}
-      </label>
-
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
-      />
-    </div>
   );
 }

@@ -29,7 +29,7 @@ export default function AdminLayout({
 
   return (
     <AdminAuthGuard>
-      <div className="min-h-screen bg-gray-50 xl:flex">
+      <div className="min-h-screen bg-[#F8FAFC] xl:flex">
         {/* =====================================================
             SIDEBAR SOLO EN PANTALLAS MUY GRANDES
         ===================================================== */}
@@ -41,7 +41,9 @@ export default function AdminLayout({
             CONTENIDO PRINCIPAL
         ===================================================== */}
         <div className="relative flex-1 pb-24 xl:pb-0">
-          {/* Botón hamburguesa móvil + tablet */}
+          {/* =====================================================
+              BOTÓN HAMBURGUESA MÓVIL + TABLET
+          ===================================================== */}
           <button
             type="button"
             onClick={() => setMenuOpen(true)}
@@ -57,9 +59,13 @@ export default function AdminLayout({
               items-center
               justify-center
               rounded-2xl
-              bg-[#061b3a]
+              bg-gradient-to-r
+              from-[#0B1F4D]
+              to-[#2563EB]
               text-white
-              shadow-lg
+              shadow-xl
+              transition
+              hover:scale-105
               xl:hidden
             "
           >

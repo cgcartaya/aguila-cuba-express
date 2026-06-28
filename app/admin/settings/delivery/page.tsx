@@ -2,18 +2,15 @@
 
 /* =========================================================
    AJUSTES DE DOMICILIO - ADMIN
-
-   Aquí el administrador controla las reglas comerciales
-   de entrega:
-   - compra mínima
-   - costo de domicilio
-   - domicilio gratis desde cierto monto
-   - mensaje visible para el cliente
 ========================================================= */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Truck } from "lucide-react";
+import { Loader2, Save, Truck } from "lucide-react";
+
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import AdminBackButton from "@/components/admin/ui/AdminBackButton";
+import AdminButton from "@/components/admin/ui/AdminButton";
+import AdminInput from "@/components/admin/ui/AdminInput";
 
 import {
   getStoreSettings,
@@ -79,8 +76,8 @@ export default function AdminDeliverySettingsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto flex max-w-5xl items-center gap-2 text-gray-500">
+      <main className="min-h-screen bg-[#F8FAFC] p-6">
+        <div className="mx-auto flex max-w-5xl items-center gap-2 text-slate-500">
           <Loader2 className="animate-spin" size={20} />
           Cargando reglas de domicilio...
         </div>
@@ -89,35 +86,20 @@ export default function AdminDeliverySettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-[#F8FAFC] p-6">
       <div className="mx-auto max-w-5xl">
-        <Link
-          href="/admin/settings"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
-        >
-          <ArrowLeft size={18} />
-          Volver a ajustes
-        </Link>
+        <AdminBackButton />
 
-        <section className="mb-8 rounded-[2rem] bg-black p-8 text-white">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm">
-            <Truck size={16} />
-            Entregas
-          </div>
+        <AdminPageHeader
+          title="Domicilio"
+          description="Define las condiciones de entrega para controlar cuándo aplica el domicilio y qué mensaje verá el cliente."
+          badge="Entregas"
+          icon={Truck}
+        />
 
-          <h1 className="text-3xl font-bold md:text-5xl">
-            Domicilio
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-white/70">
-            Define las condiciones de entrega para controlar cuándo aplica el
-            domicilio y qué mensaje verá el cliente.
-          </p>
-        </section>
-
-        <section className="rounded-3xl bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-5 md:grid-cols-3">
-            <Input
+            <AdminInput
               label="Compra mínima para domicilio"
               value={form.minimum_order}
               onChange={(value) => handleChange("minimum_order", value)}
@@ -125,7 +107,7 @@ export default function AdminDeliverySettingsPage() {
               type="number"
             />
 
-            <Input
+            <AdminInput
               label="Costo de domicilio"
               value={form.delivery_fee}
               onChange={(value) => handleChange("delivery_fee", value)}
@@ -133,7 +115,7 @@ export default function AdminDeliverySettingsPage() {
               type="number"
             />
 
-            <Input
+            <AdminInput
               label="Domicilio gratis desde"
               value={form.free_delivery_from}
               onChange={(value) => handleChange("free_delivery_from", value)}
@@ -142,7 +124,7 @@ export default function AdminDeliverySettingsPage() {
             />
 
             <div className="md:col-span-3">
-              <label className="mb-2 block text-sm font-bold text-gray-700">
+              <label className="mb-2 block text-sm font-bold text-[#0B1F4D]">
                 Mensaje visible para el cliente
               </label>
 
@@ -153,32 +135,32 @@ export default function AdminDeliverySettingsPage() {
                 }
                 rows={4}
                 placeholder="Ej: Las entregas a domicilio aplican para compras desde $20."
-                className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[#0B1F4D] outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               />
             </div>
           </div>
 
-          <div className="mt-6 rounded-3xl bg-gray-50 p-5">
-            <h2 className="font-bold text-gray-900">
+          <div className="mt-6 rounded-3xl border border-blue-100 bg-blue-50/50 p-5">
+            <h2 className="font-bold text-[#0B1F4D]">
               Vista previa de regla
             </h2>
 
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-slate-600">
               Compra mínima:{" "}
               <strong>${Number(form.minimum_order || 0).toFixed(2)}</strong>
             </p>
 
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-slate-600">
               Costo de domicilio:{" "}
               <strong>${Number(form.delivery_fee || 0).toFixed(2)}</strong>
             </p>
 
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-slate-600">
               Gratis desde:{" "}
               <strong>${Number(form.free_delivery_from || 0).toFixed(2)}</strong>
             </p>
 
-            <p className="mt-3 rounded-2xl bg-white p-4 text-sm font-medium text-gray-700">
+            <p className="mt-3 rounded-2xl bg-white p-4 text-sm font-medium text-slate-700">
               {form.delivery_message}
             </p>
           </div>
@@ -190,56 +172,12 @@ export default function AdminDeliverySettingsPage() {
           )}
 
           <div className="mt-6 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-2xl bg-black px-5 py-3 font-bold text-white disabled:opacity-60"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} />
-                  Guardando...
-                </>
-              ) : (
-                <>
-                  <Save size={20} />
-                  Guardar reglas
-                </>
-              )}
-            </button>
+            <AdminButton onClick={handleSave} disabled={saving} icon={Save}>
+              {saving ? "Guardando..." : "Guardar reglas"}
+            </AdminButton>
           </div>
         </section>
       </div>
     </main>
-  );
-}
-
-function Input({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-bold text-gray-700">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
-      />
-    </div>
   );
 }
