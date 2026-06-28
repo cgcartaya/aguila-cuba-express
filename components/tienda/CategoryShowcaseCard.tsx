@@ -33,7 +33,7 @@ export default function CategoryShowcaseCard({
   return (
     <Link
       href={`/tienda/categorias/${categorySlug}`}
-      className="min-w-[82vw] max-w-[82vw] snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:min-w-[420px] sm:max-w-[420px]"
+     className="w-[calc(100vw-2rem)] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
     >
       <div
         className="mb-2 flex items-center justify-between rounded-xl px-4 py-3 text-white"

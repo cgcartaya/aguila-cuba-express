@@ -57,7 +57,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
         </div>
       </div>
 
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {groups.map((group) => (
           <CategoryShowcaseCard
             key={group.categoria}
