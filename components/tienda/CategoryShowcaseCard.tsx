@@ -3,9 +3,10 @@
 /* =========================================================
    CATEGORY SHOWCASE CARD
 
-   Versión SaaS:
-   - Color dinámico desde Supabase.
-   - Compatible con categorías creadas por el cliente.
+   Correcciones:
+   - Mejor ancho mobile.
+   - Evita que el carrusel rompa la pantalla en iPhone.
+   - Mantiene colores dinámicos desde Supabase.
 ========================================================= */
 
 import Image from "next/image";
@@ -27,61 +28,27 @@ export default function CategoryShowcaseCard({
 }: Props) {
   const previewProducts = products.slice(0, 4);
 
-  const categorySlug = encodeURIComponent(
-    category.toLowerCase()
-  );
+  const categorySlug = encodeURIComponent(category.toLowerCase());
 
   return (
     <Link
       href={`/tienda/categorias/${categorySlug}`}
-      className="
-        min-w-[85%]
-        snap-start
-        overflow-hidden
-        rounded-2xl
-        border
-        border-slate-200
-        bg-slate-50
-        p-2
-        shadow-sm
-        transition-all
-        duration-300
-        hover:-translate-y-1
-        hover:shadow-lg
-        sm:min-w-[420px]
-      "
+      className="min-w-[82vw] max-w-[82vw] snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:min-w-[420px] sm:max-w-[420px]"
     >
-      {/* =====================================================
-          ENCABEZADO
-      ===================================================== */}
-
       <div
-        className="
-          mb-2
-          flex
-          items-center
-          justify-between
-          rounded-xl
-          px-4
-          py-3
-          text-white
-        "
+        className="mb-2 flex items-center justify-between rounded-xl px-4 py-3 text-white"
         style={{
           backgroundColor: color || "#3b82f6",
         }}
       >
-        <h3 className="text-lg font-black">
+        <h3 className="line-clamp-1 text-lg font-black">
           {category}
         </h3>
 
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
           <ChevronRight size={22} />
         </div>
       </div>
-
-      {/* =====================================================
-          CUADRÍCULA DE PRODUCTOS
-      ===================================================== */}
 
       <div
         className="grid grid-cols-2 gap-3 rounded-xl p-3"
@@ -92,28 +59,11 @@ export default function CategoryShowcaseCard({
         {previewProducts.map((product) => (
           <div
             key={product.id}
-            className="
-              overflow-hidden
-              rounded-xl
-              border
-              border-slate-200
-              bg-white
-              p-3
-              shadow-sm
-              transition-all
-              duration-300
-              hover:-translate-y-1
-              hover:shadow-md
-            "
+            className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
           >
-            {/* IMAGEN */}
-
             <div className="relative h-24 w-full rounded-lg bg-white">
               <Image
-                src={
-                  product.image_url ||
-                  "/placeholder-product.png"
-                }
+                src={product.image_url || "/placeholder-product.png"}
                 alt={product.name}
                 fill
                 unoptimized
@@ -121,13 +71,9 @@ export default function CategoryShowcaseCard({
               />
             </div>
 
-            {/* NOMBRE */}
-
             <p className="mt-3 line-clamp-2 min-h-[42px] text-sm font-bold text-[#061b3a]">
               {product.name}
             </p>
-
-            {/* TEXTO PROMOCIONAL */}
 
             <p
               className="mt-1 text-sm font-black"

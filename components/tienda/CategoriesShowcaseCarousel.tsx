@@ -3,16 +3,10 @@
 /* =========================================================
    CATEGORIES SHOWCASE CAROUSEL
 
-   Carrusel visual de categorías públicas.
-
-   Ahora recibe categorías dinámicas desde Supabase:
-   - nombre
-   - color
-   - productos asociados
-
-   Nota:
-   Mostramos también categorías sin productos para que
-   el cliente vea la categoría apenas se cree desde Admin.
+   Correcciones:
+   - Mejor responsive para iPhone.
+   - Padding lateral seguro.
+   - Evita desbordes horizontales.
 ========================================================= */
 
 import { Grid3X3 } from "lucide-react";
@@ -30,20 +24,18 @@ type Props = {
   groups: CategoryGroup[];
 };
 
-export default function CategoriesShowcaseCarousel({
-  groups,
-}: Props) {
+export default function CategoriesShowcaseCarousel({ groups }: Props) {
   if (!groups || groups.length === 0) return null;
 
   return (
-    <section className="py-4">
+    <section className="w-full overflow-hidden px-4 py-4">
       <div className="mb-4 rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-blue-600 p-4 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
             <Grid3X3 className="h-6 w-6 text-white" />
           </div>
 
-          <div className="flex-1">
+          <div className="min-w-0 flex-1">
             <h2 className="text-xl font-black leading-tight text-white">
               Explora por categoría
             </h2>

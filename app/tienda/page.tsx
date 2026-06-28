@@ -3,12 +3,12 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
 
-   Categorías 100% dinámicas:
-   - Se cargan desde Supabase.
-   - Se ordenan por sort_order.
-   - Respetan is_active.
-   - Usan color configurado desde Admin.
-   - Aparecen en sticky aunque todavía no tengan productos.
+   Correcciones:
+   - Buscador real.
+   - Si hay búsqueda, solo se muestran categorías con resultados.
+   - Se ocultan carruseles visuales durante búsqueda.
+   - Empty state profesional.
+   - Mejor soporte mobile/iPhone Safari con 100dvh.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -45,6 +45,8 @@ export default function TiendaPage() {
 
   const { addToCart } = useCart();
 
+  const hayBusqueda = busqueda.trim().length > 0;
+
   useEffect(() => {
     async function cargarDatos() {
       const [{ data: productsData, error }, { data: categoriesData }] =
@@ -75,9 +77,11 @@ export default function TiendaPage() {
     cargarDatos();
   }, []);
 
-const productosBuscados = productos.filter((producto) =>
-  productMatchesSearch(producto, busqueda)
-);
+  const productosBuscados = useMemo(() => {
+    return productos.filter((producto) =>
+      productMatchesSearch(producto, busqueda)
+    );
+  }, [productos, busqueda]);
 
   const categoriasConCombos = useMemo(() => {
     return [
@@ -93,26 +97,34 @@ const productosBuscados = productos.filter((producto) =>
   }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
-    return categorias.map((categoria) => ({
+    const grupos = categorias.map((categoria) => ({
       categoria: categoria.name,
       color: categoria.color,
       productos: productosBuscados.filter(
         (producto) => producto.category === categoria.name
       ),
     }));
-  }, [categorias, productosBuscados]);
+
+    if (hayBusqueda) {
+      return grupos.filter((grupo) => grupo.productos.length > 0);
+    }
+
+    return grupos;
+  }, [categorias, productosBuscados, hayBusqueda]);
 
   return (
-    <>
+    <main className="min-h-[100dvh] overflow-x-hidden pb-[calc(6rem+env(safe-area-inset-bottom))]">
       <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
 
-      <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+      {!hayBusqueda && (
+        <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+      )}
 
-      {categoriasConCombos.length > 0 && (
+      {!hayBusqueda && categoriasConCombos.length > 0 && (
         <StickyCategoryTabs categories={categoriasConCombos} />
       )}
 
-      <StoreCombosSection />
+      {!hayBusqueda && <StoreCombosSection />}
 
       <div className="mt-2">
         {productosPorCategoria.map((grupo) => (
@@ -125,9 +137,21 @@ const productosBuscados = productos.filter((producto) =>
         ))}
       </div>
 
-      <DeliveryBanner />
+      {hayBusqueda && productosBuscados.length === 0 && (
+        <div className="mx-4 my-10 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <h3 className="text-xl font-black text-[#061b3a]">
+            No encontramos productos
+          </h3>
 
-      <HelpCard />
-    </>
+          <p className="mt-2 text-slate-500">
+            Intenta buscar con otro nombre o revisa la categoría.
+          </p>
+        </div>
+      )}
+
+      {!hayBusqueda && <DeliveryBanner />}
+
+      {!hayBusqueda && <HelpCard />}
+    </main>
   );
 }
