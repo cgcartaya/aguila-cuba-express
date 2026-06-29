@@ -60,6 +60,12 @@ export default function AdminBannersSettingsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState<BannerForm>(initialForm);
 
+  const sortedBanners = useMemo(() => {
+    return [...banners].sort(
+      (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
+    );
+  }, [banners]);
+
   const activeBannersCount = useMemo(() => {
     return banners.filter((banner) => banner.is_active).length;
   }, [banners]);
@@ -93,7 +99,7 @@ export default function AdminBannersSettingsPage() {
       button_text: form.button_text.trim(),
       button_link: form.button_link,
       category_id: form.category_id || null,
-      sort_order: Number(form.sort_order || 0),
+      sort_order: Number(form.sort_order || banners.length + 1),
       layout_type: form.layout_type,
       background_color: form.background_color,
       text_color: form.text_color,
@@ -101,7 +107,11 @@ export default function AdminBannersSettingsPage() {
       is_active: form.is_active,
     });
 
-    setForm(initialForm);
+    setForm({
+      ...initialForm,
+      sort_order: String(banners.length + 2),
+    });
+
     await loadData();
     setSaving(false);
   };
@@ -118,6 +128,23 @@ export default function AdminBannersSettingsPage() {
     setBanners((prev) =>
       prev.map((banner) =>
         banner.id === id ? { ...banner, [field]: value } : banner
+      )
+    );
+  };
+
+  const handleReorder = async (reorderedBanners: Banner[]) => {
+    const updatedBanners = reorderedBanners.map((banner, index) => ({
+      ...banner,
+      sort_order: index + 1,
+    }));
+
+    setBanners(updatedBanners);
+
+    await Promise.all(
+      updatedBanners.map((banner) =>
+        updateBanner(banner.id, {
+          sort_order: banner.sort_order,
+        })
       )
     );
   };
@@ -183,14 +210,18 @@ export default function AdminBannersSettingsPage() {
 
         <section className="mb-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-bold text-slate-500">Banners creados</p>
+            <p className="text-sm font-bold text-slate-500">
+              Banners creados
+            </p>
             <p className="mt-1 text-3xl font-black text-[#061b3a]">
               {banners.length}
             </p>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-bold text-slate-500">Banners activos</p>
+            <p className="text-sm font-bold text-slate-500">
+              Banners activos
+            </p>
             <p className="mt-1 text-3xl font-black text-green-600">
               {activeBannersCount}
             </p>
@@ -222,11 +253,12 @@ export default function AdminBannersSettingsPage() {
 
           {!loading && (
             <BannerList
-              banners={banners}
+              banners={sortedBanners}
               categories={categories}
               onUpdate={handleUpdate}
               onDelete={handleDelete}
               onCategoryChange={handleExistingCategoryChange}
+              onReorder={handleReorder}
             />
           )}
         </section>

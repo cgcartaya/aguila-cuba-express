@@ -101,9 +101,7 @@ export default function BannerCard({
       <div className="mt-4 flex justify-end gap-3">
         <button
           type="button"
-          onClick={() =>
-            onUpdate(banner.id, "is_active", !banner.is_active)
-          }
+          onClick={() => onUpdate(banner.id, "is_active", !banner.is_active)}
           className={`rounded-2xl px-5 py-3 font-bold ${
             banner.is_active
               ? "bg-green-50 text-green-700"
