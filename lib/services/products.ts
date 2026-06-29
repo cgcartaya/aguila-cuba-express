@@ -5,29 +5,13 @@ import type { Product } from "@/components/admin/products/types";
 
 /* =========================================================
    PRODUCTS SERVICE
-   ---------------------------------------------------------
-   Este archivo centraliza todas las operaciones relacionadas
-   con productos y sus imágenes.
-
-   PREPARADO PARA MULTI-TIENDA.
-========================================================= */
-
-/* =========================================================
-   PRODUCTOS - CONSULTAS
 ========================================================= */
 
 // Obtener un producto por ID
 export async function getProductById(id: string) {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: null, error: null };
-  }
-
   return supabase
     .from("products")
     .select("*")
-    .eq("store_id", store.id)
     .eq("id", id)
     .single();
 }
@@ -152,12 +136,6 @@ export async function getStoreProducts() {
   de detalle estilo Amazon/Shopify.
 */
 export async function getStoreProductById(id: string) {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: null, error: null };
-  }
-
   return supabase
     .from("products")
     .select(`
@@ -169,7 +147,6 @@ export async function getStoreProductById(id: string) {
         position
       )
     `)
-    .eq("store_id", store.id)
     .eq("id", id)
     .eq("is_active", true)
     .single();
@@ -183,12 +160,6 @@ export async function getRelatedProducts(
   currentProductId: string,
   limit = 4
 ) {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
-  }
-
   return supabase
     .from("products")
     .select(`
@@ -198,7 +169,6 @@ export async function getRelatedProducts(
         is_main
       )
     `)
-    .eq("store_id", store.id)
     .eq("is_active", true)
     .eq("category", category)
     .neq("id", currentProductId)
