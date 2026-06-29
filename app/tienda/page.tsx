@@ -51,6 +51,8 @@ export default function TiendaPage() {
     async function cargarDatos() {
       const [{ data: productsData, error }, { data: categoriesData }] =
         await Promise.all([getStoreProducts(), getActiveCategories()]);
+        console.log("PRODUCTOS:", productsData);
+console.log("CATEGORIAS:", categoriesData);
 
       if (error) {
         console.log("Error cargando productos:", error);

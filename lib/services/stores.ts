@@ -1,20 +1,3 @@
-/* =========================================================
-   STORES SERVICE
-
-   Servicio central para manejar tiendas/clientes del SaaS.
-
-   IMPORTANTE:
-
-   De momento todo el sistema utilizará automáticamente
-   la tienda "aguila".
-
-   Más adelante este servicio detectará la tienda según:
-
-   - dominio
-   - subdominio
-   - slug
-========================================================= */
-
 import { supabase } from "@/lib/supabase";
 
 import {
@@ -29,22 +12,17 @@ import {
 export async function getStoreBySlug(
   slug = DEFAULT_STORE_SLUG
 ) {
-  return supabase
+  const response = await supabase
     .from("stores")
     .select("*")
     .eq("slug", slug)
-    .single<Store>();
+    .maybeSingle();
+
+  return response;
 }
 
 /* =========================================================
    TIENDA POR DEFECTO
-
-   Actualmente devuelve Águila.
-
-   En el futuro:
-
-   const hostname = headers().get("host")
-
 ========================================================= */
 
 export async function getDefaultStore() {
@@ -52,9 +30,7 @@ export async function getDefaultStore() {
 }
 
 /* =========================================================
-   LISTAR TODAS LAS TIENDAS
-
-   Útil para la futura administración SaaS.
+   LISTAR TIENDAS
 ========================================================= */
 
 export async function getStores() {
@@ -97,7 +73,7 @@ export async function updateStore(
 }
 
 /* =========================================================
-   DESACTIVAR TIENDA
+   ACTIVAR / DESACTIVAR
 ========================================================= */
 
 export async function toggleStoreStatus(

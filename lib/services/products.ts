@@ -133,12 +133,6 @@ export async function getProducts() {
 
 // Obtener productos visibles en la tienda pública
 export async function getStoreProducts() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
-  }
-
   return supabase
     .from("products")
     .select(`
@@ -149,7 +143,6 @@ export async function getStoreProducts() {
         position
       )
     `)
-    .eq("store_id", store.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 }

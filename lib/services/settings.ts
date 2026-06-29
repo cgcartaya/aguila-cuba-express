@@ -31,16 +31,9 @@ export type DeliveryZone = {
 ========================================================= */
 
 export async function getCategories() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
-  }
-
   return supabase
     .from("categories")
     .select("*")
-    .eq("store_id", store.id)
     .order("sort_order", { ascending: true });
 }
 
@@ -49,16 +42,9 @@ export async function getCategories() {
 ========================================================= */
 
 export async function getActiveCategories() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
-  }
-
   return supabase
     .from("categories")
     .select("*")
-    .eq("store_id", store.id)
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 }
@@ -203,16 +189,9 @@ export async function deleteDeliveryZone(id: string) {
 ========================================================= */
 
 export async function getBanners() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
-  }
-
   return supabase
     .from("banners")
     .select("*")
-    .eq("store_id", store.id)
     .order("sort_order", {
       ascending: true,
     });
