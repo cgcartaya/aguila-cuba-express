@@ -3,15 +3,18 @@
 /* =========================================================
    CATEGORIES SHOWCASE CAROUSEL
 
-   Corrección final:
-   - El section NO tiene padding lateral.
-   - El banner sí tiene margen lateral.
-   - El carrusel sí tiene padding lateral.
-   - Mantiene el efecto: una tarjeta + pedacito de la siguiente.
-   - Evita barras blancas raras laterales.
+   Características:
+
+   ✓ Swipe móvil.
+   ✓ Flechas desktop.
+   ✓ Scroll horizontal suave.
+   ✓ Compatible Safari.
+   ✓ Mantiene efecto:
+     una tarjeta + pedazo siguiente.
 ========================================================= */
 
-import { Grid3X3 } from "lucide-react";
+import { useRef } from "react";
+import { ChevronLeft, ChevronRight, Grid3X3 } from "lucide-react";
 
 import CategoryShowcaseCard from "./CategoryShowcaseCard";
 import type { Product } from "@/types/cart";
@@ -26,11 +29,33 @@ type Props = {
   groups: CategoryGroup[];
 };
 
-export default function CategoriesShowcaseCarousel({ groups }: Props) {
+export default function CategoriesShowcaseCarousel({
+  groups,
+}: Props) {
+  const scrollContainerRef =
+    useRef<HTMLDivElement>(null);
+
   if (!groups || groups.length === 0) return null;
 
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollContainerRef.current) return;
+
+    const amount = 420;
+
+    scrollContainerRef.current.scrollBy({
+      left:
+        direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  };
+
   return (
-    <section className="w-full overflow-hidden py-4">
+    <section className="relative w-full overflow-hidden py-4">
+
+      {/* ==========================================
+          CABECERA
+      ========================================== */}
+
       <div className="mx-4 mb-4 rounded-3xl bg-gradient-to-r from-sky-400 via-blue-500 to-blue-600 p-4 shadow-lg">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur">
@@ -59,7 +84,56 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
         </div>
       </div>
 
-      <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* ==========================================
+          FLECHA IZQUIERDA (SOLO DESKTOP)
+      ========================================== */}
+
+      <button
+        onClick={() => scroll("left")}
+        className="
+          absolute
+          left-2
+          top-1/2
+          z-20
+          hidden
+          h-12
+          w-12
+          -translate-y-1/2
+          items-center
+          justify-center
+          rounded-full
+          bg-white/95
+          shadow-xl
+          transition
+          hover:scale-105
+          lg:flex
+        "
+      >
+        <ChevronLeft className="h-6 w-6 text-slate-700" />
+      </button>
+
+      {/* ==========================================
+          CARRUSEL
+      ========================================== */}
+
+      <div
+        ref={scrollContainerRef}
+        className="
+          flex
+          snap-x
+          snap-mandatory
+          gap-4
+          overflow-x-auto
+          px-4
+          pb-4
+          scroll-smooth
+
+          [-ms-overflow-style:none]
+          [scrollbar-width:none]
+
+          [&::-webkit-scrollbar]:hidden
+        "
+      >
         {groups.map((group) => (
           <CategoryShowcaseCard
             key={group.categoria}
@@ -69,6 +143,34 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
           />
         ))}
       </div>
+
+      {/* ==========================================
+          FLECHA DERECHA (SOLO DESKTOP)
+      ========================================== */}
+
+      <button
+        onClick={() => scroll("right")}
+        className="
+          absolute
+          right-2
+          top-1/2
+          z-20
+          hidden
+          h-12
+          w-12
+          -translate-y-1/2
+          items-center
+          justify-center
+          rounded-full
+          bg-white/95
+          shadow-xl
+          transition
+          hover:scale-105
+          lg:flex
+        "
+      >
+        <ChevronRight className="h-6 w-6 text-slate-700" />
+      </button>
     </section>
   );
 }

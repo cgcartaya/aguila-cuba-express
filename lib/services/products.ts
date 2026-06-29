@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { getDefaultStore } from "@/lib/services/stores";
+
 import type { Product } from "@/components/admin/products/types";
 
 /* =========================================================
@@ -6,6 +8,8 @@ import type { Product } from "@/components/admin/products/types";
    ---------------------------------------------------------
    Este archivo centraliza todas las operaciones relacionadas
    con productos y sus imágenes.
+
+   PREPARADO PARA MULTI-TIENDA.
 ========================================================= */
 
 /* =========================================================
@@ -14,26 +18,47 @@ import type { Product } from "@/components/admin/products/types";
 
 // Obtener un producto por ID
 export async function getProductById(id: string) {
-  return supabase.from("products").select("*").eq("id", id).single();
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: null, error: null };
+  }
+
+  return supabase
+    .from("products")
+    .select("*")
+    .eq("store_id", store.id)
+    .eq("id", id)
+    .single();
 }
 
 // Obtener productos activos
 export async function getActiveProducts() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select("*")
+    .eq("store_id", store.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 }
 
 /* =========================================================
    ADMIN - PRODUCTOS PARA COMBOS
-
-   Obtiene productos activos con sus imágenes para
-   construir combos desde el panel de administración.
 ========================================================= */
 
 export async function getProductsForCombos() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select(`
@@ -44,24 +69,39 @@ export async function getProductsForCombos() {
         position
       )
     `)
+    .eq("store_id", store.id)
     .eq("is_active", true)
     .order("name", { ascending: true });
 }
 
 // Obtener productos inactivos
 export async function getInactiveProducts() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select("*")
+    .eq("store_id", store.id)
     .eq("is_active", false)
     .order("created_at", { ascending: false });
 }
 
 // Obtener productos con bajo stock
 export async function getLowStockProducts(limit = 5) {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select("*")
+    .eq("store_id", store.id)
     .lte("stock", limit)
     .order("created_at", { ascending: false });
 }
@@ -70,18 +110,13 @@ export async function getLowStockProducts(limit = 5) {
    TIENDA PÚBLICA - CONSULTAS
 ========================================================= */
 
-/*
-  Obtener productos visibles en la tienda.
-
-  Nuevo sistema:
-  - Carga las imágenes desde product_images.
-  - Busca la imagen marcada como principal.
-
-  Compatibilidad:
-  - Si un producto aún usa products.image_url,
-    el frontend puede seguir utilizándola como fallback.
-*/
 export async function getProducts() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select(`
@@ -92,11 +127,18 @@ export async function getProducts() {
         position
       )
     `)
+    .eq("store_id", store.id)
     .order("created_at", { ascending: false });
 }
 
 // Obtener productos visibles en la tienda pública
 export async function getStoreProducts() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select(`
@@ -107,6 +149,7 @@ export async function getStoreProducts() {
         position
       )
     `)
+    .eq("store_id", store.id)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 }
@@ -114,10 +157,14 @@ export async function getStoreProducts() {
 /*
   Obtener un producto específico para la página
   de detalle estilo Amazon/Shopify.
-
-  Incluye todas las imágenes del producto.
 */
 export async function getStoreProductById(id: string) {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: null, error: null };
+  }
+
   return supabase
     .from("products")
     .select(`
@@ -129,28 +176,26 @@ export async function getStoreProductById(id: string) {
         position
       )
     `)
+    .eq("store_id", store.id)
     .eq("id", id)
     .eq("is_active", true)
     .single();
 }
 
-
 /*
   Obtener productos relacionados.
-
-  En esta primera versión utilizaremos productos
-  de la misma categoría excluyendo el producto actual.
-
-  Más adelante podremos mejorar con:
-  - productos más vendidos
-  - historial de compras
-  - IA de recomendaciones
 */
 export async function getRelatedProducts(
   category: string,
   currentProductId: string,
   limit = 4
 ) {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("products")
     .select(`
@@ -160,6 +205,7 @@ export async function getRelatedProducts(
         is_main
       )
     `)
+    .eq("store_id", store.id)
     .eq("is_active", true)
     .eq("category", category)
     .neq("id", currentProductId)
@@ -171,8 +217,28 @@ export async function getRelatedProducts(
 ========================================================= */
 
 // Crear producto
-export async function createProduct(product: Omit<Product, "id" | "created_at">) {
-  return supabase.from("products").insert(product).select().single();
+export async function createProduct(
+  product: Omit<Product, "id" | "created_at">
+) {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return {
+      data: null,
+      error: {
+        message: "No se encontró la tienda activa",
+      },
+    };
+  }
+
+  return supabase
+    .from("products")
+    .insert({
+      ...product,
+      store_id: store.id,
+    })
+    .select()
+    .single();
 }
 
 // Actualizar producto
@@ -180,20 +246,30 @@ export async function updateProduct(
   id: string,
   product: Partial<Omit<Product, "id" | "created_at">>
 ) {
-  return supabase.from("products").update(product).eq("id", id).select().single();
+  return supabase
+    .from("products")
+    .update(product)
+    .eq("id", id)
+    .select()
+    .single();
 }
 
 // Activar o desactivar producto
 export async function toggleProductStatus(product: Product) {
   return supabase
     .from("products")
-    .update({ is_active: !product.is_active })
+    .update({
+      is_active: !product.is_active,
+    })
     .eq("id", product.id);
 }
 
 // Eliminar producto definitivamente
 export async function deleteProductForever(id: string) {
-  return supabase.from("products").delete().eq("id", id);
+  return supabase
+    .from("products")
+    .delete()
+    .eq("id", id);
 }
 
 /* =========================================================
@@ -213,7 +289,7 @@ export async function getProductImages(productId: string) {
    PRODUCT IMAGES - ACCIONES
 ========================================================= */
 
-// Subir imagen a Supabase Storage y registrar URL en product_images
+// Subir imagen a Supabase Storage y registrar URL
 export async function uploadProductImage(
   productId: string,
   file: File,
@@ -236,14 +312,6 @@ export async function uploadProductImage(
     .from("product-images")
     .getPublicUrl(filePath);
 
-  /*
-    IMAGEN PRINCIPAL
-
-    Si esta imagen llega como principal:
-    primero quitamos cualquier principal anterior
-    para garantizar que solo exista una principal.
-  */
-
   if (isMain) {
     await supabase
       .from("product_images")
@@ -264,27 +332,33 @@ export async function uploadProductImage(
     .single();
 }
 
-// Eliminar imagen del bucket y luego de la tabla product_images
+// Eliminar imagen
 export async function deleteProductImage(image: {
   id: string;
   storage_path?: string | null;
 }) {
   if (image.storage_path) {
-    await supabase.storage.from("product-images").remove([image.storage_path]);
+    await supabase.storage
+      .from("product-images")
+      .remove([image.storage_path]);
   }
 
-  return supabase.from("product_images").delete().eq("id", image.id);
+  return supabase
+    .from("product_images")
+    .delete()
+    .eq("id", image.id);
 }
 
-// Marcar una imagen como principal
-export async function setMainProductImage(productId: string, imageId: string) {
-  // Primero quitamos cualquier imagen principal anterior
+// Marcar imagen principal
+export async function setMainProductImage(
+  productId: string,
+  imageId: string
+) {
   await supabase
     .from("product_images")
     .update({ is_main: false })
     .eq("product_id", productId);
 
-  // Luego marcamos la nueva imagen principal
   return supabase
     .from("product_images")
     .update({ is_main: true })

@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabase";
+import { getDefaultStore } from "@/lib/services/stores";
+
 import type {
   Category,
   StoreSettings,
@@ -29,9 +31,16 @@ export type DeliveryZone = {
 ========================================================= */
 
 export async function getCategories() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("categories")
     .select("*")
+    .eq("store_id", store.id)
     .order("sort_order", { ascending: true });
 }
 
@@ -40,9 +49,16 @@ export async function getCategories() {
 ========================================================= */
 
 export async function getActiveCategories() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
   return supabase
     .from("categories")
     .select("*")
+    .eq("store_id", store.id)
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
 }
@@ -50,26 +66,66 @@ export async function getActiveCategories() {
 export async function createCategory(
   category: Omit<Category, "id" | "created_at">
 ) {
-  return supabase.from("categories").insert(category).select().single();
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return {
+      data: null,
+      error: {
+        message: "No se encontró la tienda activa",
+      },
+    };
+  }
+
+  return supabase
+    .from("categories")
+    .insert({
+      ...category,
+      store_id: store.id,
+    })
+    .select()
+    .single();
 }
 
-export async function updateCategory(id: string, category: Partial<Category>) {
-  return supabase.from("categories").update(category).eq("id", id).select().single();
+export async function updateCategory(
+  id: string,
+  category: Partial<Category>
+) {
+  return supabase
+    .from("categories")
+    .update(category)
+    .eq("id", id)
+    .select()
+    .single();
 }
 
 export async function deleteCategory(id: string) {
-  return supabase.from("categories").delete().eq("id", id);
+  return supabase
+    .from("categories")
+    .delete()
+    .eq("id", id);
 }
 
 /* =========================================================
    STORE SETTINGS
+
+   De momento seguimos utilizando la configuración
+   actual global.
+
+   Más adelante también se convertirá en multi-tienda.
 ========================================================= */
 
 export async function getStoreSettings() {
-  return supabase.from("store_settings").select("*").limit(1).single();
+  return supabase
+    .from("store_settings")
+    .select("*")
+    .limit(1)
+    .single();
 }
 
-export async function saveStoreSettings(settings: Partial<StoreSettings>) {
+export async function saveStoreSettings(
+  settings: Partial<StoreSettings>
+) {
   const existing = await getStoreSettings();
 
   if (existing.data) {
@@ -81,18 +137,17 @@ export async function saveStoreSettings(settings: Partial<StoreSettings>) {
       .single();
   }
 
-  return supabase.from("store_settings").insert(settings).select().single();
+  return supabase
+    .from("store_settings")
+    .insert(settings)
+    .select()
+    .single();
 }
 
 /* =========================================================
    DELIVERY ZONES
 
-   Zonas reales de domicilio:
-   - Municipio
-   - Zona
-   - Costo de entrega
-   - Compra mínima
-   - Domicilio gratis desde
+   De momento siguen siendo globales.
 ========================================================= */
 
 export async function getDeliveryZones() {
@@ -117,7 +172,11 @@ export async function getActiveDeliveryZones() {
 export async function createDeliveryZone(
   zone: Omit<DeliveryZone, "id" | "created_at">
 ) {
-  return supabase.from("delivery_zones").insert(zone).select().single();
+  return supabase
+    .from("delivery_zones")
+    .insert(zone)
+    .select()
+    .single();
 }
 
 export async function updateDeliveryZone(
@@ -133,7 +192,10 @@ export async function updateDeliveryZone(
 }
 
 export async function deleteDeliveryZone(id: string) {
-  return supabase.from("delivery_zones").delete().eq("id", id);
+  return supabase
+    .from("delivery_zones")
+    .delete()
+    .eq("id", id);
 }
 
 /* =========================================================
@@ -141,19 +203,60 @@ export async function deleteDeliveryZone(id: string) {
 ========================================================= */
 
 export async function getBanners() {
-  return supabase.from("banners").select("*").order("sort_order", {
-    ascending: true,
-  });
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
+  return supabase
+    .from("banners")
+    .select("*")
+    .eq("store_id", store.id)
+    .order("sort_order", {
+      ascending: true,
+    });
 }
 
-export async function createBanner(banner: Omit<Banner, "id" | "created_at">) {
-  return supabase.from("banners").insert(banner).select().single();
+export async function createBanner(
+  banner: Omit<Banner, "id" | "created_at">
+) {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return {
+      data: null,
+      error: {
+        message: "No se encontró la tienda activa",
+      },
+    };
+  }
+
+  return supabase
+    .from("banners")
+    .insert({
+      ...banner,
+      store_id: store.id,
+    })
+    .select()
+    .single();
 }
 
-export async function updateBanner(id: string, banner: Partial<Banner>) {
-  return supabase.from("banners").update(banner).eq("id", id).select().single();
+export async function updateBanner(
+  id: string,
+  banner: Partial<Banner>
+) {
+  return supabase
+    .from("banners")
+    .update(banner)
+    .eq("id", id)
+    .select()
+    .single();
 }
 
 export async function deleteBanner(id: string) {
-  return supabase.from("banners").delete().eq("id", id);
+  return supabase
+    .from("banners")
+    .delete()
+    .eq("id", id);
 }
