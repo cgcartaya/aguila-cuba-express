@@ -2,10 +2,7 @@
 
 /* =========================================================
    RELATED PRODUCTS
-
-   - Muestra productos relacionados.
-   - Permite agregar al carrito sin salir de la página.
-   - Mantiene enlace al detalle del producto.
+   Mantiene el contexto de tienda multiempresa.
 ========================================================= */
 
 import Image from "next/image";
@@ -13,11 +10,8 @@ import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
-
-/* =========================================================
-   TYPES
-========================================================= */
 
 type ProductImage = {
   image_url: string;
@@ -33,14 +27,11 @@ type RelatedProductsProps = {
   products: RelatedProduct[];
 };
 
-/* =========================================================
-   COMPONENT
-========================================================= */
-
 export default function RelatedProducts({
   products,
 }: RelatedProductsProps) {
   const { addToCart } = useCart();
+  const { store } = useStore();
 
   if (products.length === 0) return null;
 
@@ -65,22 +56,19 @@ export default function RelatedProducts({
 
           const outOfStock = Number(item.stock || 0) <= 0;
 
+const isDefaultStore = store?.slug === "aguila";
+
+const productUrl =
+  store?.slug && !isDefaultStore
+    ? `/tienda/${store.slug}/producto/${item.id}`
+    : `/tienda/producto/${item.id}`;
+
           return (
             <article
               key={item.id}
-              className="
-                rounded-2xl
-                border
-                border-slate-200
-                bg-white
-                p-3
-                shadow-sm
-                transition
-                hover:shadow-md
-              "
+              className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md"
             >
-              {/* IMAGEN */}
-              <Link href={`/tienda/producto/${item.id}`}>
+              <Link href={productUrl}>
                 <div className="relative h-36 overflow-hidden rounded-xl bg-slate-100">
                   <Image
                     src={mainImage}
@@ -92,36 +80,20 @@ export default function RelatedProducts({
                 </div>
               </Link>
 
-              {/* NOMBRE */}
-              <Link href={`/tienda/producto/${item.id}`}>
+              <Link href={productUrl}>
                 <h3 className="mt-3 line-clamp-2 min-h-[40px] text-sm font-bold text-[#061b3a]">
                   {item.name}
                 </h3>
               </Link>
 
-              {/* PRECIO */}
               <p className="mt-1 font-black text-red-600">
                 ${Number(item.price).toFixed(2)}
               </p>
 
-              {/* BOTONES */}
               <div className="mt-3 space-y-2">
                 <Link
-                  href={`/tienda/producto/${item.id}`}
-                  className="
-                    block
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-200
-                    py-2
-                    text-center
-                    text-sm
-                    font-bold
-                    text-[#061b3a]
-                    transition
-                    hover:bg-slate-50
-                  "
+                  href={productUrl}
+                  className="block w-full rounded-xl border border-slate-200 py-2 text-center text-sm font-bold text-[#061b3a] transition hover:bg-slate-50"
                 >
                   Ver producto
                 </Link>
@@ -129,15 +101,7 @@ export default function RelatedProducts({
                 {outOfStock ? (
                   <button
                     disabled
-                    className="
-                      w-full
-                      rounded-xl
-                      bg-slate-300
-                      py-2
-                      text-sm
-                      font-bold
-                      text-white
-                    "
+                    className="w-full rounded-xl bg-slate-300 py-2 text-sm font-bold text-white"
                   >
                     Agotado
                   </button>
@@ -145,21 +109,7 @@ export default function RelatedProducts({
                   <button
                     type="button"
                     onClick={() => addToCart(item)}
-                    className="
-                      flex
-                      w-full
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      bg-red-600
-                      py-2
-                      text-sm
-                      font-bold
-                      text-white
-                      transition
-                      hover:bg-red-700
-                    "
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-2 text-sm font-bold text-white transition hover:bg-red-700"
                   >
                     <ShoppingCart size={16} />
                     Agregar

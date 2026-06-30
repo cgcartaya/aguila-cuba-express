@@ -12,6 +12,7 @@ export default async function InventoryPage() {
       category,
       price,
       is_active,
+      store_id,
       product_images (
         image_url,
         is_main,
@@ -21,10 +22,19 @@ export default async function InventoryPage() {
     .is("deleted_at", null)
     .order("name");
 
+  if (error) {
+    return (
+      <main className="min-h-screen bg-slate-50 p-4">
+        <p className="font-bold text-red-600">
+          Error cargando inventario: {error.message}
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 p-4 pb-24">
       <div className="mx-auto max-w-7xl">
-
         <div className="mb-6">
           <h1 className="text-3xl font-black text-[#061b3a]">
             Inventario

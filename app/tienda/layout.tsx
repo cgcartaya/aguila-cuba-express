@@ -13,6 +13,7 @@ import MainBanner from "@/components/tienda/MainBanner";
 import BottomNavigation from "@/components/tienda/BottomNavigation";
 
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/hooks/useStore";
 
 type StoreLayoutProps = {
   children: React.ReactNode;
@@ -20,29 +21,38 @@ type StoreLayoutProps = {
 
 export default function StoreLayout({ children }: StoreLayoutProps) {
   const pathname = usePathname();
+
   const { cart } = useCart();
+  const { store } = useStore();
 
   const cartCount = cart.reduce((total, item) => {
     return total + item.quantity;
   }, 0);
 
-  const hideMainBanner =
-    pathname.startsWith("/tienda/producto/") ||
-    pathname.startsWith("/tienda/cart") ||
-    pathname.startsWith("/tienda/checkout");
+const isProductDetail =
+  pathname.includes("/producto/");
 
-  const hideBottomNavigation = pathname.startsWith("/tienda/checkout");
+const isCartPage =
+  pathname.endsWith("/cart") ||
+  pathname.includes("/cart/");
 
-  const hideFloatingCart =
-    pathname.startsWith("/tienda/cart") ||
-    pathname.startsWith("/tienda/checkout");
+const isCheckoutPage =
+  pathname.endsWith("/checkout") ||
+  pathname.includes("/checkout/");
 
+const hideMainBanner =
+  isProductDetail || isCartPage || isCheckoutPage;
+
+const hideBottomNavigation = isCheckoutPage;
+
+const hideFloatingCart =
+  isCartPage || isCheckoutPage;
   return (
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
       <Header cartCount={cartCount} />
 
       <div className="mx-auto max-w-7xl px-4">
-        {!hideMainBanner && <MainBanner />}
+        {!hideMainBanner && <MainBanner storeId={store?.id} />}
 
         {children}
       </div>

@@ -7,6 +7,7 @@
    - Productos
    - Combos
    - Persistencia con localStorage
+   - Carrito separado por tienda
    - Validación de stock
    - Consulta de cantidad por itemId
 ========================================================= */
@@ -15,10 +16,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   ReactNode,
 } from "react";
 
+import { useStore } from "@/hooks/useStore";
 import type { Product, Combo, CartItem } from "@/types/cart";
 
 /* =========================================================
@@ -37,49 +40,57 @@ type CartContextType = {
   removeFromCart: (itemId: string) => void;
   clearCart: () => void;
 
-  /*
-    Ahora recibe directamente el ID real del carrito:
-    product-123
-    combo-456
-  */
   getItemQuantity: (itemId: string) => number;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
-const CART_STORAGE_KEY = "aguila-cart";
-
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { store } = useStore();
+
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
 
+  const cartStorageKey = useMemo(() => {
+    const isDefaultStore = store?.slug === "aguila";
+
+    return store?.slug && !isDefaultStore
+      ? `cart-${store.slug}`
+      : "cart-aguila";
+  }, [store?.slug]);
+
   /* =========================================================
-     CARGAR CARRITO
+     CARGAR CARRITO SEGÚN TIENDA
   ========================================================= */
 
   useEffect(() => {
     try {
-      const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+      setCartLoaded(false);
+
+      const savedCart = localStorage.getItem(cartStorageKey);
 
       if (savedCart) {
         setCart(JSON.parse(savedCart));
+      } else {
+        setCart([]);
       }
     } catch (error) {
       console.error("Error cargando carrito:", error);
+      setCart([]);
     } finally {
       setCartLoaded(true);
     }
-  }, []);
+  }, [cartStorageKey]);
 
   /* =========================================================
-     GUARDAR CARRITO
+     GUARDAR CARRITO SEGÚN TIENDA
   ========================================================= */
 
   useEffect(() => {
     if (!cartLoaded) return;
 
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
-  }, [cart, cartLoaded]);
+    localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+  }, [cart, cartLoaded, cartStorageKey]);
 
   /* =========================================================
      AGREGAR PRODUCTO

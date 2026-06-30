@@ -1,28 +1,28 @@
-"use client";
+"use client"
 
 /* =========================================================
    AGREGAR PRODUCTO - ADMIN
 
-   Categorías dinámicas:
-   - Las categorías ya no vienen de constants/categories.
-   - Ahora se cargan desde Supabase.
-   - Si el cliente crea una categoría en Ajustes → Categorías,
-     aparece automáticamente aquí.
+   SaaS Multiempresa:
+   - El producto se crea asociado a la tienda
+     seleccionada actualmente.
+   - La tienda activa se obtiene desde localStorage.
 ========================================================= */
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, Images, Loader2, Save } from "lucide-react";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft, Images, Loader2, Save } from "lucide-react"
 
-import { supabase } from "@/lib/supabase";
-import { getActiveCategories } from "@/lib/services/settings";
-import type { Category } from "@/components/admin/settings/types";
+import { supabase } from "@/lib/supabase"
+import { getAdminActiveCategories } from "@/lib/services/settings"
+
+import type { Category } from "@/components/admin/settings/types"
 
 export default function NewProductPage() {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>([])
 
   const [form, setForm] = useState({
     name: "",
@@ -32,70 +32,118 @@ export default function NewProductPage() {
     stock: "",
     tag: "",
     is_active: true,
-  });
+  })
 
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [loadingCategories, setLoadingCategories] = useState(true)
+
+  /* =========================================================
+     CARGAR CATEGORÍAS
+  ========================================================= */
 
   useEffect(() => {
     async function loadCategories() {
-      const { data } = await getActiveCategories();
-      setCategories(data || []);
-      setLoadingCategories(false);
+      const { data } = await getAdminActiveCategories()
+
+      setCategories(data || [])
+      setLoadingCategories(false)
     }
 
-    loadCategories();
-  }, []);
+    loadCategories()
+  }, [])
+
+  /* =========================================================
+     FORMULARIO
+  ========================================================= */
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
 
     setForm((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
+    }))
+  }
 
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoryChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     setForm((prev) => ({
       ...prev,
       category: e.target.value,
-    }));
-  };
+    }))
+  }
 
-  const handleActiveChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleActiveChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setForm((prev) => ({
       ...prev,
       is_active: e.target.checked,
-    }));
-  };
+    }))
+  }
+
+  /* =========================================================
+     CREAR PRODUCTO
+  ========================================================= */
 
   const handleSubmit = async () => {
-    setError("");
+    setError("")
 
-    if (!form.name || !form.category || !form.price || !form.stock) {
-      setError("Completa nombre, categoría, precio y stock.");
-      return;
+    if (
+      !form.name ||
+      !form.category ||
+      !form.price ||
+      !form.stock
+    ) {
+      setError(
+        "Completa nombre, categoría, precio y stock."
+      )
+
+      return
     }
 
-    const price = Number(form.price);
-    const stock = Number(form.stock);
+    const price = Number(form.price)
+    const stock = Number(form.stock)
 
     if (Number.isNaN(price) || price < 0) {
-      setError("El precio no es válido.");
-      return;
+      setError("El precio no es válido.")
+      return
     }
 
     if (Number.isNaN(stock) || stock < 0) {
-      setError("El stock no es válido.");
-      return;
+      setError("El stock no es válido.")
+      return
     }
 
     try {
-      setLoading(true);
+      setLoading(true)
+
+      /* ==========================================
+         TIENDA ACTUAL DEL SAAS
+      ========================================== */
+
+      const savedStore = localStorage.getItem(
+        "saas-current-store"
+      )
+
+      if (!savedStore) {
+        setError(
+          "Debes seleccionar una tienda primero."
+        )
+
+        setLoading(false)
+        return
+      }
+
+      const currentStore = JSON.parse(savedStore)
+
+      /* ==========================================
+         CREAR PRODUCTO
+      ========================================== */
 
       const { data, error } = await supabase
         .from("products")
@@ -108,21 +156,30 @@ export default function NewProductPage() {
           tag: form.tag,
           is_active: form.is_active,
           image_url: "",
+
+          /* ======================================
+             SaaS Multiempresa
+          ====================================== */
+
+          store_id: currentStore.id,
         })
         .select("id")
-        .single();
+        .single()
 
-      if (error) throw error;
+      if (error) throw error
 
-      router.push(`/admin/products/${data.id}/edit`);
-      router.refresh();
+      router.push(`/admin/products/${data.id}/edit`)
+      router.refresh()
     } catch (err) {
-      console.error(err);
-      setError("No se pudo crear el producto.");
+      console.error(err)
+
+      setError(
+        "No se pudo crear el producto."
+      )
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -141,7 +198,8 @@ export default function NewProductPage() {
           </h1>
 
           <p className="mt-2 text-gray-500">
-            Crea primero el producto. Luego podrás subir varias imágenes.
+            Crea primero el producto. Luego podrás subir
+            varias imágenes.
           </p>
         </div>
 
@@ -198,9 +256,8 @@ export default function NewProductPage() {
               </p>
 
               <p className="mt-2 text-sm text-gray-500">
-                Al guardar, irás automáticamente a la pantalla de edición,
-                donde podrás subir varias imágenes, escoger la principal y
-                eliminar las que no necesites.
+                Al guardar irás automáticamente a la
+                pantalla de edición.
               </p>
             </div>
 
@@ -228,9 +285,12 @@ export default function NewProductPage() {
               />
 
               <div>
-                <p className="font-bold text-gray-900">Producto activo</p>
+                <p className="font-bold text-gray-900">
+                  Producto activo
+                </p>
+
                 <p className="text-sm text-gray-500">
-                  Si está activo, aparecerá en la tienda.
+                  Si está activo aparecerá en la tienda.
                 </p>
               </div>
             </label>
@@ -257,7 +317,10 @@ export default function NewProductPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin" size={20} />
+                  <Loader2
+                    className="animate-spin"
+                    size={20}
+                  />
                   Creando...
                 </>
               ) : (
@@ -271,7 +334,7 @@ export default function NewProductPage() {
         </div>
       </div>
     </main>
-  );
+  )
 }
 
 function Input({
@@ -282,12 +345,14 @@ function Input({
   placeholder,
   type = "text",
 }: {
-  label: string;
-  name: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  type?: string;
+  label: string
+  name: string
+  value: string
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => void
+  placeholder?: string
+  type?: string
 }) {
   return (
     <div>
@@ -304,7 +369,7 @@ function Input({
         className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
       />
     </div>
-  );
+  )
 }
 
 function CategorySelect({
@@ -313,10 +378,12 @@ function CategorySelect({
   loading,
   onChange,
 }: {
-  value: string;
-  categories: Category[];
-  loading: boolean;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  value: string
+  categories: Category[]
+  loading: boolean
+  onChange: (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => void
 }) {
   return (
     <div>
@@ -325,28 +392,28 @@ function CategorySelect({
       </label>
 
       <select
-        name="category"
         value={value}
         onChange={onChange}
-        disabled={loading || categories.length === 0}
-        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black disabled:bg-gray-100 disabled:text-gray-400"
+        disabled={
+          loading || categories.length === 0
+        }
+        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
       >
         <option value="">
-          {loading ? "Cargando categorías..." : "Selecciona una categoría"}
+          {loading
+            ? "Cargando categorías..."
+            : "Selecciona una categoría"}
         </option>
 
         {categories.map((category) => (
-          <option key={category.id} value={category.name}>
+          <option
+            key={category.id}
+            value={category.name}
+          >
             {category.name}
           </option>
         ))}
       </select>
-
-      {!loading && categories.length === 0 && (
-        <p className="mt-2 text-xs font-medium text-red-500">
-          No hay categorías activas. Ve a Ajustes → Categorías para crear una.
-        </p>
-      )}
     </div>
-  );
+  )
 }

@@ -7,11 +7,19 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { getBanners } from "@/lib/services/settings";
+import {
+  getBanners,
+  getBannersByStoreId,
+} from "@/lib/services/settings";
+
 import GeneratedBannerSlide from "@/components/tienda/GeneratedBannerSlide";
 import type { Banner } from "@/components/admin/settings/types";
 
-export default function MainBanner() {
+type MainBannerProps = {
+  storeId?: string;
+};
+
+export default function MainBanner({ storeId }: MainBannerProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [banners, setBanners] = useState<Banner[]>([]);
 
@@ -28,7 +36,9 @@ export default function MainBanner() {
 
   useEffect(() => {
     async function loadBanners() {
-      const { data } = await getBanners();
+      const { data } = storeId
+        ? await getBannersByStoreId(storeId)
+        : await getBanners();
 
       const activeBanners =
         data
@@ -39,7 +49,7 @@ export default function MainBanner() {
     }
 
     loadBanners();
-  }, []);
+  }, [storeId]);
 
   useEffect(() => {
     if (!emblaApi) return;
@@ -68,12 +78,18 @@ export default function MainBanner() {
 
   return (
     <section className="relative mt-4">
-      <div ref={emblaRef} className="mx-auto max-w-6xl overflow-hidden rounded-3xl">
+      <div
+        ref={emblaRef}
+        className="mx-auto max-w-6xl overflow-hidden rounded-3xl"
+      >
         <div className="flex">
           {banners.map((banner, index) => (
             <div key={banner.id} className="min-w-0 flex-[0_0_100%]">
               {banner.layout_type === "template" ? (
-                <GeneratedBannerSlide banner={banner} priority={index === 0} />
+                <GeneratedBannerSlide
+                  banner={banner}
+                  priority={index === 0}
+                />
               ) : (
                 <Link
                   href={banner.button_link || "/tienda"}
@@ -120,7 +136,9 @@ export default function MainBanner() {
                 onClick={() => emblaApi?.scrollTo(index)}
                 aria-label={`Ir al banner ${index + 1}`}
                 className={`h-2 rounded-full transition-all ${
-                  selectedIndex === index ? "w-6 bg-red-600" : "w-4 bg-white/70"
+                  selectedIndex === index
+                    ? "w-6 bg-red-600"
+                    : "w-4 bg-white/70"
                 }`}
               />
             ))}

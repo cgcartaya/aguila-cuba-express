@@ -9,11 +9,11 @@ import BannerCreateForm from "@/components/admin/banners/BannerCreateForm";
 import BannerList from "@/components/admin/banners/BannerList";
 
 import {
-  getBanners,
+  getAdminBanners,
   createBanner,
   updateBanner,
   deleteBanner,
-  getActiveCategories,
+  getAdminActiveCategories,
 } from "@/lib/services/settings";
 
 import type { Banner, Category } from "@/components/admin/settings/types";
@@ -73,8 +73,11 @@ export default function AdminBannersSettingsPage() {
   const loadData = async () => {
     setLoading(true);
 
-    const [{ data: bannersData }, { data: categoriesData }] =
-      await Promise.all([getBanners(), getActiveCategories()]);
+  const [{ data: bannersData }, { data: categoriesData }] =
+  await Promise.all([
+    getAdminBanners(),
+    getAdminActiveCategories(),
+  ]);
 
     setBanners(bannersData || []);
     setCategories(categoriesData || []);

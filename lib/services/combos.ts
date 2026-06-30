@@ -17,6 +17,7 @@ export async function getCombos() {
         products (*)
       )
     `)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 }
 
@@ -33,6 +34,25 @@ export async function getActiveCombos() {
       )
     `)
     .eq("is_active", true)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+}
+
+export async function getActiveCombosByStoreId(storeId: string) {
+  return await supabase
+    .from("combos")
+    .select(`
+      *,
+      combo_items (
+        id,
+        quantity,
+        product_id,
+        products (*)
+      )
+    `)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 }
 
@@ -49,6 +69,7 @@ export async function getComboById(id: string) {
       )
     `)
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 }
 
@@ -59,6 +80,23 @@ export async function createCombo(combo: {
   price: number;
   is_active?: boolean;
 }) {
+  if (typeof window !== "undefined") {
+    const savedStore = localStorage.getItem("saas-current-store");
+
+    if (savedStore) {
+      const currentStore = JSON.parse(savedStore);
+
+      return await supabase
+        .from("combos")
+        .insert({
+          ...combo,
+          store_id: currentStore.id,
+        })
+        .select()
+        .single();
+    }
+  }
+
   return await supabase
     .from("combos")
     .insert(combo)
@@ -90,7 +128,9 @@ export async function updateCombo(
 export async function deleteCombo(id: string) {
   return await supabase
     .from("combos")
-    .delete()
+    .update({
+      deleted_at: new Date().toISOString(),
+    })
     .eq("id", id);
 }
 

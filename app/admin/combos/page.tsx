@@ -3,12 +3,6 @@
 /* =========================================================
    ADMIN - COMBOS
    Página principal para gestionar combos de productos.
-
-   Esta vista ahora usa ComboCard para mantener:
-   - Código más limpio
-   - Cards compactas
-   - 2 columnas en móvil
-   - Mejor escalabilidad del admin
 ========================================================= */
 
 import { useEffect, useState } from "react";
@@ -17,7 +11,6 @@ import { Plus, Package } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 import ComboCard from "@/components/admin/combos/ComboCard";
-import { getCombos, deleteCombo } from "@/lib/services/combos";
 
 /* =========================================================
    TIPOS
@@ -54,30 +47,54 @@ export default function AdminCombosPage() {
   const [combos, setCombos] = useState<Combo[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getCurrentStoreId = () => {
+    if (typeof window === "undefined") return null;
+
+    const savedStore = localStorage.getItem("saas-current-store");
+
+    if (!savedStore) return null;
+
+    try {
+      const currentStore = JSON.parse(savedStore);
+      return currentStore?.id || null;
+    } catch {
+      return null;
+    }
+  };
+
   /* =========================================================
-     CARGAR COMBOS
+     CARGAR COMBOS DE LA TIENDA SELECCIONADA
   ========================================================= */
 
   const loadCombos = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
-  .from("combos")
-  .select(`
-    *,
-    combo_items (
-      id,
-      quantity,
-      product_id,
-      products (
-        id,
-        name,
-        price
-      )
-    )
-  `)
-  .is("deleted_at", null)
-  .order("created_at", { ascending: false });
+    const currentStoreId = getCurrentStoreId();
+
+    let query = supabase
+      .from("combos")
+      .select(`
+        *,
+        combo_items (
+          id,
+          quantity,
+          product_id,
+          products (
+            id,
+            name,
+            price
+          )
+        )
+      `)
+      .is("deleted_at", null);
+
+    if (currentStoreId) {
+      query = query.eq("store_id", currentStoreId);
+    }
+
+    const { data, error } = await query.order("created_at", {
+      ascending: false,
+    });
 
     if (error) {
       console.error("Error cargando combos:", error);
@@ -104,12 +121,12 @@ export default function AdminCombosPage() {
 
     if (!confirmDelete) return;
 
-   const { error } = await supabase
-  .from("combos")
-  .update({
-    deleted_at: new Date().toISOString(),
-  })
-  .eq("id", comboId);
+    const { error } = await supabase
+      .from("combos")
+      .update({
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", comboId);
 
     if (error) {
       console.error("Error eliminando combo:", error);
@@ -120,14 +137,9 @@ export default function AdminCombosPage() {
     await loadCombos();
   };
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
-
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-[#061b3a]">
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-black">
@@ -148,14 +160,12 @@ export default function AdminCombosPage() {
           </Link>
         </div>
 
-        {/* LOADING */}
         {loading && (
           <div className="rounded-3xl bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
             Cargando combos...
           </div>
         )}
 
-        {/* EMPTY STATE */}
         {!loading && combos.length === 0 && (
           <div className="rounded-3xl bg-white p-10 text-center shadow-sm">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
@@ -167,8 +177,9 @@ export default function AdminCombosPage() {
             </h2>
 
             <p className="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">
-              Crea combos seleccionando productos existentes. Cuando se venda un combo,
-              luego descontaremos automáticamente el inventario de cada producto incluido.
+              Crea combos seleccionando productos existentes. Cuando se venda
+              un combo, luego descontaremos automáticamente el inventario de
+              cada producto incluido.
             </p>
 
             <Link
@@ -181,7 +192,6 @@ export default function AdminCombosPage() {
           </div>
         )}
 
-        {/* GRID DE COMBOS */}
         {!loading && combos.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
             {combos.map((combo) => (

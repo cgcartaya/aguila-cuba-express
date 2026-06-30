@@ -65,59 +65,99 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, []);
 
-  async function fetchProducts() {
-    setLoading(true);
+async function fetchProducts() {
+  setLoading(true)
 
-    const { data, error } = await supabase
-  .from("products")
-  .select(`
-    *,
-    product_images (
-      image_url,
-      is_main,
-      position
+  try {
+    /*
+      Obtenemos la tienda seleccionada
+      desde localStorage.
+    */
+
+    const savedStore = localStorage.getItem(
+      "saas-current-store"
     )
-  `)
-  .is("deleted_at", null)
-  .order("created_at", { ascending: false });
 
-    if (error) {
-      console.error("Error cargando productos:", error.message);
-      setProducts([]);
-      setLoading(false);
-      return;
+    let storeId: string | null = null
+
+    if (savedStore) {
+      const parsedStore = JSON.parse(savedStore)
+      storeId = parsedStore.id
     }
 
     /*
-      ADMIN - IMAGEN PRINCIPAL
-
-      El admin ahora usa el nuevo sistema de imágenes:
-      product_images.is_main
-
-      Fallback:
-      Si el producto aún tiene image_url antiguo,
-      lo usamos temporalmente para no romper productos anteriores.
+      Si no hay tienda seleccionada
+      seguimos mostrando todo para no romper.
     */
 
+    let query = supabase
+      .from("products")
+      .select(`
+        *,
+        product_images (
+          image_url,
+          is_main,
+          position
+        )
+      `)
+      .is("deleted_at", null)
+
+    /*
+      SaaS Multiempresa
+    */
+
+    if (storeId) {
+      query = query.eq("store_id", storeId)
+    }
+
+    const { data, error } = await query.order(
+      "created_at",
+      { ascending: false }
+    )
+
+    if (error) {
+      console.error(
+        "Error cargando productos:",
+        error.message
+      )
+
+      setProducts([])
+      setLoading(false)
+      return
+    }
+
     const productsWithMainImage =
-      (data as ProductWithImages[])?.map((product) => {
-        const mainImage =
-          product.product_images?.find((img) => img.is_main) ||
-          product.product_images
-            ?.slice()
-            .sort(
-              (a, b) => (a.position ?? 0) - (b.position ?? 0)
-            )[0];
+      (data as ProductWithImages[])?.map(
+        (product) => {
+          const mainImage =
+            product.product_images?.find(
+              (img) => img.is_main
+            ) ||
+            product.product_images
+              ?.slice()
+              .sort(
+                (a, b) =>
+                  (a.position ?? 0) -
+                  (b.position ?? 0)
+              )[0]
 
-        return {
-          ...product,
-          image_url: mainImage?.image_url || product.image_url,
-        };
-      }) || [];
+          return {
+            ...product,
+            image_url:
+              mainImage?.image_url ||
+              product.image_url,
+          }
+        }
+      ) || []
 
-    setProducts(productsWithMainImage);
-    setLoading(false);
+    setProducts(productsWithMainImage)
+  } catch (error) {
+    console.error(error)
+    setProducts([])
+  } finally {
+    setLoading(false)
   }
+}
 
   /* =========================================================
      PRODUCTOS - ACTIVAR / DESACTIVAR

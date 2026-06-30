@@ -1,12 +1,7 @@
 "use client";
 
-/* =========================================================
-   HEADER - TIENDA PÚBLICA
-   Header premium compacto con fondo azul
-========================================================= */
-
 import { useState } from "react";
-import Image from "next/image";
+import { useStore } from "@/hooks/useStore";
 import Link from "next/link";
 import {
   Menu,
@@ -26,21 +21,49 @@ type HeaderProps = {
   cartCount: number;
 };
 
-const menuItems = [
-  { label: "Inicio", href: "/", icon: Home },
-  { label: "Tienda", href: "/tienda", icon: ShoppingBag },
-  { label: "Productos destacados", href: "/tienda/productos-destacados", icon: Star },
-  { label: "Combos", href: "/tienda/combos", icon: Gift },
-  { label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch },
-  { label: "Salidas", href: "/salidas", icon: CalendarDays },
-];
-
 export default function Header({ cartCount }: HeaderProps) {
   const [open, setOpen] = useState(false);
 
+  const { store } = useStore();
+
+  const primaryColor = store?.primary_color || "#061b3a";
+  const secondaryColor = store?.secondary_color || "#0f6bff";
+  const storeName = store?.name || "Águila Cuba Express";
+  const logoUrl = store?.logo_url || "/logo.png";
+
+const isDefaultStore = store?.slug === "aguila";
+
+const storeBaseUrl =
+  store?.slug && !isDefaultStore
+    ? `/tienda/${store.slug}`
+    : "/tienda";
+
+const cartUrl =
+  store?.slug && !isDefaultStore
+    ? `/tienda/${store.slug}/cart`
+    : "/tienda/cart";
+
+  const menuItems = [
+    { label: "Inicio", href: "/", icon: Home },
+    { label: "Tienda", href: storeBaseUrl, icon: ShoppingBag },
+    {
+      label: "Productos destacados",
+      href: `${storeBaseUrl}/productos-destacados`,
+      icon: Star,
+    },
+    { label: "Combos", href: `${storeBaseUrl}/combos`, icon: Gift },
+    { label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch },
+    { label: "Salidas", href: "/salidas", icon: CalendarDays },
+  ];
+
   return (
     <>
-      <header className="sticky top-0 z-50 bg-gradient-to-r from-[#061b3a] via-[#0c2d63] to-[#0f6bff] shadow-md">
+      <header
+        className="sticky top-0 z-50 shadow-md"
+        style={{
+          background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
+        }}
+      >
         <div className="mx-auto flex h-[76px] max-w-7xl items-center justify-between px-4">
           <button
             type="button"
@@ -51,20 +74,21 @@ export default function Header({ cartCount }: HeaderProps) {
             <Menu size={29} strokeWidth={2.7} />
           </button>
 
-          <Link href="/tienda" className="flex min-w-0 flex-1 items-center justify-center gap-3 px-3">
+          <Link
+            href={storeBaseUrl}
+            className="flex min-w-0 flex-1 items-center justify-center gap-3 px-3"
+          >
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white shadow-md">
-              <Image
-                src="/logo.png"
-                alt="Águila Cuba Express"
-                width={50}
-                height={50}
-                className="rounded-full"
+              <img
+                src={logoUrl}
+                alt={storeName}
+                className="h-[50px] w-[50px] rounded-full object-cover"
               />
             </div>
 
             <div className="min-w-0 leading-tight">
               <h1 className="truncate text-[18px] font-black uppercase tracking-wide text-white sm:text-2xl">
-                ÁGUILA CUBA EXPRESS
+                {storeName.toUpperCase()}
               </h1>
 
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-100">
@@ -74,7 +98,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </Link>
 
           <Link
-            href="/tienda/cart"
+            href={cartUrl}
             aria-label="Carrito"
             className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-md"
           >
@@ -101,11 +125,15 @@ export default function Header({ cartCount }: HeaderProps) {
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b px-5 py-4">
+        <div
+          className="flex items-center justify-between border-b px-5 py-4"
+          style={{ borderColor: `${primaryColor}22` }}
+        >
           <div>
-            <h2 className="text-lg font-black text-[#061b3a]">
-              Águila Cuba Express
+            <h2 className="text-lg font-black" style={{ color: primaryColor }}>
+              {storeName}
             </h2>
+
             <p className="text-xs font-bold text-slate-500">
               Menú de la tienda
             </p>
@@ -114,7 +142,8 @@ export default function Header({ cartCount }: HeaderProps) {
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-full bg-slate-100 p-2 text-[#061b3a]"
+            className="rounded-full bg-slate-100 p-2"
+            style={{ color: primaryColor }}
             aria-label="Cerrar menú"
           >
             <X size={22} />
@@ -130,7 +159,8 @@ export default function Header({ cartCount }: HeaderProps) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-[#061b3a] transition hover:bg-slate-100"
+                className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black transition hover:bg-slate-100"
+                style={{ color: primaryColor }}
               >
                 <Icon size={21} />
                 {item.label}
@@ -146,7 +176,8 @@ export default function Header({ cartCount }: HeaderProps) {
             <Link
               href="/admin"
               onClick={() => setOpen(false)}
-              className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-[#061b3a] transition hover:bg-slate-100"
+              className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black transition hover:bg-slate-100"
+              style={{ color: primaryColor }}
             >
               <Lock size={21} />
               Administrar tienda
@@ -154,7 +185,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </div>
 
           <a
-            href="https://wa.me/13054974891?text=Hola,%20necesito%20ayuda%20con%20un%20pedido%20de%20Águila%20Cuba%20Express."
+            href="https://wa.me/13054974891?text=Hola,%20necesito%20ayuda%20con%20un%20pedido."
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-green-600 transition hover:bg-green-50"

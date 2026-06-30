@@ -19,6 +19,7 @@ import AdminNav from "@/components/admin/AdminNav";
 import AdminAuthGuard from "@/components/admin/AdminAuthGuard";
 import AdminBottomNav from "@/components/admin/AdminBottomNav";
 import AdminMobileMenu from "@/components/admin/AdminMobileMenu";
+import StoreSwitcher from "@/components/admin/StoreSwitcher";
 
 export default function AdminLayout({
   children,
@@ -41,6 +42,13 @@ export default function AdminLayout({
             CONTENIDO PRINCIPAL
         ===================================================== */}
         <div className="relative flex-1 pb-24 xl:pb-0">
+
+          {/* =====================================================
+      SELECTOR DE TIENDA SAAS
+  ===================================================== */}
+  <div className="sticky top-0 z-40 border-b bg-[#F8FAFC]/95 px-4 py-3 backdrop-blur">
+    <StoreSwitcher />
+  </div>
           {/* =====================================================
               BOTÓN HAMBURGUESA MÓVIL + TABLET
           ===================================================== */}

@@ -31,10 +31,47 @@ export type DeliveryZone = {
 ========================================================= */
 
 export async function getCategories() {
+  /*
+    Si estamos en el admin usamos la tienda
+    seleccionada en el SaaS.
+  */
+
+  if (typeof window !== "undefined") {
+    const savedStore = localStorage.getItem(
+      "saas-current-store"
+    )
+
+    if (savedStore) {
+      const currentStore = JSON.parse(savedStore)
+
+      return supabase
+        .from("categories")
+        .select("*")
+        .eq("store_id", currentStore.id)
+        .order("sort_order", {
+          ascending: true,
+        })
+    }
+  }
+
+  /*
+    Fallback para producción actual
+    (Águila).
+  */
+
+  const { data: store } = await getDefaultStore()
+
+  if (!store) {
+    return { data: [], error: null }
+  }
+
   return supabase
     .from("categories")
     .select("*")
-    .order("sort_order", { ascending: true });
+    .eq("store_id", store.id)
+    .order("sort_order", {
+      ascending: true,
+    })
 }
 
 /* =========================================================
@@ -42,17 +79,72 @@ export async function getCategories() {
 ========================================================= */
 
 export async function getActiveCategories() {
+  /*
+    TIENDA PÚBLICA (/tienda)
+    Siempre debe usar la tienda por defecto
+    (Águila Cuba Express).
+  */
+
+  const { data: store } = await getDefaultStore()
+
+  if (!store) {
+    return { data: [], error: null }
+  }
+
   return supabase
     .from("categories")
     .select("*")
+    .eq("store_id", store.id)
     .eq("is_active", true)
-    .order("sort_order", { ascending: true });
+    .order("sort_order", {
+      ascending: true,
+    })
+}
+
+export async function getAdminActiveCategories() {
+  if (typeof window !== "undefined") {
+    const savedStore = localStorage.getItem(
+      "saas-current-store"
+    )
+
+    if (savedStore) {
+      const currentStore = JSON.parse(savedStore)
+
+      return supabase
+        .from("categories")
+        .select("*")
+        .eq("store_id", currentStore.id)
+        .eq("is_active", true)
+        .order("sort_order", {
+          ascending: true,
+        })
+    }
+  }
+
+  return getActiveCategories()
 }
 
 export async function createCategory(
   category: Omit<Category, "id" | "created_at">
 ) {
-  const { data: store } = await getDefaultStore();
+  if (typeof window !== "undefined") {
+    const savedStore = localStorage.getItem("saas-current-store")
+
+    if (savedStore) {
+      const currentStore = JSON.parse(savedStore)
+
+      return supabase
+        .from("categories")
+        .insert({
+          ...category,
+          store_id: currentStore.id,
+        })
+        .select()
+        .single()
+    }
+  }
+
+  const { data: store } = await getDefaultStore()
 
   if (!store) {
     return {
@@ -60,7 +152,7 @@ export async function createCategory(
       error: {
         message: "No se encontró la tienda activa",
       },
-    };
+    }
   }
 
   return supabase
@@ -70,7 +162,7 @@ export async function createCategory(
       store_id: store.id,
     })
     .select()
-    .single();
+    .single()
 }
 
 export async function updateCategory(
@@ -189,18 +281,96 @@ export async function deleteDeliveryZone(id: string) {
 ========================================================= */
 
 export async function getBanners() {
+  /*
+    TIENDA PÚBLICA /tienda
+    Siempre debe usar Águila Cuba Express.
+    Nunca debe leer localStorage del admin.
+  */
+
+  const { data: store } = await getDefaultStore()
+
+  if (!store) {
+    return { data: [], error: null }
+  }
+
   return supabase
     .from("banners")
     .select("*")
+    .eq("store_id", store.id)
     .order("sort_order", {
       ascending: true,
-    });
+    })
+}
+
+export async function getAdminBanners() {
+  if (typeof window !== "undefined") {
+    const savedStore = localStorage.getItem(
+      "saas-current-store"
+    )
+
+    if (savedStore) {
+      const currentStore = JSON.parse(savedStore)
+
+      return supabase
+        .from("banners")
+        .select("*")
+        .eq("store_id", currentStore.id)
+        .order("sort_order", {
+          ascending: true,
+        })
+    }
+  }
+
+  return getBanners()
+}
+
+/* =========================================================
+   BANNERS POR ID DE TIENDA
+========================================================= */
+
+export async function getBannersByStoreId(
+  storeId: string
+) {
+  return supabase
+    .from("banners")
+    .select("*")
+    .eq("store_id", storeId)
+    .order("sort_order", {
+      ascending: true,
+    })
 }
 
 export async function createBanner(
   banner: Omit<Banner, "id" | "created_at">
 ) {
-  const { data: store } = await getDefaultStore();
+  /*
+    ADMIN → usa la tienda seleccionada
+  */
+
+  if (typeof window !== "undefined") {
+    const savedStore = localStorage.getItem(
+      "saas-current-store"
+    )
+
+    if (savedStore) {
+      const currentStore = JSON.parse(savedStore)
+
+      return supabase
+        .from("banners")
+        .insert({
+          ...banner,
+          store_id: currentStore.id,
+        })
+        .select()
+        .single()
+    }
+  }
+
+  /*
+    Fallback → tienda por defecto
+  */
+
+  const { data: store } = await getDefaultStore()
 
   if (!store) {
     return {
@@ -208,7 +378,7 @@ export async function createBanner(
       error: {
         message: "No se encontró la tienda activa",
       },
-    };
+    }
   }
 
   return supabase
@@ -218,7 +388,7 @@ export async function createBanner(
       store_id: store.id,
     })
     .select()
-    .single();
+    .single()
 }
 
 export async function updateBanner(
@@ -230,12 +400,20 @@ export async function updateBanner(
     .update(banner)
     .eq("id", id)
     .select()
-    .single();
+    .single()
 }
 
 export async function deleteBanner(id: string) {
   return supabase
     .from("banners")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+}
+export async function getActiveCategoriesByStoreId(storeId: string) {
+  return supabase
+    .from("categories")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true })
 }

@@ -117,6 +117,12 @@ export async function getProducts() {
 
 // Obtener productos visibles en la tienda pública
 export async function getStoreProducts() {
+  const { data: store } = await getDefaultStore()
+
+  if (!store) {
+    return { data: [], error: null }
+  }
+
   return supabase
     .from("products")
     .select(`
@@ -127,8 +133,9 @@ export async function getStoreProducts() {
         position
       )
     `)
+    .eq("store_id", store.id)
     .eq("is_active", true)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
 }
 
 /*
@@ -326,4 +333,20 @@ export async function setMainProductImage(
     .from("product_images")
     .update({ is_main: true })
     .eq("id", imageId);
+}
+export async function getStoreProductsByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select(`
+      *,
+      product_images (
+        image_url,
+        is_main,
+        position
+      )
+    `)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
 }

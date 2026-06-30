@@ -2,6 +2,11 @@ import { supabase } from "@/lib/supabase";
 import OrdersManager from "@/components/admin/OrdersManager";
 
 export default async function AdminOrdersPage() {
+  let storeId: string | null = null;
+
+  // Solo funciona del lado cliente, así que usamos cookies/localStorage
+  // desde OrdersManager más adelante si fuera necesario.
+  // De momento mostramos solo órdenes con store_id válido.
   const { data: orders, error } = await supabase
     .from("orders")
     .select(`
@@ -24,6 +29,7 @@ export default async function AdminOrdersPage() {
       recipient_name,
       recipient_phone,
       recipient_phone_alt,
+      store_id,
       customers (
         name,
         email,
@@ -39,6 +45,7 @@ export default async function AdminOrdersPage() {
         subtotal
       )
     `)
+    .not("store_id", "is", null)
     .order("created_at", { ascending: false });
 
   if (error) {

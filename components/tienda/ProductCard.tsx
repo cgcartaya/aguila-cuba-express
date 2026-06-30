@@ -2,12 +2,7 @@
 
 /* =========================================================
    PRODUCT CARD V2 COMPACTA
-
-   Objetivo:
-   - Mostrar más productos en pantalla.
-   - Mantener estilo moderno tipo Instacart/Walmart.
-   - Botón Agregar compacto.
-   - Controles [-] cantidad [+] cuando ya está en carrito.
+   Mantiene el contexto de tienda multiempresa.
 ========================================================= */
 
 import Image from "next/image";
@@ -15,6 +10,7 @@ import Link from "next/link";
 import { Minus, Plus, Star } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 
 type ProductCardProps = {
@@ -32,14 +28,22 @@ export default function ProductCard({
     decreaseQuantity,
   } = useCart();
 
+  const { store } = useStore();
+
+const isDefaultStore = store?.slug === "aguila";
+
+const productUrl =
+  store?.slug && !isDefaultStore
+    ? `/tienda/${store.slug}/producto/${product.id}`
+    : `/tienda/producto/${product.id}`;
   const price = Number(product.price || 0).toFixed(2);
   const outOfStock = Number(product.stock || 0) <= 0;
-const cartItemId = `product-${product.id}`;
-const quantity = getItemQuantity(cartItemId);
+  const cartItemId = `product-${product.id}`;
+  const quantity = getItemQuantity(cartItemId);
+
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-      {/* IMAGEN MÁS COMPACTA */}
-      <Link href={`/tienda/producto/${product.id}`}>
+      <Link href={productUrl}>
         <div className="relative h-[120px] w-full bg-white p-2 md:h-[150px]">
           {outOfStock && (
             <div className="absolute left-2 top-2 z-10 rounded-full bg-red-600 px-2 py-1 text-[10px] font-black text-white shadow">
@@ -53,23 +57,19 @@ const quantity = getItemQuantity(cartItemId);
             fill
             unoptimized
             className={`object-contain p-2 transition duration-300 ${
-              outOfStock
-                ? "opacity-50 grayscale"
-                : "group-hover:scale-105"
+              outOfStock ? "opacity-50 grayscale" : "group-hover:scale-105"
             }`}
           />
         </div>
       </Link>
 
-      {/* CONTENIDO MÁS COMPACTO */}
       <div className="p-3 pt-1">
-        <Link href={`/tienda/producto/${product.id}`}>
+        <Link href={productUrl}>
           <h3 className="line-clamp-2 min-h-[38px] text-sm font-black leading-tight text-[#061b3a]">
             {product.name}
           </h3>
         </Link>
 
-        {/* RATING COMPACTO */}
         <div className="mt-1 flex items-center gap-[2px]">
           {[1, 2, 3, 4, 5].map((item) => (
             <Star
@@ -84,12 +84,10 @@ const quantity = getItemQuantity(cartItemId);
           </span>
         </div>
 
-        {/* PRECIO */}
         <p className="mt-2 text-lg font-black text-[#061b3a]">
           ${price}
         </p>
 
-        {/* BOTÓN / CONTROLES */}
         {outOfStock ? (
           <button
             disabled

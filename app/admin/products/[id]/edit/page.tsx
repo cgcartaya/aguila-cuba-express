@@ -21,7 +21,7 @@ import {
 } from "@/lib/services/products";
 
 import {
-  getActiveCategories,
+  getAdminActiveCategories,
 } from "@/lib/services/settings";
 
 import type { Category } from "@/components/admin/settings/types";
@@ -58,10 +58,10 @@ export default function EditProductPage() {
   useEffect(() => {
     async function loadData() {
       const [{ data: product, error }, { data: categoriesData }] =
-        await Promise.all([
-          getProductById(productId),
-          getActiveCategories(),
-        ]);
+  await Promise.all([
+    getProductById(productId),
+    getAdminActiveCategories(),
+  ]);
 
       setCategories(categoriesData || []);
 
