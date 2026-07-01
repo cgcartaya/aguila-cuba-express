@@ -1,14 +1,5 @@
 "use client"
 
-/* =========================================================
-   AGREGAR PRODUCTO - ADMIN
-
-   SaaS Multiempresa:
-   - El producto se crea asociado a la tienda
-     seleccionada actualmente.
-   - La tienda activa se obtiene desde localStorage.
-========================================================= */
-
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -16,11 +7,13 @@ import { ArrowLeft, Images, Loader2, Save } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { getAdminActiveCategories } from "@/lib/services/settings"
+import { useStore } from "@/hooks/useStore"
 
 import type { Category } from "@/components/admin/settings/types"
 
 export default function NewProductPage() {
   const router = useRouter()
+  const { store } = useStore()
 
   const [categories, setCategories] = useState<Category[]>([])
 
@@ -38,10 +31,6 @@ export default function NewProductPage() {
   const [loading, setLoading] = useState(false)
   const [loadingCategories, setLoadingCategories] = useState(true)
 
-  /* =========================================================
-     CARGAR CATEGORÍAS
-  ========================================================= */
-
   useEffect(() => {
     async function loadCategories() {
       const { data } = await getAdminActiveCategories()
@@ -52,10 +41,6 @@ export default function NewProductPage() {
 
     loadCategories()
   }, [])
-
-  /* =========================================================
-     FORMULARIO
-  ========================================================= */
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -86,23 +71,16 @@ export default function NewProductPage() {
     }))
   }
 
-  /* =========================================================
-     CREAR PRODUCTO
-  ========================================================= */
-
   const handleSubmit = async () => {
     setError("")
 
-    if (
-      !form.name ||
-      !form.category ||
-      !form.price ||
-      !form.stock
-    ) {
-      setError(
-        "Completa nombre, categoría, precio y stock."
-      )
+    if (!store?.id) {
+      setError("Debes seleccionar una tienda primero.")
+      return
+    }
 
+    if (!form.name || !form.category || !form.price || !form.stock) {
+      setError("Completa nombre, categoría, precio y stock.")
       return
     }
 
@@ -122,29 +100,6 @@ export default function NewProductPage() {
     try {
       setLoading(true)
 
-      /* ==========================================
-         TIENDA ACTUAL DEL SAAS
-      ========================================== */
-
-      const savedStore = localStorage.getItem(
-        "saas-current-store"
-      )
-
-      if (!savedStore) {
-        setError(
-          "Debes seleccionar una tienda primero."
-        )
-
-        setLoading(false)
-        return
-      }
-
-      const currentStore = JSON.parse(savedStore)
-
-      /* ==========================================
-         CREAR PRODUCTO
-      ========================================== */
-
       const { data, error } = await supabase
         .from("products")
         .insert({
@@ -156,12 +111,7 @@ export default function NewProductPage() {
           tag: form.tag,
           is_active: form.is_active,
           image_url: "",
-
-          /* ======================================
-             SaaS Multiempresa
-          ====================================== */
-
-          store_id: currentStore.id,
+          store_id: store.id,
         })
         .select("id")
         .single()
@@ -172,10 +122,7 @@ export default function NewProductPage() {
       router.refresh()
     } catch (err) {
       console.error(err)
-
-      setError(
-        "No se pudo crear el producto."
-      )
+      setError("No se pudo crear el producto.")
     } finally {
       setLoading(false)
     }
@@ -198,8 +145,7 @@ export default function NewProductPage() {
           </h1>
 
           <p className="mt-2 text-gray-500">
-            Crea primero el producto. Luego podrás subir
-            varias imágenes.
+            Crea primero el producto. Luego podrás subir varias imágenes.
           </p>
         </div>
 
@@ -256,8 +202,7 @@ export default function NewProductPage() {
               </p>
 
               <p className="mt-2 text-sm text-gray-500">
-                Al guardar irás automáticamente a la
-                pantalla de edición.
+                Al guardar irás automáticamente a la pantalla de edición.
               </p>
             </div>
 
@@ -285,9 +230,7 @@ export default function NewProductPage() {
               />
 
               <div>
-                <p className="font-bold text-gray-900">
-                  Producto activo
-                </p>
+                <p className="font-bold text-gray-900">Producto activo</p>
 
                 <p className="text-sm text-gray-500">
                   Si está activo aparecerá en la tienda.
@@ -317,10 +260,7 @@ export default function NewProductPage() {
             >
               {loading ? (
                 <>
-                  <Loader2
-                    className="animate-spin"
-                    size={20}
-                  />
+                  <Loader2 className="animate-spin" size={20} />
                   Creando...
                 </>
               ) : (
@@ -348,9 +288,7 @@ function Input({
   label: string
   name: string
   value: string
-  onChange: (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => void
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   placeholder?: string
   type?: string
 }) {
@@ -381,9 +319,7 @@ function CategorySelect({
   value: string
   categories: Category[]
   loading: boolean
-  onChange: (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => void
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
 }) {
   return (
     <div>
@@ -394,22 +330,15 @@ function CategorySelect({
       <select
         value={value}
         onChange={onChange}
-        disabled={
-          loading || categories.length === 0
-        }
+        disabled={loading || categories.length === 0}
         className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
       >
         <option value="">
-          {loading
-            ? "Cargando categorías..."
-            : "Selecciona una categoría"}
+          {loading ? "Cargando categorías..." : "Selecciona una categoría"}
         </option>
 
         {categories.map((category) => (
-          <option
-            key={category.id}
-            value={category.name}
-          >
+          <option key={category.id} value={category.name}>
             {category.name}
           </option>
         ))}
