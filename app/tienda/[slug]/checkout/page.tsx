@@ -211,14 +211,15 @@ const cartUrl =
     });
   }
 
-  async function createOrder(customerId: string, zone: DeliveryZone) {
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        customer_id: customerId,
+ async function createOrder(customerId: string, zone: DeliveryZone) {
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .insert({
+      customer_id: customerId,
+      store_id: store?.id,
 
-        status: "pending",
-        payment_status: "pending",
+      status: "pending",
+      payment_status: "pending",
 
         subtotal: totals.subtotal,
         delivery_fee: totals.shippingCost,

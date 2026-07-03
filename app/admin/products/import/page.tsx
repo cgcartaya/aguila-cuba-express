@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Upload, Loader2, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Upload,
+  Loader2,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+} from "lucide-react";
 
 type ImportProduct = {
   row: number;
@@ -21,28 +28,87 @@ type ImportProduct = {
   errors: string[];
 };
 
+type CategoryRow = {
+  name: string;
+  is_active?: boolean | null;
+};
+
 const REQUIRED_COLUMNS = ["name", "category", "description", "price", "stock"];
 
-const VALID_CATEGORIES = [
-  "Electrónicos",
-  "Alimentos",
-  "Hogar",
-  "Medicinas",
-  "Deportes",
-];
-
 function normalize(value: unknown) {
-  return String(value || "").trim();
+  return String(value ?? "").trim();
+}
+
+function normalizeKey(value: unknown) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
 }
 
 function normalizeName(value: string) {
-  return value.trim().toLowerCase();
+  return normalizeKey(value);
+}
+
+function parseBoolean(value: unknown) {
+  const normalized = normalizeKey(value);
+
+  if (value === false || normalized === "false" || normalized === "no" || normalized === "0") {
+    return false;
+  }
+
+  return true;
 }
 
 export default function ImportProductsPage() {
   const [products, setProducts] = useState<ImportProduct[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const [message, setMessage] = useState("");
+
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+
+    categories.forEach((category) => {
+      map.set(normalizeKey(category), category);
+    });
+
+    return map;
+  }, [categories]);
+
+  useEffect(() => {
+    async function loadCategories() {
+      setLoadingCategories(true);
+      setMessage("");
+
+      const { data, error } = await supabase
+        .from("categories")
+        .select("name, is_active")
+        .order("sort_order", { ascending: true });
+
+      setLoadingCategories(false);
+
+      if (error) {
+        console.error("Error cargando categorías:", error);
+        setMessage(
+          "No pude cargar las categorías desde Supabase. Revisa que exista la tabla categories y que tenga la columna name."
+        );
+        return;
+      }
+
+      const activeCategories = ((data || []) as CategoryRow[])
+        .filter((category) => category.is_active !== false)
+        .map((category) => normalize(category.name))
+        .filter(Boolean);
+
+      setCategories(activeCategories);
+    }
+
+    loadCategories();
+  }, []);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage("");
@@ -57,71 +123,66 @@ export default function ImportProductsPage() {
       return;
     }
 
+    if (categories.length === 0) {
+      setMessage("No hay categorías activas cargadas para validar el Excel.");
+      return;
+    }
+
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data);
 
-const sheetName =
-  workbook.SheetNames.find(
-    (name) => name.toLowerCase().trim() === "productos"
-  ) || workbook.SheetNames[0];
+    const sheetName =
+      workbook.SheetNames.find(
+        (name) => name.toLowerCase().trim() === "productos"
+      ) || workbook.SheetNames[0];
 
-const sheet = workbook.Sheets[sheetName];
+    const sheet = workbook.Sheets[sheetName];
 
-const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-  header: 1,
-  defval: "",
-});
-
-if (matrix.length === 0) {
-  setMessage("El archivo está vacío.");
-  return;
-}
-
-const headerRowIndex = matrix.findIndex((row) => {
-  const normalized = row.map((cell) =>
-    String(cell || "").toLowerCase().trim()
-  );
-
-  return REQUIRED_COLUMNS.every((column) => normalized.includes(column));
-});
-
-if (headerRowIndex === -1) {
-  setMessage(
-    "No se encontró una fila de encabezados válida. Debe incluir: name, category, description, price, stock."
-  );
-  return;
-}
-
-const headers = matrix[headerRowIndex].map((cell) =>
-  String(cell || "").toLowerCase().trim()
-);
-
-const dataRows = matrix.slice(headerRowIndex + 1);
-
-const rows = dataRows
-  .filter((row) => row.some((cell) => String(cell || "").trim() !== ""))
-  .map((row) => {
-    const normalizedRow: Record<string, unknown> = {};
-
-    headers.forEach((header, index) => {
-      if (header) {
-        normalizedRow[header] = row[index];
-      }
+    const matrix = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+      header: 1,
+      defval: "",
     });
 
-    return normalizedRow;
-  });
+    if (matrix.length === 0) {
+      setMessage("El archivo está vacío.");
+      return;
+    }
 
-const columns = headers;
+    const headerRowIndex = matrix.findIndex((row) => {
+      const normalized = row.map((cell) => normalizeKey(cell));
+      return REQUIRED_COLUMNS.every((column) => normalized.includes(column));
+    });
+
+    if (headerRowIndex === -1) {
+      setMessage(
+        "No se encontró una fila de encabezados válida. Debe incluir: name, category, description, price, stock."
+      );
+      return;
+    }
+
+    const headers = matrix[headerRowIndex].map((cell) => normalizeKey(cell));
 
     const missingColumns = REQUIRED_COLUMNS.filter(
-      (column) => !columns.includes(column)
+      (column) => !headers.includes(column)
     );
 
     if (missingColumns.length > 0) {
       setMessage(`Faltan columnas obligatorias: ${missingColumns.join(", ")}`);
       return;
     }
+
+    const rows = matrix
+      .slice(headerRowIndex + 1)
+      .filter((row) => row.some((cell) => normalize(cell) !== ""))
+      .map((row) => {
+        const normalizedRow: Record<string, unknown> = {};
+
+        headers.forEach((header, index) => {
+          if (header) normalizedRow[header] = row[index];
+        });
+
+        return normalizedRow;
+      });
 
     const { data: existingProducts } = await supabase
       .from("products")
@@ -131,34 +192,28 @@ const columns = headers;
       existingProducts?.map((p) => normalizeName(p.name)) || []
     );
 
-const existingSkus = new Set(
-  existingProducts
-    ?.map((p) => normalize(p.sku))
-    .filter((sku) => sku.length > 0) || []
-);
+    const existingSkus = new Set(
+      existingProducts
+        ?.map((p) => normalize(p.sku))
+        .filter((sku) => sku.length > 0) || []
+    );
 
     const namesInFile = new Set<string>();
     const skusInFile = new Set<string>();
 
     const formatted: ImportProduct[] = rows.map((row, index) => {
-    const excelRow = headerRowIndex + index + 2;
+      const excelRow = headerRowIndex + index + 2;
 
       const sku = normalize(row.sku);
       const name = normalize(row.name);
-      const category = normalize(row.category);
+      const rawCategory = normalize(row.category);
+      const category = categoryMap.get(normalizeKey(rawCategory)) || rawCategory;
       const description = normalize(row.description);
       const price = Number(row.price);
       const stock = Number(row.stock);
       const image_url = normalize(row.image_url);
       const tag = normalize(row.tag);
-
-      const is_active =
-        row.is_active === true ||
-        row.is_active === "true" ||
-        row.is_active === "TRUE" ||
-        row.is_active === 1 ||
-        row.is_active === undefined ||
-        row.is_active === "";
+      const is_active = parseBoolean(row.is_active);
 
       const errors: string[] = [];
 
@@ -166,12 +221,14 @@ const existingSkus = new Set(
         errors.push("Nombre obligatorio, mínimo 3 caracteres.");
       }
 
-      if (!category) {
+      if (!rawCategory) {
         errors.push("Categoría obligatoria.");
       }
 
-      if (category && !VALID_CATEGORIES.includes(category)) {
-        errors.push(`Categoría inválida: ${category}`);
+      if (rawCategory && !categoryMap.has(normalizeKey(rawCategory))) {
+        errors.push(
+          `Categoría inválida: ${rawCategory}. Categorías válidas: ${categories.join(", ")}`
+        );
       }
 
       if (!description || description.length < 10) {
@@ -187,7 +244,6 @@ const existingSkus = new Set(
       }
 
       const normalizedName = normalizeName(name);
-
       let status: ImportProduct["status"] = "valid";
 
       if (existingNames.has(normalizedName)) {
@@ -260,8 +316,8 @@ const existingSkus = new Set(
       description: product.description,
       price: product.price,
       stock: product.stock,
-      image_url: product.image_url,
-      tag: product.tag,
+      image_url: product.image_url || null,
+      tag: product.tag || null,
       is_active: product.is_active,
     }));
 
@@ -271,7 +327,7 @@ const existingSkus = new Set(
 
     if (error) {
       console.error(error);
-      setMessage("Error importando productos.");
+      setMessage(`Error importando productos: ${error.message}`);
       return;
     }
 
@@ -300,6 +356,10 @@ const existingSkus = new Set(
             stock, image_url, tag, is_active.
           </p>
 
+          <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+            Categorías cargadas: {loadingCategories ? "Cargando..." : categories.length > 0 ? categories.join(", ") : "ninguna"}
+          </div>
+
           <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed p-10 text-center hover:bg-gray-50">
             <Upload size={36} className="mb-3 text-gray-500" />
 
@@ -312,6 +372,7 @@ const existingSkus = new Set(
               accept=".xlsx,.xls"
               onChange={handleFile}
               className="hidden"
+              disabled={loadingCategories}
             />
           </label>
 

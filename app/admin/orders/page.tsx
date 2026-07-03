@@ -7,9 +7,9 @@ export default async function AdminOrdersPage() {
   // Solo funciona del lado cliente, así que usamos cookies/localStorage
   // desde OrdersManager más adelante si fuera necesario.
   // De momento mostramos solo órdenes con store_id válido.
-  const { data: orders, error } = await supabase
-    .from("orders")
-    .select(`
+const { data: orders, error } = await supabase
+  .from("orders")
+  .select(`
       id,
       order_number,
       total,
@@ -45,7 +45,6 @@ export default async function AdminOrdersPage() {
         subtotal
       )
     `)
-    .not("store_id", "is", null)
     .order("created_at", { ascending: false });
 
   if (error) {
