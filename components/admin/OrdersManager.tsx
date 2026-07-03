@@ -20,15 +20,19 @@ import {
 } from "lucide-react";
 
 const STATUSES = [
-  "Todas",
-  "Pendiente",
-  "Confirmada",
-  "Preparando",
-  "En tránsito",
-  "Lista para entrega",
-  "Entregada",
-  "Cancelada",
+  { value: "Todas", label: "Todas" },
+  { value: "pending", label: "Pendiente" },
+  { value: "confirmed", label: "Confirmada" },
+  { value: "preparing", label: "Preparando" },
+  { value: "in_transit", label: "En tránsito" },
+  { value: "ready_for_delivery", label: "Lista para entrega" },
+  { value: "delivered", label: "Entregada" },
+  { value: "cancelled", label: "Cancelada" },
 ];
+
+function getStatusLabel(value: string) {
+  return STATUSES.find((status) => status.value === value)?.label || value;
+}
 
 function normalizeText(text = "") {
   return text
@@ -50,13 +54,13 @@ function getCustomer(order: any) {
 
 function statusClass(status: string) {
   const styles: Record<string, string> = {
-    Pendiente: "bg-yellow-100 text-yellow-700",
-    Confirmada: "bg-blue-100 text-blue-700",
-    Preparando: "bg-indigo-100 text-indigo-700",
-    "En tránsito": "bg-purple-100 text-purple-700",
-    "Lista para entrega": "bg-cyan-100 text-cyan-700",
-    Entregada: "bg-green-100 text-green-700",
-    Cancelada: "bg-red-100 text-red-700",
+    pending: "bg-yellow-100 text-yellow-700",
+    confirmed: "bg-blue-100 text-blue-700",
+    preparing: "bg-indigo-100 text-indigo-700",
+    in_transit: "bg-purple-100 text-purple-700",
+    ready_for_delivery: "bg-cyan-100 text-cyan-700",
+    delivered: "bg-green-100 text-green-700",
+    cancelled: "bg-red-100 text-red-700",
   };
 
   return styles[status] || "bg-slate-100 text-slate-600";
@@ -89,9 +93,9 @@ export default function OrdersManager({
 
     return {
       total: orders.length,
-      pendientes: orders.filter((o) => o.status === "Pendiente").length,
-      preparando: orders.filter((o) => o.status === "Preparando").length,
-      transito: orders.filter((o) => o.status === "En tránsito").length,
+      pendientes: orders.filter((o) => o.status === "pending").length,
+      preparando: orders.filter((o) => o.status === "preparing").length,
+      transito: orders.filter((o) => o.status === "in_transit").length,
       ventas: totalSales,
     };
   }, [orders]);
@@ -224,15 +228,15 @@ export default function OrdersManager({
       <div className="mb-6 flex flex-wrap gap-2">
         {STATUSES.map((status) => (
           <button
-            key={status}
-            onClick={() => setFilter(status)}
+            key={status.value}
+            onClick={() => setFilter(status.value)}
             className={`rounded-full px-4 py-2 text-sm font-black transition ${
-              filter === status
+              filter === status.value
                 ? "bg-[#061b3a] text-white"
                 : "bg-white text-slate-600 shadow-sm"
             }`}
           >
-            {status}
+            {status.label}
           </button>
         ))}
       </div>
@@ -282,7 +286,7 @@ export default function OrdersManager({
                           order.status
                         )}`}
                       >
-                        {order.status}
+                        {getStatusLabel(order.status)}
                       </span>
 
                       <select
@@ -292,13 +296,13 @@ export default function OrdersManager({
                         }
                         className="rounded-xl border border-slate-300 bg-white p-2 text-sm font-bold text-slate-700"
                       >
-                        {STATUSES.filter((status) => status !== "Todas").map(
-                          (status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          )
-                        )}
+                        {STATUSES.filter(
+                          (status) => status.value !== "Todas"
+                        ).map((status) => (
+                          <option key={status.value} value={status.value}>
+                            {status.label}
+                          </option>
+                        ))}
                       </select>
 
                       <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
