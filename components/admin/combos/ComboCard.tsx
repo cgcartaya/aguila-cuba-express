@@ -5,11 +5,9 @@
 
    Card compacta para listar combos en admin.
 
-   Objetivo:
-   - Verse bien en móvil
-   - Permitir 2 columnas
-   - No mostrar toda la lista de productos
-   - Mostrar solo resumen rápido
+   Corrección:
+   - Normaliza combo_items.products porque Supabase puede devolver
+     la relación como objeto o como array.
 ========================================================= */
 
 import Link from "next/link";
@@ -18,14 +16,16 @@ import { Package, Pencil, Trash2 } from "lucide-react";
 type ComboProduct = {
   id: string;
   name: string;
-  price: number;
+  price: number | string | null;
 };
+
+type ComboProductRelation = ComboProduct | ComboProduct[] | null;
 
 type ComboItem = {
   id: string;
-  quantity: number;
+  quantity: number | null;
   product_id: string;
-  products: ComboProduct;
+  products: ComboProductRelation;
 };
 
 type Combo = {
@@ -33,9 +33,9 @@ type Combo = {
   name: string;
   description?: string | null;
   image_url?: string | null;
-  price: number;
-  is_active: boolean;
-  combo_items?: ComboItem[];
+  price: number | string | null;
+  is_active: boolean | null;
+  combo_items?: ComboItem[] | null;
 };
 
 type ComboCardProps = {
@@ -43,19 +43,24 @@ type ComboCardProps = {
   onDelete: (comboId: string) => void;
 };
 
+function normalizeComboProduct(
+  productRelation: ComboProductRelation
+): ComboProduct | null {
+  if (Array.isArray(productRelation)) {
+    return productRelation[0] ?? null;
+  }
+
+  return productRelation ?? null;
+}
+
 export default function ComboCard({ combo, onDelete }: ComboCardProps) {
-  /* =========================================================
-     PRECIO NORMAL DEL COMBO
-
-     Suma:
-     precio del producto x cantidad incluida
-  ========================================================= */
-
   const normalPrice =
     combo.combo_items?.reduce((total, item) => {
+      const product = normalizeComboProduct(item.products);
+
       return (
         total +
-        Number(item.products?.price || 0) * Number(item.quantity || 1)
+        Number(product?.price || 0) * Number(item.quantity || 1)
       );
     }, 0) || 0;
 

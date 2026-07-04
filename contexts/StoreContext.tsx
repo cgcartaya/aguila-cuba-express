@@ -108,7 +108,8 @@ export function StoreProvider({
          producción actual de Águila
       =============================================== */
 
-      const { data } = await getDefaultStore()
+      const defaultStoreResult = await getDefaultStore()
+      const data = defaultStoreResult?.data ?? null
 
       setStore((data as Store) || null)
 

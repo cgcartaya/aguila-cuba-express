@@ -8,12 +8,10 @@
    - Productos disponibles
    - Productos ya incluidos en el combo
 
-   Corrección incluida:
-   - Supabase puede devolver la relación products dentro de combo_items
-     como objeto o como array, dependiendo del tipado/inferencia.
-   - Normalizamos esa relación antes de enviarla a ComboForm.
-   - Esto evita el error de build de TypeScript en:
-     app/admin/(store)/combos/[id]/edit/page.tsx
+   Corrección:
+   - Supabase puede devolver combo_items.products como objeto o array.
+   - Normalizamos esa relación.
+   - Evitamos type predicates conflictivos con SelectedComboProduct.
 ========================================================= */
 
 import { useEffect, useState } from "react";
@@ -40,13 +38,13 @@ type ComboItemFromDB = {
 
 type ComboFromDB = {
   id: string;
-  store_id?: string;
+  store_id?: string | null;
   name: string;
   description?: string | null;
   image_url?: string | null;
   price: number | string | null;
   is_active: boolean | null;
-  created_at?: string;
+  created_at?: string | null;
   combo_items?: ComboItemFromDB[] | null;
 };
 
@@ -97,9 +95,9 @@ export default function EditComboPage() {
         return;
       }
 
-      const combo = comboResponse.data as ComboFromDB;
+      const combo = comboResponse.data as unknown as ComboFromDB;
 
-      setProducts((productsResponse.data as ComboProduct[]) || []);
+      setProducts((productsResponse.data as unknown as ComboProduct[]) || []);
 
       setInitialData({
         name: combo.name || "",
@@ -109,24 +107,23 @@ export default function EditComboPage() {
         is_active: Boolean(combo.is_active),
       });
 
-      const selected =
-        combo.combo_items
-          ?.map((item) => {
-            const product = normalizeComboProduct(item.products);
+      const selected = (combo.combo_items || []).reduce<
+        SelectedComboProduct[]
+      >((acc, item) => {
+        const product = normalizeComboProduct(item.products);
 
-            if (!product) {
-              return null;
-            }
+        if (!product) {
+          return acc;
+        }
 
-            return {
-              combo_item_id: item.id,
-              quantity: Number(item.quantity || 1),
-              product,
-            };
-          })
-          .filter(
-            (item): item is SelectedComboProduct => item !== null
-          ) || [];
+        acc.push({
+          combo_item_id: item.id,
+          quantity: Number(item.quantity || 1),
+          product,
+        });
+
+        return acc;
+      }, []);
 
       setInitialProducts(selected);
       setLoading(false);

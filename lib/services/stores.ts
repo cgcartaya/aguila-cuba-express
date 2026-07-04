@@ -84,13 +84,14 @@ export async function getStoreByDomain(domain: string): Promise<Store | null> {
   return data as Store | null
 }
 
-export async function getDefaultStore() {
+export async function getDefaultStore(): Promise<{ data: Store | null; error: unknown }> {
   if (defaultStoreCache) {
     return { data: defaultStoreCache, error: null }
   }
 
   if (!defaultStorePromise) {
-    defaultStorePromise = supabase
+    defaultStorePromise = Promise.resolve(
+      supabase
       .from("stores")
       .select(STORE_PUBLIC_FIELDS)
       .eq("slug", "aguila")
@@ -107,9 +108,10 @@ export async function getDefaultStore() {
           error,
         }
       })
+    )
   }
 
-  return defaultStorePromise
+  return await defaultStorePromise
 }
 
 export function clearDefaultStoreCache() {

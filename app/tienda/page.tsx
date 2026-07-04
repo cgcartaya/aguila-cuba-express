@@ -35,7 +35,7 @@ type ProductImage = {
 };
 
 type ProductFromSupabase = Product & {
-  product_images?: ProductImage[];
+  product_images?: ProductImage[] | null;
 };
 
 export default function TiendaPage() {
@@ -52,9 +52,12 @@ export default function TiendaPage() {
     let mounted = true;
 
     async function cargarDatos() {
-      const { data: store, error: storeError } = await getDefaultStore();
+      const storeResult = await getDefaultStore();
 
       if (!mounted) return;
+
+      const store = storeResult?.data ?? null;
+      const storeError = storeResult?.error ?? null;
 
       if (storeError || !store) {
         setProductos([]);
@@ -78,7 +81,7 @@ export default function TiendaPage() {
       }
 
       const productosConImagenPrincipal =
-        (productsData as ProductFromSupabase[])?.map((producto) => {
+        ((productsData || []) as ProductFromSupabase[]).map((producto) => {
           const imagenPrincipal =
             producto.product_images?.find((img) => img.is_main) ||
             producto.product_images
@@ -92,7 +95,7 @@ export default function TiendaPage() {
         }) || [];
 
       setProductos(productosConImagenPrincipal);
-      setCategorias(categoriesData || []);
+      setCategorias((categoriesData as Category[]) || []);
     }
 
     cargarDatos();
@@ -140,7 +143,6 @@ export default function TiendaPage() {
   return (
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
       <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
-
 
       {!hayBusqueda && (
         <CategoriesShowcaseCarousel groups={productosPorCategoria} />

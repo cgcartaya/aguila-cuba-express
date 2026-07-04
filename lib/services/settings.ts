@@ -46,7 +46,7 @@ export async function getCategories() {
 
       return supabase
         .from("categories")
-        .select("id, store_id, name, color, icon, sort_order, is_active, created_at")
+        .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
         .eq("store_id", currentStore.id)
         .order("sort_order", {
           ascending: true,
@@ -67,7 +67,7 @@ export async function getCategories() {
 
   return supabase
     .from("categories")
-    .select("id, store_id, name, color, icon, sort_order, is_active, created_at")
+    .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
     .eq("store_id", store.id)
     .order("sort_order", {
       ascending: true,
@@ -93,7 +93,7 @@ export async function getActiveCategories() {
 
   return supabase
     .from("categories")
-    .select("id, store_id, name, color, icon, sort_order, is_active, created_at")
+    .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
     .eq("store_id", store.id)
     .eq("is_active", true)
     .order("sort_order", {
@@ -112,7 +112,7 @@ export async function getAdminActiveCategories() {
 
       return supabase
         .from("categories")
-        .select("id, store_id, name, color, icon, sort_order, is_active, created_at")
+        .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
         .eq("store_id", currentStore.id)
         .eq("is_active", true)
         .order("sort_order", {
@@ -416,7 +416,7 @@ export async function deleteBanner(id: string) {
 export async function getActiveCategoriesByStoreId(storeId: string) {
   return supabase
     .from("categories")
-    .select("id, store_id, name, color, icon, sort_order, is_active, created_at")
+    .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
     .eq("store_id", storeId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })

@@ -3,6 +3,10 @@
 /* =========================================================
    ADMIN - COMBOS
    Página principal para gestionar combos de productos.
+
+   Corrección:
+   - Tipos preparados para relaciones de Supabase como objeto o array.
+   - Consulta filtrada por store_id cuando hay tienda activa.
 ========================================================= */
 
 import { useEffect, useState } from "react";
@@ -19,24 +23,27 @@ import ComboCard from "@/components/admin/combos/ComboCard";
 type ComboProduct = {
   id: string;
   name: string;
-  price: number;
+  price: number | string | null;
 };
+
+type ComboProductRelation = ComboProduct | ComboProduct[] | null;
 
 type ComboItem = {
   id: string;
-  quantity: number;
+  quantity: number | null;
   product_id: string;
-  products: ComboProduct;
+  products: ComboProductRelation;
 };
 
 type Combo = {
   id: string;
+  store_id?: string | null;
   name: string;
   description?: string | null;
   image_url?: string | null;
-  price: number;
-  is_active: boolean;
-  combo_items?: ComboItem[];
+  price: number | string | null;
+  is_active: boolean | null;
+  combo_items?: ComboItem[] | null;
 };
 
 /* =========================================================
@@ -74,7 +81,14 @@ export default function AdminCombosPage() {
     let query = supabase
       .from("combos")
       .select(`
-        *,
+        id,
+        store_id,
+        name,
+        description,
+        image_url,
+        price,
+        is_active,
+        created_at,
         combo_items (
           id,
           quantity,
@@ -102,7 +116,7 @@ export default function AdminCombosPage() {
       return;
     }
 
-    setCombos((data as Combo[]) || []);
+    setCombos((data as unknown as Combo[]) || []);
     setLoading(false);
   };
 
@@ -142,9 +156,7 @@ export default function AdminCombosPage() {
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-black">
-              Combos
-            </h1>
+            <h1 className="text-3xl font-black">Combos</h1>
 
             <p className="mt-1 text-sm font-semibold text-slate-500">
               Crea paquetes de productos que descuentan inventario real.
@@ -160,40 +172,32 @@ export default function AdminCombosPage() {
           </Link>
         </div>
 
-        {loading && (
+        {loading ? (
           <div className="rounded-3xl bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
             Cargando combos...
           </div>
-        )}
-
-        {!loading && combos.length === 0 && (
+        ) : combos.length === 0 ? (
           <div className="rounded-3xl bg-white p-10 text-center shadow-sm">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-              <Package size={32} />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <Package size={34} />
             </div>
 
-            <h2 className="text-xl font-black">
-              No hay combos todavía
-            </h2>
+            <h2 className="text-xl font-black">No hay combos creados</h2>
 
-            <p className="mx-auto mt-2 max-w-md text-sm font-semibold text-slate-500">
-              Crea combos seleccionando productos existentes. Cuando se venda
-              un combo, luego descontaremos automáticamente el inventario de
-              cada producto incluido.
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Crea tu primer combo combinando productos existentes.
             </p>
 
             <Link
               href="/admin/combos/new"
-              className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white transition hover:bg-red-700"
+              className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-red-700"
             >
               <Plus size={18} />
-              Crear primer combo
+              Crear combo
             </Link>
           </div>
-        )}
-
-        {!loading && combos.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {combos.map((combo) => (
               <ComboCard
                 key={combo.id}
