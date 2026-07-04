@@ -3,18 +3,18 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
 
-   Correcciones:
-   - Buscador real.
-   - Si hay búsqueda, solo se muestran categorías con resultados.
-   - Se ocultan carruseles visuales durante búsqueda.
-   - Empty state profesional.
-   - Mejor soporte mobile/iPhone Safari con 100dvh.
+   Performance Fase 3:
+   - Evita consultar la tienda por defecto varias veces.
+   - Carga productos/categorías usando store_id ya resuelto.
+   - Pasa storeId a combos para evitar consultas globales.
+   - Elimina console.log de producción.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
 import { productMatchesSearch } from "@/lib/utils/search";
-import { getStoreProducts } from "@/lib/services/products";
-import { getActiveCategories } from "@/lib/services/settings";
+import { getStoreProductsByStoreId } from "@/lib/services/products";
+import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
+import { getDefaultStore } from "@/lib/services/stores";
 
 import ProductSearch from "@/components/tienda/ProductSearch";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
@@ -42,20 +42,39 @@ export default function TiendaPage() {
   const [busqueda, setBusqueda] = useState("");
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
+  const [storeId, setStoreId] = useState<string | null>(null);
 
   const { addToCart } = useCart();
 
   const hayBusqueda = busqueda.trim().length > 0;
 
   useEffect(() => {
+    let mounted = true;
+
     async function cargarDatos() {
+      const { data: store, error: storeError } = await getDefaultStore();
+
+      if (!mounted) return;
+
+      if (storeError || !store) {
+        setProductos([]);
+        setCategorias([]);
+        setStoreId(null);
+        return;
+      }
+
+      setStoreId(store.id);
+
       const [{ data: productsData, error }, { data: categoriesData }] =
-        await Promise.all([getStoreProducts(), getActiveCategories()]);
-        console.log("PRODUCTOS:", productsData);
-console.log("CATEGORIAS:", categoriesData);
+        await Promise.all([
+          getStoreProductsByStoreId(store.id),
+          getActiveCategoriesByStoreId(store.id),
+        ]);
+
+      if (!mounted) return;
 
       if (error) {
-        console.log("Error cargando productos:", error);
+        console.error("Error cargando productos:", error);
       }
 
       const productosConImagenPrincipal =
@@ -77,6 +96,10 @@ console.log("CATEGORIAS:", categoriesData);
     }
 
     cargarDatos();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const productosBuscados = useMemo(() => {
@@ -118,6 +141,7 @@ console.log("CATEGORIAS:", categoriesData);
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
       <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
 
+
       {!hayBusqueda && (
         <CategoriesShowcaseCarousel groups={productosPorCategoria} />
       )}
@@ -126,7 +150,7 @@ console.log("CATEGORIAS:", categoriesData);
         <StickyCategoryTabs categories={categoriasConCombos} />
       )}
 
-      {!hayBusqueda && <StoreCombosSection />}
+      {!hayBusqueda && <StoreCombosSection storeId={storeId || undefined} />}
 
       <div className="mt-2">
         {productosPorCategoria.map((grupo) => (

@@ -74,7 +74,7 @@ const productUrl =
                     src={mainImage}
                     alt={item.name}
                     fill
-                    unoptimized
+                    sizes="(max-width: 640px) 45vw, 180px"
                     className="object-contain p-2"
                   />
                 </div>

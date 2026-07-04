@@ -1,73 +1,70 @@
 import { supabase } from "@/lib/supabase";
+import { getDefaultStore } from "@/lib/services/stores";
 
 /* =========================================================
    SERVICES - COMBOS
    Maneja combos y productos incluidos en cada combo
 ========================================================= */
 
+const COMBO_PUBLIC_SELECT = `
+  id,
+  store_id,
+  name,
+  description,
+  image_url,
+  price,
+  is_active,
+  created_at,
+  combo_items (
+    id,
+    quantity,
+    product_id,
+    products (
+      id,
+      name,
+      price,
+      image_url,
+      stock,
+      category,
+      is_active,
+      store_id
+    )
+  )
+`;
+
 export async function getCombos() {
   return await supabase
     .from("combos")
-    .select(`
-      *,
-      combo_items (
-        id,
-        quantity,
-        product_id,
-        products (*)
-      )
-    `)
+    .select(COMBO_PUBLIC_SELECT)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 }
 
 export async function getActiveCombos() {
-  return await supabase
-    .from("combos")
-    .select(`
-      *,
-      combo_items (
-        id,
-        quantity,
-        product_id,
-        products (*)
-      )
-    `)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
+  return getActiveCombosByStoreId(store.id);
 }
 
 export async function getActiveCombosByStoreId(storeId: string) {
   return await supabase
     .from("combos")
-    .select(`
-      *,
-      combo_items (
-        id,
-        quantity,
-        product_id,
-        products (*)
-      )
-    `)
+    .select(COMBO_PUBLIC_SELECT)
     .eq("store_id", storeId)
     .eq("is_active", true)
     .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(8);
 }
 
 export async function getComboById(id: string) {
   return await supabase
     .from("combos")
-    .select(`
-      *,
-      combo_items (
-        id,
-        quantity,
-        product_id,
-        products (*)
-      )
-    `)
+    .select(COMBO_PUBLIC_SELECT)
     .eq("id", id)
     .is("deleted_at", null)
     .single();

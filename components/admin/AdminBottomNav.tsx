@@ -33,11 +33,19 @@ const navItems = [
   },
 ];
 
+function isSaasArea(pathname: string) {
+  return pathname === "/admin/saas" || pathname.startsWith("/admin/saas/") || pathname === "/admin/stores" || pathname.startsWith("/admin/stores/");
+}
+
 export default function AdminBottomNav() {
   const pathname = usePathname();
 
+  // Este bottom nav es solo para operación de tienda.
+  // No se muestra dentro de la administración SaaS.
+  if (isSaasArea(pathname)) return null;
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-blue-100 bg-white/95 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-blue-100 bg-white/95 shadow-[0_-8px_30px_rgba(15,23,42,0.10)] backdrop-blur xl:hidden">
       <div className="mx-auto flex max-w-3xl items-center justify-around px-2 py-2">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -45,7 +53,7 @@ export default function AdminBottomNav() {
           const isActive =
             item.href === "/admin"
               ? pathname === "/admin"
-              : pathname.startsWith(item.href);
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
           if (item.center) {
             return (

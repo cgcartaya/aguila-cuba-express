@@ -216,7 +216,7 @@ export default function ProductImageManager({ productId }: Props) {
   src={image.image_url}
   alt="Imagen del producto"
   fill
-  unoptimized
+  sizes="(max-width: 768px) 50vw, 220px"
   className="object-cover"
 />
 

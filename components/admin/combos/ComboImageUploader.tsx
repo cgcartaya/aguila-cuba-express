@@ -148,7 +148,7 @@ export default function ComboImageUploader({
               src={formData.image_url}
               alt="Vista previa del combo"
               fill
-              unoptimized
+              sizes="(max-width: 768px) 100vw, 480px"
               className="object-contain p-4"
             />
 

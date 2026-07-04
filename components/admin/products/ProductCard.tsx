@@ -49,7 +49,7 @@ export default function ProductCard({
               src={product.image_url}
               alt={product.name}
               fill
-              unoptimized
+              sizes="(max-width: 768px) 50vw, 260px"
               className={`object-cover ${
                 isOutOfStock
                   ? "opacity-60 grayscale"

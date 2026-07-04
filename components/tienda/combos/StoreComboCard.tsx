@@ -66,7 +66,7 @@ export default function StoreComboCard({ combo }: Props) {
             src={combo.image_url}
             alt={combo.name}
             fill
-            unoptimized
+            sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, 320px"
             className="object-contain p-2 transition duration-300 hover:scale-105"
           />
         ) : (

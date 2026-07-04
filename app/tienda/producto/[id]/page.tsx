@@ -184,7 +184,7 @@ export default function ProductDetailPage({ params }: PageProps) {
               src={selectedImage || "/placeholder-product.png"}
               alt={product.name}
               fill
-              unoptimized
+              sizes="100vw"
               className="object-contain"
             />
           </div>

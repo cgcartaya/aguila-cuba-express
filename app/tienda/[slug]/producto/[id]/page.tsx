@@ -232,7 +232,7 @@ export default function ProductDetailPage({
               }
               alt={product.name}
               fill
-              unoptimized
+              sizes="100vw"
               className="object-contain"
             />
           </div>

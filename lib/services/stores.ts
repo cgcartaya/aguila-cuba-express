@@ -1,10 +1,34 @@
 import { supabase } from "@/lib/supabase"
 import type { Store } from "@/lib/saas/store-types"
 
+const STORE_PUBLIC_FIELDS = `
+  id,
+  name,
+  slug,
+  domain,
+  logo_url,
+  primary_color,
+  secondary_color,
+  is_active,
+  plan,
+  monthly_price,
+  payment_status,
+  last_payment_date,
+  next_payment_date,
+  client_name,
+  client_phone,
+  client_email,
+  notes,
+  created_at
+`
+
+let defaultStoreCache: Store | null = null
+let defaultStorePromise: Promise<{ data: Store | null; error: unknown }> | null = null
+
 export async function getStores(): Promise<Store[]> {
   const { data, error } = await supabase
     .from("stores")
-    .select("*")
+    .select(STORE_PUBLIC_FIELDS)
     .order("name", { ascending: true })
 
   if (error) {
@@ -18,7 +42,7 @@ export async function getStores(): Promise<Store[]> {
 export async function getStoreById(id: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("*")
+    .select(STORE_PUBLIC_FIELDS)
     .eq("id", id)
     .maybeSingle()
 
@@ -33,7 +57,7 @@ export async function getStoreById(id: string): Promise<Store | null> {
 export async function getStoreBySlug(slug: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("*")
+    .select(STORE_PUBLIC_FIELDS)
     .eq("slug", slug)
     .maybeSingle()
 
@@ -48,7 +72,7 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
 export async function getStoreByDomain(domain: string): Promise<Store | null> {
   const { data, error } = await supabase
     .from("stores")
-    .select("*")
+    .select(STORE_PUBLIC_FIELDS)
     .eq("domain", domain)
     .maybeSingle()
 
@@ -61,11 +85,36 @@ export async function getStoreByDomain(domain: string): Promise<Store | null> {
 }
 
 export async function getDefaultStore() {
-  return supabase
-    .from("stores")
-    .select("*")
-    .eq("slug", "aguila")
-    .maybeSingle()
+  if (defaultStoreCache) {
+    return { data: defaultStoreCache, error: null }
+  }
+
+  if (!defaultStorePromise) {
+    defaultStorePromise = supabase
+      .from("stores")
+      .select(STORE_PUBLIC_FIELDS)
+      .eq("slug", "aguila")
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          defaultStoreCache = data as Store
+        }
+
+        defaultStorePromise = null
+
+        return {
+          data: (data as Store | null) || null,
+          error,
+        }
+      })
+  }
+
+  return defaultStorePromise
+}
+
+export function clearDefaultStoreCache() {
+  defaultStoreCache = null
+  defaultStorePromise = null
 }
 
 export async function createStore(store: {
@@ -78,7 +127,7 @@ export async function createStore(store: {
   plan: string
   monthly_price?: number | null
 }) {
-  return supabase
+  const result = await supabase
     .from("stores")
     .insert({
       ...store,
@@ -86,6 +135,9 @@ export async function createStore(store: {
     })
     .select()
     .single()
+
+  clearDefaultStoreCache()
+  return result
 }
 
 export async function updateStore(
@@ -109,12 +161,15 @@ export async function updateStore(
     client_email?: string | null
   }
 ) {
-  return supabase
+  const result = await supabase
     .from("stores")
     .update(store)
     .eq("id", id)
     .select()
     .single()
+
+  clearDefaultStoreCache()
+  return result
 }
 
 export async function uploadStoreLogo(storeId: string, file: File) {
@@ -126,6 +181,7 @@ export async function uploadStoreLogo(storeId: string, file: File) {
     .from("store-logos")
     .upload(filePath, file, {
       upsert: true,
+      cacheControl: "31536000",
     })
 
   if (uploadError) {
@@ -144,6 +200,7 @@ export async function uploadStoreLogo(storeId: string, file: File) {
     error: null,
   }
 }
+
 export async function markStoreAsPaid(
   id: string,
   paymentData: {
@@ -153,8 +210,11 @@ export async function markStoreAsPaid(
     is_active: boolean
   }
 ) {
-  return supabase
+  const result = await supabase
     .from("stores")
     .update(paymentData)
     .eq("id", id)
+
+  clearDefaultStoreCache()
+  return result
 }

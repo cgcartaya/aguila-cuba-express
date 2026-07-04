@@ -93,7 +93,7 @@ const checkoutUrl =
                         src={item.image_url || "/placeholder-product.png"}
                         alt={item.name}
                         fill
-                        unoptimized
+                        sizes="96px"
                         className="object-contain"
                       />
                     </div>

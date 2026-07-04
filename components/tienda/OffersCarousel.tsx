@@ -54,7 +54,7 @@ export default function OffersCarousel({ ofertas }: OffersCarouselProps) {
                 src={producto.imagen}
                 alt={producto.nombre}
                 fill
-                unoptimized
+                sizes="(max-width: 640px) 165px, 185px"
                 className="object-contain p-4 transition duration-300 group-hover:scale-105"
               />
             </div>

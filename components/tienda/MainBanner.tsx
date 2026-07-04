@@ -35,10 +35,20 @@ export default function MainBanner({ storeId }: MainBannerProps) {
   );
 
   useEffect(() => {
+    let mounted = true;
+
     async function loadBanners() {
-      const { data } = storeId
+      const { data, error } = storeId
         ? await getBannersByStoreId(storeId)
         : await getBanners();
+
+      if (!mounted) return;
+
+      if (error) {
+        console.error("Error cargando banners:", error);
+        setBanners([]);
+        return;
+      }
 
       const activeBanners =
         data
@@ -49,6 +59,10 @@ export default function MainBanner({ storeId }: MainBannerProps) {
     }
 
     loadBanners();
+
+    return () => {
+      mounted = false;
+    };
   }, [storeId]);
 
   useEffect(() => {
@@ -100,7 +114,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
                     alt={banner.title || "Banner promocional"}
                     fill
                     priority={index === 0}
-                    unoptimized
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1152px"
                     className="bg-white object-contain transition-transform duration-500 hover:scale-[1.01]"
                   />
                 </Link>

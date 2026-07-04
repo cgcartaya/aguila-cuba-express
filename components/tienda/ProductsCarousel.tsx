@@ -84,7 +84,7 @@ export default function ProductsCarousel({
                     }
                     alt={producto.name}
                     fill
-                    unoptimized
+                    sizes="(max-width: 640px) 165px, 185px"
                     className={`object-contain p-3 transition duration-300 ${
                       outOfStock
                         ? "opacity-50 grayscale"

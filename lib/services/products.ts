@@ -4,6 +4,39 @@ import { getDefaultStore } from "@/lib/services/stores";
 import type { Product } from "@/components/admin/products/types";
 
 /* =========================================================
+   SELECTS OPTIMIZADOS
+   Evitamos SELECT * en la tienda pública para reducir payload.
+========================================================= */
+
+const PRODUCT_PUBLIC_SELECT = `
+  id,
+  store_id,
+  name,
+  description,
+  price,
+  category,
+  stock,
+  image_url,
+  is_active,
+  created_at,
+  product_images (
+    image_url,
+    is_main,
+    position
+  )
+`;
+
+const PRODUCT_DETAIL_SELECT = `
+  *,
+  product_images (
+    id,
+    image_url,
+    is_main,
+    position
+  )
+`;
+
+/* =========================================================
    PRODUCTS SERVICE
 ========================================================= */
 
@@ -45,14 +78,7 @@ export async function getProductsForCombos() {
 
   return supabase
     .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        is_main,
-        position
-      )
-    `)
+    .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", store.id)
     .eq("is_active", true)
     .order("name", { ascending: true });
@@ -101,41 +127,28 @@ export async function getProducts() {
     return { data: [], error: null };
   }
 
-  return supabase
-    .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        is_main,
-        position
-      )
-    `)
-    .eq("store_id", store.id)
-    .order("created_at", { ascending: false });
+  return getStoreProductsByStoreId(store.id);
 }
 
 // Obtener productos visibles en la tienda pública
 export async function getStoreProducts() {
-  const { data: store } = await getDefaultStore()
+  const { data: store } = await getDefaultStore();
 
   if (!store) {
-    return { data: [], error: null }
+    return { data: [], error: null };
   }
 
+  return getStoreProductsByStoreId(store.id);
+}
+
+// Obtener productos visibles por tienda sin volver a consultar stores.
+export async function getStoreProductsByStoreId(storeId: string) {
   return supabase
     .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        is_main,
-        position
-      )
-    `)
-    .eq("store_id", store.id)
+    .select(PRODUCT_PUBLIC_SELECT)
+    .eq("store_id", storeId)
     .eq("is_active", true)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 }
 
 /*
@@ -145,15 +158,7 @@ export async function getStoreProducts() {
 export async function getStoreProductById(id: string) {
   return supabase
     .from("products")
-    .select(`
-      *,
-      product_images (
-        id,
-        image_url,
-        is_main,
-        position
-      )
-    `)
+    .select(PRODUCT_DETAIL_SELECT)
     .eq("id", id)
     .eq("is_active", true)
     .single();
@@ -165,21 +170,22 @@ export async function getStoreProductById(id: string) {
 export async function getRelatedProducts(
   category: string,
   currentProductId: string,
-  limit = 4
+  limit = 4,
+  storeId?: string
 ) {
-  return supabase
+  let query = supabase
     .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        is_main
-      )
-    `)
+    .select(PRODUCT_PUBLIC_SELECT)
     .eq("is_active", true)
     .eq("category", category)
     .neq("id", currentProductId)
     .limit(limit);
+
+  if (storeId) {
+    query = query.eq("store_id", storeId);
+  }
+
+  return query;
 }
 
 /* =========================================================
@@ -250,7 +256,7 @@ export async function deleteProductForever(id: string) {
 export async function getProductImages(productId: string) {
   return supabase
     .from("product_images")
-    .select("*")
+    .select("id, product_id, image_url, storage_path, is_main, position")
     .eq("product_id", productId)
     .order("position", { ascending: true });
 }
@@ -272,7 +278,9 @@ export async function uploadProductImage(
 
   const { error: uploadError } = await supabase.storage
     .from("product-images")
-    .upload(filePath, file);
+    .upload(filePath, file, {
+      cacheControl: "31536000",
+    });
 
   if (uploadError) {
     return { data: null, error: uploadError };
@@ -333,20 +341,4 @@ export async function setMainProductImage(
     .from("product_images")
     .update({ is_main: true })
     .eq("id", imageId);
-}
-export async function getStoreProductsByStoreId(storeId: string) {
-  return supabase
-    .from("products")
-    .select(`
-      *,
-      product_images (
-        image_url,
-        is_main,
-        position
-      )
-    `)
-    .eq("store_id", storeId)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
 }

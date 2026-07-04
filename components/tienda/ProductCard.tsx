@@ -55,7 +55,7 @@ const productUrl =
             src={product.image_url || "/placeholder-product.png"}
             alt={product.name}
             fill
-            unoptimized
+            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 220px"
             className={`object-contain p-2 transition duration-300 ${
               outOfStock ? "opacity-50 grayscale" : "group-hover:scale-105"
             }`}

@@ -64,7 +64,7 @@ export default function GeneratedBannerSlide({ banner, priority = false }: Props
               alt={banner.title || "Banner"}
               fill
               priority={priority}
-              unoptimized
+              sizes="(max-width: 640px) 42vw, (max-width: 1024px) 38vw, 480px"
               className="object-contain drop-shadow-2xl"
             />
           </div>

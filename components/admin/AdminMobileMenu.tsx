@@ -12,27 +12,92 @@ import {
   Store,
   Settings,
   Users,
+  Rocket,
+  Building2,
+  Layers3,
+  ExternalLink,
 } from "lucide-react";
+
+import { useStore } from "@/hooks/useStore";
 
 type AdminMobileMenuProps = {
   open: boolean;
   onClose: () => void;
 };
 
-const adminLinks = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+type MenuItem = {
+  label: string;
+  href: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+};
+
+const saasLinks: MenuItem[] = [
+  { label: "Dashboard SaaS", href: "/admin/saas", icon: Rocket },
+  { label: "Tiendas", href: "/admin/stores", icon: Building2 },
+];
+
+const storeLinks: MenuItem[] = [
+  { label: "Dashboard tienda", href: "/admin", icon: LayoutDashboard },
   { label: "Productos", href: "/admin/products", icon: Package },
-  { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Categorías", href: "/admin/categories", icon: Tags },
-  { label: "Combos", href: "/admin/combos", icon: Boxes },
+  { label: "Combos", href: "/admin/combos", icon: Layers3 },
+  { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
   { label: "Clientes", href: "/admin/customers", icon: Users },
-  { label: "Configuración", href: "/admin/settings", icon: Settings },
-  { label: "Ver tienda pública", href: "/tienda", icon: Store },
+  { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },
+  { label: "Ver tienda pública", href: "/tienda", icon: ExternalLink },
 ];
+
+function isActivePath(pathname: string, href: string) {
+  if (href === "/admin") return pathname === "/admin";
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function MenuSection({
+  title,
+  links,
+  pathname,
+  onClose,
+}: {
+  title: string;
+  links: MenuItem[];
+  pathname: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="px-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+        {title}
+      </p>
+
+      {links.map((item) => {
+        const Icon = item.icon;
+        const isActive = isActivePath(pathname, item.href);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-base font-black transition ${
+              isActive
+                ? "bg-red-50 text-red-600"
+                : "text-[#061b3a] hover:bg-slate-50"
+            }`}
+          >
+            <Icon size={24} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
   const pathname = usePathname();
+  const { store } = useStore();
 
   if (!open) return null;
 
@@ -45,47 +110,38 @@ export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps)
         className="absolute inset-0 bg-black/45"
       />
 
-      <aside className="relative h-full w-[82%] max-w-sm bg-white shadow-2xl">
+      <aside className="relative h-full w-[84%] max-w-sm overflow-y-auto bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5">
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-black text-[#061b3a]">Admin</h2>
-            <p className="text-sm font-bold text-slate-500">
-              Águila Cuba Express
+            <p className="truncate text-sm font-bold text-slate-500">
+              {store?.name || "Tienda activa"}
             </p>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-[#061b3a]"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-[#061b3a]"
           >
             <X size={24} />
           </button>
         </div>
 
-        <nav className="grid gap-2 px-4 py-5">
-          {adminLinks.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/admin" && pathname.startsWith(item.href));
+        <nav className="grid gap-7 px-4 py-5 pb-10">
+          <MenuSection
+            title="Plataforma SaaS"
+            links={saasLinks}
+            pathname={pathname}
+            onClose={onClose}
+          />
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-base font-black transition ${
-                  isActive
-                    ? "bg-red-50 text-red-600"
-                    : "text-[#061b3a] hover:bg-slate-50"
-                }`}
-              >
-                <Icon size={24} />
-                {item.label}
-              </Link>
-            );
-          })}
+          <MenuSection
+            title="Tienda activa"
+            links={storeLinks}
+            pathname={pathname}
+            onClose={onClose}
+          />
         </nav>
       </aside>
     </div>

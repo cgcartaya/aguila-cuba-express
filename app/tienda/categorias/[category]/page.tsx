@@ -72,11 +72,6 @@ export default function CategoryPage({ params }: Props) {
       const { data, error } = await getStoreProducts();
 
       if (error) {
-        console.log(
-          "Error cargando productos por categoría:",
-          error
-        );
-
         setLoading(false);
         return;
       }

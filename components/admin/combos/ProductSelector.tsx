@@ -138,7 +138,7 @@ export default function ProductSelector({
                   src={getMainImage(product)}
                   alt={product.name}
                   fill
-                  unoptimized
+                  sizes="64px"
                   className="object-contain p-2"
                 />
               </div>

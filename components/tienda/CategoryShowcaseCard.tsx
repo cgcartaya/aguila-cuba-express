@@ -67,7 +67,7 @@ export default function CategoryShowcaseCard({
                 src={product.image_url || "/placeholder-product.png"}
                 alt={product.name}
                 fill
-                unoptimized
+                sizes="(max-width: 640px) 34vw, 180px"
                 className="object-contain"
               />
             </div>

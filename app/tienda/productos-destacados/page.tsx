@@ -35,7 +35,6 @@ export default function TiendaProductosPage() {
       const { data, error } = await getStoreProducts();
 
       if (error) {
-        console.log("Error cargando productos:", error);
         return;
       }
 

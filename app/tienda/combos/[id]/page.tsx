@@ -138,7 +138,8 @@ export default function StoreComboDetailPage() {
               src={combo.image_url}
               alt={combo.name}
               fill
-              unoptimized
+              priority
+              sizes="(max-width: 768px) 100vw, 760px"
               className="object-contain p-5"
             />
           ) : (

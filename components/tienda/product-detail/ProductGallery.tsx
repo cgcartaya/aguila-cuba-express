@@ -48,7 +48,7 @@ export default function ProductGallery({
           alt={productName}
           fill
           priority
-          unoptimized
+          sizes="(max-width: 768px) 100vw, 760px"
           className="object-contain p-4 transition duration-300 hover:scale-105"
         />
 
@@ -73,7 +73,7 @@ export default function ProductGallery({
               src={img.image_url}
               alt={productName}
               fill
-              unoptimized
+              sizes="80px"
               className="object-cover"
             />
           </button>
