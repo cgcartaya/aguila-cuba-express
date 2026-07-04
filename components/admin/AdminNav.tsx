@@ -20,18 +20,13 @@ import {
 
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 type AdminLink = {
   href: string;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
-
-/* =========================================================
-   ADMINISTRACIÓN SAAS
-   - Aquí van las pantallas del dueño de la plataforma.
-   - No deben depender de una tienda activa.
-========================================================= */
 
 const saasLinks: AdminLink[] = [
   {
@@ -45,13 +40,6 @@ const saasLinks: AdminLink[] = [
     icon: Building2,
   },
 ];
-
-/* =========================================================
-   ADMINISTRACIÓN DE TIENDA
-   - Aquí van las pantallas que trabajan con la tienda activa.
-   - Productos, categorías, combos, inventario y órdenes deben
-     seguir filtrándose por store_id desde sus páginas/servicios.
-========================================================= */
 
 const storeLinks: AdminLink[] = [
   {
@@ -113,6 +101,8 @@ function NavSection({
 }) {
   const pathname = usePathname();
 
+  if (links.length === 0) return null;
+
   return (
     <div className="space-y-2">
       <p className="px-4 text-[11px] font-black uppercase tracking-[0.18em] text-white/50">
@@ -143,19 +133,17 @@ function NavSection({
 
 export default function AdminNav() {
   const { store } = useStore();
+  const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
-  const primaryColor = store?.primary_color || "#0B1F4D";
-  const storeName = store?.name || "Tienda activa";
+  const activeStore = accessStore || store;
+  const primaryColor = activeStore?.primary_color || "#0B1F4D";
+  const storeName = activeStore?.name || "Tienda activa";
 
   return (
     <aside
       className="hidden min-h-screen w-72 p-5 text-white shadow-xl xl:block"
       style={{ backgroundColor: primaryColor }}
     >
-      {/* =====================================================
-          CABECERA
-      ===================================================== */}
-
       <div className="mb-6">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
           <Store size={24} />
@@ -170,10 +158,6 @@ export default function AdminNav() {
         </p>
       </div>
 
-      {/* =====================================================
-          ACCIÓN PRINCIPAL DE TIENDA
-      ===================================================== */}
-
       <Link
         href="/admin/products/new"
         className="mb-6 flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-bold shadow-lg transition hover:opacity-90"
@@ -183,18 +167,16 @@ export default function AdminNav() {
         Agregar producto
       </Link>
 
-      {/* =====================================================
-          MENÚ SEPARADO
-      ===================================================== */}
-
       <nav className="space-y-7">
-        <NavSection
-          title="Plataforma SaaS"
-          links={saasLinks}
-          primaryColor={primaryColor}
-        />
+        {isSuperAdmin && (
+          <NavSection
+            title="Plataforma SaaS"
+            links={saasLinks}
+            primaryColor={primaryColor}
+          />
+        )}
 
-        <div className="border-t border-white/15 pt-6">
+        <div className={isSuperAdmin ? "border-t border-white/15 pt-6" : ""}>
           <NavSection
             title="Tienda activa"
             links={storeLinks}
@@ -202,10 +184,6 @@ export default function AdminNav() {
           />
         </div>
       </nav>
-
-      {/* =====================================================
-          ACCIONES INFERIORES
-      ===================================================== */}
 
       <div className="mt-8 border-t border-white/20 pt-5">
         <Link

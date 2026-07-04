@@ -9,7 +9,6 @@ import {
   Tags,
   Boxes,
   ClipboardList,
-  Store,
   Settings,
   Users,
   Rocket,
@@ -19,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/hooks/useStore";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 type AdminMobileMenuProps = {
   open: boolean;
@@ -65,6 +65,8 @@ function MenuSection({
   pathname: string;
   onClose: () => void;
 }) {
+  if (links.length === 0) return null;
+
   return (
     <div className="space-y-2">
       <p className="px-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
@@ -98,6 +100,9 @@ function MenuSection({
 export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
   const pathname = usePathname();
   const { store } = useStore();
+  const { isSuperAdmin, store: accessStore } = useAdminAccess();
+
+  const activeStore = accessStore || store;
 
   if (!open) return null;
 
@@ -115,7 +120,7 @@ export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps)
           <div className="min-w-0">
             <h2 className="text-xl font-black text-[#061b3a]">Admin</h2>
             <p className="truncate text-sm font-bold text-slate-500">
-              {store?.name || "Tienda activa"}
+              {activeStore?.name || "Tienda activa"}
             </p>
           </div>
 
@@ -129,12 +134,14 @@ export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps)
         </div>
 
         <nav className="grid gap-7 px-4 py-5 pb-10">
-          <MenuSection
-            title="Plataforma SaaS"
-            links={saasLinks}
-            pathname={pathname}
-            onClose={onClose}
-          />
+          {isSuperAdmin && (
+            <MenuSection
+              title="Plataforma SaaS"
+              links={saasLinks}
+              pathname={pathname}
+              onClose={onClose}
+            />
+          )}
 
           <MenuSection
             title="Tienda activa"

@@ -36,6 +36,23 @@ const PRODUCT_DETAIL_SELECT = `
   )
 `;
 
+const PRODUCT_INVENTORY_SELECT = `
+  id,
+  store_id,
+  name,
+  price,
+  category,
+  stock,
+  sku,
+  is_active,
+  product_images (
+    image_url,
+    is_main,
+    position
+  )
+`;
+
+
 /* =========================================================
    PRODUCTS SERVICE
 ========================================================= */
@@ -186,6 +203,30 @@ export async function getRelatedProducts(
   }
 
   return query;
+}
+
+
+/* =========================================================
+   ADMIN - INVENTARIO
+========================================================= */
+
+export async function getInventoryProductsByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select(PRODUCT_INVENTORY_SELECT)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .order("name", { ascending: true });
+}
+
+export async function getInventoryProducts() {
+  const storeResult = await getDefaultStore();
+
+  if (!storeResult?.data) {
+    return { data: [], error: null };
+  }
+
+  return getInventoryProductsByStoreId(storeResult.data.id);
 }
 
 /* =========================================================
