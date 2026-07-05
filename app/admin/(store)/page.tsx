@@ -4,7 +4,7 @@
    FASE 3.8 - DASHBOARD ADMIN MULTITIENDA
 
    Objetivo:
-   - El dashboard ya no usa datos globales.
+   - El dashboard ya no usa datos globales.ghfg
    - El Store Owner usa la tienda asignada desde store_users.
    - El Super Admin usa la tienda activa seleccionada en StoreContext.
    - Todas las métricas se filtran por store_id.
