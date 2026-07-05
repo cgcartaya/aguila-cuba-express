@@ -9,8 +9,8 @@ import BannerCreateForm from "@/components/admin/banners/BannerCreateForm";
 import BannerList from "@/components/admin/banners/BannerList";
 
 import {
-  getAdminBanners,
-  createBanner,
+  getAdminBannersByStoreId,
+  createBannerForStore,
   updateBanner,
   deleteBanner,
   getAdminActiveCategories,
@@ -18,6 +18,8 @@ import {
 
 import type { Banner, Category } from "@/components/admin/settings/types";
 import { getBannerTargetLink } from "@/components/admin/banners/bannerHelpers";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 type BannerForm = {
   title: string;
@@ -54,6 +56,14 @@ const initialForm: BannerForm = {
 };
 
 export default function AdminBannersSettingsPage() {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -71,13 +81,22 @@ export default function AdminBannersSettingsPage() {
   }, [banners]);
 
   const loadData = async () => {
+    if (accessLoading || storeLoading) return;
+
+    if (!activeStore?.id) {
+      setBanners([]);
+      setCategories([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
-  const [{ data: bannersData }, { data: categoriesData }] =
-  await Promise.all([
-    getAdminBanners(),
-    getAdminActiveCategories(),
-  ]);
+    const [{ data: bannersData }, { data: categoriesData }] =
+      await Promise.all([
+        getAdminBannersByStoreId(activeStore.id),
+        getAdminActiveCategories(activeStore.id),
+      ]);
 
     setBanners(bannersData || []);
     setCategories(categoriesData || []);
@@ -86,14 +105,17 @@ export default function AdminBannersSettingsPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessLoading, storeLoading, activeStore?.id]);
 
   const handleCreate = async () => {
     if (!form.title.trim()) return;
 
     setSaving(true);
 
-    await createBanner({
+    if (!activeStore?.id) return;
+
+    await createBannerForStore(activeStore.id, {
       title: form.title.trim(),
       subtitle: form.subtitle.trim(),
       image_url: form.image_url,

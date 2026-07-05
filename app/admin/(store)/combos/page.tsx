@@ -1,24 +1,17 @@
 "use client";
 
 /* =========================================================
-   ADMIN - COMBOS
-   Página principal para gestionar combos de productos.
-
-   Corrección:
-   - Tipos preparados para relaciones de Supabase como objeto o array.
-   - Consulta filtrada por store_id cuando hay tienda activa.
+   ADMIN - COMBOS MULTITIENDA
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Package } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 import ComboCard from "@/components/admin/combos/ComboCard";
-
-/* =========================================================
-   TIPOS
-========================================================= */
+import { getCombosByStoreId, deleteCombo } from "@/lib/services/combos";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 type ComboProduct = {
   id: string;
@@ -46,69 +39,31 @@ type Combo = {
   combo_items?: ComboItem[] | null;
 };
 
-/* =========================================================
-   PAGE
-========================================================= */
-
 export default function AdminCombosPage() {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [combos, setCombos] = useState<Combo[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const getCurrentStoreId = () => {
-    if (typeof window === "undefined") return null;
-
-    const savedStore = localStorage.getItem("saas-current-store");
-
-    if (!savedStore) return null;
-
-    try {
-      const currentStore = JSON.parse(savedStore);
-      return currentStore?.id || null;
-    } catch {
-      return null;
-    }
-  };
-
-  /* =========================================================
-     CARGAR COMBOS DE LA TIENDA SELECCIONADA
-  ========================================================= */
-
   const loadCombos = async () => {
+    if (accessLoading || storeLoading) return;
+
+    if (!activeStore?.id) {
+      setCombos([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
-    const currentStoreId = getCurrentStoreId();
-
-    let query = supabase
-      .from("combos")
-      .select(`
-        id,
-        store_id,
-        name,
-        description,
-        image_url,
-        price,
-        is_active,
-        created_at,
-        combo_items (
-          id,
-          quantity,
-          product_id,
-          products (
-            id,
-            name,
-            price
-          )
-        )
-      `)
-      .is("deleted_at", null);
-
-    if (currentStoreId) {
-      query = query.eq("store_id", currentStoreId);
-    }
-
-    const { data, error } = await query.order("created_at", {
-      ascending: false,
-    });
+    const { data, error } = await getCombosByStoreId(activeStore.id);
 
     if (error) {
       console.error("Error cargando combos:", error);
@@ -122,25 +77,14 @@ export default function AdminCombosPage() {
 
   useEffect(() => {
     loadCombos();
-  }, []);
-
-  /* =========================================================
-     ELIMINAR COMBO
-  ========================================================= */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessLoading, storeLoading, activeStore?.id]);
 
   const handleDelete = async (comboId: string) => {
-    const confirmDelete = confirm(
-      "¿Seguro que quieres eliminar este combo?"
-    );
-
+    const confirmDelete = confirm("¿Seguro que quieres eliminar este combo?");
     if (!confirmDelete) return;
 
-    const { error } = await supabase
-      .from("combos")
-      .update({
-        deleted_at: new Date().toISOString(),
-      })
-      .eq("id", comboId);
+    const { error } = await deleteCombo(comboId);
 
     if (error) {
       console.error("Error eliminando combo:", error);
@@ -157,9 +101,8 @@ export default function AdminCombosPage() {
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-black">Combos</h1>
-
             <p className="mt-1 text-sm font-semibold text-slate-500">
-              Crea paquetes de productos que descuentan inventario real.
+              Crea paquetes de productos para {activeStore?.name || "la tienda activa"}.
             </p>
           </div>
 
@@ -172,7 +115,7 @@ export default function AdminCombosPage() {
           </Link>
         </div>
 
-        {loading ? (
+        {loading || accessLoading || storeLoading ? (
           <div className="rounded-3xl bg-white p-8 text-center text-sm font-semibold text-slate-500 shadow-sm">
             Cargando combos...
           </div>
@@ -183,27 +126,14 @@ export default function AdminCombosPage() {
             </div>
 
             <h2 className="text-xl font-black">No hay combos creados</h2>
-
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              Crea tu primer combo combinando productos existentes.
+              Crea el primer combo para esta tienda.
             </p>
-
-            <Link
-              href="/admin/combos/new"
-              className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-sm transition hover:bg-red-700"
-            >
-              <Plus size={18} />
-              Crear combo
-            </Link>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {combos.map((combo) => (
-              <ComboCard
-                key={combo.id}
-                combo={combo}
-                onDelete={handleDelete}
-              />
+              <ComboCard key={combo.id} combo={combo} onDelete={handleDelete} />
             ))}
           </div>
         )}

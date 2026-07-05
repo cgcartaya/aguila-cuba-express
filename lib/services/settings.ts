@@ -30,48 +30,22 @@ export type DeliveryZone = {
    CATEGORIES
 ========================================================= */
 
-export async function getCategories() {
-  /*
-    Si estamos en el admin usamos la tienda
-    seleccionada en el SaaS.
-  */
-
-  if (typeof window !== "undefined") {
-    const savedStore = localStorage.getItem(
-      "saas-current-store"
-    )
-
-    if (savedStore) {
-      const currentStore = JSON.parse(savedStore)
-
-      return supabase
-        .from("categories")
-        .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
-        .eq("store_id", currentStore.id)
-        .order("sort_order", {
-          ascending: true,
-        })
-    }
-  }
-
-  /*
-    Fallback para producción actual
-    (Águila).
-  */
-
-  const { data: store } = await getDefaultStore()
-
-  if (!store) {
-    return { data: [], error: null }
-  }
-
+export async function getCategoriesByStoreId(storeId: string) {
   return supabase
     .from("categories")
     .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
-    .eq("store_id", store.id)
-    .order("sort_order", {
-      ascending: true,
-    })
+    .eq("store_id", storeId)
+    .order("sort_order", { ascending: true });
+}
+
+export async function getCategories() {
+  const { data: store } = await getDefaultStore();
+
+  if (!store) {
+    return { data: [], error: null };
+  }
+
+  return getCategoriesByStoreId(store.id);
 }
 
 /* =========================================================
@@ -101,27 +75,26 @@ export async function getActiveCategories() {
     })
 }
 
-export async function getAdminActiveCategories() {
-  if (typeof window !== "undefined") {
-    const savedStore = localStorage.getItem(
-      "saas-current-store"
-    )
-
-    if (savedStore) {
-      const currentStore = JSON.parse(savedStore)
-
-      return supabase
-        .from("categories")
-        .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
-        .eq("store_id", currentStore.id)
-        .eq("is_active", true)
-        .order("sort_order", {
-          ascending: true,
-        })
-    }
+export async function getAdminActiveCategories(storeId?: string) {
+  if (storeId) {
+    return getActiveCategoriesByStoreId(storeId);
   }
 
-  return getActiveCategories()
+  return getActiveCategories();
+}
+
+export async function createCategoryForStore(
+  storeId: string,
+  category: Omit<Category, "id" | "created_at">
+) {
+  return supabase
+    .from("categories")
+    .insert({
+      ...category,
+      store_id: storeId,
+    })
+    .select()
+    .single();
 }
 
 export async function createCategory(
@@ -304,6 +277,14 @@ export async function getBanners() {
     .limit(8)
 }
 
+export async function getAdminBannersByStoreId(storeId: string) {
+  return supabase
+    .from("banners")
+    .select("id, store_id, title, subtitle, image_url, button_text, button_link, is_active, sort_order, layout_type, background_color, text_color, accent_color, badge_text, product_image_url, category_id, created_at")
+    .eq("store_id", storeId)
+    .order("sort_order", { ascending: true });
+}
+
 export async function getAdminBanners() {
   if (typeof window !== "undefined") {
     const savedStore = localStorage.getItem(
@@ -342,6 +323,20 @@ export async function getBannersByStoreId(
       ascending: true,
     })
     .limit(8)
+}
+
+export async function createBannerForStore(
+  storeId: string,
+  banner: Omit<Banner, "id" | "created_at">
+) {
+  return supabase
+    .from("banners")
+    .insert({
+      ...banner,
+      store_id: storeId,
+    })
+    .select()
+    .single();
 }
 
 export async function createBanner(

@@ -82,9 +82,39 @@ export async function getActiveProducts() {
     .order("created_at", { ascending: false });
 }
 
+
+/* =========================================================
+   ADMIN - PRODUCTOS POR TIENDA
+========================================================= */
+
+export async function getAdminProductsByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select(`
+      *,
+      product_images (
+        image_url,
+        is_main,
+        position
+      )
+    `)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+}
+
 /* =========================================================
    ADMIN - PRODUCTOS PARA COMBOS
 ========================================================= */
+
+export async function getProductsForCombosByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select(PRODUCT_PUBLIC_SELECT)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+}
 
 export async function getProductsForCombos() {
   const { data: store } = await getDefaultStore();
@@ -232,6 +262,21 @@ export async function getInventoryProducts() {
 /* =========================================================
    PRODUCTOS - ACCIONES
 ========================================================= */
+
+// Crear producto para una tienda específica
+export async function createProductForStore(
+  storeId: string,
+  product: Omit<Product, "id" | "created_at">
+) {
+  return supabase
+    .from("products")
+    .insert({
+      ...product,
+      store_id: storeId,
+    })
+    .select()
+    .single();
+}
 
 // Crear producto
 export async function createProduct(

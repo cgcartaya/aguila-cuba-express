@@ -45,11 +45,19 @@ function isActivePath(pathname: string, href: string) {
 
 export default function StoreAdminNav() {
   const pathname = usePathname();
-  const { store } = useStore();
-  const { isSuperAdmin } = useAdminAccess();
+  const { store: selectedStore } = useStore();
 
-  const primaryColor = store?.primary_color || "#0B1F4D";
-  const storeName = store?.name || "Tienda activa";
+const {
+  isSuperAdmin,
+  store: accessStore,
+} = useAdminAccess();
+
+const activeStore = isSuperAdmin
+  ? (selectedStore || accessStore)
+  : accessStore;
+
+const primaryColor = activeStore?.primary_color || "#0B1F4D";
+const storeName = activeStore?.name || "Tienda activa";
 
   return (
     <aside
@@ -111,7 +119,11 @@ export default function StoreAdminNav() {
 
       <div className="mt-8 border-t border-white/20 pt-5">
         <Link
-          href="/tienda"
+          href={
+  activeStore?.slug && activeStore.slug !== "aguila"
+    ? `/tienda/${activeStore.slug}`
+    : "/tienda"
+}
           className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-white transition hover:bg-white/10"
         >
           <ExternalLink size={20} />

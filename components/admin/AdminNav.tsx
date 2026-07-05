@@ -132,12 +132,25 @@ function NavSection({
 }
 
 export default function AdminNav() {
-  const { store } = useStore();
+  const { store: selectedStore } = useStore();
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
-  const activeStore = accessStore || store;
+  /*
+    Regla SaaS:
+    - Store Owner: SIEMPRE usa accessStore.
+    - Super Admin: usa la tienda seleccionada en el switcher.
+  */
+  const activeStore = isSuperAdmin
+    ? selectedStore || accessStore
+    : accessStore;
+
   const primaryColor = activeStore?.primary_color || "#0B1F4D";
   const storeName = activeStore?.name || "Tienda activa";
+
+  const publicStoreHref =
+    activeStore?.slug && activeStore.slug !== "aguila"
+      ? `/tienda/${activeStore.slug}`
+      : "/tienda";
 
   return (
     <aside
@@ -187,7 +200,7 @@ export default function AdminNav() {
 
       <div className="mt-8 border-t border-white/20 pt-5">
         <Link
-          href="/tienda"
+          href={publicStoreHref}
           className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-white transition hover:bg-white/10"
         >
           <ExternalLink size={20} />

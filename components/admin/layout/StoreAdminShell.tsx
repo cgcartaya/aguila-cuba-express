@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Menu, Rocket, Store } from "lucide-react";
 
@@ -10,10 +10,25 @@ import StoreAdminMobileMenu from "@/components/admin/nav/StoreAdminMobileMenu";
 import MobileAdminBottomNav from "@/components/admin/MobileAdminBottomNav";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 export default function StoreAdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const { isSuperAdmin } = useAdminAccess();
+
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+
+  const { store: selectedStore } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) {
+      return selectedStore || accessStore;
+    }
+
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
+  const storeName = activeStore?.name || "Tienda activa";
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -34,7 +49,7 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
             <div className="flex min-w-0 items-center gap-2">
               <Store className="h-5 w-5 shrink-0 text-[#061b3a]" />
               <span className="truncate text-sm font-black text-[#061b3a]">
-                Administración de tienda
+                {accessLoading ? "Cargando tienda..." : storeName}
               </span>
             </div>
 
@@ -55,9 +70,12 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
         <div className="hidden border-b bg-white px-6 py-4 xl:block">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-sm font-bold text-slate-500">Panel operativo</p>
+              <p className="text-sm font-bold text-slate-500">
+                Panel operativo
+              </p>
+
               <h2 className="text-2xl font-black text-[#061b3a]">
-                Tienda activa
+                {accessLoading ? "Cargando tienda..." : storeName}
               </h2>
             </div>
 

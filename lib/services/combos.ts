@@ -32,6 +32,15 @@ const COMBO_PUBLIC_SELECT = `
   )
 `;
 
+export async function getCombosByStoreId(storeId: string) {
+  return await supabase
+    .from("combos")
+    .select(COMBO_PUBLIC_SELECT)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+}
+
 export async function getCombos() {
   return await supabase
     .from("combos")
@@ -67,6 +76,26 @@ export async function getComboById(id: string) {
     .select(COMBO_PUBLIC_SELECT)
     .eq("id", id)
     .is("deleted_at", null)
+    .single();
+}
+
+export async function createComboForStore(
+  storeId: string,
+  combo: {
+    name: string;
+    description?: string;
+    image_url?: string;
+    price: number;
+    is_active?: boolean;
+  }
+) {
+  return await supabase
+    .from("combos")
+    .insert({
+      ...combo,
+      store_id: storeId,
+    })
+    .select()
     .single();
 }
 

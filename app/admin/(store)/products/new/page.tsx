@@ -7,13 +7,17 @@ import { ArrowLeft, Images, Loader2, Save } from "lucide-react"
 
 import { supabase } from "@/lib/supabase"
 import { getAdminActiveCategories } from "@/lib/services/settings"
+import { useAdminAccess } from "@/hooks/useAdminAccess"
 import { useStore } from "@/hooks/useStore"
 
 import type { Category } from "@/components/admin/settings/types"
 
 export default function NewProductPage() {
   const router = useRouter()
-  const { store } = useStore()
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess()
+  const { store: selectedStore, loading: storeLoading } = useStore()
+
+  const store = isSuperAdmin ? selectedStore || accessStore : accessStore
 
   const [categories, setCategories] = useState<Category[]>([])
 
@@ -33,14 +37,20 @@ export default function NewProductPage() {
 
   useEffect(() => {
     async function loadCategories() {
-      const { data } = await getAdminActiveCategories()
+      if (!store?.id) {
+        setCategories([])
+        setLoadingCategories(false)
+        return
+      }
+
+      const { data } = await getAdminActiveCategories(store.id)
 
       setCategories(data || [])
       setLoadingCategories(false)
     }
 
     loadCategories()
-  }, [])
+  }, [store?.id])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>

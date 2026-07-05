@@ -1,19 +1,27 @@
 "use client";
 
 /* =========================================================
-   IMPORTS
+   ADMIN PRODUCTS PAGE
+
+   Fase 3.8.1:
+   - Store Owner usa SIEMPRE la tienda asignada desde store_users.
+   - Super Admin usa la tienda seleccionada en StoreContext.
+   - No se usa localStorage directamente.
+   - No se cargan productos globales.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Upload } from "lucide-react";
+import { Loader2, Plus, Upload } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 import {
-  getProducts,
+  getAdminProductsByStoreId,
   toggleProductStatus as toggleProductStatusService,
-  deleteProductForever as deleteProductForeverService,
 } from "@/lib/services/products";
+
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 import ProductCard from "@/components/admin/products/ProductCard";
 import ProductActionsMenu from "@/components/admin/products/ProductActionsMenu";
@@ -23,10 +31,6 @@ import ProductPagination from "@/components/admin/products/ProductPagination";
 import ProductsEmptyState from "@/components/admin/products/ProductsEmptyState";
 
 import type { Product } from "@/components/admin/products/types";
-
-/* =========================================================
-   TIPOS - IMÁGENES DEL PRODUCTO
-========================================================= */
 
 type ProductImage = {
   image_url: string;
@@ -38,11 +42,12 @@ type ProductWithImages = Product & {
   product_images?: ProductImage[];
 };
 
-/* =========================================================
-   ADMIN PRODUCTS PAGE
-========================================================= */
-
 export default function AdminProductsPage() {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,114 +59,63 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const pageSize = 8;
 
-  /* =========================================================
-     PRODUCTOS - CARGA INICIAL
-  ========================================================= */
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) {
+      return selectedStore || accessStore;
+    }
+
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessLoading, storeLoading, activeStore?.id]);
 
-async function fetchProducts() {
-  setLoading(true)
+  async function fetchProducts() {
+    if (accessLoading || storeLoading) return;
 
-  try {
-    /*
-      Obtenemos la tienda seleccionada
-      desde localStorage.
-    */
+    setLoading(true);
+    setErrorMessage(null);
 
-    const savedStore = localStorage.getItem(
-      "saas-current-store"
-    )
-
-    let storeId: string | null = null
-
-    if (savedStore) {
-      const parsedStore = JSON.parse(savedStore)
-      storeId = parsedStore.id
+    if (!activeStore?.id) {
+      setProducts([]);
+      setErrorMessage("No se pudo resolver la tienda activa.");
+      setLoading(false);
+      return;
     }
 
-    /*
-      Si no hay tienda seleccionada
-      seguimos mostrando todo para no romper.
-    */
-
-    let query = supabase
-      .from("products")
-      .select(`
-        *,
-        product_images (
-          image_url,
-          is_main,
-          position
-        )
-      `)
-      .is("deleted_at", null)
-
-    /*
-      SaaS Multiempresa
-    */
-
-    if (storeId) {
-      query = query.eq("store_id", storeId)
-    }
-
-    const { data, error } = await query.order(
-      "created_at",
-      { ascending: false }
-    )
+    const { data, error } = await getAdminProductsByStoreId(activeStore.id);
 
     if (error) {
-      console.error(
-        "Error cargando productos:",
-        error.message
-      )
-
-      setProducts([])
-      setLoading(false)
-      return
+      console.error("Error cargando productos:", error);
+      setProducts([]);
+      setErrorMessage("Error cargando productos.");
+      setLoading(false);
+      return;
     }
 
     const productsWithMainImage =
-      (data as ProductWithImages[])?.map(
-        (product) => {
-          const mainImage =
-            product.product_images?.find(
-              (img) => img.is_main
-            ) ||
-            product.product_images
-              ?.slice()
-              .sort(
-                (a, b) =>
-                  (a.position ?? 0) -
-                  (b.position ?? 0)
-              )[0]
+      (data as ProductWithImages[])?.map((product) => {
+        const mainImage =
+          product.product_images?.find((img) => img.is_main) ||
+          product.product_images
+            ?.slice()
+            .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
 
-          return {
-            ...product,
-            image_url:
-              mainImage?.image_url ||
-              product.image_url,
-          }
-        }
-      ) || []
+        return {
+          ...product,
+          image_url: mainImage?.image_url || product.image_url,
+        };
+      }) || [];
 
-    setProducts(productsWithMainImage)
-  } catch (error) {
-    console.error(error)
-    setProducts([])
-  } finally {
-    setLoading(false)
+    setProducts(productsWithMainImage);
+    setLoading(false);
   }
-}
-
-  /* =========================================================
-     PRODUCTOS - ACTIVAR / DESACTIVAR
-  ========================================================= */
 
   async function toggleProductStatus(product: Product) {
     const { error } = await toggleProductStatusService(product);
@@ -180,60 +134,46 @@ async function fetchProducts() {
     setOpenMenuId(null);
   }
 
-  /* =========================================================
-     PRODUCTOS - ELIMINAR DEFINITIVAMENTE
-  ========================================================= */
+  async function deleteProductForever(id: string) {
+    const confirmed = confirm("¿Enviar este producto a la papelera?");
 
-async function deleteProductForever(id: string) {
-  const confirmed = confirm(
-    "¿Enviar este producto a la papelera?"
-  );
+    if (!confirmed) return;
 
-  if (!confirmed) return;
+    if (!activeStore?.id) {
+      alert("No se pudo resolver la tienda activa.");
+      return;
+    }
 
-  const { error } = await supabase
-    .from("products")
-    .update({
-      deleted_at: new Date().toISOString(),
-    })
-    .eq("id", id);
+    const { error } = await supabase
+      .from("products")
+      .update({
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("store_id", activeStore.id);
 
-  if (error) {
-    alert("Error enviando producto a la papelera");
-    return;
+    if (error) {
+      alert("Error enviando producto a la papelera");
+      return;
+    }
+
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setOpenMenuId(null);
   }
-
-  setProducts((prev) => prev.filter((p) => p.id !== id));
-
-  setOpenMenuId(null);
-}
-
-  /* =========================================================
-     FILTROS RÁPIDOS
-  ========================================================= */
 
   function applyQuickFilter(type: "all" | "active") {
     setSearch("");
     setCategory("all");
     setStockFilter("all");
     setPage(1);
-
     setStatus(type === "active" ? "active" : "all");
   }
-
-  /* =========================================================
-     CATEGORÍAS DISPONIBLES
-  ========================================================= */
 
   const categories = useMemo(() => {
     return Array.from(
       new Set(products.map((p) => p.category).filter(Boolean))
     );
   }, [products]);
-
-  /* =========================================================
-     PRODUCTOS - FILTRADO Y ORDENAMIENTO
-  ========================================================= */
 
   const filteredProducts = useMemo(() => {
     let result = [...products];
@@ -276,10 +216,6 @@ async function deleteProductForever(id: string) {
     return result;
   }, [products, search, category, status, sortBy, stockFilter]);
 
-  /* =========================================================
-     PAGINACIÓN
-  ========================================================= */
-
   const totalPages = Math.ceil(filteredProducts.length / pageSize);
 
   const paginatedProducts = filteredProducts.slice(
@@ -291,44 +227,35 @@ async function deleteProductForever(id: string) {
     setPage(1);
   }, [search, category, status, sortBy, stockFilter]);
 
-  /* =========================================================
-     CONTADOR DE FILTROS ACTIVOS
-  ========================================================= */
-
   const activeFilters =
     (category !== "all" ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
     (stockFilter === "low" ? 1 : 0);
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
-
   return (
     <main className="min-h-screen bg-slate-50 pb-24">
       <section className="mx-auto max-w-6xl px-4 py-5">
-        {/* HEADER */}
-
         <div className="mb-5">
           <p className="text-sm text-slate-500">Administración</p>
 
-          <h1 className="text-3xl font-bold text-slate-900">
-            Productos
-          </h1>
+          <h1 className="text-3xl font-bold text-slate-900">Productos</h1>
 
           <p className="text-sm text-slate-500">
-            Gestiona tu catálogo, stock y disponibilidad.
+            Gestiona el catálogo de{" "}
+            <span className="font-black text-[#061b3a]">
+              {activeStore?.name || "la tienda activa"}
+            </span>
+            .
           </p>
         </div>
 
-        {/* ESTADÍSTICAS */}
+        {errorMessage && (
+          <div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
+            {errorMessage}
+          </div>
+        )}
 
-        <ProductStats
-          products={products}
-          onQuickFilter={applyQuickFilter}
-        />
-
-        {/* FILTROS */}
+        <ProductStats products={products} onQuickFilter={applyQuickFilter} />
 
         <ProductFilters
           search={search}
@@ -346,8 +273,6 @@ async function deleteProductForever(id: string) {
           setShowFilters={setShowFilters}
           activeFilters={activeFilters}
         />
-
-        {/* ACCIONES PRINCIPALES */}
 
         <div className="mb-4 flex gap-3">
           <Link
@@ -367,10 +292,9 @@ async function deleteProductForever(id: string) {
           </Link>
         </div>
 
-        {/* LISTADO */}
-
-        {loading ? (
+        {loading || accessLoading || storeLoading ? (
           <div className="rounded-2xl bg-white p-8 text-center text-slate-500 shadow-sm">
+            <Loader2 className="mx-auto mb-3 h-6 w-6 animate-spin text-[#061b3a]" />
             Cargando productos...
           </div>
         ) : paginatedProducts.length === 0 ? (
@@ -390,8 +314,6 @@ async function deleteProductForever(id: string) {
             ))}
           </div>
         )}
-
-        {/* PAGINACIÓN */}
 
         <ProductPagination
           page={page}
