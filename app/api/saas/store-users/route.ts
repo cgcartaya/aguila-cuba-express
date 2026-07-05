@@ -16,6 +16,10 @@ function jsonError(message: string, status = 400) {
 async function requireSuperAdmin(request: Request) {
   const authHeader = request.headers.get("authorization") || "";
   const token = authHeader.replace("Bearer ", "").trim();
+  console.log("========== STORE USERS AUTH ==========");
+console.log("Authorization header:", authHeader ? "PRESENTE" : "AUSENTE");
+console.log("Token length:", token.length);
+console.log("Token preview:", token.substring(0, 20) + "...");
 
   if (!token) {
     return {
@@ -24,8 +28,15 @@ async function requireSuperAdmin(request: Request) {
     };
   }
 
-  const { data: callerData, error: callerError } =
-    await supabaseAdmin.auth.getUser(token);
+console.log("Validando usuario con Supabase...");
+
+const { data: callerData, error: callerError } =
+  await supabaseAdmin.auth.getUser(token);
+
+console.log("Resultado getUser:");
+console.log("Error:", callerError);
+console.log("User ID:", callerData?.user?.id ?? "NULL");
+console.log("Email:", callerData?.user?.email ?? "NULL");
 
   if (callerError || !callerData.user) {
     return {
@@ -39,6 +50,10 @@ async function requireSuperAdmin(request: Request) {
     .select("id,role,active")
     .eq("id", callerData.user.id)
     .maybeSingle();
+
+    console.log("Perfil encontrado:");
+console.log(callerProfile);
+console.log("Error perfil:", profileError);
 
   if (profileError) {
     return {
