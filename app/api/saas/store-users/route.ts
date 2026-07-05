@@ -13,13 +13,27 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
-async function requireSuperAdmin(request: Request) {
+function getBearerToken(request: Request) {
   const authHeader = request.headers.get("authorization") || "";
-  const token = authHeader.replace("Bearer ", "").trim();
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+
+  return {
+    authHeader,
+    token,
+  };
+}
+
+async function requireSuperAdmin(request: Request) {
+  const { authHeader, token } = getBearerToken(request);
+
   console.log("========== STORE USERS AUTH ==========");
-console.log("Authorization header:", authHeader ? "PRESENTE" : "AUSENTE");
-console.log("Token length:", token.length);
-console.log("Token preview:", token.substring(0, 20) + "...");
+  console.log("Route:", new URL(request.url).pathname);
+  console.log("Method:", request.method);
+  console.log("Authorization header:", authHeader ? "PRESENTE" : "AUSENTE");
+  console.log("Token length:", token.length);
+  console.log("Token preview:", token ? `${token.substring(0, 20)}...` : "SIN TOKEN");
+  console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "PRESENTE" : "AUSENTE");
+  console.log("Service Role:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "PRESENTE" : "AUSENTE");
 
   if (!token) {
     return {
@@ -28,15 +42,15 @@ console.log("Token preview:", token.substring(0, 20) + "...");
     };
   }
 
-console.log("Validando usuario con Supabase...");
+  console.log("Validando usuario con Supabase...");
 
-const { data: callerData, error: callerError } =
-  await supabaseAdmin.auth.getUser(token);
+  const { data: callerData, error: callerError } =
+    await supabaseAdmin.auth.getUser(token);
 
-console.log("Resultado getUser:");
-console.log("Error:", callerError);
-console.log("User ID:", callerData?.user?.id ?? "NULL");
-console.log("Email:", callerData?.user?.email ?? "NULL");
+  console.log("Resultado getUser:");
+  console.log("Error:", callerError);
+  console.log("User ID:", callerData?.user?.id ?? "NULL");
+  console.log("Email:", callerData?.user?.email ?? "NULL");
 
   if (callerError || !callerData.user) {
     return {
@@ -51,9 +65,9 @@ console.log("Email:", callerData?.user?.email ?? "NULL");
     .eq("id", callerData.user.id)
     .maybeSingle();
 
-    console.log("Perfil encontrado:");
-console.log(callerProfile);
-console.log("Error perfil:", profileError);
+  console.log("Perfil encontrado:");
+  console.log(callerProfile);
+  console.log("Error perfil:", profileError);
 
   if (profileError) {
     return {
@@ -69,7 +83,10 @@ console.log("Error perfil:", profileError);
   ) {
     return {
       ok: false as const,
-      response: jsonError("Solo un Super Admin puede administrar usuarios de tienda.", 403),
+      response: jsonError(
+        "Solo un Super Admin puede administrar usuarios de tienda.",
+        403
+      ),
     };
   }
 
