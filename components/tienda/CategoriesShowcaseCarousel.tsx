@@ -4,9 +4,8 @@
    CATEGORIES SHOWCASE CAROUSEL
 
    Header V2:
-   - Se elimina la cabecera azul "Explora por categoría".
-   - El banner principal y los productos ganan protagonismo.
-   - Mantiene swipe móvil, flechas desktop y scroll horizontal.
+   - Se eliminó el bloque azul "Explora por categoría".
+   - Solo queda el carrusel limpio de categorías.
 ========================================================= */
 
 import { useRef } from "react";
@@ -42,19 +41,19 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
   };
 
   return (
-    <section className="relative w-full overflow-hidden pt-3 pb-4">
+    <section className="relative w-full overflow-hidden pt-4 pb-2">
       <button
         type="button"
         onClick={() => scroll("left")}
-        aria-label="Categorías anteriores"
         className="absolute left-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl transition hover:scale-105 lg:flex"
+        aria-label="Categorías anteriores"
       >
         <ChevronLeft className="h-6 w-6 text-slate-700" />
       </button>
 
       <div
         ref={scrollContainerRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {groups.map((group) => (
           <CategoryShowcaseCard
@@ -69,8 +68,8 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
       <button
         type="button"
         onClick={() => scroll("right")}
-        aria-label="Categorías siguientes"
         className="absolute right-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl transition hover:scale-105 lg:flex"
+        aria-label="Categorías siguientes"
       >
         <ChevronRight className="h-6 w-6 text-slate-700" />
       </button>

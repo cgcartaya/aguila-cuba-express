@@ -3,15 +3,13 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
 
-   Header V2:
-   - La búsqueda ahora vive en el Header usando el parámetro ?q=.
-   - Se elimina el buscador grande del cuerpo de la página.
-   - Se conserva el filtrado por productos/categorías.
+   Header V2 + SearchProvider:
+   - La búsqueda vive en el Header.
+   - Esta página consume el estado compartido.
+   - No usa useSearchParams, compatible con Next.js 15/Vercel.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
@@ -23,6 +21,7 @@ import CategoryProductsSection from "@/components/tienda/CategoryProductsSection
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
 import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
+import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
@@ -39,8 +38,7 @@ type ProductFromSupabase = Product & {
 };
 
 export default function TiendaPage() {
-  const searchParams = useSearchParams();
-  const busqueda = searchParams.get("q") || "";
+  const { search: busqueda } = useTiendaSearch();
 
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);

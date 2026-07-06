@@ -1,73 +1,79 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { useParams } from "next/navigation"
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 
-import { productMatchesSearch } from "@/lib/utils/search"
-import { getStoreBySlug } from "@/lib/services/stores"
-import { getStoreProductsByStoreId } from "@/lib/services/products"
-import { getActiveCategoriesByStoreId } from "@/lib/services/settings"
+import { productMatchesSearch } from "@/lib/utils/search";
+import { getStoreBySlug } from "@/lib/services/stores";
+import { getStoreProductsByStoreId } from "@/lib/services/products";
+import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
 
-import ProductSearch from "@/components/tienda/ProductSearch"
-import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection"
-import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs"
-import CategoryProductsSection from "@/components/tienda/CategoryProductsSection"
-import DeliveryBanner from "@/components/tienda/DeliveryBanner"
-import HelpCard from "@/components/tienda/HelpCard"
-import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel"
+import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
+import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
+import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
+import DeliveryBanner from "@/components/tienda/DeliveryBanner";
+import HelpCard from "@/components/tienda/HelpCard";
+import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
+import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 
-import { useCart } from "@/contexts/CartContext"
+import { useCart } from "@/contexts/CartContext";
 
-import type { Product } from "@/types/cart"
-import type { Category } from "@/components/admin/settings/types"
+import type { Product } from "@/types/cart";
+import type { Category } from "@/components/admin/settings/types";
 
 type ProductImage = {
-  image_url: string
-  is_main: boolean
-  position: number | null
-}
+  image_url: string;
+  is_main: boolean;
+  position: number | null;
+};
 
 type ProductFromSupabase = Product & {
-  product_images?: ProductImage[]
-}
+  product_images?: ProductImage[];
+};
 
 export default function StoreSlugPage() {
-  const params = useParams()
-  const slug = params.slug as string
+  const params = useParams();
+  const slug = params.slug as string;
+  const { search: busqueda } = useTiendaSearch();
 
-  const [busqueda, setBusqueda] = useState("")
-  const [productos, setProductos] = useState<Product[]>([])
-  const [categorias, setCategorias] = useState<Category[]>([])
-  const [storeId, setStoreId] = useState<string>("")
-  const [loading, setLoading] = useState(true)
+  const [productos, setProductos] = useState<Product[]>([]);
+  const [categorias, setCategorias] = useState<Category[]>([]);
+  const [storeId, setStoreId] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
-  const { addToCart } = useCart()
+  const { addToCart } = useCart();
 
-  const hayBusqueda = busqueda.trim().length > 0
+  const hayBusqueda = busqueda.trim().length > 0;
 
   useEffect(() => {
+    let mounted = true;
+
     async function cargarDatos() {
-      setLoading(true)
+      setLoading(true);
 
-      const store = await getStoreBySlug(slug)
+      const store = await getStoreBySlug(slug);
 
-      setStoreId(store?.id || "")
+      if (!mounted) return;
+
+      setStoreId(store?.id || "");
 
       if (!store) {
-        setProductos([])
-        setCategorias([])
-        setLoading(false)
-        return
+        setProductos([]);
+        setCategorias([]);
+        setLoading(false);
+        return;
       }
 
       const [{ data: productsData, error }, { data: categoriesData }] =
         await Promise.all([
           getStoreProductsByStoreId(store.id),
           getActiveCategoriesByStoreId(store.id),
-        ])
+        ]);
+
+      if (!mounted) return;
 
       if (error) {
-        console.error("Error cargando productos:", error)
+        console.error("Error cargando productos:", error);
       }
 
       const productosConImagenPrincipal =
@@ -76,27 +82,31 @@ export default function StoreSlugPage() {
             producto.product_images?.find((img) => img.is_main) ||
             producto.product_images
               ?.slice()
-              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0]
+              .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
 
           return {
             ...producto,
             image_url: imagenPrincipal?.image_url || producto.image_url,
-          }
-        }) || []
+          };
+        }) || [];
 
-      setProductos(productosConImagenPrincipal)
-      setCategorias(categoriesData || [])
-      setLoading(false)
+      setProductos(productosConImagenPrincipal);
+      setCategorias(categoriesData || []);
+      setLoading(false);
     }
 
-    cargarDatos()
-  }, [slug])
+    cargarDatos();
+
+    return () => {
+      mounted = false;
+    };
+  }, [slug]);
 
   const productosBuscados = useMemo(() => {
     return productos.filter((producto) =>
       productMatchesSearch(producto, busqueda)
-    )
-  }, [productos, busqueda])
+    );
+  }, [productos, busqueda]);
 
   const categoriasConCombos = useMemo(() => {
     return [
@@ -108,8 +118,8 @@ export default function StoreSlugPage() {
         name: categoria.name,
         color: categoria.color,
       })),
-    ]
-  }, [categorias])
+    ];
+  }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
     const grupos = categorias.map((categoria) => ({
@@ -118,28 +128,26 @@ export default function StoreSlugPage() {
       productos: productosBuscados.filter(
         (producto) => producto.category === categoria.name
       ),
-    }))
+    }));
 
     if (hayBusqueda) {
-      return grupos.filter((grupo) => grupo.productos.length > 0)
+      return grupos.filter((grupo) => grupo.productos.length > 0);
     }
 
-    return grupos
-  }, [categorias, productosBuscados, hayBusqueda])
+    return grupos;
+  }, [categorias, productosBuscados, hayBusqueda]);
 
   if (loading) {
     return (
       <main className="min-h-[100dvh] p-8 text-center text-slate-500">
         Cargando tienda...
       </main>
-    )
+    );
   }
 
   return (
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
-
-         {!hayBusqueda && (
+      {!hayBusqueda && (
         <CategoriesShowcaseCarousel groups={productosPorCategoria} />
       )}
 
@@ -147,9 +155,7 @@ export default function StoreSlugPage() {
         <StickyCategoryTabs categories={categoriasConCombos} />
       )}
 
-      {!hayBusqueda && (
-  <StoreCombosSection storeId={storeId} />
-)}
+      {!hayBusqueda && <StoreCombosSection storeId={storeId} />}
 
       <div className="mt-2">
         {productosPorCategoria.map((grupo) => (
@@ -178,5 +184,5 @@ export default function StoreSlugPage() {
 
       {!hayBusqueda && <HelpCard />}
     </main>
-  )
+  );
 }

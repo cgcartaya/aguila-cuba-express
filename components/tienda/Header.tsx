@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Menu,
   X,
@@ -20,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/hooks/useStore";
+import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 
 type HeaderProps = {
   cartCount: number;
@@ -28,10 +28,7 @@ type HeaderProps = {
 export default function Header({ cartCount }: HeaderProps) {
   const [open, setOpen] = useState(false);
   const { store } = useStore();
-
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { search, setSearch, clearSearch } = useTiendaSearch();
 
   const primaryColor = store?.primary_color || "#061b3a";
   const secondaryColor = store?.secondary_color || "#0f6bff";
@@ -46,8 +43,6 @@ export default function Header({ cartCount }: HeaderProps) {
     store?.slug && !isDefaultStore
       ? `/tienda/${store.slug}/cart`
       : "/tienda/cart";
-
-  const currentSearch = searchParams.get("q") || "";
 
   const menuItems = useMemo(
     () => [
@@ -64,23 +59,6 @@ export default function Header({ cartCount }: HeaderProps) {
     ],
     [storeBaseUrl]
   );
-
-  function updateSearch(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-
-    if (value.trim()) {
-      params.set("q", value);
-    } else {
-      params.delete("q");
-    }
-
-    const queryString = params.toString();
-    const targetPath = pathname?.startsWith("/tienda") ? pathname : storeBaseUrl;
-
-    router.replace(queryString ? `${targetPath}?${queryString}` : targetPath, {
-      scroll: false,
-    });
-  }
 
   return (
     <>
@@ -101,23 +79,23 @@ export default function Header({ cartCount }: HeaderProps) {
           </button>
 
           <div className="min-w-0 flex-1">
-            <label className="flex h-12 items-center rounded-2xl bg-white px-3 shadow-md ring-1 ring-white/30 transition focus-within:ring-2 focus-within:ring-white/70 sm:h-13 sm:px-4">
+            <label className="flex h-12 items-center rounded-2xl bg-white px-3 shadow-md ring-1 ring-white/30 transition focus-within:ring-2 focus-within:ring-white/70 sm:px-4">
               <Search size={22} className="mr-2 shrink-0 text-slate-400" />
 
               <input
                 type="text"
                 inputMode="search"
                 autoComplete="off"
-                value={currentSearch}
-                onChange={(event) => updateSearch(event.target.value)}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar productos..."
                 className="h-full w-full min-w-0 bg-transparent text-[15px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 sm:text-base"
               />
 
-              {currentSearch && (
+              {search && (
                 <button
                   type="button"
-                  onClick={() => updateSearch("")}
+                  onClick={clearSearch}
                   aria-label="Limpiar búsqueda"
                   className="ml-2 shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
                 >
