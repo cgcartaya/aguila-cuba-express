@@ -3,20 +3,21 @@
 /* =========================================================
    ADMIN PRODUCTS PAGE
 
-   Fase 3.8.1:
-   - Store Owner usa SIEMPRE la tienda asignada desde store_users.
-   - Super Admin usa la tienda seleccionada en StoreContext.
-   - No se usa localStorage directamente.
-   - No se cargan productos globales.
+   Fase papelera completa:
+   - Productos filtrados por tienda activa.
+   - Contador de papelera por tienda.
+   - Mover a papelera con servicio centralizado.
+   - No elimina definitivamente desde el listado.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Upload } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { Loader2, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
+  getTrashProductsCountByStoreId,
+  moveProductToTrashByStoreId,
   toggleProductStatus as toggleProductStatusService,
 } from "@/lib/services/products";
 
@@ -50,6 +51,8 @@ export default function AdminProductsPage() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trashCount, setTrashCount] = useState(0);
+  const [movingToTrashId, setMovingToTrashId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -84,12 +87,16 @@ export default function AdminProductsPage() {
 
     if (!activeStore?.id) {
       setProducts([]);
+      setTrashCount(0);
       setErrorMessage("No se pudo resolver la tienda activa.");
       setLoading(false);
       return;
     }
 
-    const { data, error } = await getAdminProductsByStoreId(activeStore.id);
+    const [{ data, error }, { count, error: countError }] = await Promise.all([
+      getAdminProductsByStoreId(activeStore.id),
+      getTrashProductsCountByStoreId(activeStore.id),
+    ]);
 
     if (error) {
       console.error("Error cargando productos:", error);
@@ -97,6 +104,10 @@ export default function AdminProductsPage() {
       setErrorMessage("Error cargando productos.");
       setLoading(false);
       return;
+    }
+
+    if (countError) {
+      console.error("Error cargando contador de papelera:", countError);
     }
 
     const productsWithMainImage =
@@ -114,6 +125,7 @@ export default function AdminProductsPage() {
       }) || [];
 
     setProducts(productsWithMainImage);
+    setTrashCount(count || 0);
     setLoading(false);
   }
 
@@ -134,8 +146,8 @@ export default function AdminProductsPage() {
     setOpenMenuId(null);
   }
 
-  async function deleteProductForever(id: string) {
-    const confirmed = confirm("¿Enviar este producto a la papelera?");
+  async function moveProductToTrash(id: string) {
+    const confirmed = confirm("¿Mover este producto a la papelera?");
 
     if (!confirmed) return;
 
@@ -144,20 +156,19 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const { error } = await supabase
-      .from("products")
-      .update({
-        deleted_at: new Date().toISOString(),
-      })
-      .eq("id", id)
-      .eq("store_id", activeStore.id);
+    setMovingToTrashId(id);
+
+    const { error } = await moveProductToTrashByStoreId(id, activeStore.id);
 
     if (error) {
-      alert("Error enviando producto a la papelera");
+      alert("Error moviendo producto a la papelera");
+      setMovingToTrashId(null);
       return;
     }
 
     setProducts((prev) => prev.filter((p) => p.id !== id));
+    setTrashCount((prev) => prev + 1);
+    setMovingToTrashId(null);
     setOpenMenuId(null);
   }
 
@@ -233,7 +244,7 @@ export default function AdminProductsPage() {
     (stockFilter === "low" ? 1 : 0);
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-24">
+    <main className="min-h-screen bg-slate-50 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <section className="mx-auto max-w-6xl px-4 py-5">
         <div className="mb-5">
           <p className="text-sm text-slate-500">Administración</p>
@@ -274,18 +285,31 @@ export default function AdminProductsPage() {
           activeFilters={activeFilters}
         />
 
-        <div className="mb-4 flex gap-3">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Link
             href="/admin/products/import"
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm"
+            className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm"
           >
             <Upload size={18} />
             Importar Excel
           </Link>
 
           <Link
+            href="/admin/trash"
+            className="relative flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-red-600 shadow-sm"
+          >
+            <Trash2 size={18} />
+            Papelera
+            {trashCount > 0 && (
+              <span className="ml-1 rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-black text-white">
+                {trashCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
             href="/admin/products/new"
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm"
+            className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm"
           >
             <Plus size={18} />
             Nuevo producto
@@ -308,7 +332,8 @@ export default function AdminProductsPage() {
                   openMenuId={openMenuId}
                   setOpenMenuId={setOpenMenuId}
                   onToggleStatus={toggleProductStatus}
-                  onDeleteForever={deleteProductForever}
+                  onMoveToTrash={moveProductToTrash}
+                  disabled={movingToTrashId === product.id}
                 />
               </ProductCard>
             ))}

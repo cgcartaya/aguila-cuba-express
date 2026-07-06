@@ -1,14 +1,6 @@
 "use client";
 
-/* =========================================================
-   EDIT PRODUCT PAGE
-
-   Mejoras:
-   - Categorías dinámicas desde Supabase.
-   - Integración completa con Ajustes → Categorías.
-========================================================= */
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
@@ -24,6 +16,9 @@ import {
   getAdminActiveCategories,
 } from "@/lib/services/settings";
 
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
+
 import type { Category } from "@/components/admin/settings/types";
 
 export default function EditProductPage() {
@@ -31,9 +26,18 @@ export default function EditProductPage() {
   const params = useParams();
   const productId = params.id as string;
 
-  /* =========================================================
-     FORM STATE
-  ========================================================= */
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) {
+      return selectedStore || accessStore;
+    }
+
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
 
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -51,22 +55,32 @@ export default function EditProductPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  /* =========================================================
-     LOAD PRODUCT + CATEGORIES
-  ========================================================= */
-
   useEffect(() => {
     async function loadData() {
+      if (accessLoading || storeLoading) return;
+
+      if (!activeStore?.id) {
+        setError("No se pudo resolver la tienda activa.");
+        setLoading(false);
+        return;
+      }
+
       const [{ data: product, error }, { data: categoriesData }] =
-  await Promise.all([
-    getProductById(productId),
-    getAdminActiveCategories(),
-  ]);
+        await Promise.all([
+          getProductById(productId),
+          getAdminActiveCategories(activeStore.id),
+        ]);
 
       setCategories(categoriesData || []);
 
       if (error || !product) {
         setError("No se pudo cargar el producto.");
+        setLoading(false);
+        return;
+      }
+
+      if (product.store_id && product.store_id !== activeStore.id) {
+        setError("Este producto no pertenece a la tienda activa.");
         setLoading(false);
         return;
       }
@@ -87,11 +101,7 @@ export default function EditProductPage() {
     if (productId) {
       loadData();
     }
-  }, [productId]);
-
-  /* =========================================================
-     FORM HANDLERS
-  ========================================================= */
+  }, [productId, accessLoading, storeLoading, activeStore?.id]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -122,12 +132,13 @@ export default function EditProductPage() {
     }));
   };
 
-  /* =========================================================
-     SAVE PRODUCT
-  ========================================================= */
-
   const handleSubmit = async () => {
     setError("");
+
+    if (!activeStore?.id) {
+      setError("No se pudo resolver la tienda activa.");
+      return;
+    }
 
     if (!form.name || !form.category || !form.price || !form.stock) {
       setError("Completa nombre, categoría, precio y stock.");
@@ -172,11 +183,7 @@ export default function EditProductPage() {
     }
   };
 
-  /* =========================================================
-     LOADING
-  ========================================================= */
-
-  if (loading) {
+  if (loading || accessLoading || storeLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="flex items-center gap-2 text-gray-600">
@@ -188,27 +195,36 @@ export default function EditProductPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 p-6">
+    <main className="min-h-screen bg-gray-50 p-4 pb-[calc(12rem+env(safe-area-inset-bottom))] md:p-6">
       <div className="mx-auto max-w-4xl">
         <Link
           href="/admin/products"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-gray-600"
         >
           <ArrowLeft size={18} />
           Volver a productos
         </Link>
 
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-6">
+          <h1 className="text-3xl font-black text-gray-900">
             Editar producto
           </h1>
 
-          <p className="mt-2 text-gray-500">
-            Actualiza la información del producto.
+          <p className="mt-2 text-sm font-semibold text-gray-500">
+            Actualiza la información, imágenes y estado del producto.
           </p>
         </div>
 
-        <div className="rounded-3xl bg-white p-6 shadow-sm">
+        <section className="rounded-3xl bg-white p-5 shadow-sm md:p-6">
+          <div className="mb-5">
+            <h2 className="text-2xl font-black text-slate-900">
+              Información del producto
+            </h2>
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Estos datos se mostrarán en la tienda pública.
+            </p>
+          </div>
+
           <div className="grid gap-5 md:grid-cols-2">
             <Input
               name="name"
@@ -251,7 +267,7 @@ export default function EditProductPage() {
             />
 
             <div className="md:col-span-2">
-              <label className="mb-2 block text-sm font-bold text-gray-700">
+              <label className="mb-2 block text-sm font-black text-gray-700">
                 Descripción
               </label>
 
@@ -274,11 +290,11 @@ export default function EditProductPage() {
               />
 
               <div>
-                <p className="font-bold text-gray-900">
+                <p className="font-black text-gray-900">
                   Producto activo
                 </p>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm font-medium text-gray-500">
                   Si está activo, aparecerá en la tienda.
                 </p>
               </div>
@@ -286,23 +302,24 @@ export default function EditProductPage() {
           </div>
 
           {error && (
-            <div className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            <div className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
               {error}
             </div>
           )}
 
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:flex sm:justify-end">
             <Link
               href="/admin/products"
-              className="rounded-2xl border px-5 py-3 text-center font-bold text-gray-700"
+              className="rounded-2xl border px-5 py-3 text-center font-black text-gray-700"
             >
               Cancelar
             </Link>
 
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-black px-5 py-3 font-bold text-white disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-black px-5 py-3 font-black text-white disabled:opacity-60"
             >
               {saving ? (
                 <>
@@ -317,7 +334,7 @@ export default function EditProductPage() {
               )}
             </button>
           </div>
-        </div>
+        </section>
 
         <div className="mt-6">
           <ProductImageManager productId={productId} />
@@ -326,8 +343,6 @@ export default function EditProductPage() {
     </main>
   );
 }
-
-/* ========================================================= */
 
 function Input({
   label,
@@ -346,7 +361,7 @@ function Input({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold text-gray-700">
+      <label className="mb-2 block text-sm font-black text-gray-700">
         {label}
       </label>
 
@@ -373,7 +388,7 @@ function CategorySelect({
 }) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-bold text-gray-700">
+      <label className="mb-2 block text-sm font-black text-gray-700">
         Categoría *
       </label>
 
@@ -381,10 +396,13 @@ function CategorySelect({
         name="category"
         value={value}
         onChange={onChange}
-        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black"
+        disabled={categories.length === 0}
+        className="w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
       >
         <option value="">
-          Selecciona una categoría
+          {categories.length === 0
+            ? "No hay categorías activas"
+            : "Selecciona una categoría"}
         </option>
 
         {categories.map((category) => (

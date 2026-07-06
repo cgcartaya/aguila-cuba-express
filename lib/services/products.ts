@@ -428,3 +428,134 @@ export async function setMainProductImage(
     .update({ is_main: true })
     .eq("id", imageId);
 }
+
+/* =========================================================
+   ADMIN - PAPELERA DE PRODUCTOS
+   Funciones multiempresa para mover, restaurar y eliminar.
+========================================================= */
+
+export async function getTrashProductsByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select(`
+      id,
+      store_id,
+      name,
+      category,
+      price,
+      stock,
+      sku,
+      is_active,
+      deleted_at,
+      product_images (
+        image_url,
+        is_main,
+        position
+      )
+    `)
+    .eq("store_id", storeId)
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+}
+
+export async function getTrashProductsCountByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .not("deleted_at", "is", null);
+}
+
+export async function moveProductToTrashByStoreId(
+  productId: string,
+  storeId: string
+) {
+  return supabase
+    .from("products")
+    .update({
+      deleted_at: new Date().toISOString(),
+      is_active: false,
+    })
+    .eq("id", productId)
+    .eq("store_id", storeId)
+    .is("deleted_at", null);
+}
+
+export async function restoreProductByStoreId(
+  productId: string,
+  storeId: string
+) {
+  return supabase
+    .from("products")
+    .update({
+      deleted_at: null,
+      is_active: true,
+    })
+    .eq("id", productId)
+    .eq("store_id", storeId)
+    .not("deleted_at", "is", null);
+}
+
+export async function deleteProductForeverByStoreId(
+  productId: string,
+  storeId: string
+) {
+  const { data: product, error: productError } = await supabase
+    .from("products")
+    .select("id, store_id")
+    .eq("id", productId)
+    .eq("store_id", storeId)
+    .maybeSingle();
+
+  if (productError) {
+    return { data: null, error: productError };
+  }
+
+  if (!product) {
+    return {
+      data: null,
+      error: {
+        message: "Producto no encontrado en la tienda activa.",
+      },
+    };
+  }
+
+  const { data: images, error: imagesReadError } = await supabase
+    .from("product_images")
+    .select("id, storage_path")
+    .eq("product_id", productId);
+
+  if (imagesReadError) {
+    return { data: null, error: imagesReadError };
+  }
+
+  const storagePaths =
+    images
+      ?.map((image) => image.storage_path)
+      .filter((path): path is string => Boolean(path)) || [];
+
+  if (storagePaths.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from("product-images")
+      .remove(storagePaths);
+
+    if (storageError) {
+      return { data: null, error: storageError };
+    }
+  }
+
+  const { error: imagesDeleteError } = await supabase
+    .from("product_images")
+    .delete()
+    .eq("product_id", productId);
+
+  if (imagesDeleteError) {
+    return { data: null, error: imagesDeleteError };
+  }
+
+  return supabase
+    .from("products")
+    .delete()
+    .eq("id", productId)
+    .eq("store_id", storeId);
+}
