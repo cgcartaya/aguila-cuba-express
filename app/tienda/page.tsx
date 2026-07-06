@@ -3,20 +3,20 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
 
-   Performance Fase 3:
-   - Evita consultar la tienda por defecto varias veces.
-   - Carga productos/categorías usando store_id ya resuelto.
-   - Pasa storeId a combos para evitar consultas globales.
-   - Elimina console.log de producción.
+   Header V2:
+   - La búsqueda ahora vive en el Header usando el parámetro ?q=.
+   - Se elimina el buscador grande del cuerpo de la página.
+   - Se conserva el filtrado por productos/categorías.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
 import { getDefaultStore } from "@/lib/services/stores";
 
-import ProductSearch from "@/components/tienda/ProductSearch";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
 import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
@@ -39,7 +39,9 @@ type ProductFromSupabase = Product & {
 };
 
 export default function TiendaPage() {
-  const [busqueda, setBusqueda] = useState("");
+  const searchParams = useSearchParams();
+  const busqueda = searchParams.get("q") || "";
+
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
@@ -142,8 +144,6 @@ export default function TiendaPage() {
 
   return (
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      <ProductSearch busqueda={busqueda} setBusqueda={setBusqueda} />
-
       {!hayBusqueda && (
         <CategoriesShowcaseCarousel groups={productosPorCategoria} />
       )}
