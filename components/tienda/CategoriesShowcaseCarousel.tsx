@@ -39,7 +39,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
   };
 
   return (
-    <section className="relative w-full overflow-hidden py-4">
+    <section className="relative w-full max-w-full overflow-hidden py-4">
       <button
         type="button"
         onClick={() => scroll("left")}
@@ -51,7 +51,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
 
       <div
         ref={scrollContainerRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex w-full max-w-full snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden px-4 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {groups.map((group) => (
           <CategoryShowcaseCard
