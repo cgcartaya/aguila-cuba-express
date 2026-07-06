@@ -31,9 +31,8 @@ export default function Header({ cartCount }: HeaderProps) {
   const { search, setSearch, clearSearch } = useTiendaSearch();
 
   const primaryColor = store?.primary_color || "#061b3a";
-  const secondaryColor = store?.secondary_color || "#0f6bff";
+  const secondaryColor = store?.secondary_color || "#ef233c";
   const storeName = store?.name || "Águila Cuba Express";
-
   const isDefaultStore = store?.slug === "aguila";
 
   const storeBaseUrl =
@@ -63,36 +62,36 @@ export default function Header({ cartCount }: HeaderProps) {
   return (
     <>
       <header
-        className="sticky top-0 z-50 shadow-md"
+        className="sticky top-0 z-50 shadow-[0_8px_24px_rgba(15,23,42,0.16)]"
         style={{
           background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
         }}
       >
-        <div className="mx-auto flex h-[70px] max-w-7xl items-center gap-3 px-3 sm:h-[76px] sm:px-4">
+        <div className="mx-auto flex h-[62px] max-w-7xl items-center gap-2.5 px-3 sm:h-[68px] sm:gap-3 sm:px-4">
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Abrir menú"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-12 sm:w-12"
           >
-            <Menu size={30} strokeWidth={2.8} />
+            <Menu size={28} strokeWidth={2.8} />
           </button>
 
           <div className="min-w-0 flex-1">
-            <label className="flex h-12 items-center rounded-2xl bg-white px-3 shadow-md ring-1 ring-white/30 transition focus-within:ring-2 focus-within:ring-white/70 sm:px-4">
-              <Search size={22} className="mr-2 shrink-0 text-slate-400" />
+            <label className="flex h-11 items-center rounded-[18px] bg-white/95 px-3 shadow-sm ring-1 ring-white/40 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-white/80 sm:h-12 sm:px-4">
+              <Search size={21} className="mr-2 shrink-0 text-slate-400" />
 
               <input
-                type="text"
+                type="search"
                 inputMode="search"
                 autoComplete="off"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Buscar productos..."
-                className="h-full w-full min-w-0 bg-transparent text-[15px] font-semibold text-slate-800 outline-none placeholder:text-slate-400 sm:text-base"
+                className="h-full w-full min-w-0 bg-transparent text-[15px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
               />
 
-              {search && (
+              {search.trim().length > 0 && (
                 <button
                   type="button"
                   onClick={clearSearch}
@@ -108,9 +107,9 @@ export default function Header({ cartCount }: HeaderProps) {
           <Link
             href={cartUrl}
             aria-label="Carrito"
-            className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white shadow-md transition active:scale-95"
+            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm transition active:scale-95 sm:h-12 sm:w-12"
           >
-            <ShoppingCart size={29} className="text-[#061b3a]" />
+            <ShoppingCart size={28} className="text-[#061b3a]" />
 
             <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-black text-white shadow">
               {cartCount}

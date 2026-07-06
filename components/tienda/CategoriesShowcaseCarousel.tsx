@@ -3,9 +3,9 @@
 /* =========================================================
    CATEGORIES SHOWCASE CAROUSEL
 
-   Header V2:
-   - Se eliminó el bloque azul "Explora por categoría".
-   - Solo queda el carrusel limpio de categorías.
+   - Swipe móvil.
+   - Flechas desktop.
+   - Sin encabezado azul.
 ========================================================= */
 
 import { useRef } from "react";
@@ -32,16 +32,14 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
   const scroll = (direction: "left" | "right") => {
     if (!scrollContainerRef.current) return;
 
-    const amount = 420;
-
     scrollContainerRef.current.scrollBy({
-      left: direction === "left" ? -amount : amount,
+      left: direction === "left" ? -420 : 420,
       behavior: "smooth",
     });
   };
 
   return (
-    <section className="relative w-full overflow-hidden pt-4 pb-2">
+    <section className="relative w-full overflow-hidden py-4">
       <button
         type="button"
         onClick={() => scroll("left")}
@@ -53,7 +51,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
 
       <div
         ref={scrollContainerRef}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {groups.map((group) => (
           <CategoryShowcaseCard
@@ -69,7 +67,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
         type="button"
         onClick={() => scroll("right")}
         className="absolute right-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl transition hover:scale-105 lg:flex"
-        aria-label="Categorías siguientes"
+        aria-label="Siguientes categorías"
       >
         <ChevronRight className="h-6 w-6 text-slate-700" />
       </button>

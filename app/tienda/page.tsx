@@ -3,10 +3,11 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA PÚBLICA
 
-   Header V2 + SearchProvider:
-   - La búsqueda vive en el Header.
-   - Esta página consume el estado compartido.
-   - No usa useSearchParams, compatible con Next.js 15/Vercel.
+   Search V2:
+   - El buscador vive en Header.
+   - La búsqueda usa TiendaSearchProvider, sin useSearchParams.
+   - Al buscar, se muestran resultados planos y limpios.
+   - Sin categorías completas durante búsqueda.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -21,9 +22,10 @@ import CategoryProductsSection from "@/components/tienda/CategoryProductsSection
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
 import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
-import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
+import SearchResultsSection from "@/components/tienda/search/SearchResultsSection";
 
 import { useCart } from "@/contexts/CartContext";
+import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import type { Product } from "@/types/cart";
 import type { Category } from "@/components/admin/settings/types";
 
@@ -38,15 +40,15 @@ type ProductFromSupabase = Product & {
 };
 
 export default function TiendaPage() {
-  const { search: busqueda } = useTiendaSearch();
-
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
 
+  const { search } = useTiendaSearch();
   const { addToCart } = useCart();
 
-  const hayBusqueda = busqueda.trim().length > 0;
+  const busqueda = search.trim();
+  const hayBusqueda = busqueda.length > 0;
 
   useEffect(() => {
     let mounted = true;
@@ -106,10 +108,12 @@ export default function TiendaPage() {
   }, []);
 
   const productosBuscados = useMemo(() => {
+    if (!hayBusqueda) return productos;
+
     return productos.filter((producto) =>
       productMatchesSearch(producto, busqueda)
     );
-  }, [productos, busqueda]);
+  }, [productos, busqueda, hayBusqueda]);
 
   const categoriasConCombos = useMemo(() => {
     return [
@@ -125,59 +129,47 @@ export default function TiendaPage() {
   }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
-    const grupos = categorias.map((categoria) => ({
+    return categorias.map((categoria) => ({
       categoria: categoria.name,
       color: categoria.color,
-      productos: productosBuscados.filter(
+      productos: productos.filter(
         (producto) => producto.category === categoria.name
       ),
     }));
-
-    if (hayBusqueda) {
-      return grupos.filter((grupo) => grupo.productos.length > 0);
-    }
-
-    return grupos;
-  }, [categorias, productosBuscados, hayBusqueda]);
+  }, [categorias, productos]);
 
   return (
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      {!hayBusqueda && (
-        <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+      {hayBusqueda ? (
+        <SearchResultsSection
+          products={productosBuscados}
+          onAddToCart={addToCart}
+        />
+      ) : (
+        <>
+          <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+
+          {categoriasConCombos.length > 0 && (
+            <StickyCategoryTabs categories={categoriasConCombos} />
+          )}
+
+          <StoreCombosSection storeId={storeId || undefined} />
+
+          <div className="mt-2">
+            {productosPorCategoria.map((grupo) => (
+              <CategoryProductsSection
+                key={grupo.categoria}
+                title={grupo.categoria}
+                products={grupo.productos}
+                onAddToCart={addToCart}
+              />
+            ))}
+          </div>
+
+          <DeliveryBanner />
+          <HelpCard />
+        </>
       )}
-
-      {!hayBusqueda && categoriasConCombos.length > 0 && (
-        <StickyCategoryTabs categories={categoriasConCombos} />
-      )}
-
-      {!hayBusqueda && <StoreCombosSection storeId={storeId || undefined} />}
-
-      <div className="mt-2">
-        {productosPorCategoria.map((grupo) => (
-          <CategoryProductsSection
-            key={grupo.categoria}
-            title={grupo.categoria}
-            products={grupo.productos}
-            onAddToCart={addToCart}
-          />
-        ))}
-      </div>
-
-      {hayBusqueda && productosBuscados.length === 0 && (
-        <div className="mx-4 my-10 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h3 className="text-xl font-black text-[#061b3a]">
-            No encontramos productos
-          </h3>
-
-          <p className="mt-2 text-slate-500">
-            Intenta buscar con otro nombre o revisa la categoría.
-          </p>
-        </div>
-      )}
-
-      {!hayBusqueda && <DeliveryBanner />}
-
-      {!hayBusqueda && <HelpCard />}
     </main>
   );
 }

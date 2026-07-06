@@ -1,12 +1,20 @@
 "use client";
 
+/* =========================================================
+   PÁGINA PRINCIPAL - TIENDA POR SLUG
+
+   Search V2:
+   - El buscador vive en Header.
+   - La búsqueda usa TiendaSearchProvider, sin useSearchParams.
+   - Al buscar, se muestran resultados planos y limpios.
+========================================================= */
+
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-
 import { productMatchesSearch } from "@/lib/utils/search";
-import { getStoreBySlug } from "@/lib/services/stores";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
+import { getStoreBySlug } from "@/lib/services/stores";
 
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
 import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
@@ -14,10 +22,10 @@ import CategoryProductsSection from "@/components/tienda/CategoryProductsSection
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
 import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
-import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
+import SearchResultsSection from "@/components/tienda/search/SearchResultsSection";
 
 import { useCart } from "@/contexts/CartContext";
-
+import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import type { Product } from "@/types/cart";
 import type { Category } from "@/components/admin/settings/types";
 
@@ -28,41 +36,41 @@ type ProductImage = {
 };
 
 type ProductFromSupabase = Product & {
-  product_images?: ProductImage[];
+  product_images?: ProductImage[] | null;
 };
 
-export default function StoreSlugPage() {
+export default function StoreSlugTiendaPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const { search: busqueda } = useTiendaSearch();
 
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
-  const [storeId, setStoreId] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const [storeId, setStoreId] = useState<string | null>(null);
 
+  const { search } = useTiendaSearch();
   const { addToCart } = useCart();
 
-  const hayBusqueda = busqueda.trim().length > 0;
+  const busqueda = search.trim();
+  const hayBusqueda = busqueda.length > 0;
 
   useEffect(() => {
     let mounted = true;
 
     async function cargarDatos() {
-      setLoading(true);
+      if (!slug) return;
 
       const store = await getStoreBySlug(slug);
 
       if (!mounted) return;
 
-      setStoreId(store?.id || "");
-
       if (!store) {
         setProductos([]);
         setCategorias([]);
-        setLoading(false);
+        setStoreId(null);
         return;
       }
+
+      setStoreId(store.id);
 
       const [{ data: productsData, error }, { data: categoriesData }] =
         await Promise.all([
@@ -77,7 +85,7 @@ export default function StoreSlugPage() {
       }
 
       const productosConImagenPrincipal =
-        (productsData as ProductFromSupabase[])?.map((producto) => {
+        ((productsData || []) as ProductFromSupabase[]).map((producto) => {
           const imagenPrincipal =
             producto.product_images?.find((img) => img.is_main) ||
             producto.product_images
@@ -91,8 +99,7 @@ export default function StoreSlugPage() {
         }) || [];
 
       setProductos(productosConImagenPrincipal);
-      setCategorias(categoriesData || []);
-      setLoading(false);
+      setCategorias((categoriesData as Category[]) || []);
     }
 
     cargarDatos();
@@ -103,10 +110,12 @@ export default function StoreSlugPage() {
   }, [slug]);
 
   const productosBuscados = useMemo(() => {
+    if (!hayBusqueda) return productos;
+
     return productos.filter((producto) =>
       productMatchesSearch(producto, busqueda)
     );
-  }, [productos, busqueda]);
+  }, [productos, busqueda, hayBusqueda]);
 
   const categoriasConCombos = useMemo(() => {
     return [
@@ -122,67 +131,47 @@ export default function StoreSlugPage() {
   }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
-    const grupos = categorias.map((categoria) => ({
+    return categorias.map((categoria) => ({
       categoria: categoria.name,
       color: categoria.color,
-      productos: productosBuscados.filter(
+      productos: productos.filter(
         (producto) => producto.category === categoria.name
       ),
     }));
-
-    if (hayBusqueda) {
-      return grupos.filter((grupo) => grupo.productos.length > 0);
-    }
-
-    return grupos;
-  }, [categorias, productosBuscados, hayBusqueda]);
-
-  if (loading) {
-    return (
-      <main className="min-h-[100dvh] p-8 text-center text-slate-500">
-        Cargando tienda...
-      </main>
-    );
-  }
+  }, [categorias, productos]);
 
   return (
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
-      {!hayBusqueda && (
-        <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+      {hayBusqueda ? (
+        <SearchResultsSection
+          products={productosBuscados}
+          onAddToCart={addToCart}
+        />
+      ) : (
+        <>
+          <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+
+          {categoriasConCombos.length > 0 && (
+            <StickyCategoryTabs categories={categoriasConCombos} />
+          )}
+
+          <StoreCombosSection storeId={storeId || undefined} />
+
+          <div className="mt-2">
+            {productosPorCategoria.map((grupo) => (
+              <CategoryProductsSection
+                key={grupo.categoria}
+                title={grupo.categoria}
+                products={grupo.productos}
+                onAddToCart={addToCart}
+              />
+            ))}
+          </div>
+
+          <DeliveryBanner />
+          <HelpCard />
+        </>
       )}
-
-      {!hayBusqueda && categoriasConCombos.length > 0 && (
-        <StickyCategoryTabs categories={categoriasConCombos} />
-      )}
-
-      {!hayBusqueda && <StoreCombosSection storeId={storeId} />}
-
-      <div className="mt-2">
-        {productosPorCategoria.map((grupo) => (
-          <CategoryProductsSection
-            key={grupo.categoria}
-            title={grupo.categoria}
-            products={grupo.productos}
-            onAddToCart={addToCart}
-          />
-        ))}
-      </div>
-
-      {hayBusqueda && productosBuscados.length === 0 && (
-        <div className="mx-4 my-10 rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <h3 className="text-xl font-black text-[#061b3a]">
-            No encontramos productos
-          </h3>
-
-          <p className="mt-2 text-slate-500">
-            Intenta buscar con otro nombre o revisa la categoría.
-          </p>
-        </div>
-      )}
-
-      {!hayBusqueda && <DeliveryBanner />}
-
-      {!hayBusqueda && <HelpCard />}
     </main>
   );
 }
