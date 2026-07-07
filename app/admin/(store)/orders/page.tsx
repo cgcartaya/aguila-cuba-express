@@ -6,6 +6,46 @@ import OrdersManager from "@/components/admin/OrdersManager";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 
+const ORDERS_SELECT = `
+  id,
+  order_number,
+  total,
+  subtotal,
+  delivery_fee,
+  status,
+  payment_status,
+  address,
+  exact_address,
+  municipality,
+  zone_name,
+  state,
+  zip_code,
+  country,
+  notes,
+  created_at,
+  deleted_at,
+  recipient_name,
+  recipient_phone,
+  recipient_phone_alt,
+  store_id,
+  customers (
+    name,
+    email,
+    phone,
+    city
+  ),
+  order_items (
+    id,
+    item_type,
+    product_id,
+    combo_id,
+    product_name,
+    quantity,
+    price,
+    subtotal
+  )
+`;
+
 export default function AdminOrdersPage() {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
@@ -16,7 +56,8 @@ export default function AdminOrdersPage() {
     return accessStore;
   }, [accessStore, isSuperAdmin, selectedStore]);
 
-  const [orders, setOrders] = useState<any[]>([]);
+  const [activeOrders, setActiveOrders] = useState<any[]>([]);
+  const [deletedOrders, setDeletedOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -25,7 +66,8 @@ export default function AdminOrdersPage() {
       if (accessLoading || storeLoading) return;
 
       if (!activeStore?.id) {
-        setOrders([]);
+        setActiveOrders([]);
+        setDeletedOrders([]);
         setErrorMessage("No se pudo resolver la tienda activa.");
         setLoading(false);
         return;
@@ -34,60 +76,36 @@ export default function AdminOrdersPage() {
       setLoading(true);
       setErrorMessage("");
 
-      const { data, error } = await supabase
-        .from("orders")
-        .select(`
-          id,
-          order_number,
-          total,
-          subtotal,
-          delivery_fee,
-          status,
-          payment_status,
-          address,
-          exact_address,
-          municipality,
-          zone_name,
-          state,
-          zip_code,
-          country,
-          notes,
-          created_at,
-          deleted_at,
-          recipient_name,
-          recipient_phone,
-          recipient_phone_alt,
-          store_id,
-          customers (
-            name,
-            email,
-            phone,
-            city
-          ),
-          order_items (
-            id,
-            item_type,
-            product_id,
-            combo_id,
-            product_name,
-            quantity,
-            price,
-            subtotal
-          )
-        `)
-        .eq("store_id", activeStore.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const [activeResult, deletedResult] = await Promise.all([
+        supabase
+          .from("orders")
+          .select(ORDERS_SELECT)
+          .eq("store_id", activeStore.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false }),
 
-      if (error) {
-        console.error("Error cargando órdenes:", error);
+        supabase
+          .from("orders")
+          .select(ORDERS_SELECT)
+          .eq("store_id", activeStore.id)
+          .not("deleted_at", "is", null)
+          .order("deleted_at", { ascending: false }),
+      ]);
+
+      if (activeResult.error || deletedResult.error) {
+        console.error(
+          "Error cargando órdenes:",
+          activeResult.error || deletedResult.error
+        );
         setErrorMessage("Error cargando órdenes.");
-        setOrders([]);
+        setActiveOrders([]);
+        setDeletedOrders([]);
         setLoading(false);
         return;
       }
 
-      setOrders(data || []);
+      setActiveOrders(activeResult.data || []);
+      setDeletedOrders(deletedResult.data || []);
       setLoading(false);
     }
 
@@ -115,7 +133,10 @@ export default function AdminOrdersPage() {
             Cargando órdenes...
           </div>
         ) : (
-          <OrdersManager initialOrders={orders || []} />
+          <OrdersManager
+            initialOrders={activeOrders || []}
+            initialDeletedOrders={deletedOrders || []}
+          />
         )}
       </div>
     </main>

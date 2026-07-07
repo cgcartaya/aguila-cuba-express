@@ -6,11 +6,12 @@ import { supabase } from "@/lib/supabase";
    Maneja:
    - Validación de stock
    - Descuento automático de stock
-   - Restauración de stock al cancelar/eliminar órdenes
+   - Restauración de stock al enviar órdenes a papelera
+   - Re-descuento de stock al restaurar órdenes desde papelera
 ========================================================= */
 
 export async function validateOrderStock(orderItems: any[]) {
-  for (const item of orderItems) {
+  for (const item of orderItems || []) {
     if (item.item_type === "product") {
       await validateProductStock(
         item.product_id,
@@ -25,15 +26,15 @@ export async function validateOrderStock(orderItems: any[]) {
   }
 }
 
-/* =========================================================
-   VALIDAR STOCK PRODUCTO
-========================================================= */
-
 async function validateProductStock(
   productId: string,
   quantity: number,
   productName: string
 ) {
+  if (!productId) {
+    throw new Error(`El producto ${productName || "del pedido"} no tiene ID.`);
+  }
+
   const { data: product, error } = await supabase
     .from("products")
     .select("stock")
@@ -51,11 +52,11 @@ async function validateProductStock(
   }
 }
 
-/* =========================================================
-   VALIDAR STOCK COMBO
-========================================================= */
-
 async function validateComboStock(comboId: string, comboQuantity: number) {
+  if (!comboId) {
+    throw new Error("El combo del pedido no tiene ID.");
+  }
+
   const { data: comboItems, error } = await supabase
     .from("combo_items")
     .select(`
@@ -86,11 +87,11 @@ async function validateComboStock(comboId: string, comboQuantity: number) {
 }
 
 /* =========================================================
-   DESCONTAR INVENTARIO
+   DESCONTAR INVENTARIO AL CREAR / RESTAURAR ORDEN
 ========================================================= */
 
 export async function processOrderInventory(orderItems: any[]) {
-  for (const item of orderItems) {
+  for (const item of orderItems || []) {
     if (item.item_type === "product") {
       await discountProductStock(item.product_id, item.quantity);
     }
@@ -101,11 +102,9 @@ export async function processOrderInventory(orderItems: any[]) {
   }
 }
 
-/* =========================================================
-   DESCONTAR PRODUCTO
-========================================================= */
-
 async function discountProductStock(productId: string, quantity: number) {
+  if (!productId) return;
+
   const { data: product, error } = await supabase
     .from("products")
     .select("id, stock")
@@ -130,11 +129,9 @@ async function discountProductStock(productId: string, quantity: number) {
   if (updateError) throw updateError;
 }
 
-/* =========================================================
-   DESCONTAR COMBO
-========================================================= */
-
 async function discountComboStock(comboId: string, comboQuantity: number) {
+  if (!comboId) return;
+
   const { data: comboItems, error } = await supabase
     .from("combo_items")
     .select(`
@@ -154,29 +151,24 @@ async function discountComboStock(comboId: string, comboQuantity: number) {
 }
 
 /* =========================================================
-   RESTAURAR INVENTARIO
-
-   Se usa cuando una orden se envía a papelera/cancelación
-   administrativa y queremos devolver el stock descontado.
+   RESTAURAR INVENTARIO AL ENVIAR ORDEN A PAPELERA
 ========================================================= */
 
 export async function restoreOrderInventory(orderItems: any[]) {
   for (const item of orderItems || []) {
-    if (item.item_type === "product" && item.product_id) {
+    if (item.item_type === "product") {
       await restoreProductStock(item.product_id, item.quantity);
     }
 
-    if (item.item_type === "combo" && item.combo_id) {
+    if (item.item_type === "combo") {
       await restoreComboStock(item.combo_id, item.quantity);
     }
   }
 }
 
-/* =========================================================
-   RESTAURAR PRODUCTO
-========================================================= */
-
 async function restoreProductStock(productId: string, quantity: number) {
+  if (!productId) return;
+
   const { data: product, error } = await supabase
     .from("products")
     .select("id, stock")
@@ -187,21 +179,19 @@ async function restoreProductStock(productId: string, quantity: number) {
     throw new Error(`Producto no encontrado para restaurar stock: ${productId}`);
   }
 
-  const restoredStock = Number(product.stock || 0) + Number(quantity || 0);
+  const newStock = Number(product.stock || 0) + Number(quantity || 0);
 
   const { error: updateError } = await supabase
     .from("products")
-    .update({ stock: restoredStock })
+    .update({ stock: newStock })
     .eq("id", productId);
 
   if (updateError) throw updateError;
 }
 
-/* =========================================================
-   RESTAURAR COMBO
-========================================================= */
-
 async function restoreComboStock(comboId: string, comboQuantity: number) {
+  if (!comboId) return;
+
   const { data: comboItems, error } = await supabase
     .from("combo_items")
     .select(`

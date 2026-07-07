@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { restoreOrderInventory } from "@/lib/services/inventory";
 import {
   User,
   MapPin,
@@ -18,7 +17,16 @@ import {
   PackageCheck,
   Clock,
   Truck,
+  RotateCcw,
+  Archive,
+  AlertTriangle,
 } from "lucide-react";
+
+import {
+  processOrderInventory,
+  restoreOrderInventory,
+  validateOrderStock,
+} from "@/lib/services/inventory";
 
 const STATUSES = [
   { value: "Todas", label: "Todas" },
@@ -67,18 +75,35 @@ function statusClass(status: string) {
   return styles[status] || "bg-slate-100 text-slate-600";
 }
 
+function normalizeOrderItems(order: any) {
+  return (order.order_items || []).map((item: any) => ({
+    ...item,
+    quantity: Number(item.quantity || 0),
+    item_type: item.item_type,
+    product_id: item.product_id,
+    combo_id: item.combo_id,
+    product_name: item.product_name,
+  }));
+}
+
 export default function OrdersManager({
   initialOrders,
+  initialDeletedOrders = [],
 }: {
   initialOrders: any[];
+  initialDeletedOrders?: any[];
 }) {
   const [orders, setOrders] = useState(initialOrders);
+  const [deletedOrders, setDeletedOrders] = useState(initialDeletedOrders);
+  const [view, setView] = useState<"active" | "trash">("active");
   const [filter, setFilter] = useState("Todas");
   const [search, setSearch] = useState("");
-  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>(
     {}
   );
+
+  const currentOrders = view === "active" ? orders : deletedOrders;
 
   function toggleItems(orderId: string) {
     setExpandedOrders((prev) => ({
@@ -95,17 +120,18 @@ export default function OrdersManager({
 
     return {
       total: orders.length,
+      trash: deletedOrders.length,
       pendientes: orders.filter((o) => o.status === "pending").length,
       preparando: orders.filter((o) => o.status === "preparing").length,
       transito: orders.filter((o) => o.status === "in_transit").length,
       ventas: totalSales,
     };
-  }, [orders]);
+  }, [orders, deletedOrders]);
 
   const filteredOrders = useMemo(() => {
     const query = normalizeText(search);
 
-    return orders.filter((order) => {
+    return currentOrders.filter((order) => {
       const customer = getCustomer(order);
 
       const matchesStatus =
@@ -134,7 +160,7 @@ export default function OrdersManager({
 
       return matchesStatus && matchesSearch;
     });
-  }, [orders, filter, search]);
+  }, [currentOrders, filter, search]);
 
   async function updateStatus(id: string, status: string) {
     const { error } = await supabase
@@ -152,80 +178,128 @@ export default function OrdersManager({
     );
   }
 
-  async function deleteOrder(id: string) {
+  async function sendOrderToTrash(order: any) {
     const ok = confirm(
-      "Esta acción enviará la orden a la papelera y restaurará el inventario descontado. ¿Deseas continuar?"
+      "¿Seguro que deseas enviar esta orden a la papelera?\n\nEl inventario de los productos de esta orden será restaurado automáticamente."
     );
 
     if (!ok) return;
 
     try {
-      setDeletingOrderId(id);
+      setActionLoadingId(order.id);
 
-      const { data: order, error: orderError } = await supabase
+      const orderItems = normalizeOrderItems(order);
+      await restoreOrderInventory(orderItems);
+
+      const deletedAt = new Date().toISOString();
+
+      const { error } = await supabase
         .from("orders")
-        .select("id, deleted_at")
-        .eq("id", id)
-        .maybeSingle();
+        .update({ deleted_at: deletedAt })
+        .eq("id", order.id);
 
-      if (orderError) throw orderError;
+      if (error) throw error;
 
-      if (!order) {
-        throw new Error("No se encontró la orden.");
-      }
+      const deletedOrder = {
+        ...order,
+        deleted_at: deletedAt,
+      };
 
-      if (order.deleted_at) {
-        setOrders((prev) => prev.filter((item) => item.id !== id));
-        return;
-      }
+      setOrders((prev) => prev.filter((item) => item.id !== order.id));
+      setDeletedOrders((prev) => [deletedOrder, ...prev]);
+    } catch (error: any) {
+      console.error("ERROR ENVIANDO ORDEN A PAPELERA:", error);
+      alert(error?.message || "No se pudo enviar la orden a la papelera.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
 
-      const { data: orderItems, error: itemsError } = await supabase
+  async function restoreOrderFromTrash(order: any) {
+    const ok = confirm(
+      "¿Quieres restaurar esta orden?\n\nEl inventario volverá a descontarse. Si no hay stock suficiente, la restauración se cancelará."
+    );
+
+    if (!ok) return;
+
+    try {
+      setActionLoadingId(order.id);
+
+      const orderItems = normalizeOrderItems(order);
+      await validateOrderStock(orderItems);
+      await processOrderInventory(orderItems);
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ deleted_at: null })
+        .eq("id", order.id);
+
+      if (error) throw error;
+
+      const restoredOrder = {
+        ...order,
+        deleted_at: null,
+      };
+
+      setDeletedOrders((prev) => prev.filter((item) => item.id !== order.id));
+      setOrders((prev) => [restoredOrder, ...prev]);
+      setView("active");
+    } catch (error: any) {
+      console.error("ERROR RESTAURANDO ORDEN:", error);
+      alert(error?.message || "No se pudo restaurar la orden.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function deleteOrderPermanently(order: any) {
+    const ok = confirm(
+      "Esta acción eliminará la orden definitivamente de la base de datos.\n\nNo se tocará inventario porque ya fue restaurado al enviarla a papelera.\n\n¿Deseas continuar?"
+    );
+
+    if (!ok) return;
+
+    try {
+      setActionLoadingId(order.id);
+
+      const { error: itemsError } = await supabase
         .from("order_items")
-        .select(`
-          id,
-          order_id,
-          item_type,
-          product_id,
-          combo_id,
-          product_name,
-          quantity,
-          price,
-          subtotal
-        `)
-        .eq("order_id", id);
+        .delete()
+        .eq("order_id", order.id);
 
       if (itemsError) throw itemsError;
 
-      await restoreOrderInventory(orderItems || []);
-
-      const { error: deleteError } = await supabase
+      const { error: orderError } = await supabase
         .from("orders")
-        .update({
-          deleted_at: new Date().toISOString(),
-          status: "cancelled",
-        })
-        .eq("id", id)
-        .is("deleted_at", null);
+        .delete()
+        .eq("id", order.id);
 
-      if (deleteError) throw deleteError;
+      if (orderError) throw orderError;
 
-      setOrders((prev) => prev.filter((order) => order.id !== id));
+      setDeletedOrders((prev) => prev.filter((item) => item.id !== order.id));
     } catch (error: any) {
-      console.error("ERROR ENVIANDO ORDEN A PAPELERA:", error);
-      alert(error?.message || "No se pudo eliminar la orden.");
+      console.error("ERROR ELIMINANDO ORDEN DEFINITIVAMENTE:", error);
+      alert(error?.message || "No se pudo eliminar definitivamente la orden.");
     } finally {
-      setDeletingOrderId(null);
+      setActionLoadingId(null);
     }
   }
 
   return (
     <>
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
         <StatCard
-          label="Órdenes"
+          label="Órdenes activas"
           value={stats.total}
           icon={PackageCheck}
           color="bg-slate-900 text-white"
+        />
+
+        <StatCard
+          label="Papelera"
+          value={stats.trash}
+          icon={Archive}
+          color="bg-red-100 text-red-700"
         />
 
         <StatCard
@@ -250,12 +324,48 @@ export default function OrdersManager({
         />
 
         <StatCard
-          label="Ventas"
+          label="Ventas activas"
           value={`$${stats.ventas.toFixed(2)}`}
           icon={DollarSign}
           color="bg-green-100 text-green-700"
         />
       </section>
+
+      <section className="mb-5 flex flex-wrap gap-2 rounded-3xl bg-white p-3 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setView("active")}
+          className={`rounded-2xl px-4 py-3 text-sm font-black transition ${
+            view === "active"
+              ? "bg-[#061b3a] text-white"
+              : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+          }`}
+        >
+          Órdenes activas ({orders.length})
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setView("trash")}
+          className={`rounded-2xl px-4 py-3 text-sm font-black transition ${
+            view === "trash"
+              ? "bg-red-600 text-white"
+              : "bg-red-50 text-red-600 hover:bg-red-100"
+          }`}
+        >
+          Papelera ({deletedOrders.length})
+        </button>
+      </section>
+
+      {view === "trash" && (
+        <div className="mb-5 flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-sm font-bold text-amber-700">
+          <AlertTriangle className="mt-0.5 shrink-0" size={20} />
+          <p>
+            Las órdenes en papelera no cuentan en ventas ni estadísticas. Al
+            restaurarlas, el inventario se volverá a descontar automáticamente.
+          </p>
+        </div>
+      )}
 
       <section className="mb-5 rounded-3xl bg-white p-4 shadow-sm">
         <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -292,7 +402,9 @@ export default function OrdersManager({
           <ClipboardList className="mx-auto mb-3 text-slate-400" size={42} />
 
           <h2 className="text-xl font-black text-[#061b3a]">
-            No hay órdenes para mostrar
+            {view === "trash"
+              ? "No hay órdenes en papelera"
+              : "No hay órdenes para mostrar"}
           </h2>
 
           <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -304,7 +416,7 @@ export default function OrdersManager({
           {filteredOrders.map((order) => {
             const customer = getCustomer(order);
             const orderNumber = getOrderNumber(order);
-            const isDeleting = deletingOrderId === order.id;
+            const isActionLoading = actionLoadingId === order.id;
 
             return (
               <article
@@ -325,6 +437,12 @@ export default function OrdersManager({
                       <p className="mt-1 text-xs font-semibold text-slate-400">
                         ID interno: {order.id.slice(0, 8)}
                       </p>
+
+                      {view === "trash" && order.deleted_at && (
+                        <p className="mt-2 text-xs font-bold text-red-500">
+                          En papelera desde: {new Date(order.deleted_at).toLocaleString("es-US")}
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
@@ -336,36 +454,62 @@ export default function OrdersManager({
                         {getStatusLabel(order.status)}
                       </span>
 
-                      <select
-                        value={order.status}
-                        onChange={(e) =>
-                          updateStatus(order.id, e.target.value)
-                        }
-                        className="rounded-xl border border-slate-300 bg-white p-2 text-sm font-bold text-slate-700"
-                      >
-                        {STATUSES.filter(
-                          (status) => status.value !== "Todas"
-                        ).map((status) => (
-                          <option key={status.value} value={status.value}>
-                            {status.label}
-                          </option>
-                        ))}
-                      </select>
+                      {view === "active" && (
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateStatus(order.id, e.target.value)}
+                          className="rounded-xl border border-slate-300 bg-white p-2 text-sm font-bold text-slate-700"
+                        >
+                          {STATUSES.filter((status) => status.value !== "Todas").map(
+                            (status) => (
+                              <option key={status.value} value={status.value}>
+                                {status.label}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      )}
 
                       <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-black text-green-700">
                         ${Number(order.total || 0).toFixed(2)}
                       </span>
 
-                      <button
-                        type="button"
-                        onClick={() => deleteOrder(order.id)}
-                        disabled={isDeleting}
-                        className="rounded-xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                        aria-label="Enviar orden a la papelera y restaurar stock"
-                        title="Enviar a papelera y restaurar stock"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {view === "active" ? (
+                        <button
+                          type="button"
+                          onClick={() => sendOrderToTrash(order)}
+                          disabled={isActionLoading}
+                          className="rounded-xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label="Enviar orden a la papelera"
+                          title="Enviar a papelera y restaurar stock"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => restoreOrderFromTrash(order)}
+                            disabled={isActionLoading}
+                            className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-3 text-xs font-black text-green-700 transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Restaurar orden y descontar stock"
+                          >
+                            <RotateCcw size={16} />
+                            Restaurar
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => deleteOrderPermanently(order)}
+                            disabled={isActionLoading}
+                            className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Eliminar definitivamente"
+                          >
+                            <Trash2 size={16} />
+                            Eliminar definitivo
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -417,13 +561,8 @@ export default function OrdersManager({
 
                     {(order.recipient_name || order.recipient_phone) && (
                       <div className="mt-3 rounded-xl bg-white p-3 text-sm font-semibold text-slate-500">
-                        {order.recipient_name && (
-                          <p>Recibe: {order.recipient_name}</p>
-                        )}
-
-                        {order.recipient_phone && (
-                          <p>Tel: {order.recipient_phone}</p>
-                        )}
+                        {order.recipient_name && <p>Recibe: {order.recipient_name}</p>}
+                        {order.recipient_phone && <p>Tel: {order.recipient_phone}</p>}
                       </div>
                     )}
                   </section>
@@ -480,25 +619,17 @@ export default function OrdersManager({
                     {expandedOrders[order.id] && (
                       <div className="space-y-3 border-t border-slate-200 p-4">
                         {order.order_items?.map((item: any) => (
-                          <div
-                            key={item.id}
-                            className="rounded-2xl bg-white p-4 shadow-sm"
-                          >
+                          <div key={item.id} className="rounded-2xl bg-white p-4 shadow-sm">
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <span className="mb-2 inline-block rounded-full bg-blue-100 px-2 py-1 text-xs font-bold text-blue-700">
-                                  {item.item_type === "combo"
-                                    ? "Combo"
-                                    : "Producto"}
+                                  {item.item_type === "combo" ? "Combo" : "Producto"}
                                 </span>
 
-                                <p className="font-black">
-                                  {item.product_name}
-                                </p>
+                                <p className="font-black">{item.product_name}</p>
 
                                 <p className="mt-1 text-sm text-slate-500">
-                                  {item.quantity} × $
-                                  {Number(item.price || 0).toFixed(2)}
+                                  {item.quantity} × ${Number(item.price || 0).toFixed(2)}
                                 </p>
                               </div>
 
@@ -543,9 +674,7 @@ function StatCard({
 }) {
   return (
     <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-      <div
-        className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${color}`}
-      >
+      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${color}`}>
         <Icon size={24} />
       </div>
 

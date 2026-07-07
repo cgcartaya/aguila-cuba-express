@@ -172,7 +172,9 @@ export default function StoreSlugTiendaPage() {
             <StickyCategoryTabs categories={categoriasConCombos} />
           )}
 
-          <StoreCombosSection storeId={storeId || undefined} />
+          {storeLoaded && storeId && (
+            <StoreCombosSection storeId={storeId} storeSlug={slug} />
+          )}
 
           <div className="mt-2">
             {productosPorCategoria.map((grupo) => (

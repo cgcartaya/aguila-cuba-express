@@ -13,14 +13,35 @@ import StoreComboCard, { StoreCombo } from "./StoreComboCard";
 
 type Props = {
   storeId?: string;
+  storeSlug?: string;
+  /**
+   * Solo usar en /tienda.
+   * En /tienda/[slug] debe quedar false para evitar que cargue la tienda default
+   * mientras todavía se está resolviendo el slug.
+   */
+  allowDefaultStore?: boolean;
 };
 
-export default function StoreCombosSection({ storeId }: Props) {
+export default function StoreCombosSection({
+  storeId,
+  storeSlug,
+  allowDefaultStore = false,
+}: Props) {
   const [combos, setCombos] = useState<StoreCombo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCombos = async () => {
+      // IMPORTANTE MULTIEMPRESA:
+      // En rutas por slug NO hacemos fallback a la tienda default.
+      // Si no hay storeId todavía, no cargamos combos para evitar mostrar
+      // combos de Águila dentro de DL Racing mientras carga el slug.
+      if (!storeId && !allowDefaultStore) {
+        setCombos([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = storeId
         ? await getActiveCombosByStoreId(storeId)
         : await getActiveCombos();
@@ -36,7 +57,7 @@ export default function StoreCombosSection({ storeId }: Props) {
     };
 
     loadCombos();
-  }, [storeId]);
+  }, [storeId, allowDefaultStore]);
 
   if (loading) return null;
   if (combos.length === 0) return null;
@@ -65,7 +86,7 @@ export default function StoreCombosSection({ storeId }: Props) {
         </div>
 
         <Link
-          href="/tienda/combos"
+          href={storeSlug ? `/tienda/${storeSlug}/combos` : "/tienda/combos"}
           className="hidden shrink-0 items-center gap-2 text-xs font-black text-red-600 transition hover:text-red-700 sm:flex md:text-sm"
         >
           Ver todos
@@ -75,7 +96,7 @@ export default function StoreCombosSection({ storeId }: Props) {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         {combos.slice(0, 8).map((combo) => (
-          <StoreComboCard key={combo.id} combo={combo} />
+          <StoreComboCard key={combo.id} combo={combo} storeSlug={storeSlug} />
         ))}
       </div>
     </section>

@@ -27,9 +27,10 @@ export type StoreCombo = {
 
 type Props = {
   combo: StoreCombo;
+  storeSlug?: string;
 };
 
-export default function StoreComboCard({ combo }: Props) {
+export default function StoreComboCard({ combo, storeSlug }: Props) {
   const { addComboToCart } = useCart();
 
   const normalPrice =
@@ -43,6 +44,10 @@ export default function StoreComboCard({ combo }: Props) {
   const comboPrice = Number(combo.price || 0);
   const savings = Math.max(normalPrice - comboPrice, 0);
 
+  const comboHref = storeSlug
+    ? `/tienda/${storeSlug}/combos/${combo.id}`
+    : `/tienda/combos/${combo.id}`;
+
   const visibleItems = combo.combo_items?.slice(0, 2) || [];
 
   const hiddenItemsCount =
@@ -51,7 +56,7 @@ export default function StoreComboCard({ combo }: Props) {
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link
-        href={`/tienda/combos/${combo.id}`}
+        href={comboHref}
         className="relative mb-3 h-[145px] w-full overflow-hidden rounded-xl bg-white"
       >
         {savings > 0 && (
@@ -76,7 +81,7 @@ export default function StoreComboCard({ combo }: Props) {
         )}
       </Link>
 
-      <Link href={`/tienda/combos/${combo.id}`}>
+      <Link href={comboHref}>
         <h3 className="line-clamp-2 min-h-[42px] text-sm font-black leading-tight text-[#061b3a]">
           {combo.name}
         </h3>
