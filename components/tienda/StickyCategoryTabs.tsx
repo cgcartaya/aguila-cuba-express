@@ -76,24 +76,28 @@ export default function StickyCategoryTabs({
      CENTRAR TAB ACTIVA
   ========================================================= */
 
-  useEffect(() => {
-    const container = tabsContainerRef.current;
+ useEffect(() => {
+  const container = tabsContainerRef.current;
 
-    if (!container) return;
+  if (!container) return;
 
-    const activeButton =
-      container.querySelector<HTMLButtonElement>(
-        `[data-category="${activeCategory}"]`
-      );
+  const activeButton =
+    container.querySelector<HTMLButtonElement>(
+      `[data-category="${activeCategory}"]`
+    );
 
-    if (!activeButton) return;
+  if (!activeButton) return;
 
-    activeButton.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }, [activeCategory]);
+  const left =
+    activeButton.offsetLeft -
+    container.clientWidth / 2 +
+    activeButton.clientWidth / 2;
+
+  container.scrollTo({
+    left,
+    behavior: "smooth",
+  });
+}, [activeCategory]);
 
   /* =========================================================
      SCROLL A CATEGORÍA
@@ -107,10 +111,23 @@ export default function StickyCategoryTabs({
 
     if (!section) return;
 
-    section.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+  const scrollToCategory = (category: string) => {
+  const section = document.getElementById(category);
+
+  if (!section) return;
+
+  const headerOffset = 120;
+
+  const y =
+    section.getBoundingClientRect().top +
+    window.scrollY -
+    headerOffset;
+
+  window.scrollTo({
+    top: y,
+    behavior: "smooth",
+  });
+};
   };
 
   return (
