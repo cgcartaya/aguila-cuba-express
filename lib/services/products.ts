@@ -79,6 +79,7 @@ export async function getActiveProducts() {
     .select("*")
     .eq("store_id", store.id)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 }
 
@@ -113,6 +114,7 @@ export async function getProductsForCombosByStoreId(storeId: string) {
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", storeId)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("name", { ascending: true });
 }
 
@@ -128,6 +130,7 @@ export async function getProductsForCombos() {
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", store.id)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("name", { ascending: true });
 }
 
@@ -144,6 +147,7 @@ export async function getInactiveProducts() {
     .select("*")
     .eq("store_id", store.id)
     .eq("is_active", false)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 }
 
@@ -159,6 +163,7 @@ export async function getLowStockProducts(limit = 5) {
     .from("products")
     .select("*")
     .eq("store_id", store.id)
+    .is("deleted_at", null)
     .lte("stock", limit)
     .order("created_at", { ascending: false });
 }
@@ -195,6 +200,7 @@ export async function getStoreProductsByStoreId(storeId: string) {
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", storeId)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 }
 
@@ -208,6 +214,7 @@ export async function getStoreProductById(id: string) {
     .select(PRODUCT_DETAIL_SELECT)
     .eq("id", id)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .single();
 }
 
@@ -224,6 +231,7 @@ export async function getRelatedProducts(
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .eq("category", category)
     .neq("id", currentProductId)
     .limit(limit);
@@ -520,6 +528,30 @@ export async function deleteProductForeverByStoreId(
     };
   }
 
+  /*
+    Regla profesional:
+    - Si el producto aparece en órdenes, NO se borra físicamente.
+    - Se conserva en papelera para no romper historial de ventas/reportes.
+  */
+  const { count: orderItemsCount, error: orderItemsCountError } = await supabase
+    .from("order_items")
+    .select("id", { count: "exact", head: true })
+    .eq("product_id", productId);
+
+  if (orderItemsCountError) {
+    return { data: null, error: orderItemsCountError };
+  }
+
+  if ((orderItemsCount || 0) > 0) {
+    return {
+      data: null,
+      error: {
+        message:
+          "Este producto no se puede eliminar definitivamente porque pertenece a órdenes existentes. Se mantendrá archivado en la papelera para conservar el historial.",
+      },
+    };
+  }
+
   const { data: images, error: imagesReadError } = await supabase
     .from("product_images")
     .select("id, storage_path")
@@ -542,6 +574,24 @@ export async function deleteProductForeverByStoreId(
     if (storageError) {
       return { data: null, error: storageError };
     }
+  }
+
+  const { error: inventoryDeleteError } = await supabase
+    .from("inventory_movements")
+    .delete()
+    .eq("product_id", productId);
+
+  if (inventoryDeleteError) {
+    return { data: null, error: inventoryDeleteError };
+  }
+
+  const { error: comboItemsDeleteError } = await supabase
+    .from("combo_items")
+    .delete()
+    .eq("product_id", productId);
+
+  if (comboItemsDeleteError) {
+    return { data: null, error: comboItemsDeleteError };
   }
 
   const { error: imagesDeleteError } = await supabase

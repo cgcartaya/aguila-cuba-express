@@ -91,10 +91,10 @@ export default function MainBanner({ storeId }: MainBannerProps) {
   if (banners.length === 0) return null;
 
   return (
-    <section className="relative mt-4">
+    <section className="relative w-full overflow-hidden">
       <div
         ref={emblaRef}
-        className="mx-auto max-w-6xl overflow-hidden rounded-3xl"
+        className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl md:rounded-3xl"
       >
         <div className="flex">
           {banners.map((banner, index) => (
@@ -107,7 +107,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
               ) : (
                 <Link
                   href={banner.button_link || "/tienda"}
-                  className="relative block h-[220px] overflow-hidden rounded-3xl shadow-md sm:h-[280px] md:h-[360px] lg:h-[420px]"
+                  className="relative block h-[190px] overflow-hidden rounded-2xl bg-white shadow-sm sm:h-[250px] md:h-[330px] md:rounded-3xl lg:h-[390px]"
                 >
                   <Image
                     src={banner.image_url || "/placeholder-banner.jpg"}
@@ -115,7 +115,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
                     fill
                     priority={index === 0}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1152px"
-                    className="bg-white object-contain transition-transform duration-500 hover:scale-[1.01]"
+                    className="bg-white object-contain transition-transform duration-500 md:object-cover md:hover:scale-[1.01]"
                   />
                 </Link>
               )}
@@ -130,6 +130,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
             type="button"
             onClick={scrollPrev}
             className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#061b3a] shadow-md backdrop-blur md:flex"
+            aria-label="Banner anterior"
           >
             <ChevronLeft size={20} />
           </button>
@@ -138,11 +139,12 @@ export default function MainBanner({ storeId }: MainBannerProps) {
             type="button"
             onClick={scrollNext}
             className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#061b3a] shadow-md backdrop-blur md:flex"
+            aria-label="Siguiente banner"
           >
             <ChevronRight size={20} />
           </button>
 
-          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+          <div className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full bg-white/45 px-2 py-1 backdrop-blur">
             {banners.map((banner, index) => (
               <button
                 key={banner.id}
@@ -152,7 +154,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
                 className={`h-2 rounded-full transition-all ${
                   selectedIndex === index
                     ? "w-6 bg-red-600"
-                    : "w-4 bg-white/70"
+                    : "w-2 bg-white/85"
                 }`}
               />
             ))}

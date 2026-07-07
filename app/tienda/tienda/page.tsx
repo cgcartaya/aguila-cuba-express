@@ -1,12 +1,21 @@
 "use client";
 
+/* =========================================================
+   PÁGINA PRINCIPAL - TIENDA PÚBLICA
+
+   Search V2:
+   - El buscador vive en Header.
+   - La búsqueda usa TiendaSearchProvider, sin useSearchParams.
+   - Al buscar, se muestran resultados planos y limpios.
+   - Sin categorías completas durante búsqueda.
+========================================================= */
+
 import { useEffect, useMemo, useState } from "react";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
 import { getDefaultStore } from "@/lib/services/stores";
 
-import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
 import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
@@ -46,11 +55,13 @@ export default function TiendaPage() {
 
     async function cargarDatos() {
       const storeResult = await getDefaultStore();
-      const store = storeResult?.data ?? null;
 
       if (!mounted) return;
 
-      if (!store) {
+      const store = storeResult?.data ?? null;
+      const storeError = storeResult?.error ?? null;
+
+      if (storeError || !store) {
         setProductos([]);
         setCategorias([]);
         setStoreId(null);
@@ -59,13 +70,17 @@ export default function TiendaPage() {
 
       setStoreId(store.id);
 
-      const [{ data: productsData }, { data: categoriesData }] =
+      const [{ data: productsData, error }, { data: categoriesData }] =
         await Promise.all([
           getStoreProductsByStoreId(store.id),
           getActiveCategoriesByStoreId(store.id),
         ]);
 
       if (!mounted) return;
+
+      if (error) {
+        console.error("Error cargando productos:", error);
+      }
 
       const productosConImagenPrincipal =
         ((productsData || []) as ProductFromSupabase[]).map((producto) => {
@@ -132,17 +147,13 @@ export default function TiendaPage() {
         />
       ) : (
         <>
+          <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+
           {categoriasConCombos.length > 0 && (
             <StickyCategoryTabs categories={categoriasConCombos} />
           )}
 
-          <div className="mt-4 md:mt-5">
-            <MainBanner storeId={storeId || undefined} />
-          </div>
-
           <StoreCombosSection storeId={storeId || undefined} />
-
-          <CategoriesShowcaseCarousel groups={productosPorCategoria} />
 
           <div className="mt-2">
             {productosPorCategoria.map((grupo) => (

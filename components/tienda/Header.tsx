@@ -67,52 +67,63 @@ export default function Header({ cartCount }: HeaderProps) {
           background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
         }}
       >
-        <div className="mx-auto flex h-[58px] w-full max-w-7xl items-center gap-2 px-3 sm:h-[64px] sm:gap-3 sm:px-4">
+        <div
+          className="
+            mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[40px_minmax(0,1fr)_40px]
+            items-center gap-2 px-2
+            sm:h-[64px] sm:grid-cols-[46px_minmax(0,1fr)_46px] sm:gap-3 sm:px-4
+          "
+        >
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Abrir menú"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
           >
-            <Menu size={25} strokeWidth={2.8} />
+            <Menu size={26} strokeWidth={2.8} />
           </button>
 
-          <div className="min-w-0 flex-1 px-0.5">
-            <label className="mx-auto flex h-10 w-full max-w-[250px] items-center rounded-[16px] bg-white px-2.5 shadow-sm ring-1 ring-white/40 transition focus-within:ring-2 focus-within:ring-white/80 min-[390px]:max-w-[275px] sm:h-[46px] sm:max-w-none sm:px-4">
-              <Search size={18} className="mr-1.5 shrink-0 text-slate-400 sm:mr-2 sm:size-5" />
+          <label
+            className="
+              flex h-10 min-w-0 items-center rounded-[16px]
+              bg-white px-3 shadow-sm ring-1 ring-white/40 transition
+              focus-within:ring-2 focus-within:ring-white/80
+              sm:h-[46px] sm:px-4
+            "
+          >
+            <Search size={19} className="mr-2 shrink-0 text-slate-400" />
 
-              <input
-                type="search"
-                inputMode="search"
-                autoComplete="off"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar productos..."
-                className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
-              />
+            <input
+              type="search"
+              inputMode="search"
+              autoComplete="off"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar productos..."
+              className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
+            />
 
-              {search.trim().length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  aria-label="Limpiar búsqueda"
-                  className="ml-1 shrink-0 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 sm:p-1"
-                >
-                  <XCircle size={16} />
-                </button>
-              )}
-            </label>
-          </div>
+            {search.trim().length > 0 && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                aria-label="Limpiar búsqueda"
+                className="ml-1 shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <XCircle size={17} />
+              </button>
+            )}
+          </label>
 
           <Link
             href={cartUrl}
             aria-label="Carrito"
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
           >
-            <ShoppingCart size={24} />
+            <ShoppingCart size={25} />
 
             {cartCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white shadow">
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white shadow">
                 {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}
