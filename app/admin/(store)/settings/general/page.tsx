@@ -40,10 +40,7 @@ export default function AdminGeneralSettingsPage() {
     store: accessStore,
   } = useAdminAccess();
 
-  const {
-    store: selectedStore,
-    setCurrentStore,
-  } = useStore();
+  const { store: selectedStore } = useStore();
 
   const activeStore = useMemo(() => {
     if (isSuperAdmin) {
@@ -78,15 +75,15 @@ export default function AdminGeneralSettingsPage() {
 
         if (!activeStore?.id) {
           setForm(emptyForm);
-          setError("No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda.");
+          setError(
+            "No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda."
+          );
           return;
         }
 
-        if (selectedStore?.id !== activeStore.id) {
-          setCurrentStore(activeStore);
-        }
-
-        const { data, error: settingsError } = await getStoreSettings(activeStore.id);
+        const { data, error: settingsError } = await getStoreSettings(
+          activeStore.id
+        );
 
         if (settingsError) throw settingsError;
 
@@ -103,19 +100,16 @@ export default function AdminGeneralSettingsPage() {
         });
       } catch (err: any) {
         console.error("ERROR CARGANDO AJUSTES GENERALES:", err);
-        setError(err?.message || "No se pudo cargar la configuración de esta tienda.");
+        setError(
+          err?.message || "No se pudo cargar la configuración de esta tienda."
+        );
       } finally {
         setLoading(false);
       }
     }
 
     loadSettings();
-  }, [
-    accessLoading,
-    activeStore?.id,
-    selectedStore?.id,
-    setCurrentStore,
-  ]);
+  }, [accessLoading, activeStore?.id]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({
@@ -126,7 +120,9 @@ export default function AdminGeneralSettingsPage() {
 
   const handleSave = async () => {
     if (!activeStore?.id) {
-      setError("No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda.");
+      setError(
+        "No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda."
+      );
       return;
     }
 
@@ -183,8 +179,11 @@ export default function AdminGeneralSettingsPage() {
               <p className="text-xs font-black uppercase tracking-wide text-slate-400">
                 Tienda activa
               </p>
+
               <p className="text-sm font-black text-slate-900">
-                {activeStore?.name || form.store_name || "Sin tienda seleccionada"}
+                {activeStore?.name ||
+                  form.store_name ||
+                  "Sin tienda seleccionada"}
               </p>
             </div>
 

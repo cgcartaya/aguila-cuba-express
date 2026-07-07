@@ -18,11 +18,7 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
 
-  const {
-    store: selectedStore,
-    setCurrentStore,
-    clearCurrentStore,
-  } = useStore();
+  const { store: selectedStore, clearCurrentStore } = useStore();
 
   const activeStore = useMemo(() => {
     if (isSuperAdmin) {
@@ -32,33 +28,13 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
     return accessStore;
   }, [accessStore, isSuperAdmin, selectedStore]);
 
-  /*
-    Sincroniza la tienda real del admin con StoreContext/localStorage.
-
-    Importante:
-    - Store Owner: siempre manda accessStore, aunque localStorage esté viejo.
-    - Super Admin: respeta la tienda escogida en StoreSwitcher.
-  */
   useEffect(() => {
     if (accessLoading) return;
 
-    if (!activeStore) {
-      if (selectedStore) {
-        clearCurrentStore();
-      }
-      return;
+    if (!activeStore && selectedStore) {
+      clearCurrentStore();
     }
-
-    if (selectedStore?.id !== activeStore.id) {
-      setCurrentStore(activeStore);
-    }
-  }, [
-    accessLoading,
-    activeStore,
-    selectedStore?.id,
-    setCurrentStore,
-    clearCurrentStore,
-  ]);
+  }, [accessLoading, activeStore, selectedStore, clearCurrentStore]);
 
   const storeName = activeStore?.name || "Tienda activa";
 
