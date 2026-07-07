@@ -90,3 +90,8 @@ body {
 body {
   overscroll-behavior-x: none;
 }
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}

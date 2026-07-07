@@ -100,7 +100,7 @@ export default function Header({ cartCount }: HeaderProps) {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar productos..."
-              className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
+              className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
             />
 
             {search.trim().length > 0 && (
