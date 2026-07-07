@@ -107,7 +107,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
               ) : (
                 <Link
                   href={banner.button_link || "/tienda"}
-                  className="relative block h-[190px] overflow-hidden rounded-2xl bg-white shadow-sm sm:h-[250px] md:h-[330px] md:rounded-3xl lg:h-[390px]"
+                  className="relative block aspect-[16/9] w-full overflow-hidden rounded-2xl bg-white shadow-sm md:rounded-3xl"
                 >
                   <Image
                     src={banner.image_url || "/placeholder-banner.jpg"}
@@ -115,7 +115,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
                     fill
                     priority={index === 0}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1152px"
-                    className="bg-white object-contain transition-transform duration-500 md:object-cover md:hover:scale-[1.01]"
+                    className="bg-white object-contain transition-transform duration-500 hover:scale-[1.01]"
                   />
                 </Link>
               )}

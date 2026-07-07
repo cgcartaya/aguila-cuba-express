@@ -140,10 +140,11 @@ export default function TiendaPage() {
             <MainBanner storeId={storeId || undefined} />
           </div>
 
-          <StoreCombosSection storeId={storeId || undefined} />
-
           <CategoriesShowcaseCarousel groups={productosPorCategoria} />
 
+          <StoreCombosSection storeId={storeId || undefined} />
+
+         
           <div className="mt-2">
             {productosPorCategoria.map((grupo) => (
               <CategoryProductsSection
