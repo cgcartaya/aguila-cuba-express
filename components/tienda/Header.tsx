@@ -62,56 +62,67 @@ export default function Header({ cartCount }: HeaderProps) {
   return (
     <>
       <header
-        className="sticky top-0 z-50 shadow-[0_8px_24px_rgba(15,23,42,0.16)]"
+        className="sticky top-0 z-50 w-full max-w-full overflow-hidden shadow-[0_8px_22px_rgba(15,23,42,0.14)]"
         style={{
           background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
         }}
       >
-        <div className="mx-auto flex h-[62px] max-w-7xl items-center gap-2.5 px-3 sm:h-[68px] sm:gap-3 sm:px-4">
+        <div
+          className="
+            mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[42px_minmax(0,1fr)_42px]
+            items-center gap-2 overflow-hidden px-3
+            sm:h-[64px] sm:grid-cols-[46px_minmax(0,1fr)_46px] sm:gap-3 sm:px-4
+          "
+        >
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Abrir menú"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-12 sm:w-12"
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
           >
-            <Menu size={28} strokeWidth={2.8} />
+            <Menu size={27} strokeWidth={2.8} />
           </button>
 
-          <div className="min-w-0 flex-1">
-            <label className="flex h-11 items-center rounded-[18px] bg-white/95 px-3 shadow-sm ring-1 ring-white/40 transition focus-within:bg-white focus-within:ring-2 focus-within:ring-white/80 sm:h-12 sm:px-4">
-              <Search size={21} className="mr-2 shrink-0 text-slate-400" />
+          <label
+            className="
+              flex h-[42px] min-w-0 items-center overflow-hidden rounded-[17px]
+              bg-white/96 px-3 shadow-sm ring-1 ring-white/40 transition
+              focus-within:bg-white focus-within:ring-2 focus-within:ring-white/80
+              sm:h-[46px] sm:px-4
+            "
+          >
+            <Search size={20} className="mr-2 shrink-0 text-slate-400" />
 
-              <input
-                type="search"
-                inputMode="search"
-                autoComplete="off"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar productos..."
-                className="h-full w-full min-w-0 bg-transparent text-[15px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
-              />
+            <input
+              type="search"
+              inputMode="search"
+              autoComplete="off"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar productos..."
+              className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
+            />
 
-              {search.trim().length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  aria-label="Limpiar búsqueda"
-                  className="ml-2 shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                >
-                  <XCircle size={19} />
-                </button>
-              )}
-            </label>
-          </div>
+            {search.trim().length > 0 && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                aria-label="Limpiar búsqueda"
+                className="ml-1 shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+              >
+                <XCircle size={18} />
+              </button>
+            )}
+          </label>
 
           <Link
             href={cartUrl}
             aria-label="Carrito"
-            className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm transition active:scale-95 sm:h-12 sm:w-12"
+            className="relative flex h-[42px] w-[42px] items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
           >
-            <ShoppingCart size={28} className="text-[#061b3a]" />
+            <ShoppingCart size={27} />
 
-            <span className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-black text-white shadow">
+            <span className="absolute right-0 top-0 flex h-5 min-w-5 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-black leading-none text-white shadow">
               {cartCount}
             </span>
           </Link>
