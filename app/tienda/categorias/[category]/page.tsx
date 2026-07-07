@@ -17,8 +17,6 @@ import { ArrowLeft } from "lucide-react";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProducts } from "@/lib/services/products";
 import ProductCard from "@/components/tienda/ProductCard";
-import ProductSearch from "@/components/tienda/ProductSearch";
-
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
 
@@ -193,14 +191,7 @@ export default function CategoryPage({ params }: Props) {
         </p>
       </div>
 
-      {/* =====================================================
-          BUSCADOR
-      ===================================================== */}
-
-      <ProductSearch
-        busqueda={busqueda}
-        setBusqueda={setBusqueda}
-      />
+  
 
       {/* =====================================================
           PRODUCTOS
