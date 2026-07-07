@@ -1,4 +1,32 @@
-export default function HelpCard() {
+type HelpCardProps = {
+  storeName?: string | null;
+  whatsapp?: string | null;
+};
+
+function normalizeWhatsAppNumber(value?: string | null) {
+  if (!value) return "";
+
+  const cleanValue = value.trim();
+
+  if (cleanValue.includes("wa.me/")) {
+    const [, afterWaMe] = cleanValue.split("wa.me/");
+    return afterWaMe?.split(/[?/#]/)[0]?.replace(/\D/g, "") || "";
+  }
+
+  return cleanValue.replace(/\D/g, "");
+}
+
+export default function HelpCard({ storeName, whatsapp }: HelpCardProps) {
+  const cleanPhone = normalizeWhatsAppNumber(whatsapp);
+
+  if (!cleanPhone) return null;
+
+  const safeStoreName = storeName?.trim() || "esta tienda";
+
+  const message = encodeURIComponent(
+    `Hola, necesito ayuda con un pedido de ${safeStoreName}.`
+  );
+
   return (
     <section className="mt-5 rounded-2xl bg-[#061b3a] px-4 py-3 text-white">
       <div className="flex items-center justify-between gap-3">
@@ -16,14 +44,14 @@ export default function HelpCard() {
           </div>
         </div>
 
-<a
-  href="https://wa.me/13054974891?text=Hola,%20necesito%20ayuda%20con%20un%20pedido%20de%20Águila%20Cuba%20Express."
-  target="_blank"
-  rel="noopener noreferrer"
-  className="rounded-xl bg-white px-4 py-2 text-sm font-black text-[#061b3a]"
->
-  Ayuda ?
-</a>
+        <a
+          href={`https://wa.me/${cleanPhone}?text=${message}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl bg-white px-4 py-2 text-sm font-black text-[#061b3a]"
+        >
+          Ayuda
+        </a>
       </div>
     </section>
   );

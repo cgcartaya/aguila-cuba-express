@@ -3,22 +3,25 @@
 /* =========================================================
    PÁGINA PRINCIPAL - TIENDA POR SLUG
 
-   Search V2:
-   - El buscador vive en Header.
-   - La búsqueda usa TiendaSearchProvider, sin useSearchParams.
-   - Al buscar, se muestran resultados planos y limpios.
+   - Header y categorías sticky viven en layout.
+   - La página solo controla el contenido:
+     Banner → Categorías/cuadrículas → Combos → Productos.
+   - Search V2 con resultados planos.
+   - HelpCard usa la Configuración General de la tienda.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
+import {
+  getActiveCategoriesByStoreId,
+  getStoreSettings,
+} from "@/lib/services/settings";
 import { getStoreBySlug } from "@/lib/services/stores";
 
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
-import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
@@ -28,7 +31,11 @@ import SearchResultsSection from "@/components/tienda/search/SearchResultsSectio
 import { useCart } from "@/contexts/CartContext";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import type { Product } from "@/types/cart";
-import type { Category } from "@/components/admin/settings/types";
+import type {
+  Category,
+  StoreSettings,
+} from "@/components/admin/settings/types";
+import type { Store } from "@/lib/saas/store-types";
 
 type ProductImage = {
   image_url: string;
@@ -47,6 +54,8 @@ export default function StoreSlugTiendaPage() {
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
   const [storeLoaded, setStoreLoaded] = useState(false);
 
   const { search } = useTiendaSearch();
@@ -63,25 +72,32 @@ export default function StoreSlugTiendaPage() {
 
       setStoreLoaded(false);
 
-      const store = await getStoreBySlug(slug);
+      const currentStore = await getStoreBySlug(slug);
 
       if (!mounted) return;
 
-      if (!store) {
+      if (!currentStore) {
         setProductos([]);
         setCategorias([]);
         setStoreId(null);
+        setStore(null);
+        setStoreSettings(null);
         setStoreLoaded(true);
         return;
       }
 
-      setStoreId(store.id);
+      setStore(currentStore);
+      setStoreId(currentStore.id);
 
-      const [{ data: productsData, error }, { data: categoriesData }] =
-        await Promise.all([
-          getStoreProductsByStoreId(store.id),
-          getActiveCategoriesByStoreId(store.id),
-        ]);
+      const [
+        { data: productsData, error },
+        { data: categoriesData },
+        { data: settingsData },
+      ] = await Promise.all([
+        getStoreProductsByStoreId(currentStore.id),
+        getActiveCategoriesByStoreId(currentStore.id),
+        getStoreSettings(currentStore.id),
+      ]);
 
       if (!mounted) return;
 
@@ -105,6 +121,7 @@ export default function StoreSlugTiendaPage() {
 
       setProductos(productosConImagenPrincipal);
       setCategorias((categoriesData as Category[]) || []);
+      setStoreSettings((settingsData as StoreSettings) || null);
       setStoreLoaded(true);
     }
 
@@ -122,19 +139,6 @@ export default function StoreSlugTiendaPage() {
       productMatchesSearch(producto, busqueda)
     );
   }, [productos, busqueda, hayBusqueda]);
-
-  const categoriasConCombos = useMemo(() => {
-    return [
-      {
-        name: "Combos",
-        color: "#061b3a",
-      },
-      ...categorias.map((categoria) => ({
-        name: categoria.name,
-        color: categoria.color,
-      })),
-    ];
-  }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
     return categorias
@@ -168,13 +172,11 @@ export default function StoreSlugTiendaPage() {
             storeSlug={slug}
           />
 
-          {categoriasConCombos.length > 0 && (
-            <StickyCategoryTabs categories={categoriasConCombos} />
-          )}
-
-          {storeLoaded && storeId && (
-            <StoreCombosSection storeId={storeId} storeSlug={slug} />
-          )}
+          <div className="-mt-2 md:-mt-3">
+            {storeLoaded && storeId && (
+              <StoreCombosSection storeId={storeId} storeSlug={slug} />
+            )}
+          </div>
 
           <div className="mt-2">
             {productosPorCategoria.map((grupo) => (
@@ -189,7 +191,10 @@ export default function StoreSlugTiendaPage() {
           </div>
 
           <DeliveryBanner />
-          <HelpCard />
+          <HelpCard
+            storeName={storeSettings?.store_name || store?.name}
+            whatsapp={storeSettings?.whatsapp || storeSettings?.phone || store?.client_phone}
+          />
         </>
       )}
     </main>

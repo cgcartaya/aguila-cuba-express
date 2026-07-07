@@ -25,7 +25,7 @@ export default function DeliveryBanner() {
           </h2>
 
           <p className="mt-2 text-xs font-semibold leading-snug text-slate-700 sm:text-sm">
-            En la mayoría de las provincias de Cuba
+            En todo Cienfuegos
           </p>
 
           <button className="mt-3 rounded-xl bg-[#061b3a] px-4 py-2.5 text-xs font-black text-white shadow-sm">
