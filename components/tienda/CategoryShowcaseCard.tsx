@@ -3,11 +3,10 @@
 /* =========================================================
    CATEGORY SHOWCASE CARD
 
-   Corrección final:
-   - Ancho móvil 78vw para que se vea una tarjeta
-     y un pedacito de la siguiente.
-   - shrink-0 evita que se aplaste.
-   - max-w mantiene buen diseño en tablet.
+   Fix responsive:
+   - No usa 100vw para evitar scroll horizontal en Safari/iPhone.
+   - Usa porcentaje relativo al contenedor.
+   - Mantiene efecto de una tarjeta + pedazo siguiente.
 ========================================================= */
 
 import Image from "next/image";
@@ -28,13 +27,12 @@ export default function CategoryShowcaseCard({
   products,
 }: Props) {
   const previewProducts = products.slice(0, 4);
-
   const categorySlug = encodeURIComponent(category.toLowerCase());
 
   return (
     <Link
       href={`/tienda/categorias/${categorySlug}`}
-      className="w-[calc(100vw-64px)] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[420px]"
+      className="w-[85%] min-w-[280px] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[420px]"
     >
       <div
         className="mb-2 flex items-center justify-between rounded-xl px-4 py-3 text-white"
@@ -67,7 +65,7 @@ export default function CategoryShowcaseCard({
                 src={product.image_url || "/placeholder-product.png"}
                 alt={product.name}
                 fill
-                sizes="(max-width: 640px) 34vw, 180px"
+                sizes="(max-width: 640px) 36vw, 180px"
                 className="object-contain"
               />
             </div>

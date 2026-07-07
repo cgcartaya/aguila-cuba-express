@@ -6,6 +6,7 @@
    - Swipe móvil.
    - Flechas desktop.
    - Sin encabezado azul.
+   - Protegido contra scroll horizontal del documento.
 ========================================================= */
 
 import { useRef } from "react";
@@ -39,7 +40,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
   };
 
   return (
-    <section className="relative w-full max-w-full overflow-hidden py-4">
+    <section className="relative w-full max-w-full overflow-x-hidden py-4">
       <button
         type="button"
         onClick={() => scroll("left")}

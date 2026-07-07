@@ -49,10 +49,10 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
 
   return (
     <TiendaSearchProvider>
-      <main className="min-h-screen overflow-x-hidden bg-white pb-24 text-[#061b3a]">
+      <main className="min-h-screen w-full max-w-full overflow-x-hidden bg-white pb-24 text-[#061b3a]">
         <Header cartCount={cartCount} />
 
-        <div className="mx-auto w-full max-w-7xl overflow-x-hidden px-4">
+        <div className="mx-auto w-full max-w-7xl overflow-hidden px-4">
           {!hideMainBanner && <MainBanner storeId={store?.id} />}
 
           {children}
