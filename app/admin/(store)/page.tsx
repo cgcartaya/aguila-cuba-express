@@ -3,11 +3,9 @@
 /* =========================================================
    FASE 3.8 - DASHBOARD ADMIN MULTITIENDA
 
-   Objetivo:
-   - El dashboard ya no usa datos globales.ghfg
-   - El Store Owner usa la tienda asignada desde store_users.
-   - El Super Admin usa la tienda activa seleccionada en StoreContext.
-   - Todas las métricas se filtran por store_id.
+   - Métricas filtradas por store_id.
+   - No cuenta órdenes enviadas a papelera.
+   - No muestra ventas de órdenes eliminadas.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -44,9 +42,9 @@ type DashboardData = {
 };
 
 function mapMobileStatus(status?: string | null): MobileOrderStatus {
-  if (status === "preparando") return "Preparando";
-  if (status === "en_camino") return "En camino";
-  if (status === "entregado" || status === "delivered") return "Entregado";
+  if (status === "preparing" || status === "preparando") return "Preparando";
+  if (status === "in_transit" || status === "en_camino") return "En camino";
+  if (status === "delivered" || status === "entregado") return "Entregado";
 
   return "Pendiente";
 }
@@ -121,14 +119,16 @@ export default function AdminDashboardPage() {
         supabase
           .from("orders")
           .select("*", { count: "exact", head: true })
-          .eq("store_id", activeStore.id),
+          .eq("store_id", activeStore.id)
+          .is("deleted_at", null),
 
-     Promise.resolve({ count: 0, error: null }),
+        Promise.resolve({ count: 0, error: null }),
 
         supabase
           .from("orders")
           .select("id, total, status, created_at")
           .eq("store_id", activeStore.id)
+          .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(5),
       ]);
@@ -230,7 +230,6 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-4 pb-24 md:p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HERO PRINCIPAL ADMIN */}
         <section className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#0B1F4D] via-[#123D8D] to-[#2563EB] p-6 text-white shadow-xl md:p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
@@ -263,7 +262,6 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
-        {/* CARDS DE ESTADÍSTICAS */}
         <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => {
             const Icon = card.icon;
@@ -291,7 +289,6 @@ export default function AdminDashboardPage() {
         </section>
 
         <section className="mt-8 grid gap-6 lg:grid-cols-3">
-          {/* ÓRDENES RECIENTES */}
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -345,7 +342,6 @@ export default function AdminDashboardPage() {
             </div>
           </div>
 
-          {/* ACCIONES RÁPIDAS */}
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold text-[#0B1F4D]">
               Acciones rápidas
