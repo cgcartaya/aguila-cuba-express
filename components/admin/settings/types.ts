@@ -1,5 +1,6 @@
 export type Category = {
   id: string;
+  store_id?: string | null;
   name: string;
   slug: string;
   color: string;
@@ -11,6 +12,7 @@ export type Category = {
 
 export type StoreSettings = {
   id: string;
+  store_id?: string | null;
   store_name: string;
   slogan?: string | null;
   phone?: string | null;
@@ -33,6 +35,7 @@ export type BannerLayoutType = "image" | "template";
 
 export type Banner = {
   id: string;
+  store_id?: string | null;
   title: string;
   subtitle?: string | null;
   image_url?: string | null;

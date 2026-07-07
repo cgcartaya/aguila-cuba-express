@@ -7,19 +7,55 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  getBanners,
-  getBannersByStoreId,
-} from "@/lib/services/settings";
+import { getBanners, getBannersByStoreId } from "@/lib/services/settings";
 
 import GeneratedBannerSlide from "@/components/tienda/GeneratedBannerSlide";
 import type { Banner } from "@/components/admin/settings/types";
 
 type MainBannerProps = {
   storeId?: string;
+  storeSlug?: string;
 };
 
-export default function MainBanner({ storeId }: MainBannerProps) {
+function isDefaultStoreSlug(storeSlug?: string) {
+  return !storeSlug || storeSlug === "aguila";
+}
+
+function resolveStoreHref(rawHref: string | null | undefined, storeSlug?: string) {
+  const href = (rawHref || "").trim();
+  const tiendaUrl = isDefaultStoreSlug(storeSlug) ? "/tienda" : `/tienda/${storeSlug}`;
+
+  if (!href) return tiendaUrl;
+
+  if (
+    href.startsWith("http://") ||
+    href.startsWith("https://") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:") ||
+    href.startsWith("#")
+  ) {
+    return href;
+  }
+
+  if (isDefaultStoreSlug(storeSlug)) return href;
+
+  if (href === "/tienda") return tiendaUrl;
+  if (href.startsWith(`/tienda/${storeSlug}/`)) return href;
+  if (href.startsWith("/tienda/categorias/")) {
+    return href.replace("/tienda/categorias/", `/tienda/${storeSlug}/categorias/`);
+  }
+  if (href.startsWith("/tienda/producto/")) {
+    return href.replace("/tienda/producto/", `/tienda/${storeSlug}/producto/`);
+  }
+  if (href.startsWith("/tienda/combos/")) {
+    return href.replace("/tienda/combos/", `/tienda/${storeSlug}/combos/`);
+  }
+  if (href.startsWith("/tienda/")) return href;
+
+  return href.startsWith("/") ? href : `${tiendaUrl}/${href}`;
+}
+
+export default function MainBanner({ storeId, storeSlug }: MainBannerProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [banners, setBanners] = useState<Banner[]>([]);
 
@@ -103,10 +139,11 @@ export default function MainBanner({ storeId }: MainBannerProps) {
                 <GeneratedBannerSlide
                   banner={banner}
                   priority={index === 0}
+                  storeSlug={storeSlug}
                 />
               ) : (
                 <Link
-                  href={banner.button_link || "/tienda"}
+                  href={resolveStoreHref(banner.button_link, storeSlug)}
                   className="relative block aspect-[16/9] w-full overflow-hidden rounded-2xl bg-white shadow-sm md:rounded-3xl"
                 >
                   <Image
@@ -152,9 +189,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
                 onClick={() => emblaApi?.scrollTo(index)}
                 aria-label={`Ir al banner ${index + 1}`}
                 className={`h-2 rounded-full transition-all ${
-                  selectedIndex === index
-                    ? "w-6 bg-red-600"
-                    : "w-2 bg-white/85"
+                  selectedIndex === index ? "w-6 bg-red-600" : "w-2 bg-white/85"
                 }`}
               />
             ))}

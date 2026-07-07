@@ -23,9 +23,10 @@ type CategoryGroup = {
 
 type Props = {
   groups: CategoryGroup[];
+  storeSlug?: string;
 };
 
-export default function CategoriesShowcaseCarousel({ groups }: Props) {
+export default function CategoriesShowcaseCarousel({ groups, storeSlug }: Props) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   if (!groups || groups.length === 0) return null;
@@ -60,6 +61,7 @@ export default function CategoriesShowcaseCarousel({ groups }: Props) {
             category={group.categoria}
             color={group.color}
             products={group.productos}
+            storeSlug={storeSlug}
           />
         ))}
       </div>

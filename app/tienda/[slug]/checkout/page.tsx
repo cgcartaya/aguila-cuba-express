@@ -64,16 +64,18 @@ export default function CheckoutPage() {
 
   const { store } = useStore();
 
-const isDefaultStore = store?.slug === "aguila";
+  const isDefaultStore = store?.slug === "aguila";
 
-const cartUrl =
-  store?.slug && !isDefaultStore
-    ? `/tienda/${store.slug}/cart`
-    : "/tienda/cart";
+  const cartUrl =
+    store?.slug && !isDefaultStore
+      ? `/tienda/${store.slug}/cart`
+      : "/tienda/cart";
+
+  const orderUrlBase = "/pedido";
 
   const [form, setForm] = useState<CheckoutForm>(initialForm);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
-  const [businessWhatsapp, setBusinessWhatsapp] = useState("13054974891");
+  const [businessWhatsapp, setBusinessWhatsapp] = useState("");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -84,18 +86,19 @@ const cartUrl =
       try {
         setLoadingZones(true);
 
+        if (!store?.id) return;
+
         const [zonesResponse, settingsResponse] = await Promise.all([
-          getActiveDeliveryZones(),
-          getStoreSettings(),
+          getActiveDeliveryZones(store.id),
+          getStoreSettings(store.id),
         ]);
 
         if (zonesResponse.error) throw zonesResponse.error;
 
         setZones(zonesResponse.data || []);
 
-        if (settingsResponse.data?.whatsapp) {
-          setBusinessWhatsapp(settingsResponse.data.whatsapp.replace(/\D/g, ""));
-        }
+        const cleanWhatsapp = settingsResponse.data?.whatsapp?.replace(/\D/g, "") || "";
+        setBusinessWhatsapp(cleanWhatsapp);
       } catch (err: any) {
         console.error("ERROR CARGANDO CHECKOUT:", err);
         setError("No se pudo cargar la información del checkout.");
@@ -105,7 +108,7 @@ const cartUrl =
     }
 
     loadCheckoutData();
-  }, []);
+  }, [store?.id]);
 
   const availableZones = useMemo(() => {
     if (!form.municipality) return [];
@@ -211,7 +214,7 @@ const cartUrl =
     });
   }
 
- async function createOrder(customerId: string, zone: DeliveryZone) {
+async function createOrder(customerId: string, zone: DeliveryZone) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .insert({
@@ -254,7 +257,7 @@ const cartUrl =
       window.location.href = `whatsapp://send?phone=${businessWhatsapp}&text=${whatsappMessage}`;
 
       setTimeout(() => {
-        router.push(`/pedido/${orderNumber}`);
+        router.push(`${orderUrlBase}/${orderNumber}`);
       }, 2000);
 
       return;
@@ -265,11 +268,21 @@ const cartUrl =
       "_blank"
     );
 
-    router.push(`/pedido/${orderNumber}`);
+    router.push(`${orderUrlBase}/${orderNumber}`);
   }
 
   async function handleSubmit() {
     setError("");
+
+    if (!store?.id) {
+      setError("No se pudo identificar la tienda del pedido.");
+      return;
+    }
+
+    if (!businessWhatsapp) {
+      setError("Esta tienda todavía no tiene WhatsApp configurado.");
+      return;
+    }
 
     if (cart.length === 0) {
       setError("Tu carrito está vacío.");
@@ -320,7 +333,7 @@ const cartUrl =
 
       const orderNumber = order.order_number || order.id;
       const origin = window.location.origin;
-      const orderUrl = `${origin}/pedido/${orderNumber}`;
+      const orderUrl = `${origin}${orderUrlBase}/${orderNumber}`;
 
       const whatsappMessage = buildWhatsappOrderMessage({
         orderNumber,

@@ -3,10 +3,8 @@
 /* =========================================================
    CATEGORY SHOWCASE CARD
 
-   Fix responsive:
-   - No usa 100vw para evitar scroll horizontal en Safari/iPhone.
-   - Usa porcentaje relativo al contenedor.
-   - Mantiene efecto de una tarjeta + pedazo siguiente.
+   Fix multiempresa:
+   - El link de la tarjeta conserva el slug de la tienda actual.
 ========================================================= */
 
 import Image from "next/image";
@@ -19,19 +17,26 @@ type Props = {
   category: string;
   color?: string | null;
   products: Product[];
+  storeSlug?: string;
 };
 
 export default function CategoryShowcaseCard({
   category,
   color,
   products,
+  storeSlug,
 }: Props) {
+
   const previewProducts = products.slice(0, 4);
   const categorySlug = encodeURIComponent(category.toLowerCase());
+  const isDefaultStore = !storeSlug || storeSlug === "aguila";
+  const categoryUrl = isDefaultStore
+    ? `/tienda/categorias/${categorySlug}`
+    : `/tienda/${storeSlug}/categorias/${categorySlug}`;
 
   return (
     <Link
-      href={`/tienda/categorias/${categorySlug}`}
+      href={categoryUrl}
       className="w-[85%] min-w-[280px] max-w-[420px] shrink-0 snap-start overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-2 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[420px]"
     >
       <div
@@ -40,9 +45,7 @@ export default function CategoryShowcaseCard({
           backgroundColor: color || "#3b82f6",
         }}
       >
-        <h3 className="line-clamp-1 text-lg font-black">
-          {category}
-        </h3>
+        <h3 className="line-clamp-1 text-lg font-black">{category}</h3>
 
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/20">
           <ChevronRight size={22} />

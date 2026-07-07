@@ -1,10 +1,10 @@
 "use client";
 
 /* =========================================================
-   PÁGINA INDIVIDUAL DE CATEGORÍA - TIENDA DEFAULT
+   PÁGINA INDIVIDUAL DE CATEGORÍA - TIENDA POR SLUG
 
    Ruta:
-   /tienda/categorias/[category]
+   /tienda/[slug]/categorias/[category]
 
    Fix:
    - Carga productos usando el store default.
@@ -18,13 +18,14 @@ import { ArrowLeft } from "lucide-react";
 
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { getDefaultStore } from "@/lib/services/stores";
+import { getStoreBySlug } from "@/lib/services/stores";
 import ProductCard from "@/components/tienda/ProductCard";
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
 
 type Props = {
   params: Promise<{
+    slug: string;
     category: string;
   }>;
 };
@@ -53,9 +54,10 @@ export default function CategoryPage({ params }: Props) {
   const [productos, setProductos] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { category } = use(params);
+  const { slug, category } = use(params);
   const categoryName = decodeURIComponent(category);
-  const tiendaUrl = "/tienda";
+  const storeSlug = decodeURIComponent(slug);
+  const tiendaUrl = `/tienda/${storeSlug}`;
 
   useEffect(() => {
     let mounted = true;
@@ -63,8 +65,13 @@ export default function CategoryPage({ params }: Props) {
     async function cargarProductos() {
       setLoading(true);
 
-      const storeResult = await getDefaultStore();
-      const store = storeResult?.data ?? null;
+      if (!storeSlug) {
+        setProductos([]);
+        setLoading(false);
+        return;
+      }
+
+      const store = await getStoreBySlug(storeSlug);
 
       if (!mounted) return;
 
@@ -108,7 +115,7 @@ export default function CategoryPage({ params }: Props) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [storeSlug]);
 
   const productosFiltrados = useMemo(() => {
     return productos.filter((producto) => {

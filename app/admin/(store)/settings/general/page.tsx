@@ -1,10 +1,11 @@
 "use client";
 
 /* =========================================================
-   AJUSTES GENERALES - ADMIN
+   AJUSTES GENERALES - ADMIN MULTIEMPRESA
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Loader2, Save, Store } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
@@ -12,51 +13,109 @@ import AdminBackButton from "@/components/admin/ui/AdminBackButton";
 import AdminButton from "@/components/admin/ui/AdminButton";
 import AdminInput from "@/components/admin/ui/AdminInput";
 
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
+
 import {
   getStoreSettings,
   saveStoreSettings,
 } from "@/lib/services/settings";
 
+const emptyForm = {
+  store_name: "",
+  slogan: "",
+  phone: "",
+  whatsapp: "",
+  email: "",
+  address: "",
+  city: "",
+  facebook: "",
+  instagram: "",
+};
+
 export default function AdminGeneralSettingsPage() {
-  const [form, setForm] = useState({
-    store_name: "Águila Cuba Express",
-    slogan: "",
-    phone: "",
-    whatsapp: "",
-    email: "",
-    address: "",
-    city: "",
-    facebook: "",
-    instagram: "",
-  });
+  const {
+    loading: accessLoading,
+    isSuperAdmin,
+    store: accessStore,
+  } = useAdminAccess();
+
+  const {
+    store: selectedStore,
+    setCurrentStore,
+  } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) {
+      return selectedStore || accessStore;
+    }
+
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
+  const [form, setForm] = useState(emptyForm);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  const publicStoreUrl = useMemo(() => {
+    if (!activeStore?.slug || activeStore.slug === "aguila") {
+      return "/tienda";
+    }
+
+    return `/tienda/${activeStore.slug}`;
+  }, [activeStore?.slug]);
 
   useEffect(() => {
     async function loadSettings() {
-      const { data } = await getStoreSettings();
+      if (accessLoading) return;
 
-      if (data) {
+      try {
+        setLoading(true);
+        setError("");
+
+        if (!activeStore?.id) {
+          setForm(emptyForm);
+          setError("No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda.");
+          return;
+        }
+
+        if (selectedStore?.id !== activeStore.id) {
+          setCurrentStore(activeStore);
+        }
+
+        const { data, error: settingsError } = await getStoreSettings(activeStore.id);
+
+        if (settingsError) throw settingsError;
+
         setForm({
-          store_name: data.store_name || "Águila Cuba Express",
-          slogan: data.slogan || "",
-          phone: data.phone || "",
-          whatsapp: data.whatsapp || "",
-          email: data.email || "",
-          address: data.address || "",
-          city: data.city || "",
-          facebook: data.facebook || "",
-          instagram: data.instagram || "",
+          store_name: data?.store_name || activeStore.name || "",
+          slogan: data?.slogan || "",
+          phone: data?.phone || "",
+          whatsapp: data?.whatsapp || "",
+          email: data?.email || "",
+          address: data?.address || "",
+          city: data?.city || "",
+          facebook: data?.facebook || "",
+          instagram: data?.instagram || "",
         });
+      } catch (err: any) {
+        console.error("ERROR CARGANDO AJUSTES GENERALES:", err);
+        setError(err?.message || "No se pudo cargar la configuración de esta tienda.");
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     }
 
     loadSettings();
-  }, []);
+  }, [
+    accessLoading,
+    activeStore?.id,
+    selectedStore?.id,
+    setCurrentStore,
+  ]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({
@@ -66,19 +125,36 @@ export default function AdminGeneralSettingsPage() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
-    setSuccess("");
+    if (!activeStore?.id) {
+      setError("No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda.");
+      return;
+    }
 
-    await saveStoreSettings({
-      ...form,
-      updated_at: new Date().toISOString(),
-    });
+    try {
+      setSaving(true);
+      setSuccess("");
+      setError("");
 
-    setSuccess("Ajustes guardados correctamente.");
-    setSaving(false);
+      const { error: saveError } = await saveStoreSettings(
+        {
+          ...form,
+          updated_at: new Date().toISOString(),
+        },
+        activeStore.id
+      );
+
+      if (saveError) throw saveError;
+
+      setSuccess("Ajustes guardados correctamente.");
+    } catch (err: any) {
+      console.error("ERROR GUARDANDO AJUSTES GENERALES:", err);
+      setError(err?.message || "No se pudieron guardar los ajustes.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (loading) {
+  if (loading || accessLoading) {
     return (
       <main className="min-h-screen bg-[#F8FAFC] p-6">
         <div className="mx-auto flex max-w-5xl items-center gap-2 text-slate-500">
@@ -102,19 +178,43 @@ export default function AdminGeneralSettingsPage() {
         />
 
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                Tienda activa
+              </p>
+              <p className="text-sm font-black text-slate-900">
+                {activeStore?.name || form.store_name || "Sin tienda seleccionada"}
+              </p>
+            </div>
+
+            <Link
+              href={publicStoreUrl}
+              className="rounded-2xl bg-[#ef0015] px-4 py-2 text-xs font-black text-white shadow-sm transition hover:brightness-95"
+            >
+              Ver tienda
+            </Link>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {error}
+            </div>
+          )}
+
           <div className="grid gap-5 md:grid-cols-2">
             <AdminInput
               label="Nombre de la tienda"
               value={form.store_name}
               onChange={(value) => handleChange("store_name", value)}
-              placeholder="Águila Cuba Express"
+              placeholder="Nombre del negocio"
             />
 
             <AdminInput
               label="Eslogan"
               value={form.slogan}
               onChange={(value) => handleChange("slogan", value)}
-              placeholder="Envíos rápidos y seguros hacia Cuba"
+              placeholder="Eslogan de la tienda"
             />
 
             <AdminInput
@@ -135,14 +235,14 @@ export default function AdminGeneralSettingsPage() {
               label="Correo electrónico"
               value={form.email}
               onChange={(value) => handleChange("email", value)}
-              placeholder="info@aguilacubaexpress.com"
+              placeholder="correo@negocio.com"
             />
 
             <AdminInput
               label="Ciudad"
               value={form.city}
               onChange={(value) => handleChange("city", value)}
-              placeholder="Miami"
+              placeholder="Ciudad"
             />
 
             <div className="md:col-span-2">

@@ -1,12 +1,13 @@
 "use client";
 
 /* =========================================================
-   LAYOUT GENERAL DE LA TIENDA PÚBLICA - HOME V5 FIX
+   LAYOUT GENERAL DE LA TIENDA PÚBLICA - HOME ONLY STICKY
 
    - Header fijo arriba.
-   - Categorías fijas debajo del Header.
-   - El contenido deja espacio real arriba con padding-top.
-   - Evita que F5 restaure scroll hacia abajo.
+   - Categorías sticky SOLO en home:
+     /tienda
+     /tienda/[slug]
+   - En carrito, checkout, producto, categorías, etc. NO aparecen.
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +29,29 @@ type StoreLayoutProps = {
   children: React.ReactNode;
 };
 
+const reservedTiendaRoutes = [
+  "cart",
+  "checkout",
+  "producto",
+  "productos",
+  "productos-destacados",
+  "combos",
+  "categorias",
+];
+
+function isPublicStoreHome(pathname: string) {
+  const pathParts = pathname.split("/").filter(Boolean);
+
+  const isDefaultHome = pathParts.length === 1 && pathParts[0] === "tienda";
+
+  const isStoreSlugHome =
+    pathParts.length === 2 &&
+    pathParts[0] === "tienda" &&
+    !reservedTiendaRoutes.includes(pathParts[1]);
+
+  return isDefaultHome || isStoreSlugHome;
+}
+
 export default function StoreLayout({ children }: StoreLayoutProps) {
   const pathname = usePathname();
 
@@ -40,12 +64,12 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
     return total + item.quantity;
   }, 0);
 
-  const isProductDetail = pathname.includes("/producto/");
+  const showStickyCategories = isPublicStoreHome(pathname);
+
   const isCartPage = pathname.endsWith("/cart") || pathname.includes("/cart/");
   const isCheckoutPage =
     pathname.endsWith("/checkout") || pathname.includes("/checkout/");
 
-  const showStickyCategories = !isProductDetail && !isCartPage && !isCheckoutPage;
   const hideBottomNavigation = isCheckoutPage;
   const hideFloatingCart = isCartPage || isCheckoutPage;
 

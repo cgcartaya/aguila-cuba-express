@@ -112,15 +112,17 @@ export default function TiendaPage() {
     );
   }, [productos, busqueda, hayBusqueda]);
 
-  const productosPorCategoria = useMemo(() => {
-    return categorias.map((categoria) => ({
+ const productosPorCategoria = useMemo(() => {
+  return categorias
+    .map((categoria) => ({
       categoria: categoria.name,
       color: categoria.color,
       productos: productos.filter(
         (producto) => producto.category === categoria.name
       ),
-    }));
-  }, [categorias, productos]);
+    }))
+    .filter((grupo) => grupo.productos.length > 0);
+}, [categorias, productos]);
 
   return (
     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">

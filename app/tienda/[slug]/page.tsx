@@ -16,6 +16,7 @@ import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
 import { getStoreBySlug } from "@/lib/services/stores";
 
+import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
 import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
@@ -46,6 +47,7 @@ export default function StoreSlugTiendaPage() {
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [storeLoaded, setStoreLoaded] = useState(false);
 
   const { search } = useTiendaSearch();
   const { addToCart } = useCart();
@@ -59,6 +61,8 @@ export default function StoreSlugTiendaPage() {
     async function cargarDatos() {
       if (!slug) return;
 
+      setStoreLoaded(false);
+
       const store = await getStoreBySlug(slug);
 
       if (!mounted) return;
@@ -67,6 +71,7 @@ export default function StoreSlugTiendaPage() {
         setProductos([]);
         setCategorias([]);
         setStoreId(null);
+        setStoreLoaded(true);
         return;
       }
 
@@ -100,6 +105,7 @@ export default function StoreSlugTiendaPage() {
 
       setProductos(productosConImagenPrincipal);
       setCategorias((categoriesData as Category[]) || []);
+      setStoreLoaded(true);
     }
 
     cargarDatos();
@@ -131,13 +137,15 @@ export default function StoreSlugTiendaPage() {
   }, [categorias]);
 
   const productosPorCategoria = useMemo(() => {
-    return categorias.map((categoria) => ({
-      categoria: categoria.name,
-      color: categoria.color,
-      productos: productos.filter(
-        (producto) => producto.category === categoria.name
-      ),
-    }));
+    return categorias
+      .map((categoria) => ({
+        categoria: categoria.name,
+        color: categoria.color,
+        productos: productos.filter(
+          (producto) => producto.category === categoria.name
+        ),
+      }))
+      .filter((grupo) => grupo.productos.length > 0);
   }, [categorias, productos]);
 
   return (
@@ -149,7 +157,16 @@ export default function StoreSlugTiendaPage() {
         />
       ) : (
         <>
-          <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+          <div className="mt-4 md:mt-5">
+            {storeLoaded && storeId && (
+              <MainBanner storeId={storeId} storeSlug={slug} />
+            )}
+          </div>
+
+          <CategoriesShowcaseCarousel
+            groups={productosPorCategoria}
+            storeSlug={slug}
+          />
 
           {categoriasConCombos.length > 0 && (
             <StickyCategoryTabs categories={categoriasConCombos} />
@@ -164,6 +181,7 @@ export default function StoreSlugTiendaPage() {
                 title={grupo.categoria}
                 products={grupo.productos}
                 onAddToCart={addToCart}
+                storeSlug={slug}
               />
             ))}
           </div>

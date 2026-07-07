@@ -7,16 +7,59 @@ import type { Banner } from "@/components/admin/settings/types";
 type Props = {
   banner: Banner;
   priority?: boolean;
+  storeSlug?: string;
 };
 
-export default function GeneratedBannerSlide({ banner, priority = false }: Props) {
+function isDefaultStoreSlug(storeSlug?: string) {
+  return !storeSlug || storeSlug === "aguila";
+}
+
+function resolveStoreHref(rawHref: string | null | undefined, storeSlug?: string) {
+  const href = (rawHref || "").trim();
+  const tiendaUrl = isDefaultStoreSlug(storeSlug) ? "/tienda" : `/tienda/${storeSlug}`;
+
+  if (!href) return tiendaUrl;
+
+  if (
+    href.startsWith("http://") ||
+    href.startsWith("https://") ||
+    href.startsWith("mailto:") ||
+    href.startsWith("tel:") ||
+    href.startsWith("#")
+  ) {
+    return href;
+  }
+
+  if (isDefaultStoreSlug(storeSlug)) return href;
+
+  if (href === "/tienda") return tiendaUrl;
+  if (href.startsWith(`/tienda/${storeSlug}/`)) return href;
+  if (href.startsWith("/tienda/categorias/")) {
+    return href.replace("/tienda/categorias/", `/tienda/${storeSlug}/categorias/`);
+  }
+  if (href.startsWith("/tienda/producto/")) {
+    return href.replace("/tienda/producto/", `/tienda/${storeSlug}/producto/`);
+  }
+  if (href.startsWith("/tienda/combos/")) {
+    return href.replace("/tienda/combos/", `/tienda/${storeSlug}/combos/`);
+  }
+  if (href.startsWith("/tienda/")) return href;
+
+  return href.startsWith("/") ? href : `${tiendaUrl}/${href}`;
+}
+
+export default function GeneratedBannerSlide({
+  banner,
+  priority = false,
+  storeSlug,
+}: Props) {
   const backgroundColor = banner.background_color || "#061b3a";
   const textColor = banner.text_color || "#ffffff";
   const accentColor = banner.accent_color || "#ef4444";
 
   return (
     <Link
-      href={banner.button_link || "/tienda"}
+      href={resolveStoreHref(banner.button_link, storeSlug)}
       className="relative block h-[220px] overflow-hidden rounded-3xl shadow-md sm:h-[280px] md:h-[360px] lg:h-[420px]"
       style={{ backgroundColor }}
     >
