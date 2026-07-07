@@ -62,15 +62,15 @@ export default function Header({ cartCount }: HeaderProps) {
   return (
     <>
       <header
-        className="sticky top-0 z-50 w-full max-w-full overflow-hidden shadow-[0_8px_22px_rgba(15,23,42,0.14)]"
+        className="sticky top-0 z-50 w-full max-w-full shadow-[0_8px_22px_rgba(15,23,42,0.14)]"
         style={{
           background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
         }}
       >
         <div
           className="
-            mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[42px_minmax(0,1fr)_42px]
-            items-center gap-2 overflow-hidden px-3
+            mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[40px_minmax(0,1fr)_40px]
+            items-center gap-2 px-2
             sm:h-[64px] sm:grid-cols-[46px_minmax(0,1fr)_46px] sm:gap-3 sm:px-4
           "
         >
@@ -78,20 +78,20 @@ export default function Header({ cartCount }: HeaderProps) {
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Abrir menú"
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
+            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-white shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
           >
-            <Menu size={27} strokeWidth={2.8} />
+            <Menu size={26} strokeWidth={2.8} />
           </button>
 
           <label
             className="
-              flex h-[42px] min-w-0 items-center overflow-hidden rounded-[17px]
-              bg-white/96 px-3 shadow-sm ring-1 ring-white/40 transition
-              focus-within:bg-white focus-within:ring-2 focus-within:ring-white/80
+              flex h-10 min-w-0 items-center rounded-[16px]
+              bg-white px-3 shadow-sm ring-1 ring-white/40 transition
+              focus-within:ring-2 focus-within:ring-white/80
               sm:h-[46px] sm:px-4
             "
           >
-            <Search size={20} className="mr-2 shrink-0 text-slate-400" />
+            <Search size={19} className="mr-2 shrink-0 text-slate-400" />
 
             <input
               type="search"
@@ -100,7 +100,7 @@ export default function Header({ cartCount }: HeaderProps) {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Buscar productos..."
-              className="h-full min-w-0 flex-1 bg-transparent text-[15px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
+              className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
             />
 
             {search.trim().length > 0 && (
@@ -110,7 +110,7 @@ export default function Header({ cartCount }: HeaderProps) {
                 aria-label="Limpiar búsqueda"
                 className="ml-1 shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
-                <XCircle size={18} />
+                <XCircle size={17} />
               </button>
             )}
           </label>
@@ -118,13 +118,15 @@ export default function Header({ cartCount }: HeaderProps) {
           <Link
             href={cartUrl}
             aria-label="Carrito"
-            className="relative flex h-[42px] w-[42px] items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
+            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
           >
-            <ShoppingCart size={27} />
+            <ShoppingCart size={25} />
 
-            <span className="absolute right-0 top-0 flex h-5 min-w-5 translate-x-1/4 -translate-y-1/4 items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-black leading-none text-white shadow">
-              {cartCount}
-            </span>
+            {cartCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white shadow">
+                {cartCount > 99 ? "99+" : cartCount}
+              </span>
+            )}
           </Link>
         </div>
       </header>

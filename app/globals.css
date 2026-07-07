@@ -74,3 +74,19 @@ canvas,
 svg {
   max-width: 100%;
 }
+
+/* =========================================================
+   MOBILE VIEWPORT LOCK
+   Evita que elementos fixed o badges del header generen ancho extra.
+========================================================= */
+html,
+body {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  overscroll-behavior-x: none;
+}
