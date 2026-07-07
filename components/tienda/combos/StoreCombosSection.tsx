@@ -9,17 +9,13 @@ import {
   getActiveCombosByStoreId,
 } from "@/lib/services/combos";
 
-import StoreComboCard, {
-  StoreCombo,
-} from "./StoreComboCard";
+import StoreComboCard, { StoreCombo } from "./StoreComboCard";
 
 type Props = {
   storeId?: string;
 };
 
-export default function StoreCombosSection({
-  storeId,
-}: Props) {
+export default function StoreCombosSection({ storeId }: Props) {
   const [combos, setCombos] = useState<StoreCombo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,11 +26,7 @@ export default function StoreCombosSection({
         : await getActiveCombos();
 
       if (error) {
-        console.error(
-          "Error cargando combos públicos:",
-          error
-        );
-
+        console.error("Error cargando combos públicos:", error);
         setLoading(false);
         return;
       }
@@ -50,27 +42,23 @@ export default function StoreCombosSection({
   if (combos.length === 0) return null;
 
   return (
-    <section
-      id="Combos"
-      className="scroll-mt-[170px] py-6"
-    >
-      <div className="mb-5 flex items-center justify-between gap-4 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-orange-50 to-white p-5 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-100 text-orange-700 shadow-sm">
-            <Package2 size={26} />
+    <section id="Combos" className="scroll-mt-[120px] py-3">
+      <div className="mb-4 flex items-center justify-between gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-r from-orange-50 to-white px-4 py-3 shadow-sm md:px-5 md:py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-700 shadow-sm md:h-11 md:w-11">
+            <Package2 size={22} />
           </div>
 
-          <div>
-            <h2 className="text-3xl font-black text-[#061b3a]">
+          <div className="min-w-0">
+            <h2 className="text-2xl font-black leading-tight text-[#061b3a] md:text-3xl">
               Combos
             </h2>
 
-            <p className="mt-1 max-w-[340px] text-sm font-medium leading-snug text-slate-500">
-              Paquetes preparados para ahorrar
-              dinero y enviar más a tu familia.
+            <p className="mt-0.5 max-w-[360px] text-xs font-medium leading-snug text-slate-500 md:text-sm">
+              Paquetes preparados para ahorrar dinero y enviar más a tu familia.
             </p>
 
-            <div className="mt-3 inline-flex rounded-full bg-white px-4 py-1 text-sm font-black text-slate-600 shadow-sm">
+            <div className="mt-2 inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600 shadow-sm">
               {combos.length} combos disponibles
             </div>
           </div>
@@ -78,19 +66,16 @@ export default function StoreCombosSection({
 
         <Link
           href="/tienda/combos"
-          className="hidden shrink-0 items-center gap-2 text-sm font-black text-red-600 transition hover:text-red-700 sm:flex"
+          className="hidden shrink-0 items-center gap-2 text-xs font-black text-red-600 transition hover:text-red-700 sm:flex md:text-sm"
         >
           Ver todos
-          <ArrowRight size={20} />
+          <ArrowRight size={18} />
         </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         {combos.slice(0, 8).map((combo) => (
-          <StoreComboCard
-            key={combo.id}
-            combo={combo}
-          />
+          <StoreComboCard key={combo.id} combo={combo} />
         ))}
       </div>
     </section>

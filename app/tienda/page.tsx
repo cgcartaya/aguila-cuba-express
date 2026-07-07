@@ -137,7 +137,11 @@ export default function TiendaPage() {
 
           <CategoriesShowcaseCarousel groups={productosPorCategoria} />
 
-          <StoreCombosSection storeId={storeId || undefined} />
+         <div className="-mt-2 md:-mt-3">
+    <StoreCombosSection
+        storeId={storeId || undefined}
+    />
+</div>
 
           <div className="mt-2">
             {productosPorCategoria.map((grupo) => (
