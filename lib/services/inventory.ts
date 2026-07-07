@@ -6,14 +6,11 @@ import { supabase } from "@/lib/supabase";
    Maneja:
    - Validación de stock
    - Descuento automático de stock
+   - Restauración de stock al cancelar/eliminar órdenes
 ========================================================= */
 
 export async function validateOrderStock(orderItems: any[]) {
   for (const item of orderItems) {
-    /* =====================================================
-       PRODUCTOS NORMALES
-    ===================================================== */
-
     if (item.item_type === "product") {
       await validateProductStock(
         item.product_id,
@@ -22,15 +19,8 @@ export async function validateOrderStock(orderItems: any[]) {
       );
     }
 
-    /* =====================================================
-       COMBOS
-    ===================================================== */
-
     if (item.item_type === "combo") {
-      await validateComboStock(
-        item.combo_id,
-        item.quantity
-      );
+      await validateComboStock(item.combo_id, item.quantity);
     }
   }
 }
@@ -51,12 +41,10 @@ async function validateProductStock(
     .single();
 
   if (error || !product) {
-    throw new Error(
-      `El producto ${productName} ya no está disponible.`
-    );
+    throw new Error(`El producto ${productName} ya no está disponible.`);
   }
 
-  if (product.stock < quantity) {
+  if (Number(product.stock || 0) < Number(quantity || 0)) {
     throw new Error(
       `Stock insuficiente para ${productName}. Disponibles: ${product.stock}`
     );
@@ -67,10 +55,7 @@ async function validateProductStock(
    VALIDAR STOCK COMBO
 ========================================================= */
 
-async function validateComboStock(
-  comboId: string,
-  comboQuantity: number
-) {
+async function validateComboStock(comboId: string, comboQuantity: number) {
   const { data: comboItems, error } = await supabase
     .from("combo_items")
     .select(`
@@ -86,8 +71,7 @@ async function validateComboStock(
   if (error) throw error;
 
   for (const item of comboItems || []) {
-    const totalNeeded =
-      item.quantity * comboQuantity;
+    const totalNeeded = Number(item.quantity || 0) * Number(comboQuantity || 0);
 
     const product = Array.isArray(item.products)
       ? item.products[0]
@@ -95,10 +79,8 @@ async function validateComboStock(
 
     if (!product) continue;
 
-    if (product.stock < totalNeeded) {
-      throw new Error(
-        `Stock insuficiente para ${product.name}.`
-      );
+    if (Number(product.stock || 0) < totalNeeded) {
+      throw new Error(`Stock insuficiente para ${product.name}.`);
     }
   }
 }
@@ -110,17 +92,11 @@ async function validateComboStock(
 export async function processOrderInventory(orderItems: any[]) {
   for (const item of orderItems) {
     if (item.item_type === "product") {
-      await discountProductStock(
-        item.product_id,
-        item.quantity
-      );
+      await discountProductStock(item.product_id, item.quantity);
     }
 
     if (item.item_type === "combo") {
-      await discountComboStock(
-        item.combo_id,
-        item.quantity
-      );
+      await discountComboStock(item.combo_id, item.quantity);
     }
   }
 }
@@ -129,10 +105,7 @@ export async function processOrderInventory(orderItems: any[]) {
    DESCONTAR PRODUCTO
 ========================================================= */
 
-async function discountProductStock(
-  productId: string,
-  quantity: number
-) {
+async function discountProductStock(productId: string, quantity: number) {
   const { data: product, error } = await supabase
     .from("products")
     .select("id, stock")
@@ -140,24 +113,18 @@ async function discountProductStock(
     .single();
 
   if (error || !product) {
-    throw new Error(
-      `Producto no encontrado: ${productId}`
-    );
+    throw new Error(`Producto no encontrado: ${productId}`);
   }
 
-  const newStock = product.stock - quantity;
+  const newStock = Number(product.stock || 0) - Number(quantity || 0);
 
   if (newStock < 0) {
-    throw new Error(
-      "Stock insuficiente para completar la orden."
-    );
+    throw new Error("Stock insuficiente para completar la orden.");
   }
 
   const { error: updateError } = await supabase
     .from("products")
-    .update({
-      stock: newStock,
-    })
+    .update({ stock: newStock })
     .eq("id", productId);
 
   if (updateError) throw updateError;
@@ -167,10 +134,7 @@ async function discountProductStock(
    DESCONTAR COMBO
 ========================================================= */
 
-async function discountComboStock(
-  comboId: string,
-  comboQuantity: number
-) {
+async function discountComboStock(comboId: string, comboQuantity: number) {
   const { data: comboItems, error } = await supabase
     .from("combo_items")
     .select(`
@@ -183,11 +147,75 @@ async function discountComboStock(
 
   for (const comboItem of comboItems || []) {
     const totalToDiscount =
-      comboItem.quantity * comboQuantity;
+      Number(comboItem.quantity || 0) * Number(comboQuantity || 0);
 
-    await discountProductStock(
-      comboItem.product_id,
-      totalToDiscount
-    );
+    await discountProductStock(comboItem.product_id, totalToDiscount);
+  }
+}
+
+/* =========================================================
+   RESTAURAR INVENTARIO
+
+   Se usa cuando una orden se envía a papelera/cancelación
+   administrativa y queremos devolver el stock descontado.
+========================================================= */
+
+export async function restoreOrderInventory(orderItems: any[]) {
+  for (const item of orderItems || []) {
+    if (item.item_type === "product" && item.product_id) {
+      await restoreProductStock(item.product_id, item.quantity);
+    }
+
+    if (item.item_type === "combo" && item.combo_id) {
+      await restoreComboStock(item.combo_id, item.quantity);
+    }
+  }
+}
+
+/* =========================================================
+   RESTAURAR PRODUCTO
+========================================================= */
+
+async function restoreProductStock(productId: string, quantity: number) {
+  const { data: product, error } = await supabase
+    .from("products")
+    .select("id, stock")
+    .eq("id", productId)
+    .single();
+
+  if (error || !product) {
+    throw new Error(`Producto no encontrado para restaurar stock: ${productId}`);
+  }
+
+  const restoredStock = Number(product.stock || 0) + Number(quantity || 0);
+
+  const { error: updateError } = await supabase
+    .from("products")
+    .update({ stock: restoredStock })
+    .eq("id", productId);
+
+  if (updateError) throw updateError;
+}
+
+/* =========================================================
+   RESTAURAR COMBO
+========================================================= */
+
+async function restoreComboStock(comboId: string, comboQuantity: number) {
+  const { data: comboItems, error } = await supabase
+    .from("combo_items")
+    .select(`
+      quantity,
+      product_id
+    `)
+    .eq("combo_id", comboId);
+
+  if (error) throw error;
+
+  for (const comboItem of comboItems || []) {
+    const totalToRestore =
+      Number(comboItem.quantity || 0) * Number(comboQuantity || 0);
+
+    await restoreProductStock(comboItem.product_id, totalToRestore);
   }
 }

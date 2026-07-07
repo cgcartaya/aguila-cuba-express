@@ -53,6 +53,7 @@ export default function AdminOrdersPage() {
           country,
           notes,
           created_at,
+          deleted_at,
           recipient_name,
           recipient_phone,
           recipient_phone_alt,
@@ -66,6 +67,8 @@ export default function AdminOrdersPage() {
           order_items (
             id,
             item_type,
+            product_id,
+            combo_id,
             product_name,
             quantity,
             price,
@@ -73,6 +76,7 @@ export default function AdminOrdersPage() {
           )
         `)
         .eq("store_id", activeStore.id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (error) {

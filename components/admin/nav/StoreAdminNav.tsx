@@ -30,7 +30,6 @@ type AdminLink = {
 const storeLinks: AdminLink[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/products", label: "Productos", icon: Package },
-  { href: "/admin/categories", label: "Categorías", icon: Tags },
   { href: "/admin/combos", label: "Combos", icon: Layers3 },
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },

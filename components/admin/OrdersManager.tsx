@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { restoreOrderInventory } from "@/lib/services/inventory";
 import {
   User,
   MapPin,
@@ -74,6 +75,7 @@ export default function OrdersManager({
   const [orders, setOrders] = useState(initialOrders);
   const [filter, setFilter] = useState("Todas");
   const [search, setSearch] = useState("");
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>(
     {}
   );
@@ -146,30 +148,74 @@ export default function OrdersManager({
     }
 
     setOrders((prev) =>
-      prev.map((order) =>
-        order.id === id ? { ...order, status } : order
-      )
+      prev.map((order) => (order.id === id ? { ...order, status } : order))
     );
   }
 
   async function deleteOrder(id: string) {
-    const ok = confirm("¿Seguro que deseas enviar esta orden a la papelera?");
+    const ok = confirm(
+      "Esta acción enviará la orden a la papelera y restaurará el inventario descontado. ¿Deseas continuar?"
+    );
 
     if (!ok) return;
 
-    const { error } = await supabase
-      .from("orders")
-      .update({
-        deleted_at: new Date().toISOString(),
-      })
-      .eq("id", id);
+    try {
+      setDeletingOrderId(id);
 
-    if (error) {
-      alert(`Error eliminando orden: ${error.message}`);
-      return;
+      const { data: order, error: orderError } = await supabase
+        .from("orders")
+        .select("id, deleted_at")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (orderError) throw orderError;
+
+      if (!order) {
+        throw new Error("No se encontró la orden.");
+      }
+
+      if (order.deleted_at) {
+        setOrders((prev) => prev.filter((item) => item.id !== id));
+        return;
+      }
+
+      const { data: orderItems, error: itemsError } = await supabase
+        .from("order_items")
+        .select(`
+          id,
+          order_id,
+          item_type,
+          product_id,
+          combo_id,
+          product_name,
+          quantity,
+          price,
+          subtotal
+        `)
+        .eq("order_id", id);
+
+      if (itemsError) throw itemsError;
+
+      await restoreOrderInventory(orderItems || []);
+
+      const { error: deleteError } = await supabase
+        .from("orders")
+        .update({
+          deleted_at: new Date().toISOString(),
+          status: "cancelled",
+        })
+        .eq("id", id)
+        .is("deleted_at", null);
+
+      if (deleteError) throw deleteError;
+
+      setOrders((prev) => prev.filter((order) => order.id !== id));
+    } catch (error: any) {
+      console.error("ERROR ENVIANDO ORDEN A PAPELERA:", error);
+      alert(error?.message || "No se pudo eliminar la orden.");
+    } finally {
+      setDeletingOrderId(null);
     }
-
-    setOrders((prev) => prev.filter((order) => order.id !== id));
   }
 
   return (
@@ -258,6 +304,7 @@ export default function OrdersManager({
           {filteredOrders.map((order) => {
             const customer = getCustomer(order);
             const orderNumber = getOrderNumber(order);
+            const isDeleting = deletingOrderId === order.id;
 
             return (
               <article
@@ -312,8 +359,10 @@ export default function OrdersManager({
                       <button
                         type="button"
                         onClick={() => deleteOrder(order.id)}
-                        className="rounded-xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100"
-                        aria-label="Enviar orden a la papelera"
+                        disabled={isDeleting}
+                        className="rounded-xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Enviar orden a la papelera y restaurar stock"
+                        title="Enviar a papelera y restaurar stock"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -358,7 +407,7 @@ export default function OrdersManager({
                     </p>
 
                     <p className="mt-1 text-sm font-semibold text-slate-500">
-                      {order.municipality || order.state || ""}{" "}
+                      {order.municipality || order.state || ""} {" "}
                       {order.zone_name || order.zip_code || ""}
                     </p>
 
@@ -462,7 +511,7 @@ export default function OrdersManager({
 
                         <div className="border-t pt-4 text-right">
                           <p className="text-lg font-black">
-                            Total:{" "}
+                            Total: {" "}
                             <span className="text-green-600">
                               ${Number(order.total || 0).toFixed(2)}
                             </span>

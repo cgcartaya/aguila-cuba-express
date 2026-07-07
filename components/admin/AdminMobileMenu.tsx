@@ -39,7 +39,6 @@ const saasLinks: MenuItem[] = [
 const storeLinks: MenuItem[] = [
   { label: "Dashboard tienda", href: "/admin", icon: LayoutDashboard },
   { label: "Productos", href: "/admin/products", icon: Package },
-  { label: "Categorías", href: "/admin/categories", icon: Tags },
   { label: "Combos", href: "/admin/combos", icon: Layers3 },
   { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
