@@ -24,7 +24,7 @@ export default function MainBanner({ storeId }: MainBannerProps) {
   const [banners, setBanners] = useState<Banner[]>([]);
 
   const [emblaRef, emblaApi] = useEmblaCarousel(
-    { loop: true, align: "start" },
+    { loop: true, align: "center" },
     [
       Autoplay({
         delay: 5000,

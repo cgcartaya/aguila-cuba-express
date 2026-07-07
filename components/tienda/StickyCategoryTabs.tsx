@@ -1,5 +1,15 @@
 "use client";
 
+/* =========================================================
+   STICKY CATEGORY TABS - HOME V5 FIX
+
+   - Fixed debajo del Header.
+   - Se queda siempre visible.
+   - Colores originales.
+   - Sin iconos.
+   - Sin scrollIntoView.
+========================================================= */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export type StickyCategory = {
@@ -12,7 +22,8 @@ type Props = {
 };
 
 const HEADER_OFFSET = 58;
-const SCROLL_OFFSET = 116;
+const TABS_HEIGHT = 48;
+const SCROLL_OFFSET = HEADER_OFFSET + TABS_HEIGHT + 12;
 
 export default function StickyCategoryTabs({ categories }: Props) {
   const filteredCategories = useMemo(() => {
@@ -45,6 +56,7 @@ export default function StickyCategoryTabs({ categories }: Props) {
 
         filteredCategories.forEach((category) => {
           const element = document.getElementById(category.name);
+
           if (!element) return;
 
           const rect = element.getBoundingClientRect();
@@ -69,6 +81,7 @@ export default function StickyCategoryTabs({ categories }: Props) {
 
   useEffect(() => {
     const container = tabsContainerRef.current;
+
     if (!container || !activeCategory) return;
 
     const activeButton = Array.from(
@@ -90,6 +103,7 @@ export default function StickyCategoryTabs({ categories }: Props) {
 
   const scrollToCategory = (category: string) => {
     const section = document.getElementById(category);
+
     if (!section) return;
 
     setActiveCategory(category);
@@ -111,10 +125,13 @@ export default function StickyCategoryTabs({ categories }: Props) {
   if (filteredCategories.length === 0) return null;
 
   return (
-    <div className="-mx-4 bg-white px-4 py-2 shadow-sm">
+    <div
+      className="fixed left-0 right-0 z-40 border-b bg-white px-4 py-2 shadow-sm"
+      style={{ top: HEADER_OFFSET, minHeight: TABS_HEIGHT }}
+    >
       <div
         ref={tabsContainerRef}
-        className="flex max-w-full gap-2 overflow-x-auto overflow-y-hidden pb-1 pr-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="mx-auto flex w-full max-w-7xl gap-2 overflow-x-auto overflow-y-hidden pb-1 pr-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {filteredCategories.map((category) => {
           const isActive = activeCategory === category.name;
@@ -126,9 +143,7 @@ export default function StickyCategoryTabs({ categories }: Props) {
               type="button"
               data-category={category.name}
               onClick={() => scrollToCategory(category.name)}
-              style={{
-                backgroundColor,
-              }}
+              style={{ backgroundColor }}
               className={`
                 shrink-0
                 whitespace-nowrap

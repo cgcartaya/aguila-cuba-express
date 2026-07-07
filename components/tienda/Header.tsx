@@ -62,7 +62,7 @@ export default function Header({ cartCount }: HeaderProps) {
   return (
     <>
       <header
-        className="sticky top-0 z-50 w-full max-w-full shadow-[0_8px_22px_rgba(15,23,42,0.14)]"
+        className="fixed left-0 right-0 top-0 z-50 h-[58px] w-full max-w-full shadow-[0_8px_22px_rgba(15,23,42,0.14)]"
         style={{
           background: `linear-gradient(90deg, ${primaryColor}, ${secondaryColor})`,
         }}
@@ -71,7 +71,7 @@ export default function Header({ cartCount }: HeaderProps) {
           className="
             mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[40px_minmax(0,1fr)_40px]
             items-center gap-2 px-2
-            sm:h-[64px] sm:grid-cols-[46px_minmax(0,1fr)_46px] sm:gap-3 sm:px-4
+            sm:grid-cols-[46px_minmax(0,1fr)_46px] sm:gap-3 sm:px-4
           "
         >
           <button

@@ -1,5 +1,14 @@
 "use client";
 
+/* =========================================================
+   PÁGINA PRINCIPAL - TIENDA PÚBLICA - HOME V5
+
+   - Header y categorías sticky viven en layout.
+   - La página solo controla el contenido:
+     Banner → Categorías/cuadrículas → Combos → Productos.
+   - Search V2 con resultados planos.
+========================================================= */
+
 import { useEffect, useMemo, useState } from "react";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
@@ -8,7 +17,6 @@ import { getDefaultStore } from "@/lib/services/stores";
 
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
-import StickyCategoryTabs from "@/components/tienda/StickyCategoryTabs";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
@@ -59,13 +67,17 @@ export default function TiendaPage() {
 
       setStoreId(store.id);
 
-      const [{ data: productsData }, { data: categoriesData }] =
+      const [{ data: productsData, error }, { data: categoriesData }] =
         await Promise.all([
           getStoreProductsByStoreId(store.id),
           getActiveCategoriesByStoreId(store.id),
         ]);
 
       if (!mounted) return;
+
+      if (error) {
+        console.error("Error cargando productos:", error);
+      }
 
       const productosConImagenPrincipal =
         ((productsData || []) as ProductFromSupabase[]).map((producto) => {
@@ -100,19 +112,6 @@ export default function TiendaPage() {
     );
   }, [productos, busqueda, hayBusqueda]);
 
-  const categoriasConCombos = useMemo(() => {
-    return [
-      {
-        name: "Combos",
-        color: "#061b3a",
-      },
-      ...categorias.map((categoria) => ({
-        name: categoria.name,
-        color: categoria.color,
-      })),
-    ];
-  }, [categorias]);
-
   const productosPorCategoria = useMemo(() => {
     return categorias.map((categoria) => ({
       categoria: categoria.name,
@@ -132,10 +131,6 @@ export default function TiendaPage() {
         />
       ) : (
         <>
-          {categoriasConCombos.length > 0 && (
-            <StickyCategoryTabs categories={categoriasConCombos} />
-          )}
-
           <div className="mt-4 md:mt-5">
             <MainBanner storeId={storeId || undefined} />
           </div>
@@ -144,7 +139,6 @@ export default function TiendaPage() {
 
           <StoreCombosSection storeId={storeId || undefined} />
 
-         
           <div className="mt-2">
             {productosPorCategoria.map((grupo) => (
               <CategoryProductsSection
