@@ -180,13 +180,14 @@ export default function ProductDetailPage({ params }: PageProps) {
           </button>
 
           <div className="relative h-[80vh] w-full max-w-4xl">
-            <Image
-              src={selectedImage || "/placeholder-product.png"}
-              alt={product.name}
-              fill
-              sizes="100vw"
-              className="object-contain"
-            />
+           <img
+  src={selectedImage || "/placeholder-product.png"}
+  alt={product.name}
+  className="h-full w-full object-contain"
+  onError={(event) => {
+    event.currentTarget.src = "/placeholder-product.png";
+  }}
+/>
           </div>
         </div>
       )}
