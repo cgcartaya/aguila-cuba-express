@@ -3,32 +3,25 @@
 /* =========================================================
    STORE CONTEXT
 
-   Fase 3.8 - Contexto único de tienda
-
-   Reglas:
-   - En admin NO se usa getDefaultStore().
-   - En admin:
-     Super Admin  -> puede usar localStorage para escoger tienda.
-     Store Owner  -> la tienda real viene de useAdminAccess en cada módulo.
-   - En tienda pública:
-     /tienda/[slug] -> resuelve por slug.
-     /tienda        -> fallback a tienda default actual.
+   Multiempresa + dominios:
+   - Admin: no usa getDefaultStore().
+   - /tienda/[slug]: resuelve por slug.
+   - Dominios personalizados: resuelve por domain.
+   - Subdominios de PerlaMarketplace:
+     dlracing.perlamarketplace.com -> resuelve por subdomain.
+   - /tienda: fallback a tienda default actual.
 ========================================================= */
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
-
+import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import type { Store } from "@/lib/saas/store-types";
 
 import {
   getDefaultStore,
+  getStoreByDomain,
   getStoreBySlug,
+  getStoreBySubdomain,
 } from "@/lib/services/stores";
 
 type StoreContextValue = {
@@ -45,12 +38,41 @@ const StoreContext = createContext<StoreContextValue>({
   clearCurrentStore: () => {},
 });
 
+const PLATFORM_DOMAIN = "perlamarketplace.com";
+
 const reservedTiendaRoutes = [
   "cart",
+  "checkout",
   "producto",
+  "productos",
   "combos",
   "productos-destacados",
+  "categorias",
 ];
+
+function normalizeHost(hostname: string) {
+  return hostname.replace(/^www\./, "").toLowerCase().trim();
+}
+
+function isLocalHost(hostname: string) {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".localhost")
+  );
+}
+
+function getSubdomainFromHost(hostname: string) {
+  const host = normalizeHost(hostname);
+
+  if (!host.endsWith(`.${PLATFORM_DOMAIN}`)) return null;
+
+  const subdomain = host.replace(`.${PLATFORM_DOMAIN}`, "").trim();
+
+  if (!subdomain || subdomain === "www") return null;
+
+  return subdomain;
+}
 
 export function StoreProvider({
   children,
@@ -63,11 +85,7 @@ export function StoreProvider({
   const [loading, setLoading] = useState(true);
 
   function setCurrentStore(newStore: Store) {
-    localStorage.setItem(
-      "saas-current-store",
-      JSON.stringify(newStore)
-    );
-
+    localStorage.setItem("saas-current-store", JSON.stringify(newStore));
     setStore(newStore);
   }
 
@@ -78,6 +96,13 @@ export function StoreProvider({
 
   useEffect(() => {
     let mounted = true;
+
+    async function finish(currentStore: Store | null) {
+      if (!mounted) return;
+
+      setStore(currentStore);
+      setLoading(false);
+    }
 
     async function loadStore() {
       setLoading(true);
@@ -100,24 +125,49 @@ export function StoreProvider({
         if (savedStore) {
           try {
             const parsedStore = JSON.parse(savedStore) as Store;
-
-            if (mounted) {
-              setStore(parsedStore);
-              setLoading(false);
-            }
-
+            await finish(parsedStore);
             return;
           } catch {
             localStorage.removeItem("saas-current-store");
           }
         }
 
-        if (mounted) {
-          setStore(null);
-          setLoading(false);
-        }
-
+        await finish(null);
         return;
+      }
+
+      /* ===============================================
+         DOMINIO / SUBDOMINIO
+
+         - aguilacubaexpress.com -> domain en stores.
+         - dlracing.perlamarketplace.com -> subdomain en stores.
+      =============================================== */
+
+      if (typeof window !== "undefined") {
+        const rawHost = window.location.hostname.toLowerCase();
+        const cleanHost = normalizeHost(rawHost);
+
+        if (!isLocalHost(cleanHost)) {
+          const subdomain = getSubdomainFromHost(cleanHost);
+
+          if (subdomain) {
+            const storeBySubdomain = await getStoreBySubdomain(subdomain);
+
+            if (storeBySubdomain) {
+              await finish(storeBySubdomain);
+              return;
+            }
+          }
+
+          if (cleanHost !== PLATFORM_DOMAIN) {
+            const storeByDomain = await getStoreByDomain(cleanHost);
+
+            if (storeByDomain) {
+              await finish(storeByDomain);
+              return;
+            }
+          }
+        }
       }
 
       /* ===============================================
@@ -128,18 +178,11 @@ export function StoreProvider({
         const parts = pathname.split("/").filter(Boolean);
         const possibleSlug = parts[1];
 
-        if (
-          possibleSlug &&
-          !reservedTiendaRoutes.includes(possibleSlug)
-        ) {
+        if (possibleSlug && !reservedTiendaRoutes.includes(possibleSlug)) {
           const storeBySlug = await getStoreBySlug(possibleSlug);
 
           if (storeBySlug) {
-            if (mounted) {
-              setStore(storeBySlug);
-              setLoading(false);
-            }
-
+            await finish(storeBySlug);
             return;
           }
         }
@@ -152,13 +195,14 @@ export function StoreProvider({
          siendo la tienda principal pública.
       =============================================== */
 
-      const defaultStoreResult = await getDefaultStore();
-      const data = defaultStoreResult?.data ?? null;
-
-      if (mounted) {
-        setStore((data as Store) || null);
-        setLoading(false);
+      if (isTiendaRoute) {
+        const defaultStoreResult = await getDefaultStore();
+        const data = defaultStoreResult?.data ?? null;
+        await finish((data as Store) || null);
+        return;
       }
+
+      await finish(null);
     }
 
     loadStore();

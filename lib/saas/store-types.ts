@@ -7,6 +7,12 @@ export interface Store {
   name: string
   slug: string
   domain: string | null
+  subdomain: string | null
+
+  meta_title: string | null
+  meta_description: string | null
+  og_image_url: string | null
+
   logo_url: string | null
   primary_color: string | null
   secondary_color: string | null

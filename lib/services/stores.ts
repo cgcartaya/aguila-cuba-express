@@ -6,6 +6,10 @@ const STORE_PUBLIC_FIELDS = `
   name,
   slug,
   domain,
+  subdomain,
+  meta_title,
+  meta_description,
+  og_image_url,
   logo_url,
   primary_color,
   secondary_color,
@@ -70,14 +74,35 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
 }
 
 export async function getStoreByDomain(domain: string): Promise<Store | null> {
+  const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim()
+
   const { data, error } = await supabase
     .from("stores")
     .select(STORE_PUBLIC_FIELDS)
-    .eq("domain", domain)
+    .eq("domain", cleanDomain)
     .maybeSingle()
 
   if (error) {
     console.error("Error loading store by domain:", error)
+    return null
+  }
+
+  return data as Store | null
+}
+
+export async function getStoreBySubdomain(
+  subdomain: string
+): Promise<Store | null> {
+  const cleanSubdomain = subdomain.toLowerCase().trim()
+
+  const { data, error } = await supabase
+    .from("stores")
+    .select(STORE_PUBLIC_FIELDS)
+    .eq("subdomain", cleanSubdomain)
+    .maybeSingle()
+
+  if (error) {
+    console.error("Error loading store by subdomain:", error)
     return null
   }
 
@@ -92,22 +117,22 @@ export async function getDefaultStore(): Promise<{ data: Store | null; error: un
   if (!defaultStorePromise) {
     defaultStorePromise = Promise.resolve(
       supabase
-      .from("stores")
-      .select(STORE_PUBLIC_FIELDS)
-      .eq("slug", "aguila")
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (!error && data) {
-          defaultStoreCache = data as Store
-        }
+        .from("stores")
+        .select(STORE_PUBLIC_FIELDS)
+        .eq("slug", "aguila")
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (!error && data) {
+            defaultStoreCache = data as Store
+          }
 
-        defaultStorePromise = null
+          defaultStorePromise = null
 
-        return {
-          data: (data as Store | null) || null,
-          error,
-        }
-      })
+          return {
+            data: (data as Store | null) || null,
+            error,
+          }
+        })
     )
   }
 
@@ -123,6 +148,10 @@ export async function createStore(store: {
   name: string
   slug: string
   domain?: string | null
+  subdomain?: string | null
+  meta_title?: string | null
+  meta_description?: string | null
+  og_image_url?: string | null
   logo_url?: string | null
   primary_color?: string | null
   secondary_color?: string | null
@@ -148,6 +177,10 @@ export async function updateStore(
     name?: string
     slug?: string
     domain?: string | null
+    subdomain?: string | null
+    meta_title?: string | null
+    meta_description?: string | null
+    og_image_url?: string | null
     logo_url?: string | null
     primary_color?: string | null
     secondary_color?: string | null
