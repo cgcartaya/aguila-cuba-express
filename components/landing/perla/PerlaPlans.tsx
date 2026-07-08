@@ -7,18 +7,19 @@ const plans = [
     price: "$20",
     period: "/mes",
     description:
-      "Ideal para negocios pequeños que quieren comenzar a vender online rápido.",
+      "Ideal para negocios pequeños que quieren empezar a vender online rápido.",
     badge: "Para empezar",
     icon: Rocket,
     buttonText: "Elegir Plan Básico",
-    whatsappText:
-      "Hola, quiero contratar el Plan Básico de Perla Marketplace.",
+    whatsappText: "Hola, quiero contratar el Plan Básico de Perla Marketplace.",
     features: [
       "Tienda online profesional",
       "Subdominio incluido",
       "Productos, categorías y banners",
       "Órdenes por WhatsApp",
       "Panel administrativo",
+      "Configuración inicial incluida",
+      "Sin comisiones por venta",
     ],
   },
   {
@@ -26,26 +27,27 @@ const plans = [
     price: "$35",
     period: "/mes",
     description:
-      "Para negocios que quieren una tienda más completa, personalizada y preparada para crecer.",
-    badge: "Recomendado",
+      "Para negocios que quieren una tienda más completa, personalizada y lista para crecer.",
+    badge: "Más popular",
     icon: Crown,
     buttonText: "Elegir Plan Pro",
-    whatsappText:
-      "Hola, quiero contratar el Plan Pro de Perla Marketplace.",
+    whatsappText: "Hola, quiero contratar el Plan Pro de Perla Marketplace.",
     featured: true,
     features: [
       "Todo lo del Plan Básico",
       "Dominio personalizado",
       "Combos y productos destacados",
       "Configuración avanzada de tienda",
-      "Soporte prioritario",
+      "Soporte prioritario por WhatsApp",
+      "Mejor acompañamiento inicial",
+      "Sin contratos largos",
     ],
   },
 ];
 
 export default function PerlaPlans() {
   return (
-    <section id="planes" className="px-5 py-16 lg:px-8">
+    <section id="planes" className="px-5 py-14 lg:px-8 lg:py-16">
       <div className="mx-auto max-w-7xl">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm font-black uppercase tracking-[0.3em] text-violet-600">
@@ -57,31 +59,28 @@ export default function PerlaPlans() {
           </h2>
 
           <p className="mt-4 text-base leading-8 text-[#5c6794] sm:text-lg">
-            En la landing mostramos lo esencial. Al contratar verás todos los
-            detalles del plan, configuración y próximos pasos.
+            Mostramos lo esencial para que el cliente decida rápido. Los detalles
+            completos van después en el proceso de contratación.
           </p>
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           {plans.map((plan) => {
             const Icon = plan.icon;
-
-            const href = `${whatsappUrl}&text=${encodeURIComponent(
-              plan.whatsappText
-            )}`;
+            const href = `${whatsappUrl}&text=${encodeURIComponent(plan.whatsappText)}`;
 
             return (
               <article
                 key={plan.name}
-                className={`relative overflow-hidden rounded-[2rem] border p-7 shadow-sm transition hover:-translate-y-1 hover:shadow-xl ${
+                className={`relative overflow-hidden rounded-[2rem] border p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:p-7 ${
                   plan.featured
                     ? "border-violet-300 bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-violet-200"
                     : "border-violet-100 bg-white text-[#071044]"
                 }`}
               >
                 {plan.featured && (
-                  <div className="absolute right-5 top-5 rounded-full bg-white/20 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white backdrop-blur">
-                    Recomendado
+                  <div className="absolute right-4 top-4 rounded-full bg-white/20 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur sm:right-5 sm:top-5 sm:px-4">
+                    Más popular
                   </div>
                 )}
 
@@ -97,7 +96,7 @@ export default function PerlaPlans() {
 
                 <div className="mt-6">
                   <p
-                    className={`text-sm font-black uppercase tracking-[0.25em] ${
+                    className={`text-xs font-black uppercase tracking-[0.25em] sm:text-sm ${
                       plan.featured ? "text-white/70" : "text-violet-600"
                     }`}
                   >
@@ -126,7 +125,7 @@ export default function PerlaPlans() {
                   </span>
                 </div>
 
-                <div className="mt-7 space-y-3">
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
                   {plan.features.map((feature) => (
                     <div key={feature} className="flex items-start gap-3">
                       <span
@@ -140,7 +139,7 @@ export default function PerlaPlans() {
                       </span>
 
                       <p
-                        className={`font-semibold ${
+                        className={`text-sm font-semibold leading-6 ${
                           plan.featured ? "text-white/85" : "text-[#34406f]"
                         }`}
                       >

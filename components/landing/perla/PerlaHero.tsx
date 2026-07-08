@@ -1,9 +1,11 @@
+import type { ReactNode } from "react";
 import {
   BadgeCheck,
   Bell,
   Box,
   ChartNoAxesCombined,
   CheckCircle2,
+  Clock3,
   Globe2,
   MessageCircle,
   Package,
@@ -13,14 +15,22 @@ import {
   Sparkles,
   Store,
   Users,
+  Zap,
 } from "lucide-react";
 import { demoUrl, whatsappUrl } from "./links";
 
 const trustItems = [
-  "Fácil de usar",
-  "Sin comisiones por venta",
-  "Soporte 24/7",
-  "Datos seguros",
+  "Lista en 48h",
+  "Desde $20/mes",
+  "Sin comisión",
+  "WhatsApp incluido",
+];
+
+const mobileHighlights = [
+  [Clock3, "48h", "Tienda lista"],
+  [ShoppingCart, "$20", "Plan básico"],
+  [MessageCircle, "WA", "Pedidos directos"],
+  [Globe2, "URL", "Subdominio incluido"],
 ];
 
 function FloatingBadge({
@@ -30,7 +40,7 @@ function FloatingBadge({
   text,
 }: {
   className: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   text: string;
 }) {
@@ -53,6 +63,55 @@ function FloatingBadge({
   );
 }
 
+function MobileHeroCard() {
+  return (
+    <div className="mx-auto w-full max-w-md lg:hidden">
+      <div className="rounded-[2rem] border border-violet-100 bg-white/90 p-5 shadow-2xl shadow-violet-100 backdrop-blur">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
+              Paquete inicial
+            </p>
+            <h3 className="mt-2 text-2xl font-black text-[#071044]">
+              Tu tienda lista para vender
+            </h3>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#5c6794]">
+              Configuración, catálogo, WhatsApp y subdominio desde el primer plan.
+            </p>
+          </div>
+
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white shadow-lg shadow-violet-300">
+            <Zap className="h-8 w-8" strokeWidth={2.5} />
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {mobileHighlights.map(([Icon, value, label]) => {
+            const HighlightIcon = Icon as typeof Clock3;
+            return (
+              <div key={label as string} className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+                <HighlightIcon className="h-5 w-5 text-violet-600" />
+                <p className="mt-3 text-2xl font-black text-[#071044]">{value as string}</p>
+                <p className="mt-1 text-xs font-bold text-[#5c6794]">{label as string}</p>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 rounded-2xl bg-[#07165f] p-4 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-white/60">Ejemplo</p>
+              <p className="font-black">cliente.perlamarketplace.com</p>
+            </div>
+            <BadgeCheck className="h-6 w-6 text-emerald-300" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DashboardMockup() {
   const stats = [
     ["Ventas", "$8,250", "+16.5%"],
@@ -69,7 +128,7 @@ function DashboardMockup() {
   ];
 
   return (
-    <div className="relative mx-auto w-full max-w-[760px] lg:animate-[float_7s_ease-in-out_infinite]">
+    <div className="relative mx-auto hidden w-full max-w-[760px] lg:block lg:animate-[float_7s_ease-in-out_infinite]">
       <FloatingBadge
         className="absolute -right-12 top-14 z-20"
         icon={<BadgeCheck className="h-5 w-5" />}
@@ -111,13 +170,13 @@ function DashboardMockup() {
             )}
           </aside>
 
-          <div className="flex-1 p-5 sm:p-7">
+          <div className="flex-1 p-7">
             <div className="mb-6 flex items-center justify-between">
               <div>
                 <p className="text-sm font-black text-[#7c86b6]">
                   Hola, Admin 👋
                 </p>
-                <h3 className="mt-1 text-xl font-black text-[#081044] sm:text-2xl">
+                <h3 className="mt-1 text-2xl font-black text-[#081044]">
                   Dashboard
                 </h3>
               </div>
@@ -128,7 +187,7 @@ function DashboardMockup() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-3 xl:grid-cols-4">
               {stats.map(([label, value, growth]) => (
                 <div
                   key={label}
@@ -192,7 +251,7 @@ function DashboardMockup() {
         </div>
       </div>
 
-      <div className="mx-auto -mt-10 w-[210px] rotate-3 rounded-[2rem] border border-slate-200 bg-[#07165f] p-3 shadow-2xl shadow-violet-200 lg:absolute lg:-right-16 lg:bottom-6 lg:mt-0">
+      <div className="absolute -right-16 bottom-6 w-[210px] rotate-3 rounded-[2rem] border border-slate-200 bg-[#07165f] p-3 shadow-2xl shadow-violet-200">
         <div className="rounded-[1.5rem] bg-white p-3 text-[#081044]">
           <div className="mb-3 flex items-center justify-between">
             <div>
@@ -251,7 +310,7 @@ export default function PerlaHero() {
         <Sparkles className="h-6 w-6 animate-pulse" />
       </div>
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
         <div className="text-center lg:text-left">
           <p className="mx-auto mb-5 inline-flex items-center gap-2 rounded-2xl border border-violet-200 bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-violet-700 shadow-sm backdrop-blur lg:mx-0">
             <Globe2 className="h-4 w-4" />
@@ -266,8 +325,8 @@ export default function PerlaHero() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl text-base font-medium leading-8 text-[#4f5b8c] sm:text-lg lg:mx-0">
-            Perla Marketplace es la plataforma todo en uno para crear,
-            administrar y hacer crecer tu negocio online sin complicaciones.
+            Creamos tu tienda con catálogo, WhatsApp, subdominio y panel de
+            administración para que empieces a vender sin complicaciones.
           </p>
 
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
@@ -294,7 +353,7 @@ export default function PerlaHero() {
             {trustItems.map((item) => (
               <div
                 key={item}
-                className="flex items-center justify-center gap-2 rounded-xl bg-white/60 px-3 py-2 text-xs font-black text-[#4f5b8c] shadow-sm backdrop-blur sm:justify-start"
+                className="flex items-center justify-center gap-2 rounded-xl bg-white/70 px-3 py-2 text-xs font-black text-[#4f5b8c] shadow-sm backdrop-blur sm:justify-start"
               >
                 <CheckCircle2 className="h-4 w-4 text-violet-600" />
                 {item}
@@ -303,6 +362,7 @@ export default function PerlaHero() {
           </div>
         </div>
 
+        <MobileHeroCard />
         <DashboardMockup />
       </div>
     </section>
