@@ -60,6 +60,14 @@ export default function StoreCombosSection({
   }, [storeId, allowDefaultStore]);
 
   if (loading) return null;
+  if (loading) {
+    return (
+      <section className="py-3">
+        <div className="h-[500px]" />
+      </section>
+    );
+  }
+
   if (combos.length === 0) return null;
 
   return (

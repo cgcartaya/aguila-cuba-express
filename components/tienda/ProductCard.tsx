@@ -44,7 +44,7 @@ const productUrl =
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link href={productUrl}>
-        <div className="relative h-[120px] w-full bg-white p-2 md:h-[150px]">
+        <div className="relative aspect-square w-full bg-white p-2">
           {outOfStock && (
             <div className="absolute left-2 top-2 z-10 rounded-full bg-red-600 px-2 py-1 text-[10px] font-black text-white shadow">
               AGOTADO

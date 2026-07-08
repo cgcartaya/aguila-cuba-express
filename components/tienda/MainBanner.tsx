@@ -127,7 +127,7 @@ export default function MainBanner({ storeId, storeSlug }: MainBannerProps) {
   if (banners.length === 0) return null;
 
   return (
-    <section className="relative w-full overflow-hidden">
+    <section className="relative w-full overflow-hidden min-h-[220px] md:min-h-[420px]">
       <div
         ref={emblaRef}
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl md:rounded-3xl"

@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  compress: true,
+  poweredByHeader: false,
   images: {
     remotePatterns: [
       {
@@ -8,6 +10,7 @@ const nextConfig: NextConfig = {
         hostname: "ejjftyknfqskxqhokeqd.supabase.co",
       },
     ],
+    formats: ["image/avif", "image/webp"],
   },
 };
 
