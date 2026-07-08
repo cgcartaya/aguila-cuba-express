@@ -5,7 +5,7 @@ import { useState } from "react";
 
 const slides = [
   {
-    image: "/hero-banner.png",
+    image: "/hero-banner.webp",
     label: "Envíos a Cuba",
     title: "ENVÍOS A CUBA",
     subtitle: "Tu puente confiable entre Miami y Cuba.",
@@ -13,7 +13,7 @@ const slides = [
     buttonHref: "/rastrear",
   },
   {
-    image: "/slide-store.png",
+    image: "/slide-store.webp",
     label: "Compras en USA",
     title: "COMPRAS EN USA",
     subtitle: "Tú eliges, nosotros compramos y lo enviamos a Cuba.",
@@ -21,7 +21,7 @@ const slides = [
     buttonHref: "/tienda",
   },
   {
-    image: "/slide-tracking.png",
+    image: "/slide-tracking.webp",
     label: "Rastreo en línea",
     title: "RASTREA TU ENVÍO",
     subtitle: "Consulta el estado de tu paquete en tiempo real.",
@@ -58,7 +58,7 @@ export default function Home() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
           <a href="/" className="flex items-center gap-3">
             <Image
-              src="/logo.png"
+              src="/logo.webp"
               alt="Águila Cuba Express"
               width={70}
               height={70}
@@ -274,7 +274,7 @@ export default function Home() {
           </div>
 
           <Image
-            src="/services-boxes.png"
+            src="/services-boxes.webp"
             alt="Tienda Águila Cuba Express"
             width={800}
             height={500}
