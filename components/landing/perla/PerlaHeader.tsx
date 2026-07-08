@@ -1,91 +1,72 @@
 "use client";
 
 import { useState } from "react";
-import { demoUrl, whatsappUrl } from "./links";
+import { Menu, X } from "lucide-react";
+import PerlaLogo from "./PerlaLogo";
+import { whatsappUrl } from "./links";
 
-const navLinks = [
-  { label: "Funciones", href: "#funciones" },
-  { label: "Cómo funciona", href: "#como-funciona" },
-  { label: "Clientes", href: "#clientes" },
-  { label: "Login", href: "/admin" },
+const navItems = [
+  ["Características", "#caracteristicas"],
+  ["Cómo funciona", "#como-funciona"],
+  ["Planes", "#planes"],
+  ["Demos", "#clientes"],
+  ["Login", "/admin"],
 ];
 
 export default function PerlaHeader() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#050b18]/90 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-4">
-        <a href="/" className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400 text-xl font-black text-slate-950 shadow-lg shadow-cyan-400/30">
-            P
-          </div>
+    <header className="sticky top-4 z-50 px-4 lg:px-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between rounded-3xl border border-white/70 bg-white/85 px-5 py-3 shadow-2xl shadow-violet-100/80 backdrop-blur-2xl lg:px-6">
+        <PerlaLogo />
 
-          <div>
-            <p className="text-base font-black leading-tight sm:text-lg">
-              Perla Marketplace
-            </p>
-            <p className="text-xs font-semibold text-cyan-300">
-              SaaS para tiendas online
-            </p>
-          </div>
-        </a>
-
-        <nav className="hidden items-center gap-7 text-sm font-bold text-white/75 lg:flex">
-          {navLinks.map((link) => (
-            <a key={link.href} href={link.href} className="hover:text-cyan-300">
-              {link.label}
+        <nav className="hidden items-center gap-8 text-sm font-black text-[#101a4d]/75 lg:flex">
+          {navItems.map(([label, href]) => (
+            <a
+              key={label}
+              href={href}
+              className="relative transition hover:text-violet-600 after:absolute after:-bottom-2 after:left-0 after:h-0.5 after:w-0 after:rounded-full after:bg-violet-600 after:transition-all hover:after:w-full"
+            >
+              {label}
             </a>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
           <a
-            href={demoUrl}
-            target="_blank"
-            className="rounded-xl border border-white/15 px-5 py-3 text-sm font-black hover:border-cyan-300/70"
-          >
-            Ver demo
-          </a>
-
-          <a
             href={whatsappUrl}
             target="_blank"
-            className="rounded-xl bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-400/20"
+            className="rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-6 py-3 text-sm font-black text-white shadow-xl shadow-violet-400/30 transition hover:-translate-y-0.5 hover:shadow-violet-500/40"
           >
-            Crear tienda
+            Crear mi tienda
           </a>
         </div>
 
         <button
-          type="button"
-          onClick={() => setMenuOpen((value) => !value)}
-          className="rounded-xl border border-white/15 px-3 py-2 text-2xl lg:hidden"
+          onClick={() => setOpen((value) => !value)}
+          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 bg-white/80 text-[#081044] shadow-sm lg:hidden"
           aria-label="Abrir menú"
         >
-          ☰
+          {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
-      {menuOpen && (
-        <div className="border-t border-white/10 bg-[#071225] px-5 py-5 lg:hidden">
-          <nav className="flex flex-col gap-4 font-bold text-white/80">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.label}
+      {open && (
+        <div className="mx-auto mt-3 max-w-7xl rounded-3xl border border-violet-100 bg-white/95 px-5 py-5 shadow-2xl shadow-violet-100/80 backdrop-blur-2xl lg:hidden">
+          <nav className="flex flex-col gap-4 text-sm font-black text-[#101a4d]/80">
+            {navItems.map(([label, href]) => (
+              <a key={label} href={href} onClick={() => setOpen(false)}>
+                {label}
               </a>
             ))}
 
             <a
               href={whatsappUrl}
               target="_blank"
-              className="rounded-xl bg-cyan-400 px-5 py-3 text-center font-black text-slate-950"
+              className="rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-6 py-4 text-center font-black text-white shadow-lg shadow-violet-400/25"
             >
-              Crear tienda
+              Crear mi tienda
             </a>
           </nav>
         </div>
