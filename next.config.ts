@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+console.log("? NEXT CONFIG CARGADO");
+
 const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
@@ -8,7 +10,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "ejjtfyknfqskxqhokegd.supabase.co",
+        hostname: "**.supabase.co",
+        pathname: "/**",
       },
     ],
     formats: ["image/avif", "image/webp"],
