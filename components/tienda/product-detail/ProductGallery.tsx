@@ -1,5 +1,10 @@
 "use client";
 
+/* =========================================================
+   PRODUCT GALLERY
+   Usa <img> normal para imágenes de productos de Supabase.
+========================================================= */
+
 type ProductImage = {
   id: string;
   image_url: string;
@@ -15,6 +20,10 @@ type ProductGalleryProps = {
   onOpenZoom: () => void;
 };
 
+function getSafeImageUrl(url?: string | null) {
+  return url?.trim() || "/placeholder-product.png";
+}
+
 export default function ProductGallery({
   productName,
   selectedImage,
@@ -22,8 +31,7 @@ export default function ProductGallery({
   onSelectImage,
   onOpenZoom,
 }: ProductGalleryProps) {
-  const safeSelectedImage =
-    selectedImage?.trim() || "/placeholder-product.png";
+  const safeSelectedImage = getSafeImageUrl(selectedImage);
 
   return (
     <section>
@@ -49,7 +57,7 @@ export default function ProductGallery({
 
       <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
         {images.map((img) => {
-          const imageUrl = img.image_url?.trim() || "/placeholder-product.png";
+          const imageUrl = getSafeImageUrl(img.image_url);
 
           return (
             <button

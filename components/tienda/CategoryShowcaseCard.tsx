@@ -5,9 +5,9 @@
 
    Fix multiempresa:
    - El link de la tarjeta conserva el slug de la tienda actual.
+   - Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -20,13 +20,16 @@ type Props = {
   storeSlug?: string;
 };
 
+function getSafeImageUrl(url?: string | null) {
+  return url?.trim() || "/placeholder-product.png";
+}
+
 export default function CategoryShowcaseCard({
   category,
   color,
   products,
   storeSlug,
 }: Props) {
-
   const previewProducts = products.slice(0, 4);
   const categorySlug = encodeURIComponent(category.toLowerCase());
   const isDefaultStore = !storeSlug || storeSlug === "aguila";
@@ -58,35 +61,41 @@ export default function CategoryShowcaseCard({
           backgroundColor: `${color || "#f8fafc"}15`,
         }}
       >
-        {previewProducts.map((product) => (
-          <div
-            key={product.id}
-            className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-          >
-            <div className="relative h-24 w-full rounded-lg bg-white">
-              <Image
-                src={product.image_url || "/placeholder-product.png"}
-                alt={product.name}
-                fill
-                sizes="(max-width: 640px) 36vw, 180px"
-                className="object-contain"
-              />
-            </div>
+        {previewProducts.map((product) => {
+          const imageUrl = getSafeImageUrl(product.image_url);
 
-            <p className="mt-3 line-clamp-2 min-h-[42px] text-sm font-bold text-[#061b3a]">
-              {product.name}
-            </p>
-
-            <p
-              className="mt-1 text-sm font-black"
-              style={{
-                color: color || "#2563eb",
-              }}
+          return (
+            <div
+              key={product.id}
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
             >
-              Ahorra más
-            </p>
-          </div>
-        ))}
+              <div className="h-24 w-full overflow-hidden rounded-lg bg-white">
+                <img
+                  src={imageUrl}
+                  alt={product.name}
+                  className="h-full w-full object-contain"
+                  loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.src = "/placeholder-product.png";
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 line-clamp-2 min-h-[42px] text-sm font-bold text-[#061b3a]">
+                {product.name}
+              </p>
+
+              <p
+                className="mt-1 text-sm font-black"
+                style={{
+                  color: color || "#2563eb",
+                }}
+              >
+                Ahorra más
+              </p>
+            </div>
+          );
+        })}
 
         {previewProducts.length === 0 && (
           <div className="col-span-2 rounded-xl bg-white p-8 text-center text-sm text-gray-500">

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { BadgePercent, CheckCircle2, Package } from "lucide-react";
 
@@ -30,6 +29,10 @@ type Props = {
   storeSlug?: string;
 };
 
+function getSafeImageUrl(url?: string | null) {
+  return url?.trim() || "";
+}
+
 export default function StoreComboCard({ combo, storeSlug }: Props) {
   const { addComboToCart } = useCart();
 
@@ -43,6 +46,7 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
 
   const comboPrice = Number(combo.price || 0);
   const savings = Math.max(normalPrice - comboPrice, 0);
+  const comboImageUrl = getSafeImageUrl(combo.image_url);
 
   const comboHref = storeSlug
     ? `/tienda/${storeSlug}/combos/${combo.id}`
@@ -57,7 +61,7 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link
         href={comboHref}
-        className="relative mb-3 h-[145px] w-full overflow-hidden rounded-xl bg-white"
+        className="relative mb-3 block h-[145px] w-full overflow-hidden rounded-xl bg-white"
       >
         {savings > 0 && (
           <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-[10px] font-black text-white shadow">
@@ -66,13 +70,15 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
           </div>
         )}
 
-        {combo.image_url ? (
-          <Image
-            src={combo.image_url}
+        {comboImageUrl ? (
+          <img
+            src={comboImageUrl}
             alt={combo.name}
-            fill
-            sizes="(max-width: 640px) 85vw, (max-width: 1024px) 45vw, 320px"
-            className="object-contain p-2 transition duration-300 hover:scale-105"
+            className="h-full w-full object-contain p-2 transition duration-300 hover:scale-105"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.src = "/placeholder-product.png";
+            }}
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-slate-50 text-slate-400">
@@ -139,7 +145,7 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
             id: combo.id,
             name: combo.name,
             price: combo.price,
-            image_url: combo.image_url || "",
+            image_url: comboImageUrl,
           })
         }
         className="mt-3 w-full rounded-xl bg-red-600 py-2.5 text-sm font-black text-white transition hover:bg-red-700"

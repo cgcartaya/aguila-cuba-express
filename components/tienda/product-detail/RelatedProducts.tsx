@@ -3,9 +3,9 @@
 /* =========================================================
    RELATED PRODUCTS
    Mantiene el contexto de tienda multiempresa.
+   Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
-import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 
@@ -26,6 +26,10 @@ type RelatedProduct = Product & {
 type RelatedProductsProps = {
   products: RelatedProduct[];
 };
+
+function getSafeImageUrl(url?: string | null) {
+  return url?.trim() || "/placeholder-product.png";
+}
 
 export default function RelatedProducts({
   products,
@@ -48,20 +52,20 @@ export default function RelatedProducts({
               ?.slice()
               .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
 
-          const mainImage =
+          const mainImage = getSafeImageUrl(
             orderedImages.find((img) => img.is_main)?.image_url ||
-            orderedImages[0]?.image_url ||
-            item.image_url ||
-            "/placeholder-product.png";
+              orderedImages[0]?.image_url ||
+              item.image_url
+          );
 
           const outOfStock = Number(item.stock || 0) <= 0;
 
-const isDefaultStore = store?.slug === "aguila";
+          const isDefaultStore = store?.slug === "aguila";
 
-const productUrl =
-  store?.slug && !isDefaultStore
-    ? `/tienda/${store.slug}/producto/${item.id}`
-    : `/tienda/producto/${item.id}`;
+          const productUrl =
+            store?.slug && !isDefaultStore
+              ? `/tienda/${store.slug}/producto/${item.id}`
+              : `/tienda/producto/${item.id}`;
 
           return (
             <article
@@ -69,13 +73,15 @@ const productUrl =
               className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md"
             >
               <Link href={productUrl}>
-                <div className="relative h-36 overflow-hidden rounded-xl bg-slate-100">
-                  <Image
+                <div className="h-36 overflow-hidden rounded-xl bg-slate-100">
+                  <img
                     src={mainImage}
                     alt={item.name}
-                    fill
-                    sizes="(max-width: 640px) 45vw, 180px"
-                    className="object-contain p-2"
+                    className="h-full w-full object-contain p-2"
+                    loading="lazy"
+                    onError={(event) => {
+                      event.currentTarget.src = "/placeholder-product.png";
+                    }}
                   />
                 </div>
               </Link>
@@ -108,7 +114,7 @@ const productUrl =
                 ) : (
                   <button
                     type="button"
-                    onClick={() => addToCart(item)}
+                    onClick={() => addToCart({ ...item, image_url: mainImage })}
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-2 text-sm font-bold text-white transition hover:bg-red-700"
                   >
                     <ShoppingCart size={16} />

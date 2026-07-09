@@ -3,9 +3,9 @@
 /* =========================================================
    PRODUCT CARD V2 COMPACTA
    Mantiene el contexto de tienda multiempresa.
+   Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
-import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Star } from "lucide-react";
 
@@ -17,6 +17,10 @@ type ProductCardProps = {
   product: Product;
   onAddToCart: (product: Product) => void;
 };
+
+function getSafeImageUrl(url?: string | null) {
+  return url?.trim() || "/placeholder-product.png";
+}
 
 export default function ProductCard({
   product,
@@ -30,12 +34,14 @@ export default function ProductCard({
 
   const { store } = useStore();
 
-const isDefaultStore = store?.slug === "aguila";
+  const isDefaultStore = store?.slug === "aguila";
 
-const productUrl =
-  store?.slug && !isDefaultStore
-    ? `/tienda/${store.slug}/producto/${product.id}`
-    : `/tienda/producto/${product.id}`;
+  const productUrl =
+    store?.slug && !isDefaultStore
+      ? `/tienda/${store.slug}/producto/${product.id}`
+      : `/tienda/producto/${product.id}`;
+
+  const imageUrl = getSafeImageUrl(product.image_url);
   const price = Number(product.price || 0).toFixed(2);
   const outOfStock = Number(product.stock || 0) <= 0;
   const cartItemId = `product-${product.id}`;
@@ -44,21 +50,23 @@ const productUrl =
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link href={productUrl}>
-        <div className="relative aspect-square w-full bg-white p-2">
+        <div className="aspect-square w-full overflow-hidden bg-white p-2">
           {outOfStock && (
             <div className="absolute left-2 top-2 z-10 rounded-full bg-red-600 px-2 py-1 text-[10px] font-black text-white shadow">
               AGOTADO
             </div>
           )}
 
-          <Image
-            src={product.image_url || "/placeholder-product.png"}
+          <img
+            src={imageUrl}
             alt={product.name}
-            fill
-            sizes="(max-width: 640px) 45vw, (max-width: 1024px) 25vw, 220px"
-            className={`object-contain p-2 transition duration-300 ${
+            className={`h-full w-full object-contain p-2 transition duration-300 ${
               outOfStock ? "opacity-50 grayscale" : "group-hover:scale-105"
             }`}
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.src = "/placeholder-product.png";
+            }}
           />
         </div>
       </Link>
@@ -98,7 +106,7 @@ const productUrl =
         ) : quantity === 0 ? (
           <button
             type="button"
-            onClick={() => onAddToCart(product)}
+            onClick={() => onAddToCart({ ...product, image_url: imageUrl })}
             className="mt-2 w-full rounded-xl bg-red-600 py-2 text-sm font-black text-white transition hover:bg-red-700"
           >
             Agregar
