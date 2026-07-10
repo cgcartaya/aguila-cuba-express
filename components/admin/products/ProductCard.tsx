@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Package, Pencil, AlertTriangle } from "lucide-react";
 import type { Product } from "./types";
@@ -45,17 +44,19 @@ export default function ProductCard({
 
         <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-slate-100">
           {product.image_url ? (
-            <Image
-              src={product.image_url}
-              alt={product.name}
-              fill
-              sizes="(max-width: 768px) 50vw, 260px"
-              className={`object-cover ${
-                isOutOfStock
-                  ? "opacity-60 grayscale"
-                  : ""
-              }`}
-            />
+          <img
+  src={product.image_url}
+  alt={product.name}
+  className={`h-full w-full object-cover ${
+    isOutOfStock
+      ? "opacity-60 grayscale"
+      : ""
+  }`}
+  loading="lazy"
+  onError={(e) => {
+    e.currentTarget.src = "/placeholder-product.png";
+  }}
+/>
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <Package
