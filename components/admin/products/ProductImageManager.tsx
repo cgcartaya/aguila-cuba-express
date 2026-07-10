@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import {
   AlertTriangle,
   ImagePlus,
@@ -198,14 +197,16 @@ export default function ProductImageManager({ productId }: Props) {
                 key={image.id}
                 className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
               >
-                <div className="relative aspect-[4/3] bg-slate-100 sm:aspect-square">
-                  <Image
-                    src={image.image_url}
-                    alt="Imagen del producto"
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover"
-                  />
+                <div className="aspect-[4/3] bg-slate-100 sm:aspect-square">
+  <img
+    src={image.image_url}
+    alt="Imagen del producto"
+    className="h-full w-full object-cover"
+    loading="lazy"
+    onError={(e) => {
+      e.currentTarget.src = "/placeholder-product.png";
+    }}
+  />
 
                   {image.is_main && (
                     <span className="absolute left-3 top-3 rounded-full bg-yellow-100 px-3 py-1 text-xs font-black text-yellow-700 shadow-sm">
