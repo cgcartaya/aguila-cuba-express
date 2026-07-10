@@ -10,6 +10,8 @@ function shouldIgnorePath(pathname: string) {
   return (
     pathname.startsWith("/api") ||
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/robots") ||
@@ -60,39 +62,14 @@ async function getStoreSlugBySubdomain(subdomain: string) {
   return data?.[0]?.slug || null;
 }
 
-/**
- * Convierte las rutas antiguas visibles en URLs limpias cuando se navega
- * desde un subdominio de tienda.
- *
- * Ejemplos:
- * /tienda/dl-racing-cyber                 -> /
- * /tienda/dl-racing-cyber/producto/123    -> /producto/123
- * /tienda/producto/123                    -> /producto/123
- * /tienda/cart                            -> /cart
- */
-function getCanonicalSubdomainPath(pathname: string, storeSlug: string) {
-  const slugBase = `/tienda/${storeSlug}`;
-
-  if (pathname === slugBase || pathname === "/tienda") {
-    return "/";
-  }
-
-  if (pathname.startsWith(`${slugBase}/`)) {
-    const cleanPath = pathname.slice(slugBase.length);
-    return cleanPath || "/";
-  }
-
-  if (pathname.startsWith("/tienda/")) {
-    const cleanPath = pathname.slice("/tienda".length);
-    return cleanPath || "/";
-  }
-
-  return null;
-}
-
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
 
+  /*
+   * Rutas globales:
+   * /login y /admin no pertenecen a la tienda pública y nunca deben
+   * reescribirse como /tienda/[slug]/login o /tienda/[slug]/admin.
+   */
   if (shouldIgnorePath(pathname)) {
     return NextResponse.next();
   }
@@ -104,30 +81,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Evita duplicar rutas internas que ya comienzan por /tienda.
+  if (pathname.startsWith("/tienda")) {
+    return NextResponse.next();
+  }
+
   const slug = await getStoreSlugBySubdomain(subdomain);
 
   if (!slug) {
     return NextResponse.next();
   }
 
-  // 1. Si un enlace antiguo manda al usuario a /tienda..., limpiamos la URL.
-  //    Esto evita que el navegador muestre /tienda/dl-racing-cyber en el subdominio.
-  const canonicalPath = getCanonicalSubdomainPath(pathname, slug);
-
-  if (canonicalPath) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = canonicalPath;
-    return NextResponse.redirect(redirectUrl, 308);
-  }
-
-  // 2. Reescritura interna: la URL pública queda limpia, pero Next.js renderiza
-  //    las rutas existentes bajo /tienda/[slug].
-  const rewriteUrl = request.nextUrl.clone();
+  const url = request.nextUrl.clone();
   const cleanPath = pathname === "/" ? "" : pathname;
 
-  rewriteUrl.pathname = `/tienda/${slug}${cleanPath}`;
+  url.pathname = `/tienda/${slug}${cleanPath}`;
+  url.search = search;
 
-  return NextResponse.rewrite(rewriteUrl);
+  return NextResponse.rewrite(url);
 }
 
 export const config = {
