@@ -83,8 +83,8 @@ export default function ProductImageManager({ productId }: Props) {
     }
 
     if (uploadedImages.length > 0) {
-      setImages((prev) => [...prev, ...uploadedImages]);
-    }
+  await fetchImages();
+}
 
     setUploading(false);
   }
@@ -279,15 +279,17 @@ export default function ProductImageManager({ productId }: Props) {
               </button>
             </div>
 
-            <div className="relative mb-5 aspect-video overflow-hidden rounded-2xl bg-slate-100">
-              <Image
-                src={imageToDelete.image_url}
-                alt="Imagen a eliminar"
-                fill
-                sizes="400px"
-                className="object-cover"
-              />
-            </div>
+         <div className="mb-5 aspect-video overflow-hidden rounded-2xl bg-slate-100">
+  <img
+    src={imageToDelete.image_url}
+    alt="Imagen a eliminar"
+    className="h-full w-full object-cover"
+    loading="lazy"
+    onError={(e) => {
+      e.currentTarget.src = "/placeholder-product.png";
+    }}
+  />
+</div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <button
