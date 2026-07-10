@@ -28,7 +28,10 @@ export type DeliveryZone = {
    HELPERS MULTIEMPRESA
 ========================================================= */
 
-function readCurrentStoreFromLocalStorage(): { id?: string; slug?: string } | null {
+function readCurrentStoreFromLocalStorage(): {
+  id?: string;
+  slug?: string;
+} | null {
   if (typeof window === "undefined") return null;
 
   try {
@@ -52,7 +55,7 @@ async function resolveStoreId(storeId?: string | null) {
   return store?.id || null;
 }
 
-function cleanPayload<T extends Record<string, any>>(payload: T) {
+function cleanPayload<T extends Record<string, unknown>>(payload: T) {
   return Object.fromEntries(
     Object.entries(payload).filter(([, value]) => value !== undefined)
   ) as Partial<T>;
@@ -65,7 +68,9 @@ function cleanPayload<T extends Record<string, any>>(payload: T) {
 export async function getCategoriesByStoreId(storeId: string) {
   return supabase
     .from("categories")
-    .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
+    .select(
+      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+    )
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
 }
@@ -93,7 +98,9 @@ export async function getActiveCategories() {
 export async function getActiveCategoriesByStoreId(storeId: string) {
   return supabase
     .from("categories")
-    .select("id, store_id, name, slug, color, icon, sort_order, is_active, created_at")
+    .select(
+      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+    )
     .eq("store_id", storeId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
@@ -109,20 +116,24 @@ export async function getAdminActiveCategories(storeId?: string) {
 
 export async function createCategoryForStore(
   storeId: string,
-  category: Omit<Category, "id" | "created_at">
+  category: Omit<Category, "id" | "created_at" | "store_id">
 ) {
+  const payload = cleanPayload({
+    ...category,
+    store_id: storeId,
+  });
+
   return supabase
     .from("categories")
-    .insert({
-      ...category,
-      store_id: storeId,
-    })
-    .select()
+    .insert(payload)
+    .select(
+      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+    )
     .single();
 }
 
 export async function createCategory(
-  category: Omit<Category, "id" | "created_at">
+  category: Omit<Category, "id" | "created_at" | "store_id">
 ) {
   const storeId = await resolveStoreId();
 
@@ -140,21 +151,38 @@ export async function createCategory(
 
 export async function updateCategory(
   id: string,
-  category: Partial<Category>
+  category: Partial<Omit<Category, "id" | "created_at" | "store_id">>,
+  storeId?: string
 ) {
-  return supabase
+  const payload = cleanPayload(category);
+
+  let query = supabase
     .from("categories")
-    .update(category)
-    .eq("id", id)
-    .select()
+    .update(payload)
+    .eq("id", id);
+
+  if (storeId) {
+    query = query.eq("store_id", storeId);
+  }
+
+  return query
+    .select(
+      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+    )
     .single();
 }
 
-export async function deleteCategory(id: string) {
-  return supabase
+export async function deleteCategory(id: string, storeId?: string) {
+  let query = supabase
     .from("categories")
     .delete()
     .eq("id", id);
+
+  if (storeId) {
+    query = query.eq("store_id", storeId);
+  }
+
+  return query;
 }
 
 /* =========================================================
@@ -255,7 +283,9 @@ export async function createDeliveryZone(
   zone: Omit<DeliveryZone, "id" | "created_at">,
   storeId?: string | null
 ) {
-  const resolvedStoreId = await resolveStoreId(storeId || zone.store_id || undefined);
+  const resolvedStoreId = await resolveStoreId(
+    storeId || zone.store_id || undefined
+  );
 
   if (!resolvedStoreId) {
     return {
@@ -312,7 +342,9 @@ export async function getBanners() {
 export async function getAdminBannersByStoreId(storeId: string) {
   return supabase
     .from("banners")
-    .select("id, store_id, title, subtitle, image_url, button_text, button_link, is_active, sort_order, layout_type, background_color, text_color, accent_color, badge_text, product_image_url, category_id, created_at")
+    .select(
+      "id, store_id, title, subtitle, image_url, button_text, button_link, is_active, sort_order, layout_type, background_color, text_color, accent_color, badge_text, product_image_url, category_id, created_at"
+    )
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
 }
@@ -330,7 +362,9 @@ export async function getAdminBanners() {
 export async function getBannersByStoreId(storeId: string) {
   return supabase
     .from("banners")
-    .select("id, store_id, title, subtitle, image_url, button_text, button_link, is_active, sort_order, layout_type, background_color, text_color, accent_color, badge_text, product_image_url, category_id, created_at")
+    .select(
+      "id, store_id, title, subtitle, image_url, button_text, button_link, is_active, sort_order, layout_type, background_color, text_color, accent_color, badge_text, product_image_url, category_id, created_at"
+    )
     .eq("store_id", storeId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })

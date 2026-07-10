@@ -5,7 +5,7 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Tag, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, Plus, Tag, Trash2 } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import AdminBackButton from "@/components/admin/ui/AdminBackButton";
@@ -34,6 +34,19 @@ function createSlug(value: string) {
     .replace(/(^-|-$)+/g, "");
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export default function AdminCategoriesPage() {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
@@ -55,6 +68,11 @@ export default function AdminCategoriesPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const loadCategories = async () => {
     if (accessLoading || storeLoading) return;
@@ -66,47 +84,123 @@ export default function AdminCategoriesPage() {
     }
 
     setLoading(true);
-    const { data, error } = await getCategoriesByStoreId(activeStore.id);
 
-    if (error) {
-      console.error("Error cargando categorías:", error);
+    try {
+      const { data, error } = await getCategoriesByStoreId(activeStore.id);
+
+      if (error) {
+        console.error("Error cargando categorías:", error);
+        setCategories([]);
+        setFeedback({
+          type: "error",
+          message: getErrorMessage(
+            error,
+            "No se pudieron cargar las categorías."
+          ),
+        });
+        return;
+      }
+
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Error inesperado cargando categorías:", error);
       setCategories([]);
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(
+          error,
+          "Ocurrió un error inesperado al cargar las categorías."
+        ),
+      });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setCategories(data || []);
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadCategories();
+    void loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessLoading, storeLoading, activeStore?.id]);
 
   const handleCreate = async () => {
-    if (!form.name || !activeStore?.id) return;
+    const name = form.name.trim();
+
+    if (!name) {
+      setFeedback({
+        type: "error",
+        message: "Escribe el nombre de la categoría.",
+      });
+      return;
+    }
+
+    if (!activeStore?.id) {
+      setFeedback({
+        type: "error",
+        message: "No se encontró la tienda activa.",
+      });
+      return;
+    }
+
+    const slug = createSlug(name);
+
+    if (!slug) {
+      setFeedback({
+        type: "error",
+        message: "El nombre no permite generar un slug válido.",
+      });
+      return;
+    }
 
     setSaving(true);
+    setFeedback(null);
 
-    await createCategoryForStore(activeStore.id, {
-      name: form.name,
-      slug: createSlug(form.name),
-      color: form.color,
-      icon: getCategoryIcon(form.name),
-      sort_order: Number(form.sort_order || 0),
-      is_active: form.is_active,
-    });
+    try {
+      const { error } = await createCategoryForStore(activeStore.id, {
+        name,
+        slug,
+        color: form.color,
+        icon: getCategoryIcon(name),
+        sort_order: Number(form.sort_order || 0),
+        is_active: form.is_active,
+      });
 
-    setForm({
-      name: "",
-      color: "#2563EB",
-      sort_order: "0",
-      is_active: true,
-    });
+      if (error) {
+        console.error("Error creando categoría:", error);
+        setFeedback({
+          type: "error",
+          message: getErrorMessage(
+            error,
+            "No se pudo crear la categoría."
+          ),
+        });
+        return;
+      }
 
-    await loadCategories();
-    setSaving(false);
+      setForm({
+        name: "",
+        color: "#2563EB",
+        sort_order: "0",
+        is_active: true,
+      });
+
+      setFeedback({
+        type: "success",
+        message: `La categoría "${name}" se creó correctamente.`,
+      });
+
+      await loadCategories();
+    } catch (error) {
+      console.error("Error inesperado creando categoría:", error);
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(
+          error,
+          "Ocurrió un error inesperado al crear la categoría."
+        ),
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleUpdate = async (
@@ -114,53 +208,175 @@ export default function AdminCategoriesPage() {
     field: keyof Category,
     value: string | number | boolean
   ) => {
-    if (field === "name") {
-      const newName = String(value);
-
-      await updateCategory(id, {
-        name: newName,
-        slug: createSlug(newName),
-        icon: getCategoryIcon(newName),
+    if (!activeStore?.id) {
+      setFeedback({
+        type: "error",
+        message: "No se encontró la tienda activa.",
       });
+      return;
+    }
+
+    setFeedback(null);
+
+    try {
+      if (field === "name") {
+        const newName = String(value).trim();
+        const newSlug = createSlug(newName);
+
+        if (!newName || !newSlug) {
+          setFeedback({
+            type: "error",
+            message: "El nombre de la categoría no puede estar vacío.",
+          });
+          return;
+        }
+
+        const { error } = await updateCategory(
+          id,
+          {
+            name: newName,
+            slug: newSlug,
+            icon: getCategoryIcon(newName),
+          },
+          activeStore.id
+        );
+
+        if (error) {
+          console.error("Error actualizando categoría:", error);
+          setFeedback({
+            type: "error",
+            message: getErrorMessage(
+              error,
+              "No se pudo actualizar la categoría."
+            ),
+          });
+          await loadCategories();
+          return;
+        }
+
+        setCategories((prev) =>
+          prev.map((category) =>
+            category.id === id
+              ? {
+                  ...category,
+                  name: newName,
+                  slug: newSlug,
+                  icon: getCategoryIcon(newName),
+                }
+              : category
+          )
+        );
+
+        setFeedback({
+          type: "success",
+          message: "Categoría actualizada correctamente.",
+        });
+
+        return;
+      }
+
+      const { error } = await updateCategory(
+        id,
+        {
+          [field]: value,
+        },
+        activeStore.id
+      );
+
+      if (error) {
+        console.error("Error actualizando categoría:", error);
+        setFeedback({
+          type: "error",
+          message: getErrorMessage(
+            error,
+            "No se pudo actualizar la categoría."
+          ),
+        });
+        await loadCategories();
+        return;
+      }
 
       setCategories((prev) =>
         prev.map((category) =>
           category.id === id
             ? {
                 ...category,
-                name: newName,
-                slug: createSlug(newName),
-                icon: getCategoryIcon(newName),
+                [field]: value,
               }
             : category
         )
       );
 
-      return;
+      setFeedback({
+        type: "success",
+        message: "Categoría actualizada correctamente.",
+      });
+    } catch (error) {
+      console.error("Error inesperado actualizando categoría:", error);
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(
+          error,
+          "Ocurrió un error inesperado al actualizar la categoría."
+        ),
+      });
+      await loadCategories();
     }
-
-    await updateCategory(id, {
-      [field]: value,
-    });
-
-    setCategories((prev) =>
-      prev.map((category) =>
-        category.id === id
-          ? {
-              ...category,
-              [field]: value,
-            }
-          : category
-      )
-    );
   };
 
   const handleDelete = async (id: string) => {
-    const ok = confirm("¿Seguro que quieres eliminar esta categoría?");
+    if (!activeStore?.id) {
+      setFeedback({
+        type: "error",
+        message: "No se encontró la tienda activa.",
+      });
+      return;
+    }
+
+    const ok = window.confirm(
+      "¿Seguro que quieres eliminar esta categoría?"
+    );
+
     if (!ok) return;
 
-    await deleteCategory(id);
-    setCategories((prev) => prev.filter((category) => category.id !== id));
+    setDeletingId(id);
+    setFeedback(null);
+
+    try {
+      const { error } = await deleteCategory(id, activeStore.id);
+
+      if (error) {
+        console.error("Error eliminando categoría:", error);
+        setFeedback({
+          type: "error",
+          message: getErrorMessage(
+            error,
+            "No se pudo eliminar la categoría."
+          ),
+        });
+        return;
+      }
+
+      setCategories((prev) =>
+        prev.filter((category) => category.id !== id)
+      );
+
+      setFeedback({
+        type: "success",
+        message: "Categoría eliminada correctamente.",
+      });
+    } catch (error) {
+      console.error("Error inesperado eliminando categoría:", error);
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(
+          error,
+          "Ocurrió un error inesperado al eliminar la categoría."
+        ),
+      });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -183,6 +399,23 @@ export default function AdminCategoriesPage() {
           icon={Tag}
         />
 
+        {feedback ? (
+          <div
+            className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-bold ${
+              feedback.type === "success"
+                ? "border-green-200 bg-green-50 text-green-800"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
+            {feedback.type === "success" ? (
+              <CheckCircle2 className="mt-0.5 shrink-0" size={18} />
+            ) : (
+              <AlertCircle className="mt-0.5 shrink-0" size={18} />
+            )}
+            <span>{feedback.message}</span>
+          </div>
+        ) : null}
+
         <section className="rounded-3xl bg-white p-5 shadow-sm">
           <h2 className="text-xl font-black">Nueva categoría</h2>
 
@@ -190,7 +423,9 @@ export default function AdminCategoriesPage() {
             <AdminInput
               label="Nombre"
               value={form.name}
-              onChange={(value) => setForm((prev) => ({ ...prev, name: value }))}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, name: value }))
+              }
               placeholder="Ej: Monitores"
             />
 
@@ -198,7 +433,9 @@ export default function AdminCategoriesPage() {
               label="Color"
               type="color"
               value={form.color}
-              onChange={(value) => setForm((prev) => ({ ...prev, color: value }))}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, color: value }))
+              }
             />
 
             <AdminInput
@@ -232,7 +469,7 @@ export default function AdminCategoriesPage() {
           <div className="mt-5">
             <AdminButton
               onClick={handleCreate}
-              disabled={saving || !activeStore?.id}
+              disabled={saving || !activeStore?.id || !form.name.trim()}
               icon={saving ? Loader2 : Plus}
             >
               {saving ? "Creando..." : "Crear categoría"}
@@ -244,9 +481,10 @@ export default function AdminCategoriesPage() {
           <h2 className="mb-4 text-xl font-black">Categorías existentes</h2>
 
           {loading ? (
-            <p className="text-sm font-semibold text-slate-500">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
+              <Loader2 className="animate-spin" size={18} />
               Cargando categorías...
-            </p>
+            </div>
           ) : categories.length === 0 ? (
             <p className="rounded-2xl bg-slate-50 p-5 text-sm font-semibold text-slate-500">
               Esta tienda todavía no tiene categorías.
@@ -262,7 +500,7 @@ export default function AdminCategoriesPage() {
                     label="Nombre"
                     value={category.name}
                     onChange={(value) =>
-                      handleUpdate(category.id, "name", value)
+                      void handleUpdate(category.id, "name", value)
                     }
                   />
 
@@ -271,7 +509,7 @@ export default function AdminCategoriesPage() {
                     type="color"
                     value={category.color}
                     onChange={(value) =>
-                      handleUpdate(category.id, "color", value)
+                      void handleUpdate(category.id, "color", value)
                     }
                   />
 
@@ -280,7 +518,11 @@ export default function AdminCategoriesPage() {
                     type="number"
                     value={String(category.sort_order ?? 0)}
                     onChange={(value) =>
-                      handleUpdate(category.id, "sort_order", Number(value || 0))
+                      void handleUpdate(
+                        category.id,
+                        "sort_order",
+                        Number(value || 0)
+                      )
                     }
                   />
 
@@ -294,7 +536,11 @@ export default function AdminCategoriesPage() {
                   <button
                     type="button"
                     onClick={() =>
-                      handleUpdate(category.id, "is_active", !category.is_active)
+                      void handleUpdate(
+                        category.id,
+                        "is_active",
+                        !category.is_active
+                      )
                     }
                     className={`rounded-2xl px-4 py-3 text-sm font-black ${
                       category.is_active
@@ -307,10 +553,16 @@ export default function AdminCategoriesPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleDelete(category.id)}
-                    className="flex items-center justify-center rounded-2xl bg-red-50 text-red-600"
+                    onClick={() => void handleDelete(category.id)}
+                    disabled={deletingId === category.id}
+                    aria-label={`Eliminar categoría ${category.name}`}
+                    className="flex items-center justify-center rounded-2xl bg-red-50 text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <Trash2 size={18} />
+                    {deletingId === category.id ? (
+                      <Loader2 className="animate-spin" size={18} />
+                    ) : (
+                      <Trash2 size={18} />
+                    )}
                   </button>
                 </article>
               ))}
