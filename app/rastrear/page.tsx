@@ -1,49 +1,38 @@
+import TrackingSearch from "@/components/tracking/TrackingSearch";
+
 export default function RastrearPage() {
   return (
-    <main className="min-h-screen bg-white px-6 py-16 text-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-4 py-14 text-slate-900 sm:px-6 sm:py-20">
       <section className="mx-auto max-w-4xl text-center">
-        <h1 className="text-4xl font-black text-[#062446]">
-          Rastrear Envío
+        <span className="inline-flex rounded-full bg-red-50 px-4 py-2 text-sm font-bold text-red-700">
+          Seguimiento seguro
+        </span>
+
+        <h1 className="mt-5 text-4xl font-black text-[#062446] sm:text-6xl">
+          Rastrear envío
         </h1>
 
-        <p className="mt-4 text-lg text-slate-600">
-          Ingresa tu código de rastreo para consultar el estado de tu paquete.
+        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
+          Ingresa el código compartido por Águila Cuba Express para consultar el estado y el historial de tu paquete.
         </p>
 
-        <div className="mx-auto mt-10 flex max-w-2xl overflow-hidden rounded-2xl border bg-white shadow-sm">
-          <input
-            placeholder="Ejemplo: ACE-0001"
-            className="w-full px-5 py-4 outline-none"
-          />
+        <TrackingSearch />
 
-          <button className="bg-red-600 px-8 font-bold text-white">
-            Rastrear
-          </button>
-        </div>
-
-        <div className="mx-auto mt-10 max-w-2xl rounded-2xl bg-slate-50 p-6 text-left">
-          <h2 className="text-xl font-black text-[#062446]">
-            Estado del envío
-          </h2>
-
-          <div className="mt-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="h-4 w-4 rounded-full bg-green-500"></span>
-              <p>Recibido en Miami</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="h-4 w-4 rounded-full bg-yellow-500"></span>
-              <p>En tránsito hacia Cuba</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <span className="h-4 w-4 rounded-full bg-slate-300"></span>
-              <p>Pendiente de entrega</p>
-            </div>
-          </div>
+        <div className="mx-auto mt-12 grid max-w-3xl gap-4 text-left sm:grid-cols-3">
+          <Feature title="Código privado" text="Cada envío tiene un código único y fácil de compartir." />
+          <Feature title="Estado actualizado" text="Consulta el progreso después de cada sincronización." />
+          <Feature title="Datos protegidos" text="No mostramos teléfonos, dirección ni notas internas." />
         </div>
       </section>
     </main>
+  );
+}
+
+function Feature({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="font-black text-[#062446]">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+    </div>
   );
 }
