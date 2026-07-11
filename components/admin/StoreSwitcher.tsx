@@ -51,7 +51,7 @@ export default function StoreSwitcher() {
       <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm">
         <Lock className="h-5 w-5 text-slate-500" />
 
-        <div className="flex flex-col">
+        <div className="min-w-0 flex-1 flex flex-col">
           <span className="text-xs text-slate-500">Tienda asignada</span>
 
           <span className="font-semibold text-[#061b3a]">
@@ -63,7 +63,7 @@ export default function StoreSwitcher() {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm">
+    <div className="flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm">
       <Building2 className="h-5 w-5 text-slate-600" />
 
       <div className="flex flex-col">
@@ -72,7 +72,7 @@ export default function StoreSwitcher() {
         <select
           value={store?.id || ""}
           onChange={handleChange}
-          className="bg-transparent font-semibold outline-none"
+          className="w-full min-w-0 bg-transparent font-semibold outline-none"
         >
           <option value="">Seleccionar tienda</option>
 

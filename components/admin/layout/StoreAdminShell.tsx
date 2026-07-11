@@ -36,7 +36,9 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
     }
   }, [accessLoading, activeStore, selectedStore, clearCurrentStore]);
 
-  const storeName = activeStore?.name || "Tienda activa";
+  const storeName =
+    activeStore?.name ||
+    (isSuperAdmin ? "Administración General" : "Tienda activa");
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -74,6 +76,12 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
             )}
           </div>
         </header>
+
+        {isSuperAdmin && (
+          <div className="border-b bg-white px-4 py-3 xl:hidden">
+            <StoreSwitcher />
+          </div>
+        )}
 
         <div className="hidden border-b bg-white px-6 py-4 xl:block">
           <div className="flex items-center justify-between gap-4">

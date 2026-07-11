@@ -23,6 +23,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import StoreSwitcher from "@/components/admin/StoreSwitcher";
 
 type MobileOrderStatus = "Pendiente" | "Preparando" | "En camino" | "Entregado";
 
@@ -88,6 +89,13 @@ export default function AdminDashboardPage() {
           customersCount: 0,
           recentOrders: [],
         });
+
+        if (isSuperAdmin) {
+          setErrorMessage(null);
+          setLoadingData(false);
+          return;
+        }
+
         setErrorMessage("No se pudo resolver la tienda activa.");
         setLoadingData(false);
         return;
@@ -239,15 +247,20 @@ export default function AdminDashboardPage() {
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-                {activeStore?.name || "Tienda activa"}
+                {activeStore?.name ||
+                  (isSuperAdmin
+                    ? "Administración General"
+                    : "Tienda activa")}
               </h1>
 
               <p className="mt-3 max-w-2xl text-blue-100">
-                Controla productos, órdenes, clientes y el crecimiento de la
-                tienda desde un solo lugar.
+                {isSuperAdmin && !activeStore
+                  ? "Selecciona una tienda para comenzar a administrar sus productos, inventario, órdenes y configuración."
+                  : "Controla productos, órdenes, clientes y el crecimiento de la tienda desde un solo lugar."}
               </p>
             </div>
 
+            {activeStore && (
             <Link
               href={
                 activeStore?.slug && activeStore.slug !== "aguila"
@@ -259,9 +272,29 @@ export default function AdminDashboardPage() {
               Ver tienda
               <ArrowRight size={18} />
             </Link>
+            )}
           </div>
         </section>
 
+        {isSuperAdmin && !activeStore ? (
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-[#0B1F4D]">
+                <Store size={30} />
+              </div>
+              <h2 className="text-2xl font-black text-[#061b3a]">Selecciona una tienda</h2>
+              <p className="mt-2 text-sm font-semibold text-slate-500">Elige una tienda para cargar su dashboard operativo.</p>
+              <div className="mx-auto mt-6 max-w-md text-left">
+                <StoreSwitcher />
+              </div>
+              <Link href="/admin/saas" className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-5 py-3 text-sm font-black text-white">
+                Abrir Dashboard SaaS
+                <ArrowRight size={18} />
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <>
         <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => {
             const Icon = card.icon;
@@ -362,6 +395,8 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </section>
+          </>
+        )}
       </div>
     </main>
   );

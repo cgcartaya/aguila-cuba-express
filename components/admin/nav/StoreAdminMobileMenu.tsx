@@ -11,15 +11,17 @@ import {
   ClipboardList,
   Settings,
   Users,
+  Rocket,
+  Building2,
   Layers3,
   ExternalLink,
-  Rocket,
 } from "lucide-react";
 
+import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 
-type Props = {
+type AdminMobileMenuProps = {
   open: boolean;
   onClose: () => void;
 };
@@ -30,10 +32,14 @@ type MenuItem = {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
 
-const links: MenuItem[] = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+const saasLinks: MenuItem[] = [
+  { label: "Dashboard SaaS", href: "/admin/saas", icon: Rocket },
+  { label: "Tiendas", href: "/admin/stores", icon: Building2 },
+];
+
+const storeLinks: MenuItem[] = [
+  { label: "Dashboard tienda", href: "/admin", icon: LayoutDashboard },
   { label: "Productos", href: "/admin/products", icon: Package },
-  { label: "Categorías", href: "/admin/categories", icon: Tags },
   { label: "Combos", href: "/admin/combos", icon: Layers3 },
   { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
@@ -44,13 +50,59 @@ const links: MenuItem[] = [
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function StoreAdminMobileMenu({ open, onClose }: Props) {
+function MenuSection({
+  title,
+  links,
+  pathname,
+  onClose,
+}: {
+  title: string;
+  links: MenuItem[];
+  pathname: string;
+  onClose: () => void;
+}) {
+  if (links.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="px-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
+        {title}
+      </p>
+
+      {links.map((item) => {
+        const Icon = item.icon;
+        const isActive = isActivePath(pathname, item.href);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={onClose}
+            className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-base font-black transition ${
+              isActive
+                ? "bg-red-50 text-red-600"
+                : "text-[#061b3a] hover:bg-slate-50"
+            }`}
+          >
+            <Icon size={24} />
+            {item.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
   const pathname = usePathname();
   const { store } = useStore();
-  const { isSuperAdmin } = useAdminAccess();
+  const { isSuperAdmin, store: accessStore } = useAdminAccess();
+
+  const activeStore = isSuperAdmin ? store || accessStore : accessStore;
 
   if (!open) return null;
 
@@ -66,9 +118,10 @@ export default function StoreAdminMobileMenu({ open, onClose }: Props) {
       <aside className="relative h-full w-[84%] max-w-sm overflow-y-auto bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5">
           <div className="min-w-0">
-            <h2 className="text-xl font-black text-[#061b3a]">Tienda</h2>
+            <h2 className="text-xl font-black text-[#061b3a]">Admin</h2>
             <p className="truncate text-sm font-bold text-slate-500">
-              {store?.name || "Tienda activa"}
+              {activeStore?.name ||
+                (isSuperAdmin ? "Administración General" : "Tienda activa")}
             </p>
           </div>
 
@@ -81,38 +134,28 @@ export default function StoreAdminMobileMenu({ open, onClose }: Props) {
           </button>
         </div>
 
-        <nav className="grid gap-2 px-4 py-5 pb-10">
+        {isSuperAdmin && (
+          <div className="border-b border-slate-100 px-5 py-4">
+            <StoreSwitcher />
+          </div>
+        )}
+
+        <nav className="grid gap-7 px-4 py-5 pb-10">
           {isSuperAdmin && (
-            <Link
-              href="/admin/saas"
-              onClick={onClose}
-              className="mb-2 flex items-center gap-4 rounded-2xl bg-[#061b3a] px-4 py-4 text-base font-black text-white transition hover:opacity-95"
-            >
-              <Rocket size={24} />
-              Volver al SaaS
-            </Link>
+            <MenuSection
+              title="Plataforma SaaS"
+              links={saasLinks}
+              pathname={pathname}
+              onClose={onClose}
+            />
           )}
 
-          {links.map((item) => {
-            const Icon = item.icon;
-            const isActive = isActivePath(pathname, item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-base font-black transition ${
-                  isActive
-                    ? "bg-red-50 text-red-600"
-                    : "text-[#061b3a] hover:bg-slate-50"
-                }`}
-              >
-                <Icon size={24} />
-                {item.label}
-              </Link>
-            );
-          })}
+          <MenuSection
+            title="Tienda activa"
+            links={storeLinks}
+            pathname={pathname}
+            onClose={onClose}
+          />
         </nav>
       </aside>
     </div>
