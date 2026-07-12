@@ -20,16 +20,6 @@ function formatDate(value: string | null) {
   }).format(date);
 }
 
-function formatShortDate(value: string | null) {
-  if (!value) return "No disponible";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return new Intl.DateTimeFormat("es-US", {
-    dateStyle: "short",
-  }).format(date);
-}
 
 export default function TrackingView({ code }: { code: string }) {
   const [data, setData] = useState<PublicTrackingResult | null>(null);
@@ -130,107 +120,83 @@ export default function TrackingView({ code }: { code: string }) {
                     </h2>
                   </div>
 
-                  <div className="rounded-2xl bg-white/10 px-3 py-2 text-sm text-blue-100">
-                    Código{" "}
-                    <strong className="text-white">
-                      {data.trackingCode}
-                    </strong>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-blue-100 sm:text-sm">
+                      Código{" "}
+                      <strong className="text-white">
+                        {data.trackingCode}
+                      </strong>
+                    </span>
+
+                    <span className="rounded-full bg-white/10 px-3 py-2 text-xs font-bold text-blue-100 sm:text-sm">
+                      {completedEvents.length}{" "}
+                      {completedEvents.length === 1
+                        ? "evento"
+                        : "eventos"}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 p-4 sm:gap-4 sm:p-6">
-                <CompactInfo
-                  label="Destino"
-                  value={data.location}
-                />
+              <div className="p-5 sm:p-7">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                      Seguimiento
+                    </p>
 
-                <CompactInfo
-                  label="Destinatario"
-                  value={data.recipientDisplay}
-                />
+                    <h3 className="mt-1 text-xl font-black text-[#062446] sm:text-2xl">
+                      Historial del envío
+                    </h3>
+                  </div>
 
-                <CompactInfo
-                  label="Recepción"
-                  value={formatShortDate(data.createdDate)}
-                />
+                  <div className="text-right">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                      Última actualización
+                    </p>
 
-                <CompactInfo
-                  label="Entrega"
-                  value={
-                    data.deliveredDate
-                      ? formatShortDate(data.deliveredDate)
-                      : "Pendiente"
-                  }
-                />
-
-                <div className="col-span-2 rounded-2xl bg-slate-50 px-4 py-3">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-                    Última actualización
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-slate-900 sm:text-base">
-                    {formatDate(data.updatedAt)}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <StoreCta status={data.status} />
-
-            <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                    Seguimiento
-                  </p>
-                  <h2 className="mt-1 text-2xl font-black text-[#062446]">
-                    Historial del envío
-                  </h2>
+                    <p className="mt-1 text-xs font-bold text-slate-600 sm:text-sm">
+                      {formatDate(data.updatedAt)}
+                    </p>
+                  </div>
                 </div>
 
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                  {completedEvents.length}{" "}
-                  {completedEvents.length === 1
-                    ? "evento"
-                    : "eventos"}
-                </span>
-              </div>
-
-              <div className="mt-6 space-y-0">
-                {completedEvents.length ? (
-                  completedEvents.map((event, index) => (
-                    <div
-                      key={`${event.eventDate}-${index}`}
-                      className="relative flex gap-4 pb-7 last:pb-0"
-                    >
-                      {index < completedEvents.length - 1 ? (
-                        <span className="absolute left-[7px] top-5 h-full w-0.5 bg-slate-200" />
-                      ) : null}
-
-                      <span className="relative mt-1 h-4 w-4 shrink-0 rounded-full bg-red-600 ring-4 ring-red-50" />
-
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-slate-900">
-                          {event.title}
-                        </h3>
-
-                        <p className="mt-1 text-sm text-slate-500">
-                          {formatDate(event.eventDate)}
-                        </p>
-
-                        {event.description ? (
-                          <p className="mt-2 text-sm leading-6 text-slate-600">
-                            {event.description}
-                          </p>
+                <div className="space-y-0">
+                  {completedEvents.length ? (
+                    completedEvents.map((event, index) => (
+                      <div
+                        key={`${event.eventDate}-${index}`}
+                        className="relative flex gap-4 pb-6 last:pb-0"
+                      >
+                        {index < completedEvents.length - 1 ? (
+                          <span className="absolute left-[7px] top-5 h-full w-0.5 bg-slate-200" />
                         ) : null}
+
+                        <span className="relative mt-1 h-4 w-4 shrink-0 rounded-full bg-red-600 ring-4 ring-red-50" />
+
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-slate-900">
+                            {event.title}
+                          </h4>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            {formatDate(event.eventDate)}
+                          </p>
+
+                          {event.description ? (
+                            <p className="mt-2 text-sm leading-6 text-slate-600">
+                              {event.description}
+                            </p>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-slate-500">
-                    Todavía no hay eventos adicionales para este envío.
-                  </p>
-                )}
+                    ))
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      Todavía no hay eventos adicionales para este envío.
+                    </p>
+                  )}
+                </div>
               </div>
             </section>
 
@@ -306,62 +272,6 @@ export default function TrackingView({ code }: { code: string }) {
         ) : null}
       </section>
     </main>
-  );
-}
-
-function CompactInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="min-w-0 rounded-2xl bg-slate-50 px-4 py-3">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-
-      <p className="mt-1 truncate text-sm font-black text-slate-900 sm:text-base">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function StoreCta({
-  status,
-}: {
-  status: PublicTrackingResult["status"];
-}) {
-  const delivered = status === "delivered";
-
-  return (
-    <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#062446] via-[#0A3764] to-[#0D4A80] text-white shadow-xl shadow-blue-950/15">
-      <div className="grid gap-5 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-7">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-200">
-            {delivered ? "¿Necesitas otro envío?" : "Mientras tu envío avanza"}
-          </p>
-
-          <h2 className="mt-2 text-2xl font-black sm:text-3xl">
-            Compra productos y envíalos a Cuba
-          </h2>
-
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">
-            Explora nuestra tienda, encuentra productos disponibles y
-            gestiona tu próxima compra con Águila Cuba Express.
-          </p>
-        </div>
-
-        <a
-          href={STORE_URL}
-          className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700 active:scale-[0.99]"
-        >
-          Ir a la tienda
-        </a>
-      </div>
-    </section>
   );
 }
 
