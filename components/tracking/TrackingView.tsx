@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import TrackingSearch from "./TrackingSearch";
+import TrackingProductsCarousel from "./TrackingProductsCarousel";
 import type { PublicTrackingResult } from "@/lib/tracking/types";
 
 const STORE_URL = "/tienda";
@@ -292,6 +293,8 @@ export default function TrackingView({ code }: { code: string }) {
                 publicada de forma permanente.
               </p>
             </section>
+
+            <TrackingProductsCarousel />
 
             <StoreBenefits />
 
