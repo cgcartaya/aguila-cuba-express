@@ -5,8 +5,14 @@ import {
   type TrackingStatus,
 } from "@/lib/tracking/types";
 
+const EVIDENCE_BUCKET = "delivery-photos";
+const SIGNED_URL_SECONDS = 10 * 60;
+
 function normalizeCode(value: string) {
-  return decodeURIComponent(value).trim().toUpperCase().replace(/\s+/g, "");
+  return decodeURIComponent(value)
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
 }
 
 function maskName(value: string | null) {
@@ -15,6 +21,7 @@ function maskName(value: string | null) {
 
   const parts = clean.split(/\s+/);
   if (parts.length === 1) return `${parts[0].charAt(0)}***`;
+
   return `${parts[0]} ${parts.at(-1)?.charAt(0) ?? ""}.`;
 }
 
@@ -35,7 +42,19 @@ export async function GET(
   const { data: shipment, error: shipmentError } = await supabaseAdmin
     .from("shipments")
     .select(
-      "id, tracking_code, location, recipient_name, status, created_date, delivered_date, updated_at, deleted_at, public_tracking_enabled"
+      [
+        "id",
+        "tracking_code",
+        "location",
+        "recipient_name",
+        "status",
+        "created_date",
+        "delivered_date",
+        "updated_at",
+        "deleted_at",
+        "public_tracking_enabled",
+        "delivery_photo_url",
+      ].join(",")
     )
     .ilike("tracking_code", trackingCode)
     .is("deleted_at", null)
@@ -67,22 +86,50 @@ export async function GET(
     console.error("Tracking events error", eventsError);
   }
 
+  let deliveryPhotoUrl: string | null = null;
+  const storagePath =
+    typeof shipment.delivery_photo_url === "string"
+      ? shipment.delivery_photo_url.trim()
+      : "";
+
+  if (storagePath) {
+    const { data: signedData, error: signedError } = await supabaseAdmin.storage
+      .from(EVIDENCE_BUCKET)
+      .createSignedUrl(storagePath, SIGNED_URL_SECONDS);
+
+    if (signedError) {
+      console.error("Tracking evidence signed URL error", signedError);
+    } else {
+      deliveryPhotoUrl = signedData.signedUrl;
+    }
+  }
+
   const status = (shipment.status || "received_miami") as TrackingStatus;
 
-  return NextResponse.json({
-    trackingCode: shipment.tracking_code,
-    location: shipment.location || "Cuba",
-    status,
-    statusLabel: TRACKING_STATUS_LABELS[status] || "Actualización del envío",
-    createdDate: shipment.created_date,
-    deliveredDate: shipment.delivered_date,
-    updatedAt: shipment.updated_at,
-    recipientDisplay: maskName(shipment.recipient_name),
-    events: (events || []).map((event) => ({
-      status: event.status,
-      title: event.title,
-      description: event.description,
-      eventDate: event.event_date,
-    })),
-  });
+  return NextResponse.json(
+    {
+      trackingCode: shipment.tracking_code,
+      location: shipment.location || "Cuba",
+      status,
+      statusLabel:
+        TRACKING_STATUS_LABELS[status] || "Actualización del envío",
+      createdDate: shipment.created_date,
+      deliveredDate: shipment.delivered_date,
+      updatedAt: shipment.updated_at,
+      recipientDisplay: maskName(shipment.recipient_name),
+      events: (events || []).map((event) => ({
+        status: event.status,
+        title: event.title,
+        description: event.description,
+        eventDate: event.event_date,
+      })),
+      deliveryPhotoUrl,
+      hasDeliveryPhoto: Boolean(storagePath),
+    },
+    {
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    }
+  );
 }

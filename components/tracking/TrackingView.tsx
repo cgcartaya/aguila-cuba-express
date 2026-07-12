@@ -124,6 +124,61 @@ export default function TrackingView({ code }: { code: string }) {
               </div>
             </section>
 
+            <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-red-600">
+                    Comprobante privado
+                  </p>
+                  <h2 className="mt-1 text-2xl font-black text-[#062446]">
+                    Evidencia de entrega
+                  </h2>
+                </div>
+
+                {data.deliveryPhotoUrl ? (
+                  <a
+                    href={data.deliveryPhotoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-xl border border-slate-300 px-4 py-2 text-sm font-bold text-[#062446] transition hover:bg-slate-50"
+                  >
+                    Abrir imagen
+                  </a>
+                ) : null}
+              </div>
+
+              {data.deliveryPhotoUrl ? (
+                <a
+                  href={data.deliveryPhotoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-6 block overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+                >
+                  <img
+                    src={data.deliveryPhotoUrl}
+                    alt={`Evidencia de entrega del envío ${data.trackingCode}`}
+                    className="max-h-[680px] w-full object-contain"
+                  />
+                </a>
+              ) : data.hasDeliveryPhoto ? (
+                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+                  La evidencia existe, pero no pudo cargarse temporalmente. Actualiza la página en unos minutos.
+                </div>
+              ) : data.status === "delivered" ? (
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-slate-600">
+                  El envío está marcado como entregado, pero la evidencia todavía está pendiente de sincronizar.
+                </div>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-slate-600">
+                  La evidencia estará disponible cuando el envío sea entregado y la foto se sincronice.
+                </div>
+              )}
+
+              <p className="mt-4 text-xs leading-5 text-slate-500">
+                La imagen se entrega mediante un enlace temporal y no queda publicada de forma permanente.
+              </p>
+            </section>
+
             <p className="px-4 text-center text-xs leading-5 text-slate-500">
               Por seguridad, esta página no muestra teléfonos, dirección completa ni notas privadas.
             </p>

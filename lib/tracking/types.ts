@@ -24,6 +24,10 @@ export interface PublicTrackingResult {
   updatedAt: string | null;
   recipientDisplay: string;
   events: PublicTrackingEvent[];
+
+  // URL temporal creada por el servidor. Expira automáticamente.
+  deliveryPhotoUrl: string | null;
+  hasDeliveryPhoto: boolean;
 }
 
 export const TRACKING_STATUS_LABELS: Record<TrackingStatus, string> = {
