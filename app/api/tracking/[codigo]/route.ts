@@ -8,6 +8,27 @@ import {
 const EVIDENCE_BUCKET = "delivery-photos";
 const SIGNED_URL_SECONDS = 10 * 60;
 
+type ShipmentRow = {
+  id: string;
+  tracking_code: string;
+  location: string | null;
+  recipient_name: string | null;
+  status: string | null;
+  created_date: string | null;
+  delivered_date: string | null;
+  updated_at: string | null;
+  deleted_at: string | null;
+  public_tracking_enabled: boolean | null;
+  delivery_photo_url: string | null;
+};
+
+type TrackingEventRow = {
+  status: TrackingStatus;
+  title: string;
+  description: string | null;
+  event_date: string;
+};
+
 function normalizeCode(value: string) {
   return decodeURIComponent(value)
     .trim()
@@ -20,7 +41,10 @@ function maskName(value: string | null) {
   if (!clean) return "Destinatario";
 
   const parts = clean.split(/\s+/);
-  if (parts.length === 1) return `${parts[0].charAt(0)}***`;
+
+  if (parts.length === 1) {
+    return `${parts[0].charAt(0)}***`;
+  }
 
   return `${parts[0]} ${parts.at(-1)?.charAt(0) ?? ""}.`;
 }
@@ -39,7 +63,7 @@ export async function GET(
     );
   }
 
-  const { data: shipment, error: shipmentError } = await supabaseAdmin
+  const shipmentQuery = await supabaseAdmin
     .from("shipments")
     .select(
       [
@@ -61,13 +85,22 @@ export async function GET(
     .eq("public_tracking_enabled", true)
     .maybeSingle();
 
-  if (shipmentError) {
-    console.error("Tracking shipment error", shipmentError);
+  if (shipmentQuery.error) {
+    console.error("Tracking shipment error", shipmentQuery.error);
+
     return NextResponse.json(
       { error: "No se pudo consultar el envío" },
       { status: 500 }
     );
   }
+
+  /*
+   * El cliente Supabase tipado del proyecto no conoce todavía las columnas
+   * nuevas de rastreo y por eso TypeScript puede inferir GenericStringError.
+   * Validamos el resultado en tiempo de ejecución y luego lo tratamos como
+   * ShipmentRow para mantener el build seguro.
+   */
+  const shipment = shipmentQuery.data as unknown as ShipmentRow | null;
 
   if (!shipment) {
     return NextResponse.json(
@@ -76,35 +109,43 @@ export async function GET(
     );
   }
 
-  const { data: events, error: eventsError } = await supabaseAdmin
+  const eventsQuery = await supabaseAdmin
     .from("shipment_tracking_events")
     .select("status, title, description, event_date")
     .eq("shipment_id", shipment.id)
     .order("event_date", { ascending: true });
 
-  if (eventsError) {
-    console.error("Tracking events error", eventsError);
+  if (eventsQuery.error) {
+    console.error("Tracking events error", eventsQuery.error);
   }
 
+  const events =
+    (eventsQuery.data as unknown as TrackingEventRow[] | null) ?? [];
+
   let deliveryPhotoUrl: string | null = null;
+
   const storagePath =
     typeof shipment.delivery_photo_url === "string"
       ? shipment.delivery_photo_url.trim()
       : "";
 
   if (storagePath) {
-    const { data: signedData, error: signedError } = await supabaseAdmin.storage
+    const signedResult = await supabaseAdmin.storage
       .from(EVIDENCE_BUCKET)
       .createSignedUrl(storagePath, SIGNED_URL_SECONDS);
 
-    if (signedError) {
-      console.error("Tracking evidence signed URL error", signedError);
+    if (signedResult.error) {
+      console.error(
+        "Tracking evidence signed URL error",
+        signedResult.error
+      );
     } else {
-      deliveryPhotoUrl = signedData.signedUrl;
+      deliveryPhotoUrl = signedResult.data.signedUrl;
     }
   }
 
-  const status = (shipment.status || "received_miami") as TrackingStatus;
+  const status =
+    (shipment.status || "received_miami") as TrackingStatus;
 
   return NextResponse.json(
     {
@@ -112,12 +153,13 @@ export async function GET(
       location: shipment.location || "Cuba",
       status,
       statusLabel:
-        TRACKING_STATUS_LABELS[status] || "Actualización del envío",
+        TRACKING_STATUS_LABELS[status] ||
+        "Actualización del envío",
       createdDate: shipment.created_date,
       deliveredDate: shipment.delivered_date,
       updatedAt: shipment.updated_at,
       recipientDisplay: maskName(shipment.recipient_name),
-      events: (events || []).map((event) => ({
+      events: events.map((event) => ({
         status: event.status,
         title: event.title,
         description: event.description,
