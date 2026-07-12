@@ -13,7 +13,7 @@ export default function RastrearPage() {
         </h1>
 
         <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-          Ingresa el código compartido por Águila Cuba Express para consultar el estado y el historial de tu paquete.
+          Escribe los 8 caracteres que aparecen después de ACE- para consultar el estado y el historial de tu paquete.
         </p>
 
         <TrackingSearch />
