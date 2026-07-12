@@ -1,6 +1,17 @@
-import { Loader2, MessageCircle, Package, ShoppingBag, Truck } from "lucide-react";
+
+import {
+  Loader2,
+  MessageCircle,
+  Package,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import type { DeliveryZone } from "@/lib/services/settings";
 import type { CheckoutCartItem, CheckoutTotals } from "./types";
+import {
+  DiscountCouponBox,
+  type AppliedDiscount,
+} from "@/components/checkout/DiscountCouponBox";
 
 type Props = {
   cart: CheckoutCartItem[];
@@ -11,6 +22,11 @@ type Props = {
   loading: boolean;
   canCheckout: boolean;
   onSubmit: () => void;
+  storeId: string;
+  customerPhone: string;
+  appliedDiscount: AppliedDiscount | null;
+  onApplyDiscount: (discount: AppliedDiscount) => void;
+  onRemoveDiscount: () => void;
 };
 
 export function OrderSummary({
@@ -22,7 +38,15 @@ export function OrderSummary({
   loading,
   canCheckout,
   onSubmit,
+  storeId,
+  customerPhone,
+  appliedDiscount,
+  onApplyDiscount,
+  onRemoveDiscount,
 }: Props) {
+  const discountAmount = appliedDiscount?.discountAmount || 0;
+  const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
+
   return (
     <aside className="h-fit rounded-3xl bg-white p-5 shadow-sm">
       <h2 className="mb-4 text-lg font-bold text-gray-900">
@@ -64,6 +88,17 @@ export function OrderSummary({
 
       <div className="my-5 border-t" />
 
+      <DiscountCouponBox
+        storeId={storeId}
+        phone={customerPhone}
+        subtotal={totals.subtotal}
+        appliedDiscount={appliedDiscount}
+        onApply={onApplyDiscount}
+        onRemove={onRemoveDiscount}
+      />
+
+      <div className="my-5 border-t" />
+
       <div className="space-y-3 text-sm">
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Subtotal</span>
@@ -85,28 +120,19 @@ export function OrderSummary({
           </span>
         </div>
 
+        {appliedDiscount && (
+          <div className="flex items-center justify-between font-bold text-green-700">
+            <span>Descuento ({appliedDiscount.code})</span>
+            <span>-${discountAmount.toFixed(2)}</span>
+          </div>
+        )}
+
         {selectedZone && (
           <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
             Zona:{" "}
             <strong>
               {municipality} / {selectedZone.zone_name}
             </strong>
-          </div>
-        )}
-
-        {selectedZone &&
-          totals.freeDeliveryFrom > 0 &&
-          totals.subtotal < totals.freeDeliveryFrom && (
-            <div className="rounded-xl bg-amber-50 p-3 text-xs font-medium text-amber-700">
-              Te faltan $
-              {(totals.freeDeliveryFrom - totals.subtotal).toFixed(2)} para
-              domicilio gratis en esta zona.
-            </div>
-          )}
-
-        {selectedZone && totals.hasFreeDelivery && (
-          <div className="rounded-xl bg-green-50 p-3 text-xs font-bold text-green-700">
-            🎉 ¡Tu domicilio es GRATIS!
           </div>
         )}
 
@@ -123,7 +149,7 @@ export function OrderSummary({
 
       <div className="mb-5 flex items-center justify-between text-lg font-bold">
         <span>Total</span>
-        <span>${totals.finalTotal.toFixed(2)}</span>
+        <span>${finalTotal.toFixed(2)}</span>
       </div>
 
       {error && (
@@ -149,10 +175,6 @@ export function OrderSummary({
           </>
         )}
       </button>
-
-      <p className="mt-4 text-center text-xs text-gray-500">
-        Al enviar el pedido se abrirá WhatsApp con el resumen completo.
-      </p>
     </aside>
   );
 }

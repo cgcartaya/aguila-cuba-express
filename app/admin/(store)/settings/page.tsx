@@ -8,9 +8,21 @@ import {
   ArrowRight,
   MapPinned,
   CalendarDays,
+  TicketPercent,
 } from "lucide-react";
 
 const settingsCards = [
+
+  {
+    title: "Bonos de descuento",
+    description:
+      "Crea campañas de monto fijo y autoriza teléfonos específicos para usarlas una sola vez.",
+    href: "/admin/settings/discounts",
+    icon: TicketPercent,
+    iconBox: "bg-pink-50 text-pink-700",
+    hover: "hover:border-pink-200 hover:bg-pink-50/40",
+  },
+
   {
     title: "Configuración general",
     description:
@@ -53,6 +65,7 @@ const settingsCards = [
       "Administra próximas salidas, fechas, horarios, origen y destino.",
     href: "/admin/settings/departures",
     icon: CalendarDays,
+  TicketPercent,
     iconBox: "bg-amber-50 text-amber-700",
     hover: "hover:border-amber-200 hover:bg-amber-50/40",
   },

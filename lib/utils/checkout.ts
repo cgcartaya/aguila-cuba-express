@@ -79,6 +79,8 @@ export function buildWhatsappOrderMessage({
   subtotal,
   shippingCost,
   finalTotal,
+  discountCode,
+  discountAmount,
   orderUrl,
 }: {
   orderNumber: string;
@@ -88,6 +90,8 @@ export function buildWhatsappOrderMessage({
   subtotal: number;
   shippingCost: number;
   finalTotal: number;
+  discountCode?: string | null;
+  discountAmount?: number;
   orderUrl: string;
 }) {
   const productsText = cart
@@ -175,6 +179,7 @@ RESUMEN
 
 Subtotal: $${subtotal.toFixed(2)}
 Domicilio: $${shippingCost.toFixed(2)}
+${discountCode ? `Descuento (${discountCode}): -$${Number(discountAmount || 0).toFixed(2)}` : ""}
 
 TOTAL: $${finalTotal.toFixed(2)}
 
