@@ -12,6 +12,7 @@ import {
   Trash2,
   UserPlus,
   Users,
+  MessageCircle,
   X,
   XCircle,
 } from "lucide-react";
@@ -72,6 +73,47 @@ function getErrorMessage(error: unknown, fallback: string) {
   }
 
   return fallback;
+}
+
+
+function normalizeWhatsappPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+
+  // Los teléfonos de EE. UU. guardados con 10 dígitos necesitan el prefijo 1.
+  if (digits.length === 10) {
+    return `1${digits}`;
+  }
+
+  return digits;
+}
+
+function buildStorePurchaseUrl(
+  store: {
+    slug?: string | null;
+    domain?: string | null;
+    subdomain?: string | null;
+  } | null
+) {
+  if (!store) return "https://perlamarketplace.com";
+
+  const cleanDomain = store.domain
+    ?.replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/+$/, "");
+
+  if (cleanDomain) {
+    return `https://${cleanDomain}/tienda`;
+  }
+
+  if (store.subdomain) {
+    return `https://${store.subdomain}.perlamarketplace.com`;
+  }
+
+  if (store.slug) {
+    return `https://perlamarketplace.com/tienda/${store.slug}`;
+  }
+
+  return "https://perlamarketplace.com";
 }
 
 export default function DiscountsAdminPage() {
@@ -517,6 +559,75 @@ export default function DiscountsAdminPage() {
     });
 
     await loadCampaigns();
+  }
+
+
+  function shareCouponByWhatsapp(
+    customer: DiscountCampaignCustomer
+  ) {
+    if (!selectedCampaign || !activeStore) return;
+
+    if (customer.status !== "available") {
+      setFeedback({
+        type: "error",
+        message:
+          "Solo puedes enviar instrucciones de un bono que todavía esté disponible.",
+      });
+      return;
+    }
+
+    const whatsappPhone = normalizeWhatsappPhone(
+      customer.customer_phone
+    );
+
+    if (!whatsappPhone) {
+      setFeedback({
+        type: "error",
+        message: "El teléfono asociado no es válido.",
+      });
+      return;
+    }
+
+    const storeInfo = activeStore as typeof activeStore & {
+      slug?: string | null;
+      domain?: string | null;
+      subdomain?: string | null;
+    };
+
+    const storeUrl = buildStorePurchaseUrl(storeInfo);
+    const discountAmount = Number(
+      selectedCampaign.discount_amount || 0
+    ).toFixed(2);
+
+    const message = [
+      `Hola 👋 Tienes un bono de descuento de $${discountAmount} en ${activeStore.name}.`,
+      "",
+      `🎟️ Código promocional: ${selectedCampaign.code}`,
+      `📱 Teléfono autorizado: ${customer.customer_phone}`,
+      `📅 Válido hasta: ${new Date(
+        selectedCampaign.expires_at
+      ).toLocaleDateString("es-US")}`,
+      "",
+      "Cómo usar tu bono:",
+      `1. Entra a la tienda: ${storeUrl}`,
+      "2. Agrega los productos que deseas al carrito.",
+      "3. Continúa al checkout.",
+      `4. En el teléfono del comprador escribe exactamente: ${customer.customer_phone}`,
+      `5. En la sección “¿Tienes un bono?” escribe: ${selectedCampaign.code}`,
+      "6. Pulsa “Aplicar” y verifica que el descuento aparezca antes de enviar el pedido.",
+      "",
+      "Importante: este bono es válido una sola vez y únicamente con el teléfono indicado.",
+    ].join("\n");
+
+    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+      message
+    )}`;
+
+    window.open(
+      whatsappUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
   }
 
   if (
@@ -1136,7 +1247,35 @@ export default function DiscountsAdminPage() {
                               </p>
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  shareCouponByWhatsapp(
+                                    customer
+                                  )
+                                }
+                                disabled={
+                                  customer.status !==
+                                  "available"
+                                }
+                                className="inline-flex items-center gap-2 rounded-xl bg-green-500 px-3 py-2 text-xs font-black text-white transition hover:bg-green-600 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                                aria-label={`Enviar bono por WhatsApp a ${customer.customer_phone}`}
+                                title={
+                                  customer.status ===
+                                  "available"
+                                    ? "Enviar instrucciones por WhatsApp"
+                                    : "Este bono ya no está disponible"
+                                }
+                              >
+                                <MessageCircle
+                                  size={17}
+                                />
+                                <span className="hidden sm:inline">
+                                  Enviar bono
+                                </span>
+                              </button>
+
                               {customer.status !==
                                 "used" && (
                                 <button
