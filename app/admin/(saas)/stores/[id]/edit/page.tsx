@@ -8,6 +8,7 @@ import {
   getStoreById,
   updateStore,
   uploadStoreLogo,
+  uploadStoreFavicon,
 } from "@/lib/services/stores"
 
 export default function EditStorePage() {
@@ -18,6 +19,7 @@ export default function EditStorePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [faviconFile, setFaviconFile] = useState<File | null>(null)
 
   const [form, setForm] = useState({
     name: "",
@@ -25,6 +27,7 @@ export default function EditStorePage() {
     subdomain: "",
     domain: "",
     logo_url: "",
+    favicon_url: "",
     primary_color: "#0B1F4D",
     secondary_color: "#DC2626",
     plan: "basic",
@@ -55,6 +58,7 @@ export default function EditStorePage() {
         subdomain: store.subdomain || store.slug || "",
         domain: store.domain || "",
         logo_url: store.logo_url || "",
+        favicon_url: store.favicon_url || "",
         primary_color: store.primary_color || "#0B1F4D",
         secondary_color: store.secondary_color || "#DC2626",
         plan: store.plan || "basic",
@@ -95,12 +99,30 @@ export default function EditStorePage() {
         logoUrl = data
       }
 
+      let faviconUrl = form.favicon_url || null
+
+      if (faviconFile) {
+        const { data, error } = await uploadStoreFavicon(
+          storeId,
+          faviconFile
+        )
+
+        if (error) {
+          console.error("SUPABASE UPLOAD FAVICON ERROR:", error)
+          alert(error.message || "Error subiendo favicon")
+          return
+        }
+
+        faviconUrl = data
+      }
+
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
         subdomain: form.subdomain.trim().toLowerCase(),
         domain: form.domain.trim() === "" ? null : form.domain.trim().toLowerCase(),
         logo_url: logoUrl,
+        favicon_url: faviconUrl,
         primary_color: form.primary_color,
         secondary_color: form.secondary_color,
         plan: form.plan,
@@ -285,41 +307,71 @@ export default function EditStorePage() {
           />
         </div>
 
-        <div className="rounded-2xl border p-4">
-          <label className="mb-3 block font-medium">
-            Logo de la tienda
-          </label>
+        <section className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+          <div className="rounded-2xl border bg-white p-4">
+            <label className="mb-3 block font-medium">
+              Logo de la tienda
+            </label>
 
-          <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
-              {form.logo_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={form.logo_url}
-                  alt={form.name || "Logo de tienda"}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <Upload className="h-8 w-8 text-slate-400" />
-              )}
-            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100">
+                {form.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.logo_url}
+                    alt={form.name || "Logo de tienda"}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <Upload className="h-8 w-8 text-slate-400" />
+                )}
+              </div>
 
-            <div className="flex-1">
               <input
                 type="file"
-                accept="image/*"
-                className="w-full rounded-xl border p-3"
-                onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="min-w-0 flex-1 rounded-xl border p-3"
+                onChange={(event) =>
+                  setLogoFile(event.target.files?.[0] || null)
+                }
               />
-
-              {logoFile && (
-                <p className="mt-2 text-sm text-slate-500">
-                  Nuevo logo seleccionado: {logoFile.name}
-                </p>
-              )}
             </div>
           </div>
-        </div>
+
+          <div className="rounded-2xl border bg-white p-4">
+            <label className="mb-3 block font-medium">
+              Favicon de la tienda
+            </label>
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 p-3">
+                {form.favicon_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={form.favicon_url}
+                    alt={`Favicon de ${form.name || "la tienda"}`}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <Upload className="h-7 w-7 text-slate-400" />
+                )}
+              </div>
+
+              <input
+                type="file"
+                accept="image/png,image/x-icon,image/svg+xml,image/webp"
+                className="min-w-0 flex-1 rounded-xl border p-3"
+                onChange={(event) =>
+                  setFaviconFile(event.target.files?.[0] || null)
+                }
+              />
+            </div>
+
+            <p className="mt-3 text-xs text-slate-500">
+              Usa una imagen cuadrada. Recomendado: 32×32, 48×48 o 512×512.
+            </p>
+          </div>
+        </section>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>

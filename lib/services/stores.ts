@@ -11,6 +11,7 @@ const STORE_PUBLIC_FIELDS = `
   meta_description,
   og_image_url,
   logo_url,
+  favicon_url,
   primary_color,
   secondary_color,
   is_active,
@@ -153,10 +154,12 @@ export async function createStore(store: {
   meta_description?: string | null
   og_image_url?: string | null
   logo_url?: string | null
+  favicon_url?: string | null
   primary_color?: string | null
   secondary_color?: string | null
   plan: string
   monthly_price?: number | null
+  is_active?: boolean
 }) {
   const result = await supabase
     .from("stores")
@@ -182,6 +185,7 @@ export async function updateStore(
     meta_description?: string | null
     og_image_url?: string | null
     logo_url?: string | null
+    favicon_url?: string | null
     primary_color?: string | null
     secondary_color?: string | null
     is_active?: boolean
@@ -207,16 +211,21 @@ export async function updateStore(
   return result
 }
 
-export async function uploadStoreLogo(storeId: string, file: File) {
-  const fileExt = file.name.split(".").pop()
-  const fileName = `${crypto.randomUUID()}.${fileExt}`
-  const filePath = `${storeId}/${fileName}`
+
+async function uploadStoreAsset(
+  storeId: string,
+  file: File,
+  assetName: "logo" | "favicon"
+) {
+  const extension = file.name.split(".").pop()?.toLowerCase() || "png"
+  const filePath = `${storeId}/${assetName}-${crypto.randomUUID()}.${extension}`
 
   const { error: uploadError } = await supabase.storage
     .from("store-logos")
     .upload(filePath, file, {
       upsert: true,
       cacheControl: "31536000",
+      contentType: file.type || undefined,
     })
 
   if (uploadError) {
@@ -234,6 +243,14 @@ export async function uploadStoreLogo(storeId: string, file: File) {
     data: data.publicUrl,
     error: null,
   }
+}
+
+export async function uploadStoreLogo(storeId: string, file: File) {
+  return uploadStoreAsset(storeId, file, "logo")
+}
+
+export async function uploadStoreFavicon(storeId: string, file: File) {
+  return uploadStoreAsset(storeId, file, "favicon")
 }
 
 export async function markStoreAsPaid(

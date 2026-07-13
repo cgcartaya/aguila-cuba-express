@@ -14,6 +14,7 @@ export interface Store {
   og_image_url: string | null
 
   logo_url: string | null
+  favicon_url: string | null
   primary_color: string | null
   secondary_color: string | null
   is_active: boolean

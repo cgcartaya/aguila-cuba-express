@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createStore } from "@/lib/services/stores";
+import {
+  createStore,
+  updateStore,
+  uploadStoreFavicon,
+  uploadStoreLogo,
+} from "@/lib/services/stores";
 
 export default function NewStorePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -35,18 +42,64 @@ export default function NewStorePage() {
         secondary_color: form.secondary_color,
         plan: form.plan,
         monthly_price: Number(form.monthly_price),
+        is_active: true,
       };
 
-      const { error } = await createStore(payload);
+      const { data: createdStore, error } = await createStore(payload);
 
-      if (error) {
+      if (error || !createdStore) {
         console.error("SUPABASE CREATE STORE ERROR:", error);
-        alert(error.message || "Error creando tienda");
+        alert(error?.message || "Error creando tienda");
         return;
       }
 
+      let logoUrl: string | null = null;
+      let faviconUrl: string | null = null;
+
+      if (logoFile) {
+        const result = await uploadStoreLogo(createdStore.id, logoFile);
+
+        if (result.error) {
+          console.error("SUPABASE UPLOAD LOGO ERROR:", result.error);
+          alert("La tienda se creó, pero no se pudo subir el logo.");
+        } else {
+          logoUrl = result.data;
+        }
+      }
+
+      if (faviconFile) {
+        const result = await uploadStoreFavicon(
+          createdStore.id,
+          faviconFile
+        );
+
+        if (result.error) {
+          console.error("SUPABASE UPLOAD FAVICON ERROR:", result.error);
+          alert("La tienda se creó, pero no se pudo subir el favicon.");
+        } else {
+          faviconUrl = result.data;
+        }
+      }
+
+      if (logoUrl || faviconUrl) {
+        const { error: assetUpdateError } = await updateStore(
+          createdStore.id,
+          {
+            logo_url: logoUrl,
+            favicon_url: faviconUrl,
+          }
+        );
+
+        if (assetUpdateError) {
+          console.error(
+            "SUPABASE UPDATE STORE ASSETS ERROR:",
+            assetUpdateError
+          );
+        }
+      }
+
       alert("Tienda creada correctamente");
-      router.push("/admin/stores");
+      window.location.assign("/admin/stores");
     } catch (error) {
       console.error("ERROR GENERAL CREANDO TIENDA:", error);
       alert("Error creando tienda");
@@ -147,6 +200,46 @@ export default function NewStorePage() {
             }
           />
         </div>
+
+        <section className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+          <div>
+            <label className="mb-2 block font-medium">
+              Logo de la tienda
+            </label>
+
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              className="w-full rounded-xl border bg-white p-3"
+              onChange={(event) =>
+                setLogoFile(event.target.files?.[0] || null)
+              }
+            />
+
+            <p className="mt-2 text-xs text-slate-500">
+              Recomendado: PNG o WebP, preferiblemente con fondo transparente.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block font-medium">
+              Favicon de la tienda
+            </label>
+
+            <input
+              type="file"
+              accept="image/png,image/x-icon,image/svg+xml,image/webp"
+              className="w-full rounded-xl border bg-white p-3"
+              onChange={(event) =>
+                setFaviconFile(event.target.files?.[0] || null)
+              }
+            />
+
+            <p className="mt-2 text-xs text-slate-500">
+              Imagen cuadrada. Recomendado: PNG de 32×32, 48×48 o 512×512.
+            </p>
+          </div>
+        </section>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
