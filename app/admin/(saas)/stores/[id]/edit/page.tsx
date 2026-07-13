@@ -22,6 +22,7 @@ export default function EditStorePage() {
   const [form, setForm] = useState({
     name: "",
     slug: "",
+    subdomain: "",
     domain: "",
     logo_url: "",
     primary_color: "#0B1F4D",
@@ -51,6 +52,7 @@ export default function EditStorePage() {
       setForm({
         name: store.name || "",
         slug: store.slug || "",
+        subdomain: store.subdomain || store.slug || "",
         domain: store.domain || "",
         logo_url: store.logo_url || "",
         primary_color: store.primary_color || "#0B1F4D",
@@ -96,7 +98,8 @@ export default function EditStorePage() {
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
-        domain: form.domain.trim() === "" ? null : form.domain.trim(),
+        subdomain: form.subdomain.trim().toLowerCase(),
+        domain: form.domain.trim() === "" ? null : form.domain.trim().toLowerCase(),
         logo_url: logoUrl,
         primary_color: form.primary_color,
         secondary_color: form.secondary_color,
@@ -228,15 +231,49 @@ export default function EditStorePage() {
                   .trim()
                   .replace(/\s+/g, "-")
                   .replace(/[^a-z0-9-]/g, ""),
+                subdomain: e.target.value
+                  .toLowerCase()
+                  .trim()
+                  .replace(/\s+/g, "-")
+                  .replace(/[^a-z0-9-]/g, ""),
               })
             }
           />
         </div>
 
         <div>
-          <label className="mb-2 block font-medium">Dominio</label>
+          <label className="mb-2 block font-medium">
+            Subdominio
+          </label>
+
           <input
-            placeholder="opcional"
+            required
+            className="w-full rounded-xl border p-3"
+            value={form.subdomain}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                subdomain: e.target.value
+                  .toLowerCase()
+                  .trim()
+                  .replace(/\s+/g, "-")
+                  .replace(/[^a-z0-9-]/g, ""),
+              })
+            }
+          />
+
+          <p className="mt-2 text-sm text-slate-500">
+            URL pública:{" "}
+            <span className="font-semibold text-slate-700">
+              https://{form.subdomain || "mi-tienda"}.perlamarketplace.com
+            </span>
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-2 block font-medium">Dominio personalizado (opcional)</label>
+          <input
+            placeholder="Ej: mitienda.com"
             className="w-full rounded-xl border p-3"
             value={form.domain}
             onChange={(e) =>

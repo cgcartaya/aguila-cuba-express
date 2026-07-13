@@ -11,6 +11,7 @@ export default function NewStorePage() {
   const [form, setForm] = useState({
     name: "",
     slug: "",
+    subdomain: "",
     domain: "",
     primary_color: "#0B1F4D",
     secondary_color: "#DC2626",
@@ -27,7 +28,8 @@ export default function NewStorePage() {
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
-        domain: form.domain.trim() === "" ? null : form.domain.trim(),
+        subdomain: form.subdomain.trim().toLowerCase(),
+        domain: form.domain.trim() === "" ? null : form.domain.trim().toLowerCase(),
         logo_url: null,
         primary_color: form.primary_color,
         secondary_color: form.secondary_color,
@@ -78,6 +80,11 @@ export default function NewStorePage() {
                   .trim()
                   .replace(/\s+/g, "-")
                   .replace(/[^a-z0-9-]/g, ""),
+                subdomain: e.target.value
+                  .toLowerCase()
+                  .trim()
+                  .replace(/\s+/g, "-")
+                  .replace(/[^a-z0-9-]/g, ""),
               })
             }
           />
@@ -97,15 +104,39 @@ export default function NewStorePage() {
                   .trim()
                   .replace(/\s+/g, "-")
                   .replace(/[^a-z0-9-]/g, ""),
+                subdomain: e.target.value
+                  .toLowerCase()
+                  .trim()
+                  .replace(/\s+/g, "-")
+                  .replace(/[^a-z0-9-]/g, ""),
               })
             }
           />
         </div>
 
         <div>
-          <label className="mb-2 block font-medium">Dominio</label>
+          <label className="mb-2 block font-medium">
+            Subdominio automático
+          </label>
+
           <input
-            placeholder="opcional"
+            readOnly
+            className="w-full rounded-xl border bg-slate-100 p-3 text-slate-700"
+            value={form.subdomain}
+          />
+
+          <p className="mt-2 text-sm text-slate-500">
+            URL pública:{" "}
+            <span className="font-semibold text-slate-700">
+              https://{form.subdomain || "mi-tienda"}.perlamarketplace.com
+            </span>
+          </p>
+        </div>
+
+        <div>
+          <label className="mb-2 block font-medium">Dominio personalizado (opcional)</label>
+          <input
+            placeholder="Ej: mitienda.com"
             className="w-full rounded-xl border p-3"
             value={form.domain}
             onChange={(e) =>
