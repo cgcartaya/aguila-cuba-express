@@ -14,6 +14,8 @@ import {
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import { useEffect } from "react";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 export default function CartPage() {
   const {
@@ -25,6 +27,12 @@ export default function CartPage() {
   } = useCart();
 
   const { store } = useStore();
+
+  useEffect(() => {
+    if (store?.id && cart.length > 0) {
+      trackAnalyticsEvent({ storeId: store.id, eventName: "view_cart", value: cart.reduce((s, i) => s + Number(i.price) * i.quantity, 0) });
+    }
+  }, [store?.id]);
 
 const isDefaultStore = store?.slug === "aguila";
 

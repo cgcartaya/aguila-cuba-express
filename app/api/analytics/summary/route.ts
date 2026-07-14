@@ -1,116 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-
-const VALID_DAYS = new Set([7, 30, 90]);
-
-async function canAccessStore(userId: string, storeId: string) {
-  const { data: profile } = await supabaseAdmin
-    .from("profiles")
-    .select("role,active")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (!profile?.active) return false;
-  if (profile.role === "super_admin") return true;
-
-  const { data: membership } = await supabaseAdmin
-    .from("store_users")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("store_id", storeId)
-    .eq("active", true)
-    .limit(1)
-    .maybeSingle();
-
-  return Boolean(membership);
-}
-
-export async function GET(request: NextRequest) {
-  try {
-    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    if (!token) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-
-    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !authData.user) {
-      return NextResponse.json({ error: "Sesión inválida." }, { status: 401 });
-    }
-
-    const storeId = request.nextUrl.searchParams.get("storeId") || "";
-    const requestedDays = Number(request.nextUrl.searchParams.get("days") || 30);
-    const days = VALID_DAYS.has(requestedDays) ? requestedDays : 30;
-
-    if (!storeId || !(await canAccessStore(authData.user.id, storeId))) {
-      return NextResponse.json({ error: "Sin acceso a esta tienda." }, { status: 403 });
-    }
-
-    const from = new Date();
-    from.setUTCHours(0, 0, 0, 0);
-    from.setUTCDate(from.getUTCDate() - (days - 1));
-
-    const { data, error } = await supabaseAdmin
-      .from("site_visits")
-      .select("visitor_id,session_id,path,page_type,product_id,source,device_type,created_at,products(name)")
-      .eq("store_id", storeId)
-      .gte("created_at", from.toISOString())
-      .order("created_at", { ascending: true });
-
-    if (error) throw error;
-
-    const visits = data || [];
-    const todayKey = new Date().toISOString().slice(0, 10);
-    const dailyMap = new Map<string, number>();
-    const pageMap = new Map<string, number>();
-    const productMap = new Map<string, { name: string; visits: number }>();
-    const sourceMap = new Map<string, number>();
-    const deviceMap = new Map<string, number>();
-
-    for (let i = 0; i < days; i++) {
-      const date = new Date(from);
-      date.setUTCDate(from.getUTCDate() + i);
-      dailyMap.set(date.toISOString().slice(0, 10), 0);
-    }
-
-    visits.forEach((visit: any) => {
-      const dateKey = String(visit.created_at).slice(0, 10);
-      dailyMap.set(dateKey, (dailyMap.get(dateKey) || 0) + 1);
-      pageMap.set(visit.path, (pageMap.get(visit.path) || 0) + 1);
-      sourceMap.set(visit.source || "direct", (sourceMap.get(visit.source || "direct") || 0) + 1);
-      deviceMap.set(visit.device_type || "unknown", (deviceMap.get(visit.device_type || "unknown") || 0) + 1);
-
-      if (visit.product_id) {
-        const product = Array.isArray(visit.products) ? visit.products[0] : visit.products;
-        const current = productMap.get(visit.product_id) || {
-          name: product?.name || "Producto eliminado",
-          visits: 0,
-        };
-        current.visits += 1;
-        productMap.set(visit.product_id, current);
-      }
-    });
-
-    const uniqueVisitors = new Set(visits.map((v: any) => v.visitor_id).filter(Boolean)).size;
-    const uniqueSessions = new Set(visits.map((v: any) => v.session_id).filter(Boolean)).size;
-
-    return NextResponse.json({
-      rangeDays: days,
-      totals: {
-        visits: visits.length,
-        today: dailyMap.get(todayKey) || 0,
-        uniqueVisitors,
-        sessions: uniqueSessions,
-      },
-      daily: Array.from(dailyMap, ([date, count]) => ({ date, count })),
-      topPages: Array.from(pageMap, ([path, count]) => ({ path, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10),
-      topProducts: Array.from(productMap, ([id, value]) => ({ id, ...value }))
-        .sort((a, b) => b.visits - a.visits)
-        .slice(0, 10),
-      sources: Array.from(sourceMap, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-      devices: Array.from(deviceMap, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
-    });
-  } catch (error) {
-    console.error("ANALYTICS SUMMARY ERROR:", error);
-    return NextResponse.json({ error: "No se pudieron cargar las estadísticas." }, { status: 500 });
-  }
-}
+const VALID_DAYS=new Set([7,30,90]);
+async function canAccess(userId:string,storeId:string){const {data:p}=await supabaseAdmin.from("profiles").select("role,active").eq("id",userId).maybeSingle();if(!p?.active)return false;if(p.role==="super_admin")return true;const {data:m}=await supabaseAdmin.from("store_users").select("id").eq("user_id",userId).eq("store_id",storeId).eq("active",true).maybeSingle();return !!m;}
+const pct=(a:number,b:number)=>b?((a-b)/b)*100:a?100:0;
+export async function GET(req:NextRequest){try{const token=req.headers.get("authorization")?.replace(/^Bearer\s+/i,"");if(!token)return NextResponse.json({error:"No autorizado"},{status:401});const {data:a}=await supabaseAdmin.auth.getUser(token);if(!a.user)return NextResponse.json({error:"Sesión inválida"},{status:401});const storeId=req.nextUrl.searchParams.get("storeId")||"";const d=Number(req.nextUrl.searchParams.get("days")||30);const days=VALID_DAYS.has(d)?d:30;if(!storeId||!(await canAccess(a.user.id,storeId)))return NextResponse.json({error:"Sin acceso"},{status:403});
+const end=new Date();const start=new Date();start.setUTCHours(0,0,0,0);start.setUTCDate(start.getUTCDate()-(days-1));const prevStart=new Date(start);prevStart.setUTCDate(prevStart.getUTCDate()-days);const prevEnd=new Date(start);prevEnd.setMilliseconds(-1);
+const [{data:visits},{data:events},{data:orders},{data:prevVisits},{data:prevOrders}]=await Promise.all([
+supabaseAdmin.from("site_visits").select("visitor_id,session_id,path,product_id,source,device_type,created_at,products(name)").eq("store_id",storeId).gte("created_at",start.toISOString()),
+supabaseAdmin.from("analytics_events").select("event_name,visitor_id,session_id,product_id,item_name,quantity,value,campaign_source,campaign_medium,campaign_name,created_at,products(name)").eq("store_id",storeId).gte("created_at",start.toISOString()),
+supabaseAdmin.from("orders").select("id,total,created_at").eq("store_id",storeId).is("deleted_at",null).gte("created_at",start.toISOString()),
+supabaseAdmin.from("site_visits").select("id").eq("store_id",storeId).gte("created_at",prevStart.toISOString()).lte("created_at",prevEnd.toISOString()),
+supabaseAdmin.from("orders").select("id,total").eq("store_id",storeId).is("deleted_at",null).gte("created_at",prevStart.toISOString()).lte("created_at",prevEnd.toISOString())]);
+const v=visits||[],e=events||[],o=orders||[];const count=(n:string)=>e.filter((x:any)=>x.event_name===n).length;const add=count("add_to_cart"),cart=count("view_cart"),checkout=count("begin_checkout"),created=Math.max(count("order_created"),o.length);const revenue=o.reduce((s:any,x:any)=>s+Number(x.total||0),0);const unique=new Set(v.map((x:any)=>x.visitor_id).filter(Boolean)).size;const sessions=new Set(v.map((x:any)=>x.session_id).filter(Boolean)).size;
+const product=new Map<string,any>();for(const x of v as any[]){if(!x.product_id)continue;const p=Array.isArray(x.products)?x.products[0]:x.products;product.set(x.product_id,{id:x.product_id,name:p?.name||"Producto",visits:(product.get(x.product_id)?.visits||0)+1,adds:product.get(x.product_id)?.adds||0});}for(const x of e as any[]){if(x.event_name!=="add_to_cart"||!x.product_id)continue;const p=Array.isArray(x.products)?x.products[0]:x.products;const cur=product.get(x.product_id)||{id:x.product_id,name:x.item_name||p?.name||"Producto",visits:0,adds:0};cur.adds++;product.set(x.product_id,cur);}const campaigns=new Map<string,any>();for(const x of e as any[]){const key=x.campaign_name||x.campaign_source;if(!key)continue;const cur=campaigns.get(key)||{name:key,events:0,orders:0};cur.events++;if(x.event_name==="order_created")cur.orders++;campaigns.set(key,cur);}
+return NextResponse.json({rangeDays:days,totals:{visits:v.length,uniqueVisitors:unique,sessions,orders:created,revenue,conversionRate:v.length?created/v.length*100:0},comparison:{visits:pct(v.length,(prevVisits||[]).length),orders:pct(created,(prevOrders||[]).length),revenue:pct(revenue,(prevOrders||[]).reduce((s:any,x:any)=>s+Number(x.total||0),0))},funnel:[{name:"Visitas",value:v.length},{name:"Agregar al carrito",value:add},{name:"Ver carrito",value:cart},{name:"Iniciar checkout",value:checkout},{name:"Órdenes",value:created}],products:Array.from(product.values()).map((x:any)=>({...x,addRate:x.visits?x.adds/x.visits*100:0})).sort((a:any,b:any)=>b.visits-a.visits).slice(0,15),campaigns:Array.from(campaigns.values()).sort((a:any,b:any)=>b.events-a.events).slice(0,15)});
+}catch(e){console.error(e);return NextResponse.json({error:"No se pudieron cargar las estadísticas"},{status:500});}}

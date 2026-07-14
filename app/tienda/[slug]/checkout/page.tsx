@@ -20,6 +20,7 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
   getActiveDeliveryZones,
   getStoreSettings,
@@ -35,7 +36,6 @@ import { RecipientInfoForm } from "@/components/checkout/RecipientInfoForm";
 import { DeliveryAddressForm } from "@/components/checkout/DeliveryAddressForm";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import type { CheckoutForm } from "@/components/checkout/types";
-import type { AppliedDiscount } from "@/components/checkout/DiscountCouponBox";
 
 import {
   buildWhatsappOrderMessage,
@@ -81,7 +81,6 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingZones, setLoadingZones] = useState(true);
-  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   useEffect(() => {
     async function loadCheckoutData() {
@@ -126,12 +125,6 @@ export default function CheckoutPage() {
     return calculateCheckoutTotals(cart, selectedZone);
   }, [cart, selectedZone]);
 
-  const discountAmount = appliedDiscount?.discountAmount || 0;
-  const finalTotalWithDiscount = Math.max(
-    totals.finalTotal - discountAmount,
-    0
-  );
-
   const municipalityHasNoZones =
     Boolean(form.municipality) && !loadingZones && availableZones.length === 0;
 
@@ -148,8 +141,6 @@ export default function CheckoutPage() {
     >
   ) {
     const { name, value } = e.target;
-
-    if (name === "phone") setAppliedDiscount(null);
 
     setForm((current) => {
       if (name === "municipality") {
@@ -236,10 +227,7 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
 
         subtotal: totals.subtotal,
         delivery_fee: totals.shippingCost,
-        discount_campaign_id: appliedDiscount?.campaignId || null,
-        discount_code: appliedDiscount?.code || null,
-        discount_amount: discountAmount,
-        total: finalTotalWithDiscount,
+        total: totals.finalTotal,
 
         country: "Cuba",
         state: "Cienfuegos",
@@ -331,28 +319,6 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
 
       const order = await createOrder(customer.id, selectedZone);
 
-      if (appliedDiscount) {
-        const redeemResponse = await fetch("/api/discounts/redeem", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            campaignId: appliedDiscount.campaignId,
-            storeId: store.id,
-            phone: form.phone,
-            orderId: order.id,
-          }),
-        });
-
-        const redeemResult = await redeemResponse.json();
-
-        if (!redeemResponse.ok || !redeemResult.success) {
-          await supabase.from("orders").delete().eq("id", order.id);
-          throw new Error(
-            redeemResult.message || "El bono ya no está disponible."
-          );
-        }
-      }
-
       const orderItems = orderItemsBase.map((item) => ({
         ...item,
         order_id: order.id,
@@ -362,20 +328,7 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         .from("order_items")
         .insert(orderItems);
 
-      if (itemsError) {
-        if (appliedDiscount) {
-          await fetch("/api/discounts/release", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              campaignId: appliedDiscount.campaignId,
-              phone: form.phone,
-              orderId: order.id,
-            }),
-          });
-        }
-        throw itemsError;
-      }
+      if (itemsError) throw itemsError;
 
       await processOrderInventory(orderItems);
 
@@ -390,10 +343,16 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         selectedZone,
         subtotal: totals.subtotal,
         shippingCost: totals.shippingCost,
-        finalTotal: finalTotalWithDiscount,
-        discountCode: appliedDiscount?.code || null,
-        discountAmount,
+        finalTotal: totals.finalTotal,
         orderUrl,
+      });
+
+      trackAnalyticsEvent({
+        storeId: store.id,
+        eventName: "order_created",
+        orderId: order.id,
+        value: finalTotalWithDiscount,
+        metadata: { orderNumber, items: cart.length },
       });
 
       clearCart();
@@ -445,11 +404,6 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
             loading={loading}
             canCheckout={canCheckout}
             onSubmit={handleSubmit}
-            storeId={store?.id || ""}
-            customerPhone={form.phone}
-            appliedDiscount={appliedDiscount}
-            onApplyDiscount={setAppliedDiscount}
-            onRemoveDiscount={() => setAppliedDiscount(null)}
           />
         </div>
       </div>
