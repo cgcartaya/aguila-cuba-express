@@ -279,9 +279,19 @@ async function optimizeCandidate(
     .filter(Boolean)
     .join("/");
 
+  // IMPORTANTE:
+  // En Node/Next.js no enviamos el Buffer directamente a Supabase Storage.
+  // Algunos entornos pueden enviar también bytes sobrantes del ArrayBuffer
+  // subyacente y producir archivos WebP corruptos.
+  // Creamos un ArrayBuffer exacto con solamente los bytes válidos.
+  const exactArrayBuffer = optimizedBuffer.buffer.slice(
+    optimizedBuffer.byteOffset,
+    optimizedBuffer.byteOffset + optimizedBuffer.byteLength
+  ) as ArrayBuffer;
+
   const { error: uploadError } = await supabaseAdmin.storage
     .from(parsed.bucket)
-    .upload(optimizedPath, optimizedBuffer, {
+    .upload(optimizedPath, exactArrayBuffer, {
       contentType: "image/webp",
       cacheControl: "31536000",
       upsert: false,
