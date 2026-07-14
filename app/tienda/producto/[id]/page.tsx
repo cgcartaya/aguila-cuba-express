@@ -3,7 +3,7 @@
 /* =========================================================
    PRODUCT DETAIL PAGE
    El Header y BottomNavigation son manejados por:
-   app/tienda/layout.tsx
+   app/tienda/layout.tsxiiii
 ========================================================= */
 
 import Image from "next/image";
