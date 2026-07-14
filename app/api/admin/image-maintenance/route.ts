@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 
@@ -150,6 +152,34 @@ function imageSettings(kind: ImageKind) {
   }
 }
 
+async function validateImageBuffer(buffer: Buffer, expectedFormat = "webp") {
+  const metadata = await sharp(buffer, { sequentialRead: true }).metadata();
+
+  if (
+    metadata.format !== expectedFormat ||
+    !metadata.width ||
+    !metadata.height ||
+    metadata.width < 2 ||
+    metadata.height < 2
+  ) {
+    throw new Error(
+      `La imagen generada no pasó la validación (${metadata.format || "sin formato"}).`
+    );
+  }
+
+  // Fuerza una decodificación completa de píxeles, no solo de cabeceras.
+  await sharp(buffer, { sequentialRead: true })
+    .resize({ width: 8, height: 8, fit: "inside" })
+    .raw()
+    .toBuffer();
+
+  return metadata;
+}
+
+function sha256(buffer: Buffer) {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
 async function scanCandidates(limit: number) {
   const results: Candidate[] = [];
   const warnings: string[] = [];
@@ -225,11 +255,15 @@ async function optimizeCandidate(
   const originalBuffer = Buffer.from(await downloadData.arrayBuffer());
   const settings = imageSettings(candidate.kind);
 
+  // Valida primero que el original se pueda decodificar.
+  await sharp(originalBuffer, { sequentialRead: true }).metadata();
+
   const optimizedBuffer = await sharp(originalBuffer, {
-    failOn: "none",
+    sequentialRead: true,
     limitInputPixels: 100_000_000,
   })
     .rotate()
+    .toColorspace("srgb")
     .resize({
       width: settings.width,
       height: settings.height,
@@ -238,10 +272,12 @@ async function optimizeCandidate(
     })
     .webp({
       quality: settings.quality,
-      effort: 5,
-      smartSubsample: true,
+      effort: 4,
+      smartSubsample: false,
     })
     .toBuffer();
+
+  await validateImageBuffer(optimizedBuffer);
 
   const originalFolder = parsed.path.includes("/")
     ? parsed.path.slice(0, parsed.path.lastIndexOf("/"))
@@ -267,6 +303,32 @@ async function optimizeCandidate(
     throw new Error(uploadError.message);
   }
 
+  try {
+    // Descarga nuevamente lo almacenado y compara byte por byte mediante hash.
+    const { data: uploadedData, error: uploadedDownloadError } =
+      await supabaseAdmin.storage
+        .from(parsed.bucket)
+        .download(optimizedPath);
+
+    if (uploadedDownloadError || !uploadedData) {
+      throw new Error(
+        uploadedDownloadError?.message ||
+          "No se pudo verificar el archivo después de subirlo."
+      );
+    }
+
+    const uploadedBuffer = Buffer.from(await uploadedData.arrayBuffer());
+
+    if (sha256(uploadedBuffer) !== sha256(optimizedBuffer)) {
+      throw new Error("El archivo almacenado no coincide con el archivo generado.");
+    }
+
+    await validateImageBuffer(uploadedBuffer);
+  } catch (error) {
+    await supabaseAdmin.storage.from(parsed.bucket).remove([optimizedPath]);
+    throw error;
+  }
+
   const { data: publicUrlData } = supabaseAdmin.storage
     .from(parsed.bucket)
     .getPublicUrl(optimizedPath);
@@ -286,7 +348,6 @@ async function optimizeCandidate(
 
   if (updateError) {
     await supabaseAdmin.storage.from(parsed.bucket).remove([optimizedPath]);
-
     throw new Error(`No se actualizó la base de datos: ${updateError.message}`);
   }
 
