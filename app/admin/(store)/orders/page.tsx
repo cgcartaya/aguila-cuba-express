@@ -136,6 +136,8 @@ export default function AdminOrdersPage() {
           <OrdersManager
             initialOrders={activeOrders || []}
             initialDeletedOrders={deletedOrders || []}
+            storeName={activeStore?.name || ""}
+            storeSlug={activeStore?.slug || ""}
           />
         )}
       </div>

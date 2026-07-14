@@ -21,6 +21,8 @@ import {
   Archive,
   AlertTriangle,
   CheckCircle2,
+  MessageCircle,
+  X,
 } from "lucide-react";
 
 import {
@@ -28,6 +30,10 @@ import {
   restoreOrderInventory,
   validateOrderStock,
 } from "@/lib/services/inventory";
+import {
+  cleanWhatsAppPhone,
+  openWhatsAppMessage,
+} from "@/lib/utils/whatsapp";
 
 const STATUSES = [
   { value: "Todas", label: "Todas" },
@@ -100,19 +106,6 @@ function normalizeOrderItems(order: any) {
   }));
 }
 
-function cleanWhatsAppPhone(phone?: string | null) {
-  if (!phone) return "";
-
-  let cleaned = phone.replace(/\D/g, "");
-
-  // Si el cliente escribió 10 dígitos de USA, agregamos código 1.
-  if (cleaned.length === 10) {
-    cleaned = `1${cleaned}`;
-  }
-
-  return cleaned;
-}
-
 function getOrderCustomerPhone(order: any) {
   const customer = getCustomer(order);
 
@@ -148,28 +141,16 @@ function buildWhatsAppStatusMessage(order: any, newStatus: string) {
   );
 }
 
-function openWhatsAppStatusMessage(order: any, newStatus: string) {
-  if (typeof window === "undefined") return;
-
-  const phone = cleanWhatsAppPhone(getOrderCustomerPhone(order));
-
-  if (!phone) {
-    alert(
-      "El estado fue actualizado, pero esta orden no tiene teléfono del cliente para generar el WhatsApp."
-    );
-    return;
-  }
-
-  const message = encodeURIComponent(buildWhatsAppStatusMessage(order, newStatus));
-  window.open(`https://wa.me/${phone}?text=${message}`, "_blank", "noopener,noreferrer");
-}
-
 export default function OrdersManager({
   initialOrders,
   initialDeletedOrders = [],
+  storeName = "",
+  storeSlug = "",
 }: {
   initialOrders: any[];
   initialDeletedOrders?: any[];
+  storeName?: string;
+  storeSlug?: string;
 }) {
   const [orders, setOrders] = useState(initialOrders);
   const [deletedOrders, setDeletedOrders] = useState(initialDeletedOrders);
@@ -180,6 +161,21 @@ export default function OrdersManager({
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>(
     {}
   );
+  const [whatsAppPrompt, setWhatsAppPrompt] = useState<{
+    order: any;
+    status: string;
+    phone: string;
+    message: string;
+  } | null>(null);
+
+  const normalizedStoreIdentity = `${storeName} ${storeSlug}`
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const prefersWhatsAppBusiness =
+    normalizedStoreIdentity.includes("aguila") ||
+    normalizedStoreIdentity.includes("cuba express");
 
   const currentOrders = view === "active" ? orders : deletedOrders;
 
@@ -261,7 +257,22 @@ export default function OrdersManager({
         )
       );
 
-      openWhatsAppStatusMessage({ ...order, status }, status);
+      const updatedOrder = { ...order, status };
+      const phone = cleanWhatsAppPhone(getOrderCustomerPhone(updatedOrder));
+
+      if (!phone) {
+        alert(
+          "El estado fue actualizado, pero esta orden no tiene teléfono del cliente para generar el WhatsApp."
+        );
+        return;
+      }
+
+      setWhatsAppPrompt({
+        order: updatedOrder,
+        status,
+        phone,
+        message: buildWhatsAppStatusMessage(updatedOrder, status),
+      });
     } catch (error: any) {
       console.error("ERROR ACTUALIZANDO ESTADO:", error);
       alert(error?.message || "Error actualizando estado.");
@@ -766,6 +777,84 @@ export default function OrdersManager({
               </article>
             );
           })}
+        </div>
+      )}
+
+
+      {whatsAppPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-green-600">
+                  Estado actualizado
+                </p>
+                <h2 className="mt-1 text-xl font-black text-[#061b3a]">
+                  Enviar aviso por WhatsApp
+                </h2>
+                <p className="mt-2 text-sm font-semibold text-slate-500">
+                  Orden {getOrderNumber(whatsAppPrompt.order)} · {whatsAppPrompt.phone}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setWhatsAppPrompt(null)}
+                className="rounded-xl bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+                aria-label="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {prefersWhatsAppBusiness && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    openWhatsAppMessage({
+                      app: "business",
+                      phone: whatsAppPrompt.phone,
+                      message: whatsAppPrompt.message,
+                    });
+                    setWhatsAppPrompt(null);
+                  }}
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-green-600 px-4 py-4 text-sm font-black text-white transition hover:bg-green-700"
+                >
+                  <MessageCircle size={21} />
+                  Abrir WhatsApp Business
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  openWhatsAppMessage({
+                    app: "personal",
+                    phone: whatsAppPrompt.phone,
+                    message: whatsAppPrompt.message,
+                  });
+                  setWhatsAppPrompt(null);
+                }}
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-black transition ${
+                  prefersWhatsAppBusiness
+                    ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                }`}
+              >
+                <MessageCircle size={21} />
+                Abrir WhatsApp normal
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWhatsAppPrompt(null)}
+                className="w-full rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-50"
+              >
+                No enviar ahora
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
