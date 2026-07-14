@@ -6,6 +6,7 @@
    Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
+import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
 
@@ -73,15 +74,14 @@ export default function RelatedProducts({
               className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:shadow-md"
             >
               <Link href={productUrl}>
-                <div className="h-36 overflow-hidden rounded-xl bg-slate-100">
-                  <img
+                <div className="relative h-36 overflow-hidden rounded-xl bg-slate-100">
+                  <Image
                     src={mainImage}
                     alt={item.name}
-                    className="h-full w-full object-contain p-2"
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.src = "/placeholder-product.png";
-                    }}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 220px"
+                    quality={70}
+                    className="object-contain p-2"
                   />
                 </div>
               </Link>

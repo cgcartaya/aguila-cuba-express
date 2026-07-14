@@ -8,6 +8,7 @@
    - Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
@@ -69,15 +70,14 @@ export default function CategoryShowcaseCard({
               key={product.id}
               className="overflow-hidden rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
             >
-              <div className="h-24 w-full overflow-hidden rounded-lg bg-white">
-                <img
+              <div className="relative h-24 w-full overflow-hidden rounded-lg bg-white">
+                <Image
                   src={imageUrl}
                   alt={product.name}
-                  className="h-full w-full object-contain"
-                  loading="lazy"
-                  onError={(event) => {
-                    event.currentTarget.src = "/placeholder-product.png";
-                  }}
+                  fill
+                  sizes="160px"
+                  quality={68}
+                  className="object-contain p-1"
                 />
               </div>
 

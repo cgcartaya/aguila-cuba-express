@@ -366,7 +366,7 @@ export async function uploadProductImage(
   isMain = false,
   position = 0
 ) {
-  const fileExt = file.name.split(".").pop();
+  const fileExt = file.name.split(".").pop()?.toLowerCase() || "webp";
   const fileName = `${crypto.randomUUID()}.${fileExt}`;
   const filePath = `${productId}/${fileName}`;
 
@@ -374,6 +374,8 @@ export async function uploadProductImage(
     .from("product-images")
     .upload(filePath, file, {
       cacheControl: "31536000",
+      contentType: file.type || undefined,
+      upsert: false,
     });
 
   if (uploadError) {

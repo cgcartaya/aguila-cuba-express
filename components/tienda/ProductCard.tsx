@@ -6,6 +6,7 @@
    Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
+import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Star } from "lucide-react";
 
@@ -50,23 +51,22 @@ export default function ProductCard({
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link href={productUrl}>
-        <div className="aspect-square w-full overflow-hidden bg-white p-2">
+        <div className="relative aspect-square w-full overflow-hidden bg-white p-2">
           {outOfStock && (
             <div className="absolute left-2 top-2 z-10 rounded-full bg-red-600 px-2 py-1 text-[10px] font-black text-white shadow">
               AGOTADO
             </div>
           )}
 
-          <img
+          <Image
             src={imageUrl}
             alt={product.name}
-            className={`h-full w-full object-contain p-2 transition duration-300 ${
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 260px"
+            quality={72}
+            className={`object-contain p-4 transition duration-300 ${
               outOfStock ? "opacity-50 grayscale" : "group-hover:scale-105"
             }`}
-            loading="lazy"
-            onError={(event) => {
-              event.currentTarget.src = "/placeholder-product.png";
-            }}
           />
         </div>
       </Link>

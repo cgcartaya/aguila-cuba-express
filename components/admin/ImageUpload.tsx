@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Upload, Loader2, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { optimizeImageFile } from "@/lib/images/optimizeImage";
 
 type Props = {
   value: string;
@@ -25,11 +26,17 @@ export default function ImageUpload({
     try {
       setLoading(true);
 
-      const fileName = `${Date.now()}-${file.name}`;
+      const optimizedFile = await optimizeImageFile(file, "product");
+      const extension = optimizedFile.name.split(".").pop() || "webp";
+      const fileName = `${crypto.randomUUID()}.${extension}`;
 
       const { error } = await supabase.storage
         .from("products")
-        .upload(fileName, file);
+        .upload(fileName, optimizedFile, {
+          cacheControl: "31536000",
+          contentType: optimizedFile.type,
+          upsert: false,
+        });
 
       if (error) throw error;
 
@@ -91,7 +98,7 @@ export default function ImageUpload({
             </p>
 
             <p className="text-sm text-gray-500">
-              JPG, PNG o WEBP
+              JPG, PNG o WEBP · Compresión automática
             </p>
           </>
         )}

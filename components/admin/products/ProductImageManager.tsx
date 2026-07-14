@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import type { ProductImage } from "./types";
+import { optimizeImageFile } from "@/lib/images/optimizeImage";
 
 import {
   getProductImages,
@@ -64,9 +65,17 @@ export default function ProductImageManager({ productId }: Props) {
       const file = filesArray[index];
       const shouldBeMain = !hasMainImage && index === 0;
 
+      let optimizedFile: File;
+      try {
+        optimizedFile = await optimizeImageFile(file, "product");
+      } catch (error) {
+        alert(error instanceof Error ? error.message : `No se pudo optimizar ${file.name}`);
+        continue;
+      }
+
       const { data, error } = await uploadProductImage(
         productId,
-        file,
+        optimizedFile,
         shouldBeMain,
         images.length + index
       );
@@ -159,7 +168,7 @@ export default function ProductImageManager({ productId }: Props) {
         <span>{uploading ? "Subiendo imágenes..." : "Subir imágenes"}</span>
 
         <span className="text-xs font-medium text-slate-500">
-          Puedes seleccionar una o varias fotos
+          Puedes seleccionar una o varias fotos · Se convierten y comprimen automáticamente
         </span>
 
         <input

@@ -16,6 +16,7 @@ import { ImageIcon, Upload, X } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import type { ComboFormData } from "./types";
+import { optimizeImageFile } from "@/lib/images/optimizeImage";
 
 type ComboImageUploaderProps = {
   formData: ComboFormData;
@@ -42,14 +43,16 @@ export default function ComboImageUploader({
     try {
       setUploading(true);
 
-      const fileExt = file.name.split(".").pop();
-      const fileName = `combo-${Date.now()}.${fileExt}`;
+      const optimizedFile = await optimizeImageFile(file, "combo");
+      const fileExt = optimizedFile.name.split(".").pop() || "webp";
+      const fileName = `combo-${crypto.randomUUID()}.${fileExt}`;
       const filePath = `combos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from("product-images")
-        .upload(filePath, file, {
-          cacheControl: "3600",
+        .upload(filePath, optimizedFile, {
+          cacheControl: "31536000",
+          contentType: optimizedFile.type,
           upsert: false,
         });
 
@@ -67,6 +70,9 @@ export default function ComboImageUploader({
         ...current,
         image_url: data.publicUrl,
       }));
+    } catch (error) {
+      console.error("Error optimizando imagen del combo:", error);
+      alert(error instanceof Error ? error.message : "No se pudo procesar la imagen del combo.");
     } finally {
       setUploading(false);
       event.target.value = "";

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { BadgePercent, CheckCircle2, Package } from "lucide-react";
 
@@ -71,14 +72,13 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
         )}
 
         {comboImageUrl ? (
-          <img
+          <Image
             src={comboImageUrl}
             alt={combo.name}
-            className="h-full w-full object-contain p-2 transition duration-300 hover:scale-105"
-            loading="lazy"
-            onError={(event) => {
-              event.currentTarget.src = "/placeholder-product.png";
-            }}
+            fill
+            sizes="(max-width: 640px) 85vw, 360px"
+            quality={74}
+            className="object-contain p-2 transition duration-300 hover:scale-105"
           />
         ) : (
           <div className="flex h-full items-center justify-center bg-slate-50 text-slate-400">

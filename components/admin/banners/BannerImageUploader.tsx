@@ -12,6 +12,7 @@ import { Loader2, UploadCloud } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import { BANNER_BUCKET } from "./bannerHelpers";
+import { optimizeImageFile } from "@/lib/images/optimizeImage";
 
 type BannerImageUploaderProps = {
   label?: string;
@@ -27,14 +28,16 @@ export default function BannerImageUploader({
   const [uploading, setUploading] = useState(false);
 
   const uploadBannerImage = async (file: File) => {
-    const fileExt = file.name.split(".").pop();
+    const optimizedFile = await optimizeImageFile(file, "banner");
+    const fileExt = optimizedFile.name.split(".").pop() || "webp";
     const fileName = `${crypto.randomUUID()}.${fileExt}`;
     const filePath = `banners/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BANNER_BUCKET)
-      .upload(filePath, file, {
-        cacheControl: "3600",
+      .upload(filePath, optimizedFile, {
+        cacheControl: "31536000",
+        contentType: optimizedFile.type,
         upsert: false,
       });
 
@@ -61,7 +64,12 @@ export default function BannerImageUploader({
 
     setUploading(true);
 
-    const publicUrl = await uploadBannerImage(file);
+    let publicUrl: string | null = null;
+    try {
+      publicUrl = await uploadBannerImage(file);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "No se pudo optimizar el banner.");
+    }
 
     if (publicUrl) {
       await onUploaded(publicUrl);

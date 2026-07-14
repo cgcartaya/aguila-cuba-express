@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 /* =========================================================
    PRODUCT GALLERY
    Usa <img> normal para imágenes de productos de Supabase.
@@ -40,14 +42,14 @@ export default function ProductGallery({
         onClick={onOpenZoom}
         className="relative flex h-[360px] w-full items-center justify-center overflow-hidden rounded-3xl bg-slate-100 md:h-[520px]"
       >
-        <img
+        <Image
           src={safeSelectedImage}
           alt={productName}
-          className="h-full w-full object-contain p-4 transition duration-300 hover:scale-105"
-          loading="eager"
-          onError={(event) => {
-            event.currentTarget.src = "/placeholder-product.png";
-          }}
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 720px"
+          quality={82}
+          className="object-contain p-4 transition duration-300 hover:scale-105"
         />
 
         <span className="absolute bottom-4 right-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black shadow-sm">
@@ -70,14 +72,13 @@ export default function ProductGallery({
                   : "border-slate-200"
               }`}
             >
-              <img
+              <Image
                 src={imageUrl}
                 alt={productName}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                onError={(event) => {
-                  event.currentTarget.src = "/placeholder-product.png";
-                }}
+                fill
+                sizes="80px"
+                quality={65}
+                className="object-cover"
               />
             </button>
           );
