@@ -173,18 +173,20 @@ async function scanCandidates(limit: number) {
       continue;
     }
 
-    for (const row of data || []) {
+    for (const rawRow of data ?? []) {
+      const row = rawRow as unknown as Record<string, unknown>;
+
       for (const item of source.columns) {
-        const url = String((row as Record<string, unknown>)[item.column] || "").trim();
+        const url = String(row[item.column] ?? "").trim();
 
         if (!url || !parseSupabaseStorageUrl(url) || alreadyOptimized(url)) {
           continue;
         }
 
         results.push({
-          key: `${source.table}:${String(row.id)}:${item.column}`,
+          key: `${source.table}:${String(row.id ?? "")}:${item.column}`,
           table: source.table,
-          id: String(row.id),
+          id: String(row.id ?? ""),
           column: item.column,
           url,
           kind: item.kind,
@@ -283,9 +285,7 @@ async function optimizeCandidate(
     .eq("id", candidate.id);
 
   if (updateError) {
-    await supabaseAdmin.storage
-      .from(parsed.bucket)
-      .remove([optimizedPath]);
+    await supabaseAdmin.storage.from(parsed.bucket).remove([optimizedPath]);
 
     throw new Error(`No se actualizó la base de datos: ${updateError.message}`);
   }
@@ -314,7 +314,10 @@ export async function POST(request: NextRequest) {
   const access = await requireSuperAdmin(request);
 
   if ("error" in access) {
-    return jsonError(access.error, 403);
+    return jsonError(
+      access.error ?? "No tienes permisos para ejecutar esta migración.",
+      403
+    );
   }
 
   let body: {
