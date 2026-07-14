@@ -22,42 +22,16 @@ type Candidate = {
 
 const SOURCES: Array<{
   table: string;
-  columns: Array<{ column: string; kind: ImageKind }>;
+  columns: Array<{
+    column: string;
+    kind: ImageKind;
+  }>;
   storagePathColumn?: string;
 }> = [
   {
     table: "product_images",
     columns: [{ column: "image_url", kind: "product" }],
     storagePathColumn: "storage_path",
-  },
-  {
-    table: "products",
-    columns: [{ column: "image_url", kind: "product" }],
-  },
-  {
-    table: "combos",
-    columns: [{ column: "image_url", kind: "combo" }],
-  },
-  {
-    table: "banners",
-    columns: [
-      { column: "image_url", kind: "banner" },
-      { column: "product_image_url", kind: "banner" },
-    ],
-  },
-  {
-    table: "stores",
-    columns: [
-      { column: "logo_url", kind: "logo" },
-      { column: "og_image_url", kind: "banner" },
-    ],
-  },
-  {
-    table: "store_settings",
-    columns: [
-      { column: "logo_url", kind: "logo" },
-      { column: "favicon_url", kind: "logo" },
-    ],
   },
 ];
 
@@ -209,9 +183,29 @@ async function scanCandidates(limit: number) {
       for (const item of source.columns) {
         const url = String(row[item.column] ?? "").trim();
 
-        if (!url || !parseSupabaseStorageUrl(url) || alreadyOptimized(url)) {
-          continue;
-        }
+       if (!url || !parseSupabaseStorageUrl(url) || alreadyOptimized(url)) {
+  continue;
+}
+
+const parsed = parseSupabaseStorageUrl(url);
+if (!parsed) continue;
+
+try {
+  const { data: file } = await supabaseAdmin.storage
+    .from(parsed.bucket)
+    .download(parsed.path);
+
+  if (!file) continue;
+
+  const bytes = file.size;
+
+  // ignorar imágenes menores de 1 MB
+  if (bytes < 1000000) {
+    continue;
+  }
+} catch {
+  continue;
+}
 
         results.push({
           key: `${source.table}:${String(row.id ?? "")}:${item.column}`,
