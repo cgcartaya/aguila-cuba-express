@@ -54,7 +54,7 @@ export default function ProductCard({
       void trackAnalyticsEvent({
         storeId: store.id,
         eventName: "add_to_cart",
-        productId: product.id,
+        productId: String(product.id),
         itemName: product.name,
         quantity: 1,
         value: Number(product.price || 0),
