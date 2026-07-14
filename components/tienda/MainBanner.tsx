@@ -150,6 +150,7 @@ export default function MainBanner({ storeId, storeSlug }: MainBannerProps) {
                     src={banner.image_url || "/placeholder-banner.jpg"}
                     alt={banner.title || "Banner promocional"}
                     fill
+                    unoptimized
                     priority={index === 0}
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1152px"
                     className="bg-white object-contain transition-transform duration-500 hover:scale-[1.01]"
