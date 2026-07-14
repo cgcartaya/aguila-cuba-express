@@ -20,6 +20,7 @@ import {
   getRelatedProducts,
 } from "@/lib/services/products";
 
+import VisitTracker from "@/components/analytics/VisitTracker";
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
 
@@ -130,6 +131,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   };
 
   return (
+    <>
+      <VisitTracker storeId={(product as any).store_id} pageType="product" productId={String(product.id)} />
     <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
       <div className="mx-auto max-w-6xl px-4 py-5">
         {/* BOTÓN VOLVER A TIENDA */}
@@ -192,5 +195,6 @@ export default function ProductDetailPage({ params }: PageProps) {
         </div>
       )}
     </main>
+    </>
   );
 }

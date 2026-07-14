@@ -15,6 +15,7 @@ import {
   Layers3,
   ExternalLink,
   Rocket,
+  BarChart3,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -34,6 +35,7 @@ const storeLinks: AdminLink[] = [
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
   { href: "/admin/customers", label: "Clientes", icon: Users },
+  { href: "/admin/analytics", label: "Visitas", icon: BarChart3 },
   { href: "/admin/settings", label: "Ajustes tienda", icon: Settings },
 ];
 
