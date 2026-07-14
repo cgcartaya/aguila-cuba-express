@@ -290,8 +290,28 @@ async function optimizeCandidate(
   const originalBuffer = Buffer.from(await downloadData.arrayBuffer());
   const settings = imageSettings(candidate.kind);
 
-  // Valida primero que el original se pueda decodificar.
-  await sharp(originalBuffer, { sequentialRead: true }).metadata();
+// Si la imagen original está corrupta, la omitimos.
+try {
+  await sharp(originalBuffer, {
+    sequentialRead: true,
+    failOn: "warning",
+    limitInputPixels: 100000000,
+  })
+    .resize({ width: 8, height: 8, fit: "inside" })
+    .raw()
+    .toBuffer();
+} catch {
+  return {
+    skipped: true,
+    message: "Imagen corrupta omitida.",
+    oldUrl: candidate.url,
+    newUrl: candidate.url,
+    originalBytes: originalBuffer.length,
+    optimizedBytes: originalBuffer.length,
+    savedBytes: 0,
+    originalDeleted: false,
+  };
+}
 
   const optimizedBuffer = await sharp(originalBuffer, {
     sequentialRead: true,
@@ -459,7 +479,18 @@ export async function POST(request: NextRequest) {
         body.deleteOriginal === true
       );
 
-      return NextResponse.json({ ok: true, result });
+if ((result as any).skipped) {
+  return NextResponse.json({
+    ok: true,
+    skipped: true,
+    result,
+  });
+}
+
+return NextResponse.json({
+  ok: true,
+  result,
+});
     } catch (error) {
       return jsonError(
         error instanceof Error ? error.message : "No se pudo optimizar."
