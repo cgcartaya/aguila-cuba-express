@@ -133,6 +133,17 @@ export default function CheckoutPage() {
     0
   );
 
+  useEffect(() => {
+    if (!store?.id || cart.length === 0) return;
+
+    void trackAnalyticsEvent({
+      storeId: store.id,
+      eventName: "begin_checkout",
+      value: finalTotalWithDiscount,
+      metadata: { items: cart.length },
+    });
+  }, [store?.id, cart.length]);
+
   const municipalityHasNoZones =
     Boolean(form.municipality) && !loadingZones && availableZones.length === 0;
 

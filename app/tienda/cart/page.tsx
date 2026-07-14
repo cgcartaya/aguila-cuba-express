@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,6 +15,7 @@ import {
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 export default function CartPage() {
   const {
@@ -25,6 +27,22 @@ export default function CartPage() {
   } = useCart();
 
   const { store } = useStore();
+
+  useEffect(() => {
+    if (!store?.id || cart.length === 0) return;
+
+    const totalValue = cart.reduce(
+      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+      0
+    );
+
+    void trackAnalyticsEvent({
+      storeId: store.id,
+      eventName: "view_cart",
+      value: totalValue,
+      metadata: { items: cart.length },
+    });
+  }, [store?.id, cart.length]);
 
 const isDefaultStore = store?.slug === "aguila";
 

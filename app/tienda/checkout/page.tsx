@@ -20,6 +20,7 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
   getActiveDeliveryZones,
   getStoreSettings,
@@ -131,6 +132,17 @@ export default function CheckoutPage() {
     totals.finalTotal - discountAmount,
     0
   );
+
+  useEffect(() => {
+    if (!store?.id || cart.length === 0) return;
+
+    void trackAnalyticsEvent({
+      storeId: store.id,
+      eventName: "begin_checkout",
+      value: finalTotalWithDiscount,
+      metadata: { items: cart.length },
+    });
+  }, [store?.id, cart.length]);
 
   const municipalityHasNoZones =
     Boolean(form.municipality) && !loadingZones && availableZones.length === 0;
@@ -395,6 +407,23 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         discountAmount,
         orderUrl,
       });
+
+      // Analítica Fase 2: registrar la conversión solo después de crear
+      // correctamente la orden, sus artículos y descontar el inventario.
+      if (store?.id) {
+        void trackAnalyticsEvent({
+          storeId: store.id,
+          eventName: "order_created",
+          orderId: order.id,
+          value: finalTotalWithDiscount,
+          metadata: {
+            orderNumber,
+            items: cart.length,
+            discountCode: appliedDiscount?.code || null,
+            discountAmount,
+          },
+        });
+      }
 
       clearCart();
       openWhatsappByDevice(whatsappMessage, orderNumber);

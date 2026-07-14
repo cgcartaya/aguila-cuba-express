@@ -13,6 +13,7 @@ import { Minus, Plus, Star } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type ProductCardProps = {
   product: Product;
@@ -47,6 +48,21 @@ export default function ProductCard({
   const outOfStock = Number(product.stock || 0) <= 0;
   const cartItemId = `product-${product.id}`;
   const quantity = getItemQuantity(cartItemId);
+
+  function handleAddToCart() {
+    if (store?.id) {
+      void trackAnalyticsEvent({
+        storeId: store.id,
+        eventName: "add_to_cart",
+        productId: product.id,
+        itemName: product.name,
+        quantity: 1,
+        value: Number(product.price || 0),
+      });
+    }
+
+    onAddToCart({ ...product, image_url: imageUrl });
+  }
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
@@ -106,7 +122,7 @@ export default function ProductCard({
         ) : quantity === 0 ? (
           <button
             type="button"
-            onClick={() => onAddToCart({ ...product, image_url: imageUrl })}
+            onClick={handleAddToCart}
             className="mt-2 w-full rounded-xl bg-red-600 py-2 text-sm font-black text-white transition hover:bg-red-700"
           >
             Agregar
