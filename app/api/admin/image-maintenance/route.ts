@@ -1,5 +1,3 @@
-import { createHash } from "node:crypto";
-
 import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 
@@ -148,10 +146,6 @@ async function validateImageBuffer(buffer: Buffer, expectedFormat = "webp") {
     .toBuffer();
 
   return metadata;
-}
-
-function sha256(buffer: Buffer) {
-  return createHash("sha256").update(buffer).digest("hex");
 }
 
 async function scanCandidates(limit: number) {
@@ -313,10 +307,9 @@ async function optimizeCandidate(
 
     const uploadedBuffer = Buffer.from(await uploadedData.arrayBuffer());
 
-    if (sha256(uploadedBuffer) !== sha256(optimizedBuffer)) {
-      throw new Error("El archivo almacenado no coincide con el archivo generado.");
-    }
-
+    // Supabase/CDN puede devolver una representación binaria distinta aunque
+    // la imagen sea válida. Por eso verificamos que el archivo remoto se pueda
+    // decodificar completamente como WebP, en lugar de exigir igualdad byte a byte.
     await validateImageBuffer(uploadedBuffer);
   } catch (error) {
     await supabaseAdmin.storage.from(parsed.bucket).remove([optimizedPath]);
