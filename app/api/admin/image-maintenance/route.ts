@@ -275,64 +275,79 @@ async function optimizeCandidate(
   const parsed = parseSupabaseStorageUrl(candidate.url);
 
   if (!parsed) {
-    throw new Error("La URL no pertenece a Supabase Storage.");
+    return {
+      skipped: true,
+      message: "URL inválida. Imagen omitida.",
+      oldUrl: candidate.url,
+      newUrl: candidate.url,
+      originalBytes: 0,
+      optimizedBytes: 0,
+      savedBytes: 0,
+      originalDeleted: false,
+    };
   }
 
   const { data: downloadData, error: downloadError } =
     await supabaseAdmin.storage.from(parsed.bucket).download(parsed.path);
 
   if (downloadError || !downloadData) {
-    throw new Error(
-      downloadError?.message || "No se pudo descargar la imagen original."
-    );
+    return {
+      skipped: true,
+      message:
+        downloadError?.message ||
+        "No se pudo descargar la imagen. Fue omitida.",
+      oldUrl: candidate.url,
+      newUrl: candidate.url,
+      originalBytes: 0,
+      optimizedBytes: 0,
+      savedBytes: 0,
+      originalDeleted: false,
+    };
   }
 
   const originalBuffer = Buffer.from(await downloadData.arrayBuffer());
   const settings = imageSettings(candidate.kind);
 
-// Si la imagen original está corrupta, la omitimos.
-try {
-  await sharp(originalBuffer, {
-    sequentialRead: true,
-    failOn: "warning",
-    limitInputPixels: 100000000,
-  })
-    .resize({ width: 8, height: 8, fit: "inside" })
-    .raw()
-    .toBuffer();
-} catch {
-  return {
-    skipped: true,
-    message: "Imagen corrupta omitida.",
-    oldUrl: candidate.url,
-    newUrl: candidate.url,
-    originalBytes: originalBuffer.length,
-    optimizedBytes: originalBuffer.length,
-    savedBytes: 0,
-    originalDeleted: false,
-  };
-}
+  let optimizedBuffer: Buffer;
 
-  const optimizedBuffer = await sharp(originalBuffer, {
-    sequentialRead: true,
-    limitInputPixels: 100_000_000,
-  })
-    .rotate()
-    .toColorspace("srgb")
-    .resize({
-      width: settings.width,
-      height: settings.height,
-      fit: settings.fit,
-      withoutEnlargement: true,
+  try {
+    // Todo el proceso de lectura y conversión queda dentro del mismo try.
+    // Cualquier imagen dañada o formato no compatible se omite sin romper el lote.
+    optimizedBuffer = await sharp(originalBuffer, {
+      sequentialRead: true,
+      failOn: "warning",
+      limitInputPixels: 100_000_000,
     })
-    .webp({
-      quality: settings.quality,
-      effort: 4,
-      smartSubsample: false,
-    })
-    .toBuffer();
+      .rotate()
+      .toColorspace("srgb")
+      .resize({
+        width: settings.width,
+        height: settings.height,
+        fit: settings.fit,
+        withoutEnlargement: true,
+      })
+      .webp({
+        quality: settings.quality,
+        effort: 4,
+        smartSubsample: false,
+      })
+      .toBuffer();
 
-  await validateImageBuffer(optimizedBuffer);
+    await validateImageBuffer(optimizedBuffer);
+  } catch (error) {
+    return {
+      skipped: true,
+      message: `Imagen corrupta o formato no compatible. Omitida. ${
+        error instanceof Error ? error.message : ""
+      }`.trim(),
+      oldUrl: candidate.url,
+      newUrl: candidate.url,
+      originalBytes: originalBuffer.length,
+      optimizedBytes: originalBuffer.length,
+      savedBytes: 0,
+      originalDeleted: false,
+    };
+  }
 
   const originalFolder = parsed.path.includes("/")
     ? parsed.path.slice(0, parsed.path.lastIndexOf("/"))
@@ -346,11 +361,6 @@ try {
     .filter(Boolean)
     .join("/");
 
-  // IMPORTANTE:
-  // En Node/Next.js no enviamos el Buffer directamente a Supabase Storage.
-  // Algunos entornos pueden enviar también bytes sobrantes del ArrayBuffer
-  // subyacente y producir archivos WebP corruptos.
-  // Creamos un ArrayBuffer exacto con solamente los bytes válidos.
   const exactArrayBuffer = optimizedBuffer.buffer.slice(
     optimizedBuffer.byteOffset,
     optimizedBuffer.byteOffset + optimizedBuffer.byteLength
@@ -365,11 +375,19 @@ try {
     });
 
   if (uploadError) {
-    throw new Error(uploadError.message);
+    return {
+      skipped: true,
+      message: `No se pudo subir la versión optimizada. Omitida. ${uploadError.message}`,
+      oldUrl: candidate.url,
+      newUrl: candidate.url,
+      originalBytes: originalBuffer.length,
+      optimizedBytes: originalBuffer.length,
+      savedBytes: 0,
+      originalDeleted: false,
+    };
   }
 
   try {
-    // Descarga nuevamente lo almacenado y compara byte por byte mediante hash.
     const { data: uploadedData, error: uploadedDownloadError } =
       await supabaseAdmin.storage
         .from(parsed.bucket)
@@ -383,14 +401,22 @@ try {
     }
 
     const uploadedBuffer = Buffer.from(await uploadedData.arrayBuffer());
-
-    // Supabase/CDN puede devolver una representación binaria distinta aunque
-    // la imagen sea válida. Por eso verificamos que el archivo remoto se pueda
-    // decodificar completamente como WebP, en lugar de exigir igualdad byte a byte.
     await validateImageBuffer(uploadedBuffer);
   } catch (error) {
     await supabaseAdmin.storage.from(parsed.bucket).remove([optimizedPath]);
-    throw error;
+
+    return {
+      skipped: true,
+      message: `La versión subida no pasó la validación y fue eliminada. ${
+        error instanceof Error ? error.message : ""
+      }`.trim(),
+      oldUrl: candidate.url,
+      newUrl: candidate.url,
+      originalBytes: originalBuffer.length,
+      optimizedBytes: originalBuffer.length,
+      savedBytes: 0,
+      originalDeleted: false,
+    };
   }
 
   const { data: publicUrlData } = supabaseAdmin.storage
@@ -412,7 +438,17 @@ try {
 
   if (updateError) {
     await supabaseAdmin.storage.from(parsed.bucket).remove([optimizedPath]);
-    throw new Error(`No se actualizó la base de datos: ${updateError.message}`);
+
+    return {
+      skipped: true,
+      message: `No se actualizó la base de datos. Omitida. ${updateError.message}`,
+      oldUrl: candidate.url,
+      newUrl: candidate.url,
+      originalBytes: originalBuffer.length,
+      optimizedBytes: originalBuffer.length,
+      savedBytes: 0,
+      originalDeleted: false,
+    };
   }
 
   let originalDeleted = false;
@@ -426,6 +462,7 @@ try {
   }
 
   return {
+    skipped: false,
     oldUrl: candidate.url,
     newUrl: publicUrlData.publicUrl,
     originalBytes: originalBuffer.length,
