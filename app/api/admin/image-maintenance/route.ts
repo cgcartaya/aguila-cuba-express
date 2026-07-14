@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import sharp from "sharp";
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
-//lk
+
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
@@ -152,69 +152,116 @@ async function scanCandidates(limit: number) {
   const results: Candidate[] = [];
   const warnings: string[] = [];
 
-  for (const source of SOURCES) {
-    if (results.length >= limit) break;
+  // Solo product_images. Se pagina para que una imagen corrupta o pequeña
+  // no bloquee el acceso a las imágenes válidas que vienen después.
+  const pageSize = 100;
+  let from = 0;
+  let finished = false;
 
-    const selectColumns = [
-      "id",
-      ...source.columns.map((item) => item.column),
-      ...(source.storagePathColumn ? [source.storagePathColumn] : []),
-    ].join(",");
+  while (!finished && results.length < limit) {
+    const to = from + pageSize - 1;
 
     const { data, error } = await supabaseAdmin
-      .from(source.table)
-      .select(selectColumns)
-      .limit(Math.max(limit - results.length, 1));
+      .from("product_images")
+      .select("id,image_url,storage_path")
+      .order("id", { ascending: true })
+      .range(from, to);
 
     if (error) {
-      warnings.push(`${source.table}: ${error.message}`);
-      continue;
+      warnings.push(`product_images: ${error.message}`);
+      break;
     }
 
-    for (const rawRow of data ?? []) {
+    const rows = data ?? [];
+
+    if (rows.length < pageSize) {
+      finished = true;
+    }
+
+    for (const rawRow of rows) {
+      if (results.length >= limit) break;
+
       const row = rawRow as unknown as Record<string, unknown>;
+      const id = String(row.id ?? "");
+      const url = String(row.image_url ?? "").trim();
 
-      for (const item of source.columns) {
-        const url = String(row[item.column] ?? "").trim();
-
-       if (!url || !parseSupabaseStorageUrl(url) || alreadyOptimized(url)) {
-  continue;
-}
-
-const parsed = parseSupabaseStorageUrl(url);
-if (!parsed) continue;
-
-try {
-  const { data: file } = await supabaseAdmin.storage
-    .from(parsed.bucket)
-    .download(parsed.path);
-
-  if (!file) continue;
-
-  const bytes = file.size;
-
-  // ignorar imágenes menores de 1 MB
-  if (bytes < 1000000) {
-    continue;
-  }
-} catch {
-  continue;
-}
-
-        results.push({
-          key: `${source.table}:${String(row.id ?? "")}:${item.column}`,
-          table: source.table,
-          id: String(row.id ?? ""),
-          column: item.column,
-          url,
-          kind: item.kind,
-          storagePathColumn: source.storagePathColumn,
-        });
-
-        if (results.length >= limit) break;
+      if (!id || !url || alreadyOptimized(url)) {
+        continue;
       }
 
-      if (results.length >= limit) break;
+      const parsed = parseSupabaseStorageUrl(url);
+      if (!parsed) {
+        warnings.push(`${id}: URL de Storage inválida.`);
+        continue;
+      }
+
+      try {
+        const { data: file, error: downloadError } =
+          await supabaseAdmin.storage
+            .from(parsed.bucket)
+            .download(parsed.path);
+
+        if (downloadError || !file) {
+          warnings.push(
+            `${id}: no se pudo descargar (${downloadError?.message || "sin archivo"}).`
+          );
+          continue;
+        }
+
+        // Ignorar archivos menores de 1 MB.
+        if (file.size < 1_000_000) {
+          continue;
+        }
+
+        const originalBuffer = Buffer.from(await file.arrayBuffer());
+
+        // Valida que el archivo original sea realmente una imagen decodificable.
+        // Si está corrupto o el formato no es compatible, se omite y el escaneo continúa.
+        const metadata = await sharp(originalBuffer, {
+          sequentialRead: true,
+          failOn: "warning",
+          limitInputPixels: 100_000_000,
+        }).metadata();
+
+        if (!metadata.width || !metadata.height || !metadata.format) {
+          warnings.push(`${id}: imagen original inválida; fue omitida.`);
+          continue;
+        }
+
+        // Fuerza una decodificación real para detectar cabeceras corruptas.
+        await sharp(originalBuffer, {
+          sequentialRead: true,
+          failOn: "warning",
+          limitInputPixels: 100_000_000,
+        })
+          .resize({ width: 8, height: 8, fit: "inside" })
+          .raw()
+          .toBuffer();
+
+        results.push({
+          key: `product_images:${id}:image_url`,
+          table: "product_images",
+          id,
+          column: "image_url",
+          url,
+          kind: "product",
+          storagePathColumn: "storage_path",
+        });
+      } catch (error) {
+        warnings.push(
+          `${id}: imagen corrupta o formato no compatible; se omitió. ${
+            error instanceof Error ? error.message : ""
+          }`.trim()
+        );
+      }
+    }
+
+    from += pageSize;
+
+    // Límite de seguridad para evitar recorrer indefinidamente.
+    if (from >= 10_000) {
+      finished = true;
+      warnings.push("El escaneo alcanzó el límite de seguridad de 10 000 filas.");
     }
   }
 
