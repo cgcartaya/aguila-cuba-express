@@ -96,7 +96,7 @@ export default function AdminCombosPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-6 text-[#061b3a]">
+    <main className="min-h-screen bg-slate-50 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 text-[#061b3a] xl:pb-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
