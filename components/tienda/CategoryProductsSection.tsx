@@ -124,7 +124,25 @@ export default function CategoryProductsSection({
 
   if (products.length === 0) return null;
 
-  const previewProducts = products.slice(0, 4);
+  const orderedProducts = [...products].sort((a, b) => {
+    const productA = a as Product & {
+      is_category_featured?: boolean | null;
+      category_sort_order?: number | null;
+    };
+    const productB = b as Product & {
+      is_category_featured?: boolean | null;
+      category_sort_order?: number | null;
+    };
+
+    return (
+      Number(Boolean(productB.is_category_featured)) -
+        Number(Boolean(productA.is_category_featured)) ||
+      (productA.category_sort_order ?? 9999) -
+        (productB.category_sort_order ?? 9999)
+    );
+  });
+
+  const previewProducts = orderedProducts.slice(0, 4);
   const categorySlug = encodeURIComponent(title.toLowerCase());
   const isDefaultStore = !storeSlug || storeSlug === "aguila";
   const categoryUrl = isDefaultStore

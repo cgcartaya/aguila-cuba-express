@@ -10,6 +10,8 @@ export type Product = {
   tag?: string | null;
   is_active: boolean;
   created_at?: string;
+  category_sort_order?: number | null;
+  is_category_featured?: boolean | null;
 };
 
 export type ProductImage = {
@@ -20,4 +22,6 @@ export type ProductImage = {
   is_main: boolean;
   position: number;
   created_at?: string;
+  category_sort_order?: number | null;
+  is_category_featured?: boolean | null;
 };

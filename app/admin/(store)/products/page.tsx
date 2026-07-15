@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowUpDown, Loader2, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
@@ -285,7 +285,7 @@ export default function AdminProductsPage() {
           activeFilters={activeFilters}
         />
 
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             href="/admin/products/import"
             className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm"
@@ -305,6 +305,15 @@ export default function AdminProductsPage() {
                 {trashCount}
               </span>
             )}
+          </Link>
+
+
+          <Link
+            href="/admin/products/order"
+            className="flex items-center justify-center gap-2 rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm"
+          >
+            <ArrowUpDown size={18} />
+            Orden por categoría
           </Link>
 
           <Link

@@ -19,6 +19,8 @@ const PRODUCT_PUBLIC_SELECT = `
   image_url,
   is_active,
   created_at,
+  category_sort_order,
+  is_category_featured,
   product_images (
     image_url,
     is_main,
@@ -45,6 +47,8 @@ const PRODUCT_INVENTORY_SELECT = `
   stock,
   sku,
   is_active,
+  category_sort_order,
+  is_category_featured,
   product_images (
     image_url,
     is_main,
@@ -80,6 +84,9 @@ export async function getActiveProducts() {
     .eq("store_id", store.id)
     .eq("is_active", true)
     .is("deleted_at", null)
+    .order("category", { ascending: true })
+    .order("is_category_featured", { ascending: false })
+    .order("category_sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 }
 
@@ -101,6 +108,9 @@ export async function getAdminProductsByStoreId(storeId: string) {
     `)
     .eq("store_id", storeId)
     .is("deleted_at", null)
+    .order("category", { ascending: true })
+    .order("is_category_featured", { ascending: false })
+    .order("category_sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 }
 
@@ -201,6 +211,9 @@ export async function getStoreProductsByStoreId(storeId: string) {
     .eq("store_id", storeId)
     .eq("is_active", true)
     .is("deleted_at", null)
+    .order("category", { ascending: true })
+    .order("is_category_featured", { ascending: false })
+    .order("category_sort_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 }
 
@@ -234,6 +247,8 @@ export async function getRelatedProducts(
     .is("deleted_at", null)
     .eq("category", category)
     .neq("id", currentProductId)
+    .order("is_category_featured", { ascending: false })
+    .order("category_sort_order", { ascending: true, nullsFirst: false })
     .limit(limit);
 
   if (storeId) {
@@ -610,4 +625,46 @@ export async function deleteProductForeverByStoreId(
     .delete()
     .eq("id", productId)
     .eq("store_id", storeId);
+}
+
+
+/* =========================================================
+   ADMIN - ORDEN MANUAL POR CATEGORÍA
+========================================================= */
+
+export type CategoryProductOrderItem = {
+  id: string;
+  category_sort_order: number;
+  is_category_featured: boolean;
+};
+
+export async function updateCategoryProductsOrder(
+  storeId: string,
+  category: string,
+  items: CategoryProductOrderItem[]
+) {
+  try {
+    const results = await Promise.all(
+      items.map((item) =>
+        supabase
+          .from("products")
+          .update({
+            category_sort_order: item.category_sort_order,
+            is_category_featured: item.is_category_featured,
+          })
+          .eq("id", item.id)
+          .eq("store_id", storeId)
+          .eq("category", category)
+          .is("deleted_at", null)
+      )
+    );
+
+    const failed = results.find((result) => result.error);
+    return failed || { data: items, error: null };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error : new Error("No se pudo guardar el orden"),
+    };
+  }
 }
