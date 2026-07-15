@@ -1,3 +1,4 @@
+import AnimatedDashboard from "./AnimatedDashboard";
 export default function PerlaHero() {
   return (
     <section className="relative overflow-hidden bg-[#050816] text-white">
@@ -31,12 +32,18 @@ export default function PerlaHero() {
         </div>
 
         <div className="relative mt-16 lg:mt-0">
-          <div className="rounded-[32px] border border-white/10 bg-white/5 p-4 backdrop-blur">
-            <img
-              src="/perla/dashboard.png"
-              alt="Dashboard"
-              className="rounded-2xl"
-            />
+         <div className="
+rounded-[40px]
+border border-violet-500/20
+bg-white/5
+p-5
+backdrop-blur-xl
+shadow-[0_0_120px_rgba(168,85,247,0.25)]
+animate-[float_6s_ease-in-out_infinite]
+">
+           <div className="scale-[0.82] origin-center">
+  <AnimatedDashboard />
+</div>
           </div>
         </div>
       </div>
