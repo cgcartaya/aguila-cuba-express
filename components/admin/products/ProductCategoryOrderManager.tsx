@@ -56,11 +56,23 @@ export default function ProductCategoryOrderManager() {
       return;
     }
 
-    const normalized = ((data || []) as OrderProduct[]).map((product) => ({
-      ...product,
-      category_sort_order: product.category_sort_order ?? 9999,
-      is_category_featured: product.is_category_featured ?? false,
-    }));
+    const normalized = ((data || []) as OrderProduct[]).map((product) => {
+      const mainImage =
+        product.product_images?.find((image) => image.is_main) ||
+        product.product_images
+          ?.slice()
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
+
+      return {
+        ...product,
+        image_url:
+          mainImage?.image_url ||
+          product.image_url ||
+          "/placeholder-product.png",
+        category_sort_order: product.category_sort_order ?? 9999,
+        is_category_featured: product.is_category_featured ?? false,
+      };
+    });
 
     setProducts(normalized);
 
@@ -234,7 +246,12 @@ export default function ProductCategoryOrderManager() {
             <img
               src={product.image_url || "/placeholder-product.png"}
               alt={product.name}
-              className="h-14 w-14 shrink-0 rounded-xl bg-slate-100 object-cover"
+              className="h-14 w-14 shrink-0 rounded-xl border border-slate-100 bg-slate-50 object-contain p-1"
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = "/placeholder-product.png";
+              }}
             />
 
             <div className="min-w-0 flex-1">

@@ -12,6 +12,7 @@ export type Product = {
   created_at?: string;
   category_sort_order?: number | null;
   is_category_featured?: boolean | null;
+  product_images?: ProductImage[] | null;
 };
 
 export type ProductImage = {
