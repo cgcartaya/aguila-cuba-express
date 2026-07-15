@@ -8,7 +8,6 @@ function normalizeHost(host: string) {
 
 export default async function HomePage() {
   const headersList = await headers();
-
   const host =
     headersList.get("x-forwarded-host") ||
     headersList.get("host") ||

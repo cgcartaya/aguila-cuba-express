@@ -1,11 +1,13 @@
-import PerlaHeader from "./perla/PerlaHeader";
-import PerlaHero from "./perla/PerlaHero";
-import PerlaFeatures from "./perla/PerlaFeatures";
-import PerlaHowItWorks from "./perla/PerlaHowItWorks";
-import PerlaPlans from "./perla/PerlaPlans";
-import PerlaClients from "./perla/PerlaClients";
-import PerlaCTA from "./perla/PerlaCTA";
-import PerlaFooter from "./perla/PerlaFooter";
+import PerlaHeader from "@/components/perla/PerlaHeader";
+import PerlaHero from "@/components/perla/PerlaHero";
+import PerlaFeatures from "@/components/perla/PerlaFeatures";
+import PerlaShowcase from "@/components/perla/PerlaShowcase";
+import PerlaHowItWorks from "@/components/perla/PerlaHowItWorks";
+import PerlaIndustries from "@/components/perla/PerlaIndustries";
+import PerlaPlans from "@/components/perla/PerlaPlans";
+import PerlaFAQ from "@/components/perla/PerlaFAQ";
+import PerlaCTA from "@/components/perla/PerlaCTA";
+import PerlaFooter from "@/components/perla/PerlaFooter";
 
 export default function PerlaMarketplaceLanding() {
   return (
@@ -13,9 +15,11 @@ export default function PerlaMarketplaceLanding() {
       <PerlaHeader />
       <PerlaHero />
       <PerlaFeatures />
+      <PerlaShowcase />
       <PerlaHowItWorks />
+      <PerlaIndustries />
       <PerlaPlans />
-      <PerlaClients />
+      <PerlaFAQ />
       <PerlaCTA />
       <PerlaFooter />
     </main>
