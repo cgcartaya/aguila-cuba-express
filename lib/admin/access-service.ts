@@ -1,11 +1,32 @@
 import { supabase } from "@/lib/supabase";
-import type { AdminAccess, AccessProfile, StoreMembership } from "@/lib/admin/access";
+import type {
+  AdminAccess,
+  AccessProfile,
+  StoreMembership,
+  StoreUserRole,
+} from "@/lib/admin/access";
+
+const VALID_STORE_ROLES: StoreUserRole[] = [
+  "OWNER",
+  "ADMIN",
+  "OPERATIONS",
+  "BILLER",
+  "DISPATCHER",
+  "DRIVER",
+  "VIEWER",
+];
+
+function normalizeStoreRole(value: unknown): StoreUserRole {
+  const normalized = String(value || "").trim().toUpperCase() as StoreUserRole;
+  return VALID_STORE_ROLES.includes(normalized) ? normalized : "VIEWER";
+}
 
 export async function getCurrentAdminAccess(): Promise<{
   data: AdminAccess | null;
   error: string | null;
 }> {
-  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  const { data: sessionData, error: sessionError } =
+    await supabase.auth.getSession();
 
   if (sessionError) {
     return { data: null, error: sessionError.message };
@@ -60,6 +81,7 @@ export async function getCurrentAdminAccess(): Promise<{
       user_id,
       role,
       active,
+      permissions,
       stores:store_id (
         id,
         name,
@@ -68,7 +90,10 @@ export async function getCurrentAdminAccess(): Promise<{
         logo_url,
         primary_color,
         secondary_color,
-        is_active
+        is_active,
+        module_store_enabled,
+        module_landing_enabled,
+        module_shipping_enabled
       )
     `
     )
@@ -85,7 +110,10 @@ export async function getCurrentAdminAccess(): Promise<{
     return { data: null, error: "NO_STORE_ACCESS" };
   }
 
-  const typedMembership = membership as unknown as StoreMembership;
+  const typedMembership = {
+    ...(membership as unknown as StoreMembership),
+    role: normalizeStoreRole((membership as { role?: unknown }).role),
+  };
 
   if (typedMembership.stores?.is_active === false) {
     return { data: null, error: "STORE_INACTIVE" };

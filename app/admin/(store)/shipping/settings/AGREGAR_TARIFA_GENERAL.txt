@@ -1,0 +1,28 @@
+Agrega al objeto fallback de ShippingSettings:
+
+default_rate_per_lb: 0,
+
+Agrega dentro de Configuración general:
+
+<Field label="Tarifa general por libra">
+  <input
+    type="number"
+    min="0"
+    step="0.01"
+    value={settings.default_rate_per_lb}
+    onChange={(event) =>
+      setSettings((current) =>
+        current
+          ? {
+              ...current,
+              default_rate_per_lb: Number(event.target.value),
+            }
+          : current
+      )
+    }
+    className={inputClass}
+  />
+</Field>
+
+La tarifa específica por lugar + tipo tiene prioridad.
+La tarifa general se usa solamente si no existe una específica.

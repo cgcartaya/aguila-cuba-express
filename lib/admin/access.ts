@@ -1,7 +1,17 @@
 export type AdminArea = "store" | "saas";
 
 export type PlatformRole = "super_admin" | "store_owner";
-export type StoreUserRole = "owner";
+
+export type StoreUserRole =
+  | "OWNER"
+  | "ADMIN"
+  | "OPERATIONS"
+  | "BILLER"
+  | "DISPATCHER"
+  | "DRIVER"
+  | "VIEWER";
+
+export type StorePermissions = Record<string, boolean>;
 
 export type AccessProfile = {
   id: string;
@@ -20,6 +30,9 @@ export type AccessStore = {
   primary_color?: string | null;
   secondary_color?: string | null;
   is_active?: boolean;
+  module_store_enabled?: boolean;
+  module_landing_enabled?: boolean;
+  module_shipping_enabled?: boolean;
 };
 
 export type StoreMembership = {
@@ -28,6 +41,7 @@ export type StoreMembership = {
   user_id: string;
   role: StoreUserRole;
   active: boolean;
+  permissions?: StorePermissions | null;
   stores: AccessStore | null;
 };
 

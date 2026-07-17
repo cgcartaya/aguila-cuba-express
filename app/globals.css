@@ -123,3 +123,19 @@ select {
     transform: translateY(0px);
   }
 }
+
+:root {
+  --font-sans: var(--font-manrope);
+}
+
+html,
+body {
+  font-family: var(--font-manrope), Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

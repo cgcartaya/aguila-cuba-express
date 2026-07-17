@@ -16,6 +16,8 @@ import {
   ExternalLink,
   Rocket,
   BarChart3,
+  Truck,
+  Wrench,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -34,6 +36,8 @@ const storeLinks: AdminLink[] = [
   { href: "/admin/combos", label: "Combos", icon: Layers3 },
   { href: "/admin/inventory", label: "Inventario", icon: Boxes },
   { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
+  { href: "/admin/shipping", label: "Gestión de envíos", icon: Truck },
+  { href: "/admin/shipping/settings", label: "Ajustes de envíos", icon: Wrench },
   { href: "/admin/customers", label: "Clientes", icon: Users },
   { href: "/admin/analytics", label: "Visitas", icon: BarChart3 },
   { href: "/admin/settings", label: "Ajustes tienda", icon: Settings },

@@ -16,6 +16,8 @@ import {
   Layers3,
   ExternalLink,
   BarChart3,
+  Truck,
+  Wrench,
 } from "lucide-react";
 
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
@@ -44,6 +46,8 @@ const storeLinks: MenuItem[] = [
   { label: "Combos", href: "/admin/combos", icon: Layers3 },
   { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
+  { label: "Gestión de envíos", href: "/admin/shipping", icon: Truck },
+  { label: "Ajustes de envíos", href: "/admin/shipping/settings", icon: Wrench },
   { label: "Clientes", href: "/admin/customers", icon: Users },
   { label: "Visitas", href: "/admin/analytics", icon: BarChart3 },
   { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },

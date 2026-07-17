@@ -111,7 +111,14 @@ export default function LoginPage() {
        * aguilacubaexpress.com/login          -> /admin
        * perlamarketplace.com/login           -> /admin
        */
-      window.location.assign("/admin");
+      const params = new URLSearchParams(window.location.search);
+      const requestedPath = params.get("next");
+      const safePath =
+        requestedPath?.startsWith("/") && !requestedPath.startsWith("//")
+          ? requestedPath
+          : "/admin";
+
+      window.location.assign(safePath);
     } catch (loginError) {
       console.error("Error inesperado iniciando sesión:", loginError);
       setError("Ocurrió un error inesperado. Inténtalo nuevamente.");
