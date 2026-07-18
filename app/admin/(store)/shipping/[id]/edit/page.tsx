@@ -181,6 +181,7 @@ export default function EditShipmentPage({
             </div>
 
             <ShipmentForm
+          storeId={activeStore?.id || ""}
               shipment={shipment}
               drivers={drivers}
               settings={settings}

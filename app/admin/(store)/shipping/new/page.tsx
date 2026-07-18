@@ -137,6 +137,7 @@ export default function NewShipmentPage() {
         </div>
 
         <ShipmentForm
+          storeId={activeStore?.id || ""}
           drivers={drivers}
           settings={settings}
           countries={countries}

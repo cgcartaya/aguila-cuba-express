@@ -12,8 +12,11 @@ export type ShippingStatus = (typeof SHIPPING_STATUSES)[number];
 
 export type Shipment = {
   id: string;
-  order_number: number | null;
   store_id: string;
+  order_number: number | null;
+  customer_id: string | null;
+  recipient_id: string | null;
+  recipient_identity_card: string | null;
   location: string;
   country_id: string | null;
   province_id: string | null;
@@ -164,6 +167,9 @@ export type ShippingSettings = {
 };
 
 export type ShipmentInput = {
+  customer_id: string | null;
+  recipient_id: string | null;
+  recipient_identity_card: string;
   location: string;
   country_id: string | null;
   province_id: string | null;

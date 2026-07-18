@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Banknote, Loader2, Package, Save } from "lucide-react";
+import CustomerRecipientPicker from "@/components/admin/shipping/CustomerRecipientPicker";
 import type {
   Shipment, ShipmentFeeSelection, ShipmentInput, ShippingCountry,
   ShippingDriver, ShippingExtraFee, ShippingLocation, ShippingMunicipality,
@@ -11,6 +12,7 @@ import type {
 import { buildLegacyLocation, calculateMoneyCommission, getShippingStatusLabel, SHIPPING_STATUSES } from "@/lib/shipping/types";
 
 type Props = {
+  storeId: string;
   shipment?: Shipment | null;
   drivers: ShippingDriver[];
   settings: ShippingSettings | null;
@@ -27,9 +29,12 @@ type Props = {
 };
 
 export default function ShipmentForm(props: Props) {
-  const { shipment, drivers, settings, countries, provinces, municipalities, locations, serviceTypes, rates, extraFees, initialSelectedFees = [], submitting, onSubmit } = props;
+  const { storeId, shipment, drivers, settings, countries, provinces, municipalities, locations, serviceTypes, rates, extraFees, initialSelectedFees = [], submitting, onSubmit } = props;
   const [error, setError] = useState("");
   const [form, setForm] = useState<ShipmentInput>({
+    customer_id: shipment?.customer_id || null,
+    recipient_id: shipment?.recipient_id || null,
+    recipient_identity_card: shipment?.recipient_identity_card || "",
     location: shipment?.location || "",
     country_id: shipment?.country_id || settings?.default_country_id || null,
     province_id: shipment?.province_id || settings?.default_province_id || null,
@@ -135,6 +140,39 @@ export default function ShipmentForm(props: Props) {
 
   return <form onSubmit={submit} className="space-y-6">
     {error && <div className="rounded-2xl bg-red-50 p-4 font-bold text-red-700">{error}</div>}
+
+    <CustomerRecipientPicker
+      storeId={storeId}
+      countries={countries}
+      provinces={provinces}
+      municipalities={municipalities}
+      locations={locations}
+      initialPhone={form.sender_phone}
+      onApply={(selection) =>
+        setForm((current) => ({
+          ...current,
+          customer_id: selection.customer_id,
+          recipient_id: selection.recipient_id,
+          sender_name: selection.sender_name,
+          sender_phone: selection.sender_phone,
+          recipient_name: selection.recipient_name || current.recipient_name,
+          recipient_phone: selection.recipient_phone || current.recipient_phone,
+          recipient_address:
+            selection.recipient_address || current.recipient_address,
+          recipient_identity_card:
+            selection.recipient_identity_card ||
+            current.recipient_identity_card,
+          country_id: selection.country_id || current.country_id,
+          province_id: selection.province_id || current.province_id,
+          municipality_id:
+            selection.municipality_id || current.municipality_id,
+          shipping_location_id:
+            selection.shipping_location_id ||
+            current.shipping_location_id,
+          location: selection.location || current.location,
+        }))
+      }
+    />
 
     <Section title="Contenido de la operación">
       <div className="grid gap-3 md:grid-cols-2">
