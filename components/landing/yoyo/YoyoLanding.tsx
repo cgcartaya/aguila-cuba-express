@@ -33,7 +33,7 @@ import {
 
 const WHATSAPP_PHONE = "18032623676";
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}`;
-const STORE_URL = "/tienda/yoyo-envios";
+const STORE_URL = "/tienda";
 const TRACKING_URL = "/rastrear";
 
 const services = [
@@ -120,7 +120,7 @@ export default function YoyoLanding() {
     <main className="min-h-screen bg-[#f6f8fc] text-slate-950">
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#061a3a]/95 text-white shadow-lg backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link href="/yoyo-envios" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="relative h-12 w-16 overflow-hidden rounded-xl bg-white shadow-sm">
               <Image
                 src="/yoyo/logo-yoyo.jpg"
