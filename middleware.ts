@@ -3,6 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
 /* =========================================================
+   TYPES
+========================================================= */
+
+type StoreResolution = {
+  slug: string;
+  hasLanding: boolean;
+};
+
+/* =========================================================
    HOST HELPERS
 ========================================================= */
 
@@ -50,13 +59,15 @@ function shouldIgnorePath(pathname: string) {
 /**
  * Convierte rutas antiguas visibles en rutas canónicas del subdominio.
  *
+ * Solo se utiliza para empresas cuya página principal es directamente
+ * la tienda, por ejemplo DL Racing.
+ *
  * Ejemplos:
- * /tienda/dl-racing-cyber                 -> /
- * /tienda/dl-racing-cyber/producto/123    -> /producto/123
- * /tienda/producto/123                    -> /producto/123
- * /tienda/categorias/perifericos          -> /categorias/perifericos
+ * /tienda/dl-racing-cyber              -> /
+ * /tienda/dl-racing-cyber/producto/123 -> /producto/123
+ * /tienda/producto/123                 -> /producto/123
  */
-function getCanonicalSubdomainPath(pathname: string, slug: string) {
+function getCanonicalStorefrontPath(pathname: string, slug: string) {
   const storeBasePath = `/tienda/${slug}`;
 
   if (pathname === "/tienda" || pathname === `${storeBasePath}/`) {
@@ -72,15 +83,6 @@ function getCanonicalSubdomainPath(pathname: string, slug: string) {
     return suffix || "/";
   }
 
-  /*
-   * Compatibilidad con rutas antiguas sin slug:
-   * /tienda/producto/...
-   * /tienda/categorias/...
-   * /tienda/combos/...
-   * /tienda/carrito
-   * /tienda/checkout
-   * /tienda/success
-   */
   const legacyPrefixes = [
     "/tienda/producto",
     "/tienda/productos",
@@ -106,11 +108,47 @@ function getCanonicalSubdomainPath(pathname: string, slug: string) {
   return null;
 }
 
+/**
+ * Devuelve la ruta interna de tienda para empresas que tienen landing.
+ *
+ * La URL pública mantiene /tienda para no confundir la landing con el
+ * marketplace:
+ *
+ * /tienda                         -> /tienda/[slug]
+ * /tienda/producto/123            -> /tienda/[slug]/producto/123
+ * /tienda/categorias/perifericos  -> /tienda/[slug]/categorias/perifericos
+ */
+function getLandingStoreRewritePath(pathname: string, slug: string) {
+  const storeBasePath = `/tienda/${slug}`;
+
+  if (
+    pathname === "/tienda" ||
+    pathname === "/tienda/" ||
+    pathname === storeBasePath ||
+    pathname === `${storeBasePath}/`
+  ) {
+    return storeBasePath;
+  }
+
+  if (pathname.startsWith(`${storeBasePath}/`)) {
+    return pathname;
+  }
+
+  if (pathname.startsWith("/tienda/")) {
+    const suffix = pathname.slice("/tienda".length);
+    return `${storeBasePath}${suffix}`;
+  }
+
+  return null;
+}
+
 /* =========================================================
    STORE RESOLUTION
 ========================================================= */
 
-async function getStoreSlugBySubdomain(subdomain: string) {
+async function getStoreBySubdomain(
+  subdomain: string
+): Promise<StoreResolution | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -122,7 +160,7 @@ async function getStoreSlugBySubdomain(subdomain: string) {
   }
 
   const url = new URL(`${supabaseUrl}/rest/v1/stores`);
-  url.searchParams.set("select", "slug");
+  url.searchParams.set("select", "slug,has_landing");
   url.searchParams.set("subdomain", `eq.${subdomain}`);
   url.searchParams.set("is_active", "eq.true");
   url.searchParams.set("limit", "1");
@@ -145,9 +183,21 @@ async function getStoreSlugBySubdomain(subdomain: string) {
       return null;
     }
 
-    const data = (await response.json()) as Array<{ slug?: string }>;
+    const data = (await response.json()) as Array<{
+      slug?: string;
+      has_landing?: boolean | null;
+    }>;
 
-    return data?.[0]?.slug || null;
+    const store = data?.[0];
+
+    if (!store?.slug) {
+      return null;
+    }
+
+    return {
+      slug: store.slug,
+      hasLanding: store.has_landing === true,
+    };
   } catch (error) {
     console.error(
       `Middleware: error resolviendo el subdominio ${subdomain}.`,
@@ -165,7 +215,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   /*
-   * /login y /admin son rutas globales.
+   * /login, /admin, API, autenticación y archivos estáticos son globales.
    * Nunca deben reescribirse dentro de /tienda/[slug].
    */
   if (shouldIgnorePath(pathname)) {
@@ -176,24 +226,54 @@ export async function middleware(request: NextRequest) {
   const subdomain = getSubdomain(host);
 
   /*
-   * En localhost, dominio raíz o dominios que no sean subdominios
-   * de perlamarketplace.com, la aplicación conserva sus rutas normales.
+   * En localhost, el dominio raíz y dominios personalizados como
+   * aguilacubaexpress.com, la aplicación conserva sus rutas normales.
+   * Los dominios personalizados pueden seguir resolviéndose desde la
+   * lógica existente de app/page.tsx.
    */
   if (!subdomain) {
     return NextResponse.next();
   }
 
-  const slug = await getStoreSlugBySubdomain(subdomain);
+  const store = await getStoreBySubdomain(subdomain);
 
-  if (!slug) {
+  if (!store) {
     return NextResponse.next();
   }
 
-  /*
-   * 1. Redirección canónica:
-   * limpia rutas antiguas que el navegador todavía pueda visitar.
-   */
-  const canonicalPath = getCanonicalSubdomainPath(pathname, slug);
+  const { slug, hasLanding } = store;
+
+  /* =======================================================
+     EMPRESAS CON LANDING
+
+     /                 -> landing existente
+     /login            -> login global
+     /tienda            -> tienda de la empresa
+     /tienda/producto/* -> producto dentro de la tienda
+
+     Las demás rutas se dejan pasar para conservar rastreo,
+     cotizador, contacto, SEO y cualquier sección de la landing.
+  ======================================================= */
+  if (hasLanding) {
+    const storeRewritePath = getLandingStoreRewritePath(pathname, slug);
+
+    if (storeRewritePath) {
+      const rewriteUrl = request.nextUrl.clone();
+      rewriteUrl.pathname = storeRewritePath;
+
+      return NextResponse.rewrite(rewriteUrl);
+    }
+
+    return NextResponse.next();
+  }
+
+  /* =======================================================
+     EMPRESAS SIN LANDING
+
+     Conservan el comportamiento anterior: el subdominio abre
+     directamente la tienda con URLs públicas limpias.
+  ======================================================= */
+  const canonicalPath = getCanonicalStorefrontPath(pathname, slug);
 
   if (canonicalPath && canonicalPath !== pathname) {
     const redirectUrl = request.nextUrl.clone();
@@ -202,15 +282,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl, 308);
   }
 
-  /*
-   * 2. Rewrite interno:
-   * la URL visible queda limpia, pero Next.js renderiza las rutas
-   * existentes dentro de /tienda/[slug].
-   *
-   * /                         -> /tienda/dl-racing-cyber
-   * /producto/123             -> /tienda/dl-racing-cyber/producto/123
-   * /categorias/perifericos   -> /tienda/dl-racing-cyber/categorias/perifericos
-   */
   const rewriteUrl = request.nextUrl.clone();
   const cleanPath = pathname === "/" ? "" : pathname;
 
