@@ -2,110 +2,372 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Edit3, Loader2, PackageSearch, Plus, Search, Trash2, Truck } from "lucide-react";
-import InvoiceActions from "@/components/admin/shipping/InvoiceActions";
-import ShippingStatusBadge from "@/components/admin/shipping/ShippingStatusBadge";
+import {
+  Banknote,
+  CalendarDays,
+  CircleAlert,
+  Clock3,
+  DollarSign,
+  Loader2,
+  PackageCheck,
+  Plus,
+  Scale,
+  Settings2,
+  Sparkles,
+  Truck,
+  UserRoundX,
+  WalletCards,
+} from "lucide-react";
+
+import DriverPerformance from "@/components/admin/shipping/dashboard/DriverPerformance";
+import OperationalMetricCard from "@/components/admin/shipping/dashboard/OperationalMetricCard";
+import RecentShipments from "@/components/admin/shipping/dashboard/RecentShipments";
+import SevenDayActivity from "@/components/admin/shipping/dashboard/SevenDayActivity";
+import ShippingQuickActions from "@/components/admin/shipping/dashboard/ShippingQuickActions";
+import StatusOverview from "@/components/admin/shipping/dashboard/StatusOverview";
+import TopDestinations from "@/components/admin/shipping/dashboard/TopDestinations";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
-import { getShipmentsByStoreId, moveShipmentToTrash } from "@/lib/services/shipping";
-import type { Shipment } from "@/lib/shipping/types";
+import { getShippingDashboard } from "@/lib/services/shipping-dashboard";
+import type { ShippingDashboardData } from "@/lib/shipping/dashboard-types";
 
-export default function ShippingPage() {
-  const { access, loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
-  const { store: selectedStore, loading: storeLoading } = useStore();
-  const activeStore = useMemo(() => (isSuperAdmin ? selectedStore || accessStore : accessStore), [accessStore, isSuperAdmin, selectedStore]);
+function currency(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
 
-  const [shipments, setShipments] = useState<Shipment[]>([]);
+const emptyDashboard: ShippingDashboardData = {
+  summary: {
+    total_active: 0,
+    created_today: 0,
+    created_this_week: 0,
+    pending_total: 0,
+    delivered_total: 0,
+    delivered_today: 0,
+    issues_total: 0,
+    in_transit_total: 0,
+    received_cuba_total: 0,
+    out_for_delivery_total: 0,
+    unassigned_total: 0,
+    billed_today: 0,
+    billed_this_month: 0,
+    outstanding_total: 0,
+    paid_total: 0,
+    weight_today_lb: 0,
+    weight_this_month_lb: 0,
+    money_sent_today: 0,
+    money_sent_this_month: 0,
+  },
+  statuses: [],
+  last_7_days: [],
+  top_destinations: [],
+  drivers: [],
+  recent_shipments: [],
+};
+
+export default function ShippingOperationalDashboardPage() {
+  const {
+    access,
+    loading: accessLoading,
+    isSuperAdmin,
+    store: accessStore,
+  } = useAdminAccess();
+
+  const {
+    store: selectedStore,
+    loading: storeLoading,
+  } = useStore();
+
+  const activeStore = useMemo(
+    () =>
+      isSuperAdmin
+        ? selectedStore || accessStore
+        : accessStore,
+    [accessStore, isSuperAdmin, selectedStore]
+  );
+
+  const [dashboard, setDashboard] =
+    useState<ShippingDashboardData>(emptyDashboard);
+
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
   const [errorMessage, setErrorMessage] = useState("");
 
-  async function load() {
-    if (!activeStore?.id) { setShipments([]); setLoading(false); return; }
-    setLoading(true);
-    const { data, error } = await getShipmentsByStoreId(activeStore.id);
-    if (error) { setErrorMessage(error.message); setShipments([]); }
-    else setShipments(data || []);
-    setLoading(false);
-  }
-
-  useEffect(() => { if (!accessLoading && !storeLoading) void load(); }, [accessLoading, storeLoading, activeStore?.id]);
-
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return shipments.filter((s) =>
-      (status === "all" || s.status === status) &&
-      (!query ||
-        s.tracking_code?.toLowerCase().includes(query) ||
-        s.recipient_name?.toLowerCase().includes(query) ||
-        s.recipient_phone?.includes(query) ||
-        s.sender_name?.toLowerCase().includes(query) ||
-        s.location.toLowerCase().includes(query))
+  const canCreate =
+    access?.isSuperAdmin ||
+    ["OWNER", "ADMIN", "OPERATIONS"].includes(
+      access?.storeMembership?.role || ""
     );
-  }, [search, shipments, status]);
 
-  async function trash(shipment: Shipment) {
-    if (!activeStore?.id || !window.confirm(`¿Mover ${shipment.tracking_code || "este envío"} a la papelera?`)) return;
-    const { error } = await moveShipmentToTrash(activeStore.id, shipment.id);
-    if (error) return alert(error.message);
-    setShipments((current) => current.filter((item) => item.id !== shipment.id));
+  useEffect(() => {
+    async function loadDashboard() {
+      if (!activeStore?.id) {
+        setDashboard(emptyDashboard);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setErrorMessage("");
+
+      const { data, error } = await getShippingDashboard(
+        activeStore.id
+      );
+
+      if (error) {
+        setErrorMessage(
+          error.message ||
+            "No se pudo cargar el dashboard operativo."
+        );
+        setDashboard(emptyDashboard);
+      } else {
+        setDashboard(data || emptyDashboard);
+      }
+
+      setLoading(false);
+    }
+
+    if (!accessLoading && !storeLoading) {
+      void loadDashboard();
+    }
+  }, [
+    accessLoading,
+    storeLoading,
+    activeStore?.id,
+  ]);
+
+  if (loading || accessLoading || storeLoading) {
+    return (
+      <main className="min-h-screen bg-slate-50 p-6">
+        <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center">
+          <div className="text-center text-slate-500">
+            <Loader2 className="mx-auto mb-3 animate-spin" size={30} />
+            <p className="font-semibold">Preparando dashboard operativo...</p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
-  const canCreate = access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
+  const summary = dashboard.summary;
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 pb-24 md:p-6">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div><p className="text-sm font-black text-blue-700">Operaciones</p><h1 className="text-3xl font-black text-[#061b3a] md:text-4xl">Envíos</h1><p className="mt-1 text-sm font-semibold text-slate-500">{activeStore?.name}</p></div>
-          {canCreate && activeStore && <Link href="/admin/shipping/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-5 py-3 text-sm font-black text-white"><Plus size={19}/>Nuevo envío</Link>}
+    <main className="min-h-screen bg-[#f5f7fb] p-4 pb-28 md:p-6 xl:p-8">
+      <div className="mx-auto max-w-[1500px]">
+        <header className="relative mb-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0a2d63] to-[#1554a6] p-6 text-white shadow-xl md:p-8">
+          <div className="absolute -right-12 -top-16 h-56 w-56 rounded-full bg-blue-400/15 blur-2xl" />
+          <div className="absolute -bottom-20 left-1/3 h-52 w-52 rounded-full bg-violet-400/10 blur-2xl" />
+
+          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-blue-100">
+                <Sparkles size={15} />
+                Centro de operaciones
+              </div>
+
+              <h1 className="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">
+                Dashboard de envíos
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-blue-100/80 md:text-base">
+                Controla paquetes, remesas, repartidores y cobros de{" "}
+                <span className="font-extrabold text-white">
+                  {activeStore?.name || "la empresa"}
+                </span>{" "}
+                desde una sola vista.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                {canCreate && (
+                  <Link
+                    href="/admin/shipping/new"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-[#061b3a] shadow-lg transition hover:-translate-y-0.5"
+                  >
+                    <Plus size={18} />
+                    Nueva operación
+                  </Link>
+                )}
+
+                <Link
+                  href="/admin/shipping/shipments"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
+                >
+                  <Truck size={18} />
+                  Ver lista de envíos
+                </Link>
+
+                <Link
+                  href="/admin/shipping/settings"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
+                >
+                  <Settings2 size={18} />
+                  Ajustes
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid min-w-full grid-cols-2 gap-3 sm:min-w-[420px]">
+              <HeroMiniMetric
+                label="Creados hoy"
+                value={summary.created_today.toString()}
+                icon={<CalendarDays size={18} />}
+              />
+              <HeroMiniMetric
+                label="Entregados hoy"
+                value={summary.delivered_today.toString()}
+                icon={<PackageCheck size={18} />}
+              />
+              <HeroMiniMetric
+                label="Facturado hoy"
+                value={currency(summary.billed_today)}
+                icon={<DollarSign size={18} />}
+              />
+              <HeroMiniMetric
+                label="Libras hoy"
+                value={summary.weight_today_lb.toFixed(1)}
+                icon={<Scale size={18} />}
+              />
+            </div>
+          </div>
         </header>
 
-        <section className="mb-5 rounded-3xl border bg-white p-4 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr_240px]">
-            <label className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19}/><input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full rounded-2xl border py-3 pl-12 pr-4 text-sm font-semibold" placeholder="Código, nombre, teléfono o lugar"/></label>
-            <select value={status} onChange={(e)=>setStatus(e.target.value)} className="rounded-2xl border bg-white px-4 py-3 text-sm font-bold"><option value="all">Todos los estados</option><option value="received_miami">Recibido en Miami</option><option value="preparing">Preparando</option><option value="in_transit">En tránsito</option><option value="received_cuba">Recibido en Cuba</option><option value="out_for_delivery">En reparto</option><option value="delivered">Entregado</option><option value="issue">Incidencia</option></select>
+        {errorMessage && (
+          <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-semibold text-rose-700">
+            {errorMessage}
           </div>
+        )}
+
+        <ShippingQuickActions />
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <OperationalMetricCard
+            label="Pendientes"
+            value={summary.pending_total.toString()}
+            helper={`${summary.unassigned_total} sin repartidor asignado`}
+            icon={<Clock3 size={22} />}
+            tone="amber"
+          />
+
+          <OperationalMetricCard
+            label="En tránsito"
+            value={summary.in_transit_total.toString()}
+            helper={`${summary.received_cuba_total} ya recibidos en Cuba`}
+            icon={<Truck size={22} />}
+            tone="violet"
+          />
+
+          <OperationalMetricCard
+            label="Saldo pendiente"
+            value={currency(summary.outstanding_total)}
+            helper={`${currency(summary.paid_total)} registrado como pagado`}
+            icon={<WalletCards size={22} />}
+            tone="rose"
+          />
+
+          <OperationalMetricCard
+            label="Facturado este mes"
+            value={currency(summary.billed_this_month)}
+            helper={`${summary.created_this_week} operaciones creadas esta semana`}
+            icon={<Banknote size={22} />}
+            tone="emerald"
+          />
         </section>
 
-        {errorMessage && <div className="mb-5 rounded-2xl bg-red-50 p-4 font-bold text-red-700">{errorMessage}</div>}
+        <div className="mt-6">
+          <StatusOverview statuses={dashboard.statuses} />
+        </div>
 
-        {loading || accessLoading || storeLoading ? (
-          <div className="rounded-3xl border bg-white p-10 text-center font-bold text-slate-500"><Loader2 className="mx-auto mb-3 animate-spin"/>Cargando envíos...</div>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border bg-white p-10 text-center"><PackageSearch className="mx-auto mb-4 text-slate-300" size={44}/><h2 className="text-xl font-black">No hay envíos</h2></div>
-        ) : (
-          <div className="space-y-3">
-            {filtered.map((shipment) => (
-              <article key={shipment.id} className="rounded-3xl border bg-white p-4 shadow-sm md:p-5">
-                <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
-                  <div className="flex min-w-0 flex-1 items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><Truck size={23}/></div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2"><h2 className="font-black text-[#061b3a]">{shipment.tracking_code || shipment.id.slice(0,8)}</h2><ShippingStatusBadge status={shipment.status}/></div>
-                      <p className="mt-2 font-black">{shipment.recipient_name || "Sin destinatario"}</p>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">{shipment.location} · {shipment.recipient_phone || "Sin teléfono"}</p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs font-black">
-                        {shipment.contains_package && <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">Paquete · {Number(shipment.weight_lb || 0).toFixed(2)} lb</span>}
-                        {shipment.contains_money && <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Dinero · ${Number(shipment.money_amount || 0).toFixed(2)}</span>}
-                        <span className="rounded-full bg-slate-100 px-3 py-1">Total · ${Number(shipment.service_price || 0).toFixed(2)}</span>
-                      </div>
-                      <p className="mt-2 text-sm text-slate-500">Repartidor: <span className="font-bold">{shipment.assigned_driver_name || "Sin asignar"}</span></p>
-                    </div>
-                  </div>
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.55fr_1fr]">
+          <SevenDayActivity days={dashboard.last_7_days} />
+          <TopDestinations destinations={dashboard.top_destinations} />
+        </div>
 
-                  <div className="flex flex-wrap gap-2 xl:justify-end">
-                    <InvoiceActions shipment={shipment} compact/>
-                    <Link href={`/admin/shipping/${shipment.id}/edit`} className="inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-black"><Edit3 size={17}/>Editar</Link>
-                    <button onClick={()=>void trash(shipment)} className="inline-flex items-center gap-2 rounded-2xl border border-red-100 px-4 py-2.5 text-sm font-black text-red-600"><Trash2 size={17}/>Papelera</button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1fr_1.55fr]">
+          <DriverPerformance drivers={dashboard.drivers} />
+          <RecentShipments shipments={dashboard.recent_shipments} />
+        </div>
+
+        {(summary.issues_total > 0 ||
+          summary.unassigned_total > 0) && (
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
+            {summary.issues_total > 0 && (
+              <AlertCard
+                icon={<CircleAlert size={21} />}
+                title={`${summary.issues_total} envío(s) con incidencia`}
+                text="Revisa las operaciones que necesitan atención."
+                href="/admin/shipping/shipments?status=issue"
+                tone="rose"
+              />
+            )}
+
+            {summary.unassigned_total > 0 && (
+              <AlertCard
+                icon={<UserRoundX size={21} />}
+                title={`${summary.unassigned_total} envío(s) sin repartidor`}
+                text="Asigna responsables para evitar retrasos."
+                href="/admin/shipping/shipments"
+                tone="amber"
+              />
+            )}
+          </section>
         )}
       </div>
     </main>
+  );
+}
+
+function HeroMiniMetric({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+      <div className="flex items-center gap-2 text-blue-100">
+        {icon}
+        <p className="text-xs font-semibold">{label}</p>
+      </div>
+      <p className="mt-2 text-xl font-extrabold text-white">{value}</p>
+    </div>
+  );
+}
+
+function AlertCard({
+  icon,
+  title,
+  text,
+  href,
+  tone,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  href: string;
+  tone: "rose" | "amber";
+}) {
+  const styles =
+    tone === "rose"
+      ? "border-rose-200 bg-rose-50 text-rose-800"
+      : "border-amber-200 bg-amber-50 text-amber-900";
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-4 rounded-3xl border p-5 transition hover:-translate-y-0.5 hover:shadow-md ${styles}`}
+    >
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/70">
+        {icon}
+      </div>
+      <div>
+        <p className="font-extrabold">{title}</p>
+        <p className="mt-1 text-sm font-medium opacity-75">{text}</p>
+      </div>
+    </Link>
   );
 }

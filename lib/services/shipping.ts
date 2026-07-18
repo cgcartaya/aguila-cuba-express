@@ -13,7 +13,7 @@ function paymentStatus(total: number, paid: number) {
 }
 
 export function getShipmentsByStoreId(storeId: string) {
-  return supabase.from("shipments").select("*").eq("store_id", storeId).is("deleted_at", null).order("created_at", { ascending: false }).returns<Shipment[]>();
+  return supabase.from("shipments").select("*").eq("store_id", storeId).is("deleted_at", null).order("order_number", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).returns<Shipment[]>();
 }
 
 export function getShipmentById(storeId: string, shipmentId: string) {
@@ -99,9 +99,28 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
   if (!shipmentId) {
     const ids = identity();
-    const result = await supabase.from("shipments").insert({ ...data, id: ids.id, tracking_code: ids.trackingCode, created_date: now, created_by: userId || null }).select("*").single<Shipment>();
-    if (!result.error) await replaceItems(storeId, ids.id, input);
-    return result;
+
+    const result = await supabase.rpc("create_numbered_shipment", {
+      p_store_id: storeId,
+      p_id: ids.id,
+      p_tracking_code: ids.trackingCode,
+      p_payload: {
+        ...data,
+        created_date: now,
+        created_by: userId || null,
+      },
+    });
+
+    const shipment = (result.data || null) as Shipment | null;
+
+    if (!result.error && shipment) {
+      await replaceItems(storeId, shipment.id, input);
+    }
+
+    return {
+      data: shipment,
+      error: result.error,
+    };
   }
 
   const result = await supabase.from("shipments").update(data).eq("store_id", storeId).eq("id", shipmentId).select("*").single<Shipment>();

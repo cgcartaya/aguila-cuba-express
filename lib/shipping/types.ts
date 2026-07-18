@@ -12,6 +12,7 @@ export type ShippingStatus = (typeof SHIPPING_STATUSES)[number];
 
 export type Shipment = {
   id: string;
+  order_number: number | null;
   store_id: string;
   location: string;
   country_id: string | null;

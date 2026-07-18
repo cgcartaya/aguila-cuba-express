@@ -6,7 +6,7 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  Store,
+  Truck,
   Boxes,
 } from "lucide-react";
 
@@ -15,7 +15,7 @@ const links = [
   { name: "Productos", href: "/admin/products", icon: Package },
   { name: "Inventario", href: "/admin/inventory", icon: Boxes },
   { name: "Órdenes", href: "/admin/orders", icon: ShoppingCart },
-  { name: "Tienda", href: "/tienda", icon: Store },
+  { name: "Envíos", href: "/admin/shipping", icon: Truck },
 ];
 
 function isSaasArea(pathname: string) {
