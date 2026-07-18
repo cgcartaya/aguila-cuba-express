@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import ShippingAnimatedShowcase from "../ShippingAnimatedShowcase";
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Clock3,
   HeartHandshake,
   MapPin,
+  LogIn,
   Menu,
   MessageCircle,
   PackageCheck,
@@ -145,6 +147,9 @@ export default function YoyoLanding() {
           </nav>
 
           <div className="hidden items-center gap-3 lg:flex">
+            <Link href="/login" className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-black transition hover:bg-white/20">
+              <LogIn size={17} /> Iniciar sesión
+            </Link>
             <a
               href={WHATSAPP_URL}
               target="_blank"
@@ -189,6 +194,9 @@ export default function YoyoLanding() {
                   {label}
                 </a>
               ))}
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3">
+                <LogIn size={17} /> Iniciar sesión
+              </Link>
               <Link href={STORE_URL} className="rounded-xl bg-red-600 px-4 py-3 text-center">
                 Entrar a la tienda
               </Link>
@@ -197,91 +205,23 @@ export default function YoyoLanding() {
         )}
       </header>
 
-      <section className="relative isolate overflow-hidden bg-[#071d43] text-white">
-        <div className="absolute inset-0">
-          <Image
-            src="/yoyo/hero-yoyo.jpg"
-            alt="YOYO Envíos a Cuba"
-            fill
-            priority
-            className="object-cover object-center opacity-60"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#061631] via-[#061631]/90 to-[#061631]/30" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#061631] via-transparent to-transparent" />
-        </div>
-
-        <div className="relative mx-auto grid min-h-[720px] max-w-7xl items-center gap-10 px-5 py-20 sm:px-6 lg:grid-cols-[1.05fr_.95fr]">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-100 backdrop-blur">
-              <ShieldCheck size={16} /> Seguridad, confianza y responsabilidad
+      <section className="relative isolate overflow-hidden bg-[#06152f] text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(37,99,235,0.3),transparent_34%),radial-gradient(circle_at_30%_24%,rgba(220,38,38,0.18),transparent_28%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:46px_46px]" />
+        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 py-20 sm:px-6 lg:grid-cols-[.92fr_1.08fr] lg:py-24">
+          <div className="relative z-10 max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/25 bg-blue-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-100"><span className="h-2 w-2 animate-pulse rounded-full bg-red-400" /> Seguridad, confianza y responsabilidad</div>
+            <h1 className="mt-8 text-5xl font-black leading-[.96] tracking-[-0.04em] sm:text-6xl lg:text-7xl">Todo para tus<span className="mt-2 block bg-gradient-to-r from-red-400 via-red-300 to-blue-300 bg-clip-text text-transparent">envíos a Cuba.</span></h1>
+            <p className="mt-7 max-w-xl text-base font-semibold leading-8 text-blue-100/75 sm:text-lg">Recogemos, empacamos y entregamos tus envíos con una operación profesional, rastreo online y atención personalizada.</p>
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <a href="#cotizar" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 px-7 py-4 text-sm font-black shadow-[0_18px_48px_rgba(220,38,38,.3)] transition hover:-translate-y-0.5"><Calculator size={20} /> Cotizar mi envío <ArrowRight size={18} /></a>
+              <a href="#rastreo" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.05] px-7 py-4 text-sm font-black backdrop-blur transition hover:bg-white/[0.1]"><Search size={20} /> Rastrear paquete</a>
             </div>
-
-            <h1 className="mt-6 text-5xl font-black leading-[0.94] tracking-tight sm:text-6xl lg:text-7xl">
-              Todo para tus
-              <span className="block text-red-500">envíos a Cuba</span>
-            </h1>
-
-            <p className="mt-6 max-w-2xl text-lg font-semibold leading-8 text-blue-100/85 sm:text-xl">
-              Recogemos, empacamos y entregamos tus envíos con seguimiento,
-              atención personalizada y opciones express, aéreas y marítimas.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#cotizar"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 text-base font-black shadow-xl shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-red-500"
-              >
-                <Calculator size={20} /> Cotizar mi envío
-              </a>
-              <a
-                href="#rastreo"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-base font-black backdrop-blur transition hover:bg-white/15"
-              >
-                <Search size={20} /> Rastrear paquete
-              </a>
-            </div>
-
-            <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                ["48 h", "Express Habana"],
-                ["7–15 días", "Envío aéreo"],
-                ["25–30 días", "Marítimo"],
-                ["Toda Cuba", "Cobertura"],
-              ].map(([value, label]) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                  <p className="text-xl font-black">{value}</p>
-                  <p className="mt-1 text-xs font-bold text-blue-200">{label}</p>
-                </div>
-              ))}
+            <div className="mt-9 grid max-w-xl grid-cols-2 gap-4 text-sm font-bold text-blue-100/80 sm:grid-cols-4">
+              {["Express 48 h", "Aéreo", "Marítimo", "Toda Cuba"].map((item) => <div key={item} className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-400/10 text-[11px] text-emerald-300">✓</span>{item}</div>)}
             </div>
           </div>
-
-          <div className="hidden lg:block">
-            <div className="relative mx-auto max-w-md rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
-              <div className="rounded-[1.5rem] bg-white p-4 text-slate-950">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Cotización rápida</p>
-                    <p className="mt-1 text-xl font-black">Tu envío en segundos</p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-                    <Box size={22} />
-                  </div>
-                </div>
-                <div className="mt-5 space-y-3">
-                  {services.map((service) => (
-                    <div key={service.id} className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                      <span className="font-bold text-slate-600">{service.name}</span>
-                      <span className="font-black text-[#071d43]">{money(service.price)}/lb</span>
-                    </div>
-                  ))}
-                </div>
-                <a href="#cotizar" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#071d43] px-4 py-3 font-black text-white">
-                  Calcular ahora <ArrowRight size={18} />
-                </a>
-              </div>
-            </div>
-          </div>
+          <div className="relative z-10"><ShippingAnimatedShowcase agencyName="YOYO Envíos" trackingPrefix="YOYO" accentClassName="from-red-600 to-red-500" accentSoftClassName="bg-red-500/15 text-red-200" /></div>
         </div>
       </section>
 

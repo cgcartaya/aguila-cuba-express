@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import ShippingAnimatedShowcase from "./ShippingAnimatedShowcase";
 import {
   ArrowRight,
   Box,
@@ -39,42 +40,6 @@ const links = [
   { label: "Tienda", href: STORE_URL },
   { label: "Rastrear envío", href: TRACKING_URL },
   { label: "Contacto", href: "/contacto" },
-];
-
-const slides = [
-  {
-    image: "/hero-banner.webp",
-    eyebrow: "Envíos desde Miami hacia Cuba",
-    title: "Más cerca de tu familia, en cada envío",
-    description:
-      "Paquetes, compras y atención personalizada con seguimiento durante todo el proceso.",
-    primaryLabel: "Entrar a la tienda",
-    primaryHref: STORE_URL,
-    secondaryLabel: "Rastrear envío",
-    secondaryHref: TRACKING_URL,
-  },
-  {
-    image: "/slide-store.webp",
-    eyebrow: "Compra y envía desde un solo lugar",
-    title: "Tu tienda online para ayudar a los tuyos",
-    description:
-      "Tecnología, alimentos, combos, electrodomésticos y mucho más para enviar directamente a Cuba.",
-    primaryLabel: "Ver productos",
-    primaryHref: STORE_URL,
-    secondaryLabel: "Hablar por WhatsApp",
-    secondaryHref: WHATSAPP_URL,
-  },
-  {
-    image: "/slide-tracking.webp",
-    eyebrow: "Seguimiento en línea",
-    title: "Consulta tu envío en pocos segundos",
-    description:
-      "Introduce tu código de rastreo y revisa el progreso de tu paquete de forma clara y sencilla.",
-    primaryLabel: "Rastrear ahora",
-    primaryHref: TRACKING_URL,
-    secondaryLabel: "Ir a la tienda",
-    secondaryHref: STORE_URL,
-  },
 ];
 
 const services = [
@@ -121,19 +86,9 @@ const categories = [
 
 export default function AguilaLanding() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSlide, setActiveSlide] = useState(0);
   const [trackingCode, setTrackingCode] = useState("");
   const [weight, setWeight] = useState("10");
 
-  const slide = slides[activeSlide];
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % slides.length);
-    }, 7000);
-
-    return () => window.clearInterval(interval);
-  }, []);
 
   const estimatedTotal = useMemo(() => {
     const pounds = Math.max(0, Number(weight) || 0);
@@ -187,7 +142,7 @@ export default function AguilaLanding() {
           </nav>
 
           <Link
-  href="/admin/login"
+  href="/login"
   className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-white/20"
 >
   <LogIn size={15} />
@@ -241,6 +196,13 @@ export default function AguilaLanding() {
                   {item.label}
                 </Link>
               ))}
+              <Link
+                href="/login"
+                onClick={() => setMenuOpen(false)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-3"
+              >
+                <LogIn size={17} /> Iniciar sesión
+              </Link>
               <a
                 href={WHATSAPP_URL}
                 target="_blank"
@@ -255,167 +217,33 @@ export default function AguilaLanding() {
         )}
       </header>
 
-      <section className="relative isolate overflow-hidden bg-[#071d43] text-white">
-        {slides.map((item, index) => (
-          <Image
-            key={item.image}
-            src={item.image}
-            alt={item.eyebrow}
-            fill
-            priority={index === 0}
-            className={`object-cover object-center transition-opacity duration-700 ${
-              index === activeSlide ? "opacity-55" : "opacity-0"
-            }`}
-          />
-        ))}
-
-        <div className="absolute inset-0 bg-gradient-to-r from-[#061631] via-[#061631]/92 to-[#061631]/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#061631] via-transparent to-transparent" />
-
-        <div className="relative mx-auto grid min-h-[720px] max-w-7xl items-center gap-10 px-5 py-20 sm:px-6 lg:grid-cols-[1.05fr_.95fr]">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-100 backdrop-blur">
-              <ShieldCheck size={16} />
-              {slide.eyebrow}
+      <section className="relative isolate overflow-hidden bg-[#06152f] text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_42%,rgba(37,99,235,0.28),transparent_34%),radial-gradient(circle_at_32%_24%,rgba(220,38,38,0.16),transparent_28%)]" />
+        <div className="pointer-events-none absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:46px_46px]" />
+        <div className="relative mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 py-20 sm:px-6 lg:grid-cols-[.92fr_1.08fr] lg:py-24">
+          <div className="relative z-10 max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/25 bg-blue-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-100">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-400" />
+              Envíos, tienda y rastreo en una plataforma
             </div>
-
-            <h1 className="mt-6 text-5xl font-black leading-[0.94] tracking-tight sm:text-6xl lg:text-7xl">
-              {slide.title}
+            <h1 className="mt-8 text-5xl font-black leading-[.96] tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+              Más cerca de tu familia,
+              <span className="mt-2 block bg-gradient-to-r from-red-400 via-red-300 to-blue-300 bg-clip-text text-transparent">en cada envío.</span>
             </h1>
-
-            <p className="mt-6 max-w-2xl text-lg font-semibold leading-8 text-blue-100/85 sm:text-xl">
-              {slide.description}
+            <p className="mt-7 max-w-xl text-base font-semibold leading-8 text-blue-100/75 sm:text-lg">
+              Envía paquetes, compra productos y consulta cada movimiento desde una experiencia moderna, segura y conectada de Miami a Cuba.
             </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href={slide.primaryHref}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 text-base font-black shadow-xl shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-red-500"
-              >
-                <ShoppingBag size={20} />
-                {slide.primaryLabel}
-                <ArrowRight size={18} />
-              </Link>
-
-              {slide.secondaryHref.startsWith("http") ? (
-                <a
-                  href={slide.secondaryHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-base font-black backdrop-blur transition hover:bg-white/15"
-                >
-                  <MessageCircle size={20} />
-                  {slide.secondaryLabel}
-                </a>
-              ) : (
-                <Link
-                  href={slide.secondaryHref}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-base font-black backdrop-blur transition hover:bg-white/15"
-                >
-                  <Search size={20} />
-                  {slide.secondaryLabel}
-                </Link>
-              )}
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+              <a href="#cotizar" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 px-7 py-4 text-sm font-black shadow-[0_18px_48px_rgba(220,38,38,.3)] transition hover:-translate-y-0.5"><Calculator size={20} /> Cotizar envío <ArrowRight size={18} /></a>
+              <Link href={TRACKING_URL} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/[0.05] px-7 py-4 text-sm font-black backdrop-blur transition hover:bg-white/[0.1]"><Search size={20} /> Rastrear paquete</Link>
             </div>
-
-            <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
-              {[
-                ["Miami", "Punto de salida"],
-                ["Toda Cuba", "Cobertura"],
-                ["En línea", "Seguimiento"],
-                ["WhatsApp", "Atención directa"],
-              ].map(([value, label]) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"
-                >
-                  <p className="text-xl font-black">{value}</p>
-                  <p className="mt-1 text-xs font-bold text-blue-200">{label}</p>
-                </div>
-              ))}
+            <div className="mt-9 grid max-w-xl grid-cols-2 gap-4 text-sm font-bold text-blue-100/80 sm:grid-cols-4">
+              {["Miami → Cuba", "Rastreo online", "Tienda integrada", "WhatsApp"].map((item) => <div key={item} className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-400/10 text-[11px] text-emerald-300">✓</span>{item}</div>)}
             </div>
           </div>
-
-          <div className="hidden lg:block">
-            <div className="mx-auto max-w-md rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
-              <div className="rounded-[1.5rem] bg-white p-5 text-slate-950">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">
-                      Acceso rápido
-                    </p>
-                    <p className="mt-1 text-xl font-black">
-                      Todo en una plataforma
-                    </p>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-                    <Box size={22} />
-                  </div>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {[
-                    ["Comprar productos", STORE_URL, ShoppingBag],
-                    ["Rastrear un envío", TRACKING_URL, Search],
-                    ["Ver nuestros servicios", "/servicios", Truck],
-                    ["Contactar al equipo", "/contacto", MessageCircle],
-                  ].map(([label, href, Icon]) => (
-                    <Link
-                      key={String(label)}
-                      href={String(href)}
-                      className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 transition hover:bg-blue-50"
-                    >
-                      <span className="flex items-center gap-3 font-bold text-slate-700">
-                        <Icon size={18} className="text-blue-700" />
-                        {String(label)}
-                      </span>
-                      <ArrowRight size={17} className="text-slate-400" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="relative z-10">
+            <ShippingAnimatedShowcase agencyName="Águila Cuba Express" trackingPrefix="ACE" accentClassName="from-red-600 to-red-500" accentSoftClassName="bg-red-500/15 text-red-200" />
           </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() =>
-            setActiveSlide(
-              (current) => (current - 1 + slides.length) % slides.length
-            )
-          }
-          aria-label="Banner anterior"
-          className="absolute left-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#062446] shadow-lg sm:flex"
-        >
-          <ChevronLeft size={26} />
-        </button>
-
-        <button
-          type="button"
-          onClick={() =>
-            setActiveSlide((current) => (current + 1) % slides.length)
-          }
-          aria-label="Siguiente banner"
-          className="absolute right-4 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#062446] shadow-lg sm:flex"
-        >
-          <ChevronRight size={26} />
-        </button>
-
-        <div className="absolute bottom-6 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-          {slides.map((item, index) => (
-            <button
-              type="button"
-              key={item.image}
-              onClick={() => setActiveSlide(index)}
-              aria-label={`Mostrar banner ${index + 1}`}
-              className={`h-2.5 rounded-full transition-all ${
-                index === activeSlide
-                  ? "w-9 bg-red-500"
-                  : "w-2.5 bg-white/50"
-              }`}
-            />
-          ))}
         </div>
       </section>
 
