@@ -19,6 +19,7 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  LogIn,
   Smartphone,
   Sparkles,
   Store,
@@ -184,6 +185,14 @@ export default function AguilaLanding() {
               </Link>
             ))}
           </nav>
+
+          <Link
+  href="/admin/login"
+  className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-white/20"
+>
+  <LogIn size={15} />
+  Iniciar sesión
+</Link>
 
           <div className="hidden items-center gap-3 lg:flex">
             <a
