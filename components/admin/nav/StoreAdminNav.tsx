@@ -18,6 +18,8 @@ import {
   BarChart3,
   Truck,
   Wrench,
+  Calculator,
+  ClipboardCheck,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -39,6 +41,8 @@ const storeLinks: AdminLink[] = [
   { href: "/admin/shipping", label: "Dashboard de envíos", icon: LayoutDashboard },
   { href: "/admin/shipping/shipments", label: "Lista de envíos", icon: Truck },
   { href: "/admin/shipping/settings", label: "Ajustes de envíos", icon: Wrench },
+  { href: "/admin/portal/cotizador", label: "Cotizador público", icon: Calculator },
+  { href: "/admin/portal/cotizaciones", label: "Cotizaciones", icon: ClipboardCheck },
   { href: "/admin/customers", label: "Clientes", icon: Users },
   { href: "/admin/analytics", label: "Visitas", icon: BarChart3 },
   { href: "/admin/settings", label: "Ajustes tienda", icon: Settings },

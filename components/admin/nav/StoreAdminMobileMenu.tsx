@@ -18,6 +18,8 @@ import {
   BarChart3,
   Truck,
   Wrench,
+  Calculator,
+  ClipboardCheck,
 } from "lucide-react";
 
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
@@ -49,6 +51,8 @@ const storeLinks: MenuItem[] = [
   { label: "Dashboard de envíos", href: "/admin/shipping", icon: LayoutDashboard },
   { label: "Lista de envíos", href: "/admin/shipping/shipments", icon: Truck },
   { label: "Ajustes de envíos", href: "/admin/shipping/settings", icon: Wrench },
+  { label: "Cotizador público", href: "/admin/portal/cotizador", icon: Calculator },
+  { label: "Cotizaciones", href: "/admin/portal/cotizaciones", icon: ClipboardCheck },
   { label: "Clientes", href: "/admin/customers", icon: Users },
   { label: "Visitas", href: "/admin/analytics", icon: BarChart3 },
   { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },
