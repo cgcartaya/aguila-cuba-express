@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type CreateStoreUserBody = {
@@ -13,27 +14,9 @@ function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
-function getBearerToken(request: Request) {
-  const authHeader = request.headers.get("authorization") || "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-
-  return {
-    authHeader,
-    token,
-  };
-}
-
 async function requireSuperAdmin(request: Request) {
-  const { authHeader, token } = getBearerToken(request);
-
-  console.log("========== STORE USERS AUTH ==========");
-  console.log("Route:", new URL(request.url).pathname);
-  console.log("Method:", request.method);
-  console.log("Authorization header:", authHeader ? "PRESENTE" : "AUSENTE");
-  console.log("Token length:", token.length);
-  console.log("Token preview:", token ? `${token.substring(0, 20)}...` : "SIN TOKEN");
-  console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "PRESENTE" : "AUSENTE");
-  console.log("Service Role:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "PRESENTE" : "AUSENTE");
+  const authHeader = request.headers.get("authorization") || "";
+  const token = authHeader.replace("Bearer ", "").trim();
 
   if (!token) {
     return {
@@ -42,15 +25,8 @@ async function requireSuperAdmin(request: Request) {
     };
   }
 
-  console.log("Validando usuario con Supabase...");
-
   const { data: callerData, error: callerError } =
     await supabaseAdmin.auth.getUser(token);
-
-  console.log("Resultado getUser:");
-  console.log("Error:", callerError);
-  console.log("User ID:", callerData?.user?.id ?? "NULL");
-  console.log("Email:", callerData?.user?.email ?? "NULL");
 
   if (callerError || !callerData.user) {
     return {
@@ -64,10 +40,6 @@ async function requireSuperAdmin(request: Request) {
     .select("id,role,active")
     .eq("id", callerData.user.id)
     .maybeSingle();
-
-  console.log("Perfil encontrado:");
-  console.log(callerProfile);
-  console.log("Error perfil:", profileError);
 
   if (profileError) {
     return {
@@ -94,6 +66,31 @@ async function requireSuperAdmin(request: Request) {
     ok: true as const,
     user: callerData.user,
   };
+}
+
+async function findAuthUserByEmail(email: string): Promise<User | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const perPage = 200;
+
+  for (let page = 1; page <= 50; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const user = data.users.find(
+      (item) => item.email?.trim().toLowerCase() === normalizedEmail
+    );
+
+    if (user) return user;
+    if (data.users.length < perPage) return null;
+  }
+
+  return null;
 }
 
 export async function GET(request: Request) {
@@ -214,27 +211,69 @@ export async function POST(request: Request) {
     return jsonError("La tienda seleccionada no existe.", 404);
   }
 
-  const { data: createdUser, error: createUserError } =
-    await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        full_name: fullName,
-        store_id: storeId,
-        role: "store_owner",
-      },
-    });
+  let authUser: User | null = null;
+  let reusedExistingUser = false;
 
-  if (createUserError || !createdUser.user) {
+  try {
+    authUser = await findAuthUserByEmail(email);
+  } catch (error) {
     return jsonError(
-      createUserError?.message ||
-        "No se pudo crear el usuario. Si el email ya existe, revisa Authentication en Supabase.",
-      400
+      error instanceof Error
+        ? error.message
+        : "No se pudo comprobar si el usuario ya existe.",
+      500
     );
   }
 
-  const userId = createdUser.user.id;
+  if (authUser) {
+    reusedExistingUser = true;
+
+    const { data: updatedUser, error: updateAuthError } =
+      await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          ...(authUser.user_metadata || {}),
+          full_name: fullName,
+          store_id: storeId,
+          role: "store_owner",
+        },
+      });
+
+    if (updateAuthError || !updatedUser.user) {
+      return jsonError(
+        updateAuthError?.message ||
+          "El usuario existe, pero no se pudo actualizar su acceso.",
+        500
+      );
+    }
+
+    authUser = updatedUser.user;
+  } else {
+    const { data: createdUser, error: createUserError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          full_name: fullName,
+          store_id: storeId,
+          role: "store_owner",
+        },
+      });
+
+    if (createUserError || !createdUser.user) {
+      return jsonError(
+        createUserError?.message || "No se pudo crear el usuario.",
+        400
+      );
+    }
+
+    authUser = createdUser.user;
+  }
+
+  const userId = authUser.id;
   const now = new Date().toISOString();
 
   const { error: profileError } = await supabaseAdmin
@@ -280,6 +319,10 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
+    reused_existing_user: reusedExistingUser,
+    message: reusedExistingUser
+      ? "El usuario ya existía y fue asignado correctamente a la tienda."
+      : "Usuario creado y asignado correctamente a la tienda.",
     store,
     user: {
       id: userId,
