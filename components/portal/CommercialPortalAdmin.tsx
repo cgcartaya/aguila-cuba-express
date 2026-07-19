@@ -4,7 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { useStore } from "@/hooks/useStore";
-import { Eye, Globe2, LayoutTemplate, MessageCircle, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { Calculator, ClipboardCheck, Eye, Globe2, LayoutTemplate, MessageCircle, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 type Tab = "general"|"services"|"promotions"|"faqs"|"testimonials"|"seo";
@@ -16,7 +17,7 @@ function Field({label,value,onChange,type="text",placeholder=""}:{label:string;v
 function Toggle({label,checked,onChange}:{label:string;checked:boolean;onChange:(v:boolean)=>void}){return <label className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-700"><span>{label}</span><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)} className="h-5 w-5"/></label>}
 
 export default function CommercialPortalAdmin(){
- const {store}=useStore() as any; const [tab,setTab]=useState<Tab>("general"); const [settings,setSettings]=useState<RecordRow>(blankSettings); const [rows,setRows]=useState<RecordRow[]>([]); const [loading,setLoading]=useState(true); const [message,setMessage]=useState("");
+ const {store:selectedStore}=useStore() as any; const {isSuperAdmin,store:accessStore,loading:accessLoading}=useAdminAccess(); const store=isSuperAdmin?(selectedStore||accessStore):accessStore; const [tab,setTab]=useState<Tab>("general"); const [settings,setSettings]=useState<RecordRow>(blankSettings); const [rows,setRows]=useState<RecordRow[]>([]); const [loading,setLoading]=useState(true); const [message,setMessage]=useState("");
  const table=useMemo(()=>({services:"commercial_portal_services",promotions:"commercial_portal_promotions",faqs:"commercial_portal_faqs",testimonials:"commercial_portal_testimonials"} as Record<string,string>)[tab],[tab]);
  useEffect(()=>{if(!store?.id)return; (async()=>{setLoading(true); const {data}=await supabase.from("commercial_portal_settings").select("*").eq("store_id",store.id).maybeSingle(); setSettings({...blankSettings,...data}); setLoading(false)})()},[store?.id]);
  useEffect(()=>{if(!store?.id||!table){setRows([]);return;} (async()=>{const {data}=await supabase.from(table).select("*").eq("store_id",store.id).order("sort_order");setRows(data||[])})()},[store?.id,table]);
@@ -25,12 +26,18 @@ export default function CommercialPortalAdmin(){
  async function saveRow(row:RecordRow){if(!table)return; const payload: RecordRow={...row,updated_at:new Date().toISOString()}; delete payload.created_at; const {error}=await supabase.from(table).update(payload).eq("id",row.id); setMessage(error?error.message:"Elemento guardado.")}
  async function removeRow(id:string){if(!table||!confirm("¿Eliminar este elemento?"))return; const {error}=await supabase.from(table).delete().eq("id",id); if(!error)setRows(v=>v.filter(x=>x.id!==id)); else setMessage(error.message)}
  const patch=(key:string,value:any)=>setSettings((s:any)=>({...s,[key]:value}));
- if(!store?.id)return <div className="p-8 text-lg font-bold">Selecciona una tienda para configurar su portal comercial.</div>;
+ if(accessLoading)return <div className="p-8 text-lg font-bold text-slate-600">Cargando la tienda asignada...</div>;
+ if(!store?.id)return <div className="m-6 rounded-3xl border border-amber-200 bg-amber-50 p-8"><h1 className="text-2xl font-black text-amber-950">No pudimos identificar la tienda</h1><p className="mt-2 font-medium text-amber-800">Cierra sesión y vuelve a entrar. Si eres Super Admin, selecciona una tienda desde el selector superior.</p></div>;
  return <main className="min-h-screen bg-slate-50 p-4 md:p-8">
   <section className="mx-auto max-w-7xl space-y-6">
    <header className="overflow-hidden rounded-[32px] bg-gradient-to-br from-slate-950 via-blue-950 to-blue-700 p-7 text-white shadow-xl md:p-10">
-    <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[.22em] text-blue-200"><Sparkles size={18}/>Portal Comercial</div><h1 className="text-3xl font-black md:text-5xl">La experiencia pública de {store.name}</h1><p className="mt-3 max-w-3xl text-base font-medium text-blue-100 md:text-lg">Gestiona la landing, servicios, promociones, preguntas, testimonios, contacto y SEO desde un solo lugar.</p></div><div className="flex flex-wrap gap-3"><Link href="/portal" target="_blank" className="flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-blue-950"><Eye size={18}/>Vista previa</Link><Link href="/admin/portal/cotizador" className="flex items-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-5 py-3 font-black"><MessageCircle size={18}/>Cotizador</Link></div></div>
+    <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><div className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[.22em] text-blue-200"><Sparkles size={18}/>Portal Comercial</div><h1 className="text-3xl font-black md:text-5xl">La experiencia pública de {store.name}</h1><p className="mt-3 max-w-3xl text-base font-medium text-blue-100 md:text-lg">Gestiona la landing, servicios, promociones, preguntas, testimonios, contacto y SEO desde un solo lugar.</p></div><Link href="/portal" target="_blank" className="flex items-center gap-2 self-start rounded-2xl bg-white px-5 py-3 font-black text-blue-950 lg:self-auto"><Eye size={18}/>Vista previa</Link></div>
    </header>
+   <section className="grid gap-4 md:grid-cols-3">
+    <Link href="/admin/portal/cotizador" className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="mb-4 inline-flex rounded-2xl bg-blue-100 p-3 text-blue-800"><Calculator size={24}/></div><h2 className="text-xl font-black text-slate-950">Cotizador público</h2><p className="mt-2 font-medium text-slate-500">Configura tarifas aéreas, marítimas, mínimos, destinos y recogida.</p></Link>
+    <Link href="/admin/portal/cotizaciones" className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="mb-4 inline-flex rounded-2xl bg-emerald-100 p-3 text-emerald-800"><ClipboardCheck size={24}/></div><h2 className="text-xl font-black text-slate-950">Cotizaciones recibidas</h2><p className="mt-2 font-medium text-slate-500">Revisa leads, contacta por WhatsApp y controla su estado comercial.</p></Link>
+    <Link href="/cotizar" target="_blank" className="group rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><div className="mb-4 inline-flex rounded-2xl bg-violet-100 p-3 text-violet-800"><MessageCircle size={24}/></div><h2 className="text-xl font-black text-slate-950">Probar como cliente</h2><p className="mt-2 font-medium text-slate-500">Abre el cotizador público y comprueba la experiencia final.</p></Link>
+   </section>
    <nav className="flex gap-2 overflow-x-auto rounded-3xl border border-slate-200 bg-white p-2 shadow-sm">{tabs.map(([id,label])=><button key={id} onClick={()=>setTab(id)} className={`whitespace-nowrap rounded-2xl px-5 py-3 text-sm font-black transition ${tab===id?"bg-blue-950 text-white shadow":"text-slate-600 hover:bg-slate-100"}`}>{label}</button>)}</nav>
    {message&&<div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 font-bold text-blue-900">{message}</div>}
    {loading?<div className="rounded-3xl bg-white p-10 text-center font-bold">Cargando configuración...</div>:null}
