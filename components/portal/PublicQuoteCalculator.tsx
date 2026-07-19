@@ -22,7 +22,7 @@ type QuoteResult = { public_code: string; total_amount: number; base_amount: num
 const modeLabels: Record<string,string> = { air:"Aéreo", sea:"Marítimo", express:"Express", ground:"Terrestre", other:"Otro" };
 const categoryLabels: Record<string,string> = { package:"Paquete", appliance:"Electrodoméstico", medicine:"Medicinas", documents:"Documentos", food:"Alimentos", electronics:"Electrónica", other:"Otro" };
 
-export default function PublicQuoteCalculator() {
+export default function PublicQuoteCalculator({ embedded = false }: { embedded?: boolean }) {
   const [config,setConfig]=useState<PortalConfig|null>(null);
   const [loading,setLoading]=useState(true);
   const [sending,setSending]=useState(false);
@@ -43,9 +43,9 @@ export default function PublicQuoteCalculator() {
   if(!config) return <div className="rounded-3xl bg-red-50 p-6 font-bold text-red-700">{error||"Cotizador no disponible."}</div>;
   const primary=config.store.primary_color||"#071d43";
 
-  return <div className="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
+  return <div className={`grid gap-6 lg:grid-cols-[1.15fr_.85fr] ${embedded ? "mx-auto max-w-7xl" : ""}`}>
     <form onSubmit={submit} className="rounded-[2rem] bg-white p-5 shadow-xl sm:p-8">
-      <div className="mb-7"><div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-black uppercase tracking-wider"><Calculator size={15}/> Cotizador inteligente</div><h1 className="mt-4 text-3xl font-black">{config.settings.quote_title}</h1><p className="mt-2 text-slate-500">{config.settings.quote_subtitle}</p></div>
+      <div className="mb-7"><div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-black uppercase tracking-wider"><Calculator size={15}/> Cotizador inteligente</div><h2 className="mt-4 text-3xl font-black">{config.settings.quote_title}</h2><p className="mt-2 text-slate-500">{config.settings.quote_subtitle}</p></div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Tipo de servicio"><select value={form.service_type_id} onChange={e=>set("service_type_id",e.target.value)} required>{config.services.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
         <Field label="Método"><select value={form.transport_mode} onChange={e=>set("transport_mode",e.target.value)}>{config.transportModes.map(x=><option key={x} value={x}>{modeLabels[x]||x}</option>)}</select></Field>

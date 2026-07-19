@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import ShippingAnimatedShowcase from "../ShippingAnimatedShowcase";
+import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
 import { useMemo, useState } from "react";
 import {
   ArrowRight,
@@ -240,10 +241,10 @@ export default function YoyoLanding() {
                 <div className={`bg-gradient-to-br ${styles} p-6 text-white`}>
                   <div className="flex items-center justify-between">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15"><Icon size={24} /></div>
-                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black">POR LIBRA</span>
+                    <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-black">TARIFA CONFIGURABLE</span>
                   </div>
                   <p className="mt-6 text-lg font-black">{service.name}</p>
-                  <p className="mt-2 text-5xl font-black">{money(service.price)}</p>
+                  <p className="mt-2 text-2xl font-black">Consulta el precio actual</p>
                 </div>
                 <div className="space-y-3 p-6">
                   <InfoRow icon={<Clock3 size={18} />} text={service.time} />
@@ -256,51 +257,12 @@ export default function YoyoLanding() {
         </div>
       </section>
 
-      <section id="cotizar" className="bg-[#071d43] px-5 py-20 text-white sm:px-6">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_.82fr]">
-          <div>
-            <SectionTitle dark eyebrow="Cotización" title="Calcula tu envío ahora" description="Obtén un estimado y envíalo directamente a nuestro WhatsApp." />
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <Field label="Tipo de servicio">
-                <select value={serviceId} onChange={(event) => setServiceId(event.target.value as typeof serviceId)} className="w-full rounded-2xl border border-white/15 bg-white px-4 py-3 font-bold text-slate-950 outline-none">
-                  {services.map((item) => <option key={item.id} value={item.id}>{item.name} — {money(item.price)}/lb</option>)}
-                </select>
-              </Field>
-              <Field label="Provincia de destino">
-                <select value={province} onChange={(event) => setProvince(event.target.value)} className="w-full rounded-2xl border border-white/15 bg-white px-4 py-3 font-bold text-slate-950 outline-none">
-                  {["La Habana", "Cienfuegos", "Villa Clara", "Matanzas", "Camagüey", "Holguín", "Santiago de Cuba", "Otra provincia"].map((item) => <option key={item}>{item}</option>)}
-                </select>
-              </Field>
-              <Field label="Peso aproximado (lb)">
-                <input value={weight} onChange={(event) => setWeight(event.target.value.replace(/[^0-9.]/g, ""))} className="w-full rounded-2xl border border-white/15 bg-white px-4 py-3 font-bold text-slate-950 outline-none" inputMode="decimal" />
-              </Field>
-              <Field label="Recogida a domicilio">
-                <button type="button" onClick={() => setPickup((value) => !value)} className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 font-black transition ${pickup ? "border-emerald-400 bg-emerald-500 text-white" : "border-white/15 bg-white/10 text-white"}`}>
-                  <span>{pickup ? "Incluida (+$20)" : "No incluida"}</span>
-                  <div className={`h-6 w-11 rounded-full p-1 ${pickup ? "bg-white/30" : "bg-white/10"}`}><div className={`h-4 w-4 rounded-full bg-white transition ${pickup ? "translate-x-5" : ""}`} /></div>
-                </button>
-              </Field>
-            </div>
+      <section id="cotizar" className="bg-[#071d43] px-5 py-20 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-9 text-center text-white">
+            <SectionTitle dark eyebrow="Cotización conectada" title="Calcula tu envío con nuestras tarifas actuales" description="Los precios, mínimos, destinos y tiempos se actualizan directamente desde la administración de YOYO Envíos." />
           </div>
-
-          <div className="rounded-[2rem] bg-white p-6 text-slate-950 shadow-2xl">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">Resumen estimado</p>
-            <h3 className="mt-2 text-2xl font-black">Tu cotización</h3>
-            <div className="mt-6 space-y-4">
-              <QuoteRow label={`${quote.pounds} lb × ${money(selectedService.price)}`} value={quote.shipping} />
-              <QuoteRow label="Recogida a domicilio" value={quote.pickupFee} />
-              <div className="border-t border-dashed border-slate-200 pt-4">
-                <div className="flex items-end justify-between gap-4">
-                  <span className="font-bold text-slate-500">Total estimado</span>
-                  <span className="text-4xl font-black text-[#071d43]">{money(quote.total)}</span>
-                </div>
-              </div>
-            </div>
-            <a href={`${WHATSAPP_URL}?text=${quoteMessage}`} target="_blank" rel="noreferrer" className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-4 font-black text-white transition hover:bg-emerald-400">
-              <MessageCircle size={20} /> Enviar cotización por WhatsApp
-            </a>
-            <p className="mt-3 text-center text-xs font-semibold text-slate-400">El precio final puede variar según contenido, destino y condiciones del servicio.</p>
-          </div>
+          <PublicQuoteCalculator embedded />
         </div>
       </section>
 
