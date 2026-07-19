@@ -14,7 +14,7 @@ export type StoreUserMembership = {
   id: string;
   store_id: string;
   user_id: string;
-  role: "owner";
+  role: "OWNER";
   active: boolean;
   created_at?: string | null;
   updated_at?: string | null;
@@ -100,7 +100,7 @@ export async function createStoreUser(input: CreateStoreUserInput) {
       },
       body: JSON.stringify({
         ...input,
-        role: "owner",
+        role: "OWNER",
       }),
     });
 

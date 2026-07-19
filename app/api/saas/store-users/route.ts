@@ -183,15 +183,15 @@ export async function POST(request: Request) {
   const email = body.email?.trim().toLowerCase();
   const password = body.password?.trim();
   const fullName = body.full_name?.trim() || null;
-  const role = body.role || "owner";
+  const role = body.role || "OWNER";
 
   if (!storeId || !email || !password) {
     return jsonError("store_id, email y password son obligatorios.");
   }
 
-  if (role !== "owner") {
-    return jsonError("Por ahora solo se permite el rol owner.");
-  }
+  if (role !== "OWNER") {
+  return jsonError("Por ahora solo se permite el rol OWNER.");
+}
 
   if (password.length < 8) {
     return jsonError("La contraseña debe tener al menos 8 caracteres.");
