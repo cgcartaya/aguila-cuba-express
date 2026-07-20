@@ -101,7 +101,7 @@ export async function getShippingConfiguration(storeId: string) {
 
 export async function upsertShippingSettings(
   storeId: string,
-  input: Partial<ShippingSettings>
+  input: Partial<ShippingSettings>,
 ) {
   return supabase
     .from("shipping_settings")
@@ -116,12 +116,13 @@ export async function upsertShippingSettings(
         default_rate_per_lb: input.default_rate_per_lb ?? 0,
         money_threshold: input.money_threshold ?? 1000,
         money_rate_below_threshold: input.money_rate_below_threshold ?? 8,
-        money_rate_at_or_above_threshold: input.money_rate_at_or_above_threshold ?? 5,
+        money_rate_at_or_above_threshold:
+          input.money_rate_at_or_above_threshold ?? 5,
         allow_manual_discount: input.allow_manual_discount ?? true,
         maximum_manual_discount: input.maximum_manual_discount ?? null,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "store_id" }
+      { onConflict: "store_id" },
     )
     .select("*")
     .single<ShippingSettings>();
@@ -130,7 +131,7 @@ export async function upsertShippingSettings(
 export async function createCountry(
   storeId: string,
   name: string,
-  code: string
+  code: string,
 ) {
   return supabase.from("shipping_countries").insert({
     store_id: storeId,
@@ -143,7 +144,7 @@ export async function createProvince(
   storeId: string,
   countryId: string,
   name: string,
-  code: string
+  code: string,
 ) {
   return supabase.from("shipping_provinces").insert({
     store_id: storeId,
@@ -157,7 +158,7 @@ export async function createMunicipality(
   storeId: string,
   provinceId: string,
   name: string,
-  code: string
+  code: string,
 ) {
   return supabase.from("shipping_municipalities").insert({
     store_id: storeId,
@@ -171,7 +172,7 @@ export async function createLocation(
   storeId: string,
   municipalityId: string,
   name: string,
-  legacyCode: string
+  legacyCode: string,
 ) {
   return supabase.from("shipping_locations").insert({
     store_id: storeId,
@@ -186,7 +187,7 @@ export async function createServiceType(
   name: string,
   code: string,
   legacyPrefix: string,
-  billingMode: "per_lb" | "fixed" | "percentage"
+  billingMode: "per_lb" | "fixed" | "percentage",
 ) {
   return supabase.from("shipping_service_types").insert({
     store_id: storeId,
@@ -202,18 +203,30 @@ export async function upsertShippingRate(input: {
   scope_type: "country" | "province" | "municipality" | "location";
   target_id: string;
   service_type_id: string;
+  transport_mode: "air" | "sea" | "express" | "ground" | "other";
   rate_per_lb: number;
   minimum_weight_lb: number;
+  maximum_weight_lb?: number | null;
   minimum_charge: number;
+  fixed_fee?: number;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  priority?: number;
 }) {
   return upsertShippingRatesBulk({
     store_id: input.store_id,
     scope_type: input.scope_type,
     target_ids: [input.target_id],
     service_type_ids: [input.service_type_id],
+    transport_mode: input.transport_mode,
     rate_per_lb: input.rate_per_lb,
     minimum_weight_lb: input.minimum_weight_lb,
+    maximum_weight_lb: input.maximum_weight_lb ?? null,
     minimum_charge: input.minimum_charge,
+    fixed_fee: input.fixed_fee ?? 0,
+    estimated_days_min: input.estimated_days_min ?? null,
+    estimated_days_max: input.estimated_days_max ?? null,
+    priority: input.priority ?? 100,
   });
 }
 
@@ -227,7 +240,6 @@ export async function createExtraFee(input: {
   return supabase.from("shipping_extra_fees").insert(input);
 }
 
-
 export async function updateExtraFee(
   id: string,
   input: {
@@ -236,7 +248,7 @@ export async function updateExtraFee(
     code: string;
     amount: number;
     calculation_type: "fixed" | "per_lb" | "percentage";
-  }
+  },
 ) {
   return supabase
     .from("shipping_extra_fees")
@@ -262,11 +274,10 @@ export async function toggleShippingConfigItem(
     | "shipping_service_types"
     | "shipping_extra_fees",
   id: string,
-  isActive: boolean
+  isActive: boolean,
 ) {
   return supabase.from(table).update({ is_active: isActive }).eq("id", id);
 }
-
 
 export type ShippingConfigTable =
   | "shipping_countries"
@@ -279,7 +290,7 @@ export type ShippingConfigTable =
 export async function setShippingConfigItemActive(
   table: ShippingConfigTable,
   id: string,
-  isActive: boolean
+  isActive: boolean,
 ) {
   return supabase
     .from(table)
@@ -292,24 +303,37 @@ export async function setShippingConfigItemActive(
 
 export async function deleteShippingConfigItem(
   table: ShippingConfigTable,
-  id: string
+  id: string,
 ) {
   return supabase.from(table).delete().eq("id", id);
 }
 
+export async function deleteShippingRate(storeId: string, rateId: string) {
+  return supabase
+    .from("shipping_rates")
+    .delete()
+    .eq("id", rateId)
+    .eq("store_id", storeId);
+}
 
 export async function upsertShippingRatesBulk(input: {
   store_id: string;
   scope_type: "country" | "province" | "municipality" | "location";
   target_ids: string[];
   service_type_ids: string[];
+  transport_mode: "air" | "sea" | "express" | "ground" | "other";
   rate_per_lb: number;
   minimum_weight_lb: number;
+  maximum_weight_lb?: number | null;
   minimum_charge: number;
+  fixed_fee?: number;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  priority?: number;
 }) {
   const targetIds = Array.from(new Set(input.target_ids.filter(Boolean)));
   const serviceTypeIds = Array.from(
-    new Set(input.service_type_ids.filter(Boolean))
+    new Set(input.service_type_ids.filter(Boolean)),
   );
 
   if (!targetIds.length) {
@@ -346,19 +370,28 @@ export async function upsertShippingRatesBulk(input: {
       municipality_id: input.scope_type === "municipality" ? targetId : null,
       location_id: input.scope_type === "location" ? targetId : null,
       service_type_id: serviceTypeId,
+      transport_mode: input.transport_mode,
       rate_per_lb: input.rate_per_lb,
       minimum_weight_lb: input.minimum_weight_lb,
+      maximum_weight_lb: input.maximum_weight_lb ?? null,
       minimum_charge: input.minimum_charge,
+      fixed_fee: input.fixed_fee ?? 0,
+      estimated_days_min: input.estimated_days_min ?? null,
+      estimated_days_max: input.estimated_days_max ?? null,
+      priority: input.priority ?? 100,
       is_active: true,
       updated_at: new Date().toISOString(),
-    }))
+    })),
   );
 
   const { data: existing, error: existingError } = await supabase
     .from("shipping_rates")
-    .select("id,service_type_id,country_id,province_id,municipality_id,location_id")
+    .select(
+      "id,service_type_id,transport_mode,country_id,province_id,municipality_id,location_id",
+    )
     .eq("store_id", input.store_id)
     .eq("scope_type", input.scope_type)
+    .eq("transport_mode", input.transport_mode)
     .in(targetColumn, targetIds)
     .in("service_type_id", serviceTypeIds);
 
@@ -366,16 +399,21 @@ export async function upsertShippingRatesBulk(input: {
 
   const existingByKey = new Map(
     (existing || []).map((row) => [
-      `${row[targetColumn as keyof typeof row]}:${row.service_type_id}`,
+      `${row[targetColumn as keyof typeof row]}:${row.service_type_id}:${row.transport_mode}`,
       row.id,
-    ])
+    ]),
   );
 
   const updates = rows.filter((row) =>
-    existingByKey.has(`${row[targetColumn]}:${row.service_type_id}`)
+    existingByKey.has(
+      `${row[targetColumn]}:${row.service_type_id}:${row.transport_mode}`,
+    ),
   );
-  const inserts = rows.filter((row) =>
-    !existingByKey.has(`${row[targetColumn]}:${row.service_type_id}`)
+  const inserts = rows.filter(
+    (row) =>
+      !existingByKey.has(
+        `${row[targetColumn]}:${row.service_type_id}:${row.transport_mode}`,
+      ),
   );
 
   const updateResults = await Promise.all(
@@ -383,8 +421,13 @@ export async function upsertShippingRatesBulk(input: {
       supabase
         .from("shipping_rates")
         .update(row)
-        .eq("id", existingByKey.get(`${row[targetColumn]}:${row.service_type_id}`)!)
-    )
+        .eq(
+          "id",
+          existingByKey.get(
+            `${row[targetColumn]}:${row.service_type_id}:${row.transport_mode}`,
+          )!,
+        ),
+    ),
   );
 
   const updateError = updateResults.map((result) => result.error).find(Boolean);
@@ -402,7 +445,7 @@ export type BulkShippingStatus =
 
 export async function updateActiveShipmentsStatusBulk(
   storeId: string,
-  status: BulkShippingStatus
+  status: BulkShippingStatus,
 ) {
   const mutableStatuses = [
     "received_miami",
