@@ -37,6 +37,7 @@ import {
   createProvince,
   createServiceType,
   deleteShippingConfigItem,
+  deleteShippingRate,
   getShippingConfiguration,
   setShippingConfigItemActive,
   updateActiveShipmentsStatusBulk,
@@ -66,18 +67,21 @@ export default function ShippingSettingsPage() {
 
   const activeStore = useMemo(
     () => (isSuperAdmin ? selectedStore || accessStore : accessStore),
-    [accessStore, isSuperAdmin, selectedStore]
+    [accessStore, isSuperAdmin, selectedStore],
   );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingRateId, setDeletingRateId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
 
   const [settings, setSettings] = useState<ShippingSettings | null>(null);
   const [countries, setCountries] = useState<ShippingCountry[]>([]);
   const [provinces, setProvinces] = useState<ShippingProvince[]>([]);
-  const [municipalities, setMunicipalities] = useState<ShippingMunicipality[]>([]);
+  const [municipalities, setMunicipalities] = useState<ShippingMunicipality[]>(
+    [],
+  );
   const [locations, setLocations] = useState<ShippingLocation[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ShippingServiceType[]>([]);
   const [rates, setRates] = useState<ShippingRate[]>([]);
@@ -99,19 +103,30 @@ export default function ShippingSettingsPage() {
   const [serviceName, setServiceName] = useState("");
   const [serviceCode, setServiceCode] = useState("");
   const [legacyPrefix, setLegacyPrefix] = useState("");
-  const [billingMode, setBillingMode] =
-    useState<"per_lb" | "fixed" | "percentage">("per_lb");
+  const [billingMode, setBillingMode] = useState<
+    "per_lb" | "fixed" | "percentage"
+  >("per_lb");
 
   const [rateScope, setRateScope] = useState<
     "country" | "province" | "municipality" | "location"
   >("province");
-  const [selectedRateCountryIds, setSelectedRateCountryIds] = useState<string[]>([]);
-  const [selectedRateProvinceIds, setSelectedRateProvinceIds] = useState<string[]>([]);
-  const [selectedRateMunicipalityIds, setSelectedRateMunicipalityIds] = useState<string[]>([]);
-  const [selectedRateLocationIds, setSelectedRateLocationIds] = useState<string[]>([]);
-  const [municipalityProvinceFilters, setMunicipalityProvinceFilters] = useState<string[]>([]);
+  const [selectedRateCountryIds, setSelectedRateCountryIds] = useState<
+    string[]
+  >([]);
+  const [selectedRateProvinceIds, setSelectedRateProvinceIds] = useState<
+    string[]
+  >([]);
+  const [selectedRateMunicipalityIds, setSelectedRateMunicipalityIds] =
+    useState<string[]>([]);
+  const [selectedRateLocationIds, setSelectedRateLocationIds] = useState<
+    string[]
+  >([]);
+  const [municipalityProvinceFilters, setMunicipalityProvinceFilters] =
+    useState<string[]>([]);
   const [rateTerritorySearch, setRateTerritorySearch] = useState("");
-  const [selectedRateServiceIds, setSelectedRateServiceIds] = useState<string[]>([]);
+  const [selectedRateServiceIds, setSelectedRateServiceIds] = useState<
+    string[]
+  >([]);
   const [rateTransportMode, setRateTransportMode] = useState<
     "air" | "sea" | "express" | "ground" | "other"
   >("air");
@@ -130,8 +145,9 @@ export default function ShippingSettingsPage() {
   const [feeName, setFeeName] = useState("");
   const [feeCode, setFeeCode] = useState("");
   const [feeAmount, setFeeAmount] = useState(0);
-  const [feeType, setFeeType] =
-    useState<"fixed" | "per_lb" | "percentage">("fixed");
+  const [feeType, setFeeType] = useState<"fixed" | "per_lb" | "percentage">(
+    "fixed",
+  );
   const [editingFeeId, setEditingFeeId] = useState<string | null>(null);
 
   const [expandedLists, setExpandedLists] = useState<Record<string, boolean>>({
@@ -142,24 +158,26 @@ export default function ShippingSettingsPage() {
   });
 
   const visibleProvinces = provinces.filter(
-    (province) => province.country_id === selectedCountryId
+    (province) => province.country_id === selectedCountryId,
   );
   const visibleMunicipalities = municipalities.filter(
-    (municipality) => municipality.province_id === selectedProvinceId
+    (municipality) => municipality.province_id === selectedProvinceId,
   );
   const selectedProvinceMunicipalityIds = new Set(
     municipalities
       .filter((municipality) => municipality.province_id === selectedProvinceId)
-      .map((municipality) => municipality.id)
+      .map((municipality) => municipality.id),
   );
 
   const visibleLocations = locations.filter((location) =>
-    selectedProvinceMunicipalityIds.has(location.municipality_id)
+    selectedProvinceMunicipalityIds.has(location.municipality_id),
   );
 
   const activeRateCountries = countries.filter((item) => item.is_active);
   const activeRateProvinces = provinces.filter((item) => item.is_active);
-  const activeRateMunicipalities = municipalities.filter((item) => item.is_active);
+  const activeRateMunicipalities = municipalities.filter(
+    (item) => item.is_active,
+  );
   const activeRateLocations = locations.filter((item) => item.is_active);
 
   const selectedRateTargetIds =
@@ -176,8 +194,16 @@ export default function ShippingSettingsPage() {
 
     if (rateScope === "country") {
       return activeRateCountries
-        .map((item) => ({ id: item.id, label: item.name, description: item.code }))
-        .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+        .map((item) => ({
+          id: item.id,
+          label: item.name,
+          description: item.code,
+        }))
+        .filter(
+          (item) =>
+            !search ||
+            `${item.label} ${item.description}`.toLowerCase().includes(search),
+        );
     }
 
     if (rateScope === "province") {
@@ -185,9 +211,15 @@ export default function ShippingSettingsPage() {
         .map((item) => ({
           id: item.id,
           label: item.name,
-          description: countries.find((country) => country.id === item.country_id)?.name || "Provincia",
+          description:
+            countries.find((country) => country.id === item.country_id)?.name ||
+            "Provincia",
         }))
-        .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+        .filter(
+          (item) =>
+            !search ||
+            `${item.label} ${item.description}`.toLowerCase().includes(search),
+        );
     }
 
     if (rateScope === "municipality") {
@@ -195,27 +227,43 @@ export default function ShippingSettingsPage() {
         .filter((item) =>
           municipalityProvinceFilters.length
             ? municipalityProvinceFilters.includes(item.province_id)
-            : true
+            : true,
         )
         .map((item) => ({
           id: item.id,
           label: item.name,
-          description: provinces.find((province) => province.id === item.province_id)?.name || "Municipio",
+          description:
+            provinces.find((province) => province.id === item.province_id)
+              ?.name || "Municipio",
         }))
-        .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+        .filter(
+          (item) =>
+            !search ||
+            `${item.label} ${item.description}`.toLowerCase().includes(search),
+        );
     }
 
     return activeRateLocations
       .map((item) => {
-        const municipality = municipalities.find((municipality) => municipality.id === item.municipality_id);
-        const province = provinces.find((province) => province.id === municipality?.province_id);
+        const municipality = municipalities.find(
+          (municipality) => municipality.id === item.municipality_id,
+        );
+        const province = provinces.find(
+          (province) => province.id === municipality?.province_id,
+        );
         return {
           id: item.id,
           label: item.name,
-          description: [municipality?.name, province?.name, item.legacy_code].filter(Boolean).join(" · "),
+          description: [municipality?.name, province?.name, item.legacy_code]
+            .filter(Boolean)
+            .join(" · "),
         };
       })
-      .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+      .filter(
+        (item) =>
+          !search ||
+          `${item.label} ${item.description}`.toLowerCase().includes(search),
+      );
   })();
 
   async function load() {
@@ -232,22 +280,21 @@ export default function ShippingSettingsPage() {
       setIsError(true);
     }
 
-    const resolvedSettings =
-      result.settings || {
-        id: "",
-        store_id: activeStore.id,
-        default_country_id: null,
-        default_province_id: null,
-        currency: "USD",
-        phone_digits_min: 8,
-        phone_digits_max: 15,
-        default_rate_per_lb: 0,
-        money_threshold: 1000,
-        money_rate_below_threshold: 8,
-        money_rate_at_or_above_threshold: 5,
-        allow_manual_discount: true,
-        maximum_manual_discount: null,
-      };
+    const resolvedSettings = result.settings || {
+      id: "",
+      store_id: activeStore.id,
+      default_country_id: null,
+      default_province_id: null,
+      currency: "USD",
+      phone_digits_min: 8,
+      phone_digits_max: 15,
+      default_rate_per_lb: 0,
+      money_threshold: 1000,
+      money_rate_below_threshold: 8,
+      money_rate_at_or_above_threshold: 5,
+      allow_manual_discount: true,
+      maximum_manual_discount: null,
+    };
 
     setSettings(resolvedSettings);
     setCountries(result.countries);
@@ -272,9 +319,8 @@ export default function ShippingSettingsPage() {
 
     const initialMunicipality =
       selectedMunicipalityId ||
-      result.municipalities.find(
-        (item) => item.province_id === initialProvince
-      )?.id ||
+      result.municipalities.find((item) => item.province_id === initialProvince)
+        ?.id ||
       "";
 
     setSelectedCountryId(initialCountry);
@@ -290,7 +336,7 @@ export default function ShippingSettingsPage() {
 
   async function runAction(
     action: () => Promise<{ error: { message?: string } | null }>,
-    successMessage: string
+    successMessage: string,
   ) {
     setSaving(true);
     setMessage("");
@@ -307,14 +353,15 @@ export default function ShippingSettingsPage() {
       await load();
     } catch (error) {
       const readable =
-        error instanceof Error ? error.message : "No se pudo guardar el cambio.";
+        error instanceof Error
+          ? error.message
+          : "No se pudo guardar el cambio.";
       setMessage(readable);
       setIsError(true);
     } finally {
       setSaving(false);
     }
   }
-
 
   async function changeItemStatus(
     table:
@@ -324,11 +371,11 @@ export default function ShippingSettingsPage() {
       | "shipping_locations",
     id: string,
     currentActive: boolean,
-    label: string
+    label: string,
   ) {
     await runAction(
       () => setShippingConfigItemActive(table, id, !currentActive),
-      `${label} ${currentActive ? "desactivado" : "activado"}.`
+      `${label} ${currentActive ? "desactivado" : "activado"}.`,
     );
   }
 
@@ -339,19 +386,19 @@ export default function ShippingSettingsPage() {
       | "shipping_municipalities"
       | "shipping_locations",
     id: string,
-    label: string
+    label: string,
   ) {
     const confirmed = window.confirm(
       `¿Eliminar definitivamente "${label}"?\n\n` +
         "Hazlo solamente si fue creado por error y todavía no se usa. " +
-        "Si tiene datos relacionados, Supabase bloqueará la eliminación."
+        "Si tiene datos relacionados, Supabase bloqueará la eliminación.",
     );
 
     if (!confirmed) return;
 
     await runAction(
       () => deleteShippingConfigItem(table, id),
-      `${label} eliminado definitivamente.`
+      `${label} eliminado definitivamente.`,
     );
   }
 
@@ -393,7 +440,7 @@ export default function ShippingSettingsPage() {
     setSelectedRateServiceIds((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
-        : [...current, id]
+        : [...current, id],
     );
   }
 
@@ -414,7 +461,7 @@ export default function ShippingSettingsPage() {
         `${selectedRateTargetIds.length} territorio(s) × ` +
         `${selectedRateServiceIds.length} tipo(s) de paquete.\n\n` +
         `Método: ${rateTransportMode === "air" ? "Aéreo" : rateTransportMode === "sea" ? "Marítimo" : rateTransportMode}.\n` +
-        `Tarifa: $${ratePerLb.toFixed(2)} por libra.`
+        `Tarifa: $${ratePerLb.toFixed(2)} por libra.`,
     );
 
     if (!confirmed) return;
@@ -429,26 +476,65 @@ export default function ShippingSettingsPage() {
           transport_mode: rateTransportMode,
           rate_per_lb: ratePerLb,
           minimum_weight_lb: minimumWeight,
-          maximum_weight_lb: maximumWeight === "" ? null : Number(maximumWeight),
+          maximum_weight_lb:
+            maximumWeight === "" ? null : Number(maximumWeight),
           minimum_charge: minimumCharge,
           fixed_fee: fixedFee,
           estimated_days_min: estimatedDaysMin,
           estimated_days_max: estimatedDaysMax,
           priority: ratePriority,
         }),
-      `${combinations} combinaciones de tarifa guardadas.`
+      `${combinations} combinaciones de tarifa guardadas.`,
     );
+  }
+
+  async function removeRate(rate: ShippingRate) {
+    if (!activeStore?.id) return;
+
+    const territory =
+      rate.scope_type === "country"
+        ? countries.find((item) => item.id === rate.country_id)?.name
+        : rate.scope_type === "province"
+          ? provinces.find((item) => item.id === rate.province_id)?.name
+          : rate.scope_type === "municipality"
+            ? municipalities.find((item) => item.id === rate.municipality_id)
+                ?.name
+            : locations.find((item) => item.id === rate.location_id)?.name;
+    const service = serviceTypes.find(
+      (item) => item.id === rate.service_type_id,
+    )?.name;
+    const method =
+      rate.transport_mode === "air"
+        ? "Aéreo"
+        : rate.transport_mode === "sea"
+          ? "Marítimo"
+          : rate.transport_mode === "express"
+            ? "Express"
+            : rate.transport_mode;
+
+    const confirmed = window.confirm(
+      `¿Eliminar esta tarifa?\n\n${territory || "Territorio"} · ${service || "Servicio"} · ${method}\n$${Number(rate.rate_per_lb || 0).toFixed(2)}/lb\n\nEl cotizador público dejará de usarla inmediatamente. Esta acción no se puede deshacer.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingRateId(rate.id);
+    await runAction(
+      () => deleteShippingRate(activeStore.id, rate.id),
+      "Tarifa eliminada correctamente.",
+    );
+    setDeletingRateId(null);
   }
 
   async function changeGlobalShipmentStatus(
     status: "in_transit" | "received_cuba" | "out_for_delivery",
-    label: string
+    label: string,
   ) {
     if (!activeStore?.id) return;
 
     const confirmed = window.confirm(
       `¿Cambiar todos los envíos activos a "${label}"?\n\n` +
-        "No se modificarán envíos entregados, con incidencia o en papelera."
+        "No se modificarán envíos entregados, con incidencia o en papelera.",
     );
 
     if (!confirmed) return;
@@ -460,12 +546,12 @@ export default function ShippingSettingsPage() {
     try {
       const result = await updateActiveShipmentsStatusBulk(
         activeStore.id,
-        status
+        status,
       );
 
       if (result.error) {
         throw new Error(
-          result.error.message || "No se pudo cambiar el estado general."
+          result.error.message || "No se pudo cambiar el estado general.",
         );
       }
 
@@ -473,14 +559,14 @@ export default function ShippingSettingsPage() {
       setMessage(
         count > 0
           ? `${count} envío(s) actualizado(s) a "${label}".`
-          : "No había envíos activos que necesitaran cambio."
+          : "No había envíos activos que necesitaran cambio.",
       );
     } catch (error) {
       setIsError(true);
       setMessage(
         error instanceof Error
           ? error.message
-          : "No se pudo cambiar el estado general."
+          : "No se pudo cambiar el estado general.",
       );
     } finally {
       setUpdatingGlobalStatus(false);
@@ -534,7 +620,7 @@ export default function ShippingSettingsPage() {
 
     await runAction(
       action,
-      editingFeeId ? "Fee actualizado." : "Fee guardado."
+      editingFeeId ? "Fee actualizado." : "Fee guardado.",
     );
 
     cancelEditingFee();
@@ -546,9 +632,9 @@ export default function ShippingSettingsPage() {
         setShippingConfigItemActive(
           "shipping_extra_fees",
           fee.id,
-          !fee.is_active
+          !fee.is_active,
         ),
-      fee.is_active ? "Fee desactivado." : "Fee activado."
+      fee.is_active ? "Fee desactivado." : "Fee activado.",
     );
   }
 
@@ -556,18 +642,14 @@ export default function ShippingSettingsPage() {
     const confirmed = window.confirm(
       `¿Eliminar definitivamente "${fee.name}"?\n\n` +
         "Úsalo solamente si fue creado por error. Si ya está relacionado con " +
-        "operaciones anteriores, Supabase puede bloquear la eliminación."
+        "operaciones anteriores, Supabase puede bloquear la eliminación.",
     );
 
     if (!confirmed) return;
 
     await runAction(
-      () =>
-        deleteShippingConfigItem(
-          "shipping_extra_fees",
-          fee.id
-        ),
-      "Fee eliminado."
+      () => deleteShippingConfigItem("shipping_extra_fees", fee.id),
+      "Fee eliminado.",
     );
 
     if (editingFeeId === fee.id) {
@@ -621,8 +703,16 @@ export default function ShippingSettingsPage() {
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <StepCard number="1" title="País" icon={<Globe2 size={18} />} />
-                <StepCard number="2" title="Provincia" icon={<MapPinned size={18} />} />
-                <StepCard number="3" title="Municipio" icon={<MapPinned size={18} />} />
+                <StepCard
+                  number="2"
+                  title="Provincia"
+                  icon={<MapPinned size={18} />}
+                />
+                <StepCard
+                  number="3"
+                  title="Municipio"
+                  icon={<MapPinned size={18} />}
+                />
                 <StepCard
                   number="4"
                   title="Destino para APK"
@@ -651,10 +741,7 @@ export default function ShippingSettingsPage() {
         )}
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <SettingsCard
-            title="Configuración general"
-            icon={<Settings2 />}
-          >
+          <SettingsCard title="Configuración general" icon={<Settings2 />}>
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="País predeterminado">
                 <select
@@ -669,7 +756,7 @@ export default function ShippingSettingsPage() {
                             default_country_id: countryId,
                             default_province_id: null,
                           }
-                        : current
+                        : current,
                     );
 
                     setSelectedCountryId(countryId || "");
@@ -699,7 +786,7 @@ export default function ShippingSettingsPage() {
                             ...current,
                             default_province_id: provinceId,
                           }
-                        : current
+                        : current,
                     );
 
                     setSelectedProvinceId(provinceId || "");
@@ -712,7 +799,7 @@ export default function ShippingSettingsPage() {
                     .filter(
                       (province) =>
                         !settings.default_country_id ||
-                        province.country_id === settings.default_country_id
+                        province.country_id === settings.default_country_id,
                     )
                     .map((province) => (
                       <option key={province.id} value={province.id}>
@@ -732,7 +819,7 @@ export default function ShippingSettingsPage() {
                             ...current,
                             currency: event.target.value.toUpperCase(),
                           }
-                        : current
+                        : current,
                     )
                   }
                   className={inputClass}
@@ -752,7 +839,7 @@ export default function ShippingSettingsPage() {
                             ...current,
                             phone_digits_max: Number(event.target.value),
                           }
-                        : current
+                        : current,
                     )
                   }
                   className={inputClass}
@@ -761,15 +848,109 @@ export default function ShippingSettingsPage() {
             </div>
 
             <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50 p-4">
-              <h3 className="font-black text-emerald-950">Reglas para envío de dinero</h3>
-              <p className="mt-1 text-sm font-semibold text-emerald-900/70">Debajo del límite se usa la primera tasa. Desde el límite, todo el monto usa la tasa reducida.</p>
+              <h3 className="font-black text-emerald-950">
+                Reglas para envío de dinero
+              </h3>
+              <p className="mt-1 text-sm font-semibold text-emerald-900/70">
+                Debajo del límite se usa la primera tasa. Desde el límite, todo
+                el monto usa la tasa reducida.
+              </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <Field label="Límite para tasa reducida"><input type="number" min="0" step="0.01" value={settings.money_threshold} onChange={(e)=>setSettings(c=>c?{...c,money_threshold:Number(e.target.value)}:c)} className={inputClass}/></Field>
-                <Field label="Tasa debajo del límite (%)"><input type="number" min="0" step="0.01" value={settings.money_rate_below_threshold} onChange={(e)=>setSettings(c=>c?{...c,money_rate_below_threshold:Number(e.target.value)}:c)} className={inputClass}/></Field>
-                <Field label="Tasa desde el límite (%)"><input type="number" min="0" step="0.01" value={settings.money_rate_at_or_above_threshold} onChange={(e)=>setSettings(c=>c?{...c,money_rate_at_or_above_threshold:Number(e.target.value)}:c)} className={inputClass}/></Field>
-                <Field label="Descuento manual máximo"><input type="number" min="0" step="0.01" value={settings.maximum_manual_discount ?? ""} onChange={(e)=>setSettings(c=>c?{...c,maximum_manual_discount:e.target.value===""?null:Number(e.target.value)}:c)} className={inputClass} placeholder="Sin límite"/></Field>
+                <Field label="Límite para tasa reducida">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={settings.money_threshold}
+                    onChange={(e) =>
+                      setSettings((c) =>
+                        c
+                          ? { ...c, money_threshold: Number(e.target.value) }
+                          : c,
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Tasa debajo del límite (%)">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={settings.money_rate_below_threshold}
+                    onChange={(e) =>
+                      setSettings((c) =>
+                        c
+                          ? {
+                              ...c,
+                              money_rate_below_threshold: Number(
+                                e.target.value,
+                              ),
+                            }
+                          : c,
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Tasa desde el límite (%)">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={settings.money_rate_at_or_above_threshold}
+                    onChange={(e) =>
+                      setSettings((c) =>
+                        c
+                          ? {
+                              ...c,
+                              money_rate_at_or_above_threshold: Number(
+                                e.target.value,
+                              ),
+                            }
+                          : c,
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Descuento manual máximo">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={settings.maximum_manual_discount ?? ""}
+                    onChange={(e) =>
+                      setSettings((c) =>
+                        c
+                          ? {
+                              ...c,
+                              maximum_manual_discount:
+                                e.target.value === ""
+                                  ? null
+                                  : Number(e.target.value),
+                            }
+                          : c,
+                      )
+                    }
+                    className={inputClass}
+                    placeholder="Sin límite"
+                  />
+                </Field>
               </div>
-              <label className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-black text-emerald-950"><input type="checkbox" checked={settings.allow_manual_discount} onChange={(e)=>setSettings(c=>c?{...c,allow_manual_discount:e.target.checked}:c)} className="h-5 w-5"/>Permitir descuento manual en la comisión</label>
+              <label className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-black text-emerald-950">
+                <input
+                  type="checkbox"
+                  checked={settings.allow_manual_discount}
+                  onChange={(e) =>
+                    setSettings((c) =>
+                      c ? { ...c, allow_manual_discount: e.target.checked } : c,
+                    )
+                  }
+                  className="h-5 w-5"
+                />
+                Permitir descuento manual en la comisión
+              </label>
             </div>
 
             <button
@@ -777,7 +958,7 @@ export default function ShippingSettingsPage() {
               onClick={() =>
                 void runAction(
                   () => upsertShippingSettings(activeStore.id, settings),
-                  "Configuración general guardada."
+                  "Configuración general guardada.",
                 )
               }
               className={primaryButton}
@@ -812,7 +993,7 @@ export default function ShippingSettingsPage() {
                   void runAction(
                     () =>
                       createCountry(activeStore.id, countryName, countryCode),
-                    "País guardado."
+                    "País guardado.",
                   )
                 }
                 className={smallButton}
@@ -840,14 +1021,14 @@ export default function ShippingSettingsPage() {
                   "shipping_countries",
                   item.id,
                   item.isActive,
-                  item.title
+                  item.title,
                 )
               }
               onDelete={(item) =>
                 void permanentlyDeleteItem(
                   "shipping_countries",
                   item.id,
-                  item.title
+                  item.title,
                 )
               }
               emptyText="Todavía no hay países."
@@ -898,9 +1079,9 @@ export default function ShippingSettingsPage() {
                         activeStore.id,
                         selectedCountryId,
                         provinceName,
-                        provinceCode
+                        provinceCode,
                       ),
-                    "Provincia guardada."
+                    "Provincia guardada.",
                   )
                 }
                 className={smallButton}
@@ -927,14 +1108,14 @@ export default function ShippingSettingsPage() {
                   "shipping_provinces",
                   item.id,
                   item.isActive,
-                  item.title
+                  item.title,
                 )
               }
               onDelete={(item) =>
                 void permanentlyDeleteItem(
                   "shipping_provinces",
                   item.id,
-                  item.title
+                  item.title,
                 )
               }
               emptyText={
@@ -988,9 +1169,9 @@ export default function ShippingSettingsPage() {
                         activeStore.id,
                         selectedProvinceId,
                         municipalityName,
-                        municipalityCode
+                        municipalityCode,
                       ),
-                    "Municipio guardado."
+                    "Municipio guardado.",
                   )
                 }
                 className={smallButton}
@@ -1014,14 +1195,14 @@ export default function ShippingSettingsPage() {
                   "shipping_municipalities",
                   item.id,
                   item.isActive,
-                  item.title
+                  item.title,
                 )
               }
               onDelete={(item) =>
                 void permanentlyDeleteItem(
                   "shipping_municipalities",
                   item.id,
-                  item.title
+                  item.title,
                 )
               }
               emptyText={
@@ -1040,8 +1221,8 @@ export default function ShippingSettingsPage() {
             icon={<MapPinned />}
           >
             <p className={helpText}>
-              Aquí se muestra la lista plana que usará la APK. El municipio
-              solo sirve para organizar el destino dentro de esta web.
+              Aquí se muestra la lista plana que usará la APK. El municipio solo
+              sirve para organizar el destino dentro de esta web.
             </p>
 
             <div className="rounded-2xl bg-slate-50 p-3 text-sm font-black text-slate-700">
@@ -1050,9 +1231,8 @@ export default function ShippingSettingsPage() {
                 "ninguna"}
               {" · "}
               Nuevo destino se guardará dentro de:{" "}
-              {municipalities.find(
-                (item) => item.id === selectedMunicipalityId
-              )?.name || "selecciona un municipio"}
+              {municipalities.find((item) => item.id === selectedMunicipalityId)
+                ?.name || "selecciona un municipio"}
             </div>
 
             <div className="grid gap-3 md:grid-cols-[1fr_170px_auto]">
@@ -1084,9 +1264,9 @@ export default function ShippingSettingsPage() {
                         activeStore.id,
                         selectedMunicipalityId,
                         locationName,
-                        legacyCode
+                        legacyCode,
                       ),
-                    "Lugar guardado."
+                    "Lugar guardado.",
                   )
                 }
                 className={smallButton}
@@ -1099,7 +1279,7 @@ export default function ShippingSettingsPage() {
             <ManageableSelectionList
               items={visibleLocations.map((item) => {
                 const municipality = municipalities.find(
-                  (candidate) => candidate.id === item.municipality_id
+                  (candidate) => candidate.id === item.municipality_id,
                 );
 
                 return {
@@ -1118,14 +1298,14 @@ export default function ShippingSettingsPage() {
                   "shipping_locations",
                   item.id,
                   item.isActive,
-                  item.title
+                  item.title,
                 )
               }
               onDelete={(item) =>
                 void permanentlyDeleteItem(
                   "shipping_locations",
                   item.id,
-                  item.title
+                  item.title,
                 )
               }
               emptyText={
@@ -1169,7 +1349,7 @@ export default function ShippingSettingsPage() {
                 value={billingMode}
                 onChange={(event) =>
                   setBillingMode(
-                    event.target.value as "per_lb" | "fixed" | "percentage"
+                    event.target.value as "per_lb" | "fixed" | "percentage",
                   )
                 }
                 className={inputClass}
@@ -1190,9 +1370,9 @@ export default function ShippingSettingsPage() {
                       serviceName,
                       serviceCode,
                       legacyPrefix,
-                      billingMode
+                      billingMode,
                     ),
-                  "Tipo de servicio guardado."
+                  "Tipo de servicio guardado.",
                 )
               }
               className={primaryButton}
@@ -1243,7 +1423,9 @@ export default function ShippingSettingsPage() {
                     }`}
                   >
                     <span className="block font-extrabold">{label}</span>
-                    <span className={`mt-1 block text-xs font-medium ${rateScope === value ? "text-blue-100" : "text-slate-500"}`}>
+                    <span
+                      className={`mt-1 block text-xs font-medium ${rateScope === value ? "text-blue-100" : "text-slate-500"}`}
+                    >
                       {description}
                     </span>
                   </button>
@@ -1255,24 +1437,51 @@ export default function ShippingSettingsPage() {
               <div className="rounded-3xl border border-blue-100 bg-blue-50/60 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <h3 className="font-extrabold text-slate-950">Filtrar municipios por provincia</h3>
+                    <h3 className="font-extrabold text-slate-950">
+                      Filtrar municipios por provincia
+                    </h3>
                     <p className="text-xs font-medium text-slate-500">
-                      Puedes seleccionar varias provincias y después elegir municipios de todas ellas.
+                      Puedes seleccionar varias provincias y después elegir
+                      municipios de todas ellas.
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => setMunicipalityProvinceFilters(activeRateProvinces.map((item) => item.id))} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 shadow-sm">Todas</button>
-                    <button type="button" onClick={() => setMunicipalityProvinceFilters([])} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm">Sin filtro</button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setMunicipalityProvinceFilters(
+                          activeRateProvinces.map((item) => item.id),
+                        )
+                      }
+                      className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 shadow-sm"
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMunicipalityProvinceFilters([])}
+                      className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm"
+                    >
+                      Sin filtro
+                    </button>
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {activeRateProvinces.map((province) => {
-                    const selected = municipalityProvinceFilters.includes(province.id);
+                    const selected = municipalityProvinceFilters.includes(
+                      province.id,
+                    );
                     return (
                       <button
                         type="button"
                         key={province.id}
-                        onClick={() => setMunicipalityProvinceFilters((current) => selected ? current.filter((id) => id !== province.id) : [...current, province.id])}
+                        onClick={() =>
+                          setMunicipalityProvinceFilters((current) =>
+                            selected
+                              ? current.filter((id) => id !== province.id)
+                              : [...current, province.id],
+                          )
+                        }
                         className={`rounded-full border px-3 py-2 text-xs font-bold transition ${selected ? "border-blue-600 bg-blue-600 text-white" : "border-blue-200 bg-white text-blue-800"}`}
                       >
                         {province.name}
@@ -1297,7 +1506,9 @@ export default function ShippingSettingsPage() {
                   <button
                     type="button"
                     key={value}
-                    onClick={() => setRateTransportMode(value as typeof rateTransportMode)}
+                    onClick={() =>
+                      setRateTransportMode(value as typeof rateTransportMode)
+                    }
                     className={`rounded-2xl border p-4 text-left transition ${
                       rateTransportMode === value
                         ? "border-blue-500 bg-blue-600 text-white shadow-md"
@@ -1305,7 +1516,9 @@ export default function ShippingSettingsPage() {
                     }`}
                   >
                     <span className="block font-extrabold">{label}</span>
-                    <span className={`mt-1 block text-xs font-medium ${rateTransportMode === value ? "text-blue-100" : "text-slate-500"}`}>
+                    <span
+                      className={`mt-1 block text-xs font-medium ${rateTransportMode === value ? "text-blue-100" : "text-slate-500"}`}
+                    >
                       {description}
                     </span>
                   </button>
@@ -1315,16 +1528,36 @@ export default function ShippingSettingsPage() {
 
             <div className="grid gap-5 xl:grid-cols-2">
               <div className="space-y-3">
-                <Field label={rateScope === "country" ? "Buscar país" : rateScope === "province" ? "Buscar provincia" : rateScope === "municipality" ? "Buscar municipio" : "Buscar lugar operativo"}>
+                <Field
+                  label={
+                    rateScope === "country"
+                      ? "Buscar país"
+                      : rateScope === "province"
+                        ? "Buscar provincia"
+                        : rateScope === "municipality"
+                          ? "Buscar municipio"
+                          : "Buscar lugar operativo"
+                  }
+                >
                   <input
                     value={rateTerritorySearch}
-                    onChange={(event) => setRateTerritorySearch(event.target.value)}
+                    onChange={(event) =>
+                      setRateTerritorySearch(event.target.value)
+                    }
                     className={inputClass}
                     placeholder="Escribe para filtrar..."
                   />
                 </Field>
                 <MultiSelectPanel
-                  title={rateScope === "country" ? "Países" : rateScope === "province" ? "Provincias" : rateScope === "municipality" ? "Municipios" : "Lugares operativos"}
+                  title={
+                    rateScope === "country"
+                      ? "Países"
+                      : rateScope === "province"
+                        ? "Provincias"
+                        : rateScope === "municipality"
+                          ? "Municipios"
+                          : "Lugares operativos"
+                  }
                   subtitle={`${selectedRateTargetIds.length} seleccionado(s)`}
                   items={rateTerritoryItems}
                   selectedIds={selectedRateTargetIds}
@@ -1332,7 +1565,9 @@ export default function ShippingSettingsPage() {
                   onSelectAll={selectAllRateTargets}
                   onClear={clearRateTargets}
                   expanded={showAllRateTerritories}
-                  onToggleExpanded={() => setShowAllRateTerritories((current) => !current)}
+                  onToggleExpanded={() =>
+                    setShowAllRateTerritories((current) => !current)
+                  }
                 />
               </div>
 
@@ -1344,7 +1579,7 @@ export default function ShippingSettingsPage() {
                     (service) =>
                       service.is_active &&
                       service.billing_mode === "per_lb" &&
-                      service.code.toLowerCase() !== "money"
+                      service.code.toLowerCase() !== "money",
                   )
                   .map((service) => ({
                     id: service.id,
@@ -1360,9 +1595,9 @@ export default function ShippingSettingsPage() {
                         (service) =>
                           service.is_active &&
                           service.billing_mode === "per_lb" &&
-                          service.code.toLowerCase() !== "money"
+                          service.code.toLowerCase() !== "money",
                       )
-                      .map((service) => service.id)
+                      .map((service) => service.id),
                   )
                 }
                 onClear={() => setSelectedRateServiceIds([])}
@@ -1379,57 +1614,151 @@ export default function ShippingSettingsPage() {
                   <DollarSign size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-slate-950">3. Valores que se aplicarán</h3>
+                  <h3 className="font-extrabold text-slate-950">
+                    3. Valores que se aplicarán
+                  </h3>
                   <p className="text-sm font-medium text-slate-500">
-                    Las combinaciones existentes se actualizarán; las que falten se crearán.
+                    Las combinaciones existentes se actualizarán; las que falten
+                    se crearán.
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Field label="Precio por libra">
-                  <input type="number" min="0" step="0.01" value={ratePerLb} onChange={(event) => setRatePerLb(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={ratePerLb}
+                    onChange={(event) =>
+                      setRatePerLb(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Peso mínimo facturable">
-                  <input type="number" min="0" step="0.01" value={minimumWeight} onChange={(event) => setMinimumWeight(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={minimumWeight}
+                    onChange={(event) =>
+                      setMinimumWeight(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Peso máximo (opcional)">
-                  <input type="number" min="0" step="0.01" value={maximumWeight} onChange={(event) => setMaximumWeight(event.target.value)} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={maximumWeight}
+                    onChange={(event) => setMaximumWeight(event.target.value)}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Cobro mínimo">
-                  <input type="number" min="0" step="0.01" value={minimumCharge} onChange={(event) => setMinimumCharge(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={minimumCharge}
+                    onChange={(event) =>
+                      setMinimumCharge(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Fee fijo adicional">
-                  <input type="number" min="0" step="0.01" value={fixedFee} onChange={(event) => setFixedFee(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={fixedFee}
+                    onChange={(event) =>
+                      setFixedFee(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Entrega mínima (días)">
-                  <input type="number" min="0" value={estimatedDaysMin} onChange={(event) => setEstimatedDaysMin(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    value={estimatedDaysMin}
+                    onChange={(event) =>
+                      setEstimatedDaysMin(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Entrega máxima (días)">
-                  <input type="number" min="0" value={estimatedDaysMax} onChange={(event) => setEstimatedDaysMax(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="0"
+                    value={estimatedDaysMax}
+                    onChange={(event) =>
+                      setEstimatedDaysMax(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Prioridad">
-                  <input type="number" min="1" value={ratePriority} onChange={(event) => setRatePriority(Number(event.target.value))} className={inputClass} />
+                  <input
+                    type="number"
+                    min="1"
+                    value={ratePriority}
+                    onChange={(event) =>
+                      setRatePriority(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
               </div>
 
               <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-extrabold text-slate-900">
-                    {selectedRateTargetIds.length * selectedRateServiceIds.length} combinación(es)
+                    {selectedRateTargetIds.length *
+                      selectedRateServiceIds.length}{" "}
+                    combinación(es)
                   </p>
                   <p className="text-xs font-medium text-slate-500">
-                    {selectedRateTargetIds.length} territorio(s) × {selectedRateServiceIds.length} tipo(s) · Método: {rateTransportMode === "air" ? "Aéreo" : rateTransportMode === "sea" ? "Marítimo" : rateTransportMode} · Alcance: {rateScope === "country" ? "país" : rateScope === "province" ? "provincia" : rateScope === "municipality" ? "municipio" : "lugar operativo"}
+                    {selectedRateTargetIds.length} territorio(s) ×{" "}
+                    {selectedRateServiceIds.length} tipo(s) · Método:{" "}
+                    {rateTransportMode === "air"
+                      ? "Aéreo"
+                      : rateTransportMode === "sea"
+                        ? "Marítimo"
+                        : rateTransportMode}{" "}
+                    · Alcance:{" "}
+                    {rateScope === "country"
+                      ? "país"
+                      : rateScope === "province"
+                        ? "provincia"
+                        : rateScope === "municipality"
+                          ? "municipio"
+                          : "lugar operativo"}
                   </p>
                 </div>
                 <button
                   type="button"
-                  disabled={saving || !selectedRateTargetIds.length || !selectedRateServiceIds.length || ratePerLb < 0}
+                  disabled={
+                    saving ||
+                    !selectedRateTargetIds.length ||
+                    !selectedRateServiceIds.length ||
+                    ratePerLb < 0
+                  }
                   onClick={() => void saveBulkRates()}
                   className={primaryButton}
                 >
                   <Save size={18} />
-                  Aplicar tarifa a {selectedRateTargetIds.length * selectedRateServiceIds.length} combinación(es)
+                  Aplicar tarifa a{" "}
+                  {selectedRateTargetIds.length *
+                    selectedRateServiceIds.length}{" "}
+                  combinación(es)
                 </button>
               </div>
             </div>
@@ -1441,6 +1770,8 @@ export default function ShippingSettingsPage() {
               municipalities={municipalities}
               locations={locations}
               serviceTypes={serviceTypes}
+              deletingRateId={deletingRateId}
+              onDelete={(rate) => void removeRate(rate)}
             />
           </SettingsCard>
 
@@ -1464,7 +1795,7 @@ export default function ShippingSettingsPage() {
                 onClick={() =>
                   void changeGlobalShipmentStatus(
                     "in_transit",
-                    "En tránsito hacia Cuba"
+                    "En tránsito hacia Cuba",
                   )
                 }
               />
@@ -1477,7 +1808,7 @@ export default function ShippingSettingsPage() {
                 onClick={() =>
                   void changeGlobalShipmentStatus(
                     "received_cuba",
-                    "Recibido en Cuba"
+                    "Recibido en Cuba",
                   )
                 }
               />
@@ -1490,7 +1821,7 @@ export default function ShippingSettingsPage() {
                 onClick={() =>
                   void changeGlobalShipmentStatus(
                     "out_for_delivery",
-                    "En reparto"
+                    "En reparto",
                   )
                 }
               />
@@ -1557,9 +1888,7 @@ export default function ShippingSettingsPage() {
                   min="0"
                   step="0.01"
                   value={feeAmount}
-                  onChange={(event) =>
-                    setFeeAmount(Number(event.target.value))
-                  }
+                  onChange={(event) => setFeeAmount(Number(event.target.value))}
                   className={inputClass}
                 />
               </Field>
@@ -1569,10 +1898,7 @@ export default function ShippingSettingsPage() {
                   value={feeType}
                   onChange={(event) =>
                     setFeeType(
-                      event.target.value as
-                        | "fixed"
-                        | "per_lb"
-                        | "percentage"
+                      event.target.value as "fixed" | "per_lb" | "percentage",
                     )
                   }
                   className={inputClass}
@@ -2056,6 +2382,8 @@ function CollapsibleRateList({
   municipalities,
   locations,
   serviceTypes,
+  deletingRateId,
+  onDelete,
 }: {
   rates: ShippingRate[];
   countries: ShippingCountry[];
@@ -2063,6 +2391,8 @@ function CollapsibleRateList({
   municipalities: ShippingMunicipality[];
   locations: ShippingLocation[];
   serviceTypes: ShippingServiceType[];
+  deletingRateId: string | null;
+  onDelete: (rate: ShippingRate) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const visibleRates = expanded ? rates : rates.slice(0, 5);
@@ -2079,7 +2409,9 @@ function CollapsibleRateList({
     <div className="overflow-hidden rounded-3xl border border-slate-200">
       <div className="flex items-center justify-between bg-slate-50 px-4 py-3">
         <div>
-          <h3 className="font-extrabold text-slate-950">Tarifas configuradas</h3>
+          <h3 className="font-extrabold text-slate-950">
+            Tarifas configuradas
+          </h3>
           <p className="text-xs font-medium text-slate-500">
             {rates.length} combinación(es)
           </p>
@@ -2105,8 +2437,11 @@ function CollapsibleRateList({
               : rate.scope_type === "province"
                 ? provinces.find((item) => item.id === rate.province_id)?.name
                 : rate.scope_type === "municipality"
-                  ? municipalities.find((item) => item.id === rate.municipality_id)?.name
-                  : locations.find((item) => item.id === rate.location_id)?.name;
+                  ? municipalities.find(
+                      (item) => item.id === rate.municipality_id,
+                    )?.name
+                  : locations.find((item) => item.id === rate.location_id)
+                      ?.name;
           const scopeLabel =
             rate.scope_type === "country"
               ? "País"
@@ -2116,7 +2451,7 @@ function CollapsibleRateList({
                   ? "Municipio"
                   : "Lugar APK";
           const service = serviceTypes.find(
-            (item) => item.id === rate.service_type_id
+            (item) => item.id === rate.service_type_id,
           );
 
           return (
@@ -2126,18 +2461,41 @@ function CollapsibleRateList({
             >
               <div className="min-w-0">
                 <p className="truncate font-bold text-slate-900">
-                  {territory || "Territorio"} · {service?.name || "Servicio"} · {rate.transport_mode === "air" ? "Aéreo" : rate.transport_mode === "sea" ? "Marítimo" : rate.transport_mode}
+                  {territory || "Territorio"} · {service?.name || "Servicio"} ·{" "}
+                  {rate.transport_mode === "air"
+                    ? "Aéreo"
+                    : rate.transport_mode === "sea"
+                      ? "Marítimo"
+                      : rate.transport_mode}
                 </p>
                 <p className="text-xs font-medium text-slate-400">
-                  {scopeLabel} · Mínimo: {Number(rate.minimum_weight_lb || 0).toFixed(2)} lb ·
-                  Cobro mínimo: ${Number(rate.minimum_charge || 0).toFixed(2)} ·
-                  Entrega: {rate.estimated_days_min ?? "?"}-{rate.estimated_days_max ?? "?"} días
+                  {scopeLabel} · Mínimo:{" "}
+                  {Number(rate.minimum_weight_lb || 0).toFixed(2)} lb · Cobro
+                  mínimo: ${Number(rate.minimum_charge || 0).toFixed(2)} ·
+                  Entrega: {rate.estimated_days_min ?? "?"}-
+                  {rate.estimated_days_max ?? "?"} días
                 </p>
               </div>
 
-              <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1.5 font-extrabold text-emerald-700">
-                ${Number(rate.rate_per_lb).toFixed(2)}/lb
-              </span>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-extrabold text-emerald-700">
+                  ${Number(rate.rate_per_lb).toFixed(2)}/lb
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onDelete(rate)}
+                  disabled={deletingRateId === rate.id}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-200 bg-white text-red-600 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-50"
+                  aria-label={`Eliminar tarifa de ${territory || "territorio"}`}
+                  title="Eliminar tarifa"
+                >
+                  {deletingRateId === rate.id ? (
+                    <Loader2 size={17} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={17} />
+                  )}
+                </button>
+              </div>
             </div>
           );
         })}
@@ -2145,7 +2503,6 @@ function CollapsibleRateList({
     </div>
   );
 }
-
 
 function SimpleRows({
   rows,

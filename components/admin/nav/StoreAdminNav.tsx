@@ -97,22 +97,23 @@ export default function StoreAdminNav() {
 
   return (
     <aside
-  className="
-    sticky
-    top-0
-    hidden
-    h-screen
-    w-72
-    shrink-0
-    overflow-y-auto
-    overscroll-contain
-    p-5
-    text-white
-    shadow-xl
-    xl:block
-  "
-  style={{ backgroundColor: primaryColor }}
->
+      className="
+        fixed
+        inset-y-0
+        left-0
+        z-40
+        hidden
+        h-screen
+        w-72
+        overflow-hidden
+        p-5
+        text-white
+        shadow-xl
+        xl:flex
+        xl:flex-col
+      "
+      style={{ backgroundColor: primaryColor }}
+    >
       <div className="mb-6">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
           <Store size={24} />

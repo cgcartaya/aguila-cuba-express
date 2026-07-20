@@ -41,10 +41,10 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
     (isSuperAdmin ? "Administración General" : "Tienda activa");
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <StoreAdminNav />
 
-      <div className="min-w-0 flex-1">
+      <div className="min-h-screen min-w-0 xl:ml-72">
         <header className="sticky top-0 z-40 border-b bg-white/90 px-4 py-3 backdrop-blur xl:hidden">
           <div className="flex items-center justify-between gap-3">
             <button
