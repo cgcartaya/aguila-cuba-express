@@ -102,12 +102,20 @@ export default function ShippingSettingsPage() {
   const [billingMode, setBillingMode] =
     useState<"per_lb" | "fixed" | "percentage">("per_lb");
 
+  const [rateScope, setRateScope] = useState<
+    "country" | "province" | "municipality" | "location"
+  >("province");
+  const [selectedRateCountryIds, setSelectedRateCountryIds] = useState<string[]>([]);
+  const [selectedRateProvinceIds, setSelectedRateProvinceIds] = useState<string[]>([]);
+  const [selectedRateMunicipalityIds, setSelectedRateMunicipalityIds] = useState<string[]>([]);
   const [selectedRateLocationIds, setSelectedRateLocationIds] = useState<string[]>([]);
+  const [municipalityProvinceFilters, setMunicipalityProvinceFilters] = useState<string[]>([]);
+  const [rateTerritorySearch, setRateTerritorySearch] = useState("");
   const [selectedRateServiceIds, setSelectedRateServiceIds] = useState<string[]>([]);
   const [ratePerLb, setRatePerLb] = useState(0);
   const [minimumWeight, setMinimumWeight] = useState(0);
   const [minimumCharge, setMinimumCharge] = useState(0);
-  const [showAllRateLocations, setShowAllRateLocations] = useState(false);
+  const [showAllRateTerritories, setShowAllRateTerritories] = useState(false);
   const [showAllRateServices, setShowAllRateServices] = useState(false);
   const [updatingGlobalStatus, setUpdatingGlobalStatus] = useState(false);
 
@@ -140,6 +148,67 @@ export default function ShippingSettingsPage() {
   const visibleLocations = locations.filter((location) =>
     selectedProvinceMunicipalityIds.has(location.municipality_id)
   );
+
+  const activeRateCountries = countries.filter((item) => item.is_active);
+  const activeRateProvinces = provinces.filter((item) => item.is_active);
+  const activeRateMunicipalities = municipalities.filter((item) => item.is_active);
+  const activeRateLocations = locations.filter((item) => item.is_active);
+
+  const selectedRateTargetIds =
+    rateScope === "country"
+      ? selectedRateCountryIds
+      : rateScope === "province"
+        ? selectedRateProvinceIds
+        : rateScope === "municipality"
+          ? selectedRateMunicipalityIds
+          : selectedRateLocationIds;
+
+  const rateTerritoryItems = (() => {
+    const search = rateTerritorySearch.trim().toLowerCase();
+
+    if (rateScope === "country") {
+      return activeRateCountries
+        .map((item) => ({ id: item.id, label: item.name, description: item.code }))
+        .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+    }
+
+    if (rateScope === "province") {
+      return activeRateProvinces
+        .map((item) => ({
+          id: item.id,
+          label: item.name,
+          description: countries.find((country) => country.id === item.country_id)?.name || "Provincia",
+        }))
+        .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+    }
+
+    if (rateScope === "municipality") {
+      return activeRateMunicipalities
+        .filter((item) =>
+          municipalityProvinceFilters.length
+            ? municipalityProvinceFilters.includes(item.province_id)
+            : true
+        )
+        .map((item) => ({
+          id: item.id,
+          label: item.name,
+          description: provinces.find((province) => province.id === item.province_id)?.name || "Municipio",
+        }))
+        .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+    }
+
+    return activeRateLocations
+      .map((item) => {
+        const municipality = municipalities.find((municipality) => municipality.id === item.municipality_id);
+        const province = provinces.find((province) => province.id === municipality?.province_id);
+        return {
+          id: item.id,
+          label: item.name,
+          description: [municipality?.name, province?.name, item.legacy_code].filter(Boolean).join(" · "),
+        };
+      })
+      .filter((item) => !search || `${item.label} ${item.description}`.toLowerCase().includes(search));
+  })();
 
   async function load() {
     if (!activeStore?.id) {
@@ -285,12 +354,31 @@ export default function ShippingSettingsPage() {
     }));
   }
 
-  function toggleRateLocation(id: string) {
-    setSelectedRateLocationIds((current) =>
+  function toggleRateTarget(id: string) {
+    const toggle = (current: string[]) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
-        : [...current, id]
-    );
+        : [...current, id];
+
+    if (rateScope === "country") setSelectedRateCountryIds(toggle);
+    if (rateScope === "province") setSelectedRateProvinceIds(toggle);
+    if (rateScope === "municipality") setSelectedRateMunicipalityIds(toggle);
+    if (rateScope === "location") setSelectedRateLocationIds(toggle);
+  }
+
+  function selectAllRateTargets() {
+    const ids = rateTerritoryItems.map((item) => item.id);
+    if (rateScope === "country") setSelectedRateCountryIds(ids);
+    if (rateScope === "province") setSelectedRateProvinceIds(ids);
+    if (rateScope === "municipality") setSelectedRateMunicipalityIds(ids);
+    if (rateScope === "location") setSelectedRateLocationIds(ids);
+  }
+
+  function clearRateTargets() {
+    if (rateScope === "country") setSelectedRateCountryIds([]);
+    if (rateScope === "province") setSelectedRateProvinceIds([]);
+    if (rateScope === "municipality") setSelectedRateMunicipalityIds([]);
+    if (rateScope === "location") setSelectedRateLocationIds([]);
   }
 
   function toggleRateService(id: string) {
@@ -305,7 +393,7 @@ export default function ShippingSettingsPage() {
     if (!activeStore?.id) return;
 
     const combinations =
-      selectedRateLocationIds.length * selectedRateServiceIds.length;
+      selectedRateTargetIds.length * selectedRateServiceIds.length;
 
     if (!combinations) {
       setMessage("Selecciona destinos y tipos de paquete.");
@@ -315,7 +403,7 @@ export default function ShippingSettingsPage() {
 
     const confirmed = window.confirm(
       `Se guardarán ${combinations} combinaciones de tarifa.\n\n` +
-        `${selectedRateLocationIds.length} destino(s) × ` +
+        `${selectedRateTargetIds.length} territorio(s) × ` +
         `${selectedRateServiceIds.length} tipo(s) de paquete.\n\n` +
         `Tarifa: $${ratePerLb.toFixed(2)} por libra.`
     );
@@ -326,7 +414,8 @@ export default function ShippingSettingsPage() {
       () =>
         upsertShippingRatesBulk({
           store_id: activeStore.id,
-          location_ids: selectedRateLocationIds,
+          scope_type: rateScope,
+          target_ids: selectedRateTargetIds,
           service_type_ids: selectedRateServiceIds,
           rate_per_lb: ratePerLb,
           minimum_weight_lb: minimumWeight,
@@ -1108,36 +1197,99 @@ export default function ShippingSettingsPage() {
 
           <SettingsCard title="Tarifas por libra" icon={<DollarSign />}>
             <p className={helpText}>
-              Selecciona varios destinos y varios tipos de paquete. La misma
-              tarifa se aplicará automáticamente a todas las combinaciones.
+              Aplica una misma tarifa a varias provincias, municipios, lugares
+              operativos y tipos de paquete. Las tarifas más específicas tienen
+              prioridad: lugar → municipio → provincia → país.
             </p>
 
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">
+                1. Alcance territorial
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                  ["country", "País completo", "Tarifa general"],
+                  ["province", "Provincias", "Una o varias"],
+                  ["municipality", "Municipios", "Uno o varios"],
+                  ["location", "Lugares operativos", "Lista usada por la APK"],
+                ].map(([value, label, description]) => (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => {
+                      setRateScope(value as typeof rateScope);
+                      setRateTerritorySearch("");
+                      setShowAllRateTerritories(false);
+                    }}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      rateScope === value
+                        ? "border-blue-500 bg-blue-600 text-white shadow-md"
+                        : "border-slate-200 bg-white text-slate-800 hover:border-blue-300"
+                    }`}
+                  >
+                    <span className="block font-extrabold">{label}</span>
+                    <span className={`mt-1 block text-xs font-medium ${rateScope === value ? "text-blue-100" : "text-slate-500"}`}>
+                      {description}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {rateScope === "municipality" && (
+              <div className="rounded-3xl border border-blue-100 bg-blue-50/60 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-extrabold text-slate-950">Filtrar municipios por provincia</h3>
+                    <p className="text-xs font-medium text-slate-500">
+                      Puedes seleccionar varias provincias y después elegir municipios de todas ellas.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setMunicipalityProvinceFilters(activeRateProvinces.map((item) => item.id))} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 shadow-sm">Todas</button>
+                    <button type="button" onClick={() => setMunicipalityProvinceFilters([])} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm">Sin filtro</button>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {activeRateProvinces.map((province) => {
+                    const selected = municipalityProvinceFilters.includes(province.id);
+                    return (
+                      <button
+                        type="button"
+                        key={province.id}
+                        onClick={() => setMunicipalityProvinceFilters((current) => selected ? current.filter((id) => id !== province.id) : [...current, province.id])}
+                        className={`rounded-full border px-3 py-2 text-xs font-bold transition ${selected ? "border-blue-600 bg-blue-600 text-white" : "border-blue-200 bg-white text-blue-800"}`}
+                      >
+                        {province.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className="grid gap-5 xl:grid-cols-2">
-              <MultiSelectPanel
-                title="Destinos"
-                subtitle={`${selectedRateLocationIds.length} seleccionado(s)`}
-                items={locations
-                  .filter((location) => location.is_active)
-                  .map((location) => ({
-                    id: location.id,
-                    label: location.name,
-                    description: location.legacy_code,
-                  }))}
-                selectedIds={selectedRateLocationIds}
-                onToggle={toggleRateLocation}
-                onSelectAll={() =>
-                  setSelectedRateLocationIds(
-                    locations
-                      .filter((location) => location.is_active)
-                      .map((location) => location.id)
-                  )
-                }
-                onClear={() => setSelectedRateLocationIds([])}
-                expanded={showAllRateLocations}
-                onToggleExpanded={() =>
-                  setShowAllRateLocations((current) => !current)
-                }
-              />
+              <div className="space-y-3">
+                <Field label={rateScope === "country" ? "Buscar país" : rateScope === "province" ? "Buscar provincia" : rateScope === "municipality" ? "Buscar municipio" : "Buscar lugar operativo"}>
+                  <input
+                    value={rateTerritorySearch}
+                    onChange={(event) => setRateTerritorySearch(event.target.value)}
+                    className={inputClass}
+                    placeholder="Escribe para filtrar..."
+                  />
+                </Field>
+                <MultiSelectPanel
+                  title={rateScope === "country" ? "Países" : rateScope === "province" ? "Provincias" : rateScope === "municipality" ? "Municipios" : "Lugares operativos"}
+                  subtitle={`${selectedRateTargetIds.length} seleccionado(s)`}
+                  items={rateTerritoryItems}
+                  selectedIds={selectedRateTargetIds}
+                  onToggle={toggleRateTarget}
+                  onSelectAll={selectAllRateTargets}
+                  onClear={clearRateTargets}
+                  expanded={showAllRateTerritories}
+                  onToggleExpanded={() => setShowAllRateTerritories((current) => !current)}
+                />
+              </div>
 
               <MultiSelectPanel
                 title="Tipos de paquete"
@@ -1182,88 +1334,51 @@ export default function ShippingSettingsPage() {
                   <DollarSign size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-slate-950">
-                    Valores que se aplicarán
-                  </h3>
+                  <h3 className="font-extrabold text-slate-950">2. Valores que se aplicarán</h3>
                   <p className="text-sm font-medium text-slate-500">
-                    Puedes actualizar tarifas existentes con la misma operación.
+                    Las combinaciones existentes se actualizarán; las que falten se crearán.
                   </p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Precio por libra">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={ratePerLb}
-                    onChange={(event) =>
-                      setRatePerLb(Number(event.target.value))
-                    }
-                    className={inputClass}
-                  />
+                  <input type="number" min="0" step="0.01" value={ratePerLb} onChange={(event) => setRatePerLb(Number(event.target.value))} className={inputClass} />
                 </Field>
-
                 <Field label="Peso mínimo">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={minimumWeight}
-                    onChange={(event) =>
-                      setMinimumWeight(Number(event.target.value))
-                    }
-                    className={inputClass}
-                  />
+                  <input type="number" min="0" step="0.01" value={minimumWeight} onChange={(event) => setMinimumWeight(Number(event.target.value))} className={inputClass} />
                 </Field>
-
                 <Field label="Cobro mínimo">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={minimumCharge}
-                    onChange={(event) =>
-                      setMinimumCharge(Number(event.target.value))
-                    }
-                    className={inputClass}
-                  />
+                  <input type="number" min="0" step="0.01" value={minimumCharge} onChange={(event) => setMinimumCharge(Number(event.target.value))} className={inputClass} />
                 </Field>
               </div>
 
               <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-extrabold text-slate-900">
-                    {selectedRateLocationIds.length *
-                      selectedRateServiceIds.length}{" "}
-                    combinación(es)
+                    {selectedRateTargetIds.length * selectedRateServiceIds.length} combinación(es)
                   </p>
                   <p className="text-xs font-medium text-slate-500">
-                    {selectedRateLocationIds.length} destino(s) ×{" "}
-                    {selectedRateServiceIds.length} tipo(s)
+                    {selectedRateTargetIds.length} territorio(s) × {selectedRateServiceIds.length} tipo(s) · Alcance: {rateScope === "country" ? "país" : rateScope === "province" ? "provincia" : rateScope === "municipality" ? "municipio" : "lugar operativo"}
                   </p>
                 </div>
-
                 <button
                   type="button"
-                  disabled={
-                    saving ||
-                    !selectedRateLocationIds.length ||
-                    !selectedRateServiceIds.length ||
-                    ratePerLb < 0
-                  }
+                  disabled={saving || !selectedRateTargetIds.length || !selectedRateServiceIds.length || ratePerLb < 0}
                   onClick={() => void saveBulkRates()}
                   className={primaryButton}
                 >
                   <Save size={18} />
-                  Aplicar tarifa a la selección
+                  Aplicar tarifa a {selectedRateTargetIds.length * selectedRateServiceIds.length} combinación(es)
                 </button>
               </div>
             </div>
 
             <CollapsibleRateList
               rates={rates}
+              countries={countries}
+              provinces={provinces}
+              municipalities={municipalities}
               locations={locations}
               serviceTypes={serviceTypes}
             />
@@ -1876,10 +1991,16 @@ function GlobalStatusButton({
 
 function CollapsibleRateList({
   rates,
+  countries,
+  provinces,
+  municipalities,
   locations,
   serviceTypes,
 }: {
   rates: ShippingRate[];
+  countries: ShippingCountry[];
+  provinces: ShippingProvince[];
+  municipalities: ShippingMunicipality[];
   locations: ShippingLocation[];
   serviceTypes: ShippingServiceType[];
 }) {
@@ -1918,9 +2039,22 @@ function CollapsibleRateList({
 
       <div className="divide-y divide-slate-100">
         {visibleRates.map((rate) => {
-          const location = locations.find(
-            (item) => item.id === rate.location_id
-          );
+          const territory =
+            rate.scope_type === "country"
+              ? countries.find((item) => item.id === rate.country_id)?.name
+              : rate.scope_type === "province"
+                ? provinces.find((item) => item.id === rate.province_id)?.name
+                : rate.scope_type === "municipality"
+                  ? municipalities.find((item) => item.id === rate.municipality_id)?.name
+                  : locations.find((item) => item.id === rate.location_id)?.name;
+          const scopeLabel =
+            rate.scope_type === "country"
+              ? "País"
+              : rate.scope_type === "province"
+                ? "Provincia"
+                : rate.scope_type === "municipality"
+                  ? "Municipio"
+                  : "Lugar APK";
           const service = serviceTypes.find(
             (item) => item.id === rate.service_type_id
           );
@@ -1932,11 +2066,10 @@ function CollapsibleRateList({
             >
               <div className="min-w-0">
                 <p className="truncate font-bold text-slate-900">
-                  {location?.name || "Destino"} ·{" "}
-                  {service?.name || "Servicio"}
+                  {territory || "Territorio"} · {service?.name || "Servicio"}
                 </p>
                 <p className="text-xs font-medium text-slate-400">
-                  Mínimo: {Number(rate.minimum_weight_lb || 0).toFixed(2)} lb ·
+                  {scopeLabel} · Mínimo: {Number(rate.minimum_weight_lb || 0).toFixed(2)} lb ·
                   Cobro mínimo: ${Number(rate.minimum_charge || 0).toFixed(2)}
                 </p>
               </div>

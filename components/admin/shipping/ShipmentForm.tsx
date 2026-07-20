@@ -80,7 +80,30 @@ export default function ShipmentForm(props: Props) {
   useEffect(() => {
     const location = locations.find(x => x.id === form.shipping_location_id);
     const service = serviceTypes.find(x => x.id === form.service_type_id);
-    const rate = rates.find(x => x.location_id === location?.id && x.service_type_id === service?.id && x.is_active);
+    const matchingRates = rates.filter(
+      (item) => item.service_type_id === service?.id && item.is_active
+    );
+    const rate =
+      matchingRates.find(
+        (item) =>
+          item.scope_type === "location" &&
+          item.location_id === form.shipping_location_id
+      ) ||
+      matchingRates.find(
+        (item) =>
+          item.scope_type === "municipality" &&
+          item.municipality_id === form.municipality_id
+      ) ||
+      matchingRates.find(
+        (item) =>
+          item.scope_type === "province" &&
+          item.province_id === form.province_id
+      ) ||
+      matchingRates.find(
+        (item) =>
+          item.scope_type === "country" &&
+          item.country_id === form.country_id
+      );
     const effectiveWeight = Math.max(Number(form.weight_lb || 0), Number(rate?.minimum_weight_lb || 0));
     const specificRate = Number(rate?.rate_per_lb || 0);
     const fallbackRate = Number(settings?.default_rate_per_lb || 0);

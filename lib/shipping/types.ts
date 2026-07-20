@@ -120,10 +120,20 @@ export type ShippingServiceType = {
   sort_order: number;
 };
 
+export type ShippingRateScope =
+  | "country"
+  | "province"
+  | "municipality"
+  | "location";
+
 export type ShippingRate = {
   id: string;
   store_id: string;
-  location_id: string;
+  scope_type: ShippingRateScope;
+  country_id: string | null;
+  province_id: string | null;
+  municipality_id: string | null;
+  location_id: string | null;
   service_type_id: string;
   rate_per_lb: number;
   minimum_weight_lb: number;

@@ -199,17 +199,22 @@ export async function createServiceType(
 
 export async function upsertShippingRate(input: {
   store_id: string;
-  location_id: string;
+  scope_type: "country" | "province" | "municipality" | "location";
+  target_id: string;
   service_type_id: string;
   rate_per_lb: number;
   minimum_weight_lb: number;
   minimum_charge: number;
 }) {
-  return supabase
-    .from("shipping_rates")
-    .upsert(input, {
-      onConflict: "store_id,location_id,service_type_id",
-    });
+  return upsertShippingRatesBulk({
+    store_id: input.store_id,
+    scope_type: input.scope_type,
+    target_ids: [input.target_id],
+    service_type_ids: [input.service_type_id],
+    rate_per_lb: input.rate_per_lb,
+    minimum_weight_lb: input.minimum_weight_lb,
+    minimum_charge: input.minimum_charge,
+  });
 }
 
 export async function createExtraFee(input: {
@@ -295,19 +300,20 @@ export async function deleteShippingConfigItem(
 
 export async function upsertShippingRatesBulk(input: {
   store_id: string;
-  location_ids: string[];
+  scope_type: "country" | "province" | "municipality" | "location";
+  target_ids: string[];
   service_type_ids: string[];
   rate_per_lb: number;
   minimum_weight_lb: number;
   minimum_charge: number;
 }) {
-  const locationIds = Array.from(new Set(input.location_ids.filter(Boolean)));
+  const targetIds = Array.from(new Set(input.target_ids.filter(Boolean)));
   const serviceTypeIds = Array.from(
     new Set(input.service_type_ids.filter(Boolean))
   );
 
-  if (!locationIds.length) {
-    throw new Error("Selecciona al menos un destino.");
+  if (!targetIds.length) {
+    throw new Error("Selecciona al menos un territorio.");
   }
 
   if (!serviceTypeIds.length) {
@@ -318,10 +324,27 @@ export async function upsertShippingRatesBulk(input: {
     throw new Error("La tarifa por libra no puede ser negativa.");
   }
 
-  const rows = locationIds.flatMap((locationId) =>
+  const targetColumn:
+    | "country_id"
+    | "province_id"
+    | "municipality_id"
+    | "location_id" =
+    input.scope_type === "country"
+      ? "country_id"
+      : input.scope_type === "province"
+        ? "province_id"
+        : input.scope_type === "municipality"
+          ? "municipality_id"
+          : "location_id";
+
+  const rows = targetIds.flatMap((targetId) =>
     serviceTypeIds.map((serviceTypeId) => ({
       store_id: input.store_id,
-      location_id: locationId,
+      scope_type: input.scope_type,
+      country_id: input.scope_type === "country" ? targetId : null,
+      province_id: input.scope_type === "province" ? targetId : null,
+      municipality_id: input.scope_type === "municipality" ? targetId : null,
+      location_id: input.scope_type === "location" ? targetId : null,
       service_type_id: serviceTypeId,
       rate_per_lb: input.rate_per_lb,
       minimum_weight_lb: input.minimum_weight_lb,
@@ -331,12 +354,45 @@ export async function upsertShippingRatesBulk(input: {
     }))
   );
 
-  return supabase
+  const { data: existing, error: existingError } = await supabase
     .from("shipping_rates")
-    .upsert(rows, {
-      onConflict: "store_id,location_id,service_type_id",
-    })
-    .select("*");
+    .select("id,service_type_id,country_id,province_id,municipality_id,location_id")
+    .eq("store_id", input.store_id)
+    .eq("scope_type", input.scope_type)
+    .in(targetColumn, targetIds)
+    .in("service_type_id", serviceTypeIds);
+
+  if (existingError) return { data: null, error: existingError };
+
+  const existingByKey = new Map(
+    (existing || []).map((row) => [
+      `${row[targetColumn as keyof typeof row]}:${row.service_type_id}`,
+      row.id,
+    ])
+  );
+
+  const updates = rows.filter((row) =>
+    existingByKey.has(`${row[targetColumn]}:${row.service_type_id}`)
+  );
+  const inserts = rows.filter((row) =>
+    !existingByKey.has(`${row[targetColumn]}:${row.service_type_id}`)
+  );
+
+  const updateResults = await Promise.all(
+    updates.map((row) =>
+      supabase
+        .from("shipping_rates")
+        .update(row)
+        .eq("id", existingByKey.get(`${row[targetColumn]}:${row.service_type_id}`)!)
+    )
+  );
+
+  const updateError = updateResults.map((result) => result.error).find(Boolean);
+  if (updateError) return { data: null, error: updateError };
+
+  if (!inserts.length) return { data: updates, error: null };
+
+  return supabase.from("shipping_rates").insert(inserts).select("*");
 }
 
 export type BulkShippingStatus =
