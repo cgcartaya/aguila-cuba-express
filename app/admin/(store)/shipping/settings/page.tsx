@@ -740,9 +740,13 @@ export default function ShippingSettingsPage() {
           </div>
         )}
 
-        <div className="grid gap-6 xl:grid-cols-2">
-          <SettingsCard title="Configuración general" icon={<Settings2 />}>
-            <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-6">
+          <SettingsCard
+            title="Configuración general"
+            icon={<Settings2 />}
+            className="order-1 lg:col-span-2 xl:col-span-6"
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Field label="País predeterminado">
                 <select
                   value={settings.default_country_id || ""}
@@ -855,7 +859,7 @@ export default function ShippingSettingsPage() {
                 Debajo del límite se usa la primera tasa. Desde el límite, todo
                 el monto usa la tasa reducida.
               </p>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Field label="Límite para tasa reducida">
                   <input
                     type="number"
@@ -968,13 +972,17 @@ export default function ShippingSettingsPage() {
             </button>
           </SettingsCard>
 
-          <SettingsCard title="1. Países" icon={<Globe2 />}>
+          <SettingsCard
+            title="1. Países"
+            icon={<Globe2 />}
+            className="order-2 xl:col-span-2"
+          >
             <p className={helpText}>
               Crea un país solamente si todavía no existe. Para Águila debe
               aparecer Cuba en la lista.
             </p>
 
-            <div className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
+            <div className="grid grid-cols-[minmax(0,1fr)_88px_48px] gap-2">
               <input
                 value={countryName}
                 onChange={(event) => setCountryName(event.target.value)}
@@ -1038,7 +1046,11 @@ export default function ShippingSettingsPage() {
             />
           </SettingsCard>
 
-          <SettingsCard title="2. Provincias" icon={<MapPinned />}>
+          <SettingsCard
+            title="2. Provincias"
+            icon={<MapPinned />}
+            className="order-3 xl:col-span-2"
+          >
             <p className={helpText}>
               Primero selecciona un país. Después crea o selecciona una
               provincia dentro de ese país.
@@ -1050,7 +1062,7 @@ export default function ShippingSettingsPage() {
                 "ninguno"}
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
+            <div className="grid grid-cols-[minmax(0,1fr)_88px_48px] gap-2">
               <input
                 value={provinceName}
                 disabled={!selectedCountryId}
@@ -1129,7 +1141,11 @@ export default function ShippingSettingsPage() {
             />
           </SettingsCard>
 
-          <SettingsCard title="3. Municipios" icon={<MapPinned />}>
+          <SettingsCard
+            title="3. Municipios"
+            icon={<MapPinned />}
+            className="order-4 xl:col-span-2"
+          >
             <p className={helpText}>
               Selecciona una provincia y crea los municipios que necesites.
             </p>
@@ -1140,7 +1156,7 @@ export default function ShippingSettingsPage() {
                 "ninguna"}
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[1fr_140px_auto]">
+            <div className="grid grid-cols-[minmax(0,1fr)_88px_48px] gap-2">
               <input
                 value={municipalityName}
                 disabled={!selectedProvinceId}
@@ -1217,8 +1233,9 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
-            title="4. Destinos operativos (lista de la APK)"
+            title="Destinos operativos (lista de la APK)"
             icon={<MapPinned />}
+            className="order-6 xl:col-span-2"
           >
             <p className={helpText}>
               Aquí se muestra la lista plana que usará la APK. El municipio solo
@@ -1235,7 +1252,7 @@ export default function ShippingSettingsPage() {
                 ?.name || "selecciona un municipio"}
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[1fr_170px_auto]">
+            <div className="grid grid-cols-[minmax(0,1fr)_110px_48px] gap-2">
               <input
                 value={locationName}
                 disabled={!selectedMunicipalityId}
@@ -1320,13 +1337,17 @@ export default function ShippingSettingsPage() {
             />
           </SettingsCard>
 
-          <SettingsCard title="Tipos de servicio" icon={<Tags />}>
+          <SettingsCard
+            title="Tipos de servicio"
+            icon={<Tags />}
+            className="order-7 xl:col-span-2"
+          >
             <p className={helpText}>
               Ejemplos: Paquete normal, Paquete grande y Dinero. El prefijo
               mantiene compatibilidad con la APK.
             </p>
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3">
               <input
                 value={serviceName}
                 onChange={(event) => setServiceName(event.target.value)}
@@ -1390,7 +1411,11 @@ export default function ShippingSettingsPage() {
             />
           </SettingsCard>
 
-          <SettingsCard title="Tarifas por libra" icon={<DollarSign />}>
+          <SettingsCard
+            title="4. Tarifas por libra"
+            icon={<DollarSign />}
+            className="order-5 lg:col-span-2 xl:col-span-6"
+          >
             <p className={helpText}>
               Aplica una misma tarifa a varias provincias, municipios, lugares
               operativos y tipos de paquete. Las tarifas más específicas tienen
@@ -1775,7 +1800,11 @@ export default function ShippingSettingsPage() {
             />
           </SettingsCard>
 
-          <SettingsCard title="Estado general de los envíos" icon={<Send />}>
+          <SettingsCard
+            title="Estado general de los envíos"
+            icon={<Send />}
+            className="order-8 xl:col-span-2"
+          >
             <p className={helpText}>
               Funciona como el control de la APK. Con un solo botón cambia el
               estado de todos los envíos activos de esta empresa.
@@ -1786,7 +1815,7 @@ export default function ShippingSettingsPage() {
               conservan sin cambios.
             </div>
 
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid gap-3">
               <GlobalStatusButton
                 icon={<Send size={20} />}
                 title="En tránsito hacia Cuba"
@@ -1835,7 +1864,11 @@ export default function ShippingSettingsPage() {
             )}
           </SettingsCard>
 
-          <SettingsCard title="Fees adicionales" icon={<DollarSign />}>
+          <SettingsCard
+            title="Fees adicionales"
+            icon={<DollarSign />}
+            className="order-9 xl:col-span-2"
+          >
             <p className={helpText}>
               Cargos para equipos o servicios especiales: televisor,
               refrigerador, bicicleta, entrega especial, etc.
@@ -1863,7 +1896,7 @@ export default function ShippingSettingsPage() {
               </div>
             )}
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3">
               <Field label="Nombre del fee">
                 <input
                   value={feeName}
@@ -2024,13 +2057,17 @@ function SettingsCard({
   title,
   icon,
   children,
+  className = "",
 }: {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <section className="group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+    <section
+      className={`group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${className}`}
+    >
       <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white p-5 md:p-6">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#061b3a] text-white shadow-md transition group-hover:scale-105">
