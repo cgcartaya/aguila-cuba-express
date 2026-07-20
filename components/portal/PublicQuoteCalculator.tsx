@@ -112,7 +112,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           service_type_id: json.services?.[0]?.id || "",
           country_id: json.countries?.[0]?.id || "",
           transport_mode: json.transportModes?.[0] || "",
-          item_category: json.categories?.[0] || "",
+          item_category: "service",
         }));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "No se pudo cargar el cotizador.");
@@ -133,8 +133,8 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
   }
 
   function nextStep() {
-    if (step === 1 && (!form.service_type_id || !form.transport_mode || !form.item_category)) {
-      setError("Selecciona el servicio, el método y el contenido.");
+    if (step === 1 && (!form.service_type_id || !form.transport_mode)) {
+      setError("Selecciona el servicio y el método de transporte.");
       return;
     }
     if (step === 2 && (!form.country_id || Number(form.weight_lb) <= 0)) {
@@ -211,7 +211,6 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
             <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text="Selecciona el servicio y la modalidad que mejor se ajusten a tu envío." />
             <Field label="Tipo de servicio"><select value={form.service_type_id} onChange={(event) => setField("service_type_id", event.target.value)} required><option value="">Selecciona un servicio</option>{config.services.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
             <div><p className="text-sm font-black text-slate-700">Método de transporte</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div></div>
-            <div><p className="text-sm font-black text-slate-700">Tipo de contenido</p><div className="mt-3 flex flex-wrap gap-2">{config.categories.map((category) => <button type="button" key={category} onClick={() => setField("item_category", category)} className={`rounded-full border px-4 py-2 text-sm font-black transition ${form.item_category === category ? "border-blue-600 bg-blue-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}>{categoryLabels[category] || category}</button>)}</div></div>
           </div>}
 
           {step === 2 && <div className="space-y-7">

@@ -112,9 +112,17 @@ export default function ShippingSettingsPage() {
   const [municipalityProvinceFilters, setMunicipalityProvinceFilters] = useState<string[]>([]);
   const [rateTerritorySearch, setRateTerritorySearch] = useState("");
   const [selectedRateServiceIds, setSelectedRateServiceIds] = useState<string[]>([]);
+  const [rateTransportMode, setRateTransportMode] = useState<
+    "air" | "sea" | "express" | "ground" | "other"
+  >("air");
   const [ratePerLb, setRatePerLb] = useState(0);
   const [minimumWeight, setMinimumWeight] = useState(0);
+  const [maximumWeight, setMaximumWeight] = useState("");
   const [minimumCharge, setMinimumCharge] = useState(0);
+  const [fixedFee, setFixedFee] = useState(0);
+  const [estimatedDaysMin, setEstimatedDaysMin] = useState(7);
+  const [estimatedDaysMax, setEstimatedDaysMax] = useState(15);
+  const [ratePriority, setRatePriority] = useState(100);
   const [showAllRateTerritories, setShowAllRateTerritories] = useState(false);
   const [showAllRateServices, setShowAllRateServices] = useState(false);
   const [updatingGlobalStatus, setUpdatingGlobalStatus] = useState(false);
@@ -405,6 +413,7 @@ export default function ShippingSettingsPage() {
       `Se guardarán ${combinations} combinaciones de tarifa.\n\n` +
         `${selectedRateTargetIds.length} territorio(s) × ` +
         `${selectedRateServiceIds.length} tipo(s) de paquete.\n\n` +
+        `Método: ${rateTransportMode === "air" ? "Aéreo" : rateTransportMode === "sea" ? "Marítimo" : rateTransportMode}.\n` +
         `Tarifa: $${ratePerLb.toFixed(2)} por libra.`
     );
 
@@ -417,9 +426,15 @@ export default function ShippingSettingsPage() {
           scope_type: rateScope,
           target_ids: selectedRateTargetIds,
           service_type_ids: selectedRateServiceIds,
+          transport_mode: rateTransportMode,
           rate_per_lb: ratePerLb,
           minimum_weight_lb: minimumWeight,
+          maximum_weight_lb: maximumWeight === "" ? null : Number(maximumWeight),
           minimum_charge: minimumCharge,
+          fixed_fee: fixedFee,
+          estimated_days_min: estimatedDaysMin,
+          estimated_days_max: estimatedDaysMax,
+          priority: ratePriority,
         }),
       `${combinations} combinaciones de tarifa guardadas.`
     );
@@ -1268,6 +1283,36 @@ export default function ShippingSettingsPage() {
               </div>
             )}
 
+            <div className="rounded-3xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">
+                2. Método de transporte
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  ["air", "Aéreo", "Entrega rápida por avión"],
+                  ["sea", "Marítimo", "Carga y paquetes por barco"],
+                  ["express", "Express", "Servicio prioritario"],
+                  ["ground", "Terrestre", "Transporte terrestre"],
+                ].map(([value, label, description]) => (
+                  <button
+                    type="button"
+                    key={value}
+                    onClick={() => setRateTransportMode(value as typeof rateTransportMode)}
+                    className={`rounded-2xl border p-4 text-left transition ${
+                      rateTransportMode === value
+                        ? "border-blue-500 bg-blue-600 text-white shadow-md"
+                        : "border-slate-200 bg-white text-slate-800 hover:border-blue-300"
+                    }`}
+                  >
+                    <span className="block font-extrabold">{label}</span>
+                    <span className={`mt-1 block text-xs font-medium ${rateTransportMode === value ? "text-blue-100" : "text-slate-500"}`}>
+                      {description}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid gap-5 xl:grid-cols-2">
               <div className="space-y-3">
                 <Field label={rateScope === "country" ? "Buscar país" : rateScope === "province" ? "Buscar provincia" : rateScope === "municipality" ? "Buscar municipio" : "Buscar lugar operativo"}>
@@ -1334,22 +1379,37 @@ export default function ShippingSettingsPage() {
                   <DollarSign size={20} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-slate-950">2. Valores que se aplicarán</h3>
+                  <h3 className="font-extrabold text-slate-950">3. Valores que se aplicarán</h3>
                   <p className="text-sm font-medium text-slate-500">
                     Las combinaciones existentes se actualizarán; las que falten se crearán.
                   </p>
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Field label="Precio por libra">
                   <input type="number" min="0" step="0.01" value={ratePerLb} onChange={(event) => setRatePerLb(Number(event.target.value))} className={inputClass} />
                 </Field>
-                <Field label="Peso mínimo">
+                <Field label="Peso mínimo facturable">
                   <input type="number" min="0" step="0.01" value={minimumWeight} onChange={(event) => setMinimumWeight(Number(event.target.value))} className={inputClass} />
+                </Field>
+                <Field label="Peso máximo (opcional)">
+                  <input type="number" min="0" step="0.01" value={maximumWeight} onChange={(event) => setMaximumWeight(event.target.value)} className={inputClass} />
                 </Field>
                 <Field label="Cobro mínimo">
                   <input type="number" min="0" step="0.01" value={minimumCharge} onChange={(event) => setMinimumCharge(Number(event.target.value))} className={inputClass} />
+                </Field>
+                <Field label="Fee fijo adicional">
+                  <input type="number" min="0" step="0.01" value={fixedFee} onChange={(event) => setFixedFee(Number(event.target.value))} className={inputClass} />
+                </Field>
+                <Field label="Entrega mínima (días)">
+                  <input type="number" min="0" value={estimatedDaysMin} onChange={(event) => setEstimatedDaysMin(Number(event.target.value))} className={inputClass} />
+                </Field>
+                <Field label="Entrega máxima (días)">
+                  <input type="number" min="0" value={estimatedDaysMax} onChange={(event) => setEstimatedDaysMax(Number(event.target.value))} className={inputClass} />
+                </Field>
+                <Field label="Prioridad">
+                  <input type="number" min="1" value={ratePriority} onChange={(event) => setRatePriority(Number(event.target.value))} className={inputClass} />
                 </Field>
               </div>
 
@@ -1359,7 +1419,7 @@ export default function ShippingSettingsPage() {
                     {selectedRateTargetIds.length * selectedRateServiceIds.length} combinación(es)
                   </p>
                   <p className="text-xs font-medium text-slate-500">
-                    {selectedRateTargetIds.length} territorio(s) × {selectedRateServiceIds.length} tipo(s) · Alcance: {rateScope === "country" ? "país" : rateScope === "province" ? "provincia" : rateScope === "municipality" ? "municipio" : "lugar operativo"}
+                    {selectedRateTargetIds.length} territorio(s) × {selectedRateServiceIds.length} tipo(s) · Método: {rateTransportMode === "air" ? "Aéreo" : rateTransportMode === "sea" ? "Marítimo" : rateTransportMode} · Alcance: {rateScope === "country" ? "país" : rateScope === "province" ? "provincia" : rateScope === "municipality" ? "municipio" : "lugar operativo"}
                   </p>
                 </div>
                 <button
@@ -2066,11 +2126,12 @@ function CollapsibleRateList({
             >
               <div className="min-w-0">
                 <p className="truncate font-bold text-slate-900">
-                  {territory || "Territorio"} · {service?.name || "Servicio"}
+                  {territory || "Territorio"} · {service?.name || "Servicio"} · {rate.transport_mode === "air" ? "Aéreo" : rate.transport_mode === "sea" ? "Marítimo" : rate.transport_mode}
                 </p>
                 <p className="text-xs font-medium text-slate-400">
                   {scopeLabel} · Mínimo: {Number(rate.minimum_weight_lb || 0).toFixed(2)} lb ·
-                  Cobro mínimo: ${Number(rate.minimum_charge || 0).toFixed(2)}
+                  Cobro mínimo: ${Number(rate.minimum_charge || 0).toFixed(2)} ·
+                  Entrega: {rate.estimated_days_min ?? "?"}-{rate.estimated_days_max ?? "?"} días
                 </p>
               </div>
 

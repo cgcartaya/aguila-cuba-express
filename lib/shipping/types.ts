@@ -135,9 +135,15 @@ export type ShippingRate = {
   municipality_id: string | null;
   location_id: string | null;
   service_type_id: string;
+  transport_mode: "air" | "sea" | "express" | "ground" | "other";
   rate_per_lb: number;
   minimum_weight_lb: number;
+  maximum_weight_lb: number | null;
   minimum_charge: number;
+  fixed_fee: number;
+  estimated_days_min: number | null;
+  estimated_days_max: number | null;
+  priority: number;
   is_active: boolean;
 };
 

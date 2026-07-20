@@ -202,18 +202,30 @@ export async function upsertShippingRate(input: {
   scope_type: "country" | "province" | "municipality" | "location";
   target_id: string;
   service_type_id: string;
+  transport_mode: "air" | "sea" | "express" | "ground" | "other";
   rate_per_lb: number;
   minimum_weight_lb: number;
+  maximum_weight_lb?: number | null;
   minimum_charge: number;
+  fixed_fee?: number;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  priority?: number;
 }) {
   return upsertShippingRatesBulk({
     store_id: input.store_id,
     scope_type: input.scope_type,
     target_ids: [input.target_id],
     service_type_ids: [input.service_type_id],
+    transport_mode: input.transport_mode,
     rate_per_lb: input.rate_per_lb,
     minimum_weight_lb: input.minimum_weight_lb,
+    maximum_weight_lb: input.maximum_weight_lb ?? null,
     minimum_charge: input.minimum_charge,
+    fixed_fee: input.fixed_fee ?? 0,
+    estimated_days_min: input.estimated_days_min ?? null,
+    estimated_days_max: input.estimated_days_max ?? null,
+    priority: input.priority ?? 100,
   });
 }
 
@@ -303,9 +315,15 @@ export async function upsertShippingRatesBulk(input: {
   scope_type: "country" | "province" | "municipality" | "location";
   target_ids: string[];
   service_type_ids: string[];
+  transport_mode: "air" | "sea" | "express" | "ground" | "other";
   rate_per_lb: number;
   minimum_weight_lb: number;
+  maximum_weight_lb?: number | null;
   minimum_charge: number;
+  fixed_fee?: number;
+  estimated_days_min?: number | null;
+  estimated_days_max?: number | null;
+  priority?: number;
 }) {
   const targetIds = Array.from(new Set(input.target_ids.filter(Boolean)));
   const serviceTypeIds = Array.from(
@@ -346,9 +364,15 @@ export async function upsertShippingRatesBulk(input: {
       municipality_id: input.scope_type === "municipality" ? targetId : null,
       location_id: input.scope_type === "location" ? targetId : null,
       service_type_id: serviceTypeId,
+      transport_mode: input.transport_mode,
       rate_per_lb: input.rate_per_lb,
       minimum_weight_lb: input.minimum_weight_lb,
+      maximum_weight_lb: input.maximum_weight_lb ?? null,
       minimum_charge: input.minimum_charge,
+      fixed_fee: input.fixed_fee ?? 0,
+      estimated_days_min: input.estimated_days_min ?? null,
+      estimated_days_max: input.estimated_days_max ?? null,
+      priority: input.priority ?? 100,
       is_active: true,
       updated_at: new Date().toISOString(),
     }))
@@ -356,9 +380,10 @@ export async function upsertShippingRatesBulk(input: {
 
   const { data: existing, error: existingError } = await supabase
     .from("shipping_rates")
-    .select("id,service_type_id,country_id,province_id,municipality_id,location_id")
+    .select("id,service_type_id,transport_mode,country_id,province_id,municipality_id,location_id")
     .eq("store_id", input.store_id)
     .eq("scope_type", input.scope_type)
+    .eq("transport_mode", input.transport_mode)
     .in(targetColumn, targetIds)
     .in("service_type_id", serviceTypeIds);
 
@@ -366,16 +391,16 @@ export async function upsertShippingRatesBulk(input: {
 
   const existingByKey = new Map(
     (existing || []).map((row) => [
-      `${row[targetColumn as keyof typeof row]}:${row.service_type_id}`,
+      `${row[targetColumn as keyof typeof row]}:${row.service_type_id}:${row.transport_mode}`,
       row.id,
     ])
   );
 
   const updates = rows.filter((row) =>
-    existingByKey.has(`${row[targetColumn]}:${row.service_type_id}`)
+    existingByKey.has(`${row[targetColumn]}:${row.service_type_id}:${row.transport_mode}`)
   );
   const inserts = rows.filter((row) =>
-    !existingByKey.has(`${row[targetColumn]}:${row.service_type_id}`)
+    !existingByKey.has(`${row[targetColumn]}:${row.service_type_id}:${row.transport_mode}`)
   );
 
   const updateResults = await Promise.all(
@@ -383,7 +408,7 @@ export async function upsertShippingRatesBulk(input: {
       supabase
         .from("shipping_rates")
         .update(row)
-        .eq("id", existingByKey.get(`${row[targetColumn]}:${row.service_type_id}`)!)
+        .eq("id", existingByKey.get(`${row[targetColumn]}:${row.service_type_id}:${row.transport_mode}`)!)
     )
   );
 
