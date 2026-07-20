@@ -21,9 +21,9 @@ import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 
-type Option = { id: string; name: string };
+type Option = { id: string; name: string; code?: string };
 type Province = Option & { country_id: string };
-type Municipality = Option & { province_id: string };
+type Municipality = Option & { province_id: string; is_capital?: boolean; is_special_municipality?: boolean };
 type Location = Option & { municipality_id: string };
 type Rule = {
   id: string;
@@ -110,11 +110,16 @@ export default function QuoteSettingsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [section, setSection] = useState<"general" | "rules" | "test">("general");
   const [testWeight, setTestWeight] = useState(10);
+  const [territoryScope, setTerritoryScope] = useState<"cuba" | "province" | "municipality">("cuba");
+  const [importingCuba, setImportingCuba] = useState(false);
 
   const visibleProvinces = provinces.filter((item) => !form.country_id || item.country_id === form.country_id);
-  const visibleMunicipalities = municipalities.filter((item) => !form.province_id || item.province_id === form.province_id);
+  const visibleMunicipalities = municipalities
+    .filter((item) => !form.province_id || item.province_id === form.province_id)
+    .sort((a, b) => Number(!!b.is_capital) - Number(!!a.is_capital) || a.name.localeCompare(b.name));
   const visibleLocations = locations.filter((item) => !form.municipality_id || item.municipality_id === form.municipality_id);
   const activeRules = rules.filter((rule) => rule.is_active);
+  const cubaCountry = countries.find((item) => item.code === "CU" || item.name.toLowerCase() === "cuba");
 
   const readiness = [
     { label: "Configuración pública", ok: !!settings?.quote_enabled, detail: settings?.quote_enabled ? "Cotizador activo" : "Activa el cotizador" },
@@ -133,9 +138,9 @@ export default function QuoteSettingsPage() {
       supabase.from("customer_portal_settings").select("*").eq("store_id", store.id).maybeSingle(),
       supabase.from("quote_rate_rules").select("*").eq("store_id", store.id).order("priority").order("created_at", { ascending: false }),
       supabase.from("shipping_service_types").select("id,name").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
-      supabase.from("shipping_countries").select("id,name").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
+      supabase.from("shipping_countries").select("id,name,code").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
       supabase.from("shipping_provinces").select("id,name,country_id").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
-      supabase.from("shipping_municipalities").select("id,name,province_id").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
+      supabase.from("shipping_municipalities").select("id,name,province_id,is_capital,is_special_municipality").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
       supabase.from("shipping_locations").select("id,name,municipality_id").eq("store_id", store.id).eq("is_active", true).order("sort_order"),
     ]);
 
@@ -180,10 +185,46 @@ export default function QuoteSettingsPage() {
     else { setMessage("Configuración pública guardada."); await load(); }
   }
 
+  async function importCubaDestinations() {
+    if (!store?.id) return;
+    setImportingCuba(true);
+    setMessage("");
+    setError("");
+
+    const { data, error: importError } = await supabase.rpc(
+      "import_cuba_shipping_destinations",
+      { p_store_id: store.id }
+    );
+
+    setImportingCuba(false);
+    if (importError) {
+      setError(importError.message);
+      return;
+    }
+
+    setMessage(`Cuba importada correctamente: ${data?.provinces ?? 16} territorios y ${data?.municipalities ?? 168} municipios.`);
+    await load();
+  }
+
+  function changeTerritoryScope(scope: "cuba" | "province" | "municipality") {
+    setTerritoryScope(scope);
+    const countryId = cubaCountry?.id || form.country_id || "";
+
+    if (scope === "cuba") {
+      setForm((current) => ({ ...current, country_id: countryId, province_id: "", municipality_id: "", location_id: "" }));
+      return;
+    }
+
+    setForm((current) => ({ ...current, country_id: countryId, municipality_id: scope === "province" ? "" : current.municipality_id, location_id: "" }));
+  }
+
   function validateRule() {
     if (!form.name.trim()) return "Escribe un nombre para la tarifa.";
     if (!form.service_type_id) return "Selecciona un servicio. Si el selector está vacío, créalo en Ajustes de envíos.";
     if (!form.transport_mode) return "Selecciona el método de transporte.";
+    if (!form.country_id) return "Selecciona Cuba como país para esta tarifa.";
+    if (territoryScope === "province" && !form.province_id) return "Selecciona la provincia a la que aplica la tarifa.";
+    if (territoryScope === "municipality" && (!form.province_id || !form.municipality_id)) return "Selecciona la provincia y el municipio.";
     if (!form.item_category) return "Selecciona el contenido.";
     if (form.billing_mode !== "quote_only" && Number(form.rate) <= 0) return "La tarifa debe ser mayor que cero.";
     if (Number(form.minimum_weight_lb) <= 0) return "El peso mínimo debe ser mayor que cero.";
@@ -233,6 +274,7 @@ export default function QuoteSettingsPage() {
   function editRule(rule: Rule) {
     setEditingId(rule.id);
     setForm({ ...rule, service_type_id: rule.service_type_id || "", country_id: rule.country_id || "", province_id: rule.province_id || "", municipality_id: rule.municipality_id || "", location_id: rule.location_id || "", maximum_weight_lb: rule.maximum_weight_lb ?? "" });
+    setTerritoryScope(rule.municipality_id ? "municipality" : rule.province_id ? "province" : "cuba");
     setSection("rules");
     window.scrollTo({ top: 300, behavior: "smooth" });
   }
@@ -286,10 +328,42 @@ export default function QuoteSettingsPage() {
       <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <Heading icon={<Plus />} title={editingId ? "Editar tarifa" : "Nueva tarifa"} text="Empieza con una tarifa general. Después agrega excepciones por provincia, municipio o lugar." />
         {services.length === 0 && <Notice text="No hay servicios activos. Ve a Ajustes de envíos y crea al menos uno antes de guardar una tarifa." />}
-        {countries.length === 0 && <Notice text="No hay países activos. Configura primero los destinos en Ajustes de envíos." />}
+        {countries.length === 0 ? (
+          <div className="mt-6 rounded-3xl border border-blue-200 bg-blue-50 p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-black text-[#071d43]">Carga automática de Cuba</h3>
+                <p className="mt-1 text-sm font-semibold text-slate-600">Importa 15 provincias, el Municipio Especial Isla de la Juventud y los 168 municipios sin escribirlos uno por uno.</p>
+              </div>
+              <button type="button" disabled={importingCuba} onClick={() => void importCubaDestinations()} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-blue-700 px-5 py-3 font-black text-white shadow disabled:opacity-60">
+                {importingCuba ? <Loader2 className="animate-spin" size={18} /> : <MapPin size={18} />}
+                Importar Cuba
+              </button>
+            </div>
+          </div>
+        ) : null}
         <form onSubmit={saveRule} className="mt-7 space-y-8">
           <Block title="Servicio y modalidad"><div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"><Field label="Nombre de la regla"><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></Field><Field label="Servicio"><select value={form.service_type_id ?? ""} onChange={(event) => setForm({ ...form, service_type_id: event.target.value })}><option value="">Selecciona un servicio</option>{services.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="Método"><select value={form.transport_mode} onChange={(event) => setForm({ ...form, transport_mode: event.target.value })}>{Object.entries(modeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="Contenido"><select value={form.item_category} onChange={(event) => setForm({ ...form, item_category: event.target.value })}>{Object.entries(categoryLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field></div></Block>
-          <Block title="Destino al que aplica"><div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"><Field label="País"><select value={form.country_id ?? ""} onChange={(event) => setForm({ ...form, country_id: event.target.value, province_id: "", municipality_id: "", location_id: "" })}><option value="">Todos los países</option>{countries.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="Provincia"><select value={form.province_id ?? ""} onChange={(event) => setForm({ ...form, province_id: event.target.value, municipality_id: "", location_id: "" })}><option value="">Todas las provincias</option>{visibleProvinces.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="Municipio"><select value={form.municipality_id ?? ""} onChange={(event) => setForm({ ...form, municipality_id: event.target.value, location_id: "" })}><option value="">Todos los municipios</option>{visibleMunicipalities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field><Field label="Lugar"><select value={form.location_id ?? ""} onChange={(event) => setForm({ ...form, location_id: event.target.value })}><option value="">Todos los lugares</option>{visibleLocations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field></div></Block>
+          <Block title="Territorio al que aplica">
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                ["cuba", "Todo Cuba", "Tarifa base para cualquier provincia o municipio"],
+                ["province", "Provincia completa", "Sobrescribe la tarifa general en una provincia"],
+                ["municipality", "Municipio específico", "Permite diferenciar cabecera y municipios más alejados"],
+              ].map(([scope, title, description]) => (
+                <button key={scope} type="button" onClick={() => changeTerritoryScope(scope as typeof territoryScope)} className={`rounded-2xl border p-4 text-left transition ${territoryScope === scope ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
+                  <span className="block font-black text-[#071d43]">{title}</span>
+                  <span className="mt-1 block text-xs font-semibold leading-5 text-slate-500">{description}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 grid gap-5 md:grid-cols-2">
+              <Field label="País"><select value={form.country_id ?? ""} onChange={(event) => setForm({ ...form, country_id: event.target.value, province_id: "", municipality_id: "", location_id: "" })}><option value="">Selecciona el país</option>{countries.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+              {territoryScope !== "cuba" && <Field label="Provincia"><select value={form.province_id ?? ""} onChange={(event) => setForm({ ...form, province_id: event.target.value, municipality_id: "", location_id: "" })}><option value="">Selecciona una provincia</option>{visibleProvinces.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>}
+              {territoryScope === "municipality" && <Field label="Municipio"><select value={form.municipality_id ?? ""} onChange={(event) => setForm({ ...form, municipality_id: event.target.value, location_id: "" })}><option value="">Selecciona un municipio</option>{visibleMunicipalities.map((item) => <option key={item.id} value={item.id}>{item.name}{item.is_capital ? " · Cabecera" : ""}</option>)}</select></Field>}
+            </div>
+            {territoryScope === "municipality" && form.province_id && <div className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-600"><b className="text-[#071d43]">Consejo:</b> crea primero una tarifa para toda la provincia y luego una excepción más económica para el municipio cabecera o más alta para municipios alejados.</div>}
+          </Block>
           <Block title="Precio, mínimos y entrega"><div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4"><Field label="Forma de cobro"><select value={form.billing_mode} onChange={(event) => setForm({ ...form, billing_mode: event.target.value })}>{Object.entries(billingLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field><Field label="Tarifa"><input type="number" min="0" step="0.01" value={form.rate} disabled={form.billing_mode === "quote_only"} onChange={(event) => setForm({ ...form, rate: Number(event.target.value) })} /></Field><Field label="Peso mínimo facturable"><input type="number" min="0.1" step="0.1" value={form.minimum_weight_lb} onChange={(event) => setForm({ ...form, minimum_weight_lb: Number(event.target.value) })} /></Field><Field label="Peso máximo (opcional)"><input type="number" min="0" step="0.1" value={form.maximum_weight_lb} onChange={(event) => setForm({ ...form, maximum_weight_lb: event.target.value })} /></Field><Field label="Cobro mínimo"><input type="number" min="0" step="0.01" value={form.minimum_charge} onChange={(event) => setForm({ ...form, minimum_charge: Number(event.target.value) })} /></Field><Field label="Fee fijo adicional"><input type="number" min="0" step="0.01" value={form.fixed_fee} onChange={(event) => setForm({ ...form, fixed_fee: Number(event.target.value) })} /></Field><Field label="Entrega mínima (días)"><input type="number" min="0" value={form.estimated_days_min ?? ""} onChange={(event) => setForm({ ...form, estimated_days_min: event.target.value === "" ? null : Number(event.target.value) })} /></Field><Field label="Entrega máxima (días)"><input type="number" min="0" value={form.estimated_days_max ?? ""} onChange={(event) => setForm({ ...form, estimated_days_max: event.target.value === "" ? null : Number(event.target.value) })} /></Field><Field label="Prioridad"><input type="number" min="1" value={form.priority} onChange={(event) => setForm({ ...form, priority: Number(event.target.value) })} /></Field><Toggle title="Regla activa" text="Se publica inmediatamente." checked={form.is_active} onChange={(value) => setForm({ ...form, is_active: value })} /></div></Block>
           <div className="flex flex-wrap gap-3"><button disabled={saving || services.length === 0} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 font-black text-white shadow-lg disabled:opacity-50">{saving ? <Loader2 className="animate-spin" /> : <Save />} {editingId ? "Guardar cambios" : "Crear tarifa"}</button>{editingId && <button type="button" onClick={() => { setEditingId(null); setForm({ ...baseRule, service_type_id: services[0]?.id || "", country_id: countries[0]?.id || "" }); }} className="rounded-2xl border border-slate-300 px-6 py-3.5 font-black">Cancelar</button>}</div>
         </form>
