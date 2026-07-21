@@ -116,7 +116,7 @@ export default function StoreAdminNav() {
       "
       style={{ backgroundColor: primaryColor }}
     >
-      <div className="mb-6">
+      <div className="mb-6 shrink-0">
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
           <Store size={24} />
         </div>
@@ -143,7 +143,7 @@ export default function StoreAdminNav() {
         Agregar producto
       </Link>
 
-      <nav className="space-y-6">
+      <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain pr-2 pb-4 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.28)_transparent]">
         {sections.map((section) => (
           <section key={section.title}>
             <p className="mb-2 px-4 text-[11px] font-black uppercase tracking-[0.18em] text-white/50">
@@ -173,7 +173,7 @@ export default function StoreAdminNav() {
         ))}
       </nav>
 
-      <div className="mt-8 border-t border-white/20 pt-5">
+      <div className="shrink-0 border-t border-white/20 pt-4">
         <Link
           href={publicStoreHref}
           target="_blank"
@@ -184,7 +184,7 @@ export default function StoreAdminNav() {
         </Link>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-3 shrink-0">
         <LogoutButton />
       </div>
     </aside>
