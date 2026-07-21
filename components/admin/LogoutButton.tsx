@@ -1,25 +1,47 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-export default function LogoutButton() {
+type LogoutButtonProps = {
+  className?: string;
+  compact?: boolean;
+  onLoggedOut?: () => void;
+};
+
+export default function LogoutButton({
+  className = "",
+  compact = false,
+  onLoggedOut,
+}: LogoutButtonProps) {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    if (loading) return;
+    setLoading(true);
+
+    try {
+      await supabase.auth.signOut();
+      onLoggedOut?.();
+      router.replace("/login");
+      router.refresh();
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <button
+      type="button"
       onClick={handleLogout}
-      className="flex items-center gap-2 rounded-2xl border px-4 py-3 font-semibold text-gray-700 hover:bg-gray-100"
+      disabled={loading}
+      className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-black transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     >
-      <LogOut size={18} />
-      Cerrar sesión
+      {loading ? <Loader2 size={18} className="animate-spin" /> : <LogOut size={18} />}
+      {!compact && (loading ? "Cerrando..." : "Cerrar sesión")}
     </button>
   );
 }
