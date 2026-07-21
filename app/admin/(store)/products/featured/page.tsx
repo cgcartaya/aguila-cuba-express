@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { ArrowLeft, Loader2, Save, Search, Sparkles } from "lucide-react";
+import { Loader2, Save, Search, Sparkles } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -12,6 +11,7 @@ import {
   updateHomeFeaturedProduct,
 } from "@/lib/services/products";
 import type { Product } from "@/components/admin/products/types";
+import ProductSectionTabs from "@/components/admin/products/ProductSectionTabs";
 
 type Draft = {
   enabled: boolean;
@@ -150,11 +150,10 @@ export default function FeaturedProductsAdminPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl p-4 sm:p-6">
+      <ProductSectionTabs />
+
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/admin/products" className="mb-2 inline-flex items-center gap-2 text-sm font-bold text-slate-600 hover:text-slate-900">
-            <ArrowLeft size={16} /> Volver a productos
-          </Link>
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-50 text-red-600">
               <Sparkles size={22} />

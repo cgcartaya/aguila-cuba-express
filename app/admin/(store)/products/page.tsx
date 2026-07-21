@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Sparkles, Trash2, Upload } from "lucide-react";
+import { Loader2, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
@@ -29,6 +29,7 @@ import ProductActionsMenu from "@/components/admin/products/ProductActionsMenu";
 import ProductStats from "@/components/admin/products/ProductStats";
 import ProductFilters from "@/components/admin/products/ProductFilters";
 import ProductPagination from "@/components/admin/products/ProductPagination";
+import ProductSectionTabs from "@/components/admin/products/ProductSectionTabs";
 import ProductsEmptyState from "@/components/admin/products/ProductsEmptyState";
 
 import type { Product } from "@/components/admin/products/types";
@@ -260,6 +261,8 @@ export default function AdminProductsPage() {
           </p>
         </div>
 
+        <ProductSectionTabs />
+
         {errorMessage && (
           <div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
             {errorMessage}
@@ -285,7 +288,7 @@ export default function AdminProductsPage() {
           activeFilters={activeFilters}
         />
 
-        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Link
             href="/admin/products/import"
             className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm"
@@ -305,14 +308,6 @@ export default function AdminProductsPage() {
                 {trashCount}
               </span>
             )}
-          </Link>
-
-          <Link
-            href="/admin/products/featured"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-100"
-          >
-            <Sparkles size={17} />
-            Destacados de inicio
           </Link>
 
           <Link
