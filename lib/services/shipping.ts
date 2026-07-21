@@ -141,3 +141,85 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 export function createShipment(storeId: string, input: ShipmentInput, createdBy?: string | null) { return save(storeId, null, input, createdBy); }
 export function updateShipment(storeId: string, shipmentId: string, input: ShipmentInput, updatedBy?: string | null) { return save(storeId, shipmentId, input, updatedBy); }
 export function moveShipmentToTrash(storeId: string, shipmentId: string) { return supabase.from("shipments").update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("store_id", storeId).eq("id", shipmentId); }
+
+export function updateShipmentStatus(
+  storeId: string,
+  shipmentId: string,
+  status: Shipment["status"],
+) {
+  const now = new Date().toISOString();
+  return supabase
+    .from("shipments")
+    .update({
+      status,
+      delivered: status === "delivered",
+      delivered_date: status === "delivered" ? now : null,
+      updated_at: now,
+    })
+    .eq("store_id", storeId)
+    .eq("id", shipmentId)
+    .is("deleted_at", null);
+}
+
+export function bulkUpdateShipmentStatus(
+  storeId: string,
+  shipmentIds: string[],
+  status: Shipment["status"],
+) {
+  if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
+  const now = new Date().toISOString();
+  return supabase
+    .from("shipments")
+    .update({
+      status,
+      delivered: status === "delivered",
+      delivered_date: status === "delivered" ? now : null,
+      updated_at: now,
+    })
+    .eq("store_id", storeId)
+    .in("id", shipmentIds)
+    .is("deleted_at", null);
+}
+
+export function bulkMoveShipmentsToTrash(storeId: string, shipmentIds: string[]) {
+  if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
+  const now = new Date().toISOString();
+  return supabase
+    .from("shipments")
+    .update({ deleted_at: now, updated_at: now })
+    .eq("store_id", storeId)
+    .in("id", shipmentIds)
+    .is("deleted_at", null);
+}
+
+export function bulkAssignShipmentDriver(
+  storeId: string,
+  shipmentIds: string[],
+  driver: Pick<ShippingDriver, "id" | "name"> | null,
+) {
+  if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
+  return supabase
+    .from("shipments")
+    .update({
+      assigned_driver_id: driver?.id || null,
+      assigned_driver_name: driver?.name || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("store_id", storeId)
+    .in("id", shipmentIds)
+    .is("deleted_at", null);
+}
+
+export function bulkMoveShipmentsToTrip(
+  storeId: string,
+  shipmentIds: string[],
+  tripId: string,
+) {
+  if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
+  return supabase
+    .from("shipments")
+    .update({ trip_id: tripId, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .in("id", shipmentIds)
+    .is("deleted_at", null);
+}
