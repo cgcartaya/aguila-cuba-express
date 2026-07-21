@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -75,6 +75,8 @@ export default function CustomerRecipientPicker({
   const [message, setMessage] = useState("");
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [creatingRecipient, setCreatingRecipient] = useState(false);
+  const searchRequestRef = useRef(0);
+  const suppressNextRealtimeSearchRef = useRef(false);
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState(digits(initialPhone));
@@ -107,19 +109,24 @@ export default function CustomerRecipientPicker({
     [locations, municipalityId]
   );
 
-  async function runSearch() {
-    const term = search.trim();
+  async function runSearch(termOverride?: string, openNewCustomerWhenEmpty = false) {
+    const term = (termOverride ?? search).trim();
     if (term.length < 2) {
-      setMessage("Escribe al menos 2 caracteres: código, nombre o teléfono.");
+      setResults([]);
+      setMessage(term.length ? "Escribe al menos 2 caracteres: código, nombre o teléfono." : "");
       return;
     }
 
+    const requestId = ++searchRequestRef.current;
     setLoading(true);
     setMessage("");
     const { data, error } = await searchShippingCustomers(storeId, term);
+
+    if (requestId !== searchRequestRef.current) return;
     setLoading(false);
 
     if (error) {
+      setResults([]);
       setMessage(error.message || "No se pudo buscar el cliente.");
       return;
     }
@@ -127,10 +134,32 @@ export default function CustomerRecipientPicker({
     setResults(data);
     if (!data.length) {
       setCustomerPhone(digits(term));
-      setCreatingCustomer(true);
-      setMessage("No encontramos coincidencias. Valida los datos antes de registrarlo.");
+      if (openNewCustomerWhenEmpty) setCreatingCustomer(true);
+      setMessage("No encontramos coincidencias. Puedes registrar un cliente nuevo.");
     }
   }
+
+  useEffect(() => {
+    if (suppressNextRealtimeSearchRef.current) {
+      suppressNextRealtimeSearchRef.current = false;
+      return;
+    }
+
+    const term = search.trim();
+    if (term.length < 2) {
+      searchRequestRef.current += 1;
+      setLoading(false);
+      setResults([]);
+      setMessage(term.length ? "Escribe al menos 2 caracteres: código, nombre o teléfono." : "");
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void runSearch(term, false);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [search, storeId]);
 
   async function selectCustomer(selected: ShippingCustomer) {
     setLoading(true);
@@ -148,6 +177,7 @@ export default function CustomerRecipientPicker({
     setResults([]);
     setCreatingCustomer(false);
     setCreatingRecipient(false);
+    suppressNextRealtimeSearchRef.current = true;
     setSearch(`${data.customer.customer_code} · ${data.customer.name}`);
     applyCustomer(data.customer);
   }
@@ -218,6 +248,7 @@ export default function CustomerRecipientPicker({
     setRecipients([]);
     setCreatingCustomer(false);
     setCreatingRecipient(true);
+    suppressNextRealtimeSearchRef.current = true;
     setSearch(`${data.customer_code} · ${data.name}`);
     setMessage(`Cliente ${data.customer_code} creado. Ahora agrega o selecciona un destinatario.`);
     applyCustomer(data);
@@ -300,7 +331,11 @@ export default function CustomerRecipientPicker({
             <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setCustomer(null);
+                setRecipients([]);
+              }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -311,7 +346,7 @@ export default function CustomerRecipientPicker({
               placeholder="Ej. AG-0043, Carlos García o 3051234567"
             />
           </label>
-          <button type="button" onClick={() => void runSearch()} disabled={loading} className={darkButton}>
+          <button type="button" onClick={() => void runSearch(undefined, true)} disabled={loading} className={darkButton}>
             {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
             Buscar
           </button>
