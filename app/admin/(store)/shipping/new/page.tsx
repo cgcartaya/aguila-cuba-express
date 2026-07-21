@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Settings } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import ShipmentForm from "@/components/admin/shipping/ShipmentForm";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -28,6 +28,9 @@ import type {
 
 export default function NewShipmentPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialCustomerId = searchParams.get("customerId") || "";
+  const initialRecipientId = searchParams.get("recipientId") || "";
   const {
     access,
     loading: accessLoading,
@@ -147,6 +150,8 @@ export default function NewShipmentPage() {
           serviceTypes={serviceTypes}
           rates={rates}
           extraFees={extraFees}
+          initialCustomerId={initialCustomerId}
+          initialRecipientId={initialRecipientId}
           submitting={submitting}
           onSubmit={submit}
         />

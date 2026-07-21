@@ -57,6 +57,8 @@ export default function CustomerRecipientPicker({
   municipalities,
   locations,
   initialPhone = "",
+  initialCustomerId = "",
+  initialRecipientId = "",
   onApply,
 }: {
   storeId: string;
@@ -65,6 +67,8 @@ export default function CustomerRecipientPicker({
   municipalities: ShippingMunicipality[];
   locations: ShippingLocation[];
   initialPhone?: string;
+  initialCustomerId?: string;
+  initialRecipientId?: string;
   onApply: (selection: CustomerSelection) => void;
 }) {
   const [search, setSearch] = useState(initialPhone);
@@ -77,6 +81,7 @@ export default function CustomerRecipientPicker({
   const [creatingRecipient, setCreatingRecipient] = useState(false);
   const searchRequestRef = useRef(0);
   const suppressNextRealtimeSearchRef = useRef(false);
+  const initialSelectionLoadedRef = useRef(false);
 
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState(digits(initialPhone));
@@ -108,6 +113,46 @@ export default function CustomerRecipientPicker({
     () => locations.filter((item) => !municipalityId || item.municipality_id === municipalityId),
     [locations, municipalityId]
   );
+
+
+  useEffect(() => {
+    if (!initialCustomerId || initialSelectionLoadedRef.current) return;
+    initialSelectionLoadedRef.current = true;
+
+    void (async () => {
+      setLoading(true);
+      setMessage("Cargando cliente seleccionado...");
+      const { data, error } = await getShippingCustomerWithRecipients(
+        storeId,
+        initialCustomerId
+      );
+      setLoading(false);
+
+      if (error || !data?.customer) {
+        setMessage(error?.message || "No se pudo cargar el cliente seleccionado.");
+        return;
+      }
+
+      setCustomer(data.customer);
+      setRecipients(data.recipients || []);
+      setResults([]);
+      setCreatingCustomer(false);
+      setCreatingRecipient(false);
+      suppressNextRealtimeSearchRef.current = true;
+      setSearch(`${data.customer.customer_code} · ${data.customer.name}`);
+      applyCustomer(data.customer);
+
+      const selectedRecipient = (data.recipients || []).find(
+        (recipient) => recipient.id === initialRecipientId
+      );
+      if (selectedRecipient) {
+        applyRecipientForCustomer(data.customer, selectedRecipient);
+        setMessage(`Cliente y destinatario ${selectedRecipient.name} cargados.`);
+      } else {
+        setMessage("Cliente cargado. Selecciona uno de sus destinatarios.");
+      }
+    })();
+  }, [initialCustomerId, initialRecipientId, storeId]);
 
   async function runSearch(termOverride?: string, openNewCustomerWhenEmpty = false) {
     const term = (termOverride ?? search).trim();
@@ -254,13 +299,15 @@ export default function CustomerRecipientPicker({
     applyCustomer(data);
   }
 
-  function applyRecipient(recipient: ShippingRecipient) {
-    if (!customer) return;
+  function applyRecipientForCustomer(
+    selectedCustomer: ShippingCustomer,
+    recipient: ShippingRecipient
+  ) {
     onApply({
-      customer_id: customer.id,
+      customer_id: selectedCustomer.id,
       recipient_id: recipient.id,
-      sender_name: customer.name,
-      sender_phone: customer.phone,
+      sender_name: selectedCustomer.name,
+      sender_phone: selectedCustomer.phone,
       recipient_name: recipient.name,
       recipient_phone: recipient.phone,
       recipient_address: recipient.address,
@@ -271,6 +318,11 @@ export default function CustomerRecipientPicker({
       shipping_location_id: recipient.shipping_location_id,
       location: recipient.legacy_location || "",
     });
+  }
+
+  function applyRecipient(recipient: ShippingRecipient) {
+    if (!customer) return;
+    applyRecipientForCustomer(customer, recipient);
     setMessage(`Destinatario ${recipient.name} aplicado al envío.`);
   }
 

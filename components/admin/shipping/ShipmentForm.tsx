@@ -24,12 +24,14 @@ type Props = {
   rates: ShippingRate[];
   extraFees: ShippingExtraFee[];
   initialSelectedFees?: ShipmentFeeSelection[];
+  initialCustomerId?: string;
+  initialRecipientId?: string;
   submitting: boolean;
   onSubmit: (input: ShipmentInput) => Promise<void>;
 };
 
 export default function ShipmentForm(props: Props) {
-  const { storeId, shipment, drivers, settings, countries, provinces, municipalities, locations, serviceTypes, rates, extraFees, initialSelectedFees = [], submitting, onSubmit } = props;
+  const { storeId, shipment, drivers, settings, countries, provinces, municipalities, locations, serviceTypes, rates, extraFees, initialSelectedFees = [], initialCustomerId = "", initialRecipientId = "", submitting, onSubmit } = props;
   const [error, setError] = useState("");
   const [form, setForm] = useState<ShipmentInput>({
     customer_id: shipment?.customer_id || null,
@@ -171,6 +173,8 @@ export default function ShipmentForm(props: Props) {
       municipalities={municipalities}
       locations={locations}
       initialPhone={form.sender_phone}
+      initialCustomerId={initialCustomerId}
+      initialRecipientId={initialRecipientId}
       onApply={(selection) =>
         setForm((current) => ({
           ...current,
