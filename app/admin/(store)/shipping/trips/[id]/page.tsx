@@ -10,8 +10,11 @@ import {
   Edit3,
   Loader2,
   Package,
+  Search,
   Ship,
+  SlidersHorizontal,
   Truck,
+  X,
 } from "lucide-react";
 
 import InvoiceActions from "@/components/admin/shipping/InvoiceActions";
@@ -55,13 +58,13 @@ export default function ShippingTripDetailPage() {
 
   const activeStore = useMemo(
     () => (isSuperAdmin ? selectedStore || accessStore : accessStore),
-    [accessStore, isSuperAdmin, selectedStore]
+    [accessStore, isSuperAdmin, selectedStore],
   );
 
   const canManage =
     access?.isSuperAdmin ||
     ["OWNER", "ADMIN", "OPERATIONS"].includes(
-      access?.storeMembership?.role || ""
+      access?.storeMembership?.role || "",
     );
 
   const [trip, setTrip] = useState<ShippingTrip | null>(null);
@@ -69,6 +72,9 @@ export default function ShippingTripDetailPage() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
 
   async function load() {
     if (!activeStore?.id || !params.id) return;
@@ -101,7 +107,7 @@ export default function ShippingTripDetailPage() {
     const result = await changeShippingTripStatus(
       activeStore.id,
       trip.id,
-      status
+      status,
     );
 
     if (result.error) {
@@ -149,19 +155,61 @@ export default function ShippingTripDetailPage() {
   const tripClosed = trip.status === "completed";
   const totalWeight = shipments.reduce(
     (sum, shipment) => sum + Number(shipment.weight_lb || 0),
-    0
+    0,
   );
   const billed = shipments.reduce(
     (sum, shipment) => sum + Number(shipment.service_price || 0),
-    0
+    0,
   );
   const delivered = shipments.filter(
-    (shipment) => shipment.status === "delivered"
+    (shipment) => shipment.status === "delivered",
   ).length;
   const issues = shipments.filter(
-    (shipment) => shipment.status === "issue"
+    (shipment) => shipment.status === "issue",
   ).length;
   const open = shipments.length - delivered - issues;
+  const progress =
+    shipments.length > 0
+      ? Math.round(((delivered + issues) / shipments.length) * 100)
+      : 0;
+
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredShipments = shipments.filter((shipment) => {
+    const matchesSearch =
+      !normalizedSearch ||
+      [
+        shipment.order_number,
+        shipment.tracking_code,
+        shipment.sender_name,
+        shipment.sender_phone,
+        shipment.recipient_name,
+        shipment.recipient_phone,
+        shipment.location,
+        shipment.recipient_address,
+      ]
+        .filter(Boolean)
+        .some((value) =>
+          String(value).toLowerCase().includes(normalizedSearch),
+        );
+
+    const matchesStatus =
+      statusFilter === "all" || shipment.status === statusFilter;
+    const matchesPayment =
+      paymentFilter === "all" || shipment.payment_status === paymentFilter;
+
+    return matchesSearch && matchesStatus && matchesPayment;
+  });
+
+  const filtersActive =
+    Boolean(normalizedSearch) ||
+    statusFilter !== "all" ||
+    paymentFilter !== "all";
+
+  function clearFilters() {
+    setSearch("");
+    setStatusFilter("all");
+    setPaymentFilter("all");
+  }
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] p-4 pb-28 md:p-7">
@@ -240,6 +288,22 @@ export default function ShippingTripDetailPage() {
             <Metric label="Libras" value={totalWeight.toFixed(1)} />
             <Metric label="Facturado" value={money(billed)} />
           </div>
+
+          <div className="mt-5 rounded-2xl bg-white/10 p-4">
+            <div className="flex items-center justify-between gap-4 text-sm font-black">
+              <span>Progreso operativo</span>
+              <span>{progress}%</span>
+            </div>
+            <div className="mt-3 h-3 overflow-hidden rounded-full bg-white/15">
+              <div
+                className="h-full rounded-full bg-emerald-400 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs font-semibold text-blue-100/80">
+              {delivered} entregados · {issues} incidencias · {open} pendientes
+            </p>
+          </div>
         </header>
 
         {error && (
@@ -255,10 +319,7 @@ export default function ShippingTripDetailPage() {
             title="Llegada estimada"
             value={date(trip.estimated_arrival_date)}
           />
-          <Info
-            title="Responsable"
-            value={trip.driver_name || "Sin asignar"}
-          />
+          <Info title="Responsable" value={trip.driver_name || "Sin asignar"} />
         </section>
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
@@ -283,10 +344,94 @@ export default function ShippingTripDetailPage() {
             )}
           </div>
 
+          {shipments.length > 0 && (
+            <div className="border-b border-slate-100 bg-slate-50/70 p-4 md:p-5">
+              <div className="grid gap-3 xl:grid-cols-[1fr_220px_220px_auto]">
+                <label className="relative block">
+                  <Search
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={18}
+                  />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Buscar orden, rastreo, cliente, destinatario, teléfono o lugar"
+                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+                  />
+                </label>
+
+                <label className="relative block">
+                  <SlidersHorizontal
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    size={17}
+                  />
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                    className="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-11 pr-4 font-bold text-slate-700 outline-none focus:border-blue-400"
+                  >
+                    <option value="all">Todos los estados</option>
+                    <option value="pending">Pendiente de salida</option>
+                    <option value="in_transit">En tránsito hacia Cuba</option>
+                    <option value="received_cuba">Recibido en Cuba</option>
+                    <option value="in_delivery">En reparto</option>
+                    <option value="delivered">Entregado</option>
+                    <option value="issue">Incidencia</option>
+                  </select>
+                </label>
+
+                <select
+                  value={paymentFilter}
+                  onChange={(event) => setPaymentFilter(event.target.value)}
+                  className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-700 outline-none focus:border-blue-400"
+                >
+                  <option value="all">Todos los cobros</option>
+                  <option value="pending">Pendiente</option>
+                  <option value="partial">Pago parcial</option>
+                  <option value="paid">Pagado</option>
+                </select>
+
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-12 min-w-[120px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700">
+                    {filteredShipments.length} resultado
+                    {filteredShipments.length === 1 ? "" : "s"}
+                  </span>
+                  {filtersActive && (
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      title="Limpiar filtros"
+                      className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {shipments.length === 0 ? (
             <div className="p-12 text-center text-slate-500">
               <Package className="mx-auto mb-3 text-slate-300" size={48} />
               <p className="font-black">Este viaje todavía está vacío.</p>
+            </div>
+          ) : filteredShipments.length === 0 ? (
+            <div className="p-12 text-center text-slate-500">
+              <Search className="mx-auto mb-3 text-slate-300" size={46} />
+              <p className="font-black text-slate-800">
+                No hay envíos que coincidan.
+              </p>
+              <p className="mt-1 text-sm font-semibold">
+                Prueba otra búsqueda o limpia los filtros.
+              </p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="mt-4 rounded-2xl bg-[#0a2d63] px-5 py-3 font-black text-white"
+              >
+                Limpiar filtros
+              </button>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -302,7 +447,7 @@ export default function ShippingTripDetailPage() {
                 </div>
 
                 <div className="divide-y divide-slate-100">
-                  {shipments.map((shipment) => (
+                  {filteredShipments.map((shipment) => (
                     <article
                       key={shipment.id}
                       className="grid grid-cols-[80px_1.25fr_1.1fr_1fr_150px_120px_270px] items-center gap-4 px-5 py-4 transition hover:bg-slate-50"
