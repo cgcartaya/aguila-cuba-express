@@ -37,6 +37,7 @@ export type ShippingTrip = {
   transport_mode: "ground" | "air" | "sea" | "mixed" | "other";
   manifest_notes: string | null;
   is_active: boolean;
+  is_default: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -51,6 +52,7 @@ export type ShippingTripInput = {
   vehicle: string;
   transport_mode: ShippingTrip["transport_mode"];
   manifest_notes: string;
+  is_default?: boolean;
 };
 
 export type ShippingTripWithStats = ShippingTrip & {

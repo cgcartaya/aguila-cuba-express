@@ -78,6 +78,7 @@ export function createShippingTrip(storeId: string, input: ShippingTripInput) {
     p_vehicle: input.vehicle || null,
     p_transport_mode: input.transport_mode,
     p_manifest_notes: input.manifest_notes || null,
+    p_is_default: Boolean(input.is_default),
   });
 }
 
@@ -103,4 +104,24 @@ export function closeShippingTrip(storeId: string, tripId: string, force = false
 
 export function getOrCreatePreparingTrip(storeId: string) {
   return supabase.rpc("get_or_create_preparing_trip", { p_store_id: storeId });
+}
+
+export function getOpenShippingTripsByStoreId(storeId: string) {
+  return supabase
+    .from("shipping_trips")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("status", "preparing")
+    .eq("is_active", true)
+    .order("is_default", { ascending: false })
+    .order("departure_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .returns<ShippingTrip[]>();
+}
+
+export function setDefaultShippingTrip(storeId: string, tripId: string) {
+  return supabase.rpc("set_default_shipping_trip", {
+    p_store_id: storeId,
+    p_trip_id: tripId,
+  });
 }

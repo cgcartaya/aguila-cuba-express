@@ -10,7 +10,7 @@ import { useStore } from "@/hooks/useStore";
 import { createShippingTrip } from "@/lib/services/shipping-trips";
 import type { ShippingTripInput } from "@/lib/shipping/types";
 
-const initial: ShippingTripInput = { name: "", origin: "Miami", destination: "Cienfuegos", departure_date: "", estimated_arrival_date: "", driver_name: "", vehicle: "", transport_mode: "ground", manifest_notes: "" };
+const initial: ShippingTripInput = { name: "", origin: "Miami", destination: "Cienfuegos", departure_date: "", estimated_arrival_date: "", driver_name: "", vehicle: "", transport_mode: "ground", manifest_notes: "", is_default: false };
 
 export default function NewShippingTripPage() {
   const router = useRouter();
@@ -37,7 +37,7 @@ export default function NewShippingTripPage() {
   return <main className="min-h-screen bg-[#f5f7fb] p-4 pb-28 md:p-7"><div className="mx-auto max-w-4xl">
     <Link href="/admin/shipping/trips" className="mb-5 inline-flex items-center gap-2 font-black text-slate-600"><ArrowLeft size={18}/> Volver a viajes</Link>
     <form onSubmit={submit} className="overflow-hidden rounded-[2rem] bg-white shadow-xl">
-      <header className="bg-gradient-to-br from-[#061b3a] to-[#1554a6] p-6 text-white md:p-8"><div className="flex items-center gap-3"><Route size={30}/><div><h1 className="text-3xl font-black">Crear nuevo viaje</h1><p className="mt-1 text-blue-100/80">Los envíos nuevos se asignarán automáticamente a este viaje.</p></div></div></header>
+      <header className="bg-gradient-to-br from-[#061b3a] to-[#1554a6] p-6 text-white md:p-8"><div className="flex items-center gap-3"><Route size={30}/><div><h1 className="text-3xl font-black">Crear nuevo viaje</h1><p className="mt-1 text-blue-100/80">Puedes mantener varios viajes abiertos al mismo tiempo y decidir cuál será el predeterminado.</p></div></div></header>
       <div className="grid gap-5 p-6 md:grid-cols-2 md:p-8">
         <Input label="Nombre del viaje" value={form.name} onChange={(v)=>field("name",v)} placeholder="Ej. Viaje agosto 2026" required />
         <Select label="Tipo de transporte" value={form.transport_mode} onChange={(v)=>field("transport_mode",v as ShippingTripInput["transport_mode"])} options={[['ground','Terrestre'],['air','Aéreo'],['sea','Marítimo'],['mixed','Mixto'],['other','Otro']]} />
@@ -48,6 +48,7 @@ export default function NewShippingTripPage() {
         <Input label="Chofer o responsable" value={form.driver_name} onChange={(v)=>field("driver_name",v)} />
         <Input label="Vehículo / contenedor" value={form.vehicle} onChange={(v)=>field("vehicle",v)} />
         <label className="md:col-span-2"><span className="mb-2 block text-sm font-black text-slate-700">Notas del manifiesto</span><textarea value={form.manifest_notes} onChange={(e)=>field("manifest_notes",e.target.value)} rows={4} className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500" /></label>
+        <label className="md:col-span-2 flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4"><input type="checkbox" checked={Boolean(form.is_default)} onChange={(e)=>field("is_default",e.target.checked)} className="mt-1 h-5 w-5"/><span><strong className="block text-sm font-black text-amber-950">Marcar como viaje predeterminado</strong><span className="mt-1 block text-sm font-semibold text-amber-800">Se seleccionará inicialmente al crear envíos desde Clientes o Todos los envíos, pero el operador podrá cambiarlo.</span></span></label>
         {error && <div className="md:col-span-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{error}</div>}
         <div className="md:col-span-2 flex justify-end"><button disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-[#0a2d63] px-6 py-3 font-black text-white disabled:opacity-60">{saving?<Loader2 className="animate-spin" size={19}/>:<Save size={19}/>} Crear viaje</button></div>
       </div>

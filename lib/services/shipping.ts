@@ -54,17 +54,12 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
 
-  let tripId = input.trip_id || null;
+  const tripId = input.trip_id || null;
   if (!shipmentId && !tripId) {
-    const tripResult = await supabase.rpc("get_or_create_preparing_trip", {
-      p_store_id: storeId,
-    });
-
-    if (tripResult.error) {
-      return { data: null, error: tripResult.error };
-    }
-
-    tripId = tripResult.data as string;
+    return {
+      data: null,
+      error: { message: "Selecciona el viaje al que pertenece este envío." },
+    };
   }
 
   const data = {
