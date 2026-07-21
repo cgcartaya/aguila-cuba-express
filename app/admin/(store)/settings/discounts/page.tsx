@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { openWhatsAppMessage, type WhatsAppApp } from "@/lib/utils/whatsapp";
 import { useStore } from "@/hooks/useStore";
 
 import {
@@ -149,6 +150,8 @@ export default function DiscountsAdminPage() {
     useState<CampaignEditForm | null>(null);
 
   const [phonesText, setPhonesText] = useState("");
+  const [whatsAppCustomer, setWhatsAppCustomer] =
+    useState<DiscountCampaignCustomer | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [loadingCustomers, setLoadingCustomers] =
@@ -563,7 +566,8 @@ export default function DiscountsAdminPage() {
 
 
   function shareCouponByWhatsapp(
-    customer: DiscountCampaignCustomer
+    customer: DiscountCampaignCustomer,
+    app: WhatsAppApp
   ) {
     if (!selectedCampaign || !activeStore) return;
 
@@ -619,15 +623,22 @@ export default function DiscountsAdminPage() {
       "Importante: este bono es válido una sola vez y únicamente con el teléfono indicado.",
     ].join("\n");
 
-    const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-      message
-    )}`;
-
-    window.open(
-      whatsappUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    try {
+      openWhatsAppMessage({
+        app,
+        phone: whatsappPhone,
+        message,
+      });
+      setWhatsAppCustomer(null);
+    } catch (error) {
+      setFeedback({
+        type: "error",
+        message: getErrorMessage(
+          error,
+          "No se pudo abrir WhatsApp."
+        ),
+      });
+    }
   }
 
   if (
@@ -1251,9 +1262,7 @@ export default function DiscountsAdminPage() {
                               <button
                                 type="button"
                                 onClick={() =>
-                                  shareCouponByWhatsapp(
-                                    customer
-                                  )
+                                  setWhatsAppCustomer(customer)
                                 }
                                 disabled={
                                   customer.status !==
@@ -1351,6 +1360,96 @@ export default function DiscountsAdminPage() {
           </div>
         </section>
       </div>
+
+      {whatsAppCustomer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="whatsapp-app-title"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setWhatsAppCustomer(null);
+            }
+          }}
+        >
+          <section className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-green-600">
+                  Enviar bono
+                </p>
+                <h2
+                  id="whatsapp-app-title"
+                  className="mt-1 text-2xl font-black text-[#061b3a]"
+                >
+                  Elige qué WhatsApp usar
+                </h2>
+                <p className="mt-2 text-sm font-semibold text-slate-500">
+                  El código se enviará al {whatsAppCustomer.customer_phone}.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setWhatsAppCustomer(null)}
+                className="rounded-xl bg-slate-100 p-2 text-slate-600 transition hover:bg-slate-200"
+                aria-label="Cerrar selector de WhatsApp"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  shareCouponByWhatsapp(
+                    whatsAppCustomer,
+                    "business"
+                  )
+                }
+                className="flex items-center justify-between rounded-2xl bg-green-600 px-5 py-4 text-left text-white transition hover:bg-green-700"
+              >
+                <span>
+                  <span className="block font-black">
+                    WhatsApp Business
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold text-green-100">
+                    Abrir la aplicación comercial
+                  </span>
+                </span>
+                <MessageCircle size={24} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  shareCouponByWhatsapp(
+                    whatsAppCustomer,
+                    "personal"
+                  )
+                }
+                className="flex items-center justify-between rounded-2xl border-2 border-green-600 px-5 py-4 text-left text-green-700 transition hover:bg-green-50"
+              >
+                <span>
+                  <span className="block font-black">
+                    WhatsApp normal
+                  </span>
+                  <span className="mt-1 block text-xs font-semibold text-slate-500">
+                    Abrir WhatsApp Messenger
+                  </span>
+                </span>
+                <MessageCircle size={24} />
+              </button>
+            </div>
+
+            <p className="mt-4 text-center text-xs font-semibold text-slate-400">
+              En computadora ambas opciones abrirán WhatsApp Web.
+            </p>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
