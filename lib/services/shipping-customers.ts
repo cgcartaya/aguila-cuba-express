@@ -11,24 +11,32 @@ export function normalizeCustomerPhone(value: string) {
   return String(value || "").replace(/\D/g, "");
 }
 
-export async function findShippingCustomerByPhone(
+export async function searchShippingCustomers(
   storeId: string,
-  phone: string
+  search: string,
+  limit = 12
 ) {
-  const normalizedPhone = normalizeCustomerPhone(phone);
+  const { data, error } = await supabase.rpc("search_shipping_customers", {
+    p_store_id: storeId,
+    p_search: search.trim(),
+    p_limit: limit,
+  });
 
-  if (!normalizedPhone) {
-    return {
-      data: null,
-      error: null,
-    };
-  }
+  return {
+    data: (data || []) as ShippingCustomer[],
+    error,
+  };
+}
 
+export async function getShippingCustomerWithRecipients(
+  storeId: string,
+  customerId: string
+) {
   const { data, error } = await supabase.rpc(
-    "find_shipping_customer_by_phone",
+    "get_shipping_customer_with_recipients",
     {
       p_store_id: storeId,
-      p_phone: normalizedPhone,
+      p_customer_id: customerId,
     }
   );
 
@@ -38,21 +46,39 @@ export async function findShippingCustomerByPhone(
   };
 }
 
+export async function findShippingCustomerDuplicate(
+  storeId: string,
+  phone: string,
+  birthDate: string
+) {
+  const { data, error } = await supabase.rpc(
+    "find_shipping_customer_duplicate",
+    {
+      p_store_id: storeId,
+      p_phone: normalizeCustomerPhone(phone),
+      p_birth_date: birthDate,
+    }
+  );
+
+  return {
+    data: (data || null) as ShippingCustomer | null,
+    error,
+  };
+}
+
 export async function saveShippingCustomer(
   input: SaveShippingCustomerInput
 ) {
-  const { data, error } = await supabase.rpc(
-    "save_shipping_customer",
-    {
-      p_store_id: input.store_id,
-      p_customer_id: input.id || null,
-      p_name: input.name,
-      p_phone: input.phone,
-      p_email: input.email || null,
-      p_address: input.address || null,
-      p_notes: input.notes || null,
-    }
-  );
+  const { data, error } = await supabase.rpc("save_shipping_customer_v2", {
+    p_store_id: input.store_id,
+    p_customer_id: input.id || null,
+    p_name: input.name,
+    p_phone: normalizeCustomerPhone(input.phone),
+    p_birth_date: input.birth_date,
+    p_email: input.email || null,
+    p_address: input.address || null,
+    p_notes: input.notes || null,
+  });
 
   return {
     data: (data || null) as ShippingCustomer | null,
@@ -64,13 +90,13 @@ export async function saveShippingRecipient(
   input: SaveShippingRecipientInput
 ) {
   const { data, error } = await supabase.rpc(
-    "save_shipping_recipient",
+    "save_shipping_recipient_v2",
     {
       p_store_id: input.store_id,
       p_customer_id: input.customer_id,
       p_recipient_id: input.id || null,
       p_name: input.name,
-      p_phone: input.phone,
+      p_phone: normalizeCustomerPhone(input.phone),
       p_address: input.address,
       p_identity_card: input.identity_card || null,
       p_country_id: input.country_id || null,
@@ -90,15 +116,10 @@ export async function saveShippingRecipient(
   };
 }
 
-export async function getShippingCustomers(
-  storeId: string
-) {
-  const { data, error } = await supabase.rpc(
-    "get_shipping_customers",
-    {
-      p_store_id: storeId,
-    }
-  );
+export async function getShippingCustomers(storeId: string) {
+  const { data, error } = await supabase.rpc("get_shipping_customers", {
+    p_store_id: storeId,
+  });
 
   return {
     data: (data || []) as ShippingCustomer[],

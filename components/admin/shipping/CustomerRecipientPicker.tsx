@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
+  CalendarDays,
   CheckCircle2,
   Contact,
+  GripVertical,
   Loader2,
-  MapPin,
   Phone,
   Plus,
   Search,
@@ -16,9 +17,11 @@ import {
 } from "lucide-react";
 
 import {
-  findShippingCustomerByPhone,
+  findShippingCustomerDuplicate,
+  getShippingCustomerWithRecipients,
   saveShippingCustomer,
   saveShippingRecipient,
+  searchShippingCustomers,
 } from "@/lib/services/shipping-customers";
 import type {
   ShippingCustomer,
@@ -64,7 +67,8 @@ export default function CustomerRecipientPicker({
   initialPhone?: string;
   onApply: (selection: CustomerSelection) => void;
 }) {
-  const [phone, setPhone] = useState(initialPhone);
+  const [search, setSearch] = useState(initialPhone);
+  const [results, setResults] = useState<ShippingCustomer[]>([]);
   const [customer, setCustomer] = useState<ShippingCustomer | null>(null);
   const [recipients, setRecipients] = useState<ShippingRecipient[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,6 +77,8 @@ export default function CustomerRecipientPicker({
   const [creatingRecipient, setCreatingRecipient] = useState(false);
 
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState(digits(initialPhone));
+  const [customerBirthDate, setCustomerBirthDate] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
 
@@ -92,41 +98,25 @@ export default function CustomerRecipientPicker({
   );
 
   const visibleMunicipalities = useMemo(
-    () =>
-      municipalities.filter(
-        (item) => !provinceId || item.province_id === provinceId
-      ),
-    [municipalityId, provinceId, municipalities]
+    () => municipalities.filter((item) => !provinceId || item.province_id === provinceId),
+    [provinceId, municipalities]
   );
 
   const visibleLocations = useMemo(
-    () =>
-      locations.filter(
-        (item) => !municipalityId || item.municipality_id === municipalityId
-      ),
+    () => locations.filter((item) => !municipalityId || item.municipality_id === municipalityId),
     [locations, municipalityId]
   );
 
-  function digits(value: string) {
-    return value.replace(/\D/g, "").slice(0, 15);
-  }
-
-  async function searchCustomer() {
-    const normalized = digits(phone);
-
-    if (!normalized) {
-      setMessage("Escribe el teléfono del cliente.");
+  async function runSearch() {
+    const term = search.trim();
+    if (term.length < 2) {
+      setMessage("Escribe al menos 2 caracteres: código, nombre o teléfono.");
       return;
     }
 
     setLoading(true);
     setMessage("");
-
-    const { data, error } = await findShippingCustomerByPhone(
-      storeId,
-      normalized
-    );
-
+    const { data, error } = await searchShippingCustomers(storeId, term);
     setLoading(false);
 
     if (error) {
@@ -134,24 +124,40 @@ export default function CustomerRecipientPicker({
       return;
     }
 
-    if (!data?.customer) {
-      setCustomer(null);
-      setRecipients([]);
+    setResults(data);
+    if (!data.length) {
+      setCustomerPhone(digits(term));
       setCreatingCustomer(true);
-      setCustomerName("");
-      setMessage("Cliente no encontrado. Puedes registrarlo ahora.");
+      setMessage("No encontramos coincidencias. Valida los datos antes de registrarlo.");
+    }
+  }
+
+  async function selectCustomer(selected: ShippingCustomer) {
+    setLoading(true);
+    setMessage("");
+    const { data, error } = await getShippingCustomerWithRecipients(storeId, selected.id);
+    setLoading(false);
+
+    if (error || !data?.customer) {
+      setMessage(error?.message || "No se pudo cargar el cliente.");
       return;
     }
 
     setCustomer(data.customer);
     setRecipients(data.recipients || []);
+    setResults([]);
     setCreatingCustomer(false);
-    setMessage("");
+    setCreatingRecipient(false);
+    setSearch(`${data.customer.customer_code} · ${data.customer.name}`);
+    applyCustomer(data.customer);
+  }
+
+  function applyCustomer(selected: ShippingCustomer) {
     onApply({
-      customer_id: data.customer.id,
+      customer_id: selected.id,
       recipient_id: null,
-      sender_name: data.customer.name,
-      sender_phone: data.customer.phone,
+      sender_name: selected.name,
+      sender_phone: selected.phone,
       recipient_name: "",
       recipient_phone: "",
       recipient_address: "",
@@ -165,16 +171,39 @@ export default function CustomerRecipientPicker({
   }
 
   async function createCustomer() {
-    if (!customerName.trim() || !digits(phone)) {
-      setMessage("Nombre y teléfono del cliente son obligatorios.");
+    const normalizedPhone = digits(customerPhone);
+    if (!customerName.trim() || !normalizedPhone || !customerBirthDate) {
+      setMessage("Nombre, teléfono y fecha de nacimiento son obligatorios.");
       return;
     }
 
     setLoading(true);
+    setMessage("");
+
+    const duplicate = await findShippingCustomerDuplicate(
+      storeId,
+      normalizedPhone,
+      customerBirthDate
+    );
+
+    if (duplicate.error) {
+      setLoading(false);
+      setMessage(duplicate.error.message || "No se pudo validar el cliente.");
+      return;
+    }
+
+    if (duplicate.data) {
+      setLoading(false);
+      setMessage(`Este cliente ya existe como ${duplicate.data.customer_code} · ${duplicate.data.name}.`);
+      await selectCustomer(duplicate.data);
+      return;
+    }
+
     const { data, error } = await saveShippingCustomer({
       store_id: storeId,
       name: customerName,
-      phone: digits(phone),
+      phone: normalizedPhone,
+      birth_date: customerBirthDate,
       email: customerEmail,
       address: customerAddress,
     });
@@ -189,34 +218,18 @@ export default function CustomerRecipientPicker({
     setRecipients([]);
     setCreatingCustomer(false);
     setCreatingRecipient(true);
-    setMessage("Cliente creado. Ahora agrega su primer destinatario.");
-
-    onApply({
-      customer_id: data.id,
-      recipient_id: null,
-      sender_name: data.name,
-      sender_phone: data.phone,
-      recipient_name: "",
-      recipient_phone: "",
-      recipient_address: "",
-      recipient_identity_card: "",
-      country_id: null,
-      province_id: null,
-      municipality_id: null,
-      shipping_location_id: null,
-      location: "",
-    });
+    setSearch(`${data.customer_code} · ${data.name}`);
+    setMessage(`Cliente ${data.customer_code} creado. Ahora agrega o selecciona un destinatario.`);
+    applyCustomer(data);
   }
 
   function applyRecipient(recipient: ShippingRecipient) {
-    const customerData = customer;
-    if (!customerData) return;
-
+    if (!customer) return;
     onApply({
-      customer_id: customerData.id,
+      customer_id: customer.id,
       recipient_id: recipient.id,
-      sender_name: customerData.name,
-      sender_phone: customerData.phone,
+      sender_name: customer.name,
+      sender_phone: customer.phone,
       recipient_name: recipient.name,
       recipient_phone: recipient.phone,
       recipient_address: recipient.address,
@@ -227,29 +240,16 @@ export default function CustomerRecipientPicker({
       shipping_location_id: recipient.shipping_location_id,
       location: recipient.legacy_location || "",
     });
+    setMessage(`Destinatario ${recipient.name} aplicado al envío.`);
   }
 
   async function createRecipient() {
-    if (!customer?.id) {
-      setMessage("Primero selecciona o crea el cliente.");
-      return;
+    if (!customer?.id) return setMessage("Primero selecciona o crea el cliente.");
+    if (!recipientName.trim() || !digits(recipientPhone) || !recipientAddress.trim()) {
+      return setMessage("Nombre, teléfono y dirección del destinatario son obligatorios.");
     }
 
-    if (
-      !recipientName.trim() ||
-      !digits(recipientPhone) ||
-      !recipientAddress.trim()
-    ) {
-      setMessage(
-        "Nombre, teléfono y dirección del destinatario son obligatorios."
-      );
-      return;
-    }
-
-    const selectedLocation = locations.find(
-      (item) => item.id === locationId
-    );
-
+    const selectedLocation = locations.find((item) => item.id === locationId);
     setLoading(true);
     const { data, error } = await saveShippingRecipient({
       store_id: storeId,
@@ -275,7 +275,7 @@ export default function CustomerRecipientPicker({
 
     setRecipients((current) => [...current, data]);
     setCreatingRecipient(false);
-    setMessage("Destinatario guardado y aplicado al envío.");
+    setMessage("Destinatario guardado, asociado al cliente y aplicado al envío.");
     applyRecipient(data);
   }
 
@@ -287,59 +287,70 @@ export default function CustomerRecipientPicker({
             <UsersRound size={23} />
           </div>
           <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">
-              Cliente y destinatarios
-            </p>
-            <h2 className="mt-1 text-xl font-extrabold text-slate-950">
-              Buscar cliente por teléfono
-            </h2>
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">CRM de envíos</p>
+            <h2 className="mt-1 text-xl font-extrabold text-slate-950">Buscar cliente existente</h2>
             <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
-              Al encontrarlo se completan sus datos y puedes elegir uno de sus
-              destinatarios guardados.
+              Busca por código AG-0000, nombre o teléfono. Al seleccionarlo se cargan sus destinatarios.
             </p>
           </div>
         </div>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <label className="relative flex-1">
-            <Phone
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-            />
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
-              value={phone}
-              onChange={(event) => setPhone(digits(event.target.value))}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  void searchCustomer();
+                  void runSearch();
                 }
               }}
               className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              placeholder="Ej. 3051234567"
+              placeholder="Ej. AG-0043, Carlos García o 3051234567"
             />
           </label>
-
+          <button type="button" onClick={() => void runSearch()} disabled={loading} className={darkButton}>
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <Search size={18} />}
+            Buscar
+          </button>
           <button
             type="button"
-            onClick={() => void searchCustomer()}
-            disabled={loading || !phone}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+            onClick={() => {
+              setCreatingCustomer(true);
+              setCustomerPhone(digits(search));
+              setResults([]);
+            }}
+            className={lightButton}
           >
-            {loading ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Search size={18} />
-            )}
-            Buscar
+            <Plus size={18} /> Nuevo cliente
           </button>
         </div>
 
-        {message && (
-          <div className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">
-            {message}
+        {results.length > 0 && (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+            {results.map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() => void selectCustomer(item)}
+                className="flex w-full items-center justify-between gap-4 border-b border-slate-100 px-4 py-3 text-left last:border-0 hover:bg-blue-50"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <UserRound size={18} className="shrink-0 text-blue-700" />
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold text-slate-950">{item.customer_code} · {item.name}</p>
+                    <p className="text-xs font-semibold text-slate-500">{item.phone}{item.birth_date ? ` · Nac. ${formatDate(item.birth_date)}` : ""}</p>
+                  </div>
+                </div>
+                <CheckCircle2 size={18} className="shrink-0 text-blue-600" />
+              </button>
+            ))}
           </div>
         )}
+
+        {message && <div className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600">{message}</div>}
       </div>
 
       <div className="space-y-5 p-5 md:p-6">
@@ -347,26 +358,14 @@ export default function CustomerRecipientPicker({
           <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                  <UserRound size={20} />
-                </div>
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white"><UserRound size={20} /></div>
                 <div>
-                  <p className="font-extrabold text-emerald-950">
-                    {customer.name}
-                  </p>
-                  <p className="text-sm font-medium text-emerald-800/70">
-                    {customer.phone} · Cliente #{customer.customer_number}
-                  </p>
+                  <p className="font-extrabold text-emerald-950">{customer.customer_code} · {customer.name}</p>
+                  <p className="text-sm font-medium text-emerald-800/70">{customer.phone}{customer.birth_date ? ` · ${formatDate(customer.birth_date)}` : ""}</p>
                 </div>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setCreatingRecipient(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm"
-              >
-                <Plus size={16} />
-                Nuevo destinatario
+              <button type="button" onClick={() => setCreatingRecipient(true)} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm">
+                <Plus size={16} /> Nuevo destinatario
               </button>
             </div>
           </div>
@@ -374,246 +373,57 @@ export default function CustomerRecipientPicker({
 
         {recipients.length > 0 && !creatingRecipient && (
           <div>
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <h3 className="font-extrabold text-slate-950">
-                  Destinatarios guardados
-                </h3>
-                <p className="text-sm font-medium text-slate-500">
-                  Selecciona la persona que recibirá esta operación.
-                </p>
-              </div>
-            </div>
-
+            <h3 className="font-extrabold text-slate-950">Destinatarios guardados</h3>
+            <p className="mb-3 text-sm font-medium text-slate-500">El mismo destinatario puede estar asociado con diferentes clientes.</p>
             <div className="grid gap-3 md:grid-cols-2">
-              {recipients
-                .filter((item) => item.is_active)
-                .sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite))
-                .map((recipient) => (
-                  <button
-                    type="button"
-                    key={recipient.id}
-                    onClick={() => applyRecipient(recipient)}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700">
-                          <Contact size={19} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="flex items-center gap-2 font-extrabold text-slate-950">
-                            <span className="truncate">{recipient.name}</span>
-                            {recipient.is_favorite && (
-                              <Star
-                                size={14}
-                                className="fill-amber-400 text-amber-400"
-                              />
-                            )}
-                          </p>
-                          <p className="mt-1 text-sm font-medium text-slate-500">
-                            {recipient.phone}
-                          </p>
-                          <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-400">
-                            {recipient.address}
-                          </p>
-                          {recipient.identity_card && (
-                            <p className="mt-2 text-xs font-bold text-blue-700">
-                              CI: {recipient.identity_card}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <CheckCircle2 size={19} className="text-blue-600" />
+              {recipients.filter((item) => item.is_active).sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite)).map((recipient) => (
+                <button type="button" key={recipient.id} onClick={() => applyRecipient(recipient)} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-blue-50">
+                  <div className="flex items-start gap-3">
+                    <GripVertical size={18} className="mt-1 text-slate-300" />
+                    <Contact size={19} className="mt-1 text-blue-700" />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-2 font-extrabold text-slate-950">{recipient.name}{recipient.is_favorite && <Star size={14} className="fill-amber-400 text-amber-400" />}</p>
+                      <p className="mt-1 text-sm font-medium text-slate-500">{recipient.phone}</p>
+                      <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-400">{recipient.address}</p>
                     </div>
-                  </button>
-                ))}
+                    <CheckCircle2 size={19} className="text-blue-600" />
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         )}
 
         {creatingCustomer && (
-          <EditorCard
-            title="Registrar nuevo cliente"
-            onClose={() => setCreatingCustomer(false)}
-          >
+          <EditorCard title="Registrar nuevo cliente" onClose={() => setCreatingCustomer(false)}>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Nombre completo">
-                <input
-                  value={customerName}
-                  onChange={(event) => setCustomerName(event.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Teléfono">
-                <input value={phone} readOnly className={inputClass} />
-              </Field>
-              <Field label="Correo opcional">
-                <input
-                  value={customerEmail}
-                  onChange={(event) => setCustomerEmail(event.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Dirección en Estados Unidos">
-                <input
-                  value={customerAddress}
-                  onChange={(event) => setCustomerAddress(event.target.value)}
-                  className={inputClass}
-                />
-              </Field>
+              <Field label="Nombre completo"><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputClass} /></Field>
+              <Field label="Teléfono"><input value={customerPhone} onChange={(e) => setCustomerPhone(digits(e.target.value))} className={inputClass} inputMode="numeric" /></Field>
+              <Field label="Fecha de nacimiento"><input type="date" value={customerBirthDate} onChange={(e) => setCustomerBirthDate(e.target.value)} className={inputClass} /></Field>
+              <Field label="Correo opcional"><input value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} className={inputClass} /></Field>
+              <Field label="Dirección en Estados Unidos"><input value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} className={inputClass} /></Field>
             </div>
-
-            <button
-              type="button"
-              onClick={() => void createCustomer()}
-              disabled={loading}
-              className={primaryButton}
-            >
-              <Plus size={17} />
-              Crear cliente
-            </button>
+            <div className="rounded-2xl bg-amber-50 p-3 text-xs font-bold text-amber-800">
+              La validación de duplicados usa tienda + teléfono normalizado + fecha de nacimiento.
+            </div>
+            <button type="button" onClick={() => void createCustomer()} disabled={loading} className={primaryButton}><Plus size={17} /> Validar y crear cliente</button>
           </EditorCard>
         )}
 
         {creatingRecipient && customer && (
-          <EditorCard
-            title={`Nuevo destinatario para ${customer.name}`}
-            onClose={() => setCreatingRecipient(false)}
-          >
+          <EditorCard title={`Nuevo destinatario para ${customer.name}`} onClose={() => setCreatingRecipient(false)}>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Nombre completo">
-                <input
-                  value={recipientName}
-                  onChange={(event) => setRecipientName(event.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Teléfono">
-                <input
-                  value={recipientPhone}
-                  onChange={(event) =>
-                    setRecipientPhone(digits(event.target.value))
-                  }
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Carnet de identidad">
-                <input
-                  value={identityCard}
-                  onChange={(event) =>
-                    setIdentityCard(event.target.value.replace(/\s/g, ""))
-                  }
-                  className={inputClass}
-                  placeholder="Opcional por ahora"
-                />
-              </Field>
-              <Field label="Relación con el cliente">
-                <input
-                  value={relationship}
-                  onChange={(event) => setRelationship(event.target.value)}
-                  className={inputClass}
-                  placeholder="Madre, hermano, amigo..."
-                />
-              </Field>
-              <Field label="País">
-                <select
-                  value={countryId}
-                  onChange={(event) => {
-                    setCountryId(event.target.value);
-                    setProvinceId("");
-                    setMunicipalityId("");
-                    setLocationId("");
-                  }}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar</option>
-                  {countries
-                    .filter((item) => item.is_active)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <Field label="Provincia">
-                <select
-                  value={provinceId}
-                  onChange={(event) => {
-                    setProvinceId(event.target.value);
-                    setMunicipalityId("");
-                    setLocationId("");
-                  }}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar</option>
-                  {visibleProvinces
-                    .filter((item) => item.is_active)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <Field label="Municipio">
-                <select
-                  value={municipalityId}
-                  onChange={(event) => {
-                    setMunicipalityId(event.target.value);
-                    setLocationId("");
-                  }}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar</option>
-                  {visibleMunicipalities
-                    .filter((item) => item.is_active)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <Field label="Lugar de entrega">
-                <select
-                  value={locationId}
-                  onChange={(event) => setLocationId(event.target.value)}
-                  className={inputClass}
-                >
-                  <option value="">Seleccionar</option>
-                  {visibleLocations
-                    .filter((item) => item.is_active)
-                    .map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                </select>
-              </Field>
-              <div className="md:col-span-2">
-                <Field label="Dirección completa en Cuba">
-                  <textarea
-                    value={recipientAddress}
-                    onChange={(event) =>
-                      setRecipientAddress(event.target.value)
-                    }
-                    className={`${inputClass} min-h-24`}
-                  />
-                </Field>
-              </div>
+              <Field label="Nombre completo"><input value={recipientName} onChange={(e) => setRecipientName(e.target.value)} className={inputClass} /></Field>
+              <Field label="Teléfono"><input value={recipientPhone} onChange={(e) => setRecipientPhone(digits(e.target.value))} className={inputClass} inputMode="numeric" /></Field>
+              <Field label="Carnet de identidad"><input value={identityCard} onChange={(e) => setIdentityCard(e.target.value.replace(/\s/g, ""))} className={inputClass} /></Field>
+              <Field label="Relación con el cliente"><input value={relationship} onChange={(e) => setRelationship(e.target.value)} className={inputClass} placeholder="Madre, hermano, amigo..." /></Field>
+              <Field label="País"><select value={countryId} onChange={(e) => { setCountryId(e.target.value); setProvinceId(""); setMunicipalityId(""); setLocationId(""); }} className={inputClass}><option value="">Seleccionar</option>{countries.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+              <Field label="Provincia"><select value={provinceId} onChange={(e) => { setProvinceId(e.target.value); setMunicipalityId(""); setLocationId(""); }} className={inputClass}><option value="">Seleccionar</option>{visibleProvinces.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+              <Field label="Municipio"><select value={municipalityId} onChange={(e) => { setMunicipalityId(e.target.value); setLocationId(""); }} className={inputClass}><option value="">Seleccionar</option>{visibleMunicipalities.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+              <Field label="Lugar"><select value={locationId} onChange={(e) => setLocationId(e.target.value)} className={inputClass}><option value="">Seleccionar</option>{visibleLocations.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
+              <div className="md:col-span-2"><Field label="Dirección completa"><textarea value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} className={`${inputClass} min-h-24`} /></Field></div>
             </div>
-
-            <button
-              type="button"
-              onClick={() => void createRecipient()}
-              disabled={loading}
-              className={primaryButton}
-            >
-              <Plus size={17} />
-              Guardar y usar destinatario
-            </button>
+            <button type="button" onClick={() => void createRecipient()} disabled={loading} className={primaryButton}><Plus size={17} /> Guardar y usar destinatario</button>
           </EditorCard>
         )}
       </div>
@@ -621,49 +431,24 @@ export default function CustomerRecipientPicker({
   );
 }
 
-function EditorCard({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-}) {
-  return (
-    <div className="rounded-3xl border border-blue-100 bg-blue-50/50 p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="font-extrabold text-slate-950">{title}</h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-xl border bg-white p-2 text-slate-500"
-        >
-          <X size={17} />
-        </button>
-      </div>
-      {children}
-    </div>
-  );
+function digits(value: string) {
+  return String(value || "").replace(/\D/g, "").slice(0, 15);
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="space-y-2">
-      <span className="text-sm font-bold text-slate-700">{label}</span>
-      {children}
-    </label>
-  );
+function formatDate(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString("es-US");
 }
 
-const inputClass =
-  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100";
+function EditorCard({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return <div className="rounded-3xl border border-blue-100 bg-blue-50/50 p-4 md:p-5"><div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-extrabold text-slate-950">{title}</h3><button type="button" onClick={onClose} className="rounded-xl bg-white p-2 text-slate-500"><X size={18} /></button></div><div className="space-y-4">{children}</div></div>;
+}
 
-const primaryButton =
-  "mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-5 py-3 text-sm font-bold text-white disabled:opacity-40";
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <label className="block"><span className="mb-2 flex items-center gap-2 text-sm font-extrabold text-slate-700">{label === "Fecha de nacimiento" && <CalendarDays size={15} />}{label === "Teléfono" && <Phone size={15} />}{label}</span>{children}</label>;
+}
+
+const inputClass = "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100";
+const primaryButton = "inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-40";
+const darkButton = "inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-5 py-3 text-sm font-bold text-white disabled:opacity-40";
+const lightButton = "inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700";

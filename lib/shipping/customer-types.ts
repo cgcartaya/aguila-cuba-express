@@ -8,9 +8,11 @@ export type ShippingCustomer = {
   id: string;
   store_id: string;
   customer_number: number;
+  customer_code: string;
   name: string;
   phone: string;
   normalized_phone: string;
+  birth_date: string | null;
   email: string | null;
   address: string | null;
   notes: string | null;
@@ -63,6 +65,7 @@ export type SaveShippingCustomerInput = {
   store_id: string;
   name: string;
   phone: string;
+  birth_date: string;
   email?: string;
   address?: string;
   notes?: string;
