@@ -9,10 +9,80 @@ export const SHIPPING_STATUSES = [
 ] as const;
 
 export type ShippingStatus = (typeof SHIPPING_STATUSES)[number];
+export const SHIPPING_TRIP_STATUSES = [
+  "preparing",
+  "in_transit",
+  "received_cuba",
+  "in_delivery",
+  "completed",
+  "cancelled",
+] as const;
+
+export type ShippingTripStatus = (typeof SHIPPING_TRIP_STATUSES)[number];
+
+export type ShippingTrip = {
+  id: string;
+  store_id: string;
+  trip_number: number;
+  name: string;
+  status: ShippingTripStatus;
+  origin: string | null;
+  destination: string | null;
+  departure_date: string | null;
+  estimated_arrival_date: string | null;
+  actual_arrival_date: string | null;
+  completed_at: string | null;
+  driver_name: string | null;
+  vehicle: string | null;
+  transport_mode: "ground" | "air" | "sea" | "mixed" | "other";
+  manifest_notes: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ShippingTripInput = {
+  name: string;
+  origin: string;
+  destination: string;
+  departure_date: string;
+  estimated_arrival_date: string;
+  driver_name: string;
+  vehicle: string;
+  transport_mode: ShippingTrip["transport_mode"];
+  manifest_notes: string;
+};
+
+export type ShippingTripWithStats = ShippingTrip & {
+  stats: {
+    total_shipments: number;
+    delivered_shipments: number;
+    issue_shipments: number;
+    pending_shipments: number;
+    total_weight_lb: number;
+    billed_total: number;
+    paid_total: number;
+    outstanding_total: number;
+  };
+};
+
+export function getShippingTripStatusLabel(status: ShippingTripStatus | string) {
+  const labels: Record<string, string> = {
+    preparing: "Preparando salida",
+    in_transit: "En tránsito hacia Cuba",
+    received_cuba: "Recibido en Cuba",
+    in_delivery: "En proceso de entrega",
+    completed: "Finalizado",
+    cancelled: "Cancelado",
+  };
+  return labels[status] || status;
+}
+
 
 export type Shipment = {
   id: string;
   store_id: string;
+  trip_id: string | null;
   order_number: number | null;
   customer_id: string | null;
   recipient_id: string | null;
@@ -183,6 +253,7 @@ export type ShippingSettings = {
 };
 
 export type ShipmentInput = {
+  trip_id?: string | null;
   customer_id: string | null;
   recipient_id: string | null;
   recipient_identity_card: string;

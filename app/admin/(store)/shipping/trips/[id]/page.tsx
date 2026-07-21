@@ -1,0 +1,92 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, Package, Plane, Scale, Ship, Truck } from "lucide-react";
+
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
+import { changeShippingTripStatus, closeShippingTrip, getShipmentsByTripId, getShippingTripById } from "@/lib/services/shipping-trips";
+import { getShippingStatusLabel, getShippingTripStatusLabel, type Shipment, type ShippingTrip, type ShippingTripStatus } from "@/lib/shipping/types";
+
+function money(value: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value || 0); }
+function date(value: string | null) { return value ? new Intl.DateTimeFormat("es-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Sin definir"; }
+
+export default function ShippingTripDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { access, isSuperAdmin, store: accessStore } = useAdminAccess();
+  const { store: selectedStore } = useStore();
+  const activeStore = useMemo(() => (isSuperAdmin ? selectedStore || accessStore : accessStore), [accessStore, isSuperAdmin, selectedStore]);
+  const canManage = access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
+
+  const [trip, setTrip] = useState<ShippingTrip | null>(null);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState("");
+
+  async function load() {
+    if (!activeStore?.id || !params.id) return;
+    setLoading(true); setError("");
+    const [tripResult, shipmentResult] = await Promise.all([getShippingTripById(activeStore.id, params.id), getShipmentsByTripId(activeStore.id, params.id)]);
+    if (tripResult.error) setError(tripResult.error.message);
+    setTrip(tripResult.data || null);
+    setShipments((shipmentResult.data || []) as Shipment[]);
+    setLoading(false);
+  }
+
+  useEffect(() => { void load(); }, [activeStore?.id, params.id]);
+
+  async function setStatus(status: ShippingTripStatus) {
+    if (!activeStore?.id || !trip) return;
+    setWorking(true); setError("");
+    const result = await changeShippingTripStatus(activeStore.id, trip.id, status);
+    if (result.error) setError(result.error.message || "No se pudo cambiar el estado.");
+    await load(); setWorking(false);
+  }
+
+  async function closeTrip(force = false) {
+    if (!activeStore?.id || !trip) return;
+    setWorking(true); setError("");
+    const result = await closeShippingTrip(activeStore.id, trip.id, force);
+    if (result.error) { setError(result.error.message || "No se pudo cerrar el viaje."); setWorking(false); return; }
+    await load(); setWorking(false);
+  }
+
+  if (loading) return <main className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-blue-700" size={34}/></main>;
+  if (!trip) return <main className="p-8"><p className="font-black text-rose-700">No se encontró el viaje.</p></main>;
+
+  const totalWeight = shipments.reduce((s, x) => s + Number(x.weight_lb || 0), 0);
+  const billed = shipments.reduce((s, x) => s + Number(x.service_price || 0), 0);
+  const delivered = shipments.filter((x) => x.status === "delivered").length;
+  const issues = shipments.filter((x) => x.status === "issue").length;
+  const open = shipments.length - delivered - issues;
+
+  return <main className="min-h-screen bg-[#f5f7fb] p-4 pb-28 md:p-7"><div className="mx-auto max-w-[1500px]">
+    <button onClick={() => router.push('/admin/shipping/trips')} className="mb-5 inline-flex items-center gap-2 font-black text-slate-600"><ArrowLeft size={18}/> Volver a viajes</button>
+    <header className="rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0a2d63] to-[#1554a6] p-6 text-white shadow-xl md:p-8">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">Viaje {trip.trip_number}</p><h1 className="mt-2 text-3xl font-black md:text-4xl">{trip.name}</h1><p className="mt-2 font-semibold text-blue-100/80">{trip.origin || 'Origen sin definir'} → {trip.destination || 'Destino sin definir'}</p><span className="mt-4 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-black">{getShippingTripStatusLabel(trip.status)}</span></div>
+      {canManage && trip.status !== 'completed' && <div className="flex flex-wrap gap-2">
+        {trip.status === 'preparing' && <Action icon={<Truck size={18}/>} label="Salió hacia Cuba" onClick={()=>setStatus('in_transit')} disabled={working}/>} 
+        {trip.status === 'in_transit' && <Action icon={<Ship size={18}/>} label="Recibido en Cuba" onClick={()=>setStatus('received_cuba')} disabled={working}/>} 
+        {trip.status === 'received_cuba' && <Action icon={<Package size={18}/>} label="Comenzar reparto" onClick={()=>setStatus('in_delivery')} disabled={working}/>} 
+        <button onClick={()=>closeTrip(false)} disabled={working} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black text-white disabled:opacity-50"><CheckCircle2 size={18}/> Cerrar viaje</button>
+      </div>}</div>
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5"><Metric label="Envíos" value={shipments.length.toString()}/><Metric label="Pendientes" value={open.toString()}/><Metric label="Entregados" value={delivered.toString()}/><Metric label="Libras" value={totalWeight.toFixed(1)}/><Metric label="Facturado" value={money(billed)}/></div>
+    </header>
+
+    {error && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700"><AlertTriangle className="mr-2 inline" size={18}/>{error}</div>}
+
+    <section className="mt-6 grid gap-4 md:grid-cols-3"><Info title="Salida" value={date(trip.departure_date)}/><Info title="Llegada estimada" value={date(trip.estimated_arrival_date)}/><Info title="Responsable" value={trip.driver_name || 'Sin asignar'}/></section>
+
+    <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm"><div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black text-[#061b3a]">Envíos del viaje</h2><p className="text-sm font-semibold text-slate-500">Solo aparecen los paquetes asociados a este viaje.</p></div><Link href="/admin/shipping/new" className="rounded-2xl bg-[#0a2d63] px-5 py-3 text-center font-black text-white">Registrar envío</Link></div>
+      {shipments.length === 0 ? <div className="p-12 text-center text-slate-500"><Package className="mx-auto mb-3 text-slate-300" size={48}/><p className="font-black">Este viaje todavía está vacío.</p></div> : <div className="divide-y divide-slate-100">{shipments.map((shipment)=><Link key={shipment.id} href={`/admin/shipping/${shipment.id}/edit`} className="grid gap-3 p-5 transition hover:bg-slate-50 md:grid-cols-[110px_1fr_1fr_160px_130px] md:items-center"><div className="font-black text-[#0a2d63]">#{shipment.order_number || '—'}</div><div><p className="font-black text-slate-900">{shipment.recipient_name || 'Sin destinatario'}</p><p className="text-sm text-slate-500">{shipment.tracking_code}</p></div><div><p className="font-bold text-slate-700">{shipment.sender_name || 'Sin remitente'}</p><p className="text-sm text-slate-500">{shipment.location}</p></div><div className="text-sm font-black text-slate-600">{getShippingStatusLabel(shipment.status)}</div><div className="font-black text-slate-900">{money(shipment.service_price)}</div></Link>)}</div>}
+    </section>
+  </div></main>;
+}
+
+function Metric({label,value}:{label:string;value:string}) { return <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-blue-200">{label}</p><p className="mt-2 text-2xl font-black">{value}</p></div>; }
+function Info({title,value}:{title:string;value:string}) { return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-wider text-slate-400">{title}</p><p className="mt-2 font-black text-slate-900">{value}</p></div>; }
+function Action({icon,label,onClick,disabled}:{icon:React.ReactNode;label:string;onClick:()=>void;disabled:boolean}) { return <button onClick={onClick} disabled={disabled} className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a] disabled:opacity-50">{icon}{label}</button>; }
