@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Boxes, FolderTree, Package, Sparkles } from "lucide-react";
+import {
+  ArrowUpDown,
+  Boxes,
+  FolderTree,
+  Package,
+  Sparkles,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 
 const tabs = [
@@ -9,10 +15,7 @@ const tabs = [
     href: "/admin/products",
     label: "Productos",
     icon: Package,
-    active: (pathname: string) =>
-      pathname === "/admin/products" ||
-      (pathname.startsWith("/admin/products/") &&
-        !pathname.startsWith("/admin/products/featured")),
+    active: (pathname: string) => pathname === "/admin/products",
   },
   {
     href: "/admin/settings/categories",
@@ -25,6 +28,12 @@ const tabs = [
     label: "Combos",
     icon: Boxes,
     active: (pathname: string) => pathname.startsWith("/admin/combos"),
+  },
+  {
+    href: "/admin/products/order",
+    label: "Orden por categoría",
+    icon: ArrowUpDown,
+    active: (pathname: string) => pathname.startsWith("/admin/products/order"),
   },
   {
     href: "/admin/products/featured",

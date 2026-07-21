@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, Loader2, Save, Star } from "lucide-react";
+import { ArrowDown, ArrowUp, GripVertical, Loader2, Save, Star } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
@@ -26,6 +26,8 @@ export default function ProductCategoryOrderManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [draggedProductId, setDraggedProductId] = useState<string | null>(null);
+  const [dragOverProductId, setDragOverProductId] = useState<string | null>(null);
 
   const activeStore = useMemo(() => {
     if (isSuperAdmin) return selectedStore || accessStore;
@@ -133,6 +135,25 @@ export default function ProductCategoryOrderManager() {
     replaceCategory(current);
   }
 
+  function reorderByDrag(sourceId: string, targetId: string) {
+    if (sourceId === targetId) return;
+
+    const current = [...categoryProducts];
+    const sourceIndex = current.findIndex((product) => product.id === sourceId);
+    const targetIndex = current.findIndex((product) => product.id === targetId);
+
+    if (sourceIndex < 0 || targetIndex < 0) return;
+
+    const [movedProduct] = current.splice(sourceIndex, 1);
+    current.splice(targetIndex, 0, movedProduct);
+    replaceCategory(current);
+  }
+
+  function finishDrag() {
+    setDraggedProductId(null);
+    setDragOverProductId(null);
+  }
+
   function toggleFeatured(productId: string) {
     const featuredCount = categoryProducts.filter(
       (product) => product.is_category_featured
@@ -222,8 +243,9 @@ export default function ProductCategoryOrderManager() {
         </select>
 
         <p className="mt-3 text-sm text-slate-500">
-          Los destacados aparecen primero. Después se respeta el orden indicado
-          aquí. En la portada se muestran los primeros cuatro.
+          Mantén presionado el icono de puntos y arrastra cada producto. También
+          puedes usar las flechas como alternativa. Los productos con estrella
+          se mantienen como destacados de esa categoría.
         </p>
       </div>
 
@@ -237,8 +259,45 @@ export default function ProductCategoryOrderManager() {
         {categoryProducts.map((product, index) => (
           <div
             key={product.id}
-            className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
+            draggable
+            onDragStart={(event) => {
+              setDraggedProductId(product.id);
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", product.id);
+            }}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              if (draggedProductId && draggedProductId !== product.id) {
+                setDragOverProductId(product.id);
+              }
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = "move";
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              const sourceId =
+                draggedProductId || event.dataTransfer.getData("text/plain");
+              if (sourceId) reorderByDrag(sourceId, product.id);
+              finishDrag();
+            }}
+            onDragEnd={finishDrag}
+            className={`flex items-center gap-3 rounded-2xl border bg-white p-3 shadow-sm transition ${
+              draggedProductId === product.id
+                ? "border-slate-300 opacity-50"
+                : dragOverProductId === product.id
+                ? "border-slate-900 ring-2 ring-slate-200"
+                : "border-transparent"
+            }`}
           >
+            <div
+              className="flex h-10 w-8 shrink-0 cursor-grab items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing"
+              title="Arrastrar para cambiar el orden"
+              aria-label={`Arrastrar ${product.name}`}
+            >
+              <GripVertical size={20} />
+            </div>
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-black text-slate-700">
               {index + 1}
             </div>
