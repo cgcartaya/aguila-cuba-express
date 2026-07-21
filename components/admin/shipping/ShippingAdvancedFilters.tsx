@@ -9,6 +9,7 @@ import {
   MapPinned,
   Package,
   RotateCcw,
+  Route,
   Truck,
   UserRound,
 } from "lucide-react";
@@ -17,10 +18,11 @@ import type {
   ShippingLocation,
   ShippingMunicipality,
   ShippingProvince,
-  ShippingStatus,
+  ShippingTrip,
 } from "@/lib/shipping/types";
 
 export type ShippingListFilters = {
+  tripId: string;
   status: string;
   provinceId: string;
   municipalityId: string;
@@ -37,7 +39,7 @@ export type ShippingListFilters = {
 const statusOptions: Array<{ value: string; label: string }> = [
   { value: "all", label: "Todos los estados" },
   { value: "received_miami", label: "Recibido en Miami" },
-  { value: "preparing", label: "Preparando salida" },
+  { value: "preparing", label: "Pendiente de salida" },
   { value: "in_transit", label: "En tránsito hacia Cuba" },
   { value: "received_cuba", label: "Recibido en Cuba" },
   { value: "out_for_delivery", label: "En reparto" },
@@ -52,6 +54,7 @@ export default function ShippingAdvancedFilters({
   provinces,
   municipalities,
   locations,
+  trips,
   driverNames,
   expanded,
   onToggleExpanded,
@@ -63,6 +66,7 @@ export default function ShippingAdvancedFilters({
   provinces: ShippingProvince[];
   municipalities: ShippingMunicipality[];
   locations: ShippingLocation[];
+  trips: ShippingTrip[];
   driverNames: string[];
   expanded: boolean;
   onToggleExpanded: () => void;
@@ -92,18 +96,70 @@ export default function ShippingAdvancedFilters({
 
   return (
     <div className="border-t border-slate-100 pt-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <QuickSelect
+          icon={<Route size={16} />}
+          label="Viaje"
+          value={filters.tripId}
+          onChange={(value) => set("tripId", value)}
+        >
+          <option value="all">Todos los viajes</option>
+          <option value="unassigned">Sin viaje asignado</option>
+          {trips.map((trip) => (
+            <option key={trip.id} value={trip.id}>
+              Viaje {trip.trip_number} · {trip.name}
+            </option>
+          ))}
+        </QuickSelect>
+
+        <QuickSelect
+          icon={<Truck size={16} />}
+          label="Estado"
+          value={filters.status}
+          onChange={(value) => set("status", value)}
+        >
+          {statusOptions.map((item) => (
+            <option key={item.value} value={item.value}>{item.label}</option>
+          ))}
+        </QuickSelect>
+
+        <QuickSelect
+          icon={<CircleDollarSign size={16} />}
+          label="Cobro"
+          value={filters.paymentStatus}
+          onChange={(value) => set("paymentStatus", value as ShippingListFilters["paymentStatus"])}
+        >
+          <option value="all">Todos los cobros</option>
+          <option value="pending">Pendiente</option>
+          <option value="partial">Pago parcial</option>
+          <option value="paid">Pagado</option>
+        </QuickSelect>
+
+        <QuickSelect
+          icon={<Filter size={16} />}
+          label="Orden"
+          value={filters.sort}
+          onChange={(value) => set("sort", value as ShippingListFilters["sort"])}
+        >
+          <option value="newest">Más recientes primero</option>
+          <option value="oldest">Más antiguos primero</option>
+          <option value="order_desc">Número mayor primero</option>
+          <option value="order_asc">Número menor primero</option>
+        </QuickSelect>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={onToggleExpanded}
-          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-extrabold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-extrabold text-slate-700 transition hover:border-blue-300 hover:text-blue-700"
         >
-          <Filter size={17} />
-          Filtros avanzados
+          <Filter size={16} />
+          Más filtros
           {activeCount > 0 && (
             <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">{activeCount}</span>
           )}
-          <ChevronDown size={16} className={`transition ${expanded ? "rotate-180" : ""}`} />
+          <ChevronDown size={15} className={`transition ${expanded ? "rotate-180" : ""}`} />
         </button>
 
         {activeCount > 0 && (
@@ -119,14 +175,7 @@ export default function ShippingAdvancedFilters({
       </div>
 
       {expanded && (
-        <div className="mt-4 rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50/70 to-white p-4 md:p-5">
-          <div className="mb-4">
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">Búsqueda territorial y operativa</p>
-            <p className="mt-1 text-sm font-medium text-slate-500">
-              Filtra en cascada por provincia, municipio y lugar de entrega en Cuba.
-            </p>
-          </div>
-
+        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <FilterField icon={<MapPinned size={16} />} label="Provincia">
               <select value={filters.provinceId} onChange={(e) => set("provinceId", e.target.value)} className={selectClass}>
@@ -155,12 +204,6 @@ export default function ShippingAdvancedFilters({
               </select>
             </FilterField>
 
-            <FilterField icon={<Truck size={16} />} label="Estado del envío">
-              <select value={filters.status} onChange={(e) => set("status", e.target.value)} className={selectClass}>
-                {statusOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </FilterField>
-
             <FilterField icon={<UserRound size={16} />} label="Repartidor">
               <select value={filters.driverName} onChange={(e) => set("driverName", e.target.value)} className={selectClass}>
                 <option value="">Todos los repartidores</option>
@@ -185,15 +228,6 @@ export default function ShippingAdvancedFilters({
               </select>
             </FilterField>
 
-            <FilterField icon={<CircleDollarSign size={16} />} label="Estado de cobro">
-              <select value={filters.paymentStatus} onChange={(e) => set("paymentStatus", e.target.value as ShippingListFilters["paymentStatus"])} className={selectClass}>
-                <option value="all">Todos los cobros</option>
-                <option value="pending">Pendiente</option>
-                <option value="partial">Pago parcial</option>
-                <option value="paid">Pagado</option>
-              </select>
-            </FilterField>
-
             <FilterField icon={<CalendarDays size={16} />} label="Desde">
               <input type="date" value={filters.dateFrom} onChange={(e) => set("dateFrom", e.target.value)} className={selectClass} />
             </FilterField>
@@ -201,19 +235,39 @@ export default function ShippingAdvancedFilters({
             <FilterField icon={<CalendarDays size={16} />} label="Hasta">
               <input type="date" value={filters.dateTo} onChange={(e) => set("dateTo", e.target.value)} className={selectClass} />
             </FilterField>
-
-            <FilterField icon={<Filter size={16} />} label="Ordenar resultados">
-              <select value={filters.sort} onChange={(e) => set("sort", e.target.value as ShippingListFilters["sort"])} className={selectClass}>
-                <option value="newest">Más recientes primero</option>
-                <option value="oldest">Más antiguos primero</option>
-                <option value="order_desc">Número mayor primero</option>
-                <option value="order_asc">Número menor primero</option>
-              </select>
-            </FilterField>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+function QuickSelect({
+  icon,
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+      <span className="shrink-0 text-blue-700">{icon}</span>
+      <span className="sr-only">{label}</span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="min-w-0 flex-1 bg-transparent text-sm font-bold text-slate-700 outline-none"
+      >
+        {children}
+      </select>
+    </label>
   );
 }
 
@@ -226,4 +280,4 @@ function FilterField({ icon, label, children }: { icon: React.ReactNode; label: 
   );
 }
 
-const selectClass = "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400";
+const selectClass = "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400";
