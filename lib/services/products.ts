@@ -21,6 +21,9 @@ const PRODUCT_PUBLIC_SELECT = `
   created_at,
   category_sort_order,
   is_category_featured,
+  is_home_featured,
+  home_featured_order,
+  home_featured_label,
   product_images (
     image_url,
     is_main,
@@ -49,6 +52,9 @@ const PRODUCT_INVENTORY_SELECT = `
   is_active,
   category_sort_order,
   is_category_featured,
+  is_home_featured,
+  home_featured_order,
+  home_featured_label,
   product_images (
     image_url,
     is_main,
@@ -258,6 +264,43 @@ export async function getRelatedProducts(
   return query;
 }
 
+
+
+
+/* =========================================================
+   ADMIN / HOME - PRODUCTOS DESTACADOS
+========================================================= */
+
+export async function updateHomeFeaturedProduct(
+  productId: string,
+  storeId: string,
+  values: {
+    is_home_featured: boolean;
+    home_featured_order: number | null;
+    home_featured_label: string | null;
+  }
+) {
+  return supabase
+    .from("products")
+    .update(values)
+    .eq("id", productId)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .select("id, is_home_featured, home_featured_order, home_featured_label")
+    .single();
+}
+
+export async function getHomeFeaturedProductsByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select(PRODUCT_PUBLIC_SELECT)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .eq("is_home_featured", true)
+    .is("deleted_at", null)
+    .order("home_featured_order", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false });
+}
 
 /* =========================================================
    ADMIN - INVENTARIO

@@ -25,6 +25,7 @@ import CategoryProductsSection from "@/components/tienda/CategoryProductsSection
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
 import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
+import HomeFeaturedProducts from "@/components/tienda/HomeFeaturedProducts";
 import SearchResultsSection from "@/components/tienda/search/SearchResultsSection";
 import VisitTracker from "@/components/analytics/VisitTracker";
 
@@ -131,6 +132,16 @@ export default function TiendaPage() {
     );
   }, [productos, busqueda, hayBusqueda]);
 
+  const productosDestacados = useMemo(() => {
+    return productos
+      .filter((producto) => producto.is_home_featured)
+      .sort((a, b) => {
+        const orderA = a.home_featured_order ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.home_featured_order ?? Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
+  }, [productos]);
+
   const productosPorCategoria = useMemo(() => {
     return categorias
       .map((categoria) => ({
@@ -157,6 +168,11 @@ export default function TiendaPage() {
           <div className="mt-4 md:mt-5">
             <MainBanner storeId={storeId || undefined} />
           </div>
+
+          <HomeFeaturedProducts
+            products={productosDestacados}
+            onAddToCart={addToCart}
+          />
 
           <CategoriesShowcaseCarousel groups={productosPorCategoria} />
 

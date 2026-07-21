@@ -12,6 +12,9 @@ export type Product = {
   created_at?: string;
   category_sort_order?: number | null;
   is_category_featured?: boolean | null;
+  is_home_featured?: boolean | null;
+  home_featured_order?: number | null;
+  home_featured_label?: string | null;
   product_images?: ProductImage[] | null;
 };
 

@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowUpDown, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { Loader2, Plus, Sparkles, Trash2, Upload } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
@@ -307,13 +307,12 @@ export default function AdminProductsPage() {
             )}
           </Link>
 
-
           <Link
-            href="/admin/products/order"
-            className="flex items-center justify-center gap-2 rounded-xl bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-700 shadow-sm"
+            href="/admin/products/featured"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-100"
           >
-            <ArrowUpDown size={18} />
-            Orden por categoría
+            <Sparkles size={17} />
+            Destacados de inicio
           </Link>
 
           <Link

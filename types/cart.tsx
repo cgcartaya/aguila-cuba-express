@@ -12,6 +12,9 @@ export type Product = {
   stock?: number;
   is_active?: boolean;
   tag?: string | null;
+  is_home_featured?: boolean | null;
+  home_featured_order?: number | null;
+  home_featured_label?: string | null;
 };
 
 /* =========================================================
