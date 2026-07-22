@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import ShippingAnimatedShowcase from "../ShippingAnimatedShowcase";
+import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
 import { useMemo, useState } from "react";
 import {
@@ -222,7 +222,7 @@ export default function YoyoLanding() {
               {["Express 48 h", "Aéreo", "Marítimo", "Toda Cuba"].map((item) => <div key={item} className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-400/10 text-[11px] text-emerald-300">✓</span>{item}</div>)}
             </div>
           </div>
-          <div className="relative z-10"><ShippingAnimatedShowcase agencyName="YOYO Envíos" trackingPrefix="YOYO" accentClassName="from-red-600 to-red-500" accentSoftClassName="bg-red-500/15 text-red-200" /></div>
+          <div className="relative z-10"><PickupPlannerHero /></div>
         </div>
       </section>
 

@@ -18,6 +18,7 @@ import {
   ShoppingCart,
   Store,
   Truck,
+  CalendarDays,
   Route,
   Users,
   Wrench,
@@ -54,6 +55,12 @@ const sections: AdminSection[] = [
       { href: "/admin/products", label: "Productos", icon: Package },
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
+    ],
+  },
+  {
+    title: "Recogidas",
+    links: [
+      { href: "/admin/pickups", label: "Solicitudes de recogida", icon: CalendarDays },
     ],
   },
   {
