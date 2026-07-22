@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import CityAutocomplete from "./CityAutocomplete";
 import {
   AlertTriangle,
   ArrowRight,
@@ -239,10 +240,14 @@ export default function PickupPlannerHero() {
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={19} />
                     <input value={form.address_line_1} onChange={(e) => update("address_line_1", e.target.value)} placeholder="Número y calle" autoComplete="street-address" className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 font-bold outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" />
                   </label>
-                  <select value={form.city} onChange={(e) => update("city", e.target.value)} disabled={configLoading || !config?.cities?.length} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white disabled:opacity-60">
-                    <option value="">{configLoading ? "Cargando ciudades..." : "Selecciona tu ciudad"}</option>
-                    {(config?.cities || []).map((city) => <option key={city} value={city}>{city}</option>)}
-                  </select>
+                  <CityAutocomplete
+                    cities={config?.cities || []}
+                    value={form.city}
+                    onChange={(city) => update("city", city)}
+                    disabled={configLoading || !config?.cities?.length}
+                    loading={configLoading}
+                    placeholder="Escribe tu ciudad"
+                  />
                   <input value={form.region} readOnly aria-readonly="true" placeholder="Estado / provincia" className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3.5 font-bold text-slate-600 outline-none" />
                   <input value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} placeholder="ZIP / código postal" autoComplete="postal-code" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white sm:col-span-2" />
                 </div>
