@@ -19,6 +19,7 @@ import {
   Store,
   Truck,
   CalendarDays,
+  MapPin,
   Route,
   Users,
   Wrench,
@@ -61,6 +62,7 @@ const sections: AdminSection[] = [
     title: "Recogidas",
     links: [
       { href: "/admin/pickups", label: "Solicitudes de recogida", icon: CalendarDays },
+      { href: "/admin/pickups/settings", label: "Configurar cobertura", icon: MapPin },
     ],
   },
   {

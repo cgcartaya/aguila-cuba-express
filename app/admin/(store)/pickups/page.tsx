@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
   CalendarDays,
   CheckCircle2,
@@ -13,6 +14,9 @@ import {
   RefreshCw,
   Search,
   Truck,
+  Settings,
+  ShieldCheck,
+  ExternalLink,
 } from "lucide-react";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -92,7 +96,7 @@ export default function PickupsAdminPage() {
       <header className="overflow-hidden rounded-[2.2rem] bg-gradient-to-br from-[#061b3a] via-[#0a3474] to-[#1174c4] p-6 text-white shadow-xl sm:p-8">
         <div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-end">
           <div><p className="text-xs font-black uppercase tracking-[0.18em] text-blue-200">Operación local</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">Solicitudes de recogida</h1><p className="mt-3 max-w-2xl font-semibold text-blue-100/75">Organiza las solicitudes por ciudad, confirma fechas y prepara las próximas rutas.</p></div>
-          <button onClick={load} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a]"><RefreshCw size={18} /> Actualizar</button>
+          <div className="flex flex-wrap gap-3"><Link href="/admin/pickups/settings" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-black text-white"><Settings size={18} /> Configurar cobertura</Link><button onClick={load} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a]"><RefreshCw size={18} /> Actualizar</button></div>
         </div>
         <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Metric label="Nuevas" value={metrics.new} icon={<Clock3 size={18} />} />
@@ -118,7 +122,7 @@ export default function PickupsAdminPage() {
             return (
               <article key={item.id} className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-lg sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{item.request_code}</span><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">{PICKUP_STATUS_LABELS[item.status]}</span></div><h2 className="mt-3 text-xl font-black text-slate-950">{item.customer_name}</h2><p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-600"><MapPin size={16} className="text-red-500" /> {item.address_line_1}, {item.city}, {item.region} {item.postal_code}</p></div>
+                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700">{item.request_code}</span><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">{PICKUP_STATUS_LABELS[item.status]}</span>{item.address_verified ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"><ShieldCheck size={13} /> Dirección verificada</span> : <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">Revisar dirección</span>}</div><h2 className="mt-3 text-xl font-black text-slate-950">{item.customer_name}</h2><p className="mt-1 flex items-center gap-2 text-sm font-bold text-slate-600"><MapPin size={16} className="text-red-500" /> {item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`}</p>{item.latitude != null && item.longitude != null && <a href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-xs font-black text-blue-700"><ExternalLink size={14} /> Abrir ubicación</a>}</div>
                   <a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsappText}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black text-white"><MessageCircle size={18} /> WhatsApp</a>
                 </div>
 

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { validatePickupAddress } from "@/lib/pickups/address-validation";
 import type { CreatePickupRequestInput } from "@/lib/pickups/types";
 
 const MAX_TEXT = 500;
-const SC_STATE_NAMES = new Set(["SC", "SOUTH CAROLINA", "CAROLINA DEL SUR"]);
 
 function clean(value: unknown, max = MAX_TEXT) {
   return String(value ?? "").trim().slice(0, max);
@@ -14,7 +14,11 @@ function normalizePhone(value: unknown) {
 }
 
 function validDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T12:00:00Z`));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T12:00:00Z`))) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const candidate = new Date(`${value}T12:00:00`);
+  return candidate >= today;
 }
 
 export async function POST(request: NextRequest) {
@@ -27,20 +31,29 @@ export async function POST(request: NextRequest) {
     const storeSlug = clean(body.store_slug, 100).toLowerCase();
     const customerName = clean(body.customer_name, 120);
     const phone = normalizePhone(body.phone);
-    const address = clean(body.address_line_1, 180);
-    const city = clean(body.city, 100);
-    const region = clean(body.region, 100);
-    const postalCode = clean(body.postal_code, 20);
     const preferredDates = Array.from(
-      new Set((Array.isArray(body.preferred_dates) ? body.preferred_dates : []).map((v) => clean(v, 10)))
-    ).filter(validDate).slice(0, 3);
+      new Set((Array.isArray(body.preferred_dates) ? body.preferred_dates : []).map((value) => clean(value, 10)))
+    ).filter(validDate).slice(0, 7);
 
-    if (!storeSlug || !customerName || phone.length < 7 || !address || !city || !region || !postalCode) {
-      return NextResponse.json({ error: "Completa nombre, teléfono y dirección de recogida." }, { status: 400 });
+    if (!storeSlug || !customerName || phone.length < 7) {
+      return NextResponse.json({ error: "Completa el nombre y un teléfono válido." }, { status: 400 });
     }
 
     if (preferredDates.length === 0) {
-      return NextResponse.json({ error: "Selecciona al menos una fecha preferida." }, { status: 400 });
+      return NextResponse.json({ error: "Selecciona al menos una fecha futura." }, { status: 400 });
+    }
+
+    const validation = await validatePickupAddress({
+      storeSlug,
+      addressLine1: clean(body.address_line_1, 180),
+      city: clean(body.city, 100),
+      region: clean(body.region, 100),
+      postalCode: clean(body.postal_code, 20),
+      countryCode: clean(body.country_code || "US", 2).toUpperCase(),
+    });
+
+    if (!validation.valid) {
+      return NextResponse.json({ error: validation.message, address_validation: validation }, { status: 422 });
     }
 
     const { data: store, error: storeError } = await supabaseAdmin
@@ -54,10 +67,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No pudimos identificar la tienda." }, { status: 404 });
     }
 
-    // Restricción inicial para Yoyo. Las demás tiendas pueden configurar otras regiones.
-    if (storeSlug === "yoyo-envios" && !SC_STATE_NAMES.has(region.toUpperCase())) {
-      return NextResponse.json({ error: "YOYO Envíos realiza recogidas dentro de Carolina del Sur." }, { status: 400 });
-    }
+    const { data: settings } = await supabaseAdmin
+      .from("pickup_service_settings")
+      .select("max_preferred_dates")
+      .eq("store_id", store.id)
+      .maybeSingle();
+
+    const maxDates = Math.max(1, Math.min(7, Number(settings?.max_preferred_dates) || 3));
+    const selectedDates = preferredDates.slice(0, maxDates);
 
     const { data: pickup, error: pickupError } = await supabaseAdmin
       .from("pickup_requests")
@@ -66,12 +83,22 @@ export async function POST(request: NextRequest) {
         customer_name: customerName,
         phone,
         email: clean(body.email, 160) || null,
-        address_line_1: address,
+        address_line_1: validation.addressLine1,
         address_line_2: clean(body.address_line_2, 100) || null,
-        city,
-        region,
-        postal_code: postalCode,
-        country_code: clean(body.country_code, 2).toUpperCase() || "US",
+        formatted_address: validation.formattedAddress,
+        city: validation.city,
+        region: validation.region,
+        postal_code: validation.postalCode,
+        country_code: validation.countryCode,
+        county: validation.county,
+        place_id: validation.placeId,
+        latitude: validation.latitude,
+        longitude: validation.longitude,
+        address_verified: validation.verified,
+        validation_provider: validation.provider,
+        validation_payload: validation.raw || null,
+        suggested_zone_id: validation.suggestedZoneId,
+        assigned_zone_id: validation.suggestedZoneId,
         package_count: Math.max(1, Math.min(99, Number(body.package_count) || 1)),
         estimated_weight:
           body.estimated_weight == null || body.estimated_weight === ("" as any)
@@ -91,24 +118,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No pudimos registrar la solicitud." }, { status: 500 });
     }
 
-    const dateRows = preferredDates.map((preferredDate, index) => ({
+    const dateRows = selectedDates.map((preferredDate, index) => ({
       pickup_request_id: pickup.id,
       preferred_date: preferredDate,
       priority: index + 1,
     }));
 
-    const { error: datesError } = await supabaseAdmin
-      .from("pickup_request_dates")
-      .insert(dateRows);
-
+    const { error: datesError } = await supabaseAdmin.from("pickup_request_dates").insert(dateRows);
     if (datesError) {
       await supabaseAdmin.from("pickup_requests").delete().eq("id", pickup.id);
-      console.error("pickup dates insert error", datesError);
       return NextResponse.json({ error: "No pudimos guardar las fechas seleccionadas." }, { status: 500 });
     }
 
     return NextResponse.json(
-      { id: pickup.id, request_code: pickup.request_code },
+      { id: pickup.id, request_code: pickup.request_code, address: validation },
       { status: 201, headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

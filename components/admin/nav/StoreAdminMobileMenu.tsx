@@ -22,6 +22,7 @@ import {
   Calculator,
   ClipboardCheck,
   CalendarDays,
+  MapPin,
   Globe2,
 } from "lucide-react";
 
@@ -52,6 +53,7 @@ const storeLinks: MenuItem[] = [
   { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
   { label: "Recogidas", href: "/admin/pickups", icon: CalendarDays },
+  { label: "Cobertura de recogidas", href: "/admin/pickups/settings", icon: MapPin },
   { label: "Dashboard de envíos", href: "/admin/shipping", icon: LayoutDashboard },
   { label: "Viajes", href: "/admin/shipping/trips", icon: Route },
   { label: "Todos los envíos", href: "/admin/shipping/shipments", icon: Truck },

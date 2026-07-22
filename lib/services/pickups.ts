@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { PickupRequest, PickupRequestStatus } from "@/lib/pickups/types";
+import type { PickupRequest, PickupRequestStatus, PickupServiceSettings } from "@/lib/pickups/types";
 
 export async function getPickupRequests(storeId: string) {
   const { data, error } = await supabase
@@ -51,4 +51,31 @@ export async function confirmPickupRequestDate(
     .eq("id", requestId)
     .select()
     .single();
+}
+
+
+export async function getPickupServiceSettings(storeId: string) {
+  return supabase
+    .from("pickup_service_settings")
+    .select("*")
+    .eq("store_id", storeId)
+    .maybeSingle<PickupServiceSettings>();
+}
+
+export async function upsertPickupServiceSettings(
+  storeId: string,
+  values: Partial<PickupServiceSettings>
+) {
+  return supabase
+    .from("pickup_service_settings")
+    .upsert(
+      {
+        store_id: storeId,
+        ...values,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "store_id" }
+    )
+    .select()
+    .single<PickupServiceSettings>();
 }
