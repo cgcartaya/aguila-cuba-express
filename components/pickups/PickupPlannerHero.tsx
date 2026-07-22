@@ -35,6 +35,17 @@ type AddressValidation = {
   suggestedZoneName: string | null;
 };
 
+
+type PickupPublicConfig = {
+  countryCode: string;
+  countryName: string | null;
+  regionCode: string;
+  regionName: string;
+  coverageMode: string;
+  maxPreferredDates: number;
+  cities: string[];
+};
+
 function nextDays(count = 7) {
   const days: Array<{ iso: string; day: string; date: string }> = [];
   const formatterDay = new Intl.DateTimeFormat("es-US", { weekday: "short" });
@@ -60,7 +71,7 @@ export default function PickupPlannerHero() {
   const [form, setForm] = useState({
     address_line_1: "",
     city: "",
-    region: "South Carolina",
+    region: "",
     postal_code: "",
     customer_name: "",
     phone: "",
@@ -77,6 +88,24 @@ export default function PickupPlannerHero() {
   const [addressResult, setAddressResult] = useState<AddressValidation | null>(null);
   const [error, setError] = useState("");
   const [successCode, setSuccessCode] = useState("");
+  const [config, setConfig] = useState<PickupPublicConfig | null>(null);
+  const [configLoading, setConfigLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await fetch(`/api/pickups/config?store_slug=${encodeURIComponent(STORE_SLUG)}`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "No pudimos cargar la cobertura.");
+        setConfig(result);
+        setForm((current) => ({ ...current, region: result.regionName || result.regionCode || "", city: "" }));
+      } catch (configError) {
+        setError(configError instanceof Error ? configError.message : "No pudimos cargar las ciudades.");
+      } finally {
+        setConfigLoading(false);
+      }
+    })();
+  }, []);
 
   function update(name: string, value: string | boolean) {
     setForm((current) => ({ ...current, [name]: value }));
@@ -103,7 +132,7 @@ export default function PickupPlannerHero() {
           city: form.city,
           region: form.region,
           postal_code: form.postal_code,
-          country_code: "US",
+          country_code: config?.countryCode || "US",
         }),
       });
       const result = await response.json();
@@ -132,7 +161,8 @@ export default function PickupPlannerHero() {
   function toggleDate(date: string) {
     setSelectedDates((current) => {
       if (current.includes(date)) return current.filter((item) => item !== date);
-      if (current.length >= 3) return [...current.slice(1), date];
+      const maximum = Math.max(1, config?.maxPreferredDates || 3);
+      if (current.length >= maximum) return [...current.slice(1), date];
       return [...current, date];
     });
   }
@@ -170,7 +200,7 @@ export default function PickupPlannerHero() {
           preferred_dates: selectedDates,
           package_count: Number(form.package_count) || 1,
           estimated_weight: form.estimated_weight ? Number(form.estimated_weight) : null,
-          country_code: "US",
+          country_code: config?.countryCode || "US",
         }),
       });
       const result = await response.json();
@@ -209,8 +239,11 @@ export default function PickupPlannerHero() {
                     <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={19} />
                     <input value={form.address_line_1} onChange={(e) => update("address_line_1", e.target.value)} placeholder="Número y calle" autoComplete="street-address" className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 font-bold outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" />
                   </label>
-                  <input value={form.city} onChange={(e) => update("city", e.target.value)} placeholder="Ciudad" autoComplete="address-level2" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white" />
-                  <input value={form.region} onChange={(e) => update("region", e.target.value)} placeholder="Estado / provincia" autoComplete="address-level1" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white" />
+                  <select value={form.city} onChange={(e) => update("city", e.target.value)} disabled={configLoading || !config?.cities?.length} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white disabled:opacity-60">
+                    <option value="">{configLoading ? "Cargando ciudades..." : "Selecciona tu ciudad"}</option>
+                    {(config?.cities || []).map((city) => <option key={city} value={city}>{city}</option>)}
+                  </select>
+                  <input value={form.region} readOnly aria-readonly="true" placeholder="Estado / provincia" className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3.5 font-bold text-slate-600 outline-none" />
                   <input value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} placeholder="ZIP / código postal" autoComplete="postal-code" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white sm:col-span-2" />
                 </div>
 
@@ -250,7 +283,7 @@ export default function PickupPlannerHero() {
 
               {error && <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
               <button type="button" onClick={continueFirstStep} disabled={validating} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">Continuar con mi solicitud <ArrowRight size={19} /></button>
-              <p className="text-center text-xs font-semibold leading-5 text-slate-500">La fecha será confirmada cuando la agencia organice la ruta de tu zona.</p>
+              <p className="text-center text-xs font-semibold leading-5 text-slate-500">La fecha será confirmada cuando la agencia organice la ruta de tu zona. Puedes escoger hasta {config?.maxPreferredDates || 3} días.</p>
             </div>
           )}
 

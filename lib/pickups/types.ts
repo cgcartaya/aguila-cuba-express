@@ -28,6 +28,7 @@ export type PickupServiceSettings = {
   public_headline: string | null;
   public_description: string | null;
   coverage_mode: PickupCoverageMode;
+  city_selection_mode?: "all_region" | "selected";
   allowed_cities: string[];
   allowed_postal_codes: string[];
   base_latitude: number | null;

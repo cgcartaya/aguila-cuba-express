@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getCityOptions } from "@/lib/geo/location-catalog";
 
 export type PickupCoverageSettings = {
   id: string;
@@ -256,6 +257,18 @@ export async function validatePickupAddress(input: AddressValidationInput): Prom
   }
 
   const { store, settings } = resolved;
+  const catalogCities = getCityOptions(settings.country_code, settings.region_code || "").map((item) => item.label);
+  const cityBelongsToRegion = catalogCities.some((catalogCity) => sameLoose(catalogCity, city));
+  if (!cityBelongsToRegion) {
+    return {
+      valid: false, verified: false, inCoverage: false,
+      message: `La ciudad seleccionada no pertenece a ${settings.region_name || settings.region_code || "la región configurada"}.`,
+      provider: "catalog", formattedAddress: "", addressLine1, city, region, regionCode: settings.region_code || region,
+      postalCode, countryCode, county: null, latitude: null, longitude: null, placeId: null,
+      suggestedZoneId: null, suggestedZoneName: null,
+    };
+  }
+
   let normalized: any = null;
   let provider = "manual";
 
