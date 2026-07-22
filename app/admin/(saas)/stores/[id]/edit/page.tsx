@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Upload } from "lucide-react"
+import { ArrowLeft, ExternalLink, ImageIcon, Search, Share2, Upload } from "lucide-react"
 import {
   getStoreById,
   updateStore,
   uploadStoreLogo,
   uploadStoreFavicon,
+  uploadStoreOgImage,
 } from "@/lib/services/stores"
 
 export default function EditStorePage() {
@@ -20,6 +21,8 @@ export default function EditStorePage() {
   const [saving, setSaving] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [faviconFile, setFaviconFile] = useState<File | null>(null)
+  const [ogImageFile, setOgImageFile] = useState<File | null>(null)
+  const [ogPreviewUrl, setOgPreviewUrl] = useState("")
 
   const [form, setForm] = useState({
     name: "",
@@ -28,6 +31,9 @@ export default function EditStorePage() {
     domain: "",
     logo_url: "",
     favicon_url: "",
+    meta_title: "",
+    meta_description: "",
+    og_image_url: "",
     primary_color: "#0B1F4D",
     secondary_color: "#DC2626",
     plan: "basic",
@@ -59,6 +65,9 @@ export default function EditStorePage() {
         domain: store.domain || "",
         logo_url: store.logo_url || "",
         favicon_url: store.favicon_url || "",
+        meta_title: store.meta_title || "",
+        meta_description: store.meta_description || "",
+        og_image_url: store.og_image_url || "",
         primary_color: store.primary_color || "#0B1F4D",
         secondary_color: store.secondary_color || "#DC2626",
         plan: store.plan || "basic",
@@ -78,6 +87,18 @@ export default function EditStorePage() {
 
     loadStore()
   }, [storeId, router])
+
+  useEffect(() => {
+    if (!ogImageFile) {
+      setOgPreviewUrl(form.og_image_url)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(ogImageFile)
+    setOgPreviewUrl(objectUrl)
+
+    return () => URL.revokeObjectURL(objectUrl)
+  }, [ogImageFile, form.og_image_url])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -116,6 +137,20 @@ export default function EditStorePage() {
         faviconUrl = data
       }
 
+      let ogImageUrl = form.og_image_url || null
+
+      if (ogImageFile) {
+        const { data, error } = await uploadStoreOgImage(storeId, ogImageFile)
+
+        if (error) {
+          console.error("SUPABASE UPLOAD OG IMAGE ERROR:", error)
+          alert(error.message || "Error subiendo la imagen para compartir")
+          return
+        }
+
+        ogImageUrl = data
+      }
+
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
@@ -123,6 +158,9 @@ export default function EditStorePage() {
         domain: form.domain.trim() === "" ? null : form.domain.trim().toLowerCase(),
         logo_url: logoUrl,
         favicon_url: faviconUrl,
+        meta_title: form.meta_title.trim() === "" ? null : form.meta_title.trim(),
+        meta_description: form.meta_description.trim() === "" ? null : form.meta_description.trim(),
+        og_image_url: ogImageUrl,
         primary_color: form.primary_color,
         secondary_color: form.secondary_color,
         plan: form.plan,
@@ -157,14 +195,22 @@ export default function EditStorePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-3xl p-6">
+      <main className="mx-auto max-w-5xl p-6">
         <p className="text-slate-600">Cargando tienda...</p>
       </main>
     )
   }
 
+  const publicUrl = form.domain
+    ? `https://${form.domain.replace(/^https?:\/\//, "").replace(/^www\./, "")}`
+    : `https://${form.subdomain || form.slug || "mi-tienda"}.perlamarketplace.com`
+  const seoTitle = form.meta_title.trim() || `${form.name || "Mi tienda"} | Perla Marketplace`
+  const seoDescription =
+    form.meta_description.trim() ||
+    `Descubre productos, ofertas y novedades de ${form.name || "esta tienda"}.`
+
   return (
-    <main className="mx-auto max-w-3xl p-6">
+    <main className="mx-auto max-w-5xl p-6">
       <Link
         href="/admin/stores"
         className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900"
@@ -408,6 +454,130 @@ export default function EditStorePage() {
             />
           </div>
         </div>
+
+        <section className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50 p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-[#0B1F4D]" />
+                <h2 className="text-xl font-bold text-slate-900">SEO y vista al compartir</h2>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">
+                Controla cómo aparece la tienda en Google, WhatsApp y redes sociales.
+              </p>
+            </div>
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[#0B1F4D] hover:underline"
+            >
+              Abrir tienda <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-[1.05fr_.95fr]">
+            <div className="space-y-4">
+              <div className="rounded-2xl border bg-white p-4">
+                <label className="mb-2 block font-semibold text-slate-800">Título SEO</label>
+                <input
+                  maxLength={70}
+                  className="w-full rounded-xl border p-3"
+                  placeholder={`${form.name || "Mi tienda"} | Perla Marketplace`}
+                  value={form.meta_title}
+                  onChange={(e) => setForm({ ...form, meta_title: e.target.value })}
+                />
+                <div className="mt-2 flex justify-between text-xs text-slate-500">
+                  <span>Recomendado: entre 30 y 60 caracteres.</span>
+                  <span className={form.meta_title.length > 60 ? "font-bold text-amber-600" : ""}>
+                    {form.meta_title.length}/70
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-white p-4">
+                <label className="mb-2 block font-semibold text-slate-800">Descripción SEO</label>
+                <textarea
+                  rows={4}
+                  maxLength={180}
+                  className="w-full rounded-xl border p-3"
+                  placeholder={`Describe brevemente lo que ofrece ${form.name || "la tienda"}.`}
+                  value={form.meta_description}
+                  onChange={(e) => setForm({ ...form, meta_description: e.target.value })}
+                />
+                <div className="mt-2 flex justify-between text-xs text-slate-500">
+                  <span>Recomendado: entre 120 y 160 caracteres.</span>
+                  <span className={form.meta_description.length > 160 ? "font-bold text-amber-600" : ""}>
+                    {form.meta_description.length}/180
+                  </span>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-white p-4">
+                <div className="mb-3 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5 text-[#0B1F4D]" />
+                  <label className="font-semibold text-slate-800">Imagen para compartir</label>
+                </div>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="w-full rounded-xl border p-3"
+                  onChange={(event) => setOgImageFile(event.target.files?.[0] || null)}
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Recomendado: 1200 × 630 px, PNG, JPG o WebP. Se subirá al bucket público <strong>seo</strong>.
+                </p>
+                {form.og_image_url && !ogImageFile ? (
+                  <button
+                    type="button"
+                    className="mt-3 text-sm font-semibold text-red-600 hover:underline"
+                    onClick={() => setForm({ ...form, og_image_url: "" })}
+                  >
+                    Quitar imagen actual
+                  </button>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+                <div className="flex items-center gap-2 border-b px-4 py-3 text-sm font-bold text-slate-700">
+                  <Share2 className="h-4 w-4" /> Vista previa de WhatsApp
+                </div>
+                <div className="bg-[#efeae2] p-4">
+                  <div className="overflow-hidden rounded-xl bg-white shadow-sm">
+                    <div className="aspect-[1200/630] bg-slate-100">
+                      {ogPreviewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={ogPreviewUrl} alt="Vista previa Open Graph" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-center text-sm text-slate-400">
+                          Sube una imagen para ver la vista previa
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="line-clamp-2 font-bold text-slate-900">{seoTitle}</p>
+                      <p className="mt-1 line-clamp-2 text-sm text-slate-600">{seoDescription}</p>
+                      <p className="mt-2 truncate text-xs uppercase text-slate-400">
+                        {publicUrl.replace(/^https?:\/\//, "")}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
+                  <Search className="h-4 w-4" /> Vista previa de Google
+                </div>
+                <p className="truncate text-sm text-emerald-700">{publicUrl}</p>
+                <p className="mt-1 line-clamp-1 text-xl text-[#1a0dab]">{seoTitle}</p>
+                <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">{seoDescription}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <div>
           <label className="mb-2 block font-medium">Plan</label>

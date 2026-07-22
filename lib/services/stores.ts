@@ -253,6 +253,27 @@ export async function uploadStoreFavicon(storeId: string, file: File) {
   return uploadStoreAsset(storeId, file, "favicon")
 }
 
+export async function uploadStoreOgImage(storeId: string, file: File) {
+  const extension = file.name.split(".").pop()?.toLowerCase() || "png"
+  const filePath = `${storeId}/open-graph-${crypto.randomUUID()}.${extension}`
+
+  const { error: uploadError } = await supabase.storage
+    .from("seo")
+    .upload(filePath, file, {
+      upsert: true,
+      cacheControl: "31536000",
+      contentType: file.type || undefined,
+    })
+
+  if (uploadError) {
+    return { data: null, error: uploadError }
+  }
+
+  const { data } = supabase.storage.from("seo").getPublicUrl(filePath)
+
+  return { data: data.publicUrl, error: null }
+}
+
 export async function markStoreAsPaid(
   id: string,
   paymentData: {
