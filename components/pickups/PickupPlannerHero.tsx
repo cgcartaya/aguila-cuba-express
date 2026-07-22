@@ -218,8 +218,8 @@ export default function PickupPlannerHero() {
 
   return (
     <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white text-slate-950 shadow-[0_35px_90px_rgba(0,0,0,.35)]">
-      <div className="grid lg:grid-cols-[1.08fr_.92fr]">
-        <div className="p-5 sm:p-7">
+      <div className="grid lg:grid-cols-[1.16fr_.84fr]">
+        <div className="p-5 sm:p-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.17em] text-red-600">Recogida a domicilio</p>
@@ -229,27 +229,35 @@ export default function PickupPlannerHero() {
           </div>
 
           {step === 1 && (
-            <div className="mt-6 space-y-5">
+            <div className="mt-5 space-y-4">
               <div>
                 <div className="flex items-center justify-between gap-3">
                   <label className="text-sm font-black text-slate-700">¿Dónde recogemos?</label>
                   {validating && <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600"><Loader2 className="animate-spin" size={14} /> Verificando</span>}
                 </div>
-                <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                  <label className="relative sm:col-span-2">
-                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={19} />
-                    <input value={form.address_line_1} onChange={(e) => update("address_line_1", e.target.value)} placeholder="Número y calle" autoComplete="street-address" className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-12 pr-4 font-bold outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" />
-                  </label>
-                  <CityAutocomplete
-                    cities={config?.cities || []}
-                    value={form.city}
-                    onChange={(city) => update("city", city)}
-                    disabled={configLoading || !config?.cities?.length}
-                    loading={configLoading}
-                    placeholder="Escribe tu ciudad"
-                  />
-                  <input value={form.region} readOnly aria-readonly="true" placeholder="Estado / provincia" className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3.5 font-bold text-slate-600 outline-none" />
-                  <input value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} placeholder="ZIP / código postal" autoComplete="postal-code" className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-bold outline-none focus:border-blue-400 focus:bg-white sm:col-span-2" />
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.08em] text-slate-600">Dirección</label>
+                    <label className="relative block">
+                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-500" size={18} />
+                      <input value={form.address_line_1} onChange={(e) => update("address_line_1", e.target.value)} placeholder="Ej. 1500 Main St" autoComplete="street-address" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                    </label>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-[1.35fr_.65fr]">
+                    <CityAutocomplete
+                      cities={config?.cities || []}
+                      value={form.city}
+                      onChange={(city) => update("city", city)}
+                      disabled={configLoading || !config?.cities?.length}
+                      loading={configLoading}
+                    />
+                    <div>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.08em] text-slate-600">ZIP Code</label>
+                      <input value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} placeholder="29201" autoComplete="postal-code" inputMode="numeric" className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
+                      <p className="mt-1.5 text-xs font-semibold text-slate-500">{form.region || "Estado configurado"}</p>
+                    </div>
+                  </div>
                 </div>
 
                 {addressResult && (
@@ -268,18 +276,21 @@ export default function PickupPlannerHero() {
                 <button type="button" onClick={() => validateAddress(true)} disabled={validating} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-[#061b3a] disabled:opacity-50"><Search size={15} /> Verificar dirección</button>
               </div>
 
-              <div>
-                <div className="flex items-end justify-between gap-3">
-                  <label className="text-sm font-black text-slate-700">¿Qué días te convienen?</label>
-                  <span className="text-[11px] font-bold text-slate-400">Puedes elegir hasta 3</span>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-slate-800">¿Qué días te convienen?</p>
+                    <p className="mt-0.5 text-xs font-semibold text-slate-500">Elige hasta {config?.maxPreferredDates || 3} opciones.</p>
+                  </div>
+                  <CalendarDays className="text-blue-700" size={20} />
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-7">
                   {days.map((item) => {
                     const selected = selectedDates.includes(item.iso);
                     return (
-                      <button key={item.iso} type="button" onClick={() => toggleDate(item.iso)} className={`rounded-2xl border px-2 py-3 text-center transition ${selected ? "border-red-600 bg-red-600 text-white shadow-lg shadow-red-200" : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>
-                        <span className="block text-[11px] font-black uppercase">{item.day}</span>
-                        <span className="mt-1 block text-sm font-black">{item.date}</span>
+                      <button key={item.iso} type="button" onClick={() => toggleDate(item.iso)} className={`rounded-xl border px-1.5 py-2.5 text-center transition ${selected ? "border-red-600 bg-red-600 text-white shadow-md" : "border-slate-200 bg-white text-slate-800 hover:border-blue-400 hover:bg-blue-50"}`}>
+                        <span className="block text-[10px] font-black uppercase tracking-wide">{item.day}</span>
+                        <span className="mt-0.5 block text-xs font-black">{item.date}</span>
                       </button>
                     );
                   })}
