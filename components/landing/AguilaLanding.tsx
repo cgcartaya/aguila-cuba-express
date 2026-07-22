@@ -134,15 +134,16 @@ export default function AguilaLanding() {
         )}
       </header>
 
-      <section className="relative overflow-hidden border-b border-[#13233d]/10">
-        <div className="absolute right-0 top-0 h-full w-[38%] bg-[#c9202f] max-lg:hidden" />
-        <div className="pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full border-[54px] border-[#e2b75b]/20" />
-        <div className="relative mx-auto grid min-h-[700px] max-w-7xl items-center gap-12 px-5 py-16 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:py-24">
+      <section className="relative overflow-hidden border-b border-[#13233d]/10 bg-[#f7f2e9]">
+        <div className="pointer-events-none absolute -left-24 top-28 h-72 w-72 rounded-full border-[54px] border-[#e2b75b]/20" />
+        <div className="pointer-events-none absolute right-[-8rem] top-[-7rem] h-[28rem] w-[28rem] rounded-full bg-[#c9202f]/8" />
+
+        <div className="relative mx-auto grid min-h-[690px] max-w-7xl items-center gap-14 px-5 py-16 sm:px-6 lg:grid-cols-[1.02fr_.98fr] lg:py-20">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#c9202f]/20 bg-white/70 px-4 py-2 text-xs font-black uppercase tracking-[0.17em] text-[#c9202f]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#c9202f]/20 bg-white/75 px-4 py-2 text-xs font-black uppercase tracking-[0.17em] text-[#c9202f] shadow-sm">
               <span className="h-2 w-2 rounded-full bg-[#c9202f]" /> Miami · Cuba · Familia
             </div>
-            <h1 className="mt-7 text-5xl font-black leading-[.95] tracking-[-0.045em] sm:text-6xl lg:text-[5.3rem]">
+            <h1 className="mt-7 text-5xl font-black leading-[.95] tracking-[-0.045em] sm:text-6xl lg:text-[5.1rem]">
               Todo lo que envías
               <span className="block font-serif italic text-[#c9202f]">lleva un pedacito de ti.</span>
             </h1>
@@ -151,38 +152,46 @@ export default function AguilaLanding() {
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <a href="#cotizar" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#c9202f] px-7 py-4 text-sm font-black text-white shadow-[0_16px_35px_rgba(201,32,47,.22)] transition hover:-translate-y-0.5"><Calculator size={19} /> Cotizar envío <ArrowRight size={18} /></a>
-              <Link href={STORE_URL} className="inline-flex items-center justify-center gap-2 rounded-full border border-[#13233d]/15 bg-white/70 px-7 py-4 text-sm font-black transition hover:bg-white"><Store size={19} /> Visitar la tienda</Link>
+              <Link href={STORE_URL} className="inline-flex items-center justify-center gap-2 rounded-full border border-[#13233d]/15 bg-white/80 px-7 py-4 text-sm font-black transition hover:bg-white"><Store size={19} /> Visitar la tienda</Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-x-7 gap-y-3 text-sm font-extrabold text-[#13233d]/65">
               {["Rastreo en línea", "Atención por WhatsApp", "Compra y envío juntos"].map((item) => <span key={item} className="inline-flex items-center gap-2"><Check size={16} className="text-[#c9202f]" />{item}</span>)}
             </div>
           </div>
 
-          <div className="relative lg:pl-8">
-            <div className="relative mx-auto aspect-[4/5] max-w-[500px] overflow-hidden rounded-[3rem_3rem_1rem_3rem] bg-[#13233d] shadow-2xl">
-              <Image src="/slide-store.webp" alt="Familias conectadas por Águila Cuba Express" fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#13233d]/85 via-transparent to-transparent" />
-              <div className="absolute left-6 right-6 top-6 flex items-center justify-between rounded-2xl bg-white/92 p-4 shadow-lg backdrop-blur">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#13233d]/45">Próximo envío</p>
-                  <p className="mt-1 font-black text-[#13233d]">Miami → Cienfuegos</p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#c9202f] text-white"><Truck size={20} /></div>
-              </div>
-              <div className="absolute bottom-6 left-6 right-6 rounded-3xl bg-[#13233d]/92 p-5 text-white backdrop-blur">
-                <div className="flex items-center justify-between gap-4">
+          <div className="relative mx-auto w-full max-w-[570px] lg:justify-self-end">
+            <div className="absolute -inset-5 translate-x-4 translate-y-4 rounded-[3rem] bg-[#c9202f] sm:-inset-7" />
+            <div className="relative overflow-hidden rounded-[2.5rem] border-[10px] border-white bg-white shadow-[0_30px_80px_rgba(19,35,61,.22)]">
+              <div className="relative aspect-[1.05/1] min-h-[430px]">
+                <Image src="/slide-store.webp" alt="Familias conectadas por Águila Cuba Express" fill className="object-cover object-center" priority />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#13233d]/78 via-transparent to-transparent" />
+
+                <div className="absolute left-5 right-5 top-5 flex items-center justify-between rounded-2xl bg-white/94 p-4 shadow-lg backdrop-blur sm:left-6 sm:right-6 sm:top-6">
                   <div>
-                    <p className="text-xs font-bold text-white/55">Estado del envío</p>
-                    <p className="mt-1 text-xl font-black">En tránsito hacia Cuba</p>
+                    <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#13233d]/45">Próximo envío</p>
+                    <p className="mt-1 font-black text-[#13233d]">Miami → Cienfuegos</p>
                   </div>
-                  <span className="rounded-full bg-[#e2b75b] px-3 py-1 text-xs font-black text-[#13233d]">ACE</span>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#c9202f] text-white"><Truck size={20} /></div>
                 </div>
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full w-[72%] rounded-full bg-[#e2b75b]" /></div>
+
+                <div className="absolute bottom-5 left-5 right-5 rounded-3xl bg-[#13233d]/94 p-5 text-white shadow-xl backdrop-blur sm:bottom-6 sm:left-6 sm:right-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-bold text-white/55">Estado del envío</p>
+                      <p className="mt-1 text-lg font-black sm:text-xl">En tránsito hacia Cuba</p>
+                    </div>
+                    <span className="rounded-full bg-[#e2b75b] px-3 py-1 text-xs font-black text-[#13233d]">ACE</span>
+                  </div>
+                  <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full w-[72%] rounded-full bg-[#e2b75b]" /></div>
+                </div>
               </div>
             </div>
-            <div className="absolute -bottom-5 -left-2 rounded-3xl bg-[#e2b75b] p-5 text-[#13233d] shadow-xl sm:left-0">
-              <p className="text-3xl font-black">1 plataforma</p>
-              <p className="mt-1 text-sm font-extrabold">para comprar, enviar y rastrear</p>
+
+            <div className="relative -mt-5 ml-5 inline-flex rounded-2xl bg-[#e2b75b] px-5 py-4 text-[#13233d] shadow-xl sm:ml-8">
+              <div>
+                <p className="text-2xl font-black">1 plataforma</p>
+                <p className="mt-1 text-sm font-extrabold">para comprar, enviar y rastrear</p>
+              </div>
             </div>
           </div>
         </div>
