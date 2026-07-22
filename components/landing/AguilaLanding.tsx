@@ -135,7 +135,6 @@ export default function AguilaLanding() {
       </header>
 
       <section className="relative overflow-hidden border-b border-[#13233d]/10">
-        <div className="absolute right-0 top-0 h-full w-[38%] bg-[#c9202f] max-lg:hidden" />
         <div className="pointer-events-none absolute -left-24 top-32 h-56 w-56 rounded-full border-[40px] border-[#e2b75b]/20 sm:h-72 sm:w-72 sm:border-[54px]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-5 py-12 sm:px-6 sm:py-16 lg:min-h-[700px] lg:grid-cols-[1.05fr_.95fr] lg:py-24">
           <div className="min-w-0 max-w-3xl">
@@ -158,31 +157,67 @@ export default function AguilaLanding() {
             </div>
           </div>
 
-          <div className="relative min-w-0 pt-2 sm:pt-4 lg:pl-8 lg:pt-0">
-            <div className="relative mx-auto aspect-[4/5] w-full max-w-[500px] overflow-hidden rounded-[2rem_2rem_.9rem_2rem] bg-[#13233d] shadow-2xl sm:rounded-[3rem_3rem_1rem_3rem]">
-              <Image src="/slide-store.webp" alt="Familias conectadas por Águila Cuba Express" fill className="object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#13233d]/85 via-transparent to-transparent" />
-              <div className="absolute left-3 right-3 top-3 flex items-center justify-between gap-3 rounded-2xl bg-white/92 p-3 shadow-lg backdrop-blur sm:left-6 sm:right-6 sm:top-6 sm:p-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#13233d]/45">Próximo envío</p>
-                  <p className="mt-1 text-sm font-black text-[#13233d] sm:text-base">Miami → Cienfuegos</p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#c9202f] text-white"><Truck size={20} /></div>
-              </div>
-              <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-[#13233d]/92 p-4 text-white backdrop-blur sm:bottom-6 sm:left-6 sm:right-6 sm:rounded-3xl sm:p-5">
-                <div className="flex items-center justify-between gap-4">
+          <div className="relative min-w-0 lg:pl-8">
+            <div className="relative mx-auto w-full max-w-[560px] rounded-[2rem] bg-[#c9202f] p-3 shadow-[0_28px_70px_rgba(19,35,61,.18)] sm:p-5 lg:rotate-[1deg] lg:rounded-[3rem]">
+              <div className="relative overflow-hidden rounded-[1.55rem] bg-[#13233d] p-5 text-white sm:p-7 lg:rounded-[2.35rem] lg:p-8">
+                <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full border-[38px] border-white/[.06]" />
+                <div className="pointer-events-none absolute -bottom-24 -left-20 h-64 w-64 rounded-full border-[42px] border-[#e2b75b]/10" />
+
+                <div className="relative flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-bold text-white/55">Estado del envío</p>
-                    <p className="mt-1 text-base font-black sm:text-xl">En tránsito hacia Cuba</p>
+                    <p className="text-[10px] font-black uppercase tracking-[.22em] text-[#e2b75b]">Ruta activa</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Miami → Cienfuegos</h2>
+                    <p className="mt-2 text-sm font-semibold text-white/55">Compra, envío y rastreo en un solo lugar.</p>
                   </div>
-                  <span className="rounded-full bg-[#e2b75b] px-3 py-1 text-xs font-black text-[#13233d]">ACE</span>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-[#c9202f] shadow-lg sm:h-14 sm:w-14">
+                    <Truck size={24} />
+                  </div>
                 </div>
-                <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/15"><div className="h-full w-[72%] rounded-full bg-[#e2b75b]" /></div>
+
+                <div className="relative mt-8 rounded-[1.75rem] bg-white/[.07] p-5 ring-1 ring-white/10 sm:p-6">
+                  <div className="absolute left-[17%] right-[17%] top-[38px] h-1 rounded-full bg-white/10">
+                    <div className="h-full w-[72%] rounded-full bg-[#e2b75b]" />
+                  </div>
+                  <div className="relative grid grid-cols-3 text-center">
+                    <div>
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e2b75b] text-[#13233d] ring-8 ring-[#13233d] sm:h-14 sm:w-14"><ShoppingBag size={21} /></div>
+                      <p className="mt-3 text-xs font-black uppercase tracking-[.12em] text-white/45">Compra</p>
+                    </div>
+                    <div>
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#c9202f] text-white ring-8 ring-[#13233d] sm:h-14 sm:w-14"><PackageCheck size={22} /></div>
+                      <p className="mt-3 text-xs font-black uppercase tracking-[.12em] text-white/45">Preparamos</p>
+                    </div>
+                    <div>
+                      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#13233d] ring-8 ring-[#13233d] sm:h-14 sm:w-14"><MapPin size={22} /></div>
+                      <p className="mt-3 text-xs font-black uppercase tracking-[.12em] text-white/45">Entregamos</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-white p-4 text-[#13233d] shadow-lg">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#13233d]/40">Estado actual</p>
+                        <p className="mt-1 font-black">En tránsito hacia Cuba</p>
+                      </div>
+                      <span className="rounded-full bg-[#e2b75b] px-3 py-1 text-[11px] font-black">ACE</span>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl bg-[#e2b75b] p-4 text-[#13233d] shadow-lg">
+                    <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#13233d]/50">Todo conectado</p>
+                    <p className="mt-1 text-lg font-black">Tienda + Envíos + Rastreo</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="relative mx-auto -mt-5 w-[calc(100%-2rem)] max-w-sm rounded-3xl bg-[#e2b75b] p-5 text-[#13233d] shadow-xl sm:absolute sm:-bottom-5 sm:left-0 sm:mt-0 sm:w-auto">
-              <p className="text-2xl font-black sm:text-3xl">1 plataforma</p>
-              <p className="mt-1 text-sm font-extrabold">para comprar, enviar y rastrear</p>
+
+            <div className="relative mx-auto -mt-3 flex w-[calc(100%-2rem)] max-w-md items-center justify-between gap-4 rounded-2xl border border-[#13233d]/10 bg-[#f7f2e9] px-5 py-4 shadow-xl sm:-mt-5 sm:rounded-3xl lg:absolute lg:-bottom-7 lg:-left-1 lg:w-auto lg:min-w-[310px]">
+              <div>
+                <p className="text-2xl font-black text-[#13233d]">1 plataforma</p>
+                <p className="text-sm font-extrabold text-[#13233d]/60">para comprar, enviar y rastrear</p>
+              </div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#c9202f] text-white"><ArrowRight size={19} /></div>
             </div>
           </div>
         </div>
