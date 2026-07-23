@@ -220,3 +220,82 @@ export async function getPublicPickupRoutes(storeId: string, limit = 4) {
     .limit(limit);
   return { data: data || [], error };
 }
+
+async function pickupAdminApi<T>(path: string, init?: RequestInit): Promise<{ data: T | null; error: { message: string } | null }> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+  if (!token) return { data: null, error: { message: "No hay una sesión administrativa activa." } };
+
+  try {
+    const response = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        ...(init?.headers || {}),
+      },
+      cache: "no-store",
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) return { data: null, error: { message: payload.error || "No se pudo completar la operación." } };
+    return { data: payload as T, error: null };
+  } catch (error) {
+    return { data: null, error: { message: error instanceof Error ? error.message : "Error de conexión." } };
+  }
+}
+
+export async function getPickupZones(storeId: string) {
+  const result = await pickupAdminApi<{ ok: true; zones: import("@/lib/pickups/types").PickupZone[] }>(
+    `/api/admin/pickups/zones?store_id=${encodeURIComponent(storeId)}`
+  );
+  return { data: result.data?.zones || [], error: result.error };
+}
+
+export async function createPickupZone(storeId: string, values: { name: string; color?: string; description?: string; habitualDays?: number[] }) {
+  const result = await pickupAdminApi<{ ok: true; zone: import("@/lib/pickups/types").PickupZone }>("/api/admin/pickups/zones", {
+    method: "POST",
+    body: JSON.stringify({
+      store_id: storeId,
+      name: values.name,
+      color: values.color,
+      description: values.description,
+      habitual_days: values.habitualDays || [],
+    }),
+  });
+  return { data: result.data?.zone || null, error: result.error };
+}
+
+export async function updatePickupZone(zoneId: string, storeId: string, values: Record<string, unknown>) {
+  const result = await pickupAdminApi<{ ok: true; zone: import("@/lib/pickups/types").PickupZone }>("/api/admin/pickups/zones", {
+    method: "PATCH",
+    body: JSON.stringify({ store_id: storeId, zone_id: zoneId, ...values }),
+  });
+  return { data: result.data?.zone || null, error: result.error };
+}
+
+export async function deletePickupZone(zoneId: string, storeId: string) {
+  const result = await pickupAdminApi<{ ok: true }>(
+    `/api/admin/pickups/zones?store_id=${encodeURIComponent(storeId)}&zone_id=${encodeURIComponent(zoneId)}`,
+    { method: "DELETE" }
+  );
+  return { data: result.data, error: result.error };
+}
+
+export async function replacePickupZoneCities(storeId: string, zoneId: string, cities: string[], regionCode?: string | null) {
+  const result = await pickupAdminApi<{ ok: true }>("/api/admin/pickups/zones", {
+    method: "PATCH",
+    body: JSON.stringify({ store_id: storeId, zone_id: zoneId, cities, region_code: regionCode || null }),
+  });
+  return { error: result.error };
+}
+
+export async function assignPickupRequestZone(storeId: string, requestId: string, zoneId: string | null) {
+  return supabase.from("pickup_requests").update({ assigned_zone_id: zoneId, updated_at: new Date().toISOString() }).eq("store_id", storeId).eq("id", requestId).select().single();
+}
+
+export async function updatePickupStopConfirmation(stopId: string, routeId: string, status: "pending" | "confirmed" | "declined") {
+  return supabase.from("pickup_route_stops").update({
+    customer_confirmation_status: status,
+    customer_confirmed_at: status === "confirmed" ? new Date().toISOString() : null,
+  }).eq("id", stopId).eq("route_id", routeId).select().single();
+}
