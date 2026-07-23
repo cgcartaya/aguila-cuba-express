@@ -110,17 +110,14 @@ async function resolveStoreAndSettings(storeSlug: string) {
 
 async function findSuggestedZone(storeId: string, city: string, postalCode: string, county?: string | null) {
   const { data } = await supabaseAdmin
-    .from("pickup_zone_locations")
-    .select("zone_id, name, postal_code, location_type, pickup_zones!inner(name, is_active)")
-    .eq("store_id", storeId)
-    .eq("is_active", true);
+    .from("pickup_zone_cities")
+    .select("zone_id, city_name, region_code, pickup_zones!inner(name, is_active)")
+    .eq("store_id", storeId);
 
-  const match = (data || []).find((row: any) => {
-    if (!row.pickup_zones?.is_active) return false;
-    if (row.location_type === "postal_code" && row.postal_code) return norm(row.postal_code) === norm(postalCode);
-    if (row.location_type === "county" && county) return sameLoose(row.name, county);
-    return sameLoose(row.name, city);
-  });
+  const match = (data || []).find((row: any) =>
+    row.pickup_zones?.is_active &&
+    (sameLoose(row.city_name, city) || Boolean(county && sameLoose(row.city_name, county)))
+  );
 
   return match
     ? { id: match.zone_id as string, name: String((match as any).pickup_zones?.name || "") }
