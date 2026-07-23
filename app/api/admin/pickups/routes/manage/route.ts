@@ -111,6 +111,78 @@ async function restorePendingRequests(
   return { restored: confirmedIds.length + newIds.length, error: null };
 }
 
+
+export async function GET(request: NextRequest) {
+  const storeId = clean(request.nextUrl.searchParams.get("store_id"), 64);
+  const routeId = clean(request.nextUrl.searchParams.get("route_id"), 64);
+
+  if (!storeId || !routeId) return fail("store_id y route_id son obligatorios.");
+
+  const denied = await access(request, storeId);
+  if (denied) return denied;
+
+  const { data: route, error: routeError } = await loadRoute(storeId, routeId);
+  if (routeError) return fail(routeError.message, 500);
+  if (!route) return fail("La ruta no existe o no pertenece a esta tienda.", 404);
+
+  const { data: assignedStops, error: stopsError } = await supabaseAdmin
+    .from("pickup_route_stops")
+    .select("pickup_request_id");
+
+  if (stopsError) return fail(stopsError.message, 500);
+
+  const assignedIds = new Set(
+    (assignedStops || []).map((item) => item.pickup_request_id).filter(Boolean)
+  );
+
+  const { data: requests, error: requestsError } = await supabaseAdmin
+    .from("pickup_requests")
+    .select("*, pickup_request_dates(preferred_date, priority)")
+    .eq("store_id", storeId)
+    .in("status", ["new", "contacted", "pending_confirmation", "confirmed"])
+    .order("created_at", { ascending: false });
+
+  if (requestsError) return fail(requestsError.message, 500);
+
+  const routeRequestIds = new Set(
+    ((route.pickup_route_stops || []) as Array<{ pickup_request_id: string }>)
+      .map((item) => item.pickup_request_id)
+      .filter(Boolean)
+  );
+
+  const { data: routeRequests } = routeRequestIds.size
+    ? await supabaseAdmin
+        .from("pickup_requests")
+        .select("city")
+        .eq("store_id", storeId)
+        .in("id", Array.from(routeRequestIds))
+    : { data: [] as Array<{ city: string }> };
+
+  const routeCities = new Set(
+    (routeRequests || []).map((item) => clean(item.city).toLowerCase()).filter(Boolean)
+  );
+
+  const eligible = (requests || [])
+    .filter((item) => !assignedIds.has(item.id))
+    .map((item) => ({
+      ...item,
+      preferred_dates: (item.pickup_request_dates || [])
+        .sort((a: any, b: any) => a.priority - b.priority)
+        .map((date: any) => date.preferred_date),
+      compatible_city: routeCities.size === 0 || routeCities.has(clean(item.city).toLowerCase()),
+    }))
+    .sort((a, b) => {
+      if (a.compatible_city !== b.compatible_city) return a.compatible_city ? -1 : 1;
+      return String(b.created_at).localeCompare(String(a.created_at));
+    });
+
+  return NextResponse.json({
+    ok: true,
+    requests: eligible,
+    compatible_count: eligible.filter((item) => item.compatible_city).length,
+  });
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const storeId = clean(body.store_id, 64);
@@ -134,6 +206,81 @@ export async function POST(request: NextRequest) {
     pickup_request_id: string;
     stop_order: number;
   }>;
+
+
+  if (action === "add_requests") {
+    if (["completed", "cancelled"].includes(route.status)) {
+      return fail("No se pueden agregar solicitudes a una ruta cerrada.");
+    }
+
+    const requestIds = Array.from(
+      new Set(
+        (Array.isArray(body.request_ids) ? body.request_ids : [])
+          .map((value: unknown) => clean(value, 64))
+          .filter(Boolean)
+      )
+    );
+
+    if (!requestIds.length) return fail("Selecciona al menos una solicitud.");
+
+    const { data: requests, error: requestsError } = await supabaseAdmin
+      .from("pickup_requests")
+      .select("id,status")
+      .eq("store_id", storeId)
+      .in("id", requestIds);
+
+    if (requestsError) return fail(requestsError.message, 500);
+    if ((requests || []).length !== requestIds.length) {
+      return fail("Una o más solicitudes no existen o no pertenecen a esta tienda.");
+    }
+
+    const allowedStatuses = new Set(["new", "contacted", "pending_confirmation", "confirmed"]);
+    const unavailableByStatus = (requests || []).filter((item) => !allowedStatuses.has(item.status));
+    if (unavailableByStatus.length) {
+      return fail("Una o más solicitudes ya no están disponibles para asignar.");
+    }
+
+    const { data: existingStops, error: existingError } = await supabaseAdmin
+      .from("pickup_route_stops")
+      .select("pickup_request_id")
+      .in("pickup_request_id", requestIds);
+
+    if (existingError) return fail(existingError.message, 500);
+    if ((existingStops || []).length) {
+      return fail("Una o más solicitudes ya pertenecen a otra ruta. Actualiza la lista e inténtalo de nuevo.");
+    }
+
+    const lastOrder = stops.reduce((max, stop) => Math.max(max, Number(stop.stop_order) || 0), 0);
+    const rows = requestIds.map((pickupRequestId, index) => ({
+      route_id: routeId,
+      pickup_request_id: pickupRequestId,
+      stop_order: lastOrder + index + 1,
+      status: "pending",
+    }));
+
+    const { data: inserted, error: insertError } = await supabaseAdmin
+      .from("pickup_route_stops")
+      .insert(rows)
+      .select("id");
+
+    if (insertError) return fail(insertError.message, 500);
+
+    const { error: statusError } = await supabaseAdmin
+      .from("pickup_requests")
+      .update({ status: "assigned", updated_at: new Date().toISOString() })
+      .eq("store_id", storeId)
+      .in("id", requestIds);
+
+    if (statusError) {
+      const insertedIds = (inserted || []).map((item) => item.id);
+      if (insertedIds.length) {
+        await supabaseAdmin.from("pickup_route_stops").delete().in("id", insertedIds);
+      }
+      return fail(statusError.message, 500);
+    }
+
+    return NextResponse.json({ ok: true, added: requestIds.length });
+  }
 
   if (action === "cancel") {
     if (route.status === "completed") {

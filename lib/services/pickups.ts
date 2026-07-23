@@ -309,6 +309,42 @@ export async function updatePickupStopConfirmation(stopId: string, routeId: stri
   }).eq("id", stopId).eq("route_id", routeId).select().single();
 }
 
+
+export type EligiblePickupRequest = PickupRequest & {
+  compatible_city: boolean;
+};
+
+export async function getEligiblePickupRequestsForRoute(storeId: string, routeId: string) {
+  const result = await pickupAdminApi<{ ok: true; requests: EligiblePickupRequest[]; compatible_count: number }>(
+    `/api/admin/pickups/routes/manage?store_id=${encodeURIComponent(storeId)}&route_id=${encodeURIComponent(routeId)}`
+  );
+  return {
+    data: result.data?.requests || [],
+    compatibleCount: result.data?.compatible_count || 0,
+    error: result.error,
+  };
+}
+
+export async function addPickupRequestsToRoute(input: {
+  storeId: string;
+  routeId: string;
+  requestIds: string[];
+}) {
+  const result = await pickupAdminApi<{ ok: true; added: number }>(
+    "/api/admin/pickups/routes/manage",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        store_id: input.storeId,
+        route_id: input.routeId,
+        action: "add_requests",
+        request_ids: input.requestIds,
+      }),
+    }
+  );
+  return { data: result.data, error: result.error };
+}
+
 export type PickupRouteManagementAction =
   | "cancel"
   | "delete"

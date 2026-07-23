@@ -2,10 +2,12 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, PlayCircle, Save, Trash2, Truck } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, PlayCircle, Plus, Save, Search, Trash2, Truck, X } from "lucide-react";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import {
+  addPickupRequestsToRoute,
+  getEligiblePickupRequestsForRoute,
   getPickupRoute,
   managePickupRoute,
   removePickupRouteStop,
@@ -18,6 +20,7 @@ import RouteSocialPoster from "@/components/pickups/RouteSocialPoster";
 import {
   PICKUP_ROUTE_STATUS_LABELS,
   PICKUP_STOP_STATUS_LABELS,
+  type PickupRequest,
   type PickupRoute,
   type PickupRouteStatus,
   type PickupRouteStopStatus,
@@ -32,6 +35,12 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [eligibleRequests, setEligibleRequests] = useState<Array<PickupRequest & { compatible_city: boolean }>>([]);
+  const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
+  const [requestSearch, setRequestSearch] = useState("");
+  const [eligibleLoading, setEligibleLoading] = useState(false);
+  const [addingRequests, setAddingRequests] = useState(false);
 
   async function load() {
     if (!store?.id) return;
@@ -48,6 +57,50 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   const completedStops = useMemo(() => (route?.stops || []).filter((stop) => stop.status === "picked_up").length, [route]);
   const activeStops = useMemo(() => (route?.stops || []).filter((stop) => ["en_route", "arrived"].includes(stop.status)).length, [route]);
   const progress = route?.stops?.length ? Math.round((completedStops / route.stops.length) * 100) : 0;
+  const filteredEligibleRequests = useMemo(() => {
+    const query = requestSearch.trim().toLowerCase();
+    if (!query) return eligibleRequests;
+    return eligibleRequests.filter((item) =>
+      [item.customer_name, item.request_code, item.city, item.address_line_1, item.postal_code]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query))
+    );
+  }, [eligibleRequests, requestSearch]);
+
+  async function openAddRequests() {
+    if (!store?.id || !route) return;
+    setAddOpen(true);
+    setEligibleLoading(true);
+    setSelectedRequestIds([]);
+    setRequestSearch("");
+    const result = await getEligiblePickupRequestsForRoute(store.id, route.id);
+    setEligibleRequests(result.data);
+    setError(result.error?.message || "");
+    setEligibleLoading(false);
+  }
+
+  async function addSelectedRequests() {
+    if (!store?.id || !route || !selectedRequestIds.length) return;
+    setAddingRequests(true);
+    const result = await addPickupRequestsToRoute({
+      storeId: store.id,
+      routeId: route.id,
+      requestIds: selectedRequestIds,
+    });
+    setAddingRequests(false);
+    if (result.error) return setError(result.error.message);
+    setAddOpen(false);
+    setSelectedRequestIds([]);
+    await load();
+  }
+
+  function toggleSelectedRequest(requestId: string) {
+    setSelectedRequestIds((current) =>
+      current.includes(requestId)
+        ? current.filter((id) => id !== requestId)
+        : [...current, requestId]
+    );
+  }
 
   async function saveInfo() {
     if (!route || !store?.id) return;
@@ -193,10 +246,20 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex items-center justify-between"><div><h2 className="text-2xl font-black">Orden de paradas</h2><p className="text-slate-500">Usa las flechas para ordenar manualmente el recorrido.</p></div><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black">Orden de paradas</h2><p className="text-slate-500">Usa las flechas para ordenar manualmente el recorrido.</p></div><div className="flex items-center gap-3"><button onClick={openAddRequests} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Agregar solicitudes</button><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div></div>
         <div className="mt-6 space-y-3">{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const whatsapp = encodeURIComponent(`Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><h3 className="font-black">{item.customer_name} · {item.city}</h3><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a><button onClick={() => removeStop(stop.id)} className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button></div></div></article>; })}</div>
       </section>
     </div>
+    {addOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target && !addingRequests) setAddOpen(false); }}>
+      <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
+        <div className="flex items-start justify-between border-b p-5 sm:p-6"><div><h2 className="text-2xl font-black">Agregar solicitudes a la ruta</h2><p className="mt-1 text-sm font-bold text-slate-500">Las solicitudes de las ciudades actuales aparecen primero. No se muestran las que ya pertenecen a otra ruta.</p></div><button onClick={() => !addingRequests && setAddOpen(false)} className="rounded-xl border p-2 text-slate-500"><X size={20} /></button></div>
+        <div className="border-b p-4 sm:p-5"><label className="flex items-center gap-3 rounded-2xl border bg-slate-50 px-4 py-3"><Search size={19} className="text-slate-400" /><input value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} className="w-full bg-transparent font-bold outline-none" placeholder="Buscar por cliente, código, ciudad o dirección..." /></label></div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          {eligibleLoading ? <div className="py-14 text-center"><Loader2 className="mx-auto animate-spin text-blue-600" /><p className="mt-3 font-bold text-slate-500">Buscando solicitudes disponibles...</p></div> : filteredEligibleRequests.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center"><CheckCircle2 className="mx-auto text-emerald-500" /><p className="mt-3 font-black">No hay solicitudes disponibles</p><p className="mt-1 text-sm font-bold text-slate-500">Todas están asignadas, cerradas o no coinciden con la búsqueda.</p></div> : <div className="space-y-3">{filteredEligibleRequests.map((item) => { const selected = selectedRequestIds.includes(item.id); return <label key={item.id} className={`flex cursor-pointer gap-4 rounded-2xl border p-4 transition ${selected ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-blue-300"}`}><input type="checkbox" checked={selected} onChange={() => toggleSelectedRequest(item.id)} className="mt-1 h-5 w-5 shrink-0 accent-blue-600" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-black">{item.customer_name}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600">{item.request_code}</span>{item.compatible_city && <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-black text-emerald-700">Ciudad de esta ruta</span>}</div><p className="mt-1 text-sm font-bold text-slate-600"><MapPin size={14} className="mr-1 inline" />{item.address_line_1}, {item.city}, {item.region} {item.postal_code}</p><p className="mt-1 text-xs font-bold text-slate-500">{item.package_count} paquete(s){item.confirmed_date ? ` · Confirmada para ${item.confirmed_date}` : ""}</p></div></label>; })}</div>}
+        </div>
+        <div className="flex flex-col-reverse gap-3 border-t bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"><p className="text-sm font-black text-slate-600">{selectedRequestIds.length} seleccionada(s)</p><div className="flex gap-3"><button onClick={() => setAddOpen(false)} disabled={addingRequests} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={addSelectedRequests} disabled={!selectedRequestIds.length || addingRequests} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white disabled:opacity-40">{addingRequests ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Agregar a esta ruta</button></div></div>
+      </div>
+    </div>}
     <RouteSocialPoster route={route} storeName={store?.name || "YOYO ENVÍOS"} phone={route.driver_phone || store?.whatsapp || null} logoUrl={store?.logo_url || null} />
     <style jsx>{`.input{width:100%;border:1px solid #e2e8f0;border-radius:1rem;padding:.8rem 1rem;font-weight:700;outline:none}.input:focus{border-color:#60a5fa}`}</style>
   </div>;
