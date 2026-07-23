@@ -113,6 +113,7 @@ export async function createPickupRoute(input: {
   notes?: string;
   zoneId?: string | null;
   requestIds: string[];
+  overrideRequestIds?: string[];
 }) {
   const { data: route, error } = await supabase
     .from("pickup_routes")
@@ -134,12 +135,20 @@ export async function createPickupRoute(input: {
 
   if (input.requestIds.length > 0) {
     const { error: stopsError } = await supabase.from("pickup_route_stops").insert(
-      input.requestIds.map((pickupRequestId, index) => ({
-        route_id: route.id,
-        pickup_request_id: pickupRequestId,
-        stop_order: index + 1,
-        status: "pending",
-      }))
+      input.requestIds.map((pickupRequestId, index) => {
+        const hasScheduleOverride = (input.overrideRequestIds ?? []).includes(pickupRequestId);
+
+        return {
+          route_id: route.id,
+          pickup_request_id: pickupRequestId,
+          stop_order: index + 1,
+          status: "pending",
+          schedule_override: hasScheduleOverride,
+          override_reason: hasScheduleOverride
+            ? "Fecha aprobada manualmente durante la planificación de la ruta."
+            : null,
+        };
+      })
     );
     if (stopsError) {
       await supabase.from("pickup_routes").delete().eq("id", route.id);
