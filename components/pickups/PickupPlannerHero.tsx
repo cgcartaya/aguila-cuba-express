@@ -3,20 +3,21 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import CityAutocomplete from "./CityAutocomplete";
 import {
-  AlertTriangle,
+  ArrowLeft,
   ArrowRight,
   Box,
   CalendarDays,
+  Check,
   CheckCircle2,
-  ChevronLeft,
+  ChevronRight,
   Loader2,
   MapPin,
-  Navigation,
   Package,
   Route,
-  Search,
+  ShieldCheck,
   Sparkles,
   Truck,
+  X,
 } from "lucide-react";
 
 const STORE_SLUG = "yoyo-envios";
@@ -36,7 +37,6 @@ type AddressValidation = {
   suggestedZoneName: string | null;
 };
 
-
 type PickupPublicConfig = {
   countryCode: string;
   countryName: string | null;
@@ -47,30 +47,36 @@ type PickupPublicConfig = {
   cities: string[];
 };
 
-function nextDays(count = 7) {
-  const days: Array<{ iso: string; day: string; date: string }> = [];
-  const formatterDay = new Intl.DateTimeFormat("es-US", { weekday: "short" });
-  const formatterDate = new Intl.DateTimeFormat("es-US", { day: "numeric", month: "short" });
-  for (let offset = 1; offset <= 14 && days.length < count; offset += 1) {
+function nextDays(count = 8) {
+  const days: Array<{ iso: string; weekday: string; day: string; month: string }> = [];
+  const weekday = new Intl.DateTimeFormat("es-US", { weekday: "short" });
+  const month = new Intl.DateTimeFormat("es-US", { month: "short" });
+
+  for (let offset = 1; offset <= 16 && days.length < count; offset += 1) {
     const date = new Date();
     date.setHours(12, 0, 0, 0);
     date.setDate(date.getDate() + offset);
     if (date.getDay() === 0) continue;
+
     days.push({
       iso: date.toISOString().slice(0, 10),
-      day: formatterDay.format(date).replace(".", ""),
-      date: formatterDate.format(date),
+      weekday: weekday.format(date).replace(".", ""),
+      day: String(date.getDate()),
+      month: month.format(date).replace(".", ""),
     });
   }
+
   return days;
 }
 
 export default function PickupPlannerHero() {
   const days = useMemo(() => nextDays(), []);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [form, setForm] = useState({
     address_line_1: "",
+    address_line_2: "",
     city: "",
     region: "",
     postal_code: "",
@@ -108,21 +114,54 @@ export default function PickupPlannerHero() {
     })();
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [drawerOpen]);
+
   function update(name: string, value: string | boolean) {
     setForm((current) => ({ ...current, [name]: value }));
     if (["address_line_1", "city", "region", "postal_code"].includes(name)) setAddressResult(null);
   }
 
-  useEffect(() => {
-    if (step !== 1) return;
-    if (form.address_line_1.trim().length < 5 || form.city.trim().length < 2 || form.region.trim().length < 2 || form.postal_code.trim().length < 5) return;
-    const timer = window.setTimeout(() => validateAddress(false), 700);
-    return () => window.clearTimeout(timer);
-  }, [form.address_line_1, form.city, form.region, form.postal_code, step]);
+  function openPlanner() {
+    setError("");
+    setDrawerOpen(true);
+  }
 
-  async function validateAddress(showError = true) {
+  function closePlanner() {
+    setDrawerOpen(false);
+  }
+
+  function resetPlanner() {
+    setStep(1);
+    setSelectedDates([]);
+    setAddressResult(null);
+    setSuccessCode("");
+    setError("");
+    setForm((current) => ({
+      ...current,
+      address_line_1: "",
+      address_line_2: "",
+      city: "",
+      postal_code: "",
+      customer_name: "",
+      phone: "",
+      email: "",
+      package_count: "1",
+      package_type: "Cajas y misceláneas",
+      estimated_weight: "",
+      needs_box: false,
+      needs_packing_help: false,
+      notes: "",
+    }));
+  }
+
+  async function validateAddress() {
     setValidating(true);
-    if (showError) setError("");
+    setError("");
     try {
       const response = await fetch("/api/pickups/address", {
         method: "POST",
@@ -139,6 +178,7 @@ export default function PickupPlannerHero() {
       const result = await response.json();
       if (!response.ok && !result?.message) throw new Error(result.error || "No pudimos validar la dirección.");
       setAddressResult(result);
+
       if (result.valid) {
         setForm((current) => ({
           ...current,
@@ -147,12 +187,12 @@ export default function PickupPlannerHero() {
           region: result.region || current.region,
           postal_code: result.postalCode || current.postal_code,
         }));
-      } else if (showError) {
+      } else {
         setError(result.message || "Revisa la dirección.");
       }
       return Boolean(result.valid);
     } catch (validationError) {
-      if (showError) setError(validationError instanceof Error ? validationError.message : "No pudimos validar la dirección.");
+      setError(validationError instanceof Error ? validationError.message : "No pudimos validar la dirección.");
       return false;
     } finally {
       setValidating(false);
@@ -168,28 +208,42 @@ export default function PickupPlannerHero() {
     });
   }
 
-  async function continueFirstStep() {
+  async function continueLocation() {
     setError("");
-    if (!form.address_line_1 || !form.city || !form.region || !form.postal_code) {
-      setError("Escribe la dirección, ciudad, estado o provincia y código postal.");
+    if (!form.city) {
+      setError("Selecciona una ciudad de la lista.");
       return;
     }
-    const addressOk = addressResult?.valid || (await validateAddress(true));
-    if (!addressOk) return;
+    if (form.address_line_1.trim().length < 5) {
+      setError("Escribe la dirección donde debemos recoger.");
+      return;
+    }
+    if (form.postal_code.trim().length < 5) {
+      setError("Escribe un código postal válido.");
+      return;
+    }
+
+    const addressOk = addressResult?.valid || (await validateAddress());
+    if (addressOk) setStep(2);
+  }
+
+  function continueDates() {
+    setError("");
     if (selectedDates.length === 0) {
       setError("Selecciona al menos un día que te convenga.");
       return;
     }
-    setStep(2);
+    setStep(3);
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setError("");
-    if (!form.customer_name || form.phone.replace(/\D/g, "").length < 7) {
+    if (!form.customer_name.trim() || form.phone.replace(/\D/g, "").length < 7) {
       setError("Escribe tu nombre y un teléfono válido.");
       return;
     }
+
     setLoading(true);
     try {
       const response = await fetch("/api/pickups", {
@@ -207,44 +261,109 @@ export default function PickupPlannerHero() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No pudimos registrar la solicitud.");
       setSuccessCode(result.request_code);
-      setStep(3);
+      setStep(4);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Ocurrió un error inesperado.");
-      setStep(1);
     } finally {
       setLoading(false);
     }
   }
 
+  const stepLabels = ["Ubicación", "Fechas", "Detalles"];
+
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-white text-slate-950 shadow-[0_35px_90px_rgba(0,0,0,.35)]">
-      <div className="grid lg:grid-cols-[1.16fr_.84fr]">
-        <div className="p-5 sm:p-6">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.17em] text-red-600">Recogida a domicilio</p>
-              <h2 className="mt-1 text-2xl font-black tracking-tight text-[#061b3a] sm:text-3xl">Programa tu recogida</h2>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600"><Truck size={24} /></div>
+    <>
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-gradient-to-br from-white via-blue-50 to-blue-100 p-6 text-slate-950 shadow-[0_35px_90px_rgba(0,0,0,.32)] sm:p-8">
+        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-blue-600/10" />
+        <div className="absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-red-500/10" />
+
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
+            <Truck size={16} /> Recogida a domicilio
           </div>
+          <h2 className="mt-4 max-w-xl text-3xl font-black tracking-tight text-[#061b3a] sm:text-4xl">
+            Recogemos en tu puerta.
+          </h2>
+          <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-slate-600">
+            Dinos dónde estás y qué días te convienen. Nosotros organizamos la ruta y confirmamos por WhatsApp.
+          </p>
 
-          {step === 1 && (
-            <div className="mt-5 space-y-4">
+          <button
+            type="button"
+            onClick={openPlanner}
+            className="mt-7 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_18px_45px_rgba(15,23,42,.12)] transition hover:-translate-y-0.5 hover:border-blue-300 sm:p-5"
+          >
+            <span className="flex min-w-0 items-center gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                <MapPin size={24} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-xs font-black uppercase tracking-[0.12em] text-slate-500">Comienza aquí</span>
+                <span className="mt-1 block truncate text-base font-black text-[#061b3a] sm:text-lg">Escribe tu ciudad y dirección</span>
+              </span>
+            </span>
+            <ChevronRight className="shrink-0 text-blue-700" size={24} />
+          </button>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3.5">
+              <ShieldCheck className="text-emerald-600" size={20} />
+              <span className="text-sm font-black text-slate-700">Solicitud segura</span>
+            </div>
+            <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3.5">
+              <Route className="text-blue-700" size={20} />
+              <span className="text-sm font-black text-slate-700">Ruta flexible</span>
+            </div>
+            <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3.5">
+              <Sparkles className="text-amber-500" size={20} />
+              <span className="text-sm font-black text-slate-700">Confirmación rápida</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {drawerOpen && (
+        <div className="fixed inset-0 z-[200] flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Programar recogida">
+          <button type="button" onClick={closePlanner} className="absolute inset-0 cursor-default" aria-label="Cerrar formulario" />
+
+          <div className="relative flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl sm:rounded-l-[2rem]">
+            <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-8">
               <div>
-                <div className="flex items-center justify-between gap-3">
-                  <label className="text-sm font-black text-slate-700">¿Dónde recogemos?</label>
-                  {validating && <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-600"><Loader2 className="animate-spin" size={14} /> Verificando</span>}
-                </div>
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.08em] text-slate-600">Dirección</label>
-                    <label className="relative block">
-                      <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-500" size={18} />
-                      <input value={form.address_line_1} onChange={(e) => update("address_line_1", e.target.value)} placeholder="Ej. 1500 Main St" autoComplete="street-address" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                    </label>
-                  </div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600">Yoyo Envíos</p>
+                <h2 className="mt-1 text-xl font-black text-[#061b3a] sm:text-2xl">Programa tu recogida</h2>
+              </div>
+              <button type="button" onClick={closePlanner} className="rounded-full border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Cerrar">
+                <X size={22} />
+              </button>
+            </header>
 
-                  <div className="grid gap-3 sm:grid-cols-[1.35fr_.65fr]">
+            {step < 4 && (
+              <div className="border-b border-slate-100 px-5 py-4 sm:px-8">
+                <div className="grid grid-cols-3 gap-2">
+                  {stepLabels.map((label, index) => {
+                    const number = index + 1;
+                    const active = step === number;
+                    const completed = step > number;
+                    return (
+                      <div key={label} className="flex items-center gap-2">
+                        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${completed ? "bg-emerald-600 text-white" : active ? "bg-[#082b5c] text-white" : "bg-slate-100 text-slate-400"}`}>
+                          {completed ? <Check size={15} /> : number}
+                        </span>
+                        <span className={`hidden text-sm font-black sm:block ${active ? "text-[#082b5c]" : "text-slate-400"}`}>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-8">
+              {step === 1 && (
+                <div className="mx-auto max-w-xl">
+                  <h3 className="text-2xl font-black text-slate-950">¿Dónde recogemos?</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">Primero selecciona tu ciudad. Después escribe la dirección exacta.</p>
+
+                  <div className="mt-7 space-y-5">
                     <CityAutocomplete
                       cities={config?.cities || []}
                       value={form.city}
@@ -252,111 +371,197 @@ export default function PickupPlannerHero() {
                       disabled={configLoading || !config?.cities?.length}
                       loading={configLoading}
                     />
-                    <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.08em] text-slate-600">ZIP Code</label>
-                      <input value={form.postal_code} onChange={(e) => update("postal_code", e.target.value)} placeholder="29201" autoComplete="postal-code" inputMode="numeric" className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" />
-                      <p className="mt-1.5 text-xs font-semibold text-slate-500">{form.region || "Estado configurado"}</p>
-                    </div>
-                  </div>
-                </div>
 
-                {addressResult && (
-                  <div className={`mt-3 rounded-2xl border p-4 ${addressResult.valid ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                    <div className="flex items-start gap-3">
-                      {addressResult.valid ? <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={20} /> : <AlertTriangle className="mt-0.5 shrink-0 text-amber-600" size={20} />}
-                      <div>
-                        <p className={`text-sm font-black ${addressResult.valid ? "text-emerald-800" : "text-amber-800"}`}>{addressResult.message}</p>
-                        {addressResult.formattedAddress && <p className="mt-1 text-xs font-bold text-slate-600">{addressResult.formattedAddress}</p>}
-                        {addressResult.suggestedZoneName && <p className="mt-1 text-xs font-black text-blue-700">Zona sugerida: {addressResult.suggestedZoneName}</p>}
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-slate-800">Dirección</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={20} />
+                        <input
+                          value={form.address_line_1}
+                          onChange={(event) => update("address_line_1", event.target.value)}
+                          placeholder="Ej. 1500 Main St"
+                          autoComplete="street-address"
+                          className="min-h-14 w-full rounded-2xl border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                        />
                       </div>
                     </div>
-                  </div>
-                )}
 
-                <button type="button" onClick={() => validateAddress(true)} disabled={validating} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-[#061b3a] disabled:opacity-50"><Search size={15} /> Verificar dirección</button>
-              </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-black text-slate-800">Apartamento o unidad <span className="font-medium text-slate-400">(opcional)</span></label>
+                        <input
+                          value={form.address_line_2}
+                          onChange={(event) => update("address_line_2", event.target.value)}
+                          placeholder="Apt 4B"
+                          className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-black text-slate-800">ZIP Code</label>
+                        <input
+                          value={form.postal_code}
+                          onChange={(event) => update("postal_code", event.target.value)}
+                          placeholder="29201"
+                          autoComplete="postal-code"
+                          inputMode="numeric"
+                          className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                        />
+                      </div>
+                    </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3.5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-black text-slate-800">¿Qué días te convienen?</p>
-                    <p className="mt-0.5 text-xs font-semibold text-slate-500">Elige hasta {config?.maxPreferredDates || 3} opciones.</p>
+                    <div className="flex items-center gap-3 rounded-2xl bg-blue-50 px-4 py-3.5 text-sm font-bold text-blue-950">
+                      <ShieldCheck className="shrink-0 text-blue-700" size={20} />
+                      Cobertura configurada para {form.region || "la región seleccionada"}.
+                    </div>
+
+                    {addressResult?.valid && (
+                      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={21} />
+                          <div>
+                            <p className="font-black text-emerald-800">{addressResult.message}</p>
+                            <p className="mt-1 text-sm font-semibold text-slate-600">{addressResult.formattedAddress}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <CalendarDays className="text-blue-700" size={20} />
                 </div>
-                <div className="mt-3 grid grid-cols-4 gap-2 sm:grid-cols-7">
-                  {days.map((item) => {
-                    const selected = selectedDates.includes(item.iso);
-                    return (
-                      <button key={item.iso} type="button" onClick={() => toggleDate(item.iso)} className={`rounded-xl border px-1.5 py-2.5 text-center transition ${selected ? "border-red-600 bg-red-600 text-white shadow-md" : "border-slate-200 bg-white text-slate-800 hover:border-blue-400 hover:bg-blue-50"}`}>
-                        <span className="block text-[10px] font-black uppercase tracking-wide">{item.day}</span>
-                        <span className="mt-0.5 block text-xs font-black">{item.date}</span>
+              )}
+
+              {step === 2 && (
+                <div className="mx-auto max-w-xl">
+                  <button type="button" onClick={() => setStep(1)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
+                    <ArrowLeft size={18} /> Cambiar ubicación
+                  </button>
+                  <h3 className="text-2xl font-black text-slate-950">¿Qué días te convienen?</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">Selecciona hasta {config?.maxPreferredDates || 3} opciones. Yoyo confirmará el día definitivo.</p>
+
+                  <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {days.map((item) => {
+                      const selected = selectedDates.includes(item.iso);
+                      return (
+                        <button
+                          key={item.iso}
+                          type="button"
+                          onClick={() => toggleDate(item.iso)}
+                          className={`relative rounded-2xl border p-4 text-left transition ${selected ? "border-red-600 bg-red-600 text-white shadow-lg" : "border-slate-200 bg-white text-slate-950 hover:border-blue-400 hover:bg-blue-50"}`}
+                        >
+                          {selected && <Check className="absolute right-3 top-3" size={18} />}
+                          <span className="block text-xs font-black uppercase tracking-[0.12em] opacity-75">{item.weekday}</span>
+                          <span className="mt-3 block text-3xl font-black">{item.day}</span>
+                          <span className="block text-sm font-black capitalize opacity-75">{item.month}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="flex items-center gap-2 font-black text-slate-900"><CalendarDays className="text-blue-700" size={19} /> Fechas seleccionadas: {selectedDates.length}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-500">La fecha final depende de la ruta organizada para tu zona.</p>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <form id="pickup-details-form" onSubmit={submit} className="mx-auto max-w-xl">
+                  <button type="button" onClick={() => setStep(2)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
+                    <ArrowLeft size={18} /> Cambiar fechas
+                  </button>
+                  <h3 className="text-2xl font-black text-slate-950">Cuéntanos sobre la recogida</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">Con estos datos Yoyo podrá contactarte y organizar la ruta.</p>
+
+                  <div className="mt-7 space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-black text-slate-800">Nombre y apellidos</label>
+                        <input value={form.customer_name} onChange={(event) => update("customer_name", event.target.value)} placeholder="Tu nombre" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-black text-slate-800">Teléfono / WhatsApp</label>
+                        <input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="803 262 3676" inputMode="tel" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-black text-slate-800">Tipo de artículos</label>
+                        <select value={form.package_type} onChange={(event) => update("package_type", event.target.value)} className="min-h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100">
+                          <option>Cajas y misceláneas</option>
+                          <option>Electrodomésticos</option>
+                          <option>Equipos electrónicos</option>
+                          <option>Bicicleta</option>
+                          <option>Otro</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-black text-slate-800">Cantidad de paquetes</label>
+                        <input value={form.package_count} onChange={(event) => update("package_count", event.target.value)} type="number" min="1" max="99" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <button type="button" onClick={() => update("needs_box", !form.needs_box)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left font-black transition ${form.needs_box ? "border-red-300 bg-red-50 text-red-700" : "border-slate-200 hover:bg-slate-50"}`}>
+                        <Box size={22} /> Necesito caja
                       </button>
-                    );
-                  })}
+                      <button type="button" onClick={() => update("needs_packing_help", !form.needs_packing_help)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left font-black transition ${form.needs_packing_help ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 hover:bg-slate-50"}`}>
+                        <Package size={22} /> Ayuda para empacar
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-black text-slate-800">Notas <span className="font-medium text-slate-400">(opcional)</span></label>
+                      <textarea value={form.notes} onChange={(event) => update("notes", event.target.value)} placeholder="Detalles que debamos conocer" rows={3} className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                    </div>
+                  </div>
+                </form>
+              )}
+
+              {step === 4 && (
+                <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center py-10 text-center">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                    <CheckCircle2 size={46} />
+                  </div>
+                  <h3 className="mt-6 text-3xl font-black text-[#061b3a]">¡Solicitud recibida!</h3>
+                  <p className="mt-3 max-w-md text-base font-semibold leading-7 text-slate-600">Yoyo organizará la ruta y te confirmará el día definitivo por WhatsApp.</p>
+                  <div className="mt-6 w-full max-w-sm rounded-2xl bg-slate-950 px-5 py-5 text-white">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-200">Código de solicitud</p>
+                    <p className="mt-2 text-3xl font-black">{successCode}</p>
+                  </div>
+                  <button type="button" onClick={() => { resetPlanner(); closePlanner(); }} className="mt-6 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 hover:bg-slate-50">Cerrar</button>
                 </div>
-              </div>
+              )}
 
-              {error && <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
-              <button type="button" onClick={continueFirstStep} disabled={validating} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 px-5 py-4 font-black text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-60">Continuar con mi solicitud <ArrowRight size={19} /></button>
-              <p className="text-center text-xs font-semibold leading-5 text-slate-500">La fecha será confirmada cuando la agencia organice la ruta de tu zona. Puedes escoger hasta {config?.maxPreferredDates || 3} días.</p>
+              {error && step < 4 && (
+                <p className="mx-auto mt-5 max-w-xl rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>
+              )}
             </div>
-          )}
 
-          {step === 2 && (
-            <form onSubmit={submit} className="mt-6 space-y-4">
-              <button type="button" onClick={() => setStep(1)} className="inline-flex items-center gap-1 text-sm font-black text-slate-500 hover:text-slate-900"><ChevronLeft size={18} /> Cambiar dirección o fechas</button>
-              <div className="rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-950">
-                <p className="flex items-center gap-2"><MapPin size={17} className="text-red-600" /> {addressResult?.formattedAddress || `${form.address_line_1}, ${form.city}, ${form.region} ${form.postal_code}`}</p>
-                <p className="mt-2 flex items-center gap-2"><CalendarDays size={17} className="text-blue-700" /> {selectedDates.length} fecha(s) preferida(s)</p>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input value={form.customer_name} onChange={(e) => update("customer_name", e.target.value)} placeholder="Nombre y apellidos" className="rounded-2xl border border-slate-200 px-4 py-3.5 font-bold outline-none focus:border-blue-400" />
-                <input value={form.phone} onChange={(e) => update("phone", e.target.value)} placeholder="Teléfono / WhatsApp" inputMode="tel" className="rounded-2xl border border-slate-200 px-4 py-3.5 font-bold outline-none focus:border-blue-400" />
-                <select value={form.package_type} onChange={(e) => update("package_type", e.target.value)} className="rounded-2xl border border-slate-200 bg-white px-4 py-3.5 font-bold outline-none focus:border-blue-400"><option>Cajas y misceláneas</option><option>Electrodomésticos</option><option>Equipos electrónicos</option><option>Bicicleta</option><option>Otro</option></select>
-                <input value={form.package_count} onChange={(e) => update("package_count", e.target.value)} type="number" min="1" max="99" placeholder="Cantidad de paquetes" className="rounded-2xl border border-slate-200 px-4 py-3.5 font-bold outline-none focus:border-blue-400" />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button type="button" onClick={() => update("needs_box", !form.needs_box)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left font-black ${form.needs_box ? "border-red-300 bg-red-50 text-red-700" : "border-slate-200"}`}><Box size={21} /> Necesito caja</button>
-                <button type="button" onClick={() => update("needs_packing_help", !form.needs_packing_help)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left font-black ${form.needs_packing_help ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200"}`}><Package size={21} /> Ayuda para empacar</button>
-              </div>
-              <textarea value={form.notes} onChange={(e) => update("notes", e.target.value)} placeholder="Notas adicionales (opcional)" rows={3} className="w-full rounded-2xl border border-slate-200 px-4 py-3.5 font-bold outline-none focus:border-blue-400" />
-              {error && <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
-              <button disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-5 py-4 font-black text-white disabled:opacity-60">{loading ? <Loader2 className="animate-spin" size={19} /> : <Truck size={19} />} Enviar solicitud</button>
-            </form>
-          )}
-
-          {step === 3 && (
-            <div className="mt-8 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 size={38} /></div>
-              <h3 className="mt-5 text-3xl font-black text-[#061b3a]">¡Solicitud recibida!</h3>
-              <p className="mt-3 font-semibold leading-7 text-slate-600">La agencia organizará la ruta y te confirmará el día definitivo por WhatsApp.</p>
-              <div className="mx-auto mt-5 max-w-xs rounded-2xl bg-slate-950 px-5 py-4 text-white"><p className="text-xs font-black uppercase tracking-widest text-blue-200">Código de solicitud</p><p className="mt-1 text-2xl font-black">{successCode}</p></div>
-            </div>
-          )}
-        </div>
-
-        <div className="relative min-h-[420px] overflow-hidden bg-gradient-to-br from-[#061b3a] via-[#0a3474] to-[#1174c4] p-6 text-white sm:p-8">
-          <div className="absolute -right-16 -top-20 h-64 w-64 rounded-full border-[42px] border-white/10" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.17em] text-blue-200"><Navigation size={16} /> Rutas inteligentes</div>
-            <h3 className="mt-3 text-3xl font-black">Recogemos cerca de ti</h3>
-            <p className="mt-3 text-sm font-semibold leading-6 text-blue-100/75">Validamos tu ubicación y agrupamos solicitudes por ciudad o zona para crear una ruta flexible.</p>
-            <div className="relative mt-8 h-52 rounded-[2rem] border border-white/15 bg-white/10 p-5 backdrop-blur">
-              <div className="absolute left-[14%] top-[25%] h-4 w-4 rounded-full bg-red-400 ring-8 ring-red-400/15" />
-              <div className="absolute left-[45%] top-[54%] h-4 w-4 rounded-full bg-yellow-300 ring-8 ring-yellow-300/15" />
-              <div className="absolute right-[14%] top-[28%] h-4 w-4 rounded-full bg-emerald-300 ring-8 ring-emerald-300/15" />
-              <svg className="absolute inset-0 h-full w-full" viewBox="0 0 400 200" fill="none" aria-hidden="true"><path d="M58 56C115 28 150 140 205 112C265 82 288 34 350 62" stroke="white" strokeOpacity=".72" strokeWidth="3" strokeDasharray="8 8" /></svg>
-              <div className="absolute bottom-5 left-5 right-5 grid grid-cols-3 gap-2 text-center text-[10px] font-black uppercase tracking-wide text-blue-100"><span>Ciudad</span><span>Zona</span><span>Ruta</span></div>
-              <div className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-xl"><Truck size={24} /></div>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/10 p-4"><Route size={20} className="text-yellow-300" /><p className="mt-2 text-sm font-black">Cobertura configurable</p><p className="mt-1 text-xs text-blue-100/70">País, región, ciudades, ZIP o radio.</p></div>
-              <div className="rounded-2xl border border-white/10 bg-white/10 p-4"><Sparkles size={20} className="text-emerald-300" /><p className="mt-2 text-sm font-black">Dirección confiable</p><p className="mt-1 text-xs text-blue-100/70">Evita ciudades y códigos postales incoherentes.</p></div>
-            </div>
+            {step < 4 && (
+              <footer className="border-t border-slate-200 bg-white px-5 py-4 sm:px-8">
+                <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
+                  <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 3</p>
+                  {step === 1 && (
+                    <button type="button" onClick={continueLocation} disabled={validating} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#082b5c] px-6 font-black text-white transition hover:bg-[#0a3978] disabled:opacity-60">
+                      {validating ? <Loader2 className="animate-spin" size={19} /> : <ArrowRight size={19} />} Continuar
+                    </button>
+                  )}
+                  {step === 2 && (
+                    <button type="button" onClick={continueDates} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700">
+                      Continuar <ArrowRight size={19} />
+                    </button>
+                  )}
+                  {step === 3 && (
+                    <button type="submit" form="pickup-details-form" disabled={loading} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700 disabled:opacity-60">
+                      {loading ? <Loader2 className="animate-spin" size={19} /> : <Truck size={19} />} Enviar solicitud
+                    </button>
+                  )}
+                </div>
+              </footer>
+            )}
           </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
