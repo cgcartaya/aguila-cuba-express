@@ -45,6 +45,10 @@ function cityPoint(city: PublicCity, index: number, total: number) {
   return { x: 16 + (index % columns) * (68 / Math.max(1, columns - 1)), y: 24 + Math.floor(index / columns) * 27 };
 }
 
+function openPickupPlanner() {
+  window.dispatchEvent(new CustomEvent("open-pickup-planner"));
+}
+
 function RouteMap({ route }: { route: PublicRoute }) {
   const points = route.cities.map((city, index) => ({ ...cityPoint(city, index, route.cities.length), city }));
   const path = points.map((point) => `${point.x},${point.y}`).join(" ");
@@ -62,12 +66,32 @@ function RouteMap({ route }: { route: PublicRoute }) {
       <svg viewBox="0 0 100 100" className="h-[350px] w-full" role="img" aria-label={`Recorrido planificado de ${route.name}`}>
         <defs>
           <filter id="route-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity=".2" /></filter>
+          <filter id="truck-glow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="1" stdDeviation="1.4" floodColor="#dc2626" floodOpacity=".45" /></filter>
         </defs>
         <path d="M12 23 L24 12 L43 12 L55 19 L73 16 L91 30 L87 46 L93 57 L83 71 L65 78 L54 91 L38 84 L22 88 L10 73 L13 56 L7 43 Z" fill="#eaf0f8" stroke="#cbd5e1" strokeWidth="1" />
-        {points.length > 1 && <polyline points={path} fill="none" stroke={route.color || "#dc2626"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray={route.status === "published" ? "4 3" : undefined} />}
+        {points.length > 1 && (
+          <>
+            <polyline points={path} fill="none" stroke="#ffffff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" opacity=".9" />
+            <polyline
+              points={path}
+              fill="none"
+              stroke={route.color || "#dc2626"}
+              strokeWidth="2.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={route.status === "published" ? "4 3" : "7 2"}
+              className="route-path-flow"
+            />
+            <g filter="url(#truck-glow)" className="route-truck">
+              <circle r="3.9" fill="white" stroke={route.color || "#dc2626"} strokeWidth="1.2" />
+              <text x="0" y="1.45" textAnchor="middle" fontSize="4">🚚</text>
+              <animateMotion dur={route.status === "in_progress" ? "7s" : "11s"} repeatCount="indefinite" path={`M ${points.map((point) => `${point.x} ${point.y}`).join(" L ")}`} />
+            </g>
+          </>
+        )}
         {points.map((point, index) => (
           <g key={`${point.city.name}-${index}`} transform={`translate(${point.x} ${point.y})`} filter="url(#route-shadow)">
-            <circle r="4.5" fill={index === 0 ? "#071d43" : route.color || "#dc2626"} stroke="white" strokeWidth="1.5" />
+            <circle r="4.5" fill={index === 0 ? "#071d43" : route.color || "#dc2626"} stroke="white" strokeWidth="1.5" className={route.status === "in_progress" ? "route-stop-pulse" : ""} style={{ animationDelay: `${index * 0.22}s` }} />
             <text y="1.4" textAnchor="middle" fontSize="3.8" fontWeight="900" fill="white">{index + 1}</text>
             <g transform="translate(0 7)"><rect x="-12" y="0" width="24" height="7" rx="3.5" fill="white" opacity=".96" /><text y="4.8" textAnchor="middle" fontSize="3.2" fontWeight="800" fill="#0f172a">{point.city.name.slice(0, 15)}</text></g>
           </g>
@@ -127,7 +151,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                   {activeRoute.cities.map((city, index) => <li key={`${city.name}-${index}`} className="flex items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-black">{index + 1}</span><MapPin size={16} className="text-red-300" /><span className="font-black">{city.name}</span></li>)}
                 </ol>
                 {activeRoute.public_summary && <p className="mt-5 border-t border-white/10 pt-5 font-semibold leading-7 text-blue-100/75">{activeRoute.public_summary}</p>}
-                <a href="#recogida" className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black transition hover:bg-red-500">Solicitar recogida <ArrowRight size={18} /></a>
+                <button type="button" onClick={openPickupPlanner} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 py-4 font-black transition hover:-translate-y-0.5 hover:bg-red-500">Solicitar recogida <ArrowRight size={18} /></button>
               </div>
             </article>
           </div>
@@ -147,13 +171,33 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
 
               {searched && query.trim() && match && (
                 <div className={`mt-4 rounded-2xl border p-5 ${match.route || match.coverage ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                  {match.route ? <><p className="flex items-center gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} /> Sí, estaremos en {query.trim()}.</p><p className="mt-2 font-semibold text-emerald-700">{match.route.name} · {routeDate(match.route.route_date)} · {match.route.status === "in_progress" ? "En recorrido" : "Ruta en preparación"}</p><a href="#recogida" className="mt-4 inline-flex items-center gap-2 font-black text-red-600">Reservar mi recogida <ArrowRight size={17} /></a></> : match.coverage ? <><p className="flex items-center gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} /> Sí, recogemos en {match.coverage.name}.</p><p className="mt-2 font-semibold text-emerald-700">{match.coverage.zoneName ? `Pertenece a ${match.coverage.zoneName}. ` : ""}Todavía no hay una ruta pública con fecha para esta ciudad.</p><a href="#recogida" className="mt-4 inline-flex items-center gap-2 font-black text-red-600">Solicitar recogida <ArrowRight size={17} /></a></> : <><p className="flex items-center gap-2 text-lg font-black text-amber-900"><CircleAlert size={21} /> No encontramos una ruta publicada para {query.trim()}.</p><p className="mt-2 font-semibold text-amber-800">Envíanos la solicitud para confirmar si podemos agregarla al próximo recorrido.</p><a href="#recogida" className="mt-4 inline-flex items-center gap-2 font-black text-red-600">Consultar recogida <ArrowRight size={17} /></a></>}
+                  {match.route ? <><p className="flex items-center gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} /> Sí, estaremos en {query.trim()}.</p><p className="mt-2 font-semibold text-emerald-700">{match.route.name} · {routeDate(match.route.route_date)} · {match.route.status === "in_progress" ? "En recorrido" : "Ruta en preparación"}</p><button type="button" onClick={openPickupPlanner} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Reservar mi recogida <ArrowRight size={17} /></button></> : match.coverage ? <><p className="flex items-center gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} /> Sí, recogemos en {match.coverage.name}.</p><p className="mt-2 font-semibold text-emerald-700">{match.coverage.zoneName ? `Pertenece a ${match.coverage.zoneName}. ` : ""}Todavía no hay una ruta pública con fecha para esta ciudad.</p><button type="button" onClick={openPickupPlanner} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Solicitar recogida <ArrowRight size={17} /></button></> : <><p className="flex items-center gap-2 text-lg font-black text-amber-900"><CircleAlert size={21} /> No encontramos una ruta publicada para {query.trim()}.</p><p className="mt-2 font-semibold text-amber-800">Envíanos la solicitud para confirmar si podemos agregarla al próximo recorrido.</p><button type="button" onClick={openPickupPlanner} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Consultar recogida <ArrowRight size={17} /></button></>}
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .route-path-flow {
+          animation: route-dash 1.25s linear infinite;
+        }
+        .route-stop-pulse {
+          transform-box: fill-box;
+          transform-origin: center;
+          animation: route-pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes route-dash {
+          to { stroke-dashoffset: -12; }
+        }
+        @keyframes route-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.22); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .route-path-flow, .route-stop-pulse, .route-truck { animation: none !important; }
+        }
+      `}</style>
     </section>
   );
 }

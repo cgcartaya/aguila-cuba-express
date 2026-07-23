@@ -105,6 +105,12 @@ export default function PickupPlannerHero() {
   }, []);
 
   useEffect(() => {
+    const openFromLanding = () => openPlanner();
+    window.addEventListener("open-pickup-planner", openFromLanding);
+    return () => window.removeEventListener("open-pickup-planner", openFromLanding);
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
         const response = await fetch(`/api/pickups/config?store_slug=${encodeURIComponent(STORE_SLUG)}`);
