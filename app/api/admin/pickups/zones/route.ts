@@ -98,15 +98,54 @@ export async function PATCH(request: NextRequest) {
   if (!access.ok) return access.response;
 
   if (Array.isArray(body.cities)) {
-    const cities = [...new Set(body.cities.map((city: unknown) => cleanText(city, 120)).filter(Boolean))];
-    const { data: zone } = await supabaseAdmin.from("pickup_zones").select("id").eq("id", zoneId).eq("store_id", storeId).maybeSingle();
+    const cityMap = new Map<string, string>();
+    for (const value of body.cities) {
+      const city = cleanText(value, 120).replace(/\s+/g, " ");
+      if (city) cityMap.set(city.toLocaleLowerCase("es"), city);
+    }
+    const cities = [...cityMap.values()].sort((a, b) => a.localeCompare(b, "es"));
+
+    const { data: zone, error: zoneError } = await supabaseAdmin
+      .from("pickup_zones")
+      .select("id")
+      .eq("id", zoneId)
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (zoneError) return jsonError(zoneError.message, 500);
     if (!zone) return jsonError("La zona no pertenece a esta tienda.", 404);
 
-    const { error: deleteError } = await supabaseAdmin.from("pickup_zone_cities").delete().eq("zone_id", zoneId).eq("store_id", storeId);
+    if (cities.length) {
+      const { data: occupied, error: occupiedError } = await supabaseAdmin
+        .from("pickup_zone_cities")
+        .select("city_name,zone_id")
+        .eq("store_id", storeId)
+        .neq("zone_id", zoneId);
+      if (occupiedError) return jsonError(occupiedError.message, 500);
+
+      const requestedKeys = new Set(cities.map((city) => city.toLocaleLowerCase("es")));
+      const conflicts = (occupied || [])
+        .filter((row) => requestedKeys.has(String(row.city_name).trim().toLocaleLowerCase("es")))
+        .map((row) => String(row.city_name));
+      if (conflicts.length) {
+        return jsonError(`Estas ciudades ya pertenecen a otra zona: ${[...new Set(conflicts)].join(", ")}.`, 409);
+      }
+    }
+
+    const { error: deleteError } = await supabaseAdmin
+      .from("pickup_zone_cities")
+      .delete()
+      .eq("zone_id", zoneId)
+      .eq("store_id", storeId);
     if (deleteError) return jsonError(deleteError.message, 500);
+
     if (cities.length) {
       const { error: insertError } = await supabaseAdmin.from("pickup_zone_cities").insert(
-        cities.map((city) => ({ store_id: storeId, zone_id: zoneId, city_name: city, region_code: cleanText(body.region_code, 32) || null }))
+        cities.map((city) => ({
+          store_id: storeId,
+          zone_id: zoneId,
+          city_name: city,
+          region_code: cleanText(body.region_code, 32) || null,
+        }))
       );
       if (insertError) return jsonError(insertError.message, insertError.code === "23505" ? 409 : 500);
     }
