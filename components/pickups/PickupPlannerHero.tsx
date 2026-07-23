@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
 import {
   ArrowLeft,
@@ -72,6 +73,7 @@ function nextDays(count = 8) {
 export default function PickupPlannerHero() {
   const days = useMemo(() => nextDays(), []);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [form, setForm] = useState({
@@ -99,6 +101,10 @@ export default function PickupPlannerHero() {
   const [configLoading, setConfigLoading] = useState(true);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     (async () => {
       try {
         const response = await fetch(`/api/pickups/config?store_slug=${encodeURIComponent(STORE_SLUG)}`);
@@ -115,9 +121,29 @@ export default function PickupPlannerHero() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = drawerOpen ? "hidden" : "";
+    if (!drawerOpen) return;
+
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const html = document.documentElement;
+
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+
     return () => {
-      document.body.style.overflow = "";
+      body.style.position = "";
+      body.style.top = "";
+      body.style.left = "";
+      body.style.right = "";
+      body.style.width = "";
+      body.style.overflow = "";
+      html.style.overflow = "";
+      window.scrollTo(0, scrollY);
     };
   }, [drawerOpen]);
 
@@ -322,11 +348,16 @@ export default function PickupPlannerHero() {
         </div>
       </section>
 
-      {drawerOpen && (
-        <div className="fixed inset-0 z-[200] flex justify-end bg-slate-950/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Programar recogida">
+      {mounted && drawerOpen && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex h-[100dvh] w-screen justify-end overflow-hidden bg-slate-950/70 backdrop-blur-sm overscroll-none"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Programar recogida"
+        >
           <button type="button" onClick={closePlanner} className="absolute inset-0 cursor-default" aria-label="Cerrar formulario" />
 
-          <div className="relative flex h-full w-full max-w-2xl flex-col bg-white shadow-2xl sm:rounded-l-[2rem]">
+          <div className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-l-[2rem]">
             <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-8">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600">Yoyo Envíos</p>
@@ -357,7 +388,7 @@ export default function PickupPlannerHero() {
               </div>
             )}
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-8">
+            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-6 [scroll-padding-bottom:9rem] [-webkit-overflow-scrolling:touch] sm:px-8 sm:py-8">
               {step === 1 && (
                 <div className="mx-auto max-w-xl">
                   <h3 className="text-2xl font-black text-slate-950">¿Dónde recogemos?</h3>
@@ -538,7 +569,7 @@ export default function PickupPlannerHero() {
             </div>
 
             {step < 4 && (
-              <footer className="border-t border-slate-200 bg-white px-5 py-4 sm:px-8">
+              <footer className="shrink-0 border-t border-slate-200 bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-4">
                 <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
                   <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 3</p>
                   {step === 1 && (
@@ -560,7 +591,8 @@ export default function PickupPlannerHero() {
               </footer>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
