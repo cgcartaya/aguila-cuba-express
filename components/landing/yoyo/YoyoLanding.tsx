@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
+import UpcomingPickupRoutes from "@/components/pickups/UpcomingPickupRoutes";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
 import { useMemo, useState } from "react";
 import {
@@ -225,6 +226,8 @@ export default function YoyoLanding() {
           <div className="relative z-10"><PickupPlannerHero /></div>
         </div>
       </section>
+
+      <UpcomingPickupRoutes storeSlug="yoyo-envios" />
 
       <section id="servicios" className="mx-auto max-w-7xl px-5 py-20 sm:px-6">
         <SectionTitle eyebrow="Servicios" title="Elige cómo quieres enviar" description="Tres opciones claras para combinar rapidez, seguridad y economía." />

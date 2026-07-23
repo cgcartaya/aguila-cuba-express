@@ -9,6 +9,21 @@ export type PickupRequestStatus =
   | "failed"
   | "cancelled";
 
+export type PickupRouteStatus =
+  | "draft"
+  | "published"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
+export type PickupRouteStopStatus =
+  | "pending"
+  | "en_route"
+  | "arrived"
+  | "picked_up"
+  | "failed"
+  | "skipped";
+
 export type PickupCoverageMode = "country" | "region" | "cities" | "postal_codes" | "radius";
 export type AddressValidationProvider = "auto" | "google" | "postal" | "manual";
 
@@ -65,12 +80,46 @@ export type PickupRequest = {
   needs_box: boolean;
   needs_packing_help: boolean;
   notes: string | null;
+  internal_notes?: string | null;
   status: PickupRequestStatus;
   suggested_zone_id: string | null;
   assigned_zone_id: string | null;
   confirmed_date: string | null;
   created_at: string;
   preferred_dates?: string[];
+};
+
+export type PickupRouteStop = {
+  id: string;
+  route_id: string;
+  pickup_request_id: string;
+  stop_order: number;
+  estimated_arrival: string | null;
+  status: PickupRouteStopStatus;
+  notes: string | null;
+  completed_at?: string | null;
+  pickup_request?: PickupRequest;
+};
+
+export type PickupRoute = {
+  id: string;
+  store_id: string;
+  name: string;
+  route_date: string;
+  status: PickupRouteStatus;
+  driver_name: string | null;
+  driver_phone: string | null;
+  vehicle_name: string | null;
+  public_summary: string | null;
+  is_public: boolean;
+  color: string | null;
+  notes: string | null;
+  start_city?: string | null;
+  end_city?: string | null;
+  published_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  stops?: PickupRouteStop[];
 };
 
 export type CreatePickupRequestInput = {
@@ -103,4 +152,21 @@ export const PICKUP_STATUS_LABELS: Record<PickupRequestStatus, string> = {
   picked_up: "Recogida",
   failed: "No se pudo recoger",
   cancelled: "Cancelada",
+};
+
+export const PICKUP_ROUTE_STATUS_LABELS: Record<PickupRouteStatus, string> = {
+  draft: "Borrador",
+  published: "Publicada",
+  in_progress: "En recorrido",
+  completed: "Completada",
+  cancelled: "Cancelada",
+};
+
+export const PICKUP_STOP_STATUS_LABELS: Record<PickupRouteStopStatus, string> = {
+  pending: "Pendiente",
+  en_route: "En camino",
+  arrived: "En el lugar",
+  picked_up: "Recogida",
+  failed: "Fallida",
+  skipped: "Omitida",
 };
