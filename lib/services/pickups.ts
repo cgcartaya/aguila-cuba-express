@@ -308,3 +308,31 @@ export async function updatePickupStopConfirmation(stopId: string, routeId: stri
     customer_confirmed_at: status === "confirmed" ? new Date().toISOString() : null,
   }).eq("id", stopId).eq("route_id", routeId).select().single();
 }
+
+export type PickupRouteManagementAction =
+  | "cancel"
+  | "delete"
+  | "complete"
+  | "duplicate";
+
+export async function managePickupRoute(input: {
+  storeId: string;
+  routeId: string;
+  action: PickupRouteManagementAction;
+}) {
+  const result = await pickupAdminApi<{
+    ok: true;
+    route_id?: string;
+    duplicated_route_id?: string;
+    restored_requests?: number;
+  }>("/api/admin/pickups/routes/manage", {
+    method: "POST",
+    body: JSON.stringify({
+      store_id: input.storeId,
+      route_id: input.routeId,
+      action: input.action,
+    }),
+  });
+
+  return { data: result.data, error: result.error };
+}

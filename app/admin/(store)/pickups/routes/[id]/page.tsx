@@ -6,8 +6,8 @@ import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, Messag
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import {
-  deletePickupRoute,
   getPickupRoute,
+  managePickupRoute,
   removePickupRouteStop,
   reorderPickupRouteStops,
   updatePickupRoute,
@@ -99,11 +99,39 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     setRoute({ ...route, stops: route.stops.filter((item) => item.id !== stopId) });
   }
 
-  async function removeRoute() {
-    if (!route || !store?.id || !confirm("¿Eliminar esta ruta completa?")) return;
-    const { error: deleteError } = await deletePickupRoute(route.id, store.id);
-    if (deleteError) return setError(deleteError.message);
-    window.location.href = "/admin/pickups/routes";
+  async function manageRoute(action: "cancel" | "delete" | "complete" | "duplicate") {
+    if (!route || !store?.id) return;
+
+    const messages = {
+      cancel: "¿Cancelar esta ruta? Las solicitudes no recogidas volverán a Pendientes.",
+      delete: "¿Eliminar esta ruta? Las solicitudes no recogidas volverán a Pendientes.",
+      complete: "¿Completar esta ruta? Todas las paradas deben estar recogidas, fallidas u omitidas.",
+      duplicate: "¿Duplicar la estructura de esta ruta como un nuevo borrador?",
+    };
+
+    if (!confirm(messages[action])) return;
+
+    setSaving(true);
+    const result = await managePickupRoute({
+      storeId: store.id,
+      routeId: route.id,
+      action,
+    });
+    setSaving(false);
+
+    if (result.error) return setError(result.error.message);
+
+    if (action === "duplicate" && result.data?.duplicated_route_id) {
+      window.location.href = `/admin/pickups/routes/${result.data.duplicated_route_id}`;
+      return;
+    }
+
+    if (action === "delete") {
+      window.location.href = "/admin/pickups/routes";
+      return;
+    }
+
+    await load();
   }
 
   if (loading || accessLoading || storeLoading) return <div className="rounded-[2rem] border bg-white p-12 text-center"><Loader2 className="mx-auto animate-spin" /></div>;
@@ -123,7 +151,45 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
         <h2 className="text-xl font-black">Datos de la ruta</h2>
         <div className="mt-5 space-y-4"><Field label="Nombre"><input className="input" value={route.name} onChange={(e) => setRoute({ ...route, name: e.target.value })} /></Field><Field label="Fecha"><input className="input" type="date" value={route.route_date} onChange={(e) => setRoute({ ...route, route_date: e.target.value })} /></Field><Field label="Conductor"><input className="input" value={route.driver_name || ""} onChange={(e) => setRoute({ ...route, driver_name: e.target.value })} /></Field><Field label="Teléfono"><input className="input" value={route.driver_phone || ""} onChange={(e) => setRoute({ ...route, driver_phone: e.target.value })} /></Field><Field label="Vehículo"><input className="input" value={route.vehicle_name || ""} onChange={(e) => setRoute({ ...route, vehicle_name: e.target.value })} /></Field><Field label="Resumen público"><textarea className="input min-h-24" value={route.public_summary || ""} onChange={(e) => setRoute({ ...route, public_summary: e.target.value })} placeholder="Ej. Columbia · Lexington · Gaston" /></Field></div>
         <label className="mt-5 flex items-center gap-3 rounded-2xl bg-slate-50 p-4 font-black"><input type="checkbox" checked={route.is_public} onChange={(e) => setRoute({ ...route, is_public: e.target.checked })} className="h-5 w-5" /> Mostrar en el landing</label>
-        <button onClick={removeRoute} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 px-4 py-3 font-black text-red-700"><Trash2 size={17} /> Eliminar ruta</button>
+        <div className="mt-5 grid gap-2">
+          <button
+            onClick={() => manageRoute("duplicate")}
+            disabled={saving}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border px-4 py-3 font-black disabled:opacity-50"
+          >
+            Duplicar estructura
+          </button>
+
+          {route.status !== "completed" && route.status !== "cancelled" && (
+            <button
+              onClick={() => manageRoute("complete")}
+              disabled={saving}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-200 px-4 py-3 font-black text-emerald-700 disabled:opacity-50"
+            >
+              <CheckCircle2 size={17} /> Completar ruta
+            </button>
+          )}
+
+          {route.status !== "completed" && route.status !== "cancelled" && (
+            <button
+              onClick={() => manageRoute("cancel")}
+              disabled={saving}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-200 px-4 py-3 font-black text-amber-700 disabled:opacity-50"
+            >
+              Cancelar ruta
+            </button>
+          )}
+
+          {route.status !== "in_progress" && route.status !== "completed" && (
+            <button
+              onClick={() => manageRoute("delete")}
+              disabled={saving}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-200 px-4 py-3 font-black text-red-700 disabled:opacity-50"
+            >
+              <Trash2 size={17} /> Eliminar ruta
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
