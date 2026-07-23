@@ -99,6 +99,10 @@ export type PickupRouteStop = {
   notes: string | null;
   completed_at?: string | null;
   pickup_request?: PickupRequest;
+  schedule_override?: boolean;
+  override_reason?: string | null;
+  customer_confirmation_status?: PickupCustomerConfirmationStatus;
+  customer_confirmed_at?: string | null;
 };
 
 export type PickupRoute = {
@@ -119,6 +123,7 @@ export type PickupRoute = {
   published_at?: string | null;
   created_at: string;
   updated_at: string;
+  zone_id?: string | null;
   stops?: PickupRouteStop[];
 };
 
@@ -170,3 +175,29 @@ export const PICKUP_STOP_STATUS_LABELS: Record<PickupRouteStopStatus, string> = 
   failed: "Fallida",
   skipped: "Omitida",
 };
+
+
+export type PickupZone = {
+  id: string;
+  store_id: string;
+  name: string;
+  color: string | null;
+  description: string | null;
+  habitual_days: number[];
+  is_active: boolean;
+  sort_order: number;
+  cities?: PickupZoneCity[];
+};
+
+export type PickupZoneCity = {
+  id: string;
+  zone_id: string;
+  store_id: string;
+  city_name: string;
+  region_code: string | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export type PickupDateCompatibility = "compatible" | "flexible" | "incompatible";
+export type PickupCustomerConfirmationStatus = "not_required" | "pending" | "confirmed" | "declined";

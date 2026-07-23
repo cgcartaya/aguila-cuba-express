@@ -63,6 +63,7 @@ const sections: AdminSection[] = [
     links: [
       { href: "/admin/pickups", label: "Solicitudes de recogida", icon: CalendarDays },
       { href: "/admin/pickups/routes", label: "Rutas de recogida", icon: Route },
+      { href: "/admin/pickups/zones", label: "Zonas y ciudades", icon: Layers3 },
       { href: "/admin/pickups/settings", label: "Configurar cobertura", icon: MapPin },
     ],
   },

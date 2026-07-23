@@ -53,6 +53,8 @@ const storeLinks: MenuItem[] = [
   { label: "Inventario", href: "/admin/inventory", icon: Boxes },
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
   { label: "Recogidas", href: "/admin/pickups", icon: CalendarDays },
+  { label: "Rutas de recogida", href: "/admin/pickups/routes", icon: Route },
+  { label: "Zonas y ciudades", href: "/admin/pickups/zones", icon: Layers3 },
   { label: "Cobertura de recogidas", href: "/admin/pickups/settings", icon: MapPin },
   { label: "Dashboard de envíos", href: "/admin/shipping", icon: LayoutDashboard },
   { label: "Viajes", href: "/admin/shipping/trips", icon: Route },
