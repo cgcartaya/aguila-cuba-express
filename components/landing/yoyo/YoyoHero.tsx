@@ -35,11 +35,27 @@ export default function YoyoHero() {
             fill
             priority
             sizes="78vw"
-            className="object-contain object-right opacity-[0.96] drop-shadow-[0_38px_90px_rgba(0,0,0,.5)]"
+            className="object-contain object-right opacity-[0.78] drop-shadow-[0_38px_90px_rgba(0,0,0,.5)]"
           />
         </div>
         <div className="hero-visual-glow absolute bottom-[8%] right-[8%] h-[30%] w-[56%] rounded-[50%] bg-blue-500/20 blur-[70px]" />
         <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#020d20] via-[#020d20]/55 to-transparent" />
+      </div>
+
+      {/* Visual móvil: aparece entre contenido y planificador */}
+      <div className="hero-mobile-visual pointer-events-none relative z-10 mx-auto mt-10 h-[280px] w-full max-w-[680px] overflow-hidden sm:h-[340px] lg:hidden">
+        <Image
+          src="/yoyo/v13/hero-route-visual.webp"
+          alt="Ruta de YOYO Envíos desde Carolina del Sur hacia Cuba"
+          fill
+          priority
+          sizes="100vw"
+          className="object-contain object-center opacity-[0.92] drop-shadow-[0_24px_60px_rgba(0,0,0,.45)]"
+        />
+        <div className="absolute inset-x-[12%] bottom-[10%] h-20 rounded-[50%] bg-blue-500/25 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[#020d20] to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#020d20] to-transparent" />
+        <span className="hero-mobile-route-dot" />
       </div>
 
       {/* Ruta luminosa y señal viajera */}
@@ -65,7 +81,7 @@ export default function YoyoHero() {
         <span className="hero-shooting-light absolute right-[8%] top-[22%] h-px w-40 bg-gradient-to-r from-transparent via-blue-200/90 to-transparent" />
       </div>
 
-      <div className="relative mx-auto grid min-h-[810px] max-w-7xl items-center gap-12 px-5 py-20 sm:px-6 lg:grid-cols-[.92fr_1.08fr] lg:py-24">
+      <div className="relative mx-auto grid min-h-[810px] max-w-7xl items-center gap-8 px-5 py-16 sm:px-6 sm:py-20 lg:grid-cols-[.92fr_1.08fr] lg:gap-12 lg:py-24">
         <div className="hero-copy relative z-20 max-w-3xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-blue-300/25 bg-blue-400/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-blue-100 shadow-[0_12px_40px_rgba(37,99,235,.12)] backdrop-blur-xl">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#ef2b32] shadow-[0_0_14px_rgba(239,43,50,.9)]" />
@@ -117,7 +133,7 @@ export default function YoyoHero() {
           </div>
         </div>
 
-        <div className="hero-planner relative z-30 mt-8 lg:mt-0 lg:translate-y-7">
+        <div className="hero-planner relative z-30 mt-2 lg:mt-0 lg:translate-y-7">
           <div className="absolute -inset-10 rounded-[4rem] bg-blue-500/15 blur-[60px]" />
           <div className="hero-planner-shell relative lg:ml-auto lg:max-w-[510px]">
             <div className="pointer-events-none absolute -inset-px rounded-[2.35rem] bg-gradient-to-br from-white/60 via-blue-200/25 to-red-300/20 opacity-75" />
@@ -137,10 +153,25 @@ export default function YoyoHero() {
         }
         .hero-aurora {
           background:
-            radial-gradient(circle at 78% 38%, rgba(37,99,235,.28), transparent 28%),
-            radial-gradient(circle at 88% 72%, rgba(14,165,233,.18), transparent 24%),
-            radial-gradient(circle at 24% 24%, rgba(215,25,32,.16), transparent 22%);
-          animation: heroAurora 12s ease-in-out infinite alternate;
+            radial-gradient(circle at 78% 38%, rgba(37,99,235,.42), transparent 30%),
+            radial-gradient(circle at 88% 72%, rgba(14,165,233,.28), transparent 26%),
+            radial-gradient(circle at 24% 24%, rgba(215,25,32,.22), transparent 24%);
+          filter: saturate(1.15);
+          animation: heroAurora 10s ease-in-out infinite alternate;
+        }
+        .hero-mobile-visual {
+          animation: heroMobileVisualIn .9s .12s cubic-bezier(.2,.8,.2,1) both, heroMobileFloat 7s 1.1s ease-in-out infinite;
+        }
+        .hero-mobile-route-dot {
+          position: absolute;
+          left: 29%;
+          top: 31%;
+          width: 9px;
+          height: 9px;
+          border-radius: 9999px;
+          background: #fff;
+          box-shadow: 0 0 10px #fff, 0 0 22px #60a5fa, 0 0 34px #2563eb;
+          animation: heroMobileRoute 4.6s 1s ease-in-out infinite;
         }
         .hero-visual-float { animation: heroVisualFloat 8s ease-in-out infinite; }
         .hero-visual-glow { animation: heroGlow 5s ease-in-out infinite; }
@@ -175,8 +206,24 @@ export default function YoyoHero() {
         .hero-route-pulse-start { left: 57.5%; top: 27.5%; }
         .hero-route-pulse-end { right: 11.5%; top: 40%; border-color: rgba(248,113,113,.95); box-shadow: 0 0 28px rgba(239,68,68,.8); animation-delay: .9s; }
         @keyframes heroAurora {
-          0% { transform: scale(1) translate3d(0,0,0); opacity: .8; }
-          100% { transform: scale(1.08) translate3d(-1.5%,1%,0); opacity: 1; }
+          0% { transform: scale(1) translate3d(0,0,0); opacity: .72; }
+          50% { transform: scale(1.1) translate3d(-2%,1.2%,0); opacity: 1; }
+          100% { transform: scale(1.04) translate3d(1.5%,-1%,0); opacity: .86; }
+        }
+        @keyframes heroMobileVisualIn {
+          from { opacity: 0; transform: translate3d(0,24px,0) scale(.97); }
+          to { opacity: 1; transform: translate3d(0,0,0) scale(1); }
+        }
+        @keyframes heroMobileFloat {
+          0%,100% { transform: translate3d(0,0,0) scale(1); }
+          50% { transform: translate3d(0,-8px,0) scale(1.01); }
+        }
+        @keyframes heroMobileRoute {
+          0% { transform: translate3d(0,0,0) scale(.7); opacity: 0; }
+          12% { opacity: 1; }
+          50% { transform: translate3d(120px,-18px,0) scale(1); opacity: 1; }
+          88% { opacity: 1; }
+          100% { transform: translate3d(238px,58px,0) scale(1.25); opacity: 0; }
         }
         @keyframes heroVisualFloat {
           0%,100% { transform: translate3d(0,0,0) scale(1); }
@@ -229,9 +276,22 @@ export default function YoyoHero() {
         }
         @media (max-width: 1023px) {
           .yoyo-cinematic-hero { background: linear-gradient(145deg,#020d20,#08285b); }
+          .hero-copy { max-width: 44rem; }
+          .hero-planner-shell { max-width: 44rem; margin-inline: auto; }
+        }
+        @media (max-width: 640px) {
+          .hero-mobile-visual { margin-top: 2rem; height: 245px; }
+          .hero-mobile-route-dot { left: 24%; top: 31%; }
+          @keyframes heroMobileRoute {
+            0% { transform: translate3d(0,0,0) scale(.7); opacity: 0; }
+            12% { opacity: 1; }
+            52% { transform: translate3d(95px,-10px,0) scale(1); opacity: 1; }
+            88% { opacity: 1; }
+            100% { transform: translate3d(185px,42px,0) scale(1.2); opacity: 0; }
+          }
         }
         @media (prefers-reduced-motion: reduce) {
-          .hero-aurora,.hero-visual-float,.hero-visual-glow,.hero-particle,.hero-shooting-light,.hero-copy,.hero-planner,.hero-planner-shell,.hero-benefit,.hero-route-dot,.hero-route-pulse { animation: none !important; }
+          .hero-aurora,.hero-visual-float,.hero-visual-glow,.hero-particle,.hero-shooting-light,.hero-copy,.hero-planner,.hero-planner-shell,.hero-benefit,.hero-route-dot,.hero-route-pulse,.hero-mobile-visual,.hero-mobile-route-dot { animation: none !important; }
         }
       `}</style>
     </section>
