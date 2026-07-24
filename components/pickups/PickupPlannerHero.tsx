@@ -38,6 +38,8 @@ type AddressValidation = {
   suggestedZoneName: string | null;
 };
 
+type RequestedRoute = { id: string; name: string; date: string };
+
 type PickupPublicConfig = {
   countryCode: string;
   countryName: string | null;
@@ -99,16 +101,32 @@ export default function PickupPlannerHero() {
   const [successCode, setSuccessCode] = useState("");
   const [config, setConfig] = useState<PickupPublicConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(true);
+  const [requestedRoute, setRequestedRoute] = useState<RequestedRoute | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    const openFromLanding = () => openPlanner();
-    window.addEventListener("open-pickup-planner", openFromLanding);
-    return () => window.removeEventListener("open-pickup-planner", openFromLanding);
+    function handleOpenPlanner(event: Event) {
+      const detail = (event as CustomEvent<{ city?: string; routeId?: string; routeName?: string; routeDate?: string }>).detail || {};
+      setError("");
+      setSuccessCode("");
+      setStep(1);
+      if (detail.city) setForm((current) => ({ ...current, city: detail.city || current.city }));
+      if (detail.routeId && detail.routeName && detail.routeDate) {
+        setRequestedRoute({ id: detail.routeId, name: detail.routeName, date: detail.routeDate });
+        setSelectedDates([detail.routeDate]);
+      } else {
+        setRequestedRoute(null);
+      }
+      setDrawerOpen(true);
+    }
+
+    window.addEventListener("open-pickup-planner", handleOpenPlanner);
+    return () => window.removeEventListener("open-pickup-planner", handleOpenPlanner);
   }, []);
+
 
   useEffect(() => {
     (async () => {
@@ -117,7 +135,7 @@ export default function PickupPlannerHero() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "No pudimos cargar la cobertura.");
         setConfig(result);
-        setForm((current) => ({ ...current, region: result.regionName || result.regionCode || "", city: "" }));
+        setForm((current) => ({ ...current, region: result.regionName || result.regionCode || "" }));
       } catch (configError) {
         setError(configError instanceof Error ? configError.message : "No pudimos cargar las ciudades.");
       } finally {
@@ -173,6 +191,7 @@ export default function PickupPlannerHero() {
     setAddressResult(null);
     setSuccessCode("");
     setError("");
+    setRequestedRoute(null);
     setForm((current) => ({
       ...current,
       address_line_1: "",
@@ -288,6 +307,9 @@ export default function PickupPlannerHero() {
           package_count: Number(form.package_count) || 1,
           estimated_weight: form.estimated_weight ? Number(form.estimated_weight) : null,
           country_code: config?.countryCode || "US",
+          requested_route_id: requestedRoute?.id || null,
+          requested_route_name: requestedRoute?.name || null,
+          requested_route_date: requestedRoute?.date || null,
         }),
       });
       const result = await response.json();
@@ -395,6 +417,14 @@ export default function PickupPlannerHero() {
             )}
 
             <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-6 [scroll-padding-bottom:9rem] [-webkit-overflow-scrolling:touch] sm:px-8 sm:py-8">
+              {requestedRoute && step < 4 && (
+                <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Reserva vinculada a una ruta</p>
+                  <p className="mt-1 font-black text-[#061b3a]">{requestedRoute.name}</p>
+                  <p className="mt-1 text-sm font-semibold text-blue-800">Fecha programada: {new Intl.DateTimeFormat("es-US", { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${requestedRoute.date}T12:00:00`))}</p>
+                  <p className="mt-2 text-xs font-semibold text-slate-500">La agencia confirmará que todavía exista disponibilidad antes de añadir tu parada.</p>
+                </div>
+              )}
               {step === 1 && (
                 <div className="mx-auto max-w-xl">
                   <h3 className="text-2xl font-black text-slate-950">¿Dónde recogemos?</h3>
@@ -472,7 +502,7 @@ export default function PickupPlannerHero() {
                     <ArrowLeft size={18} /> Cambiar ubicación
                   </button>
                   <h3 className="text-2xl font-black text-slate-950">¿Qué días te convienen?</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">Selecciona hasta {config?.maxPreferredDates || 3} opciones. Yoyo confirmará el día definitivo.</p>
+                  <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. Yoyo confirmará el día definitivo.`}</p>
 
                   <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {days.map((item) => {

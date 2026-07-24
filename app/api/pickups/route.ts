@@ -34,6 +34,9 @@ export async function POST(request: NextRequest) {
     const preferredDates = Array.from(
       new Set((Array.isArray(body.preferred_dates) ? body.preferred_dates : []).map((value) => clean(value, 10)))
     ).filter(validDate).slice(0, 7);
+    const requestedRouteId = clean(body.requested_route_id, 80);
+    const requestedRouteName = clean(body.requested_route_name, 160);
+    const requestedRouteDate = clean(body.requested_route_date, 10);
 
     if (!storeSlug || !customerName || phone.length < 7) {
       return NextResponse.json({ error: "Completa el nombre y un teléfono válido." }, { status: 400 });
@@ -65,6 +68,23 @@ export async function POST(request: NextRequest) {
 
     if (storeError || !store) {
       return NextResponse.json({ error: "No pudimos identificar la tienda." }, { status: 404 });
+    }
+
+    let verifiedRequestedRoute: { id: string; name: string; route_date: string } | null = null;
+    if (requestedRouteId) {
+      const { data: route } = await supabaseAdmin
+        .from("pickup_routes")
+        .select("id,name,route_date,status,is_public")
+        .eq("id", requestedRouteId)
+        .eq("store_id", store.id)
+        .eq("is_public", true)
+        .in("status", ["published", "in_progress"])
+        .maybeSingle();
+
+      if (route) {
+        verifiedRequestedRoute = { id: route.id, name: route.name, route_date: route.route_date };
+        if (!preferredDates.includes(route.route_date) && validDate(route.route_date)) preferredDates.unshift(route.route_date);
+      }
     }
 
     const { data: settings } = await supabaseAdmin
@@ -108,6 +128,11 @@ export async function POST(request: NextRequest) {
         needs_box: Boolean(body.needs_box),
         needs_packing_help: Boolean(body.needs_packing_help),
         notes: clean(body.notes, 1000) || null,
+        internal_notes: verifiedRequestedRoute
+          ? `RUTA SOLICITADA: ${verifiedRequestedRoute.name} | ${verifiedRequestedRoute.route_date} | ROUTE_ID:${verifiedRequestedRoute.id}`
+          : requestedRouteName && requestedRouteDate
+            ? `RUTA SOLICITADA (pendiente de verificar): ${requestedRouteName} | ${requestedRouteDate}`
+            : null,
         status: "new",
       })
       .select("id, request_code")
@@ -131,7 +156,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { id: pickup.id, request_code: pickup.request_code, address: validation },
+      { id: pickup.id, request_code: pickup.request_code, address: validation, requested_route: verifiedRequestedRoute },
       { status: 201, headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {

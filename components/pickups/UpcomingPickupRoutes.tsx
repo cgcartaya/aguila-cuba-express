@@ -70,8 +70,10 @@ function smoothPath(points: MapPoint[]) {
   return path;
 }
 
-function openPickupPlanner(city?: string, routeId?: string) {
-  window.dispatchEvent(new CustomEvent("open-pickup-planner", { detail: { city, routeId } }));
+function openPickupPlanner(city?: string, route?: PublicRoute) {
+  window.dispatchEvent(new CustomEvent("open-pickup-planner", {
+    detail: { city, routeId: route?.id, routeName: route?.name, routeDate: route?.route_date },
+  }));
 }
 
 function RouteMap({ route }: { route: PublicRoute }) {
@@ -212,7 +214,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 </ol>
 
                 {activeRoute.public_summary && <p className="mt-5 border-t border-white/10 pt-5 font-semibold leading-7 text-blue-100/75">{activeRoute.public_summary}</p>}
-                <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute.id)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">Reservar en esta ruta <ArrowRight size={18} /></button>
+                <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">Reservar en esta ruta <ArrowRight size={18} /></button>
                 <p className="mt-3 flex items-center justify-center gap-2 text-center text-xs font-semibold text-blue-100/55"><Clock3 size={13} /> Sujeto a disponibilidad de la ruta</p>
               </div>
             </article>
@@ -233,7 +235,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
 
               {searched && query.trim() && match && (
                 <div className={`mt-4 rounded-2xl border p-5 ${match.route || match.coverage ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
-                  {match.route ? <><p className="flex items-start gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} className="mt-0.5 shrink-0" /> <span>Sí, estaremos en {query.trim()}.</span></p><p className="mt-2 font-semibold text-emerald-700">{match.route.name} · {routeDate(match.route.route_date)} · {match.route.status === "in_progress" ? "En recorrido" : "Ruta en preparación"}</p><button type="button" onClick={() => openPickupPlanner(query.trim(), match.route?.id)} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Reservar mi recogida <ArrowRight size={17} /></button></> : match.coverage ? <><p className="flex items-start gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} className="mt-0.5 shrink-0" /> <span>Sí, recogemos en {match.coverage.name}.</span></p><p className="mt-2 font-semibold text-emerald-700">{match.coverage.zoneName ? `Pertenece a ${match.coverage.zoneName}. ` : ""}Todavía no hay una ruta pública con fecha para esta ciudad.</p><button type="button" onClick={() => openPickupPlanner(match.coverage?.name)} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Solicitar recogida <ArrowRight size={17} /></button></> : <><p className="flex items-start gap-2 text-lg font-black text-amber-900"><CircleAlert size={21} className="mt-0.5 shrink-0" /> <span>No encontramos una ruta publicada para {query.trim()}.</span></p><p className="mt-2 font-semibold text-amber-800">Envíanos la solicitud para confirmar si podemos agregarla al próximo recorrido.</p><button type="button" onClick={() => openPickupPlanner(query.trim())} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Consultar recogida <ArrowRight size={17} /></button></>}
+                  {match.route ? <><p className="flex items-start gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} className="mt-0.5 shrink-0" /> <span>Sí, estaremos en {query.trim()}.</span></p><p className="mt-2 font-semibold text-emerald-700">{match.route.name} · {routeDate(match.route.route_date)} · {match.route.status === "in_progress" ? "En recorrido" : "Ruta en preparación"}</p><button type="button" onClick={() => openPickupPlanner(query.trim(), match.route)} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Reservar mi recogida <ArrowRight size={17} /></button></> : match.coverage ? <><p className="flex items-start gap-2 text-lg font-black text-emerald-800"><CheckCircle2 size={21} className="mt-0.5 shrink-0" /> <span>Sí, recogemos en {match.coverage.name}.</span></p><p className="mt-2 font-semibold text-emerald-700">{match.coverage.zoneName ? `Pertenece a ${match.coverage.zoneName}. ` : ""}Todavía no hay una ruta pública con fecha para esta ciudad.</p><button type="button" onClick={() => openPickupPlanner(match.coverage?.name)} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Solicitar recogida <ArrowRight size={17} /></button></> : <><p className="flex items-start gap-2 text-lg font-black text-amber-900"><CircleAlert size={21} className="mt-0.5 shrink-0" /> <span>No encontramos una ruta publicada para {query.trim()}.</span></p><p className="mt-2 font-semibold text-amber-800">Envíanos la solicitud para confirmar si podemos agregarla al próximo recorrido.</p><button type="button" onClick={() => openPickupPlanner(query.trim())} className="mt-4 inline-flex items-center gap-2 font-black text-red-600 hover:text-red-500">Consultar recogida <ArrowRight size={17} /></button></>}
                 </div>
               )}
             </div>

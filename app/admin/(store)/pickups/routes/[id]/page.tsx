@@ -41,6 +41,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   const [requestSearch, setRequestSearch] = useState("");
   const [eligibleLoading, setEligibleLoading] = useState(false);
   const [addingRequests, setAddingRequests] = useState(false);
+  const [requestedForThisRoute, setRequestedForThisRoute] = useState(0);
 
   async function load() {
     if (!store?.id) return;
@@ -48,6 +49,10 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     const result = await getPickupRoute(store.id, id);
     setRoute(result.data);
     setError(result.error?.message || "");
+    if (result.data) {
+      const eligible = await getEligiblePickupRequestsForRoute(store.id, id);
+      setRequestedForThisRoute((eligible.data || []).filter((item) => item.internal_notes?.includes(`ROUTE_ID:${id}`)).length);
+    }
     setLoading(false);
   }
 
@@ -199,6 +204,13 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
 
     {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
+    {requestedForThisRoute > 0 && (
+      <button onClick={openAddRequests} className="flex w-full items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:bg-amber-100">
+        <span><span className="block font-black text-amber-900">{requestedForThisRoute === 1 ? "Hay 1 nueva solicitud para esta ruta" : `Hay ${requestedForThisRoute} nuevas solicitudes para esta ruta`}</span><span className="mt-1 block text-sm font-bold text-amber-700">Entraron desde el botón público “Reservar en esta ruta”.</span></span>
+        <span className="shrink-0 rounded-xl bg-amber-900 px-4 py-2 text-sm font-black text-white">Revisar y agregar</span>
+      </button>
+    )}
+
     <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
       <section className="h-fit rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-6">
         <h2 className="text-xl font-black">Datos de la ruta</h2>
@@ -255,7 +267,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
         <div className="flex items-start justify-between border-b p-5 sm:p-6"><div><h2 className="text-2xl font-black">Agregar solicitudes a la ruta</h2><p className="mt-1 text-sm font-bold text-slate-500">Las solicitudes de las ciudades actuales aparecen primero. No se muestran las que ya pertenecen a otra ruta.</p></div><button onClick={() => !addingRequests && setAddOpen(false)} className="rounded-xl border p-2 text-slate-500"><X size={20} /></button></div>
         <div className="border-b p-4 sm:p-5"><label className="flex items-center gap-3 rounded-2xl border bg-slate-50 px-4 py-3"><Search size={19} className="text-slate-400" /><input value={requestSearch} onChange={(event) => setRequestSearch(event.target.value)} className="w-full bg-transparent font-bold outline-none" placeholder="Buscar por cliente, código, ciudad o dirección..." /></label></div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-          {eligibleLoading ? <div className="py-14 text-center"><Loader2 className="mx-auto animate-spin text-blue-600" /><p className="mt-3 font-bold text-slate-500">Buscando solicitudes disponibles...</p></div> : filteredEligibleRequests.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center"><CheckCircle2 className="mx-auto text-emerald-500" /><p className="mt-3 font-black">No hay solicitudes disponibles</p><p className="mt-1 text-sm font-bold text-slate-500">Todas están asignadas, cerradas o no coinciden con la búsqueda.</p></div> : <div className="space-y-3">{filteredEligibleRequests.map((item) => { const selected = selectedRequestIds.includes(item.id); return <label key={item.id} className={`flex cursor-pointer gap-4 rounded-2xl border p-4 transition ${selected ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-blue-300"}`}><input type="checkbox" checked={selected} onChange={() => toggleSelectedRequest(item.id)} className="mt-1 h-5 w-5 shrink-0 accent-blue-600" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-black">{item.customer_name}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600">{item.request_code}</span>{item.compatible_city && <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-black text-emerald-700">Ciudad de esta ruta</span>}</div><p className="mt-1 text-sm font-bold text-slate-600"><MapPin size={14} className="mr-1 inline" />{item.address_line_1}, {item.city}, {item.region} {item.postal_code}</p><p className="mt-1 text-xs font-bold text-slate-500">{item.package_count} paquete(s){item.confirmed_date ? ` · Confirmada para ${item.confirmed_date}` : ""}</p></div></label>; })}</div>}
+          {eligibleLoading ? <div className="py-14 text-center"><Loader2 className="mx-auto animate-spin text-blue-600" /><p className="mt-3 font-bold text-slate-500">Buscando solicitudes disponibles...</p></div> : filteredEligibleRequests.length === 0 ? <div className="rounded-2xl border border-dashed p-10 text-center"><CheckCircle2 className="mx-auto text-emerald-500" /><p className="mt-3 font-black">No hay solicitudes disponibles</p><p className="mt-1 text-sm font-bold text-slate-500">Todas están asignadas, cerradas o no coinciden con la búsqueda.</p></div> : <div className="space-y-3">{filteredEligibleRequests.map((item) => { const selected = selectedRequestIds.includes(item.id); return <label key={item.id} className={`flex cursor-pointer gap-4 rounded-2xl border p-4 transition ${selected ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-blue-300"}`}><input type="checkbox" checked={selected} onChange={() => toggleSelectedRequest(item.id)} className="mt-1 h-5 w-5 shrink-0 accent-blue-600" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-black">{item.customer_name}</p><span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600">{item.request_code}</span>{item.compatible_city && <span className="rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-black text-emerald-700">Ciudad de esta ruta</span>}{item.internal_notes?.includes(`ROUTE_ID:${route.id}`) && <span className="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">Solicitó esta ruta</span>}</div><p className="mt-1 text-sm font-bold text-slate-600"><MapPin size={14} className="mr-1 inline" />{item.address_line_1}, {item.city}, {item.region} {item.postal_code}</p><p className="mt-1 text-xs font-bold text-slate-500">{item.package_count} paquete(s){item.confirmed_date ? ` · Confirmada para ${item.confirmed_date}` : ""}</p></div></label>; })}</div>}
         </div>
         <div className="flex flex-col-reverse gap-3 border-t bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5"><p className="text-sm font-black text-slate-600">{selectedRequestIds.length} seleccionada(s)</p><div className="flex gap-3"><button onClick={() => setAddOpen(false)} disabled={addingRequests} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={addSelectedRequests} disabled={!selectedRequestIds.length || addingRequests} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white disabled:opacity-40">{addingRequests ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Agregar a esta ruta</button></div></div>
       </div>

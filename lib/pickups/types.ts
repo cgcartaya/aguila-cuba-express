@@ -145,6 +145,9 @@ export type CreatePickupRequestInput = {
   needs_box?: boolean;
   needs_packing_help?: boolean;
   notes?: string;
+  requested_route_id?: string | null;
+  requested_route_name?: string | null;
+  requested_route_date?: string | null;
 };
 
 export const PICKUP_STATUS_LABELS: Record<PickupRequestStatus, string> = {
