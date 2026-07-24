@@ -127,7 +127,12 @@ export default function YoyoHero() {
           <div className="yoyo-planner-shell relative mx-auto max-w-[560px] lg:ml-auto lg:mr-0 lg:max-w-[440px]">
             <div className="pointer-events-none absolute -inset-px rounded-[2.35rem] bg-gradient-to-br from-white/60 via-blue-200/25 to-red-300/20 opacity-75" />
             <div className="relative rounded-[2.3rem] bg-white/[0.08] p-1.5 shadow-[0_34px_90px_rgba(0,0,0,.45),inset_0_1px_0_rgba(255,255,255,.28)] backdrop-blur-2xl">
-              <PickupPlannerHero />
+              <div
+  id="solicitar-recogida"
+  className="scroll-mt-24"
+>
+  <PickupPlannerHero />
+</div>
             </div>
           </div>
         </div>

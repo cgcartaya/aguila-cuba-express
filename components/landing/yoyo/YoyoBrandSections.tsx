@@ -73,9 +73,9 @@ export function PickupSection() {
             ))}
           </div>
 
-          <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#d71920] to-red-500 px-6 py-4 font-black text-white shadow-[0_18px_40px_rgba(215,25,32,.25)] transition hover:-translate-y-0.5 sm:w-auto">
-            <Truck size={20} /> Solicitar recogida a domicilio <ArrowRight size={18} />
-          </a>
+         <a href="#solicitar-recogida">
+  Solicitar recogida a domicilio
+</a>
         </div>
       </div>
     </section>
