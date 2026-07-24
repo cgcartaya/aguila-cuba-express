@@ -19,7 +19,68 @@ export function QuoteSection() { return <section id="cotizar" className="relativ
 
 export function TrackingSection({trackingCode,setTrackingCode}:{trackingCode:string;setTrackingCode:(v:string)=>void}) { return <section id="rastreo" className="mx-auto max-w-7xl px-5 py-20 sm:px-6"><div className="grid overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-slate-950 to-[#0a3474] text-white shadow-2xl lg:grid-cols-[1fr_.8fr]"><div className="p-8 sm:p-12"><Search size={27}/><h2 className="mt-6 text-4xl font-black">Rastrea tu envío</h2><p className="mt-3 font-semibold text-blue-100/80">Consulta el estado de tu paquete y sigue cada etapa hasta la entrega.</p><form action={trackingCode ? `${TRACKING_URL}/${trackingCode}` : TRACKING_URL} className="mt-7 flex flex-col gap-3 sm:flex-row"><input value={trackingCode} onChange={e=>setTrackingCode(e.target.value.toUpperCase())} placeholder="Ej. ACE-12345678" className="min-w-0 flex-1 rounded-2xl border border-white/15 bg-white px-5 py-4 font-black text-slate-950"/><button className="rounded-2xl bg-[#d71920] px-6 py-4 font-black">Consultar</button></form></div><div className="relative min-h-[330px]"><Image src="/yoyo/v13/warehouse.webp" alt="Operación logística YOYO Envíos" fill className="object-cover opacity-65"/><div className="absolute inset-0 bg-gradient-to-l from-transparent to-[#0a3474]"/></div></div></section> }
 
-export function PickupSection() { const items=["Pesamos tu paquete","Sellamos tu caja","Entregamos comprobante","Preparamos el envío","Lo dejamos listo para Cuba"]; return <section id="recogida" className="bg-white px-5 py-20 sm:px-6"><div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2"><div className="relative min-h-[500px] overflow-hidden rounded-[2.5rem] shadow-xl"><Image src="/yoyo/v13/brand-flyer.webp" alt="Servicios YOYO Envíos" fill className="object-cover"/></div><div><SectionTitle eyebrow="Recogida a domicilio" title="Nosotros vamos por tu paquete" description="Servicio disponible en Carolina del Sur y zonas aledañas."/><div className="mt-7 space-y-4">{items.map(i=><div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 font-bold text-slate-700"><CheckCircle2 className="text-[#d71920]" size={20}/>{i}</div>)}</div><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#071d43] px-6 py-4 font-black text-white"><Truck size={20}/> Programar recogida</a></div></div></section> }
+export function PickupSection() {
+  const steps = [
+    ["01", "Agendamos tu recogida", "Elige el día y la hora que más te convenga."],
+    ["02", "Vamos a tu domicilio", "Nuestro equipo llega puntual y seguro."],
+    ["03", "Revisamos tu paquete", "Pesamos y verificamos el contenido."],
+    ["04", "Sellamos y etiquetamos", "Protegemos tu envío y lo dejamos listo."],
+    ["05", "Lo enviamos a Cuba", "Tu paquete inicia su viaje con total seguridad."],
+  ] as const;
+
+  return (
+    <section id="recogida" className="relative overflow-hidden bg-white px-5 py-20 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-blue-50/70 to-transparent" />
+      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.04fr_.96fr]">
+        <div className="group relative min-h-[520px] overflow-hidden rounded-[2.5rem] border border-slate-200 bg-slate-100 shadow-[0_30px_80px_rgba(7,29,67,.16)] sm:min-h-[620px]">
+          <Image
+            src="/yoyo/v14/pickup-home.webp"
+            alt="Empleado de YOYO Envíos recogiendo un paquete a domicilio"
+            fill
+            sizes="(max-width: 1024px) 100vw, 52vw"
+            className="object-cover object-center transition duration-700 group-hover:scale-[1.025]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#071d43]/45 via-transparent to-transparent" />
+          <div className="absolute bottom-5 left-5 right-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/20 bg-[#071d43]/82 p-4 text-white shadow-xl backdrop-blur-md sm:bottom-7 sm:left-7 sm:right-7 sm:p-5">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[.16em] text-blue-200">Servicio local</p>
+              <p className="mt-1 text-lg font-black">Recogidas en Carolina del Sur</p>
+            </div>
+            <div className="rounded-xl bg-white/10 px-4 py-3 text-right">
+              <p className="text-xs font-bold text-blue-100/70">Recogida desde</p>
+              <p className="text-2xl font-black text-white">$20 USD</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-xs font-black uppercase tracking-[.16em] text-blue-800">
+            <Truck size={16} /> Servicio de recogida
+          </div>
+          <div className="mt-5">
+            <SectionTitle eyebrow="Recogida a domicilio" title="Nosotros vamos por tu paquete" description="Servicio disponible en Carolina del Sur y zonas aledañas." />
+          </div>
+
+          <div className="relative mt-8 space-y-3 before:absolute before:bottom-6 before:left-[22px] before:top-6 before:w-px before:bg-gradient-to-b before:from-red-300 before:via-blue-300 before:to-slate-200">
+            {steps.map(([number, title, text]) => (
+              <div key={number} className="relative flex gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
+                <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-4 border-white bg-[#d71920] text-xs font-black text-white shadow-md">{number}</div>
+                <div>
+                  <p className="font-black text-[#071d43]">{title}</p>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-slate-500">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#d71920] to-red-500 px-6 py-4 font-black text-white shadow-[0_18px_40px_rgba(215,25,32,.25)] transition hover:-translate-y-0.5 sm:w-auto">
+            <Truck size={20} /> Solicitar recogida a domicilio <ArrowRight size={18} />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export function FinalSections() {
  const sendables=[[ShoppingBag,"Ropa y calzado"],[PackageCheck,"Alimentos"],[HeartHandshake,"Medicamentos"],[Sparkles,"Aseo personal"],[Smartphone,"Electrónica"],[BatteryCharging,"Estaciones de energía"]] as const;
