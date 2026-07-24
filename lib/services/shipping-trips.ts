@@ -125,3 +125,32 @@ export function setDefaultShippingTrip(storeId: string, tripId: string) {
     p_trip_id: tripId,
   });
 }
+
+
+export async function deleteEmptyShippingTrip(storeId: string, tripId: string) {
+  const { count, error: countError } = await supabase
+    .from("shipments")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .eq("trip_id", tripId)
+    .is("deleted_at", null);
+
+  if (countError) return { data: null, error: countError };
+
+  if ((count || 0) > 0) {
+    return {
+      data: null,
+      error: {
+        message: `Este viaje contiene ${count} envío(s). Muévelos a otro viaje antes de eliminarlo.`,
+      },
+    };
+  }
+
+  return supabase
+    .from("shipping_trips")
+    .delete()
+    .eq("store_id", storeId)
+    .eq("id", tripId)
+    .select("id")
+    .single();
+}

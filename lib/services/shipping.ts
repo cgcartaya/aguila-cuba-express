@@ -121,16 +121,41 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       },
     });
 
-    const shipment = (result.data || null) as Shipment | null;
+    let shipment = (result.data || null) as Shipment | null;
 
-    if (!result.error && shipment) {
-      await replaceItems(storeId, shipment.id, input);
+    if (result.error) {
+      return { data: null, error: result.error };
     }
 
-    return {
-      data: shipment,
-      error: result.error,
-    };
+    if (!shipment) {
+      return {
+        data: null,
+        error: { message: "El envío fue procesado, pero Supabase no devolvió el registro creado." },
+      };
+    }
+
+    // Protección para instalaciones donde el RPC create_numbered_shipment
+    // todavía no copia trip_id desde p_payload. El envío se vincula aquí y
+    // se vuelve a leer antes de continuar.
+    if (tripId && shipment.trip_id !== tripId) {
+      const assignment = await supabase
+        .from("shipments")
+        .update({ trip_id: tripId, updated_at: now, updated_by: userId || null })
+        .eq("store_id", storeId)
+        .eq("id", shipment.id)
+        .select("*")
+        .single<Shipment>();
+
+      if (assignment.error) {
+        return { data: null, error: assignment.error };
+      }
+
+      shipment = assignment.data;
+    }
+
+    await replaceItems(storeId, shipment.id, input);
+
+    return { data: shipment, error: null };
   }
 
   const result = await supabase.from("shipments").update(data).eq("store_id", storeId).eq("id", shipmentId).select("*").single<Shipment>();

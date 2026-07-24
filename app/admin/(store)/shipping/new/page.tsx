@@ -171,18 +171,24 @@ export default function NewShipmentPage() {
     if (!selectedTripId) throw new Error("Selecciona el viaje al que pertenece este envío.");
 
     setSubmitting(true);
-    const { data, error } = await createShipment(
-      activeStore.id,
-      { ...input, trip_id: selectedTripId },
-      access?.profile?.id
-    );
-    setSubmitting(false);
+    try {
+      const { data, error } = await createShipment(
+        activeStore.id,
+        { ...input, trip_id: selectedTripId },
+        access?.profile?.id
+      );
 
-    if (error) throw new Error(error.message);
+      if (error) throw new Error(error.message);
+      if (!data?.id) throw new Error("El envío se creó sin devolver un identificador válido.");
+      if (data.trip_id !== selectedTripId) {
+        throw new Error("El envío se creó, pero no quedó vinculado al viaje seleccionado.");
+      }
 
-    const createdId = data?.id ? `?created=${encodeURIComponent(data.id)}` : "";
-    router.push(`/admin/shipping/trips/${selectedTripId}${createdId}`);
-    router.refresh();
+      router.push(`/admin/shipping/trips/${selectedTripId}?created=${encodeURIComponent(data.id)}`);
+      router.refresh();
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (accessLoading || storeLoading || loadingConfig) {

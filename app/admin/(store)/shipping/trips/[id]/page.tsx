@@ -34,6 +34,7 @@ import {
 import {
   changeShippingTripStatus,
   closeShippingTrip,
+  deleteEmptyShippingTrip,
   getOpenShippingTripsByStoreId,
   getShipmentsByTripId,
   getShippingTripById,
@@ -181,6 +182,30 @@ export default function ShippingTripDetailPage() {
     setWorking(false);
   }
 
+
+  async function deleteTrip() {
+    if (!activeStore?.id || !trip) return;
+
+    if (shipments.length > 0) {
+      setError(`Este viaje contiene ${shipments.length} envío(s). Muévelos a otro viaje antes de eliminarlo.`);
+      return;
+    }
+
+    if (!window.confirm(`¿Eliminar definitivamente el viaje “${trip.name}”? Esta acción no se puede deshacer.`)) return;
+
+    setWorking(true);
+    setError("");
+    const result = await deleteEmptyShippingTrip(activeStore.id, trip.id);
+    setWorking(false);
+
+    if (result.error) {
+      setError(result.error.message || "No se pudo eliminar el viaje.");
+      return;
+    }
+
+    router.push("/admin/shipping/trips");
+    router.refresh();
+  }
   async function closeTrip(force = false) {
     if (!activeStore?.id || !trip) return;
     setWorking(true);
@@ -365,7 +390,7 @@ export default function ShippingTripDetailPage() {
         <header className="rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0a2d63] to-[#1554a6] p-6 text-white shadow-xl md:p-8">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div><p className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">Viaje {trip.trip_number}</p><h1 className="mt-2 text-3xl font-black md:text-4xl">{trip.name}</h1><p className="mt-2 font-semibold text-blue-100/80">{trip.origin || "Origen sin definir"} → {trip.destination || "Destino sin definir"}</p><span className="mt-4 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-black">{getShippingTripStatusLabel(trip.status)}</span></div>
-            {canManage && !tripClosed && <div className="flex flex-wrap gap-2">{trip.status === "preparing" && <Action icon={<Truck size={18} />} label="Salió hacia Cuba" onClick={() => setTripStatus("in_transit")} disabled={working} />}{trip.status === "in_transit" && <Action icon={<Ship size={18} />} label="Recibido en Cuba" onClick={() => setTripStatus("received_cuba")} disabled={working} />}{trip.status === "received_cuba" && <Action icon={<Package size={18} />} label="Comenzar reparto" onClick={() => setTripStatus("in_delivery")} disabled={working} />}<button onClick={() => closeTrip(false)} disabled={working} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black text-white disabled:opacity-50"><CheckCircle2 size={18} />Cerrar viaje</button></div>}
+            {canManage && <div className="flex flex-wrap gap-2">{!tripClosed && trip.status === "preparing" && <Action icon={<Truck size={18} />} label="Salió hacia Cuba" onClick={() => setTripStatus("in_transit")} disabled={working} />}{!tripClosed && trip.status === "in_transit" && <Action icon={<Ship size={18} />} label="Recibido en Cuba" onClick={() => setTripStatus("received_cuba")} disabled={working} />}{!tripClosed && trip.status === "received_cuba" && <Action icon={<Package size={18} />} label="Comenzar reparto" onClick={() => setTripStatus("in_delivery")} disabled={working} />}{!tripClosed && <button onClick={() => closeTrip(false)} disabled={working} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black text-white disabled:opacity-50"><CheckCircle2 size={18} />Cerrar viaje</button>}<button onClick={deleteTrip} disabled={working || shipments.length > 0} title={shipments.length > 0 ? "Mueve los envíos a otro viaje antes de eliminarlo" : "Eliminar viaje vacío"} className="inline-flex items-center gap-2 rounded-2xl border border-rose-300 bg-white px-5 py-3 font-black text-rose-700 disabled:cursor-not-allowed disabled:opacity-40"><Trash2 size={18} />Eliminar viaje</button></div>}
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5"><Metric label="Envíos" value={shipments.length.toString()} /><Metric label="Pendientes" value={open.toString()} /><Metric label="Entregados" value={delivered.toString()} /><Metric label="Libras" value={totalWeight.toFixed(1)} /><Metric label="Facturado" value={money(billed)} /></div>
           <div className="mt-5 rounded-2xl bg-white/10 p-4"><div className="flex items-center justify-between gap-4 text-sm font-black"><span>Progreso operativo</span><span>{progress}%</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-xs font-semibold text-blue-100/80">{delivered} entregados · {issues} incidencias · {open} pendientes</p></div>
