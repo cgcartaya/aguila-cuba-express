@@ -119,12 +119,15 @@ export async function POST(request: NextRequest) {
       Number(rate.minimum_charge || 0)
     );
     const pickupAmount = body.pickup_requested && ["paid", "optional"].includes(settings.pickup_mode)
-      ? Number(settings.pickup_fee || 0)
+      ? Number(settings.pickup_fee || 20)
       : 0;
+    const categoryValue = `${service.code || ""} ${service.name || ""} ${clean(body.item_category)}`.toLowerCase();
+    const isEnergyStation = /energ|power|station|bater/.test(categoryValue);
+    const airportFeeAmount = isEnergyStation && ["air", "express"].includes(transportMode) ? 50 : 0;
     let insuranceAmount = 0;
     if (body.insurance_requested && settings.insurance_mode === "optional_fixed") insuranceAmount = Number(settings.insurance_value || 0);
     if (body.insurance_requested && settings.insurance_mode === "optional_percentage") insuranceAmount = shippingAmount * Number(settings.insurance_value || 0) / 100;
-    const totalAmount = shippingAmount + pickupAmount + insuranceAmount;
+    const totalAmount = shippingAmount + airportFeeAmount + pickupAmount + insuranceAmount;
 
     const destinationLabel = [countryResult.data?.name, provinceResult.data?.name, municipalityResult.data?.name, locationResult.data?.name].filter(Boolean).join(" / ");
     const payload = {
@@ -135,7 +138,7 @@ export async function POST(request: NextRequest) {
       origin_label: settings.default_origin_label,
       service_type_id: serviceTypeId,
       transport_mode: transportMode,
-      item_category: service.code || "service",
+      item_category: clean(body.item_category) || service.code || "service",
       country_id: countryId,
       province_id: provinceId,
       municipality_id: municipalityId,
@@ -146,7 +149,7 @@ export async function POST(request: NextRequest) {
       pickup_requested: Boolean(body.pickup_requested),
       pickup_address: clean(body.pickup_address) || null,
       insurance_requested: Boolean(body.insurance_requested),
-      base_amount: shippingAmount,
+      base_amount: shippingAmount + airportFeeAmount,
       pickup_amount: pickupAmount,
       insurance_amount: insuranceAmount,
       total_amount: totalAmount,
@@ -155,7 +158,7 @@ export async function POST(request: NextRequest) {
       estimated_days_max: rate.estimated_days_max,
       rate_rule_id: null,
       shipping_rate_id: rate.id,
-      notes: clean(body.notes) || null,
+      notes: [clean(body.notes), airportFeeAmount ? "Fee aeroportuario: $50.00" : ""].filter(Boolean).join(" | ") || null,
     };
 
     const { data: quote, error: insertError } = await supabaseAdmin
@@ -175,11 +178,16 @@ export async function POST(request: NextRequest) {
       `Hola, deseo continuar con esta cotización de ${store.name}.\n` +
       `Código: ${quote.public_code}\nServicio: ${service.name}\n` +
       `Destino: ${destinationLabel || "Por confirmar"}\nPeso real: ${weight} lb\n` +
-      `Peso facturable: ${billableWeight} lb\nMétodo: ${transportMode}\nTotal estimado: ${formattedTotal}`
+      `Peso facturable: ${billableWeight} lb\nMétodo: ${transportMode}\n` +
+      `${airportFeeAmount ? "Fee aeroportuario: $50.00\n" : ""}` +
+      `${pickupAmount ? `Recogida: $${pickupAmount.toFixed(2)}\n` : ""}` +
+      `Total estimado: ${formattedTotal}`
     );
 
     return NextResponse.json({
       ...quote,
+      shipping_amount: shippingAmount,
+      airport_fee_amount: airportFeeAmount,
       billable_weight_lb: billableWeight,
       applied_rate: Number(rate.rate_per_lb),
       billing_mode: "per_lb",

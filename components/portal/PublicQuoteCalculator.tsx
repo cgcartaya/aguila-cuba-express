@@ -58,6 +58,8 @@ type QuoteResult = {
   base_amount: number;
   pickup_amount: number;
   insurance_amount: number;
+  airport_fee_amount?: number;
+  shipping_amount?: number;
   currency: string;
   estimated_days_min?: number | null;
   estimated_days_max?: number | null;
@@ -69,7 +71,25 @@ type QuoteResult = {
 };
 
 const modeLabels: Record<string, string> = { air: "Aéreo", sea: "Marítimo", express: "Express", ground: "Terrestre", other: "Otro" };
-const categoryLabels: Record<string, string> = { package: "Paquete normal", appliance: "Electrodoméstico", medicine: "Medicinas", documents: "Documentos", food: "Alimentos", electronics: "Electrónica", other: "Otro" };
+const categoryDescriptions: Record<string, string> = {
+  miscelaneas: "Aseo, medicinas, comida, ropa y zapatos",
+  duraderos: "Electrónicos y artículos del hogar",
+  energia: "Estaciones de energía y equipos similares",
+};
+
+function normalizeCategory(service?: Service) {
+  const value = `${service?.code || ""} ${service?.name || ""}`.toLowerCase();
+  if (/energ|power|station|bater/.test(value)) return "energia";
+  if (/durader|electr|hogar|appliance/.test(value)) return "duraderos";
+  return "miscelaneas";
+}
+
+function categoryLabel(service?: Service) {
+  const category = normalizeCategory(service);
+  if (category === "energia") return "Estación de energía";
+  if (category === "duraderos") return "Duraderos";
+  return "Misceláneas";
+}
 const modeIcons = { air: Plane, sea: Ship, express: Plane, ground: Truck, other: Package };
 
 const initialForm = {
@@ -112,7 +132,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           service_type_id: json.services?.[0]?.id || "",
           country_id: json.countries?.[0]?.id || "",
           transport_mode: json.transportModes?.[0] || "",
-          item_category: "service",
+          item_category: normalizeCategory(json.services?.[0]),
         }));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "No se pudo cargar el cotizador.");
@@ -134,7 +154,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
 
   function nextStep() {
     if (step === 1 && (!form.service_type_id || !form.transport_mode)) {
-      setError("Selecciona el servicio y el método de transporte.");
+      setError("Selecciona la categoría y la modalidad de envío.");
       return;
     }
     if (step === 2 && (!form.country_id || Number(form.weight_lb) <= 0)) {
@@ -188,7 +208,11 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
   }
 
   const primary = config.store.primary_color || "#071d43";
-  const selectedService = config.services.find((item) => item.id === form.service_type_id)?.name || "Servicio";
+  const selectedServiceObject = config.services.find((item) => item.id === form.service_type_id);
+  const selectedService = categoryLabel(selectedServiceObject);
+  const selectedCategory = normalizeCategory(selectedServiceObject);
+  const pickupFee = Number(config.settings.pickup_fee || 20);
+  const airportFeeApplies = selectedCategory === "energia" && ["air", "express"].includes(form.transport_mode);
   const selectedCountry = config.countries.find((item) => item.id === form.country_id)?.name || "Destino";
 
   return (
@@ -208,9 +232,9 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
 
         <div className="p-5 sm:p-8">
           {step === 1 && <div className="space-y-7">
-            <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text="Selecciona el servicio y la modalidad que mejor se ajusten a tu envío." />
-            <Field label="Tipo de servicio"><select value={form.service_type_id} onChange={(event) => setField("service_type_id", event.target.value)} required><option value="">Selecciona un servicio</option>{config.services.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-            <div><p className="text-sm font-black text-slate-700">Método de transporte</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div></div>
+            <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text="Primero selecciona la categoría del contenido y después la modalidad de envío." />
+            <div><p className="text-sm font-black text-slate-700">Categoría del envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.services.map((item) => { const active = form.service_type_id === item.id; const category = normalizeCategory(item); const label = categoryLabel(item); return <button type="button" key={item.id} onClick={() => { setField("service_type_id", item.id); setField("item_category", category); }} className={`rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Package className={active ? "text-blue-700" : "text-slate-400"}/><b className="mt-3 block text-slate-900">{label}</b><small className="mt-1 block leading-5 text-slate-500">{categoryDescriptions[category]}</small>{category === "energia" && <span className="mt-3 block rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">Express y Aéreo: fee aeroportuario de $50</span>}</button>; })}</div></div>
+            <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div>{airportFeeApplies && <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Esta modalidad incluye un fee aeroportuario adicional de $50 para estaciones de energía.</p>}</div>
           </div>}
 
           {step === 2 && <div className="space-y-7">
@@ -223,14 +247,14 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
               <Field label="Peso estimado (lb)"><input type="number" min="0.1" step="0.1" value={form.weight_lb} onChange={(event) => setField("weight_lb", event.target.value)} required /></Field>
               <Field label="Cantidad de bultos"><input type="number" min="1" step="1" value={form.quantity} onChange={(event) => setField("quantity", event.target.value)} required /></Field>
             </div>
-            {config.settings.pickup_mode !== "disabled" && <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${form.pickup_requested ? "border-blue-400 bg-blue-50" : "border-slate-200"}`}><input type="checkbox" checked={form.pickup_requested} onChange={(event) => setField("pickup_requested", event.target.checked)} className="mt-1" /><span><b className="text-slate-900">Solicitar recogida a domicilio</b><small className="block text-slate-500">{config.settings.pickup_mode === "free" ? "Recogida gratuita" : config.settings.pickup_fee ? `Cargo: $${config.settings.pickup_fee}` : "La agencia confirmará el cargo"}</small></span></label>}
+            {config.settings.pickup_mode !== "disabled" && <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${form.pickup_requested ? "border-blue-400 bg-blue-50" : "border-slate-200"}`}><input type="checkbox" checked={form.pickup_requested} onChange={(event) => setField("pickup_requested", event.target.checked)} className="mt-1" /><span><b className="text-slate-900">Solicitar recogida a domicilio</b><small className="block text-slate-500">{config.settings.pickup_mode === "free" ? "Recogida gratuita" : `Cargo fijo: $${pickupFee.toFixed(2)} USD`}</small></span></label>}
             {form.pickup_requested && <Field label="Dirección de recogida"><input value={form.pickup_address} onChange={(event) => setField("pickup_address", event.target.value)} required /></Field>}
           </div>}
 
           {step === 3 && <div className="space-y-7">
             <StepTitle icon={<UserRound />} title="¿Cómo te contactamos?" text="Guardaremos la cotización y la agencia podrá ayudarte a continuar." />
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Nombre"><input value={form.customer_name} onChange={(event) => setField("customer_name", event.target.value)} required /></Field><Field label="Teléfono"><input value={form.customer_phone} onChange={(event) => setField("customer_phone", event.target.value)} required inputMode="tel" /></Field><Field label="Correo (opcional)"><input type="email" value={form.customer_email} onChange={(event) => setField("customer_email", event.target.value)} /></Field><Field label="Notas (opcional)"><input value={form.notes} onChange={(event) => setField("notes", event.target.value)} placeholder="Ej.: electrodoméstico, medicina, dimensiones..." /></Field></div>
-            <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Resumen antes de calcular</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><Summary label="Servicio" value={selectedService} /><Summary label="Método" value={modeLabels[form.transport_mode] || form.transport_mode} /><Summary label="Destino" value={selectedCountry} /><Summary label="Peso" value={`${form.weight_lb} lb`} /></div></div>
+            <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Resumen antes de calcular</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><Summary label="Categoría" value={selectedService} /><Summary label="Método" value={modeLabels[form.transport_mode] || form.transport_mode} /><Summary label="Destino" value={selectedCountry} /><Summary label="Peso" value={`${form.weight_lb} lb`} /></div></div>
           </div>}
 
           {error && <p className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</p>}
@@ -252,7 +276,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           <CheckCircle2 size={46} className="text-emerald-300" />
           <p className="mt-4 text-sm font-black uppercase tracking-wider text-white/60">{result.public_code}</p>
           <h2 className="mt-2 text-3xl font-black">Cotización lista</h2>
-          <div className="mt-6 space-y-3 rounded-2xl bg-white/10 p-5"><ResultRow label="Envío" value={result.base_amount} /><ResultRow label="Recogida" value={result.pickup_amount} /><ResultRow label="Seguro" value={result.insurance_amount} />{result.billable_weight_lb && <div className="flex justify-between text-sm text-white/70"><span>Peso facturable</span><b>{result.billable_weight_lb} lb</b></div>}<div className="border-t border-white/15 pt-4"><div className="flex items-end justify-between gap-3"><b>Total estimado</b><strong className="text-3xl">{new Intl.NumberFormat("en-US", { style: "currency", currency: result.currency }).format(result.total_amount)}</strong></div></div></div>
+          <div className="mt-6 space-y-3 rounded-2xl bg-white/10 p-5"><ResultRow label="Envío" value={result.shipping_amount ?? result.base_amount} />{Boolean(result.airport_fee_amount) && <ResultRow label="Fee aeroportuario" value={result.airport_fee_amount || 0} />}<ResultRow label="Recogida" value={result.pickup_amount} /><ResultRow label="Seguro" value={result.insurance_amount} />{result.billable_weight_lb && <div className="flex justify-between text-sm text-white/70"><span>Peso facturable</span><b>{result.billable_weight_lb} lb</b></div>}<div className="border-t border-white/15 pt-4"><div className="flex items-end justify-between gap-3"><b>Total estimado</b><strong className="text-3xl">{new Intl.NumberFormat("en-US", { style: "currency", currency: result.currency }).format(result.total_amount)}</strong></div></div></div>
           {(result.estimated_days_min || result.estimated_days_max) && <p className="mt-4 rounded-xl bg-white/10 p-3 text-sm font-semibold">Entrega estimada: {result.estimated_days_min ?? "?"}–{result.estimated_days_max ?? "?"} días</p>}
           {result.whatsapp_url && <a href={result.whatsapp_url} target="_blank" rel="noreferrer" className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 p-4 font-black"><MessageCircle /> Continuar por WhatsApp</a>}
           <button type="button" onClick={() => { setResult(null); setStep(1); }} className="mt-3 w-full rounded-2xl border border-white/20 p-3 font-black text-white">Crear otra cotización</button>
