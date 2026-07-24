@@ -165,7 +165,25 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
 export function createShipment(storeId: string, input: ShipmentInput, createdBy?: string | null) { return save(storeId, null, input, createdBy); }
 export function updateShipment(storeId: string, shipmentId: string, input: ShipmentInput, updatedBy?: string | null) { return save(storeId, shipmentId, input, updatedBy); }
-export function moveShipmentToTrash(storeId: string, shipmentId: string) { return supabase.from("shipments").update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("store_id", storeId).eq("id", shipmentId); }
+export function moveShipmentToTrash(storeId: string, shipmentId: string, deletedBy?: string | null) {
+  const now = new Date().toISOString();
+  return supabase.from("shipments").update({ deleted_at: now, deleted_by: deletedBy || null, deleted_with_trip_id: null, updated_at: now }).eq("store_id", storeId).eq("id", shipmentId).is("deleted_at", null);
+}
+
+export function getTrashedShipmentsByStoreId(storeId: string) {
+  return supabase.from("shipments").select("*").eq("store_id", storeId).not("deleted_at", "is", null).order("deleted_at", { ascending: false }).returns<Shipment[]>();
+}
+
+export function restoreShipment(storeId: string, shipmentId: string) {
+  return supabase.from("shipments").update({ deleted_at: null, deleted_by: null, deleted_with_trip_id: null, updated_at: new Date().toISOString() }).eq("store_id", storeId).eq("id", shipmentId).not("deleted_at", "is", null).select("*").single<Shipment>();
+}
+
+export async function permanentlyDeleteShipment(storeId: string, shipmentId: string) {
+  const itemResult = await supabase.from("shipment_items").delete().eq("store_id", storeId).eq("shipment_id", shipmentId);
+  if (itemResult.error) return itemResult;
+  await supabase.from("shipment_extra_fees").delete().eq("shipment_id", shipmentId);
+  return supabase.from("shipments").delete().eq("store_id", storeId).eq("id", shipmentId).not("deleted_at", "is", null);
+}
 
 export function updateShipmentStatus(
   storeId: string,
@@ -206,12 +224,12 @@ export function bulkUpdateShipmentStatus(
     .is("deleted_at", null);
 }
 
-export function bulkMoveShipmentsToTrash(storeId: string, shipmentIds: string[]) {
+export function bulkMoveShipmentsToTrash(storeId: string, shipmentIds: string[], deletedBy?: string | null) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
   const now = new Date().toISOString();
   return supabase
     .from("shipments")
-    .update({ deleted_at: now, updated_at: now })
+    .update({ deleted_at: now, deleted_by: deletedBy || null, deleted_with_trip_id: null, updated_at: now })
     .eq("store_id", storeId)
     .in("id", shipmentIds)
     .is("deleted_at", null);

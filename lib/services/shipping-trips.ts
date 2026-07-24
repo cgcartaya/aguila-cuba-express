@@ -11,6 +11,7 @@ export function getShippingTripsByStoreId(storeId: string) {
     .from("shipping_trips")
     .select("*")
     .eq("store_id", storeId)
+    .is("deleted_at", null)
     .order("trip_number", { ascending: false })
     .returns<ShippingTrip[]>();
 }
@@ -53,6 +54,7 @@ export function getShippingTripById(storeId: string, tripId: string) {
     .select("*")
     .eq("store_id", storeId)
     .eq("id", tripId)
+    .is("deleted_at", null)
     .maybeSingle<ShippingTrip>();
 }
 
@@ -111,6 +113,7 @@ export function getOpenShippingTripsByStoreId(storeId: string) {
     .from("shipping_trips")
     .select("*")
     .eq("store_id", storeId)
+    .is("deleted_at", null)
     .eq("status", "preparing")
     .eq("is_active", true)
     .order("is_default", { ascending: false })
@@ -153,4 +156,39 @@ export async function deleteEmptyShippingTrip(storeId: string, tripId: string) {
     .eq("id", tripId)
     .select("id")
     .single();
+}
+
+
+export function getTrashedShippingTripsByStoreId(storeId: string) {
+  return supabase.from("shipping_trips").select("*").eq("store_id", storeId).not("deleted_at", "is", null).order("deleted_at", { ascending: false }).returns<ShippingTrip[]>();
+}
+
+export async function moveShippingTripToTrash(storeId: string, tripId: string, deletedBy?: string | null) {
+  const now = new Date().toISOString();
+  const shipmentsResult = await supabase.from("shipments").update({ deleted_at: now, deleted_by: deletedBy || null, deleted_with_trip_id: tripId, updated_at: now }).eq("store_id", storeId).eq("trip_id", tripId).is("deleted_at", null);
+  if (shipmentsResult.error) return shipmentsResult;
+  return supabase.from("shipping_trips").update({ deleted_at: now, deleted_by: deletedBy || null, is_active: false, updated_at: now }).eq("store_id", storeId).eq("id", tripId).is("deleted_at", null);
+}
+
+export async function restoreShippingTrip(storeId: string, tripId: string) {
+  const now = new Date().toISOString();
+  const tripResult = await supabase.from("shipping_trips").update({ deleted_at: null, deleted_by: null, is_active: true, updated_at: now }).eq("store_id", storeId).eq("id", tripId).not("deleted_at", "is", null).select("*").single<ShippingTrip>();
+  if (tripResult.error) return tripResult;
+  const shipmentResult = await supabase.from("shipments").update({ deleted_at: null, deleted_by: null, deleted_with_trip_id: null, updated_at: now }).eq("store_id", storeId).eq("deleted_with_trip_id", tripId);
+  if (shipmentResult.error) return { data: null, error: shipmentResult.error };
+  return tripResult;
+}
+
+export async function permanentlyDeleteShippingTrip(storeId: string, tripId: string) {
+  const { data: rows, error: rowsError } = await supabase.from("shipments").select("id").eq("store_id", storeId).eq("trip_id", tripId);
+  if (rowsError) return { data: null, error: rowsError };
+  const ids = (rows || []).map((row) => row.id);
+  if (ids.length) {
+    const items = await supabase.from("shipment_items").delete().eq("store_id", storeId).in("shipment_id", ids);
+    if (items.error) return items;
+    await supabase.from("shipment_extra_fees").delete().in("shipment_id", ids);
+    const shipments = await supabase.from("shipments").delete().eq("store_id", storeId).in("id", ids);
+    if (shipments.error) return shipments;
+  }
+  return supabase.from("shipping_trips").delete().eq("store_id", storeId).eq("id", tripId).not("deleted_at", "is", null);
 }

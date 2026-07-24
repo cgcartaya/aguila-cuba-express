@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
+  Archive,
   CalendarDays,
   CircleDollarSign,
   Edit3,
@@ -223,7 +224,7 @@ export default function ShippingShipmentsPage() {
 
   async function trash(shipment: Shipment) {
     if (!activeStore?.id || !window.confirm(`¿Mover ${shipment.tracking_code || "este envío"} a la papelera?`)) return;
-    const { error } = await moveShipmentToTrash(activeStore.id, shipment.id);
+    const { error } = await moveShipmentToTrash(activeStore.id, shipment.id, access?.profile?.id);
     if (error) return alert(error.message);
     setShipments((current) => current.filter((item) => item.id !== shipment.id));
   }
@@ -251,6 +252,10 @@ export default function ShippingShipmentsPage() {
               <Link href="/admin/shipping/trips" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15">
                 <Route size={17} />
                 Viajes
+              </Link>
+              <Link href="/admin/shipping/shipments/trash" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15">
+                <Archive size={17} />
+                Papelera
               </Link>
               {canCreate && activeStore && (
                 <Link href="/admin/shipping/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-[#061b3a] shadow-lg">

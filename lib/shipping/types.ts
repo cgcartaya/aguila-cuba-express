@@ -40,6 +40,8 @@ export type ShippingTrip = {
   is_default: boolean;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
+  deleted_by: string | null;
 };
 
 export type ShippingTripInput = {
@@ -109,6 +111,8 @@ export type Shipment = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  deleted_by: string | null;
+  deleted_with_trip_id: string | null;
   tracking_code: string | null;
   status: ShippingStatus;
   public_tracking_enabled: boolean;

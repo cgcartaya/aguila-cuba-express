@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, CircleDollarSign, Loader2, Package, Plus, Route, Scale, Truck } from "lucide-react";
+import { Archive, CalendarDays, CircleDollarSign, Loader2, Package, Plus, Route, Scale, Trash2, Truck } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
-import { getShippingTripsWithStats } from "@/lib/services/shipping-trips";
+import { getShippingTripsWithStats, moveShippingTripToTrash } from "@/lib/services/shipping-trips";
 import { getShippingTripStatusLabel, type ShippingTripWithStats } from "@/lib/shipping/types";
 
 function currency(value: number) {
@@ -34,6 +34,7 @@ export default function ShippingTripsPage() {
   const [trips, setTrips] = useState<ShippingTripWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [workingId, setWorkingId] = useState<string | null>(null);
 
   const canManage = access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
 
@@ -50,6 +51,21 @@ export default function ShippingTripsPage() {
     if (!accessLoading && !storeLoading) void load();
   }, [accessLoading, activeStore?.id, storeLoading]);
 
+
+  async function trashTrip(trip: ShippingTripWithStats) {
+    if (!activeStore?.id) return;
+    const detail = trip.stats.total_shipments > 0
+      ? ` Este viaje contiene ${trip.stats.total_shipments} envío(s); también se moverán a la papelera.`
+      : "";
+    if (!window.confirm(`¿Mover “${trip.name}” a la papelera?${detail}`)) return;
+    setWorkingId(trip.id);
+    setError("");
+    const result = await moveShippingTripToTrash(activeStore.id, trip.id, access?.profile?.id);
+    if (result.error) setError(result.error.message || "No se pudo mover el viaje a la papelera.");
+    else setTrips((current) => current.filter((item) => item.id !== trip.id));
+    setWorkingId(null);
+  }
+
   if (loading || accessLoading || storeLoading) {
     return <main className="flex min-h-[60vh] items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-700" size={34} /></main>;
   }
@@ -64,7 +80,10 @@ export default function ShippingTripsPage() {
               <h1 className="mt-4 text-3xl font-black md:text-4xl">Viajes de envíos</h1>
               <p className="mt-2 max-w-2xl text-blue-100/80">Cada viaje conserva su lista de paquetes, estados, cobros y estadísticas.</p>
             </div>
-            {canManage && <Link href="/admin/shipping/trips/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a] shadow-lg"><Plus size={19} /> Crear viaje</Link>}
+            <div className="flex flex-wrap gap-3">
+              <Link href="/admin/shipping/trips/trash" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-black text-white"><Archive size={18}/> Papelera</Link>
+              {canManage && <Link href="/admin/shipping/trips/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a] shadow-lg"><Plus size={19} /> Crear viaje</Link>}
+            </div>
           </div>
         </header>
 
@@ -79,7 +98,9 @@ export default function ShippingTripsPage() {
         ) : (
           <div className="grid gap-5 xl:grid-cols-2">
             {trips.map((trip) => (
-              <Link key={trip.id} href={`/admin/shipping/trips/${trip.id}`} className="group rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl md:p-6">
+              <article key={trip.id} className="group relative rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl md:p-6">
+                <Link href={`/admin/shipping/trips/${trip.id}`} className="absolute inset-0 rounded-[2rem]" aria-label={`Abrir ${trip.name}`} />
+                <div className="relative pointer-events-none">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">Viaje {trip.trip_number}</p>
@@ -101,7 +122,9 @@ export default function ShippingTripsPage() {
                   <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700">{trip.stats.pending_shipments} pendientes</span>
                   <span className="rounded-full bg-rose-50 px-3 py-1.5 text-rose-700">{trip.stats.issue_shipments} incidencias</span>
                 </div>
-              </Link>
+                </div>
+                {canManage && <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void trashTrip(trip); }} disabled={workingId === trip.id} className="relative z-10 mt-5 inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-black text-rose-700 hover:bg-rose-50 disabled:opacity-50"><Trash2 size={16}/>{workingId === trip.id ? "Moviendo..." : "Mover a papelera"}</button>}
+              </article>
             ))}
           </div>
         )}
