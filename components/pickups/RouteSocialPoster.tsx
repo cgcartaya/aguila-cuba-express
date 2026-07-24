@@ -5,7 +5,6 @@ import {
   Check,
   Download,
   ImageIcon,
-  Instagram,
   LayoutTemplate,
   Loader2,
   MessageCircle,
@@ -54,7 +53,7 @@ const FORMATS: Record<PosterFormat, FormatDefinition> = {
     description: "Instagram / Facebook · 1080×1350",
     width: 1080,
     height: 1350,
-    icon: <Instagram size={17} />,
+    icon: <ImageIcon size={17} />,
   },
   story: {
     label: "Story",
