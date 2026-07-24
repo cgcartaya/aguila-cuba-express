@@ -73,37 +73,15 @@ export function PickupSection() {
             ))}
           </div>
 
-        <Button
-    asChild
-    className="..."
->
   <a
   href="#solicitar-recogida"
-  className="
-    inline-flex
-    items-center
-    justify-center
-    gap-2
-    rounded-2xl
-    bg-red-600
-    px-8
-    py-4
-    font-semibold
-    text-white
-    shadow-xl
-    transition-all
-    duration-300
-    hover:scale-105
-    hover:bg-red-700
-    hover:shadow-red-500/40
-  "
+  className="group mt-6 inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#d71920] to-red-500 px-7 py-4 font-black text-white shadow-[0_18px_40px_rgba(215,25,32,.28)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_rgba(215,25,32,.38)]"
 >
   <Truck className="h-5 w-5" />
-
   Solicitar recogida a domicilio
-
-  <ArrowRight className="h-5 w-5" />
+  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
 </a>
+  
         </div>
       </div>
     </section>
