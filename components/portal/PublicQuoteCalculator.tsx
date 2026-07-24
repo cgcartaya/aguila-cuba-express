@@ -71,13 +71,21 @@ type QuoteResult = {
 };
 
 const modeLabels: Record<string, string> = { air: "Aéreo", sea: "Marítimo", express: "Express", ground: "Terrestre", other: "Otro" };
-const categoryDescriptions: Record<string, string> = {
+type CategoryKey = "miscelaneas" | "duraderos" | "energia";
+
+const categoryDescriptions: Record<CategoryKey, string> = {
   miscelaneas: "Aseo, medicinas, comida, ropa y zapatos",
   duraderos: "Electrónicos y artículos del hogar",
   energia: "Estaciones de energía y equipos similares",
 };
 
-function normalizeCategory(service?: Service) {
+const categoryOptions: Array<{ key: CategoryKey; label: string }> = [
+  { key: "miscelaneas", label: "Misceláneas" },
+  { key: "duraderos", label: "Duraderos" },
+  { key: "energia", label: "Estación de energía" },
+];
+
+function normalizeCategory(service?: Service): CategoryKey {
   const value = `${service?.code || ""} ${service?.name || ""}`.toLowerCase();
   if (/energ|power|station|bater/.test(value)) return "energia";
   if (/durader|electr|hogar|appliance/.test(value)) return "duraderos";
@@ -132,7 +140,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           service_type_id: json.services?.[0]?.id || "",
           country_id: json.countries?.[0]?.id || "",
           transport_mode: json.transportModes?.[0] || "",
-          item_category: normalizeCategory(json.services?.[0]),
+          item_category: "miscelaneas",
         }));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "No se pudo cargar el cotizador.");
@@ -145,6 +153,30 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
   const provinces = useMemo(() => config?.provinces.filter((item) => item.country_id === form.country_id) || [], [config, form.country_id]);
   const municipalities = useMemo(() => config?.municipalities.filter((item) => item.province_id === form.province_id) || [], [config, form.province_id]);
   const locations = useMemo(() => config?.locations.filter((item) => item.municipality_id === form.municipality_id) || [], [config, form.municipality_id]);
+
+  const serviceByCategory = useMemo(() => {
+    const services = config?.services || [];
+    const first = services[0];
+    const misc = services.find((item) => normalizeCategory(item) === "miscelaneas") || first;
+    const durable = services.find((item) => normalizeCategory(item) === "duraderos") || misc || first;
+    const energy = services.find((item) => normalizeCategory(item) === "energia") || durable || misc || first;
+    return { miscelaneas: misc, duraderos: durable, energia: energy };
+  }, [config]);
+
+  function selectCategory(category: CategoryKey) {
+    const service = serviceByCategory[category];
+    if (!service) {
+      setError("No existe un servicio configurado para calcular esta categoría.");
+      return;
+    }
+    setResult(null);
+    setError("");
+    setForm((current) => ({
+      ...current,
+      service_type_id: service.id,
+      item_category: category,
+    }));
+  }
 
   function setField<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setResult(null);
@@ -209,8 +241,8 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
 
   const primary = config.store.primary_color || "#071d43";
   const selectedServiceObject = config.services.find((item) => item.id === form.service_type_id);
-  const selectedService = categoryLabel(selectedServiceObject);
-  const selectedCategory = normalizeCategory(selectedServiceObject);
+  const selectedCategory = (form.item_category || normalizeCategory(selectedServiceObject)) as CategoryKey;
+  const selectedService = categoryOptions.find((item) => item.key === selectedCategory)?.label || categoryLabel(selectedServiceObject);
   const pickupFee = Number(config.settings.pickup_fee || 20);
   const airportFeeApplies = selectedCategory === "energia" && ["air", "express"].includes(form.transport_mode);
   const selectedCountry = config.countries.find((item) => item.id === form.country_id)?.name || "Destino";
@@ -233,7 +265,31 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
         <div className="p-5 sm:p-8">
           {step === 1 && <div className="space-y-7">
             <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text="Primero selecciona la categoría del contenido y después la modalidad de envío." />
-            <div><p className="text-sm font-black text-slate-700">Categoría del envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.services.map((item) => { const active = form.service_type_id === item.id; const category = normalizeCategory(item); const label = categoryLabel(item); return <button type="button" key={item.id} onClick={() => { setField("service_type_id", item.id); setField("item_category", category); }} className={`rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Package className={active ? "text-blue-700" : "text-slate-400"}/><b className="mt-3 block text-slate-900">{label}</b><small className="mt-1 block leading-5 text-slate-500">{categoryDescriptions[category]}</small>{category === "energia" && <span className="mt-3 block rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">Express y Aéreo: fee aeroportuario de $50</span>}</button>; })}</div></div>
+            <div>
+              <p className="text-sm font-black text-slate-700">Categoría del envío</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                {categoryOptions.map(({ key, label }) => {
+                  const active = selectedCategory === key;
+                  return (
+                    <button
+                      type="button"
+                      key={key}
+                      onClick={() => selectCategory(key)}
+                      className={`rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}
+                    >
+                      <Package className={active ? "text-blue-700" : "text-slate-400"} />
+                      <b className="mt-3 block text-slate-900">{label}</b>
+                      <small className="mt-1 block leading-5 text-slate-500">{categoryDescriptions[key]}</small>
+                      {key === "energia" && (
+                        <span className="mt-3 block rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold leading-5 text-amber-800">
+                          Fee aeroportuario de $50 en Express o Aéreo. Marítimo no lleva este cargo.
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div>{airportFeeApplies && <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Esta modalidad incluye un fee aeroportuario adicional de $50 para estaciones de energía.</p>}</div>
           </div>}
 

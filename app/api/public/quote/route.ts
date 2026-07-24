@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const transportMode = clean(body.transport_mode);
 
     if (!customerName || !phone || !serviceTypeId || !transportMode || !Number.isFinite(weight) || weight <= 0) {
-      return NextResponse.json({ error: "Completa nombre, teléfono, servicio, método y peso correctamente." }, { status: 400 });
+      return NextResponse.json({ error: "Completa nombre, teléfono, categoría, modalidad y peso correctamente." }, { status: 400 });
     }
 
     const { data: settings, error: settingsError } = await supabaseAdmin
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
     const formattedTotal = new Intl.NumberFormat("en-US", { style: "currency", currency: quote.currency }).format(quote.total_amount);
     const message = encodeURIComponent(
       `Hola, deseo continuar con esta cotización de ${store.name}.\n` +
-      `Código: ${quote.public_code}\nServicio: ${service.name}\n` +
+      `Código: ${quote.public_code}\nCategoría: ${clean(body.item_category) || service.name}\n` +
       `Destino: ${destinationLabel || "Por confirmar"}\nPeso real: ${weight} lb\n` +
       `Peso facturable: ${billableWeight} lb\nMétodo: ${transportMode}\n` +
       `${airportFeeAmount ? "Fee aeroportuario: $50.00\n" : ""}` +
