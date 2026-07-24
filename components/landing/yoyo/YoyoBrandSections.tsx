@@ -73,8 +73,36 @@ export function PickupSection() {
             ))}
           </div>
 
-         <a href="#solicitar-recogida">
+        <Button
+    asChild
+    className="..."
+>
+  <a
+  href="#solicitar-recogida"
+  className="
+    inline-flex
+    items-center
+    justify-center
+    gap-2
+    rounded-2xl
+    bg-red-600
+    px-8
+    py-4
+    font-semibold
+    text-white
+    shadow-xl
+    transition-all
+    duration-300
+    hover:scale-105
+    hover:bg-red-700
+    hover:shadow-red-500/40
+  "
+>
+  <Truck className="h-5 w-5" />
+
   Solicitar recogida a domicilio
+
+  <ArrowRight className="h-5 w-5" />
 </a>
         </div>
       </div>
