@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -13,6 +13,7 @@ import {
   Navigation,
   Search,
   Truck,
+  X,
 } from "lucide-react";
 
 type PublicCity = { name: string; latitude: number | null; longitude: number | null; order: number };
@@ -153,6 +154,8 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [showAllStops, setShowAllStops] = useState(false);
 
   useEffect(() => {
     fetch(`/api/pickups/routes/public?store=${encodeURIComponent(storeSlug)}`)
@@ -161,7 +164,23 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
       .finally(() => setLoading(false));
   }, [storeSlug]);
 
-  const activeRoute = payload.routes.find((route) => route.status === "in_progress") || payload.routes[0];
+  const preferredRoute = payload.routes.find((route) => route.status === "in_progress") || payload.routes[0];
+  const activeRoute = payload.routes.find((route) => route.id === selectedRouteId) || preferredRoute;
+
+  useEffect(() => {
+    if (!selectedRouteId && preferredRoute?.id) setSelectedRouteId(preferredRoute.id);
+  }, [preferredRoute?.id, selectedRouteId]);
+
+  useEffect(() => { setShowAllStops(false); }, [activeRoute?.id]);
+
+  const visibleStops = useMemo(() => {
+    if (!activeRoute) return [];
+    if (activeRoute.cities.length <= 6) return activeRoute.cities.map((city, index) => ({ city, index }));
+    return [
+      ...activeRoute.cities.slice(0, 4).map((city, index) => ({ city, index })),
+      { city: activeRoute.cities[activeRoute.cities.length - 1], index: activeRoute.cities.length - 1 },
+    ];
+  }, [activeRoute]);
   const match = useMemo(() => {
     if (!searched || !query.trim()) return null;
     const target = normalize(query);
@@ -181,8 +200,40 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
           <p className="mt-5 text-base font-semibold leading-7 text-slate-500 sm:text-lg sm:leading-8">Las ciudades se actualizan automáticamente cuando YOYO publica o inicia una ruta. Nunca mostramos direcciones de clientes.</p>
         </div>
 
+        {payload.routes.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[.18em] text-blue-700">Próximas rutas publicadas</p>
+                <p className="mt-2 font-semibold text-slate-500">Selecciona una fecha para ver su recorrido.</p>
+              </div>
+              <p className="hidden text-sm font-bold text-slate-400 sm:block">{payload.routes.length} {payload.routes.length === 1 ? "ruta disponible" : "rutas disponibles"}</p>
+            </div>
+            <div className="route-tabs mt-5 flex gap-3 overflow-x-auto pb-3">
+              {payload.routes.map((route) => {
+                const selected = activeRoute?.id === route.id;
+                return (
+                  <button
+                    key={route.id}
+                    type="button"
+                    onClick={() => setSelectedRouteId(route.id)}
+                    className={`min-w-[180px] shrink-0 rounded-2xl border px-4 py-4 text-left transition sm:min-w-[210px] ${selected ? "border-[#071d43] bg-[#071d43] text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:shadow-md"}`}
+                  >
+                    <p className={`text-[10px] font-black uppercase tracking-[.14em] ${selected ? "text-blue-200" : "text-slate-400"}`}>{routeDate(route.route_date)}</p>
+                    <p className="mt-1 truncate text-base font-black">{route.name}</p>
+                    <div className={`mt-3 flex items-center justify-between text-xs font-bold ${selected ? "text-blue-100/75" : "text-slate-500"}`}>
+                      <span>{route.cities.length} ciudades</span>
+                      <span className={`rounded-full px-2 py-1 ${route.status === "in_progress" ? "bg-emerald-500/20 text-emerald-300" : selected ? "bg-white/10" : "bg-amber-50 text-amber-700"}`}>{route.status === "in_progress" ? "En recorrido" : "Abierta"}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {activeRoute ? (
-          <div className="mt-12 grid min-w-0 gap-7 lg:grid-cols-[1.15fr_.85fr] lg:items-stretch">
+          <div className="mt-7 grid min-w-0 gap-7 lg:grid-cols-[1.15fr_.85fr] lg:items-stretch">
             <RouteMap route={activeRoute} />
             <article className="relative min-w-0 overflow-hidden rounded-[2rem] bg-[#071d43] p-6 text-white shadow-[0_25px_80px_rgba(7,29,67,.22)] sm:p-8">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/15" />
@@ -201,17 +252,31 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 </div>
 
                 <ol className="relative mt-6 space-y-0 before:absolute before:bottom-4 before:left-[15px] before:top-4 before:w-px before:bg-white/15">
-                  {activeRoute.cities.map((city, index) => {
+                  {visibleStops.map(({ city, index }, visibleIndex) => {
                     const active = activeRoute.status === "in_progress" && index === 0;
                     return (
-                      <li key={`${city.name}-${index}`} className="relative flex items-center gap-3 py-2.5">
-                        <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-black ${active ? "border-emerald-300 bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,.14)]" : "border-white/10 bg-[#102b58]"}`}>{active ? <Truck size={14} /> : index + 1}</span>
-                        <div className="min-w-0 flex-1"><p className="truncate font-black">{city.name}</p><p className="text-xs font-semibold text-blue-100/55">{active ? "Próxima parada" : index === 0 ? "Inicio del recorrido" : "Parada programada"}</p></div>
-                        <MapPin size={15} className={active ? "text-emerald-300" : "text-red-300"} />
-                      </li>
+                      <Fragment key={`${city.name}-${index}`}>
+                        {visibleIndex === 4 && index > 4 && (
+                          <li className="relative flex items-center gap-3 py-2">
+                            <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-white/20 bg-[#102b58] text-sm font-black text-blue-100">+</span>
+                            <p className="text-sm font-black text-blue-100/70">{index - 4} paradas intermedias</p>
+                          </li>
+                        )}
+                        <li className="relative flex items-center gap-3 py-2.5">
+                          <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-black ${active ? "border-emerald-300 bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,.14)]" : "border-white/10 bg-[#102b58]"}`}>{active ? <Truck size={14} /> : index + 1}</span>
+                          <div className="min-w-0 flex-1"><p className="truncate font-black">{city.name}</p><p className="text-xs font-semibold text-blue-100/55">{active ? "Próxima parada" : index === 0 ? "Inicio del recorrido" : index === activeRoute.cities.length - 1 ? "Última parada" : "Parada programada"}</p></div>
+                          <MapPin size={15} className={active ? "text-emerald-300" : "text-red-300"} />
+                        </li>
+                      </Fragment>
                     );
                   })}
                 </ol>
+
+                {activeRoute.cities.length > 6 && (
+                  <button type="button" onClick={() => setShowAllStops(true)} className="mt-3 w-full rounded-xl border border-white/10 bg-white/[.05] px-4 py-3 text-sm font-black text-blue-100 transition hover:bg-white/[.1]">
+                    Ver recorrido completo · {activeRoute.cities.length} paradas
+                  </button>
+                )}
 
                 {activeRoute.public_summary && <p className="mt-5 border-t border-white/10 pt-5 font-semibold leading-7 text-blue-100/75">{activeRoute.public_summary}</p>}
                 <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">Reservar en esta ruta <ArrowRight size={18} /></button>
@@ -243,11 +308,44 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
         </div>
       </div>
 
+
+      {showAllStops && activeRoute && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={() => setShowAllStops(false)}>
+          <div className="max-h-[88vh] w-full max-w-xl overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2rem]" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 sm:px-7">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[.16em] text-blue-700">Recorrido completo</p>
+                <h3 className="mt-1 truncate text-2xl font-black text-slate-900">{activeRoute.name}</h3>
+                <p className="mt-1 text-sm font-semibold text-slate-500">{routeDate(activeRoute.route_date)} · {activeRoute.cities.length} paradas</p>
+              </div>
+              <button type="button" onClick={() => setShowAllStops(false)} className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Cerrar"><X size={20} /></button>
+            </div>
+            <div className="max-h-[65vh] overflow-y-auto px-5 py-4 sm:px-7">
+              <ol className="relative space-y-0 before:absolute before:bottom-5 before:left-[17px] before:top-5 before:w-px before:bg-slate-200">
+                {activeRoute.cities.map((city, index) => (
+                  <li key={`${city.name}-modal-${index}`} className="relative flex items-center gap-4 py-3">
+                    <span className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#071d43] text-xs font-black text-white">{index + 1}</span>
+                    <div className="min-w-0 flex-1"><p className="font-black text-slate-900">{city.name}</p><p className="text-xs font-semibold text-slate-500">{index === 0 ? "Inicio del recorrido" : index === activeRoute.cities.length - 1 ? "Última parada" : "Parada programada"}</p></div>
+                    <MapPin size={16} className="shrink-0 text-red-500" />
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="border-t border-slate-200 p-5 sm:px-7">
+              <button type="button" onClick={() => { setShowAllStops(false); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">Reservar en esta ruta <ArrowRight size={18} /></button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .route-path-flow { animation: route-dash 1.25s linear infinite; }
         .route-ring { transform-box: fill-box; transform-origin: center; animation: route-ring 1.9s ease-out infinite; }
         @keyframes route-dash { to { stroke-dashoffset: -14; } }
         @keyframes route-ring { 0% { opacity: .9; transform: scale(.75); } 75%, 100% { opacity: 0; transform: scale(1.55); } }
+        .route-tabs { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .route-tabs::-webkit-scrollbar { height: 6px; }
+        .route-tabs::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
         @media (prefers-reduced-motion: reduce) { .route-path-flow, .route-ring, .route-truck { animation: none !important; } }
       `}</style>
     </section>
