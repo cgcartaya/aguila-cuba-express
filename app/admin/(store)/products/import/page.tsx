@@ -13,15 +13,13 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { useAdminAccess } from "@/hooks/useAdminAccess";
-import { useStore } from "@/hooks/useStore";
-
 type ImportProduct = {
   row: number;
   sku: string;
   name: string;
   category: string;
   description: string;
+  description_generated: boolean;
   price: number;
   stock: number;
   image_url: string;
@@ -36,7 +34,7 @@ type CategoryRow = {
   is_active?: boolean | null;
 };
 
-const REQUIRED_COLUMNS = ["name", "category", "description", "price", "stock"];
+const REQUIRED_COLUMNS = ["name", "category", "price", "stock"];
 
 function normalize(value: unknown) {
   return String(value ?? "").trim();
@@ -58,12 +56,7 @@ function normalizeName(value: string) {
 function parseBoolean(value: unknown) {
   const normalized = normalizeKey(value);
 
-  if (
-    value === false ||
-    normalized === "false" ||
-    normalized === "no" ||
-    normalized === "0"
-  ) {
+  if (value === false || normalized === "false" || normalized === "no" || normalized === "0") {
     return false;
   }
 
@@ -71,24 +64,12 @@ function parseBoolean(value: unknown) {
 }
 
 export default function ImportProductsPage() {
-  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
-    useAdminAccess();
-
-  const { store: selectedStore, loading: storeLoading } = useStore();
-
-  const activeStore = useMemo(() => {
-    if (isSuperAdmin) {
-      return selectedStore || accessStore;
-    }
-
-    return accessStore;
-  }, [accessStore, isSuperAdmin, selectedStore]);
-
   const [products, setProducts] = useState<ImportProduct[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [message, setMessage] = useState("");
+  const [importReport, setImportReport] = useState<{ imported: number; duplicates: number; errors: number } | null>(null);
 
   const categoryMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -102,23 +83,12 @@ export default function ImportProductsPage() {
 
   useEffect(() => {
     async function loadCategories() {
-      if (accessLoading || storeLoading) return;
-
       setLoadingCategories(true);
       setMessage("");
-      setCategories([]);
-      setProducts([]);
-
-      if (!activeStore?.id) {
-        setLoadingCategories(false);
-        setMessage("No se pudo resolver la tienda activa.");
-        return;
-      }
 
       const { data, error } = await supabase
         .from("categories")
         .select("name, is_active")
-        .eq("store_id", activeStore.id)
         .order("sort_order", { ascending: true });
 
       setLoadingCategories(false);
@@ -126,7 +96,7 @@ export default function ImportProductsPage() {
       if (error) {
         console.error("Error cargando categorías:", error);
         setMessage(
-          "No pude cargar las categorías de la tienda activa desde Supabase."
+          "No pude cargar las categorías desde Supabase. Revisa que exista la tabla categories y que tenga la columna name."
         );
         return;
       }
@@ -137,29 +107,19 @@ export default function ImportProductsPage() {
         .filter(Boolean);
 
       setCategories(activeCategories);
-
-      if (activeCategories.length === 0) {
-        setMessage(
-          `La tienda ${activeStore.name} no tiene categorías activas. Crea las categorías antes de importar.`
-        );
-      }
     }
 
     loadCategories();
-  }, [accessLoading, storeLoading, activeStore?.id, activeStore?.name]);
+  }, []);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setMessage("");
     setProducts([]);
+    setImportReport(null);
 
     const file = e.target.files?.[0];
 
     if (!file) return;
-
-    if (!activeStore?.id) {
-      setMessage("No hay una tienda activa seleccionada.");
-      return;
-    }
 
     if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
       setMessage("El archivo debe ser Excel (.xlsx o .xls).");
@@ -198,7 +158,7 @@ export default function ImportProductsPage() {
 
     if (headerRowIndex === -1) {
       setMessage(
-        "No se encontró una fila de encabezados válida. Debe incluir: name, category, description, price, stock."
+        "No se encontró una fila de encabezados válida. Debe incluir: name, category, price y stock. La descripción es opcional."
       );
       return;
     }
@@ -227,23 +187,9 @@ export default function ImportProductsPage() {
         return normalizedRow;
       });
 
-    const { data: existingProducts, error: existingProductsError } =
-      await supabase
-        .from("products")
-        .select("name, sku")
-        .eq("store_id", activeStore.id)
-        .is("deleted_at", null);
-
-    if (existingProductsError) {
-      console.error(
-        "Error consultando productos existentes:",
-        existingProductsError
-      );
-      setMessage(
-        "No se pudieron consultar los productos existentes de la tienda."
-      );
-      return;
-    }
+    const { data: existingProducts } = await supabase
+      .from("products")
+      .select("name, sku");
 
     const existingNames = new Set(
       existingProducts?.map((p) => normalizeName(p.name)) || []
@@ -264,9 +210,12 @@ export default function ImportProductsPage() {
       const sku = normalize(row.sku);
       const name = normalize(row.name);
       const rawCategory = normalize(row.category);
-      const category =
-        categoryMap.get(normalizeKey(rawCategory)) || rawCategory;
-      const description = normalize(row.description);
+      const category = categoryMap.get(normalizeKey(rawCategory)) || rawCategory;
+      const rawDescription = normalize(row.description);
+      const description = rawDescription.length >= 10
+        ? rawDescription
+        : `${name || "Producto"}. Disponible en nuestra tienda.`;
+      const description_generated = rawDescription.length < 10;
       const price = Number(row.price);
       const stock = Number(row.stock);
       const image_url = normalize(row.image_url);
@@ -285,14 +234,8 @@ export default function ImportProductsPage() {
 
       if (rawCategory && !categoryMap.has(normalizeKey(rawCategory))) {
         errors.push(
-          `Categoría inválida: ${rawCategory}. Categorías válidas: ${categories.join(
-            ", "
-          )}`
+          `Categoría inválida: ${rawCategory}. Categorías válidas: ${categories.join(", ")}`
         );
-      }
-
-      if (!description || description.length < 10) {
-        errors.push("Descripción obligatoria, mínimo 10 caracteres.");
       }
 
       if (Number.isNaN(price) || price <= 0) {
@@ -308,7 +251,7 @@ export default function ImportProductsPage() {
 
       if (existingNames.has(normalizedName)) {
         status = "duplicate";
-        errors.push("Ya existe un producto con ese nombre en esta tienda.");
+        errors.push("Ya existe un producto con ese nombre.");
       }
 
       if (namesInFile.has(normalizedName)) {
@@ -319,7 +262,7 @@ export default function ImportProductsPage() {
       if (sku) {
         if (existingSkus.has(sku)) {
           status = "duplicate";
-          errors.push("Ya existe un producto con ese SKU en esta tienda.");
+          errors.push("Ya existe un producto con ese SKU.");
         }
 
         if (skusInFile.has(sku)) {
@@ -342,6 +285,7 @@ export default function ImportProductsPage() {
         name,
         category,
         description,
+        description_generated,
         price,
         stock,
         image_url,
@@ -356,18 +300,11 @@ export default function ImportProductsPage() {
   };
 
   const validProducts = products.filter((p) => p.status === "valid");
-  const duplicatedProducts = products.filter(
-    (p) => p.status === "duplicate"
-  );
+  const duplicatedProducts = products.filter((p) => p.status === "duplicate");
   const errorProducts = products.filter((p) => p.status === "error");
 
   const importProducts = async () => {
     setMessage("");
-
-    if (!activeStore?.id) {
-      setMessage("No hay una tienda activa seleccionada.");
-      return;
-    }
 
     if (validProducts.length === 0) {
       setMessage("No hay productos válidos para importar.");
@@ -377,7 +314,6 @@ export default function ImportProductsPage() {
     setLoading(true);
 
     const payload = validProducts.map((product) => ({
-      store_id: activeStore.id,
       sku: product.sku || null,
       name: product.name,
       category: product.category,
@@ -399,13 +335,13 @@ export default function ImportProductsPage() {
       return;
     }
 
-    setMessage(
-      `${validProducts.length} productos importados correctamente en ${activeStore.name}.`
-    );
-    setProducts([]);
+    setImportReport({
+      imported: validProducts.length,
+      duplicates: duplicatedProducts.length,
+      errors: errorProducts.length,
+    });
+    setMessage(`${validProducts.length} productos importados correctamente. Los duplicados y filas con errores no fueron importados.`);
   };
-
-  const pageLoading = accessLoading || storeLoading;
 
   return (
     <main className="min-h-screen bg-gray-50 p-6">
@@ -425,23 +361,11 @@ export default function ImportProductsPage() {
 
           <p className="mt-2 text-gray-500">
             Sube un Excel con columnas: sku, name, category, description, price,
-            stock, image_url, tag, is_active.
+            stock, image_url, tag, is_active. La descripción es opcional y se genera automáticamente cuando está vacía o es muy corta.
           </p>
 
-          <div className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-700">
-            Tienda activa:{" "}
-            {pageLoading
-              ? "Resolviendo..."
-              : activeStore?.name || "No seleccionada"}
-          </div>
-
-          <div className="mt-3 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
-            Categorías cargadas:{" "}
-            {loadingCategories
-              ? "Cargando..."
-              : categories.length > 0
-              ? categories.join(", ")
-              : "ninguna"}
+          <div className="mt-4 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-bold text-blue-700">
+            Categorías cargadas: {loadingCategories ? "Cargando..." : categories.length > 0 ? categories.join(", ") : "ninguna"}
           </div>
 
           <label className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed p-10 text-center hover:bg-gray-50">
@@ -456,12 +380,7 @@ export default function ImportProductsPage() {
               accept=".xlsx,.xls"
               onChange={handleFile}
               className="hidden"
-              disabled={
-                pageLoading ||
-                loadingCategories ||
-                !activeStore?.id ||
-                categories.length === 0
-              }
+              disabled={loadingCategories}
             />
           </label>
 
@@ -507,9 +426,10 @@ export default function ImportProductsPage() {
                         <p className="font-bold text-gray-900">
                           {product.name || "Sin nombre"}
                         </p>
-                        <p className="text-gray-500">
-                          {product.sku || "Sin SKU"}
-                        </p>
+                        <p className="text-gray-500">{product.sku || "Sin SKU"}</p>
+                        {product.description_generated && (
+                          <p className="mt-1 text-xs font-bold text-blue-600">Descripción generada automáticamente</p>
+                        )}
                       </div>
 
                       <p>{product.category}</p>
@@ -534,6 +454,18 @@ export default function ImportProductsPage() {
             </>
           )}
 
+
+          {importReport && (
+            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+              <p className="font-black text-emerald-900">Reporte de la importación</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-white p-3 text-emerald-700"><b className="block text-2xl">{importReport.imported}</b><span className="text-sm font-bold">Importados</span></div>
+                <div className="rounded-xl bg-white p-3 text-amber-700"><b className="block text-2xl">{importReport.duplicates}</b><span className="text-sm font-bold">Duplicados omitidos</span></div>
+                <div className="rounded-xl bg-white p-3 text-red-700"><b className="block text-2xl">{importReport.errors}</b><span className="text-sm font-bold">Con errores</span></div>
+              </div>
+            </div>
+          )}
+
           {message && (
             <div className="mt-5 rounded-2xl bg-gray-100 px-4 py-3 text-sm font-bold text-gray-700">
               {message}
@@ -542,12 +474,7 @@ export default function ImportProductsPage() {
 
           <button
             onClick={importProducts}
-            disabled={
-              loading ||
-              pageLoading ||
-              !activeStore?.id ||
-              validProducts.length === 0
-            }
+            disabled={loading || validProducts.length === 0}
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-black px-5 py-4 font-bold text-white disabled:opacity-60"
           >
             {loading ? (
@@ -556,7 +483,7 @@ export default function ImportProductsPage() {
                 Importando...
               </>
             ) : (
-              `Importar ${validProducts.length} productos válidos`
+              `Importar solamente los ${validProducts.length} válidos`
             )}
           </button>
         </div>
