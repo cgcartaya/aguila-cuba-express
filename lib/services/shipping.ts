@@ -123,8 +123,32 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
     let shipment = (result.data || null) as Shipment | null;
 
-    if (result.error) {
-      return { data: null, error: result.error };
+    if (!result.error && shipment) {
+      // Protección V15.4:
+      // Algunas versiones antiguas de create_numbered_shipment ignoran trip_id
+      // aunque llegue dentro de p_payload. Lo comprobamos y lo corregimos antes
+      // de guardar los artículos o devolver el resultado a la pantalla.
+      if (tripId && shipment.trip_id !== tripId) {
+        const tripFix = await supabase
+          .from("shipments")
+          .update({
+            trip_id: tripId,
+            updated_at: now,
+            updated_by: userId || null,
+          })
+          .eq("store_id", storeId)
+          .eq("id", shipment.id)
+          .select("*")
+          .single<Shipment>();
+
+        if (tripFix.error) {
+          return { data: shipment, error: tripFix.error };
+        }
+
+        shipment = tripFix.data;
+      }
+
+      await replaceItems(storeId, shipment.id, input);
     }
 
     if (!shipment) {
