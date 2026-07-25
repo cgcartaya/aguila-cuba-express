@@ -54,9 +54,11 @@ function resolveDestination(promotion: MarketingPromotion) {
 function PromotionImage({
   promotion,
   priority = false,
+  fit = "contain",
 }: {
   promotion: MarketingPromotion;
   priority?: boolean;
+  fit?: "contain" | "cover";
 }) {
   return (
     <Image
@@ -65,7 +67,7 @@ function PromotionImage({
       fill
       priority={priority}
       sizes="(max-width: 768px) 100vw, 50vw"
-      className="object-cover transition duration-700 group-hover:scale-[1.035]"
+      className={`${fit === "cover" ? "object-cover" : "object-contain"} transition duration-500 group-hover:scale-[1.02]`}
     />
   );
 }
@@ -180,16 +182,16 @@ export default function YoyoPromotions() {
             </p>
           </div>
 
-          <article className="group mt-10 overflow-hidden rounded-[2rem] border border-white/70 bg-slate-950 shadow-[0_30px_80px_-36px_rgba(15,23,42,0.65)]">
-            <div className="grid lg:grid-cols-[1.45fr_0.8fr]">
+          <article className="group mt-10 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-slate-950 shadow-[0_30px_80px_-36px_rgba(15,23,42,0.65)]">
+            <div className="grid lg:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
               <button
                 type="button"
                 onClick={() => setSelected(featured)}
-                className="relative min-h-[300px] overflow-hidden text-left sm:min-h-[430px]"
+                className="relative min-h-[360px] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 text-left sm:min-h-[500px] lg:min-h-[560px]"
                 aria-label={`Abrir promoción ${featured.title}`}
               >
                 <PromotionImage promotion={featured} priority />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent lg:bg-gradient-to-r lg:from-transparent lg:via-transparent lg:to-slate-950/50" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
                 <span className="absolute left-5 top-5 rounded-full bg-amber-300 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg">
                   {getAutomaticBadge(featured)}
                 </span>
@@ -240,46 +242,50 @@ export default function YoyoPromotions() {
           </article>
 
           {remaining.length > 0 && (
-            <div className="mt-7 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {remaining.map((promotion) => (
-                <article
-                  key={promotion.id}
-                  className="group overflow-hidden rounded-[1.65rem] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setSelected(promotion)}
-                    className="relative block aspect-[16/10] w-full overflow-hidden text-left"
-                    aria-label={`Abrir promoción ${promotion.title}`}
-                  >
-                    <PromotionImage promotion={promotion} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/55 via-transparent to-transparent opacity-80" />
-                    <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-blue-700 shadow-sm">
-                      {getAutomaticBadge(promotion)}
-                    </span>
-                  </button>
+            <div className={`mt-8 grid gap-6 ${remaining.length === 1 ? "grid-cols-1" : "md:grid-cols-2 xl:grid-cols-3"}`}>
+              {remaining.map((promotion) => {
+                const single = remaining.length === 1;
 
-                  <div className="p-5">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">
-                      {CATEGORY_LABELS[promotion.category]}
-                    </p>
-                    <h3 className="mt-2 text-xl font-black text-slate-950">
-                      {promotion.title}
-                    </h3>
-                    <p className="mt-2 line-clamp-2 min-h-12 text-sm leading-6 text-slate-600">
-                      {promotion.subtitle || promotion.description || "Conoce todos los detalles de esta promoción."}
-                    </p>
+                return (
+                  <article
+                    key={promotion.id}
+                    className={`group overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${single ? "mx-auto grid w-full max-w-5xl md:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]" : ""}`}
+                  >
                     <button
                       type="button"
                       onClick={() => setSelected(promotion)}
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-black text-blue-700 transition hover:gap-3"
+                      className={`relative block w-full overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 text-left ${single ? "min-h-[320px] md:min-h-[390px]" : "aspect-[4/3]"}`}
+                      aria-label={`Abrir promoción ${promotion.title}`}
                     >
-                      Ver promoción
-                      <ArrowRight className="h-4 w-4" />
+                      <PromotionImage promotion={promotion} />
+                      <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
+                      <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-blue-700 shadow-sm">
+                        {getAutomaticBadge(promotion)}
+                      </span>
                     </button>
-                  </div>
-                </article>
-              ))}
+
+                    <div className={`flex flex-col justify-center ${single ? "p-7 sm:p-9" : "p-5"}`}>
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">
+                        {CATEGORY_LABELS[promotion.category]}
+                      </p>
+                      <h3 className={`${single ? "mt-3 text-2xl sm:text-3xl" : "mt-2 text-xl"} font-black text-slate-950`}>
+                        {promotion.title}
+                      </h3>
+                      <p className={`${single ? "mt-4 text-base leading-7" : "mt-2 line-clamp-2 min-h-12 text-sm leading-6"} text-slate-600`}>
+                        {promotion.subtitle || promotion.description || "Conoce todos los detalles de esta promoción."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSelected(promotion)}
+                        className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-black text-blue-700 transition hover:gap-3"
+                      >
+                        Ver promoción
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
@@ -295,28 +301,28 @@ export default function YoyoPromotions() {
             if (event.currentTarget === event.target) setSelected(null);
           }}
         >
-          <div className="relative flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-2xl">
+          <div className="relative max-h-[94vh] w-full max-w-6xl overflow-hidden rounded-[1.75rem] bg-white shadow-2xl">
             <button
               type="button"
               onClick={() => setSelected(null)}
-              className="absolute right-3 top-3 z-10 grid h-11 w-11 place-items-center rounded-full bg-slate-950/75 text-white backdrop-blur transition hover:bg-slate-950"
+              className="absolute right-3 top-3 z-20 grid h-11 w-11 place-items-center rounded-full bg-slate-950/80 text-white backdrop-blur transition hover:bg-slate-950"
               aria-label="Cerrar promoción"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="overflow-y-auto">
-              <div className="relative aspect-[16/9] min-h-[240px] w-full bg-slate-100">
+            <div className="grid max-h-[94vh] overflow-y-auto lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] lg:overflow-hidden">
+              <div className="relative min-h-[360px] bg-gradient-to-br from-slate-100 via-white to-blue-50 sm:min-h-[520px] lg:h-[82vh] lg:max-h-[760px]">
                 <Image
                   src={selected.image_url}
                   alt={selected.title}
                   fill
-                  sizes="100vw"
-                  className="object-contain"
+                  sizes="(max-width: 1024px) 100vw, 60vw"
+                  className="object-contain p-3 sm:p-5"
                 />
               </div>
 
-              <div className="p-6 sm:p-8">
+              <div className="overflow-y-auto p-6 sm:p-8 lg:flex lg:flex-col lg:justify-center lg:p-10">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-black uppercase tracking-wider text-blue-700">
                     {CATEGORY_LABELS[selected.category]}
