@@ -120,14 +120,13 @@ export default function YoyoPromotions() {
     };
   }, [selected]);
 
-  const featured = useMemo(
-    () => promotions.find((promotion) => promotion.is_featured) ?? promotions[0],
+  const orderedPromotions = useMemo(
+    () =>
+      [...promotions].sort((a, b) => {
+        if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1;
+        return a.sort_order - b.sort_order;
+      }),
     [promotions]
-  );
-
-  const remaining = useMemo(
-    () => promotions.filter((promotion) => promotion.id !== featured?.id),
-    [featured?.id, promotions]
   );
 
   async function sharePromotion(promotion: MarketingPromotion) {
@@ -161,7 +160,7 @@ export default function YoyoPromotions() {
     );
   }
 
-  if (!featured) return null;
+  if (orderedPromotions.length === 0) return null;
 
   return (
     <>
@@ -182,112 +181,104 @@ export default function YoyoPromotions() {
             </p>
           </div>
 
-          <article className="group mt-10 overflow-hidden rounded-[2rem] border border-slate-200/70 bg-slate-950 shadow-[0_30px_80px_-36px_rgba(15,23,42,0.65)]">
-            <div className="grid lg:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
-              <button
-                type="button"
-                onClick={() => setSelected(featured)}
-                className="relative min-h-[360px] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 text-left sm:min-h-[500px] lg:min-h-[560px]"
-                aria-label={`Abrir promoción ${featured.title}`}
-              >
-                <PromotionImage promotion={featured} priority />
-                <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
-                <span className="absolute left-5 top-5 rounded-full bg-amber-300 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-lg">
-                  {getAutomaticBadge(featured)}
-                </span>
-              </button>
+          <div className="mt-9 grid gap-5 lg:grid-cols-2">
+            {orderedPromotions.map((promotion) => {
+              const destination = resolveDestination(promotion);
 
-              <div className="flex flex-col justify-center p-7 text-white sm:p-10 lg:p-12">
-                <p className="text-xs font-black uppercase tracking-[0.22em] text-sky-300">
-                  {CATEGORY_LABELS[featured.category]}
-                </p>
-                <h3 className="mt-3 text-3xl font-black leading-tight sm:text-4xl">
-                  {featured.title}
-                </h3>
-                {featured.subtitle && (
-                  <p className="mt-4 text-lg font-semibold text-slate-200">
-                    {featured.subtitle}
-                  </p>
-                )}
-                {featured.description && (
-                  <p className="mt-4 leading-7 text-slate-300">
-                    {featured.description}
-                  </p>
-                )}
-
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setSelected(featured)}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-sky-50"
-                  >
-                    Ver promoción
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-
-                  {resolveDestination(featured) && (
-                    <a
-                      href={resolveDestination(featured) ?? undefined}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white backdrop-blur transition hover:bg-white/20"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      {featured.button_text || "Solicitar información"}
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </article>
-
-          {remaining.length > 0 && (
-            <div className={`mt-8 grid gap-6 ${remaining.length === 1 ? "grid-cols-1" : "md:grid-cols-2 xl:grid-cols-3"}`}>
-              {remaining.map((promotion) => {
-                const single = remaining.length === 1;
-
-                return (
-                  <article
-                    key={promotion.id}
-                    className={`group overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${single ? "mx-auto grid w-full max-w-5xl md:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]" : ""}`}
-                  >
+              return (
+                <article
+                  key={promotion.id}
+                  className={`group relative overflow-hidden rounded-[1.75rem] border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                    promotion.is_featured
+                      ? "border-slate-900 ring-1 ring-slate-900/10"
+                      : "border-slate-200"
+                  }`}
+                >
+                  <div className="grid min-h-[300px] sm:grid-cols-[42%_58%] lg:min-h-[330px]">
                     <button
                       type="button"
                       onClick={() => setSelected(promotion)}
-                      className={`relative block w-full overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 text-left ${single ? "min-h-[320px] md:min-h-[390px]" : "aspect-[4/3]"}`}
+                      className="relative min-h-[250px] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 text-left sm:min-h-full"
                       aria-label={`Abrir promoción ${promotion.title}`}
                     >
-                      <PromotionImage promotion={promotion} />
+                      <PromotionImage promotion={promotion} priority={promotion.is_featured} />
                       <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
-                      <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-blue-700 shadow-sm">
+                      <span
+                        className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider shadow-md ${
+                          promotion.is_featured
+                            ? "bg-amber-300 text-slate-950"
+                            : "bg-white/95 text-blue-700"
+                        }`}
+                      >
                         {getAutomaticBadge(promotion)}
                       </span>
                     </button>
 
-                    <div className={`flex flex-col justify-center ${single ? "p-7 sm:p-9" : "p-5"}`}>
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-blue-600">
+                    <div
+                      className={`flex flex-col justify-center p-6 sm:p-7 ${
+                        promotion.is_featured
+                          ? "bg-slate-950 text-white"
+                          : "bg-white text-slate-950"
+                      }`}
+                    >
+                      <p
+                        className={`text-[11px] font-black uppercase tracking-[0.2em] ${
+                          promotion.is_featured ? "text-sky-300" : "text-blue-600"
+                        }`}
+                      >
                         {CATEGORY_LABELS[promotion.category]}
                       </p>
-                      <h3 className={`${single ? "mt-3 text-2xl sm:text-3xl" : "mt-2 text-xl"} font-black text-slate-950`}>
+
+                      <h3 className="mt-3 text-2xl font-black leading-tight">
                         {promotion.title}
                       </h3>
-                      <p className={`${single ? "mt-4 text-base leading-7" : "mt-2 line-clamp-2 min-h-12 text-sm leading-6"} text-slate-600`}>
-                        {promotion.subtitle || promotion.description || "Conoce todos los detalles de esta promoción."}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setSelected(promotion)}
-                        className="mt-5 inline-flex w-fit items-center gap-2 text-sm font-black text-blue-700 transition hover:gap-3"
+
+                      <p
+                        className={`mt-3 line-clamp-3 text-sm leading-6 ${
+                          promotion.is_featured ? "text-slate-300" : "text-slate-600"
+                        }`}
                       >
-                        Ver promoción
-                        <ArrowRight className="h-4 w-4" />
-                      </button>
+                        {promotion.subtitle ||
+                          promotion.description ||
+                          "Conoce todos los detalles de esta promoción."}
+                      </p>
+
+                      <div className="mt-5 flex flex-wrap gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelected(promotion)}
+                          className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5 ${
+                            promotion.is_featured
+                              ? "bg-white text-slate-950 hover:bg-sky-50"
+                              : "bg-slate-950 text-white hover:bg-slate-800"
+                          }`}
+                        >
+                          Ver promoción
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+
+                        {destination && (
+                          <a
+                            href={destination}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-black transition ${
+                              promotion.is_featured
+                                ? "border-white/20 bg-white/10 text-white hover:bg-white/20"
+                                : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            {promotion.button_text || "Información"}
+                          </a>
+                        )}
+                      </div>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-          )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         </div>
       </section>
 
