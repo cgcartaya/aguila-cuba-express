@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
   CalendarDays,
   MapPin,
+  Megaphone,
   Globe2,
 } from "lucide-react";
 
@@ -65,6 +66,7 @@ const storeLinks: MenuItem[] = [
   { label: "Cotizaciones", href: "/admin/portal/cotizaciones", icon: ClipboardCheck },
   { label: "Clientes", href: "/admin/customers", icon: Users },
   { label: "Visitas", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Promociones", href: "/admin/marketing/promotions", icon: Megaphone },
   { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },
   { label: "Ver tienda pública", href: "/tienda", icon: ExternalLink },
 ];

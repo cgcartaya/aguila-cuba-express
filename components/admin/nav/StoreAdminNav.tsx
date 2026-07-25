@@ -20,6 +20,7 @@ import {
   Truck,
   CalendarDays,
   MapPin,
+  Megaphone,
   Route,
   Users,
   Wrench,
@@ -82,6 +83,12 @@ const sections: AdminSection[] = [
       { href: "/admin/portal-comercial", label: "Configuración general", icon: Globe2 },
       { href: "/admin/portal/cotizador", label: "Cotizador público", icon: Calculator },
       { href: "/admin/portal/cotizaciones", label: "Cotizaciones", icon: ClipboardCheck },
+    ],
+  },
+  {
+    title: "Marketing",
+    links: [
+      { href: "/admin/marketing/promotions", label: "Promociones", icon: Megaphone },
     ],
   },
   {
