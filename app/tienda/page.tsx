@@ -61,6 +61,10 @@ export default function TiendaPage() {
   const busqueda = search.trim();
   const hayBusqueda = busqueda.length > 0;
 
+  // Los campos son opcionales para mantener compatibilidad con tiendas
+  // que todavía no hayan ejecutado la migración. Solo "false" oculta.
+  const sectionEnabled = (value: boolean | null | undefined) => value !== false;
+
   useEffect(() => {
     let mounted = true;
 
@@ -165,40 +169,59 @@ export default function TiendaPage() {
         />
       ) : (
         <>
-          <div className="mt-4 md:mt-5">
-            <MainBanner storeId={storeId || undefined} />
-          </div>
+          {sectionEnabled(storeSettings?.show_hero) && (
+            <div className="mt-4 md:mt-5">
+              <MainBanner storeId={storeId || undefined} />
+            </div>
+          )}
 
-          <HomeFeaturedProducts
-            products={productosDestacados}
-            onAddToCart={addToCart}
-          />
-
-          <CategoriesShowcaseCarousel groups={productosPorCategoria} />
-
-          <div className="-mt-2 md:-mt-3">
-            <StoreCombosSection
-              storeId={storeId || undefined}
-              allowDefaultStore
+          {sectionEnabled(storeSettings?.show_featured_products) && (
+            <HomeFeaturedProducts
+              products={productosDestacados}
+              onAddToCart={addToCart}
             />
-          </div>
+          )}
 
-          <div className="mt-2">
-            {productosPorCategoria.map((grupo) => (
-              <CategoryProductsSection
-                key={grupo.categoria}
-                title={grupo.categoria}
-                products={grupo.productos}
-                onAddToCart={addToCart}
+          {sectionEnabled(storeSettings?.show_categories) && (
+            <CategoriesShowcaseCarousel groups={productosPorCategoria} />
+          )}
+
+          {sectionEnabled(storeSettings?.show_combos) && (
+            <div className="-mt-2 md:-mt-3">
+              <StoreCombosSection
+                storeId={storeId || undefined}
+                allowDefaultStore
               />
-            ))}
-          </div>
+            </div>
+          )}
 
-          <DeliveryBanner />
-          <HelpCard
-            storeName={storeSettings?.store_name || store?.name}
-            whatsapp={storeSettings?.whatsapp || storeSettings?.phone || store?.client_phone}
-          />
+          {sectionEnabled(storeSettings?.show_products) && (
+            <div className="mt-2">
+              {productosPorCategoria.map((grupo) => (
+                <CategoryProductsSection
+                  key={grupo.categoria}
+                  title={grupo.categoria}
+                  products={grupo.productos}
+                  onAddToCart={addToCart}
+                />
+              ))}
+            </div>
+          )}
+
+          {sectionEnabled(storeSettings?.show_delivery_banner) && (
+            <DeliveryBanner />
+          )}
+
+          {sectionEnabled(storeSettings?.show_help_card) && (
+            <HelpCard
+              storeName={storeSettings?.store_name || store?.name}
+              whatsapp={
+                storeSettings?.whatsapp ||
+                storeSettings?.phone ||
+                store?.client_phone
+              }
+            />
+          )}
         </>
       )}
     </main>

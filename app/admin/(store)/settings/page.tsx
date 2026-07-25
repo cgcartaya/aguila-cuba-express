@@ -9,9 +9,20 @@ import {
   MapPinned,
   CalendarDays,
   TicketPercent,
+  PanelsTopLeft,
 } from "lucide-react";
 
 const settingsCards = [
+
+  {
+    title: "Landing Builder",
+    description:
+      "Activa u oculta las secciones que aparecen en la página pública de cada tienda.",
+    href: "/admin/settings/landing",
+    icon: PanelsTopLeft,
+    iconBox: "bg-indigo-50 text-indigo-700",
+    hover: "hover:border-indigo-200 hover:bg-indigo-50/40",
+  },
 
   {
     title: "Bonos de descuento",
@@ -65,7 +76,6 @@ const settingsCards = [
       "Administra próximas salidas, fechas, horarios, origen y destino.",
     href: "/admin/settings/departures",
     icon: CalendarDays,
-  TicketPercent,
     iconBox: "bg-amber-50 text-amber-700",
     hover: "hover:border-amber-200 hover:bg-amber-50/40",
   },

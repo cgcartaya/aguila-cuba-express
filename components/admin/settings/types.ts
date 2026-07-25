@@ -28,6 +28,18 @@ export type StoreSettings = {
   delivery_message?: string | null;
   logo_url?: string | null;
   favicon_url?: string | null;
+
+  // LANDING BUILDER V16.5
+  show_hero?: boolean;
+  show_promotions?: boolean;
+  show_featured_products?: boolean;
+  show_categories?: boolean;
+  show_combos?: boolean;
+  show_products?: boolean;
+  show_delivery_banner?: boolean;
+  show_help_card?: boolean;
+  show_footer?: boolean;
+
   updated_at?: string;
 };
 

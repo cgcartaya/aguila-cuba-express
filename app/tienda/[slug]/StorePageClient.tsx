@@ -65,6 +65,9 @@ export default function StoreSlugTiendaPage() {
   const busqueda = search.trim();
   const hayBusqueda = busqueda.length > 0;
 
+  // Compatibilidad: si el campo aún no existe o viene null, la sección se muestra.
+  const sectionEnabled = (value: boolean | null | undefined) => value !== false;
+
   useEffect(() => {
     let mounted = true;
 
@@ -164,40 +167,57 @@ export default function StoreSlugTiendaPage() {
         />
       ) : (
         <>
-          <div className="mt-4 md:mt-5">
-            {storeLoaded && storeId && (
-              <MainBanner storeId={storeId} storeSlug={slug} />
-            )}
-          </div>
+          {sectionEnabled(storeSettings?.show_hero) && (
+            <div className="mt-4 md:mt-5">
+              {storeLoaded && storeId && (
+                <MainBanner storeId={storeId} storeSlug={slug} />
+              )}
+            </div>
+          )}
 
-          <CategoriesShowcaseCarousel
-            groups={productosPorCategoria}
-            storeSlug={slug}
-          />
+          {sectionEnabled(storeSettings?.show_categories) && (
+            <CategoriesShowcaseCarousel
+              groups={productosPorCategoria}
+              storeSlug={slug}
+            />
+          )}
 
-          <div className="-mt-2 md:-mt-3">
-            {storeLoaded && storeId && (
-              <StoreCombosSection storeId={storeId} storeSlug={slug} />
-            )}
-          </div>
+          {sectionEnabled(storeSettings?.show_combos) && (
+            <div className="-mt-2 md:-mt-3">
+              {storeLoaded && storeId && (
+                <StoreCombosSection storeId={storeId} storeSlug={slug} />
+              )}
+            </div>
+          )}
 
-          <div className="mt-2">
-            {productosPorCategoria.map((grupo) => (
-              <CategoryProductsSection
-                key={grupo.categoria}
-                title={grupo.categoria}
-                products={grupo.productos}
-                onAddToCart={addToCart}
-                storeSlug={slug}
-              />
-            ))}
-          </div>
+          {sectionEnabled(storeSettings?.show_products) && (
+            <div className="mt-2">
+              {productosPorCategoria.map((grupo) => (
+                <CategoryProductsSection
+                  key={grupo.categoria}
+                  title={grupo.categoria}
+                  products={grupo.productos}
+                  onAddToCart={addToCart}
+                  storeSlug={slug}
+                />
+              ))}
+            </div>
+          )}
 
-          <DeliveryBanner />
-          <HelpCard
-            storeName={storeSettings?.store_name || store?.name}
-            whatsapp={storeSettings?.whatsapp || storeSettings?.phone || store?.client_phone}
-          />
+          {sectionEnabled(storeSettings?.show_delivery_banner) && (
+            <DeliveryBanner />
+          )}
+
+          {sectionEnabled(storeSettings?.show_help_card) && (
+            <HelpCard
+              storeName={storeSettings?.store_name || store?.name}
+              whatsapp={
+                storeSettings?.whatsapp ||
+                storeSettings?.phone ||
+                store?.client_phone
+              }
+            />
+          )}
         </>
       )}
     </main>
