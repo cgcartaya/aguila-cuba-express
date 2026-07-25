@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { getPublicPromotionsByStoreSlug } from "@/lib/services/marketing";
 import type { MarketingPromotion } from "@/types/marketing";
-import { WHATSAPP_URL } from "@/components/landing/yoyo/constants";
+import { buildPromotionDestination } from "@/lib/marketing/destination";
 
 const CATEGORY_LABELS: Record<MarketingPromotion["category"], string> = {
   general: "Promoción",
@@ -45,10 +45,11 @@ function getAutomaticBadge(promotion: MarketingPromotion) {
 }
 
 function resolveDestination(promotion: MarketingPromotion) {
-  if (promotion.destination_type === "none") return null;
-  if (promotion.destination_url?.trim()) return promotion.destination_url.trim();
-  if (promotion.destination_type === "whatsapp") return WHATSAPP_URL;
-  return null;
+  return buildPromotionDestination(
+    promotion.destination_type,
+    promotion.destination_url,
+    promotion.destination_message
+  );
 }
 
 function PromotionImage({

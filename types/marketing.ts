@@ -15,6 +15,8 @@ export type MarketingPromotionCategory =
 export type MarketingPromotionDestination =
   | "whatsapp"
   | "url"
+  | "call"
+  | "email"
   | "none";
 
 export type MarketingPromotion = {
@@ -28,6 +30,7 @@ export type MarketingPromotion = {
   button_text: string | null;
   destination_type: MarketingPromotionDestination;
   destination_url: string | null;
+  destination_message: string | null;
   category: MarketingPromotionCategory;
   starts_at: string | null;
   ends_at: string | null;

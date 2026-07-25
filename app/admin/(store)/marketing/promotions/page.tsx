@@ -23,6 +23,10 @@ import {
   uploadPromotionImage,
 } from "@/lib/services/marketing";
 import {
+  buildPromotionDestination,
+  destinationFieldCopy,
+} from "@/lib/marketing/destination";
+import {
   MARKETING_PROMOTION_CATEGORIES,
   type MarketingPromotion,
   type MarketingPromotionCategory,
@@ -48,6 +52,7 @@ type PromotionForm = {
   button_text: string;
   destination_type: MarketingPromotionDestination;
   destination_url: string;
+  destination_message: string;
   category: MarketingPromotionCategory;
   starts_at: string;
   ends_at: string;
@@ -65,6 +70,7 @@ const EMPTY_FORM: PromotionForm = {
   button_text: "Solicitar información",
   destination_type: "whatsapp",
   destination_url: "",
+  destination_message: "Hola, me interesa esta promoción.",
   category: "general",
   starts_at: "",
   ends_at: "",
@@ -136,6 +142,7 @@ export default function MarketingPromotionsPage() {
       button_text: item.button_text || "",
       destination_type: item.destination_type,
       destination_url: item.destination_url || "",
+      destination_message: item.destination_message || "",
       category: item.category,
       starts_at: toLocalInput(item.starts_at),
       ends_at: toLocalInput(item.ends_at),
@@ -167,6 +174,17 @@ export default function MarketingPromotionsPage() {
       return;
     }
 
+    const resolvedDestination = buildPromotionDestination(
+      form.destination_type,
+      form.destination_url,
+      form.destination_message
+    );
+
+    if (form.destination_type !== "none" && !resolvedDestination) {
+      setMessage("Revisa el destino del botón. El número, correo o enlace no parece válido.");
+      return;
+    }
+
     setSaving(true);
     setMessage(null);
 
@@ -179,6 +197,7 @@ export default function MarketingPromotionsPage() {
       button_text: form.button_text.trim() || null,
       destination_type: form.destination_type,
       destination_url: form.destination_url.trim() || null,
+      destination_message: form.destination_message.trim() || null,
       category: form.category,
       starts_at: toIso(form.starts_at),
       ends_at: toIso(form.ends_at),
@@ -215,6 +234,13 @@ export default function MarketingPromotionsPage() {
     if (editingId === item.id) resetForm();
     await loadPromotions();
   }
+
+  const destinationCopy = destinationFieldCopy(form.destination_type);
+  const destinationPreview = buildPromotionDestination(
+    form.destination_type,
+    form.destination_url,
+    form.destination_message
+  );
 
   return (
     <div className="space-y-6">
@@ -276,14 +302,73 @@ export default function MarketingPromotionsPage() {
             </label>
             <label>
               <span className="mb-2 block text-sm font-black">Destino</span>
-              <select value={form.destination_type} onChange={(e) => setForm({ ...form, destination_type: e.target.value as MarketingPromotionDestination })} className="w-full rounded-2xl border border-slate-200 px-4 py-3">
-                <option value="whatsapp">WhatsApp</option><option value="url">Enlace</option><option value="none">Sin botón</option>
+              <select
+                value={form.destination_type}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    destination_type: e.target.value as MarketingPromotionDestination,
+                  })
+                }
+                className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+              >
+                <option value="whatsapp">WhatsApp</option>
+                <option value="url">Página web</option>
+                <option value="call">Llamar</option>
+                <option value="email">Correo</option>
+                <option value="none">Sin botón</option>
               </select>
             </label>
-            <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-black">Enlace o WhatsApp</span>
-              <input value={form.destination_url} onChange={(e) => setForm({ ...form, destination_url: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3" placeholder="https://wa.me/..." disabled={form.destination_type === "none"} />
-            </label>
+
+            {form.destination_type !== "none" && (
+              <>
+                <label className="md:col-span-2">
+                  <span className="mb-2 block text-sm font-black">
+                    {destinationCopy.label}
+                  </span>
+                  <input
+                    value={form.destination_url}
+                    onChange={(e) =>
+                      setForm({ ...form, destination_url: e.target.value })
+                    }
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+                    placeholder={destinationCopy.placeholder}
+                    inputMode={destinationCopy.inputMode}
+                  />
+                  <span className="mt-1.5 block text-xs font-medium text-slate-500">
+                    {destinationCopy.help}
+                  </span>
+                </label>
+
+                {(form.destination_type === "whatsapp" ||
+                  form.destination_type === "email") && (
+                  <label className="md:col-span-2">
+                    <span className="mb-2 block text-sm font-black">
+                      Mensaje automático
+                    </span>
+                    <textarea
+                      value={form.destination_message}
+                      onChange={(e) =>
+                        setForm({ ...form, destination_message: e.target.value })
+                      }
+                      className="min-h-20 w-full rounded-2xl border border-slate-200 px-4 py-3"
+                      placeholder="Hola, me interesa esta promoción."
+                    />
+                  </label>
+                )}
+
+                {form.destination_url.trim() && (
+                  <div className="md:col-span-2 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+                    <p className="text-xs font-black uppercase tracking-wide text-blue-700">
+                      Enlace generado
+                    </p>
+                    <p className="mt-1 break-all text-sm font-semibold text-slate-700">
+                      {destinationPreview || "Revisa el valor introducido"}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
             <label><span className="mb-2 block text-sm font-black">Empieza</span><input type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3" /></label>
             <label><span className="mb-2 block text-sm font-black">Finaliza</span><input type="datetime-local" value={form.ends_at} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3" /></label>
             <label><span className="mb-2 block text-sm font-black">Orden</span><input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: e.target.value })} className="w-full rounded-2xl border border-slate-200 px-4 py-3" /></label>
@@ -292,7 +377,7 @@ export default function MarketingPromotionsPage() {
           <div>
             <span className="mb-2 block text-sm font-black">Imagen *</span>
             <label className="flex min-h-64 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-[1.75rem] border-2 border-dashed border-slate-200 bg-slate-50 text-center">
-              {form.image_url ? <img src={form.image_url} alt="Vista previa" className="max-h-[520px] min-h-64 w-full object-contain bg-slate-100" /> : <><ImagePlus size={38} className="text-blue-600"/><strong className="mt-3">{uploading ? "Optimizando y subiendo..." : "Seleccionar flyer"}</strong><span className="mt-1 text-xs text-slate-500">Se convierte automáticamente a WebP</span></>}
+              {form.image_url ? <img src={form.image_url} alt="Vista previa" className="h-full min-h-64 w-full object-cover" /> : <><ImagePlus size={38} className="text-blue-600"/><strong className="mt-3">{uploading ? "Optimizando y subiendo..." : "Seleccionar flyer"}</strong><span className="mt-1 text-xs text-slate-500">Se convierte automáticamente a WebP</span></>}
               <input type="file" accept="image/*" className="hidden" onChange={(e) => void handleImage(e.target.files?.[0])} />
             </label>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
@@ -311,10 +396,10 @@ export default function MarketingPromotionsPage() {
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm md:p-7">
         <div className="mb-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-blue-600">Contenido creado</p><h2 className="text-2xl font-black">Promociones de la tienda</h2></div>
-        {loading ? <p className="py-10 text-center font-bold text-slate-500">Cargando promociones...</p> : promotions.length === 0 ? <p className="rounded-2xl bg-slate-50 py-10 text-center font-bold text-slate-500">Todavía no hay promociones.</p> : <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {promotions.map((item) => <article key={item.id} className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-            <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-100 via-white to-blue-50"><img src={item.image_url} alt={item.title} className="h-full w-full object-contain p-2"/>{item.is_featured && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-black"><Star size={13} fill="currentColor"/>Destacada</span>}</div>
-            <div className="p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-blue-600">{CATEGORY_LABELS[item.category]}</p><h3 className="line-clamp-2 text-lg font-black">{item.title}</h3><p className="mt-1 text-sm text-slate-500">{item.subtitle || "Sin subtítulo"}</p></div><span className={`rounded-full px-3 py-1 text-xs font-black ${item.is_visible ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{item.is_visible ? "Visible" : "Oculta"}</span></div>
+        {loading ? <p className="py-10 text-center font-bold text-slate-500">Cargando promociones...</p> : promotions.length === 0 ? <p className="rounded-2xl bg-slate-50 py-10 text-center font-bold text-slate-500">Todavía no hay promociones.</p> : <div className="grid gap-4 lg:grid-cols-2">
+          {promotions.map((item) => <article key={item.id} className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white">
+            <div className="relative aspect-[16/8] bg-slate-100"><img src={item.image_url} alt={item.title} className="h-full w-full object-cover"/>{item.is_featured && <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-1 text-xs font-black"><Star size={13} fill="currentColor"/>Destacada</span>}</div>
+            <div className="p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wide text-blue-600">{CATEGORY_LABELS[item.category]}</p><h3 className="text-xl font-black">{item.title}</h3><p className="mt-1 text-sm text-slate-500">{item.subtitle || "Sin subtítulo"}</p></div><span className={`rounded-full px-3 py-1 text-xs font-black ${item.is_visible ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{item.is_visible ? "Visible" : "Oculta"}</span></div>
               <div className="mt-4 flex gap-2"><button onClick={() => editPromotion(item)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-black"><Pencil size={16}/>Editar</button><button onClick={() => void toggleVisibility(item)} className="rounded-xl border px-3 py-2" aria-label="Cambiar visibilidad">{item.is_visible ? <EyeOff size={17}/> : <Eye size={17}/>}</button><button onClick={() => void removePromotion(item)} className="rounded-xl border border-red-200 px-3 py-2 text-red-600" aria-label="Eliminar"><Trash2 size={17}/></button></div>
             </div>
           </article>)}
