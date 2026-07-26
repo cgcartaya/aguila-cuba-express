@@ -54,6 +54,8 @@ const initialForm: CheckoutForm = {
   recipient_phone: "",
   recipient_phone_alt: "",
 
+  city: "",
+  reference: "",
   municipality: "",
   delivery_zone_id: "",
   exact_address: "",
