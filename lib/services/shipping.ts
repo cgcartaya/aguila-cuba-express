@@ -157,7 +157,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       shipment = assignment.data;
     }
 
-    if (shipment.trip_id !== tripId || !shipment.order_number) {
+    if (shipment.trip_id !== tripId || !shipment.trip_order) {
       return {
         data: shipment,
         error: { message: "El envío no quedó vinculado o numerado correctamente dentro del viaje." },
@@ -278,10 +278,9 @@ export function bulkMoveShipmentsToTrip(
   tripId: string,
 ) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
-  return supabase
-    .from("shipments")
-    .update({ trip_id: tripId, updated_at: new Date().toISOString() })
-    .eq("store_id", storeId)
-    .in("id", shipmentIds)
-    .is("deleted_at", null);
+  return supabase.rpc("move_shipments_to_trip_v17_2_2", {
+    p_store_id: storeId,
+    p_shipment_ids: shipmentIds,
+    p_trip_id: tripId,
+  });
 }

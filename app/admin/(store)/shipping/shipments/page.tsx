@@ -27,7 +27,7 @@ import ShippingAdvancedFilters, {
 import ShippingStatusBadge from "@/components/admin/shipping/ShippingStatusBadge";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
-import { getShipmentsByStoreId, moveShipmentToTrash } from "@/lib/services/shipping";
+import { bulkMoveShipmentsToTrip, getShipmentsByStoreId, moveShipmentToTrash } from "@/lib/services/shipping";
 import { getShippingConfiguration } from "@/lib/services/shipping-settings";
 import { getShippingTripsByStoreId } from "@/lib/services/shipping-trips";
 import type {
@@ -86,6 +86,8 @@ export default function ShippingShipmentsPage() {
     tripId: searchParams.get("trip") || "all",
   });
   const [errorMessage, setErrorMessage] = useState("");
+  const [assigningShipmentId, setAssigningShipmentId] = useState<string | null>(null);
+  const [tripSelections, setTripSelections] = useState<Record<string, string>>({});
 
   async function load() {
     if (!activeStore?.id) {
@@ -131,6 +133,33 @@ export default function ShippingShipmentsPage() {
   useEffect(() => {
     if (!accessLoading && !storeLoading) void load();
   }, [accessLoading, storeLoading, activeStore?.id]);
+
+  async function assignShipmentToTrip(shipment: Shipment) {
+    if (!activeStore?.id) return;
+    const tripId = tripSelections[shipment.id];
+    if (!tripId) {
+      setErrorMessage("Selecciona el viaje al que deseas asignar el envío.");
+      return;
+    }
+    const trip = trips.find((item) => item.id === tripId);
+    if (!trip) return;
+    if (!window.confirm(`¿Asignar el envío #${shipment.order_number || "—"} al viaje “${trip.name}”?`)) return;
+
+    setAssigningShipmentId(shipment.id);
+    setErrorMessage("");
+    const result = await bulkMoveShipmentsToTrip(activeStore.id, [shipment.id], tripId);
+    if (result.error) {
+      setErrorMessage(result.error.message || "No se pudo asignar el envío al viaje.");
+    } else {
+      setTripSelections((current) => {
+        const next = { ...current };
+        delete next[shipment.id];
+        return next;
+      });
+      await load();
+    }
+    setAssigningShipmentId(null);
+  }
 
   const tripMap = useMemo(
     () => new Map(trips.map((trip) => [trip.id, trip])),
@@ -361,7 +390,30 @@ export default function ShippingShipmentsPage() {
                             <span className="truncate">Viaje {trip.trip_number}</span>
                           </Link>
                         ) : (
-                          <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700">Sin viaje</span>
+                          <div className="space-y-1.5">
+                            <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700">Sin viaje</span>
+                            <div className="flex min-w-[170px] gap-1">
+                              <select
+                                value={tripSelections[shipment.id] || ""}
+                                onChange={(event) => setTripSelections((current) => ({ ...current, [shipment.id]: event.target.value }))}
+                                className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 outline-none focus:border-blue-400"
+                                aria-label={`Seleccionar viaje para el envío ${shipment.order_number || shipment.tracking_code || shipment.id}`}
+                              >
+                                <option value="">Asignar viaje…</option>
+                                {trips
+                                  .filter((item) => item.is_active && !item.deleted_at && !["completed", "cancelled"].includes(item.status))
+                                  .map((item) => <option key={item.id} value={item.id}>Viaje {item.trip_number} · {item.name}</option>)}
+                              </select>
+                              <button
+                                type="button"
+                                onClick={() => void assignShipmentToTrip(shipment)}
+                                disabled={!tripSelections[shipment.id] || assigningShipmentId === shipment.id}
+                                className="rounded-lg bg-[#0a2d63] px-2.5 py-1.5 text-[11px] font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                {assigningShipmentId === shipment.id ? "…" : "Asignar"}
+                              </button>
+                            </div>
+                          </div>
                         )}
                         <p className="mt-1 truncate text-[11px] text-slate-500">{shipment.assigned_driver_name || "Sin repartidor"}</p>
                       </div>

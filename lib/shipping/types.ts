@@ -88,6 +88,7 @@ export type Shipment = {
   store_id: string;
   trip_id: string | null;
   order_number: number | null;
+  trip_order: number | null;
   customer_id: string | null;
   recipient_id: string | null;
   recipient_identity_card: string | null;
