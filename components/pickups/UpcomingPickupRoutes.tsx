@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
+import PublicPickupRouteMap from "@/components/maps/PublicPickupRouteMap";
 import {
   ArrowRight,
   CalendarDays,
@@ -78,75 +79,7 @@ function openPickupPlanner(city?: string, route?: PublicRoute) {
 }
 
 function RouteMap({ route }: { route: PublicRoute }) {
-  const points: MapPoint[] = route.cities.map((city, index) => ({ ...city, ...cityPoint(city, index, route.cities.length) }));
-  const path = smoothPath(points);
-  const activeIndex = route.status === "in_progress" ? 0 : -1;
-
-  return (
-    <div className="relative min-h-[420px] overflow-hidden rounded-[2rem] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(219,234,254,.9),_transparent_42%),linear-gradient(135deg,#f8fafc_0%,#ffffff_55%,#eff6ff_100%)] p-4 sm:p-6">
-      <div className="absolute inset-0 opacity-[.38]" style={{ backgroundImage: "linear-gradient(rgba(148,163,184,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.14) 1px, transparent 1px)", backgroundSize: "36px 36px" }} />
-
-      <div className="absolute left-5 top-5 z-10 rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-lg backdrop-blur">
-        <p className="text-xs font-black uppercase tracking-[.15em] text-slate-400">Carolina del Sur</p>
-        <p className="mt-1 inline-flex items-center gap-2 text-sm font-black text-slate-800">
-          <span className={`h-2.5 w-2.5 rounded-full ${route.status === "in_progress" ? "animate-pulse bg-emerald-500" : "bg-amber-500"}`} />
-          {route.status === "in_progress" ? "Ruta en recorrido" : "Ruta en preparación"}
-        </p>
-      </div>
-
-      <div className="absolute right-5 top-5 z-10 hidden rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-lg backdrop-blur sm:block">
-        <p className="text-[10px] font-black uppercase tracking-[.16em] text-slate-400">Recorrido</p>
-        <p className="mt-1 text-sm font-black text-slate-800">{route.cities.length} ciudades</p>
-      </div>
-
-      <svg viewBox="0 0 100 100" className="relative z-[1] h-[370px] w-full" role="img" aria-label={`Recorrido planificado de ${route.name}`}>
-        <defs>
-          <filter id={`route-shadow-${route.id}`} x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity=".22" /></filter>
-          <filter id={`truck-glow-${route.id}`} x="-100%" y="-100%" width="300%" height="300%"><feDropShadow dx="0" dy="1" stdDeviation="1.8" floodColor={route.color || "#dc2626"} floodOpacity=".55" /></filter>
-          <linearGradient id={`state-fill-${route.id}`} x1="0" x2="1" y1="0" y2="1"><stop offset="0%" stopColor="#eef4fb" /><stop offset="100%" stopColor="#dbe7f5" /></linearGradient>
-        </defs>
-
-        <path d="M12 23 L24 12 L43 12 L55 19 L73 16 L91 30 L87 46 L93 57 L83 71 L65 78 L54 91 L38 84 L22 88 L10 73 L13 56 L7 43 Z" fill={`url(#state-fill-${route.id})`} stroke="#c4d1e1" strokeWidth="1.1" />
-        <path d="M14 58 C25 54 29 64 41 60 S61 48 72 53 S82 65 89 60" fill="none" stroke="#cbd5e1" strokeWidth=".55" strokeDasharray="2 2" opacity=".8" />
-        <path d="M18 32 C29 38 39 30 49 36 S70 44 84 35" fill="none" stroke="#cbd5e1" strokeWidth=".55" strokeDasharray="2 2" opacity=".8" />
-
-        {points.length > 1 && (
-          <>
-            <path d={path} fill="none" stroke="white" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" opacity=".96" />
-            <path d={path} fill="none" stroke={route.color || "#dc2626"} strokeWidth="2.7" strokeLinecap="round" strokeLinejoin="round" strokeDasharray={route.status === "published" ? "5 3" : "9 2"} className="route-path-flow" />
-            <g filter={`url(#truck-glow-${route.id})`} className="route-truck">
-              <circle r="4.3" fill="white" stroke={route.color || "#dc2626"} strokeWidth="1.2" />
-              <text x="0" y="1.55" textAnchor="middle" fontSize="4.3">🚚</text>
-              <animateMotion dur={route.status === "in_progress" ? "8s" : "13s"} repeatCount="indefinite" path={path} />
-            </g>
-          </>
-        )}
-
-        {points.map((point, index) => {
-          const isActive = index === activeIndex;
-          const isFirst = index === 0;
-          return (
-            <g key={`${point.name}-${index}`} transform={`translate(${point.x} ${point.y})`} filter={`url(#route-shadow-${route.id})`}>
-              {isActive && <circle r="7.2" fill="none" stroke="#10b981" strokeWidth="1" className="route-ring" />}
-              <circle r={isActive ? 5.2 : 4.6} fill={isActive ? "#10b981" : isFirst ? "#071d43" : route.color || "#dc2626"} stroke="white" strokeWidth="1.6" />
-              {isActive ? <Check x={-2.1} y={-2.1} width={4.2} height={4.2} color="white" strokeWidth={4} /> : <text y="1.45" textAnchor="middle" fontSize="3.7" fontWeight="900" fill="white">{index + 1}</text>}
-              <g transform="translate(0 7.2)">
-                <rect x="-13" y="0" width="26" height="7.6" rx="3.8" fill="white" opacity=".98" />
-                <text y="5" textAnchor="middle" fontSize="3.05" fontWeight="800" fill="#0f172a">{point.name.slice(0, 16)}</text>
-              </g>
-            </g>
-          );
-        })}
-      </svg>
-
-      <div className="absolute bottom-12 left-5 z-10 rounded-2xl border border-white/80 bg-white/90 px-4 py-3 shadow-md backdrop-blur">
-        <p className="text-[10px] font-black uppercase tracking-[.15em] text-slate-400">{route.status === "in_progress" ? "Próxima parada" : "Primera parada"}</p>
-        <p className="mt-1 flex items-center gap-2 text-sm font-black text-slate-800"><MapPin size={14} className="text-red-500" /> {route.cities[0]?.name || "Por confirmar"}</p>
-      </div>
-
-      <p className="absolute bottom-4 left-5 right-5 z-10 text-center text-[11px] font-bold text-slate-400">Recorrido planificado. No representa la ubicación GPS del conductor.</p>
-    </div>
-  );
+  return <PublicPickupRouteMap route={route} />;
 }
 
 export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { storeSlug?: string }) {
