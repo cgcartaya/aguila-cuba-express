@@ -18,7 +18,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { getDefaultStore } from "@/lib/services/stores";
+import { getCurrentStore } from "@/lib/services/stores";
 import ProductCard from "@/components/tienda/ProductCard";
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
@@ -63,7 +63,7 @@ export default function CategoryPage({ params }: Props) {
     async function cargarProductos() {
       setLoading(true);
 
-      const storeResult = await getDefaultStore();
+      const storeResult = await getCurrentStore();
       const store = storeResult?.data ?? null;
 
       if (!mounted) return;

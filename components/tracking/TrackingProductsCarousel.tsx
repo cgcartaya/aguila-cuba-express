@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { getDefaultStore } from "@/lib/services/stores";
+import { getCurrentStore } from "@/lib/services/stores";
 import type { Product } from "@/types/cart";
 import type { Store } from "@/lib/saas/store-types";
 
@@ -58,7 +58,7 @@ export default function TrackingProductsCarousel() {
       try {
         setLoading(true);
 
-        const storeResult = await getDefaultStore();
+        const storeResult = await getCurrentStore();
         const currentStore = storeResult?.data ?? null;
 
         if (!mounted || !currentStore) {
@@ -133,10 +133,10 @@ export default function TrackingProductsCarousel() {
             Productos disponibles
           </h2>
 
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Estos productos son reales y se actualizan directamente desde
-            la tienda de Águila Cuba Express.
-          </p>
+         <p className="mt-2 text-sm leading-6 text-slate-600">
+  Estos productos son reales y se actualizan directamente desde la tienda de{" "}
+  <strong>{store?.name}</strong>.
+</p>
         </div>
 
         <Link
