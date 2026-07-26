@@ -110,7 +110,11 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
   if (!shipmentId) {
     const ids = identity();
 
-    const result = await supabase.rpc("create_numbered_shipment", {
+    // Conservamos el RPC existente para crear el registro porque ya conoce
+    // todas las columnas actuales de shipments. Inmediatamente después,
+    // V17.2 finaliza la asignación al viaje y el consecutivo en una función
+    // transaccional y protegida por bloqueo por viaje.
+    const createResult = await supabase.rpc("create_numbered_shipment", {
       p_store_id: storeId,
       p_id: ids.id,
       p_tracking_code: ids.trackingCode,
@@ -121,64 +125,46 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       },
     });
 
-    let shipment = (result.data || null) as Shipment | null;
+    let shipment = (createResult.data || null) as Shipment | null;
 
-    if (!result.error && shipment) {
-      // Protección V15.4:
-      // Algunas versiones antiguas de create_numbered_shipment ignoran trip_id
-      // aunque llegue dentro de p_payload. Lo comprobamos y lo corregimos antes
-      // de guardar los artículos o devolver el resultado a la pantalla.
-      if (tripId && shipment.trip_id !== tripId) {
-        const tripFix = await supabase
-          .from("shipments")
-          .update({
-            trip_id: tripId,
-            updated_at: now,
-            updated_by: userId || null,
-          })
-          .eq("store_id", storeId)
-          .eq("id", shipment.id)
-          .select("*")
-          .single<Shipment>();
-
-        if (tripFix.error) {
-          return { data: shipment, error: tripFix.error };
-        }
-
-        shipment = tripFix.data;
-      }
-
-      await replaceItems(storeId, shipment.id, input);
+    if (createResult.error) {
+      return { data: null, error: createResult.error };
     }
 
-    if (!shipment) {
+    if (!shipment?.id) {
       return {
         data: null,
         error: { message: "El envío fue procesado, pero Supabase no devolvió el registro creado." },
       };
     }
 
-    // Protección para instalaciones donde el RPC create_numbered_shipment
-    // todavía no copia trip_id desde p_payload. El envío se vincula aquí y
-    // se vuelve a leer antes de continuar.
-    if (tripId && shipment.trip_id !== tripId) {
-      const assignment = await supabase
+    const finalizeResult = await supabase.rpc("finalize_shipment_trip_v17_2", {
+      p_store_id: storeId,
+      p_shipment_id: shipment.id,
+      p_trip_id: tripId,
+      p_updated_by: userId || null,
+    });
+
+    if (finalizeResult.error) {
+      // Evita dejar un envío huérfano si la asignación al viaje falla.
+      await supabase
         .from("shipments")
-        .update({ trip_id: tripId, updated_at: now, updated_by: userId || null })
+        .delete()
         .eq("store_id", storeId)
-        .eq("id", shipment.id)
-        .select("*")
-        .single<Shipment>();
+        .eq("id", shipment.id);
+      return { data: null, error: finalizeResult.error };
+    }
 
-      if (assignment.error) {
-        return { data: null, error: assignment.error };
-      }
+    shipment = (finalizeResult.data || null) as Shipment | null;
 
-      shipment = assignment.data;
+    if (!shipment?.id || shipment.trip_id !== tripId || !shipment.order_number) {
+      return {
+        data: shipment,
+        error: { message: "El envío no pudo recibir un consecutivo válido dentro del viaje." },
+      };
     }
 
     await replaceItems(storeId, shipment.id, input);
-
     return { data: shipment, error: null };
   }
 
@@ -283,10 +269,9 @@ export function bulkMoveShipmentsToTrip(
   tripId: string,
 ) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
-  return supabase
-    .from("shipments")
-    .update({ trip_id: tripId, updated_at: new Date().toISOString() })
-    .eq("store_id", storeId)
-    .in("id", shipmentIds)
-    .is("deleted_at", null);
+  return supabase.rpc("move_shipments_to_trip_v17_2", {
+    p_store_id: storeId,
+    p_shipment_ids: shipmentIds,
+    p_trip_id: tripId,
+  });
 }
