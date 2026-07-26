@@ -25,6 +25,7 @@ import {
   MapPin,
   Megaphone,
   Globe2,
+  KeyRound,
 } from "lucide-react";
 
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
@@ -68,6 +69,7 @@ const storeLinks: MenuItem[] = [
   { label: "Visitas", href: "/admin/analytics", icon: BarChart3 },
   { label: "Promociones", href: "/admin/marketing/promotions", icon: Megaphone },
   { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },
+  { label: "Mi contraseña", href: "/admin/account/password", icon: KeyRound },
   { label: "Ver tienda pública", href: "/tienda", icon: ExternalLink },
 ];
 

@@ -9,6 +9,7 @@ import {
   Store,
   Settings,
   BarChart3,
+  KeyRound,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -24,6 +25,7 @@ const saasLinks: AdminLink[] = [
   { href: "/admin/stores", label: "Tiendas", icon: Building2 },
   { href: "/admin/saas/metrics", label: "Métricas", icon: BarChart3 },
   { href: "/admin/saas/settings", label: "Ajustes SaaS", icon: Settings },
+  { href: "/admin/account/password", label: "Mi contraseña", icon: KeyRound },
 ];
 
 function isActivePath(pathname: string, href: string) {

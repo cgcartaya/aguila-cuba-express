@@ -24,6 +24,7 @@ import {
   Route,
   Users,
   Wrench,
+  KeyRound,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -95,6 +96,7 @@ const sections: AdminSection[] = [
     title: "Configuración",
     links: [
       { href: "/admin/settings", label: "Ajustes de tienda", icon: Settings },
+      { href: "/admin/account/password", label: "Mi contraseña", icon: KeyRound },
     ],
   },
 ];
