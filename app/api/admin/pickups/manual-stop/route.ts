@@ -51,7 +51,17 @@ export async function POST(request: NextRequest) {
   const postalCode = clean(body.postal_code, 20);
   const notes = clean(body.notes, 1000) || null;
   const preferredDate = clean(body.preferred_date, 10) || null;
-  const packageCount = Math.max(1, Math.min(99, Number(body.package_count) || 1));
+  const pickupKind = clean(body.pickup_kind, 40) || null;
+  const pickupDetail = clean(body.pickup_detail, 240) || null;
+  const pickupOptions: Record<string, { packageType: string | null; packageCount: number }> = {
+    one_box: { packageType: "box", packageCount: 1 },
+    two_boxes: { packageType: "box", packageCount: 2 },
+    three_plus_boxes: { packageType: "box_3_plus", packageCount: 3 },
+    documents: { packageType: "documents", packageCount: 1 },
+    luggage: { packageType: "luggage", packageCount: 1 },
+    other: { packageType: "other", packageCount: 1 },
+  };
+  const pickupOption = pickupKind ? pickupOptions[pickupKind] : null;
 
   if (!storeId || !customerName || !phone || !addressLine1 || !city || !postalCode) {
     return fail("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
@@ -90,9 +100,13 @@ export async function POST(request: NextRequest) {
       country_code: "US",
       address_verified: false,
       validation_provider: "manual",
-      package_count: packageCount,
+      package_count: pickupOption?.packageCount || 1,
+      package_type: pickupOption?.packageType || null,
       notes,
-      internal_notes: "Parada creada manualmente desde una conversación de WhatsApp o llamada.",
+      internal_notes: [
+        "Parada creada manualmente desde una conversación de WhatsApp o llamada.",
+        pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null,
+      ].filter(Boolean).join(" "),
       status: routeId ? "assigned" : "confirmed",
       confirmed_date: confirmedDate,
       request_source: "manual",

@@ -266,7 +266,8 @@ export async function createManualPickupRequest(input: {
   city: string;
   region?: string;
   postalCode: string;
-  packageCount?: number;
+  pickupKind?: string | null;
+  pickupDetail?: string;
   notes?: string;
 }) {
   const result = await pickupAdminApi<{ ok: true; request: PickupRequest }>("/api/admin/pickups/manual-stop", {
@@ -283,7 +284,8 @@ export async function createManualPickupRequest(input: {
       city: input.city,
       region: input.region || "SC",
       postal_code: input.postalCode,
-      package_count: input.packageCount || 1,
+      pickup_kind: input.pickupKind || null,
+      pickup_detail: input.pickupDetail || null,
       notes: input.notes || null,
     }),
   });

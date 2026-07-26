@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, MapPin, Plus, X } from "lucide-react";
-import { createManualPickupRequest } from "@/lib/services/pickups";
+import { createManualPickupRequest, getPickupServiceSettings } from "@/lib/services/pickups";
+import { getCityOptions } from "@/lib/geo/location-catalog";
+import CityAutocomplete from "@/components/pickups/CityAutocomplete";
 import type { PickupRequest } from "@/lib/pickups/types";
 
 type Props = {
@@ -23,7 +25,8 @@ const emptyForm = {
   city: "",
   region: "SC",
   postal_code: "",
-  package_count: "1",
+  pickup_kind: "",
+  pickup_detail: "",
   notes: "",
 };
 
@@ -31,12 +34,23 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [cities, setCities] = useState<string[]>([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setForm(emptyForm);
     setError("");
-  }, [open]);
+    setCitiesLoading(true);
+    getPickupServiceSettings(storeId).then(({ data }) => {
+      const countryCode = data?.country_code || "US";
+      const regionCode = data?.region_code || "SC";
+      const configured = Array.isArray(data?.allowed_cities) ? data.allowed_cities.filter(Boolean) : [];
+      const allRegion = getCityOptions(countryCode, regionCode).map((item) => item.label);
+      setCities(data?.coverage_mode === "cities" && configured.length ? configured : allRegion);
+      setForm((current) => ({ ...current, region: regionCode }));
+    }).finally(() => setCitiesLoading(false));
+  }, [open, storeId]);
 
   if (!open) return null;
 
@@ -58,7 +72,8 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       city: form.city,
       region: form.region || "SC",
       postalCode: form.postal_code,
-      packageCount: Number(form.package_count) || 1,
+      pickupKind: form.pickup_kind || null,
+      pickupDetail: form.pickup_detail,
       notes: form.notes,
     });
     setSaving(false);
@@ -77,10 +92,27 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
         <Field label="Nombre del cliente *"><input className="manual-input" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} placeholder="Ej. Carlos García" /></Field>
         <Field label="Teléfono *"><input className="manual-input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(864) 555-0000" /></Field>
         <Field label="Email"><input className="manual-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Opcional" /></Field>
-        <Field label="Cantidad estimada"><input className="manual-input" type="number" min="1" max="99" value={form.package_count} onChange={(e) => setForm({ ...form, package_count: e.target.value })} /></Field>
+        <div className="sm:col-span-2">
+          <Field label="¿Qué recogeremos? (opcional)">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {[
+                ["one_box", "Caja"],
+                ["two_boxes", "2 cajas"],
+                ["three_plus_boxes", "3+ cajas"],
+                ["documents", "Documentos"],
+                ["luggage", "Equipaje"],
+                ["other", "Otro"],
+              ].map(([value, label]) => {
+                const active = form.pickup_kind === value;
+                return <button key={value} type="button" onClick={() => setForm({ ...form, pickup_kind: active ? "" : value, pickup_detail: value === "other" ? form.pickup_detail : "" })} className={`rounded-2xl border px-3 py-3 text-sm font-black transition ${active ? "border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-100" : "border-slate-200 bg-white text-slate-700 hover:border-orange-300"}`}>{label}</button>;
+              })}
+            </div>
+          </Field>
+          {form.pickup_kind === "other" && <div className="mt-3"><Field label="Describe qué recogeremos (opcional)"><input className="manual-input" value={form.pickup_detail} onChange={(e) => setForm({ ...form, pickup_detail: e.target.value })} placeholder="Ej. Televisor y una bolsa" /></Field></div>}
+        </div>
         <div className="sm:col-span-2"><Field label="Dirección *"><div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="manual-input pl-11" value={form.address_line_1} onChange={(e) => setForm({ ...form, address_line_1: e.target.value })} placeholder="Número y calle" /></div></Field></div>
         <div className="sm:col-span-2"><Field label="Apartamento, unidad o referencia"><input className="manual-input" value={form.address_line_2} onChange={(e) => setForm({ ...form, address_line_2: e.target.value })} placeholder="Opcional" /></Field></div>
-        <Field label="Ciudad *"><input className="manual-input" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Ej. Greenville" /></Field>
+        <div><CityAutocomplete cities={cities} value={form.city} onChange={(city) => setForm({ ...form, city })} loading={citiesLoading} disabled={citiesLoading || !cities.length} placeholder="Ej. Columbia" /></div>
         <div className="grid grid-cols-[110px_1fr] gap-3"><Field label="Estado"><input className="manual-input" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value.toUpperCase().slice(0, 2) })} /></Field><Field label="ZIP Code *"><input className="manual-input" inputMode="numeric" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} /></Field></div>
         <div className="sm:col-span-2"><Field label="Notas"><textarea className="manual-input min-h-28 resize-y" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej. Escribir al llegar, tiene dos cajas..." /></Field></div>
         {error && <p className="sm:col-span-2 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-700">{error}</p>}
