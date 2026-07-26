@@ -37,6 +37,11 @@ type Order = {
   recipient_phone_alt?: string | null;
   notes?: string | null;
   created_at: string;
+  store_id: string | null;
+};
+
+type StoreBrand = {
+  name: string;
 };
 
 type OrderItem = {
@@ -61,6 +66,7 @@ const statusLabels: Record<string, string> = {
 export function PublicOrderClient({ orderNumber }: { orderNumber: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<OrderItem[]>([]);
+  const [storeBrand, setStoreBrand] = useState<StoreBrand | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -84,6 +90,20 @@ export function PublicOrderClient({ orderNumber }: { orderNumber: string }) {
         }
 
         setOrder(orderData);
+
+        if (orderData.store_id) {
+          const { data: storeData, error: storeError } = await supabase
+            .from("stores")
+            .select("name")
+            .eq("id", orderData.store_id)
+            .maybeSingle();
+
+          if (storeError) {
+            console.error("ERROR CARGANDO TIENDA DEL PEDIDO:", storeError);
+          } else {
+            setStoreBrand(storeData);
+          }
+        }
 
         const { data: itemsData, error: itemsError } = await supabase
           .from("order_items")
@@ -133,6 +153,7 @@ export function PublicOrderClient({ orderNumber }: { orderNumber: string }) {
   }
 
   const statusText = statusLabels[order.status] || order.status;
+  const storeName = storeBrand?.name?.trim() || "Águila Cuba Express";
 
   return (
     <main className="min-h-screen bg-gray-50 pb-20">
@@ -147,7 +168,7 @@ export function PublicOrderClient({ orderNumber }: { orderNumber: string }) {
 
         <section className="mb-6 rounded-[2rem] bg-black p-7 text-white shadow-sm">
           <p className="text-sm font-semibold text-white/60">
-            ÁGUILA CUBA EXPRESS
+            {storeName.toUpperCase()}
           </p>
 
           <h1 className="mt-2 text-3xl font-black">
@@ -270,8 +291,8 @@ export function PublicOrderClient({ orderNumber }: { orderNumber: string }) {
           </div>
 
           <p className="mt-2 text-sm">
-            El equipo de Águila Cuba Express confirmará el pago y actualizará el
-            estado del pedido.
+            El equipo de {storeName} confirmará el pago y actualizará el estado
+            del pedido.
           </p>
         </section>
       </div>
