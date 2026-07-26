@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   const { data: pickup, error: pickupError } = await supabaseAdmin.from("pickup_requests").insert({
     store_id: storeId, customer_name: customerName, phone, email, address_line_1: addressLine1, address_line_2: addressLine2,
     formatted_address: formattedAddress || `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
-    city, region, postal_code: postalCode, country_code: "US", address_verified: addressVerified, validation_provider: addressVerified ? "google" : "manual", place_id: placeId, latitude, longitude,
+    city, region, postal_code: postalCode, country_code: "US", address_verified: addressVerified, validation_provider: addressVerified ? "manual_map" : "manual", place_id: placeId, latitude, longitude,
     package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null, notes,
     internal_notes: ["Parada creada manualmente desde una conversación de WhatsApp o llamada.", pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
     status: routeId ? "assigned" : "confirmed", confirmed_date: confirmedDate, request_source: "manual", created_by: access.userId, customer_id: customer.id,
@@ -170,7 +170,7 @@ export async function PATCH(request: NextRequest) {
   const { data: pickup, error: updateError } = await supabaseAdmin.from("pickup_requests").update({
     customer_name: customerName, phone, email, address_line_1: addressLine1, address_line_2: addressLine2,
     formatted_address: formattedAddress || `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
-    city, region, postal_code: postalCode, address_verified: addressVerified, validation_provider: addressVerified ? "google" : "manual", place_id: placeId, latitude, longitude, package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null,
+    city, region, postal_code: postalCode, address_verified: addressVerified, validation_provider: addressVerified ? "manual_map" : "manual", place_id: placeId, latitude, longitude, package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null,
     notes, internal_notes: ["Parada creada manualmente desde una conversación de WhatsApp o llamada.", pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
     customer_id: customer.id, updated_at: new Date().toISOString(),
   }).eq("id", requestId).eq("store_id", storeId).select("*").single();
