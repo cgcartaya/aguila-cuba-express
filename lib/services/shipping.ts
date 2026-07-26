@@ -110,11 +110,10 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
   if (!shipmentId) {
     const ids = identity();
 
-    // Conservamos el RPC existente para crear el registro porque ya conoce
-    // todas las columnas actuales de shipments. Inmediatamente después,
-    // V17.2 finaliza la asignación al viaje y el consecutivo en una función
-    // transaccional y protegida por bloqueo por viaje.
-    const createResult = await supabase.rpc("create_numbered_shipment", {
+    // El trigger V17.2 ya asigna el consecutivo por viaje. No hacemos una
+    // segunda finalización RPC porque puede bloquear la creación si la función
+    // no coincide exactamente con la versión instalada en Supabase.
+    const result = await supabase.rpc("create_numbered_shipment", {
       p_store_id: storeId,
       p_id: ids.id,
       p_tracking_code: ids.trackingCode,
@@ -125,12 +124,9 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       },
     });
 
-    let shipment = (createResult.data || null) as Shipment | null;
+    if (result.error) return { data: null, error: result.error };
 
-    if (createResult.error) {
-      return { data: null, error: createResult.error };
-    }
-
+    let shipment = (result.data || null) as Shipment | null;
     if (!shipment?.id) {
       return {
         data: null,
@@ -138,33 +134,46 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       };
     }
 
-    const finalizeResult = await supabase.rpc("finalize_shipment_trip_v17_2", {
-      p_store_id: storeId,
-      p_shipment_id: shipment.id,
-      p_trip_id: tripId,
-      p_updated_by: userId || null,
-    });
-
-    if (finalizeResult.error) {
-      // Evita dejar un envío huérfano si la asignación al viaje falla.
-      await supabase
+    // Compatibilidad con versiones antiguas del RPC que no copian trip_id.
+    // Al actualizar trip_id se ejecuta el trigger V17.2 y se asigna el siguiente
+    // número dentro del viaje.
+    if (shipment.trip_id !== tripId) {
+      const assignment = await supabase
         .from("shipments")
-        .delete()
+        .update({
+          trip_id: tripId,
+          updated_at: now,
+          updated_by: userId || null,
+        })
         .eq("store_id", storeId)
-        .eq("id", shipment.id);
-      return { data: null, error: finalizeResult.error };
+        .eq("id", shipment.id)
+        .select("*")
+        .single<Shipment>();
+
+      if (assignment.error) {
+        await supabase.from("shipments").delete().eq("store_id", storeId).eq("id", shipment.id);
+        return { data: null, error: assignment.error };
+      }
+      shipment = assignment.data;
     }
 
-    shipment = (finalizeResult.data || null) as Shipment | null;
-
-    if (!shipment?.id || shipment.trip_id !== tripId || !shipment.order_number) {
+    if (shipment.trip_id !== tripId || !shipment.order_number) {
       return {
         data: shipment,
-        error: { message: "El envío no pudo recibir un consecutivo válido dentro del viaje." },
+        error: { message: "El envío no quedó vinculado o numerado correctamente dentro del viaje." },
       };
     }
 
-    await replaceItems(storeId, shipment.id, input);
+    try {
+      await replaceItems(storeId, shipment.id, input);
+    } catch (itemError) {
+      await supabase.from("shipments").delete().eq("store_id", storeId).eq("id", shipment.id);
+      return {
+        data: null,
+        error: itemError instanceof Error ? itemError : { message: "No se pudieron guardar los artículos del envío." },
+      };
+    }
+
     return { data: shipment, error: null };
   }
 
@@ -269,9 +278,10 @@ export function bulkMoveShipmentsToTrip(
   tripId: string,
 ) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
-  return supabase.rpc("move_shipments_to_trip_v17_2", {
-    p_store_id: storeId,
-    p_shipment_ids: shipmentIds,
-    p_trip_id: tripId,
-  });
+  return supabase
+    .from("shipments")
+    .update({ trip_id: tripId, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .in("id", shipmentIds)
+    .is("deleted_at", null);
 }

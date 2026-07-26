@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Banknote, Loader2, Package, Save } from "lucide-react";
 import CustomerRecipientPicker from "@/components/admin/shipping/CustomerRecipientPicker";
 import type {
@@ -33,6 +33,7 @@ type Props = {
 export default function ShipmentForm(props: Props) {
   const { storeId, shipment, drivers, settings, countries, provinces, municipalities, locations, serviceTypes, rates, extraFees, initialSelectedFees = [], initialCustomerId = "", initialRecipientId = "", submitting, onSubmit } = props;
   const [error, setError] = useState("");
+  const errorRef = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState<ShipmentInput>({
     customer_id: shipment?.customer_id || null,
     recipient_id: shipment?.recipient_id || null,
@@ -160,11 +161,16 @@ export default function ShipmentForm(props: Props) {
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
     if (form.recipient_phone.length < (settings?.phone_digits_min || 1)) return setError("El teléfono del destinatario no es válido.");
-    try { await onSubmit(form); } catch (e) { setError(e instanceof Error ? e.message : "No se pudo guardar."); }
+    try {
+      await onSubmit(form);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo guardar.");
+      requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+    }
   }
 
   return <form onSubmit={submit} className="space-y-6">
-    {error && <div className="rounded-2xl bg-red-50 p-4 font-bold text-red-700">{error}</div>}
+    {error && <div ref={errorRef} className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
     <CustomerRecipientPicker
       storeId={storeId}
@@ -255,6 +261,8 @@ export default function ShipmentForm(props: Props) {
       <div className="grid gap-3 md:grid-cols-2">{extraFees.filter(x=>x.is_active).map(fee=><label key={fee.id} className="flex items-center justify-between rounded-2xl border p-4"><span className="font-bold">{fee.name}</span><input type="checkbox" checked={form.selected_fees.some(x=>x.fee_id===fee.id)} onChange={()=>toggleFee(fee)} /></label>)}</div>
       <div className="grid gap-4 md:grid-cols-3"><Input label="Fees" value={form.extra_fees_total.toFixed(2)} readOnly /><NumberInput label="Descuento general" value={form.discount_amount} onChange={v=>set("discount_amount",v)} /><Input label="Motivo descuento" value={form.discount_reason} onChange={v=>set("discount_reason",v)} /><Input label="Total" value={form.service_price.toFixed(2)} readOnly /><NumberInput label="Pagado" value={form.amount_paid} onChange={v=>set("amount_paid",v)} /><Input label="Saldo" value={form.balance_due.toFixed(2)} readOnly /></div>
     </Section>
+
+    {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
     <button disabled={submitting} className="inline-flex items-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 font-black text-white">{submitting?<Loader2 className="animate-spin"/>:<Save/>}{shipment?"Guardar cambios":"Crear operación"}</button>
   </form>;
