@@ -140,6 +140,48 @@ export async function getDefaultStore(): Promise<{ data: Store | null; error: un
   return await defaultStorePromise
 }
 
+export async function getCurrentStore(): Promise<{
+  data: Store | null
+  error: unknown
+}> {
+  if (typeof window === "undefined") {
+    return getDefaultStore()
+  }
+
+  const host = window.location.hostname
+    .replace(/^www\./, "")
+    .toLowerCase()
+
+  // 1. Buscar por dominio personalizado
+  const byDomain = await getStoreByDomain(host)
+
+  if (byDomain) {
+    return {
+      data: byDomain,
+      error: null,
+    }
+  }
+
+  // 2. Buscar por subdominio
+  if (host.endsWith("perlamarketplace.com")) {
+    const subdomain = host.split(".")[0]
+
+    if (subdomain !== "www" && subdomain !== "perlamarketplace") {
+      const bySubdomain = await getStoreBySubdomain(subdomain)
+
+      if (bySubdomain) {
+        return {
+          data: bySubdomain,
+          error: null,
+        }
+      }
+    }
+  }
+
+  // 3. Tienda por defecto
+  return getDefaultStore()
+}
+
 export function clearDefaultStoreCache() {
   defaultStoreCache = null
   defaultStorePromise = null

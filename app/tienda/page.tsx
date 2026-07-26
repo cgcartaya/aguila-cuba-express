@@ -17,7 +17,7 @@ import {
   getActiveCategoriesByStoreId,
   getStoreSettings,
 } from "@/lib/services/settings";
-import { getDefaultStore } from "@/lib/services/stores";
+import { getCurrentStore } from "@/lib/services/stores";
 
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
@@ -69,7 +69,7 @@ export default function TiendaPage() {
     let mounted = true;
 
     async function cargarDatos() {
-      const storeResult = await getDefaultStore();
+      const storeResult = await getCurrentStore();
       const currentStore = storeResult?.data ?? null;
 
       if (!mounted) return;
