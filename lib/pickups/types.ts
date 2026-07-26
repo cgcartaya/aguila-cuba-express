@@ -87,6 +87,8 @@ export type PickupRequest = {
   confirmed_date: string | null;
   created_at: string;
   preferred_dates?: string[];
+  request_source?: "web" | "manual";
+  created_by?: string | null;
 };
 
 export type PickupRouteStop = {

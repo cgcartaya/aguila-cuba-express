@@ -253,6 +253,43 @@ async function pickupAdminApi<T>(path: string, init?: RequestInit): Promise<{ da
   }
 }
 
+
+export async function createManualPickupRequest(input: {
+  storeId: string;
+  routeId?: string | null;
+  preferredDate: string;
+  customerName: string;
+  phone: string;
+  email?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  region?: string;
+  postalCode: string;
+  packageCount?: number;
+  notes?: string;
+}) {
+  const result = await pickupAdminApi<{ ok: true; request: PickupRequest }>("/api/admin/pickups/manual-stop", {
+    method: "POST",
+    body: JSON.stringify({
+      store_id: input.storeId,
+      route_id: input.routeId || null,
+      preferred_date: input.preferredDate,
+      customer_name: input.customerName,
+      phone: input.phone,
+      email: input.email || null,
+      address_line_1: input.addressLine1,
+      address_line_2: input.addressLine2 || null,
+      city: input.city,
+      region: input.region || "SC",
+      postal_code: input.postalCode,
+      package_count: input.packageCount || 1,
+      notes: input.notes || null,
+    }),
+  });
+  return { data: result.data?.request || null, error: result.error };
+}
+
 export async function getPickupZones(storeId: string) {
   const result = await pickupAdminApi<{ ok: true; zones: import("@/lib/pickups/types").PickupZone[] }>(
     `/api/admin/pickups/zones?store_id=${encodeURIComponent(storeId)}`
