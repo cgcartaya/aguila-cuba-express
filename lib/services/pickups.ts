@@ -254,7 +254,7 @@ async function pickupAdminApi<T>(path: string, init?: RequestInit): Promise<{ da
 }
 
 
-export async function createManualPickupRequest(input: {
+export type ManualPickupRequestInput = {
   storeId: string;
   routeId?: string | null;
   preferredDate: string;
@@ -269,7 +269,9 @@ export async function createManualPickupRequest(input: {
   pickupKind?: string | null;
   pickupDetail?: string;
   notes?: string;
-}) {
+};
+
+export async function createManualPickupRequest(input: ManualPickupRequestInput) {
   const result = await pickupAdminApi<{ ok: true; request: PickupRequest }>("/api/admin/pickups/manual-stop", {
     method: "POST",
     body: JSON.stringify({
@@ -290,6 +292,38 @@ export async function createManualPickupRequest(input: {
     }),
   });
   return { data: result.data?.request || null, error: result.error };
+}
+
+export async function updateManualPickupRequest(requestId: string, input: ManualPickupRequestInput) {
+  const result = await pickupAdminApi<{ ok: true; request: PickupRequest }>("/api/admin/pickups/manual-stop", {
+    method: "PATCH",
+    body: JSON.stringify({
+      request_id: requestId,
+      store_id: input.storeId,
+      route_id: input.routeId || null,
+      preferred_date: input.preferredDate,
+      customer_name: input.customerName,
+      phone: input.phone,
+      email: input.email || null,
+      address_line_1: input.addressLine1,
+      address_line_2: input.addressLine2 || null,
+      city: input.city,
+      region: input.region || "SC",
+      postal_code: input.postalCode,
+      pickup_kind: input.pickupKind || null,
+      pickup_detail: input.pickupDetail || null,
+      notes: input.notes || null,
+    }),
+  });
+  return { data: result.data?.request || null, error: result.error };
+}
+
+export async function deleteManualPickupRequest(input: { storeId: string; requestId: string; routeId?: string | null }) {
+  const result = await pickupAdminApi<{ ok: true }>("/api/admin/pickups/manual-stop", {
+    method: "DELETE",
+    body: JSON.stringify({ store_id: input.storeId, request_id: input.requestId, route_id: input.routeId || null }),
+  });
+  return { data: result.data, error: result.error };
 }
 
 export async function getPickupZones(storeId: string) {

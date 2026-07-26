@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Check, Loader2, MapPin, Plus, Search, UserRound, X } from "lucide-react";
-import { createManualPickupRequest, getPickupServiceSettings } from "@/lib/services/pickups";
+import { createManualPickupRequest, getPickupServiceSettings, updateManualPickupRequest } from "@/lib/services/pickups";
 import { getCityOptions } from "@/lib/geo/location-catalog";
 import CityAutocomplete from "@/components/pickups/CityAutocomplete";
 import type { PickupRequest } from "@/lib/pickups/types";
@@ -13,6 +13,7 @@ type Props = {
   storeId: string;
   routeId?: string | null;
   routeDate: string;
+  editRequest?: PickupRequest | null;
   onClose: () => void;
   onCreated: (request: PickupRequest) => void | Promise<void>;
 };
@@ -35,7 +36,7 @@ const emptyForm = {
   notes: "",
 };
 
-export default function ManualPickupStopModal({ open, storeId, routeId, routeDate, onClose, onCreated }: Props) {
+export default function ManualPickupStopModal({ open, storeId, routeId, routeDate, editRequest = null, onClose, onCreated }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -47,10 +48,24 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
 
   useEffect(() => {
     if (!open) return;
-    setForm(emptyForm);
+    const pickupKind = editRequest ? pickupKindFromRequest(editRequest) : "";
+    const pickupDetail = editRequest?.internal_notes?.match(/Recogida indicada:\s*(.+)$/i)?.[1] || "";
+    setForm(editRequest ? {
+      customer_name: editRequest.customer_name || "",
+      phone: editRequest.phone || "",
+      email: editRequest.email || "",
+      address_line_1: editRequest.address_line_1 || "",
+      address_line_2: editRequest.address_line_2 || "",
+      city: editRequest.city || "",
+      region: editRequest.region || "SC",
+      postal_code: editRequest.postal_code || "",
+      pickup_kind: pickupKind,
+      pickup_detail: pickupDetail,
+      notes: editRequest.notes || "",
+    } : emptyForm);
     setError("");
     setCustomerMatches([]);
-    setSelectedCustomerId(null);
+    setSelectedCustomerId(editRequest ? "editing" : null);
     setCitiesLoading(true);
     getPickupServiceSettings(storeId).then(({ data }) => {
       const countryCode = data?.country_code || "US";
@@ -60,7 +75,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       setCities(data?.coverage_mode === "cities" && configured.length ? configured : allRegion);
       setForm((current) => ({ ...current, region: regionCode }));
     }).finally(() => setCitiesLoading(false));
-  }, [open, storeId]);
+  }, [open, storeId, editRequest]);
 
   useEffect(() => {
     if (!open || selectedCustomerId) return;
@@ -91,7 +106,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
     }
     setSaving(true);
     setError("");
-    const result = await createManualPickupRequest({
+    const payload = {
       storeId,
       routeId: routeId || null,
       preferredDate: routeDate,
@@ -106,7 +121,10 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       pickupKind: form.pickup_kind || null,
       pickupDetail: form.pickup_detail,
       notes: form.notes,
-    });
+    };
+    const result = editRequest
+      ? await updateManualPickupRequest(editRequest.id, payload)
+      : await createManualPickupRequest(payload);
     setSaving(false);
     if (result.error || !result.data) return setError(result.error?.message || "No se pudo agregar la parada.");
     await onCreated(result.data);
@@ -116,7 +134,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   return <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}>
     <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl">
       <header className="sticky top-0 z-10 flex items-start justify-between border-b bg-white p-5 sm:p-6">
-        <div><p className="text-xs font-black uppercase tracking-[.15em] text-orange-600">WhatsApp o llamada</p><h2 className="mt-1 text-2xl font-black">Agregar parada manual</h2><p className="mt-1 text-sm font-bold text-slate-500">Se programará para {routeDate}. No crea un envío.</p></div>
+        <div><p className="text-xs font-black uppercase tracking-[.15em] text-orange-600">WhatsApp o llamada</p><h2 className="mt-1 text-2xl font-black">{editRequest ? "Editar parada manual" : "Agregar parada manual"}</h2><p className="mt-1 text-sm font-bold text-slate-500">{editRequest ? "Corrige los datos de esta parada." : `Se programará para ${routeDate}. No crea un envío.`}</p></div>
         <button onClick={onClose} disabled={saving} className="rounded-xl border p-2 text-slate-500"><X size={20} /></button>
       </header>
       <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
@@ -154,10 +172,20 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
         <div className="sm:col-span-2"><Field label="Notas"><textarea className="manual-input min-h-28 resize-y" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej. Escribir al llegar, tiene dos cajas..." /></Field></div>
         {error && <p className="sm:col-span-2 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-700">{error}</p>}
       </div>
-      <footer className="sticky bottom-0 flex justify-end gap-3 border-t bg-slate-50 p-5 sm:p-6"><button onClick={onClose} disabled={saving} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} Agregar parada</button></footer>
+      <footer className="sticky bottom-0 flex justify-end gap-3 border-t bg-slate-50 p-5 sm:p-6"><button onClick={onClose} disabled={saving} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} {editRequest ? "Guardar cambios" : "Agregar parada"}</button></footer>
       <style jsx>{`.manual-input{width:100%;border:1px solid #dbe3ee;border-radius:1rem;padding:.82rem 1rem;font-weight:700;outline:none;background:white}.manual-input:focus{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.12)}`}</style>
     </div>
   </div>;
+}
+
+function pickupKindFromRequest(request: PickupRequest) {
+  if (request.package_type === "box" && request.package_count === 1) return "one_box";
+  if (request.package_type === "box" && request.package_count === 2) return "two_boxes";
+  if (request.package_type === "box_3_plus" || (request.package_type === "box" && request.package_count >= 3)) return "three_plus_boxes";
+  if (request.package_type === "documents") return "documents";
+  if (request.package_type === "luggage") return "luggage";
+  if (request.package_type === "other") return "other";
+  return "";
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
