@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Loader2, MapPin, Plus, Search, UserRound, X } from "lucide-react";
+import { Check, Loader2, MapPin, Plus, Search, ShieldCheck, UserRound, X } from "lucide-react";
 import { createManualPickupRequest, getPickupServiceSettings, updateManualPickupRequest } from "@/lib/services/pickups";
 import { getCityOptions } from "@/lib/geo/location-catalog";
 import CityAutocomplete from "@/components/pickups/CityAutocomplete";
@@ -34,6 +34,7 @@ const emptyForm = {
   pickup_kind: "",
   pickup_detail: "",
   notes: "",
+  formatted_address: "", place_id: "", latitude: null as number | null, longitude: null as number | null, address_verified: false,
 };
 
 export default function ManualPickupStopModal({ open, storeId, routeId, routeDate, editRequest = null, onClose, onCreated }: Props) {
@@ -62,6 +63,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       pickup_kind: pickupKind,
       pickup_detail: pickupDetail,
       notes: editRequest.notes || "",
+      formatted_address: editRequest.formatted_address || "", place_id: editRequest.place_id || "", latitude: editRequest.latitude, longitude: editRequest.longitude, address_verified: Boolean(editRequest.address_verified),
     } : emptyForm);
     setError("");
     setCustomerMatches([]);
@@ -100,6 +102,15 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
 
   if (!open) return null;
 
+  async function validateAddress() {
+    if (!form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) return setError("Completa dirección, ciudad y ZIP antes de validar.");
+    setSaving(true); setError("");
+    const response = await fetch("/api/pickups/address", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ store_slug: "yoyo-envios", address_line_1: form.address_line_1, city: form.city, region: form.region, postal_code: form.postal_code, country_code: "US" }) });
+    const result = await response.json().catch(() => ({})); setSaving(false);
+    if (!response.ok || !result.valid) return setError(result.message || result.error || "No se pudo validar la dirección.");
+    setForm((current) => ({ ...current, address_line_1: result.addressLine1 || current.address_line_1, city: result.city || current.city, region: result.regionCode || current.region, postal_code: result.postalCode || current.postal_code, formatted_address: result.formattedAddress || "", place_id: result.placeId || "", latitude: result.latitude ?? null, longitude: result.longitude ?? null, address_verified: Boolean(result.verified) }));
+  }
+
   async function save() {
     if (!form.customer_name.trim() || !form.phone.trim() || !form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) {
       return setError("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
@@ -121,6 +132,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       pickupKind: form.pickup_kind || null,
       pickupDetail: form.pickup_detail,
       notes: form.notes,
+      formattedAddress: form.formatted_address, placeId: form.place_id, latitude: form.latitude, longitude: form.longitude, addressVerified: form.address_verified,
     };
     const result = editRequest
       ? await updateManualPickupRequest(editRequest.id, payload)
@@ -165,7 +177,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
           </Field>
           {form.pickup_kind === "other" && <div className="mt-3"><Field label="Describe qué recogeremos (opcional)"><input className="manual-input" value={form.pickup_detail} onChange={(e) => setForm({ ...form, pickup_detail: e.target.value })} placeholder="Ej. Televisor y una bolsa" /></Field></div>}
         </div>
-        <div className="sm:col-span-2"><Field label="Dirección *"><div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="manual-input pl-11" value={form.address_line_1} onChange={(e) => setForm({ ...form, address_line_1: e.target.value })} placeholder="Número y calle" /></div></Field></div>
+        <div className="sm:col-span-2"><Field label="Dirección *"><div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="manual-input pl-11" value={form.address_line_1} onChange={(e) => setForm({ ...form, address_line_1: e.target.value })} placeholder="Número y calle" /></div></Field><div className="mt-3 flex flex-wrap items-center gap-3"><button type="button" onClick={validateAddress} disabled={saving} className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700"><ShieldCheck size={16}/> Validar con Google Maps</button>{form.latitude != null && form.longitude != null && <span className="text-sm font-black text-emerald-700">✓ Ubicación lista para el mapa</span>}</div></div>
         <div className="sm:col-span-2"><Field label="Apartamento, unidad o referencia"><input className="manual-input" value={form.address_line_2} onChange={(e) => setForm({ ...form, address_line_2: e.target.value })} placeholder="Opcional" /></Field></div>
         <div><CityAutocomplete cities={cities} value={form.city} onChange={(city) => setForm({ ...form, city })} loading={citiesLoading} disabled={citiesLoading || !cities.length} placeholder="Ej. Columbia" /></div>
         <div className="grid grid-cols-[110px_1fr] gap-3"><Field label="Estado"><input className="manual-input" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value.toUpperCase().slice(0, 2) })} /></Field><Field label="ZIP Code *"><input className="manual-input" inputMode="numeric" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} /></Field></div>

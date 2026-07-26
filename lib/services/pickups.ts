@@ -269,6 +269,11 @@ export type ManualPickupRequestInput = {
   pickupKind?: string | null;
   pickupDetail?: string;
   notes?: string;
+  formattedAddress?: string;
+  placeId?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  addressVerified?: boolean;
 };
 
 export async function createManualPickupRequest(input: ManualPickupRequestInput) {
@@ -289,6 +294,11 @@ export async function createManualPickupRequest(input: ManualPickupRequestInput)
       pickup_kind: input.pickupKind || null,
       pickup_detail: input.pickupDetail || null,
       notes: input.notes || null,
+      formatted_address: input.formattedAddress || null,
+      place_id: input.placeId || null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      address_verified: Boolean(input.addressVerified),
     }),
   });
   return { data: result.data?.request || null, error: result.error };
@@ -313,6 +323,11 @@ export async function updateManualPickupRequest(requestId: string, input: Manual
       pickup_kind: input.pickupKind || null,
       pickup_detail: input.pickupDetail || null,
       notes: input.notes || null,
+      formatted_address: input.formattedAddress || null,
+      place_id: input.placeId || null,
+      latitude: input.latitude ?? null,
+      longitude: input.longitude ?? null,
+      address_verified: Boolean(input.addressVerified),
     }),
   });
   return { data: result.data?.request || null, error: result.error };

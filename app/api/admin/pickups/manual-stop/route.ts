@@ -83,6 +83,11 @@ export async function POST(request: NextRequest) {
   const region = clean(body.region, 40) || "SC";
   const postalCode = clean(body.postal_code, 20);
   const notes = clean(body.notes, 1000) || null;
+  const formattedAddress = clean(body.formatted_address, 300) || null;
+  const placeId = clean(body.place_id, 180) || null;
+  const latitude = Number.isFinite(Number(body.latitude)) ? Number(body.latitude) : null;
+  const longitude = Number.isFinite(Number(body.longitude)) ? Number(body.longitude) : null;
+  const addressVerified = Boolean(body.address_verified);
   const preferredDate = clean(body.preferred_date, 10) || null;
   const { pickupKind, pickupDetail, pickupOption } = readPickupFields(body);
 
@@ -103,8 +108,8 @@ export async function POST(request: NextRequest) {
   const confirmedDate = preferredDate || null;
   const { data: pickup, error: pickupError } = await supabaseAdmin.from("pickup_requests").insert({
     store_id: storeId, customer_name: customerName, phone, email, address_line_1: addressLine1, address_line_2: addressLine2,
-    formatted_address: `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
-    city, region, postal_code: postalCode, country_code: "US", address_verified: false, validation_provider: "manual",
+    formatted_address: formattedAddress || `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
+    city, region, postal_code: postalCode, country_code: "US", address_verified: addressVerified, validation_provider: addressVerified ? "google" : "manual", place_id: placeId, latitude, longitude,
     package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null, notes,
     internal_notes: ["Parada creada manualmente desde una conversación de WhatsApp o llamada.", pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
     status: routeId ? "assigned" : "confirmed", confirmed_date: confirmedDate, request_source: "manual", created_by: access.userId, customer_id: customer.id,
@@ -142,6 +147,11 @@ export async function PATCH(request: NextRequest) {
   const region = clean(body.region, 40) || "SC";
   const postalCode = clean(body.postal_code, 20);
   const notes = clean(body.notes, 1000) || null;
+  const formattedAddress = clean(body.formatted_address, 300) || null;
+  const placeId = clean(body.place_id, 180) || null;
+  const latitude = Number.isFinite(Number(body.latitude)) ? Number(body.latitude) : null;
+  const longitude = Number.isFinite(Number(body.longitude)) ? Number(body.longitude) : null;
+  const addressVerified = Boolean(body.address_verified);
   const { pickupKind, pickupDetail, pickupOption } = readPickupFields(body);
 
   if (!storeId || !requestId || !customerName || !phone || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
@@ -159,8 +169,8 @@ export async function PATCH(request: NextRequest) {
 
   const { data: pickup, error: updateError } = await supabaseAdmin.from("pickup_requests").update({
     customer_name: customerName, phone, email, address_line_1: addressLine1, address_line_2: addressLine2,
-    formatted_address: `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
-    city, region, postal_code: postalCode, package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null,
+    formatted_address: formattedAddress || `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
+    city, region, postal_code: postalCode, address_verified: addressVerified, validation_provider: addressVerified ? "google" : "manual", place_id: placeId, latitude, longitude, package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null,
     notes, internal_notes: ["Parada creada manualmente desde una conversación de WhatsApp o llamada.", pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
     customer_id: customer.id, updated_at: new Date().toISOString(),
   }).eq("id", requestId).eq("store_id", storeId).select("*").single();
