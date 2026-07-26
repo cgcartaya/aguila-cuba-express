@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, MapPin, Plus, X } from "lucide-react";
+import { Check, Loader2, MapPin, Plus, Search, UserRound, X } from "lucide-react";
 import { createManualPickupRequest, getPickupServiceSettings } from "@/lib/services/pickups";
 import { getCityOptions } from "@/lib/geo/location-catalog";
 import CityAutocomplete from "@/components/pickups/CityAutocomplete";
 import type { PickupRequest } from "@/lib/pickups/types";
+import { supabase } from "@/lib/supabase";
 
 type Props = {
   open: boolean;
@@ -14,6 +15,10 @@ type Props = {
   routeDate: string;
   onClose: () => void;
   onCreated: (request: PickupRequest) => void | Promise<void>;
+};
+
+type PickupCustomer = {
+  id: string; name: string; phone: string; email: string | null; address_line_1: string | null; address_line_2: string | null; city: string | null; region: string | null; postal_code: string | null; pickups_count: number; last_pickup_at: string | null;
 };
 
 const emptyForm = {
@@ -36,11 +41,16 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   const [error, setError] = useState("");
   const [cities, setCities] = useState<string[]>([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
+  const [customerMatches, setCustomerMatches] = useState<PickupCustomer[]>([]);
+  const [customerSearching, setCustomerSearching] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setForm(emptyForm);
     setError("");
+    setCustomerMatches([]);
+    setSelectedCustomerId(null);
     setCitiesLoading(true);
     getPickupServiceSettings(storeId).then(({ data }) => {
       const countryCode = data?.country_code || "US";
@@ -51,6 +61,27 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       setForm((current) => ({ ...current, region: regionCode }));
     }).finally(() => setCitiesLoading(false));
   }, [open, storeId]);
+
+  useEffect(() => {
+    if (!open || selectedCustomerId) return;
+    const query = form.phone.replace(/\D/g, "").length >= 3 ? form.phone : form.customer_name.trim().length >= 3 ? form.customer_name : "";
+    if (!query) { setCustomerMatches([]); return; }
+    const timer = window.setTimeout(async () => {
+      setCustomerSearching(true);
+      const { data } = await supabase.auth.getSession();
+      const response = await fetch(`/api/admin/pickups/customers?store_id=${encodeURIComponent(storeId)}&q=${encodeURIComponent(query)}`, { headers: { Authorization: `Bearer ${data.session?.access_token || ""}` }, cache: "no-store" });
+      const payload = await response.json().catch(() => ({}));
+      setCustomerMatches(response.ok ? payload.customers || [] : []);
+      setCustomerSearching(false);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [form.customer_name, form.phone, open, selectedCustomerId, storeId]);
+
+  function useCustomer(customer: PickupCustomer) {
+    setSelectedCustomerId(customer.id);
+    setCustomerMatches([]);
+    setForm((current) => ({ ...current, customer_name: customer.name || "", phone: customer.phone || "", email: customer.email || "", address_line_1: customer.address_line_1 || "", address_line_2: customer.address_line_2 || "", city: customer.city || "", region: customer.region || "SC", postal_code: customer.postal_code || "" }));
+  }
 
   if (!open) return null;
 
@@ -89,8 +120,14 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
         <button onClick={onClose} disabled={saving} className="rounded-xl border p-2 text-slate-500"><X size={20} /></button>
       </header>
       <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
-        <Field label="Nombre del cliente *"><input className="manual-input" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} placeholder="Ej. Carlos García" /></Field>
-        <Field label="Teléfono *"><input className="manual-input" inputMode="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(864) 555-0000" /></Field>
+        <Field label="Nombre del cliente *"><input className="manual-input" value={form.customer_name} onChange={(e) => { setSelectedCustomerId(null); setForm({ ...form, customer_name: e.target.value }); }} placeholder="Ej. Carlos García" /></Field>
+        <Field label="Teléfono *"><input className="manual-input" inputMode="tel" value={form.phone} onChange={(e) => { setSelectedCustomerId(null); setForm({ ...form, phone: e.target.value }); }} placeholder="(864) 555-0000" /></Field>
+        {(customerSearching || customerMatches.length > 0 || selectedCustomerId) && <div className="sm:col-span-2">
+          {selectedCustomerId ? <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-black text-emerald-800"><Check size={18} /> Cliente existente cargado. Puedes actualizar cualquier dato antes de guardar.</div> : <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3">
+            <p className="mb-2 flex items-center gap-2 text-sm font-black text-blue-900">{customerSearching ? <Loader2 className="animate-spin" size={16} /> : <Search size={16} />} Clientes encontrados</p>
+            <div className="space-y-2">{customerMatches.map((customer) => <button key={customer.id} type="button" onClick={() => useCustomer(customer)} className="flex w-full items-center justify-between rounded-xl bg-white p-3 text-left shadow-sm hover:ring-2 hover:ring-blue-200"><span className="flex items-center gap-3"><UserRound size={18} className="text-blue-600" /><span><b className="block text-slate-900">{customer.name}</b><small className="font-bold text-slate-500">{customer.phone} · {customer.city || "Sin ciudad"}</small></span></span><span className="text-xs font-black text-blue-700">{customer.pickups_count || 0} recogidas</span></button>)}</div>
+          </div>}
+        </div>}
         <Field label="Email"><input className="manual-input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Opcional" /></Field>
         <div className="sm:col-span-2">
           <Field label="¿Qué recogeremos? (opcional)">

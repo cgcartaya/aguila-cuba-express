@@ -83,6 +83,28 @@ export async function POST(request: NextRequest) {
     if (["completed", "cancelled"].includes(route.status)) return fail("No puedes agregar paradas a una ruta cerrada.");
   }
 
+  const phoneNormalized = phone.replace(/\D/g, "");
+  const { data: customer, error: customerError } = await supabaseAdmin
+    .from("pickup_customers")
+    .upsert({
+      store_id: storeId,
+      name: customerName,
+      phone,
+      phone_normalized: phoneNormalized,
+      email,
+      address_line_1: addressLine1,
+      address_line_2: addressLine2,
+      city,
+      region,
+      postal_code: postalCode,
+      last_pickup_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "store_id,phone_normalized" })
+    .select("id")
+    .single();
+
+  if (customerError || !customer) return fail(customerError?.message || "No se pudo guardar el cliente.", 500);
+
   const confirmedDate = preferredDate || null;
   const { data: pickup, error: pickupError } = await supabaseAdmin
     .from("pickup_requests")
@@ -111,11 +133,15 @@ export async function POST(request: NextRequest) {
       confirmed_date: confirmedDate,
       request_source: "manual",
       created_by: access.userId,
+      customer_id: customer.id,
     })
     .select("*")
     .single();
 
   if (pickupError || !pickup) return fail(pickupError?.message || "No se pudo crear la parada manual.", 500);
+
+  const { count } = await supabaseAdmin.from("pickup_requests").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("customer_id", customer.id);
+  await supabaseAdmin.from("pickup_customers").update({ pickups_count: count || 1, last_pickup_at: pickup.created_at, updated_at: new Date().toISOString() }).eq("id", customer.id);
 
   if (confirmedDate) {
     const { error: dateError } = await supabaseAdmin.from("pickup_request_dates").insert({

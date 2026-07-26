@@ -24,7 +24,6 @@ import {
   Route,
   Users,
   Wrench,
-  KeyRound,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -65,6 +64,7 @@ const sections: AdminSection[] = [
     links: [
       { href: "/admin/pickups", label: "Solicitudes de recogida", icon: CalendarDays },
       { href: "/admin/pickups/routes", label: "Rutas de recogida", icon: Route },
+      { href: "/admin/pickups/customers", label: "Clientes de recogida", icon: Users },
       { href: "/admin/pickups/zones", label: "Zonas y ciudades", icon: Layers3 },
       { href: "/admin/pickups/settings", label: "Configurar cobertura", icon: MapPin },
     ],
@@ -96,7 +96,6 @@ const sections: AdminSection[] = [
     title: "Configuración",
     links: [
       { href: "/admin/settings", label: "Ajustes de tienda", icon: Settings },
-      { href: "/admin/account/password", label: "Mi contraseña", icon: KeyRound },
     ],
   },
 ];

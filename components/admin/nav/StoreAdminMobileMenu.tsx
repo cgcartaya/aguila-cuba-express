@@ -25,7 +25,6 @@ import {
   MapPin,
   Megaphone,
   Globe2,
-  KeyRound,
 } from "lucide-react";
 
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
@@ -56,6 +55,7 @@ const storeLinks: MenuItem[] = [
   { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
   { label: "Recogidas", href: "/admin/pickups", icon: CalendarDays },
   { label: "Rutas de recogida", href: "/admin/pickups/routes", icon: Route },
+  { label: "Clientes de recogida", href: "/admin/pickups/customers", icon: Users },
   { label: "Zonas y ciudades", href: "/admin/pickups/zones", icon: Layers3 },
   { label: "Cobertura de recogidas", href: "/admin/pickups/settings", icon: MapPin },
   { label: "Dashboard de envíos", href: "/admin/shipping", icon: LayoutDashboard },
@@ -69,7 +69,6 @@ const storeLinks: MenuItem[] = [
   { label: "Visitas", href: "/admin/analytics", icon: BarChart3 },
   { label: "Promociones", href: "/admin/marketing/promotions", icon: Megaphone },
   { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },
-  { label: "Mi contraseña", href: "/admin/account/password", icon: KeyRound },
   { label: "Ver tienda pública", href: "/tienda", icon: ExternalLink },
 ];
 
