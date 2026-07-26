@@ -9,6 +9,8 @@ export type CheckoutForm = {
   recipient_phone: string;
   recipient_phone_alt: string;
 
+  city: string;
+  reference: string;
   municipality: string;
   delivery_zone_id: string;
   exact_address: string;
@@ -41,6 +43,7 @@ export type DeliveryAddressProps = {
   availableZones: DeliveryZone[];
   loadingZones: boolean;
   municipalityHasNoZones: boolean;
+  showNotes?: boolean;
   onChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement

@@ -1,17 +1,5 @@
 "use client";
 
-/* =========================================================
-   CHECKOUT - TIENDA PÚBLICA
-
-   Refactor profesional:
-   - Crea cliente
-   - Crea orden
-   - Guarda items
-   - Descuenta inventario
-   - Genera mensaje compacto para WhatsApp
-   - Abre WhatsApp app en móvil y WhatsApp Web en escritorio
-========================================================= */
-
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,12 +18,20 @@ import {
   processOrderInventory,
   validateOrderStock,
 } from "@/lib/services/inventory";
+import { getCheckoutSettings } from "@/lib/checkout/settings-service";
+import {
+  createDefaultCheckoutSettings,
+  type CheckoutMethod,
+  type CheckoutSettings,
+} from "@/lib/checkout/types";
 
 import { CustomerInfoForm } from "@/components/checkout/CustomerInfoForm";
 import { RecipientInfoForm } from "@/components/checkout/RecipientInfoForm";
 import { DeliveryAddressForm } from "@/components/checkout/DeliveryAddressForm";
+import { LocalDeliveryAddressForm } from "@/components/checkout/LocalDeliveryAddressForm";
+import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSelector";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
-import type { CheckoutForm } from "@/components/checkout/types";
+import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
 import type { AppliedDiscount } from "@/components/checkout/DiscountCouponBox";
 
 import {
@@ -45,15 +41,17 @@ import {
   isCheckoutFormComplete,
 } from "@/lib/utils/checkout";
 
+const YOYO_SLUG = "yoyo-envios";
+
 const initialForm: CheckoutForm = {
   name: "",
   email: "",
   phone: "",
-
   recipient_name: "",
   recipient_phone: "",
   recipient_phone_alt: "",
-
+  city: "",
+  reference: "",
   municipality: "",
   delivery_zone_id: "",
   exact_address: "",
@@ -63,167 +61,191 @@ const initialForm: CheckoutForm = {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart } = useCart();
-
   const { store } = useStore();
 
-  const isDefaultStore = store?.slug === "aguila";
-
-  const cartUrl =
-    store?.slug && !isDefaultStore
-      ? `/tienda/${store.slug}/cart`
-      : "/tienda/cart";
-
+  const isYoyo = store?.slug === YOYO_SLUG;
+  const cartUrl = store?.slug ? `/tienda/${store.slug}/cart` : "/tienda/cart";
   const orderUrlBase = "/pedido";
 
   const [form, setForm] = useState<CheckoutForm>(initialForm);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [businessWhatsapp, setBusinessWhatsapp] = useState("");
-
+  const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings | null>(null);
+  const [method, setMethod] = useState<CheckoutMethod>("cuba");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [loadingZones, setLoadingZones] = useState(true);
+  const [loadingCheckout, setLoadingCheckout] = useState(true);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
   useEffect(() => {
     async function loadCheckoutData() {
+      if (!store?.id) return;
+
       try {
-        setLoadingZones(true);
-
-        if (!store?.id) return;
-
-        const [zonesResponse, settingsResponse] = await Promise.all([
+        setLoadingCheckout(true);
+        const [zonesResponse, storeSettingsResponse, builderResponse] = await Promise.all([
           getActiveDeliveryZones(store.id),
           getStoreSettings(store.id),
+          getCheckoutSettings(store.id),
         ]);
 
         if (zonesResponse.error) throw zonesResponse.error;
 
         setZones(zonesResponse.data || []);
+        setBusinessWhatsapp(
+          storeSettingsResponse.data?.whatsapp?.replace(/\D/g, "") || ""
+        );
 
-        const cleanWhatsapp = settingsResponse.data?.whatsapp?.replace(/\D/g, "") || "";
-        setBusinessWhatsapp(cleanWhatsapp);
-      } catch (err: any) {
-        console.error("ERROR CARGANDO CHECKOUT:", err);
+        const settings = builderResponse.data || createDefaultCheckoutSettings(store.id);
+        setCheckoutSettings(settings);
+
+        const allowedDefault =
+          (settings.default_method === "delivery" && settings.enabled_delivery) ||
+          (settings.default_method === "cuba" && settings.enabled_cuba);
+
+        setMethod(
+          allowedDefault
+            ? settings.default_method
+            : settings.enabled_delivery
+              ? "delivery"
+              : "cuba"
+        );
+      } catch (checkoutError: any) {
+        console.error("ERROR CARGANDO CHECKOUT:", checkoutError);
         setError("No se pudo cargar la información del checkout.");
       } finally {
-        setLoadingZones(false);
+        setLoadingCheckout(false);
       }
     }
 
-    loadCheckoutData();
+    void loadCheckoutData();
   }, [store?.id]);
 
   const availableZones = useMemo(() => {
     if (!form.municipality) return [];
-
     return zones.filter((zone) => zone.municipality === form.municipality);
   }, [zones, form.municipality]);
 
-  const selectedZone = useMemo(() => {
-    return zones.find((zone) => zone.id === form.delivery_zone_id) || null;
-  }, [zones, form.delivery_zone_id]);
+  const selectedZone = useMemo(
+    () => zones.find((zone) => zone.id === form.delivery_zone_id) || null,
+    [zones, form.delivery_zone_id]
+  );
 
-  const totals = useMemo(() => {
-    return calculateCheckoutTotals(cart, selectedZone);
-  }, [cart, selectedZone]);
+  const cubaTotals = useMemo(
+    () => calculateCheckoutTotals(cart, selectedZone),
+    [cart, selectedZone]
+  );
+
+  const totals = useMemo<CheckoutTotals>(() => {
+    if (!isYoyo || method === "cuba") return cubaTotals;
+
+    const subtotal = cart.reduce(
+      (sum, item) => sum + Number(item.price) * item.quantity,
+      0
+    );
+    const shippingCost = checkoutSettings?.show_delivery_price
+      ? Number(checkoutSettings.fixed_delivery_fee || 0)
+      : 0;
+
+    return {
+      subtotal,
+      minimumOrder: 0,
+      baseDeliveryFee: shippingCost,
+      freeDeliveryFrom: 0,
+      hasFreeDelivery: shippingCost === 0,
+      shippingCost,
+      finalTotal: subtotal + shippingCost,
+      missingAmount: 0,
+    };
+  }, [cart, checkoutSettings, cubaTotals, isYoyo, method]);
 
   const discountAmount = appliedDiscount?.discountAmount || 0;
-  const finalTotalWithDiscount = Math.max(
-    totals.finalTotal - discountAmount,
-    0
-  );
+  const finalTotalWithDiscount = Math.max(totals.finalTotal - discountAmount, 0);
 
   useEffect(() => {
     if (!store?.id || cart.length === 0) return;
-
     void trackAnalyticsEvent({
       storeId: store.id,
       eventName: "begin_checkout",
       value: finalTotalWithDiscount,
-      metadata: { items: cart.length },
+      metadata: { items: cart.length, fulfillmentMethod: method },
     });
-  }, [store?.id, cart.length]);
+  }, [store?.id, cart.length, method]);
 
   const municipalityHasNoZones =
-    Boolean(form.municipality) && !loadingZones && availableZones.length === 0;
+    Boolean(form.municipality) && !loadingCheckout && availableZones.length === 0;
 
-  const canCheckout = isCheckoutFormComplete(
-    form,
-    cart,
-    selectedZone,
-    totals
-  );
+  const canCheckout = useMemo(() => {
+    if (!isYoyo || method === "cuba") {
+      return isCheckoutFormComplete(form, cart, selectedZone, totals);
+    }
+
+    return (
+      cart.length > 0 &&
+      Boolean(form.name.trim()) &&
+      Boolean(form.email.trim()) &&
+      Boolean(form.phone.trim()) &&
+      Boolean(form.city.trim()) &&
+      Boolean(form.exact_address.trim())
+    );
+  }, [cart, form, isYoyo, method, selectedZone, totals]);
 
   function handleChange(
-    e: React.ChangeEvent<
+    event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >
   ) {
-    const { name, value } = e.target;
-
+    const { name, value } = event.target;
     if (name === "phone") setAppliedDiscount(null);
 
     setForm((current) => {
       if (name === "municipality") {
-        return {
-          ...current,
-          municipality: value,
-          delivery_zone_id: "",
-        };
+        return { ...current, municipality: value, delivery_zone_id: "" };
       }
-
-      return {
-        ...current,
-        [name]: value,
-      };
+      return { ...current, [name]: value };
     });
   }
 
+  function changeMethod(nextMethod: CheckoutMethod) {
+    if (nextMethod === "pickup") return;
+    setMethod(nextMethod);
+    setError("");
+    setAppliedDiscount(null);
+  }
+
   async function createOrUpdateCustomer() {
-    const { data: existingCustomer, error: existingCustomerError } =
-      await supabase
-        .from("customers")
-        .select("*")
-        .eq("email", form.email)
-        .maybeSingle();
+    const { data: existingCustomer, error: existingCustomerError } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("email", form.email)
+      .maybeSingle();
 
     if (existingCustomerError) throw existingCustomerError;
+
+    const city = method === "delivery" ? form.city : form.municipality;
 
     if (existingCustomer) {
       const { error: updateCustomerError } = await supabase
         .from("customers")
-        .update({
-          name: form.name,
-          phone: form.phone,
-          city: form.municipality,
-        })
+        .update({ name: form.name, phone: form.phone, city })
         .eq("id", existingCustomer.id);
-
       if (updateCustomerError) throw updateCustomerError;
-
       return existingCustomer;
     }
 
     const { data: newCustomer, error: customerError } = await supabase
       .from("customers")
-      .insert({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        city: form.municipality,
-      })
+      .insert({ name: form.name, email: form.email, phone: form.phone, city })
       .select()
       .single();
 
     if (customerError) throw customerError;
-
     return newCustomer;
   }
 
   function buildOrderItemsBase() {
     return cart.map((item) => {
       const originalId = getOriginalCartItemId(item.id);
-
       return {
         item_type: item.type,
         product_id: item.type === "product" ? originalId : null,
@@ -236,112 +258,131 @@ export default function CheckoutPage() {
     });
   }
 
-async function createOrder(customerId: string, zone: DeliveryZone) {
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
-    .insert({
+  async function createOrder(customerId: string) {
+    const isLocalDelivery = isYoyo && method === "delivery";
+    const zone = isLocalDelivery ? null : selectedZone;
+
+    const payload = {
       customer_id: customerId,
       store_id: store?.id,
-
       status: "pending",
       payment_status: "pending",
+      subtotal: totals.subtotal,
+      delivery_fee: totals.shippingCost,
+      discount_campaign_id: appliedDiscount?.campaignId || null,
+      discount_code: appliedDiscount?.code || null,
+      discount_amount: discountAmount,
+      total: finalTotalWithDiscount,
+      country: isLocalDelivery ? "Estados Unidos" : "Cuba",
+      state: isLocalDelivery ? null : "Cienfuegos",
+      municipality: isLocalDelivery ? form.city : form.municipality,
+      delivery_zone_id: zone?.id || null,
+      zone_name: zone?.zone_name || null,
+      exact_address: form.exact_address,
+      recipient_name: isLocalDelivery ? form.name : form.recipient_name,
+      recipient_phone: isLocalDelivery ? form.phone : form.recipient_phone,
+      recipient_phone_alt: isLocalDelivery ? null : form.recipient_phone_alt,
+      address: form.exact_address,
+      notes: [form.reference ? `Referencia: ${form.reference}` : "", form.notes]
+        .filter(Boolean)
+        .join("\n"),
+    };
 
-        subtotal: totals.subtotal,
-        delivery_fee: totals.shippingCost,
-        discount_campaign_id: appliedDiscount?.campaignId || null,
-        discount_code: appliedDiscount?.code || null,
-        discount_amount: discountAmount,
-        total: finalTotalWithDiscount,
-
-        country: "Cuba",
-        state: "Cienfuegos",
-        municipality: form.municipality,
-        delivery_zone_id: zone.id,
-        zone_name: zone.zone_name,
-        exact_address: form.exact_address,
-
-        recipient_name: form.recipient_name,
-        recipient_phone: form.recipient_phone,
-        recipient_phone_alt: form.recipient_phone_alt,
-
-        address: form.exact_address,
-        notes: form.notes,
-      })
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert(payload)
       .select()
       .single();
 
     if (orderError) throw orderError;
-
     return order;
   }
 
-  function openWhatsappByDevice(whatsappMessage: string, orderNumber: string) {
+  function buildYoyoWhatsappMessage(orderNumber: string, orderUrl: string) {
+    const products = cart
+      .map(
+        (item) =>
+          `${item.quantity}x ${item.name}: $${(
+            Number(item.price) * item.quantity
+          ).toFixed(2)}`
+      )
+      .join("\n");
+
+    const deliverySection =
+      method === "delivery"
+        ? `ENTREGA A DOMICILIO\nCiudad: ${form.city}\nDirección: ${form.exact_address}${
+            form.reference ? `\nReferencia: ${form.reference}` : ""
+          }`
+        : `ENVÍO A CUBA\nDestinatario: ${form.recipient_name}\nTeléfono: ${
+            form.recipient_phone
+          }${form.recipient_phone_alt ? `\nTeléfono alternativo: ${form.recipient_phone_alt}` : ""}\nMunicipio: ${form.municipality}\nZona: ${selectedZone?.zone_name || ""}\nDirección: ${form.exact_address}`;
+
+    return encodeURIComponent(`YOYO ENVÍOS
+--------------------
+PEDIDO NUEVO
+Orden: ${orderNumber}
+
+CLIENTE
+Nombre: ${form.name}
+Teléfono: ${form.phone}
+Email: ${form.email}
+
+${deliverySection}
+
+PRODUCTOS
+${products}
+
+RESUMEN
+Subtotal: $${totals.subtotal.toFixed(2)}${
+      totals.shippingCost > 0 ? `\nDelivery: $${totals.shippingCost.toFixed(2)}` : ""
+    }${
+      appliedDiscount
+        ? `\nDescuento (${appliedDiscount.code}): -$${discountAmount.toFixed(2)}`
+        : ""
+    }
+TOTAL: $${finalTotalWithDiscount.toFixed(2)}
+
+NOTAS
+${form.notes || "Sin notas"}
+
+Ver pedido:
+${orderUrl}`);
+  }
+
+  function openWhatsappByDevice(message: string, orderNumber: string) {
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
     if (isMobile) {
-      window.location.href = `whatsapp://send?phone=${businessWhatsapp}&text=${whatsappMessage}`;
-
-      setTimeout(() => {
-        router.push(`${orderUrlBase}/${orderNumber}`);
-      }, 2000);
-
+      window.location.href = `whatsapp://send?phone=${businessWhatsapp}&text=${message}`;
+      setTimeout(() => router.push(`${orderUrlBase}/${orderNumber}`), 2000);
       return;
     }
-
     window.open(
-      `https://web.whatsapp.com/send?phone=${businessWhatsapp}&text=${whatsappMessage}`,
+      `https://web.whatsapp.com/send?phone=${businessWhatsapp}&text=${message}`,
       "_blank"
     );
-
     router.push(`${orderUrlBase}/${orderNumber}`);
   }
 
   async function handleSubmit() {
     setError("");
 
-    if (!store?.id) {
-      setError("No se pudo identificar la tienda del pedido.");
-      return;
-    }
-
-    if (!businessWhatsapp) {
-      setError("Esta tienda todavía no tiene WhatsApp configurado.");
-      return;
-    }
-
-    if (cart.length === 0) {
-      setError("Tu carrito está vacío.");
-      return;
-    }
-
-    if (!selectedZone) {
-      setError("Selecciona una zona de entrega.");
-      return;
-    }
-
+    if (!store?.id) return setError("No se pudo identificar la tienda del pedido.");
+    if (!businessWhatsapp) return setError("Esta tienda todavía no tiene WhatsApp configurado.");
+    if (cart.length === 0) return setError("Tu carrito está vacío.");
+    if (method === "cuba" && !selectedZone) return setError("Selecciona una zona de entrega.");
     if (totals.subtotal < totals.minimumOrder) {
-      setError(
-        `La compra mínima para esta zona es de $${totals.minimumOrder.toFixed(
-          2
-        )}. Te faltan $${totals.missingAmount.toFixed(2)}.`
+      return setError(
+        `La compra mínima para esta zona es de $${totals.minimumOrder.toFixed(2)}. Te faltan $${totals.missingAmount.toFixed(2)}.`
       );
-      return;
     }
-
-    if (!canCheckout) {
-      setError("Completa todos los campos obligatorios.");
-      return;
-    }
+    if (!canCheckout) return setError("Completa todos los campos obligatorios.");
 
     try {
       setLoading(true);
-
       const customer = await createOrUpdateCustomer();
       const orderItemsBase = buildOrderItemsBase();
-
       await validateOrderStock(orderItemsBase);
-
-      const order = await createOrder(customer.id, selectedZone);
+      const order = await createOrder(customer.id);
 
       if (appliedDiscount) {
         const redeemResponse = await fetch("/api/discounts/redeem", {
@@ -354,25 +395,16 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
             orderId: order.id,
           }),
         });
-
         const redeemResult = await redeemResponse.json();
-
         if (!redeemResponse.ok || !redeemResult.success) {
           await supabase.from("orders").delete().eq("id", order.id);
-          throw new Error(
-            redeemResult.message || "El bono ya no está disponible."
-          );
+          throw new Error(redeemResult.message || "El bono ya no está disponible.");
         }
       }
 
-      const orderItems = orderItemsBase.map((item) => ({
-        ...item,
-        order_id: order.id,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
+      const { error: itemsError } = await supabase.from("order_items").insert(
+        orderItemsBase.map((item) => ({ ...item, order_id: order.id }))
+      );
 
       if (itemsError) {
         if (appliedDiscount) {
@@ -389,98 +421,134 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         throw itemsError;
       }
 
-      await processOrderInventory(orderItems);
+      await processOrderInventory(orderItemsBase.map((item) => ({ ...item, order_id: order.id })));
 
       const orderNumber = order.order_number || order.id;
-      const origin = window.location.origin;
-      const orderUrl = `${origin}${orderUrlBase}/${orderNumber}`;
-
-      const whatsappMessage = buildWhatsappOrderMessage({
-        orderNumber,
-        form,
-        cart,
-        selectedZone,
-        subtotal: totals.subtotal,
-        shippingCost: totals.shippingCost,
-        finalTotal: finalTotalWithDiscount,
-        discountCode: appliedDiscount?.code || null,
-        discountAmount,
-        orderUrl,
-      });
-
-      // Analítica Fase 2: registrar la conversión solo después de crear
-      // correctamente la orden, sus artículos y descontar el inventario.
-      if (store?.id) {
-        void trackAnalyticsEvent({
-          storeId: store.id,
-          eventName: "order_created",
-          orderId: order.id,
-          value: finalTotalWithDiscount,
-          metadata: {
+      const orderUrl = `${window.location.origin}${orderUrlBase}/${orderNumber}`;
+      const whatsappMessage = isYoyo
+        ? buildYoyoWhatsappMessage(orderNumber, orderUrl)
+        : buildWhatsappOrderMessage({
             orderNumber,
-            items: cart.length,
+            form,
+            cart,
+            selectedZone: selectedZone!,
+            subtotal: totals.subtotal,
+            shippingCost: totals.shippingCost,
+            finalTotal: finalTotalWithDiscount,
             discountCode: appliedDiscount?.code || null,
             discountAmount,
-          },
-        });
-      }
+            orderUrl,
+          });
+
+      void trackAnalyticsEvent({
+        storeId: store.id,
+        eventName: "order_created",
+        orderId: order.id,
+        value: finalTotalWithDiscount,
+        metadata: {
+          orderNumber,
+          items: cart.length,
+          fulfillmentMethod: method,
+          discountCode: appliedDiscount?.code || null,
+          discountAmount,
+        },
+      });
 
       clearCart();
       openWhatsappByDevice(whatsappMessage, orderNumber);
-    } catch (err: any) {
-      console.error("ERROR CHECKOUT:", err);
-      setError(err?.message || "Ocurrió un error al crear la orden.");
+    } catch (submitError: any) {
+      console.error("ERROR CHECKOUT:", submitError);
+      setError(submitError?.message || "Ocurrió un error al crear la orden.");
     } finally {
       setLoading(false);
     }
   }
 
+  const settings = checkoutSettings || (store?.id ? createDefaultCheckoutSettings(store.id) : null);
+  const showRecipient = !isYoyo || (method === "cuba" && settings?.blocks.recipient !== false);
+  const showAddress = !isYoyo || settings?.blocks.address !== false;
+  const showNotes = !isYoyo || settings?.blocks.notes !== false;
+  const showCoupon = !isYoyo || settings?.blocks.coupon !== false;
+  const showDelivery = !isYoyo || settings?.show_delivery_price === true;
+
   return (
     <main className="min-h-screen bg-gray-50 pb-24">
       <div className="mx-auto max-w-6xl px-4 py-6">
-        <Link
-          href={cartUrl}
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600"
-        >
+        <Link href={cartUrl} className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600">
           <ArrowLeft size={18} />
           Volver al carrito
         </Link>
 
         <h1 className="mb-6 text-2xl font-bold text-gray-900">Checkout</h1>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <section className="space-y-6 lg:col-span-2">
-            <CustomerInfoForm form={form} onChange={handleChange} />
+        {loadingCheckout ? (
+          <div className="rounded-3xl bg-white p-8 text-center font-semibold text-gray-500 shadow-sm">
+            Cargando checkout...
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-3">
+            <section className="space-y-6 lg:col-span-2">
+              {isYoyo && settings && (
+                <CheckoutMethodSelector
+                  value={method}
+                  enabledDelivery={settings.enabled_delivery}
+                  enabledCuba={settings.enabled_cuba}
+                  onChange={changeMethod}
+                />
+              )}
 
-            <RecipientInfoForm form={form} onChange={handleChange} />
+              {(!isYoyo || settings?.blocks.customer !== false) && (
+                <CustomerInfoForm form={form} onChange={handleChange} />
+              )}
 
-            <DeliveryAddressForm
-              form={form}
-              zones={zones}
+              {showRecipient && <RecipientInfoForm form={form} onChange={handleChange} />}
+
+              {showAddress && method === "delivery" && isYoyo ? (
+                <LocalDeliveryAddressForm
+                  form={form}
+                  showNotes={showNotes}
+                  onChange={handleChange}
+                />
+              ) : showAddress ? (
+                <DeliveryAddressForm
+                  form={form}
+                  zones={zones}
+                  selectedZone={selectedZone}
+                  availableZones={availableZones}
+                  loadingZones={loadingCheckout}
+                  municipalityHasNoZones={municipalityHasNoZones}
+                  showNotes={showNotes}
+                  onChange={handleChange}
+                />
+              ) : null}
+            </section>
+
+            <OrderSummary
+              cart={cart}
               selectedZone={selectedZone}
-              availableZones={availableZones}
-              loadingZones={loadingZones}
-              municipalityHasNoZones={municipalityHasNoZones}
-              onChange={handleChange}
+              municipality={method === "delivery" ? form.city : form.municipality}
+              totals={totals}
+              error={error}
+              loading={loading}
+              canCheckout={canCheckout}
+              onSubmit={handleSubmit}
+              storeId={store?.id || ""}
+              customerPhone={form.phone}
+              appliedDiscount={appliedDiscount}
+              onApplyDiscount={setAppliedDiscount}
+              onRemoveDiscount={() => setAppliedDiscount(null)}
+              showCoupon={showCoupon}
+              showDelivery={showDelivery}
+              deliveryLabel="Delivery"
+              deliveryRequiresZone={method === "cuba"}
+              locationLabel={
+                method === "delivery" && form.city
+                  ? `Entrega en ${form.city}`
+                  : undefined
+              }
             />
-          </section>
-
-          <OrderSummary
-            cart={cart}
-            selectedZone={selectedZone}
-            municipality={form.municipality}
-            totals={totals}
-            error={error}
-            loading={loading}
-            canCheckout={canCheckout}
-            onSubmit={handleSubmit}
-            storeId={store?.id || ""}
-            customerPhone={form.phone}
-            appliedDiscount={appliedDiscount}
-            onApplyDiscount={setAppliedDiscount}
-            onRemoveDiscount={() => setAppliedDiscount(null)}
-          />
-        </div>
+          </div>
+        )}
       </div>
     </main>
   );

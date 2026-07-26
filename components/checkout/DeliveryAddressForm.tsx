@@ -7,6 +7,7 @@ export function DeliveryAddressForm({
   availableZones,
   loadingZones,
   municipalityHasNoZones,
+  showNotes = true,
   onChange,
 }: DeliveryAddressProps) {
   return (
@@ -91,14 +92,16 @@ export function DeliveryAddressForm({
           className="rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
-        <textarea
-          name="notes"
-          placeholder="¿Quieres aclararnos algo? Ej: Toque el timbre varias veces..."
-          value={form.notes}
-          onChange={onChange}
-          rows={4}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black"
-        />
+        {showNotes && (
+          <textarea
+            name="notes"
+            placeholder="¿Quieres aclararnos algo? Ej: Toque el timbre varias veces..."
+            value={form.notes}
+            onChange={onChange}
+            rows={4}
+            className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+          />
+        )}
       </div>
     </div>
   );

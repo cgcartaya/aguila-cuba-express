@@ -1,4 +1,3 @@
-
 import {
   Loader2,
   MessageCircle,
@@ -27,6 +26,11 @@ type Props = {
   appliedDiscount: AppliedDiscount | null;
   onApplyDiscount: (discount: AppliedDiscount) => void;
   onRemoveDiscount: () => void;
+  showCoupon?: boolean;
+  showDelivery?: boolean;
+  deliveryLabel?: string;
+  deliveryRequiresZone?: boolean;
+  locationLabel?: string;
 };
 
 export function OrderSummary({
@@ -43,6 +47,11 @@ export function OrderSummary({
   appliedDiscount,
   onApplyDiscount,
   onRemoveDiscount,
+  showCoupon = true,
+  showDelivery = true,
+  deliveryLabel = "Domicilio",
+  deliveryRequiresZone = true,
+  locationLabel,
 }: Props) {
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
@@ -55,10 +64,7 @@ export function OrderSummary({
 
       <div className="space-y-3">
         {cart.map((item) => (
-          <div
-            key={item.id}
-            className="flex items-start justify-between gap-3 text-sm"
-          >
+          <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
             <div>
               <span
                 className={`mb-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black ${
@@ -67,18 +73,12 @@ export function OrderSummary({
                     : "bg-blue-100 text-blue-700"
                 }`}
               >
-                {item.type === "combo" ? (
-                  <Package size={11} />
-                ) : (
-                  <ShoppingBag size={11} />
-                )}
+                {item.type === "combo" ? <Package size={11} /> : <ShoppingBag size={11} />}
                 {item.type === "combo" ? "Combo" : "Producto"}
               </span>
-
               <p className="font-medium text-gray-900">{item.name}</p>
               <p className="text-gray-500">Cantidad: {item.quantity}</p>
             </div>
-
             <p className="font-semibold">
               ${(Number(item.price) * item.quantity).toFixed(2)}
             </p>
@@ -86,16 +86,19 @@ export function OrderSummary({
         ))}
       </div>
 
-      <div className="my-5 border-t" />
-
-      <DiscountCouponBox
-        storeId={storeId}
-        phone={customerPhone}
-        subtotal={totals.subtotal}
-        appliedDiscount={appliedDiscount}
-        onApply={onApplyDiscount}
-        onRemove={onRemoveDiscount}
-      />
+      {showCoupon && (
+        <>
+          <div className="my-5 border-t" />
+          <DiscountCouponBox
+            storeId={storeId}
+            phone={customerPhone}
+            subtotal={totals.subtotal}
+            appliedDiscount={appliedDiscount}
+            onApply={onApplyDiscount}
+            onRemove={onRemoveDiscount}
+          />
+        </>
+      )}
 
       <div className="my-5 border-t" />
 
@@ -105,20 +108,21 @@ export function OrderSummary({
           <span className="font-bold">${totals.subtotal.toFixed(2)}</span>
         </div>
 
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1 text-gray-500">
-            <Truck size={15} />
-            Domicilio
-          </span>
-
-          <span className="font-bold">
-            {!selectedZone
-              ? "Selecciona zona"
-              : totals.shippingCost === 0
-              ? "Gratis"
-              : `$${totals.shippingCost.toFixed(2)}`}
-          </span>
-        </div>
+        {showDelivery && (
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1 text-gray-500">
+              <Truck size={15} />
+              {deliveryLabel}
+            </span>
+            <span className="font-bold">
+              {deliveryRequiresZone && !selectedZone
+                ? "Selecciona zona"
+                : totals.shippingCost === 0
+                  ? "Gratis"
+                  : `$${totals.shippingCost.toFixed(2)}`}
+            </span>
+          </div>
+        )}
 
         {appliedDiscount && (
           <div className="flex items-center justify-between font-bold text-green-700">
@@ -127,20 +131,18 @@ export function OrderSummary({
           </div>
         )}
 
-        {selectedZone && (
+        {(locationLabel || selectedZone) && (
           <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
-            Zona:{" "}
             <strong>
-              {municipality} / {selectedZone.zone_name}
+              {locationLabel || `${municipality} / ${selectedZone?.zone_name}`}
             </strong>
           </div>
         )}
 
         {selectedZone && totals.subtotal < totals.minimumOrder && (
           <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600">
-            La compra mínima para esta zona es de $
-            {totals.minimumOrder.toFixed(2)}. Te faltan $
-            {totals.missingAmount.toFixed(2)}.
+            La compra mínima para esta zona es de ${totals.minimumOrder.toFixed(2)}.
+            Te faltan ${totals.missingAmount.toFixed(2)}.
           </div>
         )}
       </div>
