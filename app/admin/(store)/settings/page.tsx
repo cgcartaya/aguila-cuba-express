@@ -10,9 +10,20 @@ import {
   CalendarDays,
   TicketPercent,
   PanelsTopLeft,
+  ShoppingBag,
 } from "lucide-react";
 
 const settingsCards = [
+
+  {
+    title: "Checkout Builder",
+    description:
+      "Configura métodos de entrega, bloques visibles, direcciones y vista previa del checkout.",
+    href: "/admin/settings/checkout",
+    icon: ShoppingBag,
+    iconBox: "bg-blue-50 text-blue-700",
+    hover: "hover:border-blue-200 hover:bg-blue-50/40",
+  },
 
   {
     title: "Landing Builder",
