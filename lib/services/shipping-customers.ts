@@ -245,3 +245,38 @@ export async function deleteShippingCustomer(storeId: string, customerId: string
 
   return { error };
 }
+
+
+export async function deleteOrArchiveShippingRecipient(
+  storeId: string,
+  recipientId: string
+): Promise<{ action: "deleted" | "archived" | null; error: Error | null }> {
+  const { count, error: shipmentCheckError } = await supabase
+    .from("shipments")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .eq("recipient_id", recipientId);
+
+  if (shipmentCheckError) {
+    return { action: null, error: shipmentCheckError };
+  }
+
+  if ((count || 0) > 0) {
+    const { error } = await setShippingRecipientActive(storeId, recipientId, false);
+    return {
+      action: error ? null : "archived",
+      error: error ? new Error(error.message) : null,
+    };
+  }
+
+  const { error } = await supabase
+    .from("shipping_recipients")
+    .delete()
+    .eq("store_id", storeId)
+    .eq("id", recipientId);
+
+  return {
+    action: error ? null : "deleted",
+    error: error ? new Error(error.message) : null,
+  };
+}

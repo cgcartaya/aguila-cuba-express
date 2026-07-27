@@ -9,12 +9,15 @@ import {
   Loader2,
   MapPin,
   MessageCircle,
+  MoreVertical,
   Package,
   PackagePlus,
   Phone,
+  Pencil,
   Plus,
   Search,
   Star,
+  Trash2,
   UserRound,
   WalletCards,
   X,
@@ -23,6 +26,7 @@ import {
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import {
+  deleteOrArchiveShippingRecipient,
   getShippingCustomerDetail,
   saveShippingRecipient,
 } from "@/lib/services/shipping-customers";
@@ -66,7 +70,10 @@ export default function ShippingCustomerDetailPage({
   const [recipientSearch, setRecipientSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showRecipientModal, setShowRecipientModal] = useState(false);
+  const [editingRecipient, setEditingRecipient] = useState<ShippingRecipient | null>(null);
+  const [openRecipientMenu, setOpenRecipientMenu] = useState<string | null>(null);
   const [savingRecipient, setSavingRecipient] = useState(false);
+  const [deletingRecipientId, setDeletingRecipientId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   const [countries, setCountries] = useState<ShippingCountry[]>([]);
@@ -138,7 +145,55 @@ export default function ShippingCustomerDetailPage({
     [locations, recipientForm.municipality_id]
   );
 
-  async function createRecipient() {
+  function emptyRecipientForm() {
+    return {
+      name: "",
+      phone: "",
+      address: "",
+      identity_card: "",
+      relationship: "",
+      country_id: "",
+      province_id: "",
+      municipality_id: "",
+      shipping_location_id: "",
+      notes: "",
+    };
+  }
+
+  function openNewRecipient() {
+    setEditingRecipient(null);
+    setRecipientForm(emptyRecipientForm());
+    setMessage("");
+    setShowRecipientModal(true);
+  }
+
+  function openEditRecipient(recipient: ShippingRecipient) {
+    setEditingRecipient(recipient);
+    setRecipientForm({
+      name: recipient.name || "",
+      phone: recipient.phone || "",
+      address: recipient.address || "",
+      identity_card: recipient.identity_card || "",
+      relationship: recipient.relationship || "",
+      country_id: recipient.country_id || "",
+      province_id: recipient.province_id || "",
+      municipality_id: recipient.municipality_id || "",
+      shipping_location_id: recipient.shipping_location_id || "",
+      notes: recipient.notes || "",
+    });
+    setOpenRecipientMenu(null);
+    setMessage("");
+    setShowRecipientModal(true);
+  }
+
+  function closeRecipientModal() {
+    if (savingRecipient) return;
+    setShowRecipientModal(false);
+    setEditingRecipient(null);
+    setRecipientForm(emptyRecipientForm());
+  }
+
+  async function submitRecipient() {
     if (!activeStore?.id || !customer?.id) return;
     const phone = recipientForm.phone.replace(/\D/g, "");
     if (!recipientForm.name.trim() || !phone || !recipientForm.address.trim()) {
@@ -150,6 +205,7 @@ export default function ShippingCustomerDetailPage({
     setSavingRecipient(true);
     setMessage("");
     const { data, error } = await saveShippingRecipient({
+      id: editingRecipient?.id,
       store_id: activeStore.id,
       customer_id: customer.id,
       name: recipientForm.name.trim(),
@@ -161,9 +217,9 @@ export default function ShippingCustomerDetailPage({
       province_id: recipientForm.province_id || null,
       municipality_id: recipientForm.municipality_id || null,
       shipping_location_id: recipientForm.shipping_location_id || null,
-      legacy_location: selectedLocation?.legacy_code || "",
+      legacy_location: selectedLocation?.legacy_code || editingRecipient?.legacy_location || "",
       notes: recipientForm.notes,
-      is_favorite: recipients.length === 0,
+      is_favorite: editingRecipient?.is_favorite ?? recipients.length === 0,
     });
     setSavingRecipient(false);
 
@@ -172,21 +228,41 @@ export default function ShippingCustomerDetailPage({
       return;
     }
 
-    setRecipients((current) => [...current, data]);
-    setRecipientForm({
-      name: "",
-      phone: "",
-      address: "",
-      identity_card: "",
-      relationship: "",
-      country_id: "",
-      province_id: "",
-      municipality_id: "",
-      shipping_location_id: "",
-      notes: "",
-    });
-    setShowRecipientModal(false);
-    setMessage("Destinatario guardado correctamente.");
+    setRecipients((current) =>
+      editingRecipient
+        ? current.map((recipient) => (recipient.id === data.id ? data : recipient))
+        : [...current, data]
+    );
+    const wasEditing = Boolean(editingRecipient);
+    closeRecipientModal();
+    setMessage(wasEditing ? "Destinatario actualizado correctamente." : "Destinatario guardado correctamente.");
+  }
+
+  async function removeRecipient(recipient: ShippingRecipient) {
+    if (!activeStore?.id) return;
+
+    const confirmed = window.confirm(
+      `¿Deseas eliminar a ${recipient.name}?\n\nSi tiene envíos asociados, se archivará para conservar el historial.`
+    );
+    if (!confirmed) return;
+
+    setDeletingRecipientId(recipient.id);
+    setOpenRecipientMenu(null);
+    setMessage("");
+    const result = await deleteOrArchiveShippingRecipient(activeStore.id, recipient.id);
+    setDeletingRecipientId(null);
+
+    if (result.error) {
+      setMessage(result.error.message || "No se pudo eliminar el destinatario.");
+      return;
+    }
+
+    setRecipients((current) => current.filter((item) => item.id !== recipient.id));
+    setMessage(
+      result.action === "archived"
+        ? "El destinatario tenía envíos asociados y fue archivado."
+        : "Destinatario eliminado definitivamente."
+    );
   }
 
   if (loading || accessLoading || storeLoading) {
@@ -235,7 +311,7 @@ export default function ShippingCustomerDetailPage({
               <a href={`https://wa.me/${customer.normalized_phone}`} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 text-sm font-black text-white shadow-lg">
                 <MessageCircle size={18} /> WhatsApp
               </a>
-              <button type="button" onClick={() => setShowRecipientModal(true)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-[#061b3a] shadow-lg">
+              <button type="button" onClick={openNewRecipient} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-[#061b3a] shadow-lg">
                 <Plus size={18} /> Nuevo destinatario
               </button>
             </div>
@@ -259,7 +335,7 @@ export default function ShippingCustomerDetailPage({
                 <h2 className="mt-1 text-2xl font-black text-slate-950">{recipients.length} destinatarios</h2>
                 <p className="mt-1 text-sm font-semibold text-slate-500">Selecciona uno para comenzar un envío con sus datos cargados.</p>
               </div>
-              <button type="button" onClick={() => setShowRecipientModal(true)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-800">
+              <button type="button" onClick={openNewRecipient} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-black text-blue-800">
                 <Plus size={17} /> Agregar
               </button>
             </div>
@@ -273,8 +349,37 @@ export default function ShippingCustomerDetailPage({
 
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               {filteredRecipients.map((recipient) => (
-                <article key={recipient.id} className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-white hover:shadow-md">
-                  <div className="flex items-start gap-3">
+                <article key={recipient.id} className="group relative rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-white hover:shadow-md">
+                  <button
+                    type="button"
+                    onClick={() => setOpenRecipientMenu((current) => current === recipient.id ? null : recipient.id)}
+                    className="absolute right-3 top-3 rounded-xl p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
+                    aria-label={`Acciones de ${recipient.name}`}
+                  >
+                    {deletingRecipientId === recipient.id ? <Loader2 size={18} className="animate-spin" /> : <MoreVertical size={18} />}
+                  </button>
+
+                  {openRecipientMenu === recipient.id && (
+                    <div className="absolute right-3 top-12 z-20 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+                      <button
+                        type="button"
+                        onClick={() => openEditRecipient(recipient)}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-slate-700 hover:bg-blue-50 hover:text-blue-800"
+                      >
+                        <Pencil size={16} /> Editar datos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void removeRecipient(recipient)}
+                        disabled={deletingRecipientId === recipient.id}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-black text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <Trash2 size={16} /> Eliminar
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex items-start gap-3 pr-9">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-blue-700"><Contact size={19} /></div>
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 truncate font-black text-slate-950">
@@ -330,9 +435,9 @@ export default function ShippingCustomerDetailPage({
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 p-5 backdrop-blur sm:p-6">
               <div>
                 <p className="text-xs font-black uppercase tracking-[.14em] text-blue-700">{customerCode(customer)}</p>
-                <h3 className="mt-1 text-2xl font-black text-slate-950">Nuevo destinatario</h3>
+                <h3 className="mt-1 text-2xl font-black text-slate-950">{editingRecipient ? "Editar destinatario" : "Nuevo destinatario"}</h3>
               </div>
-              <button type="button" onClick={() => setShowRecipientModal(false)} className="rounded-xl bg-slate-100 p-3 text-slate-600"><X size={20} /></button>
+              <button type="button" onClick={closeRecipientModal} className="rounded-xl bg-slate-100 p-3 text-slate-600"><X size={20} /></button>
             </div>
 
             <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
@@ -351,9 +456,9 @@ export default function ShippingCustomerDetailPage({
             {message && <div className="mx-5 mb-3 rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 sm:mx-6">{message}</div>}
 
             <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 p-5 backdrop-blur sm:flex-row sm:justify-end sm:p-6">
-              <button type="button" onClick={() => setShowRecipientModal(false)} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700">Cancelar</button>
-              <button type="button" onClick={() => void createRecipient()} disabled={savingRecipient} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 text-sm font-black text-white disabled:opacity-50">
-                {savingRecipient ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Guardar destinatario
+              <button type="button" onClick={closeRecipientModal} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700">Cancelar</button>
+              <button type="button" onClick={() => void submitRecipient()} disabled={savingRecipient} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 text-sm font-black text-white disabled:opacity-50">
+                {savingRecipient ? <Loader2 size={18} className="animate-spin" /> : editingRecipient ? <Pencil size={18} /> : <Plus size={18} />} {editingRecipient ? "Guardar cambios" : "Guardar destinatario"}
               </button>
             </div>
           </div>
