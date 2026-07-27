@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
   const requestSourceDetail = clean(body.request_source_detail, 30) || "whatsapp";
   const { pickupKind, pickupDetail, pickupOption } = readPickupFields(body);
 
-  if (!storeId || !customerName || !phone || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
+  if (!storeId || !customerName || !phone || !preferredDate || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, día disponible, dirección, ciudad y ZIP Code.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return fail("Selecciona un día disponible válido.");
   const access = await authorize(request, storeId);
   if (access.denied) return access.denied;
 
@@ -153,9 +154,11 @@ export async function PATCH(request: NextRequest) {
   const latitude = Number.isFinite(Number(body.latitude)) ? Number(body.latitude) : null;
   const longitude = Number.isFinite(Number(body.longitude)) ? Number(body.longitude) : null;
   const addressVerified = Boolean(body.address_verified);
+  const preferredDate = clean(body.preferred_date, 10) || null;
   const { pickupKind, pickupDetail, pickupOption } = readPickupFields(body);
 
-  if (!storeId || !requestId || !customerName || !phone || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
+  if (!storeId || !requestId || !customerName || !phone || !preferredDate || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, día disponible, dirección, ciudad y ZIP Code.");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return fail("Selecciona un día disponible válido.");
   const access = await authorize(request, storeId);
   if (access.denied) return access.denied;
 
@@ -173,13 +176,17 @@ export async function PATCH(request: NextRequest) {
     formatted_address: formattedAddress || `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
     city, region, postal_code: postalCode, address_verified: addressVerified, validation_provider: addressVerified ? "manual_map" : "manual", place_id: placeId, latitude, longitude, package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null,
     notes, internal_notes: ["Parada creada manualmente desde una conversación de WhatsApp o llamada.", pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
-    customer_id: customer.id, updated_at: new Date().toISOString(),
+    confirmed_date: preferredDate, customer_id: customer.id, updated_at: new Date().toISOString(),
   }).eq("id", requestId).eq("store_id", storeId).select("*").single();
   if (updateError || !pickup) return fail(updateError?.message || "No se pudo editar la parada.", 500);
 
+  await supabaseAdmin.from("pickup_request_dates").delete().eq("pickup_request_id", requestId);
+  const { error: preferredDateError } = await supabaseAdmin.from("pickup_request_dates").insert({ pickup_request_id: requestId, preferred_date: preferredDate, priority: 1 });
+  if (preferredDateError) return fail(preferredDateError.message, 500);
+
   await refreshCustomerCount(existing.customer_id);
   await refreshCustomerCount(customer.id);
-  return NextResponse.json({ ok: true, request: pickup });
+  return NextResponse.json({ ok: true, request: { ...pickup, preferred_dates: [preferredDate] } });
 }
 
 export async function DELETE(request: NextRequest) {

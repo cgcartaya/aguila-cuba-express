@@ -49,6 +49,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   const [customerSearching, setCustomerSearching] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [requestSource, setRequestSource] = useState("whatsapp");
+  const [availableDate, setAvailableDate] = useState(routeDate);
   const [geocoding, setGeocoding] = useState(false);
 
   useEffect(() => {
@@ -69,6 +70,8 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       notes: editRequest.notes || "",
       formatted_address: editRequest.formatted_address || "", place_id: editRequest.place_id || "", latitude: editRequest.latitude, longitude: editRequest.longitude, address_verified: Boolean(editRequest.address_verified),
     } : emptyForm);
+    const savedDate = editRequest?.preferred_dates?.[0] || editRequest?.confirmed_date || routeDate;
+    setAvailableDate(savedDate);
     setError("");
     setCustomerMatches([]);
     setSelectedCustomerId(editRequest ? "editing" : null);
@@ -81,7 +84,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       setCities(data?.coverage_mode === "cities" && configured.length ? configured : allRegion);
       setForm((current) => ({ ...current, region: regionCode }));
     }).finally(() => setCitiesLoading(false));
-  }, [open, storeId, editRequest]);
+  }, [open, storeId, editRequest, routeDate]);
 
   useEffect(() => {
     if (!open || selectedCustomerId) return;
@@ -143,15 +146,21 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   }
 
   async function save() {
-    if (!form.customer_name.trim() || !form.phone.trim() || !form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) {
-      return setError("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
+    if (!form.customer_name.trim() || !form.phone.trim() || !availableDate || !form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) {
+      return setError("Completa nombre, teléfono, día disponible, dirección, ciudad y ZIP Code.");
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(`${availableDate}T12:00:00`);
+    if (Number.isNaN(selectedDay.getTime()) || selectedDay < today) {
+      return setError("Selecciona un día disponible de hoy en adelante.");
     }
     setSaving(true);
     setError("");
     const payload = {
       storeId,
       routeId: routeId || null,
-      preferredDate: routeDate,
+      preferredDate: availableDate,
       customerName: form.customer_name,
       phone: form.phone,
       email: form.email,
@@ -164,6 +173,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
       pickupDetail: form.pickup_detail,
       notes: form.notes,
       formattedAddress: form.formatted_address, placeId: form.place_id, latitude: form.latitude, longitude: form.longitude, addressVerified: form.address_verified,
+      requestSource,
     };
     const result = editRequest
       ? await updateManualPickupRequest(editRequest.id, payload)
@@ -209,6 +219,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
           {form.pickup_kind === "other" && <div className="mt-3"><Field label="Describe qué recogeremos (opcional)"><input className="manual-input" value={form.pickup_detail} onChange={(e) => setForm({ ...form, pickup_detail: e.target.value })} placeholder="Ej. Televisor y una bolsa" /></Field></div>}
         </div>
         {requestMode && !editRequest && <div className="sm:col-span-2"><Field label="Origen de la solicitud"><select className="manual-input" value={requestSource} onChange={(e) => setRequestSource(e.target.value)}><option value="whatsapp">WhatsApp</option><option value="phone">Llamada</option><option value="in_person">Presencial</option><option value="other">Otro</option></select></Field></div>}
+        <div className="sm:col-span-2"><Field label="Día disponible para la recogida *"><input className="manual-input" type="date" min={new Date().toISOString().slice(0, 10)} value={availableDate} onChange={(e) => setAvailableDate(e.target.value)} /><span className="mt-2 block text-xs font-bold text-slate-500">{routeId ? `La ruta está programada para ${routeDate}. Confirma el día indicado por el cliente.` : "Selecciona el día en que el cliente estará disponible."}</span></Field></div>
         <div className="sm:col-span-2"><CityAutocomplete cities={cities} value={form.city} onChange={(city) => setForm((current) => ({ ...current, city, latitude: city === current.city ? current.latitude : null, longitude: city === current.city ? current.longitude : null, address_verified: false }))} loading={citiesLoading} disabled={citiesLoading || !cities.length} placeholder="Ej. Columbia" /></div>
         <div className="sm:col-span-2"><Field label="Dirección *"><div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="manual-input pl-11" value={form.address_line_1} onChange={(e) => setForm({ ...form, address_line_1: e.target.value, formatted_address: "", address_verified: false })} placeholder="Número y calle" /></div></Field></div>
         <div className="sm:col-span-2"><Field label="Apartamento, unidad o referencia"><input className="manual-input" value={form.address_line_2} onChange={(e) => setForm({ ...form, address_line_2: e.target.value })} placeholder="Opcional" /></Field></div>
