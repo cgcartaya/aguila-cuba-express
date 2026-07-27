@@ -15,6 +15,7 @@ type Props = {
   routeId?: string | null;
   routeDate: string;
   editRequest?: PickupRequest | null;
+  requestMode?: boolean;
   onClose: () => void;
   onCreated: (request: PickupRequest) => void | Promise<void>;
 };
@@ -38,7 +39,7 @@ const emptyForm = {
   formatted_address: "", place_id: "", latitude: null as number | null, longitude: null as number | null, address_verified: false,
 };
 
-export default function ManualPickupStopModal({ open, storeId, routeId, routeDate, editRequest = null, onClose, onCreated }: Props) {
+export default function ManualPickupStopModal({ open, storeId, routeId, routeDate, editRequest = null, requestMode = false, onClose, onCreated }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +48,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   const [customerMatches, setCustomerMatches] = useState<PickupCustomer[]>([]);
   const [customerSearching, setCustomerSearching] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [requestSource, setRequestSource] = useState("whatsapp");
 
   useEffect(() => {
     if (!open) return;
@@ -139,7 +141,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   return <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) onClose(); }}>
     <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] bg-white shadow-2xl">
       <header className="sticky top-0 z-10 flex items-start justify-between border-b bg-white p-5 sm:p-6">
-        <div><p className="text-xs font-black uppercase tracking-[.15em] text-orange-600">WhatsApp o llamada</p><h2 className="mt-1 text-2xl font-black">{editRequest ? "Editar parada manual" : "Agregar parada manual"}</h2><p className="mt-1 text-sm font-bold text-slate-500">{editRequest ? "Corrige los datos de esta parada." : `Se programará para ${routeDate}. No crea un envío.`}</p></div>
+        <div><p className="text-xs font-black uppercase tracking-[.15em] text-orange-600">WhatsApp, llamada o atención directa</p><h2 className="mt-1 text-2xl font-black">{editRequest ? "Editar parada manual" : requestMode ? "Nueva solicitud manual" : "Agregar parada manual"}</h2><p className="mt-1 text-sm font-bold text-slate-500">{editRequest ? "Corrige los datos de esta parada." : requestMode ? "Quedará pendiente para asignarla después a una ruta. No crea un envío." : `Se programará para ${routeDate}. No crea un envío.`}</p></div>
         <button onClick={onClose} disabled={saving} className="rounded-xl border p-2 text-slate-500"><X size={20} /></button>
       </header>
       <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
@@ -170,15 +172,16 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
           </Field>
           {form.pickup_kind === "other" && <div className="mt-3"><Field label="Describe qué recogeremos (opcional)"><input className="manual-input" value={form.pickup_detail} onChange={(e) => setForm({ ...form, pickup_detail: e.target.value })} placeholder="Ej. Televisor y una bolsa" /></Field></div>}
         </div>
+        {requestMode && !editRequest && <div className="sm:col-span-2"><Field label="Origen de la solicitud"><select className="manual-input" value={requestSource} onChange={(e) => setRequestSource(e.target.value)}><option value="whatsapp">WhatsApp</option><option value="phone">Llamada</option><option value="in_person">Presencial</option><option value="other">Otro</option></select></Field></div>}
+        <div className="sm:col-span-2"><CityAutocomplete cities={cities} value={form.city} onChange={(city) => setForm((current) => ({ ...current, city, latitude: city === current.city ? current.latitude : null, longitude: city === current.city ? current.longitude : null, address_verified: false }))} loading={citiesLoading} disabled={citiesLoading || !cities.length} placeholder="Ej. Columbia" /></div>
         <div className="sm:col-span-2"><Field label="Dirección *"><div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="manual-input pl-11" value={form.address_line_1} onChange={(e) => setForm({ ...form, address_line_1: e.target.value, formatted_address: "", address_verified: false })} placeholder="Número y calle" /></div></Field></div>
-        <div className="sm:col-span-2"><Field label="Ubicación en el mapa (opcional, recomendada)"><LocationPickerMap latitude={form.latitude} longitude={form.longitude} onChange={(latitude, longitude) => setForm((current) => ({ ...current, latitude, longitude, address_verified: true, place_id: "", formatted_address: [current.address_line_1, current.city, current.region, current.postal_code].filter(Boolean).join(", ") }))} onClear={() => setForm((current) => ({ ...current, latitude: null, longitude: null, address_verified: false }))}/></Field></div>
         <div className="sm:col-span-2"><Field label="Apartamento, unidad o referencia"><input className="manual-input" value={form.address_line_2} onChange={(e) => setForm({ ...form, address_line_2: e.target.value })} placeholder="Opcional" /></Field></div>
-        <div><CityAutocomplete cities={cities} value={form.city} onChange={(city) => setForm({ ...form, city })} loading={citiesLoading} disabled={citiesLoading || !cities.length} placeholder="Ej. Columbia" /></div>
-        <div className="grid grid-cols-[110px_1fr] gap-3"><Field label="Estado"><input className="manual-input" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value.toUpperCase().slice(0, 2) })} /></Field><Field label="ZIP Code *"><input className="manual-input" inputMode="numeric" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} /></Field></div>
+        <div className="grid grid-cols-[110px_1fr] gap-3 sm:col-span-2"><Field label="Estado"><input className="manual-input" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value.toUpperCase().slice(0, 2) })} /></Field><Field label="ZIP Code *"><input className="manual-input" inputMode="numeric" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} /></Field></div>
+        <div className="sm:col-span-2"><Field label="Ubicación en el mapa (opcional, recomendada)"><LocationPickerMap latitude={form.latitude} longitude={form.longitude} onChange={(latitude, longitude) => setForm((current) => ({ ...current, latitude, longitude, address_verified: true, place_id: "", formatted_address: [current.address_line_1, current.city, current.region, current.postal_code].filter(Boolean).join(", ") }))} onClear={() => setForm((current) => ({ ...current, latitude: null, longitude: null, address_verified: false }))}/></Field></div>
         <div className="sm:col-span-2"><Field label="Notas"><textarea className="manual-input min-h-28 resize-y" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej. Escribir al llegar, tiene dos cajas..." /></Field></div>
         {error && <p className="sm:col-span-2 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-700">{error}</p>}
       </div>
-      <footer className="sticky bottom-0 flex justify-end gap-3 border-t bg-slate-50 p-5 sm:p-6"><button onClick={onClose} disabled={saving} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} {editRequest ? "Guardar cambios" : "Agregar parada"}</button></footer>
+      <footer className="sticky bottom-0 flex justify-end gap-3 border-t bg-slate-50 p-5 sm:p-6"><button onClick={onClose} disabled={saving} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} {editRequest ? "Guardar cambios" : requestMode ? "Crear solicitud" : "Agregar parada"}</button></footer>
       <style jsx>{`.manual-input{width:100%;border:1px solid #dbe3ee;border-radius:1rem;padding:.82rem 1rem;font-weight:700;outline:none;background:white}.manual-input:focus{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.12)}`}</style>
     </div>
   </div>;

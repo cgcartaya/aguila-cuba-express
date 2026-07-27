@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
   const longitude = Number.isFinite(Number(body.longitude)) ? Number(body.longitude) : null;
   const addressVerified = Boolean(body.address_verified);
   const preferredDate = clean(body.preferred_date, 10) || null;
+  const requestSourceDetail = clean(body.request_source_detail, 30) || "whatsapp";
   const { pickupKind, pickupDetail, pickupOption } = readPickupFields(body);
 
   if (!storeId || !customerName || !phone || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, dirección, ciudad y ZIP Code.");
@@ -111,8 +112,8 @@ export async function POST(request: NextRequest) {
     formatted_address: formattedAddress || `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ""}, ${city}, ${region} ${postalCode}`,
     city, region, postal_code: postalCode, country_code: "US", address_verified: addressVerified, validation_provider: addressVerified ? "manual_map" : "manual", place_id: placeId, latitude, longitude,
     package_count: pickupOption?.packageCount || 1, package_type: pickupOption?.packageType || null, notes,
-    internal_notes: ["Parada creada manualmente desde una conversación de WhatsApp o llamada.", pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
-    status: routeId ? "assigned" : "confirmed", confirmed_date: confirmedDate, request_source: "manual", created_by: access.userId, customer_id: customer.id,
+    internal_notes: [`Solicitud manual · ${requestSourceDetail}.`, pickupKind === "other" && pickupDetail ? `Recogida indicada: ${pickupDetail}` : null].filter(Boolean).join(" "),
+    status: routeId ? "assigned" : "new", confirmed_date: routeId ? confirmedDate : null, request_source: "manual", created_by: access.userId, customer_id: customer.id,
   }).select("*").single();
   if (pickupError || !pickup) return fail(pickupError?.message || "No se pudo crear la parada manual.", 500);
 

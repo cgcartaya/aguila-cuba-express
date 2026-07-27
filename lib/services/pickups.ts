@@ -274,6 +274,7 @@ export type ManualPickupRequestInput = {
   latitude?: number | null;
   longitude?: number | null;
   addressVerified?: boolean;
+  requestSource?: string;
 };
 
 export async function createManualPickupRequest(input: ManualPickupRequestInput) {
@@ -299,6 +300,7 @@ export async function createManualPickupRequest(input: ManualPickupRequestInput)
       latitude: input.latitude ?? null,
       longitude: input.longitude ?? null,
       address_verified: Boolean(input.addressVerified),
+      request_source_detail: input.requestSource || null,
     }),
   });
   return { data: result.data?.request || null, error: result.error };

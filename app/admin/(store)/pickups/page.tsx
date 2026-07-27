@@ -11,6 +11,7 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  Plus,
   RefreshCw,
   Search,
   Truck,
@@ -20,6 +21,8 @@ import { supabase } from "@/lib/supabase";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { openWhatsAppMessage, type WhatsAppApp } from "@/lib/utils/whatsapp";
+import ManualPickupStopModal from "@/components/pickups/ManualPickupStopModal";
+import type { PickupRequest } from "@/lib/pickups/types";
 
 type Zone = {
   id: string;
@@ -96,6 +99,7 @@ export default function PickupsAdminPage() {
   const [cancelTarget, setCancelTarget] = useState<Row | null>(null);
   const [cancelReason, setCancelReason] = useState(CANCEL_REASONS[0]);
   const [cancelDetails, setCancelDetails] = useState("");
+  const [manualOpen, setManualOpen] = useState(false);
 
   async function authHeaders() {
     const { data } = await supabase.auth.getSession();
@@ -268,7 +272,8 @@ export default function PickupsAdminPage() {
             <h1 className="text-3xl font-black">Demanda de recogidas</h1>
             <p className="mt-2 text-blue-100">Contacta al cliente, cancela solicitudes y prepara rutas sin acumular pendientes antiguos.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => setManualOpen(true)} className="rounded-xl bg-orange-500 px-4 py-3 font-black text-white"><Plus className="mr-2 inline" size={17} /> Nueva solicitud manual</button>
             <Link href="/admin/pickups/routes" className="rounded-xl border border-white/20 px-4 py-3 font-black">
               Ver rutas
             </Link>
@@ -446,6 +451,19 @@ export default function PickupsAdminPage() {
           </div>
         </div>
       )}
+      <ManualPickupStopModal
+        open={manualOpen}
+        storeId={store?.id || ""}
+        routeId={null}
+        routeDate={new Date().toISOString().slice(0, 10)}
+        requestMode
+        onClose={() => setManualOpen(false)}
+        onCreated={async (_request: PickupRequest) => {
+          setNotice("Solicitud manual creada y guardada en Pendientes.");
+          await load();
+        }}
+      />
+
     </div>
   );
 }
