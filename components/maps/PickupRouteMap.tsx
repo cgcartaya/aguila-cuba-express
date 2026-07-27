@@ -37,7 +37,7 @@ export default function PickupRouteMap({ stops }: { stops: PickupRouteStop[] }) 
   const missing = stops.length - located.length;
   const manualCount = stops.filter((stop) => stop.pickup_request?.request_source === "manual").length;
   const webCount = stops.length - manualCount;
-  const completedCount = stops.filter((stop) => stop.status === "completed" || stop.status === "picked_up").length;
+  const completedCount = stops.filter((stop) => stop.status === "picked_up").length;
   const pendingCount = Math.max(0, stops.length - completedCount);
 
   useEffect(() => {
