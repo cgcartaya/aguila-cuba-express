@@ -65,7 +65,7 @@ export type SaveShippingCustomerInput = {
   store_id: string;
   name: string;
   phone: string;
-  birth_date: string;
+  birth_date: string | null;
   email?: string;
   address?: string;
   notes?: string;

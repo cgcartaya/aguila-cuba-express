@@ -165,3 +165,83 @@ export async function setShippingRecipientActive(
     .eq("store_id", storeId)
     .eq("id", recipientId);
 }
+
+/**
+ * Carga los clientes activos mediante el RPC existente y, opcionalmente,
+ * agrega los archivados directamente desde la tabla para poder restaurarlos.
+ */
+export async function getShippingCustomersWithArchived(storeId: string) {
+  const activeResult = await getShippingCustomers(storeId);
+  if (activeResult.error) return activeResult;
+
+  const { data: archived, error: archivedError } = await supabase
+    .from("shipping_customers")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("is_active", false)
+    .order("updated_at", { ascending: false });
+
+  if (archivedError) return { data: activeResult.data, error: archivedError };
+
+  const merged = new Map<string, ShippingCustomer>();
+  [...(activeResult.data || []), ...((archived || []) as ShippingCustomer[])].forEach((customer) => {
+    merged.set(customer.id, {
+      operations_count: 0,
+      recipients_count: 0,
+      total_billed: 0,
+      total_paid: 0,
+      total_balance: 0,
+      total_weight_lb: 0,
+      total_money_sent: 0,
+      last_operation_at: null,
+      ...customer,
+    });
+  });
+
+  return { data: Array.from(merged.values()), error: null };
+}
+
+export async function archiveShippingCustomer(storeId: string, customerId: string) {
+  return supabase
+    .from("shipping_customers")
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .eq("id", customerId);
+}
+
+export async function restoreShippingCustomer(storeId: string, customerId: string) {
+  return supabase
+    .from("shipping_customers")
+    .update({ is_active: true, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .eq("id", customerId);
+}
+
+export async function deleteShippingCustomer(storeId: string, customerId: string) {
+  const { count, error: shipmentCheckError } = await supabase
+    .from("shipments")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .eq("customer_id", customerId);
+
+  if (shipmentCheckError) return { error: shipmentCheckError };
+  if ((count || 0) > 0) {
+    return { error: new Error("Este cliente ya tiene envíos y solamente puede archivarse.") };
+  }
+
+  const { error: recipientsError } = await supabase
+    .from("shipping_recipients")
+    .delete()
+    .eq("store_id", storeId)
+    .eq("customer_id", customerId);
+
+  if (recipientsError) return { error: recipientsError };
+
+  const { error } = await supabase
+    .from("shipping_customers")
+    .delete()
+    .eq("store_id", storeId)
+    .eq("id", customerId);
+
+  return { error };
+}
