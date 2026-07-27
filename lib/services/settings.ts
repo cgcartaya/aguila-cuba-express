@@ -69,7 +69,7 @@ export async function getCategoriesByStoreId(storeId: string) {
   return supabase
     .from("categories")
     .select(
-      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+      "id, store_id, name, slug, color, icon, sort_order, is_active, minimum_order_exempt, delivery_included, created_at"
     )
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
@@ -99,7 +99,7 @@ export async function getActiveCategoriesByStoreId(storeId: string) {
   return supabase
     .from("categories")
     .select(
-      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+      "id, store_id, name, slug, color, icon, sort_order, is_active, minimum_order_exempt, delivery_included, created_at"
     )
     .eq("store_id", storeId)
     .eq("is_active", true)
@@ -127,7 +127,7 @@ export async function createCategoryForStore(
     .from("categories")
     .insert(payload)
     .select(
-      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+      "id, store_id, name, slug, color, icon, sort_order, is_active, minimum_order_exempt, delivery_included, created_at"
     )
     .single();
 }
@@ -167,7 +167,7 @@ export async function updateCategory(
 
   return query
     .select(
-      "id, store_id, name, slug, color, icon, sort_order, is_active, created_at"
+      "id, store_id, name, slug, color, icon, sort_order, is_active, minimum_order_exempt, delivery_included, created_at"
     )
     .single();
 }

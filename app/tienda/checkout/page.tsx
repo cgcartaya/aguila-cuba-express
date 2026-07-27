@@ -85,6 +85,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [loadingZones, setLoadingZones] = useState(true);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [checkoutRuleMap, setCheckoutRuleMap] = useState<Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }>>({});
+  const [loadingRules, setLoadingRules] = useState(false);
 
   useEffect(() => {
     async function loadCheckoutData() {
@@ -115,6 +117,43 @@ export default function CheckoutPage() {
     loadCheckoutData();
   }, [store?.id]);
 
+  useEffect(() => {
+    async function loadCheckoutRules() {
+      if (!store?.id || cart.length === 0) { setCheckoutRuleMap({}); return; }
+      const productIds = cart.filter((item) => item.type === "product").map((item) => getOriginalCartItemId(item.id));
+      if (productIds.length === 0) { setCheckoutRuleMap({}); return; }
+      setLoadingRules(true);
+      try {
+        const [{ data: products, error: productsError }, { data: categories, error: categoriesError }] = await Promise.all([
+          supabase.from("products").select("id, category, minimum_order_exempt, delivery_included").eq("store_id", store.id).in("id", productIds),
+          supabase.from("categories").select("name, minimum_order_exempt, delivery_included").eq("store_id", store.id),
+        ]);
+        if (productsError) throw productsError;
+        if (categoriesError) throw categoriesError;
+        const categoryMap = new Map((categories || []).map((category) => [String(category.name).trim().toLowerCase(), category]));
+        const nextMap: Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }> = {};
+        for (const product of products || []) {
+          const category = categoryMap.get(String(product.category || "").trim().toLowerCase());
+          nextMap[String(product.id)] = {
+            minimum_order_exempt: product.minimum_order_exempt ?? category?.minimum_order_exempt ?? false,
+            delivery_included: product.delivery_included ?? category?.delivery_included ?? false,
+          };
+        }
+        setCheckoutRuleMap(nextMap);
+      } catch (ruleError) {
+        console.error("No se pudieron cargar las reglas especiales del checkout:", ruleError);
+        setCheckoutRuleMap({});
+      } finally { setLoadingRules(false); }
+    }
+    void loadCheckoutRules();
+  }, [store?.id, cart]);
+
+  const checkoutCart = useMemo(() => cart.map((item) => {
+    if (item.type !== "product") return item;
+    const rule = checkoutRuleMap[getOriginalCartItemId(item.id)];
+    return { ...item, minimum_order_exempt: rule?.minimum_order_exempt ?? false, delivery_included: rule?.delivery_included ?? false };
+  }), [cart, checkoutRuleMap]);
+
   const availableZones = useMemo(() => {
     if (!form.municipality) return [];
 
@@ -126,8 +165,8 @@ export default function CheckoutPage() {
   }, [zones, form.delivery_zone_id]);
 
   const totals = useMemo(() => {
-    return calculateCheckoutTotals(cart, selectedZone);
-  }, [cart, selectedZone]);
+    return calculateCheckoutTotals(checkoutCart, selectedZone);
+  }, [checkoutCart, selectedZone]);
 
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotalWithDiscount = Math.max(
@@ -151,7 +190,7 @@ export default function CheckoutPage() {
 
   const canCheckout = isCheckoutFormComplete(
     form,
-    cart,
+    checkoutCart,
     selectedZone,
     totals
   );

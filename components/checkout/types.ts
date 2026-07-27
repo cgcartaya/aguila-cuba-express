@@ -23,6 +23,8 @@ export type CheckoutCartItem = {
   price: number;
   quantity: number;
   type: "product" | "combo";
+  minimum_order_exempt?: boolean;
+  delivery_included?: boolean;
 };
 
 export type CheckoutTotals = {
@@ -34,6 +36,8 @@ export type CheckoutTotals = {
   shippingCost: number;
   finalTotal: number;
   missingAmount: number;
+  minimumOrderExempt: boolean;
+  deliveryIncludedForAllItems: boolean;
 };
 
 export type DeliveryAddressProps = {

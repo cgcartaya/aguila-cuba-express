@@ -139,6 +139,18 @@ export function OrderSummary({
           </div>
         )}
 
+        {totals.minimumOrderExempt && (
+          <div className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+            Este pedido no requiere compra mínima.
+          </div>
+        )}
+
+        {totals.deliveryIncludedForAllItems && (
+          <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+            Entrega incluida en el precio de los productos.
+          </div>
+        )}
+
         {selectedZone && totals.subtotal < totals.minimumOrder && (
           <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600">
             La compra mínima para esta zona es de ${totals.minimumOrder.toFixed(2)}.

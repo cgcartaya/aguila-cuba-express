@@ -64,6 +64,8 @@ export default function AdminCategoriesPage() {
     color: "#2563EB",
     sort_order: "0",
     is_active: true,
+    minimum_order_exempt: false,
+    delivery_included: false,
   });
 
   const [loading, setLoading] = useState(true);
@@ -162,6 +164,8 @@ export default function AdminCategoriesPage() {
         icon: getCategoryIcon(name),
         sort_order: Number(form.sort_order || 0),
         is_active: form.is_active,
+        minimum_order_exempt: form.minimum_order_exempt,
+        delivery_included: form.delivery_included,
       });
 
       if (error) {
@@ -181,6 +185,8 @@ export default function AdminCategoriesPage() {
         color: "#2563EB",
         sort_order: "0",
         is_active: true,
+        minimum_order_exempt: false,
+        delivery_included: false,
       });
 
       setFeedback({
@@ -460,6 +466,17 @@ export default function AdminCategoriesPage() {
               />
               Activa
             </label>
+        
+
+            <label className="flex items-center gap-3 rounded-2xl border bg-amber-50 px-4 py-3 text-sm font-black md:col-span-2">
+              <input type="checkbox" checked={form.minimum_order_exempt} onChange={(event) => setForm((prev) => ({ ...prev, minimum_order_exempt: event.target.checked }))} />
+              Exenta del mínimo de compra
+            </label>
+
+            <label className="flex items-center gap-3 rounded-2xl border bg-emerald-50 px-4 py-3 text-sm font-black md:col-span-2">
+              <input type="checkbox" checked={form.delivery_included} onChange={(event) => setForm((prev) => ({ ...prev, delivery_included: event.target.checked }))} />
+              Entrega incluida en el precio
+            </label>
           </div>
 
           <p className="mt-3 text-xs font-semibold text-slate-500">
@@ -550,6 +567,15 @@ export default function AdminCategoriesPage() {
                   >
                     {category.is_active ? "Activa" : "Inactiva"}
                   </button>
+
+                  <div className="grid gap-2 md:col-span-6 md:grid-cols-2">
+                    <button type="button" onClick={() => void handleUpdate(category.id, "minimum_order_exempt", !category.minimum_order_exempt)} className={`rounded-2xl px-4 py-3 text-sm font-black ${category.minimum_order_exempt ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500"}`}>
+                      {category.minimum_order_exempt ? "Sin mínimo" : "Aplica mínimo"}
+                    </button>
+                    <button type="button" onClick={() => void handleUpdate(category.id, "delivery_included", !category.delivery_included)} className={`rounded-2xl px-4 py-3 text-sm font-black ${category.delivery_included ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-500"}`}>
+                      {category.delivery_included ? "Entrega incluida" : "Delivery normal"}
+                    </button>
+                  </div>
 
                   <button
                     type="button"

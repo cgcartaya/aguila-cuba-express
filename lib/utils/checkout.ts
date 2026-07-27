@@ -25,14 +25,27 @@ export function calculateCheckoutTotals(
     0
   );
 
-  const minimumOrder = Number(selectedZone?.minimum_order || 0);
+  const minimumOrderExempt = cart.some((item) => item.minimum_order_exempt === true);
+  const deliveryIncludedForAllItems =
+    cart.length > 0 && cart.every((item) => item.delivery_included === true);
+
+  const minimumOrder = minimumOrderExempt
+    ? 0
+    : Number(selectedZone?.minimum_order || 0);
   const baseDeliveryFee = Number(selectedZone?.delivery_fee || 0);
   const freeDeliveryFrom = Number(selectedZone?.free_delivery_from || 0);
 
   const hasFreeDelivery =
-    Boolean(selectedZone) && freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom;
+    deliveryIncludedForAllItems ||
+    (Boolean(selectedZone) && freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom);
 
-  const shippingCost = selectedZone ? (hasFreeDelivery ? 0 : baseDeliveryFee) : 0;
+  const shippingCost = selectedZone
+    ? deliveryIncludedForAllItems
+      ? 0
+      : hasFreeDelivery
+        ? 0
+        : baseDeliveryFee
+    : 0;
 
   return {
     subtotal,
@@ -43,6 +56,8 @@ export function calculateCheckoutTotals(
     shippingCost,
     finalTotal: subtotal + shippingCost,
     missingAmount: Math.max(minimumOrder - subtotal, 0),
+    minimumOrderExempt,
+    deliveryIncludedForAllItems,
   };
 }
 

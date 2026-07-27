@@ -76,6 +76,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [loadingCheckout, setLoadingCheckout] = useState(true);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [checkoutRuleMap, setCheckoutRuleMap] = useState<Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }>>({});
+  const [loadingRules, setLoadingRules] = useState(false);
 
   useEffect(() => {
     async function loadCheckoutData() {
@@ -121,6 +123,43 @@ export default function CheckoutPage() {
     void loadCheckoutData();
   }, [store?.id]);
 
+  useEffect(() => {
+    async function loadCheckoutRules() {
+      if (!store?.id || cart.length === 0) { setCheckoutRuleMap({}); return; }
+      const productIds = cart.filter((item) => item.type === "product").map((item) => getOriginalCartItemId(item.id));
+      if (productIds.length === 0) { setCheckoutRuleMap({}); return; }
+      setLoadingRules(true);
+      try {
+        const [{ data: products, error: productsError }, { data: categories, error: categoriesError }] = await Promise.all([
+          supabase.from("products").select("id, category, minimum_order_exempt, delivery_included").eq("store_id", store.id).in("id", productIds),
+          supabase.from("categories").select("name, minimum_order_exempt, delivery_included").eq("store_id", store.id),
+        ]);
+        if (productsError) throw productsError;
+        if (categoriesError) throw categoriesError;
+        const categoryMap = new Map((categories || []).map((category) => [String(category.name).trim().toLowerCase(), category]));
+        const nextMap: Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }> = {};
+        for (const product of products || []) {
+          const category = categoryMap.get(String(product.category || "").trim().toLowerCase());
+          nextMap[String(product.id)] = {
+            minimum_order_exempt: product.minimum_order_exempt ?? category?.minimum_order_exempt ?? false,
+            delivery_included: product.delivery_included ?? category?.delivery_included ?? false,
+          };
+        }
+        setCheckoutRuleMap(nextMap);
+      } catch (ruleError) {
+        console.error("No se pudieron cargar las reglas especiales del checkout:", ruleError);
+        setCheckoutRuleMap({});
+      } finally { setLoadingRules(false); }
+    }
+    void loadCheckoutRules();
+  }, [store?.id, cart]);
+
+  const checkoutCart = useMemo(() => cart.map((item) => {
+    if (item.type !== "product") return item;
+    const rule = checkoutRuleMap[getOriginalCartItemId(item.id)];
+    return { ...item, minimum_order_exempt: rule?.minimum_order_exempt ?? false, delivery_included: rule?.delivery_included ?? false };
+  }), [cart, checkoutRuleMap]);
+
   const availableZones = useMemo(() => {
     if (!form.municipality) return [];
     return zones.filter((zone) => zone.municipality === form.municipality);
@@ -132,8 +171,8 @@ export default function CheckoutPage() {
   );
 
   const cubaTotals = useMemo(
-    () => calculateCheckoutTotals(cart, selectedZone),
-    [cart, selectedZone]
+    () => calculateCheckoutTotals(checkoutCart, selectedZone),
+    [checkoutCart, selectedZone]
   );
 
   const totals = useMemo<CheckoutTotals>(() => {
@@ -156,6 +195,8 @@ export default function CheckoutPage() {
       shippingCost,
       finalTotal: subtotal + shippingCost,
       missingAmount: 0,
+      minimumOrderExempt: false,
+      deliveryIncludedForAllItems: false,
     };
   }, [cart, checkoutSettings, cubaTotals, isYoyo, method]);
 
@@ -177,7 +218,7 @@ export default function CheckoutPage() {
 
   const canCheckout = useMemo(() => {
     if (!isYoyo || method === "cuba") {
-      return isCheckoutFormComplete(form, cart, selectedZone, totals);
+      return isCheckoutFormComplete(form, checkoutCart, selectedZone, totals);
     }
 
     return (
@@ -369,6 +410,7 @@ ${orderUrl}`);
     if (!store?.id) return setError("No se pudo identificar la tienda del pedido.");
     if (!businessWhatsapp) return setError("Esta tienda todavía no tiene WhatsApp configurado.");
     if (cart.length === 0) return setError("Tu carrito está vacío.");
+    if (loadingRules) return setError("Espera un momento mientras verificamos las reglas de entrega.");
     if (method === "cuba" && !selectedZone) return setError("Selecciona una zona de entrega.");
     if (totals.subtotal < totals.minimumOrder) {
       return setError(

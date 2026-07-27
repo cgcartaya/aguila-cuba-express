@@ -49,6 +49,8 @@ export default function EditProductPage() {
     stock: "",
     tag: "",
     is_active: true,
+    minimum_order_exempt: null as boolean | null,
+    delivery_included: null as boolean | null,
   });
 
   const [loading, setLoading] = useState(true);
@@ -93,6 +95,8 @@ export default function EditProductPage() {
         stock: String(product.stock || ""),
         tag: product.tag || "",
         is_active: product.is_active ?? true,
+        minimum_order_exempt: product.minimum_order_exempt ?? null,
+        delivery_included: product.delivery_included ?? null,
       });
 
       setLoading(false);
@@ -169,6 +173,8 @@ export default function EditProductPage() {
         stock,
         tag: form.tag,
         is_active: form.is_active,
+        minimum_order_exempt: form.minimum_order_exempt,
+        delivery_included: form.delivery_included,
       });
 
       if (error) throw error;
@@ -281,6 +287,12 @@ export default function EditProductPage() {
               />
             </div>
 
+            <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 md:grid-cols-2">
+              <RuleOverride label="Mínimo de compra" value={form.minimum_order_exempt} onChange={(value) => setForm((prev) => ({ ...prev, minimum_order_exempt: value }))} trueLabel="Exento" falseLabel="Aplicar mínimo" />
+              <RuleOverride label="Entrega" value={form.delivery_included} onChange={(value) => setForm((prev) => ({ ...prev, delivery_included: value }))} trueLabel="Incluida" falseLabel="Cobrar delivery" />
+              <p className="text-xs font-semibold text-slate-500 md:col-span-2">En “Heredar categoría”, el producto utiliza la configuración definida en su categoría.</p>
+            </div>
+
             <label className="flex items-center gap-3 rounded-2xl border p-4 md:col-span-2">
               <input
                 type="checkbox"
@@ -341,6 +353,19 @@ export default function EditProductPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function RuleOverride({ label, value, onChange, trueLabel, falseLabel }: { label: string; value: boolean | null; onChange: (value: boolean | null) => void; trueLabel: string; falseLabel: string }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-black text-gray-700">{label}</span>
+      <select value={value === null ? "inherit" : value ? "true" : "false"} onChange={(event) => onChange(event.target.value === "inherit" ? null : event.target.value === "true")} className="w-full rounded-2xl border bg-white px-4 py-3 font-bold outline-none focus:border-black">
+        <option value="inherit">Heredar categoría</option>
+        <option value="true">{trueLabel}</option>
+        <option value="false">{falseLabel}</option>
+      </select>
+    </label>
   );
 }
 

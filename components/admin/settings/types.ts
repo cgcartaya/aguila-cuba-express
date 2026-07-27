@@ -7,6 +7,8 @@ export type Category = {
   icon?: string | null;
   sort_order: number;
   is_active: boolean;
+  minimum_order_exempt?: boolean;
+  delivery_included?: boolean;
   created_at?: string;
 };
 

@@ -15,6 +15,8 @@ export type Product = {
   is_home_featured?: boolean | null;
   home_featured_order?: number | null;
   home_featured_label?: string | null;
+  minimum_order_exempt?: boolean | null;
+  delivery_included?: boolean | null;
   product_images?: ProductImage[] | null;
 };
 
