@@ -14,6 +14,7 @@ import {
   Navigation,
   Search,
   Truck,
+  ShieldCheck,
   X,
 } from "lucide-react";
 
@@ -150,9 +151,9 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                     key={route.id}
                     type="button"
                     onClick={() => setSelectedRouteId(route.id)}
-                    className={`min-w-[180px] shrink-0 rounded-2xl border px-4 py-4 text-left transition sm:min-w-[210px] ${selected ? "border-[#071d43] bg-[#071d43] text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:shadow-md"}`}
+                    className={`min-w-[190px] shrink-0 rounded-2xl border px-4 py-4 text-left transition duration-300 sm:min-w-[220px] ${selected ? "border-[#071d43] bg-[#071d43] text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:shadow-md"}`}
                   >
-                    <p className={`text-[10px] font-black uppercase tracking-[.14em] ${selected ? "text-blue-200" : "text-slate-400"}`}>{routeDate(route.route_date)}</p>
+                    <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.14em] ${selected ? "text-blue-200" : "text-slate-400"}`}><CalendarDays size={12} /> {routeDate(route.route_date)}</p>
                     <p className="mt-1 truncate text-base font-black">{route.name}</p>
                     <div className={`mt-3 flex items-center justify-between text-xs font-bold ${selected ? "text-blue-100/75" : "text-slate-500"}`}>
                       <span>{route.cities.length} ciudades</span>
@@ -166,7 +167,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
         )}
 
         {activeRoute ? (
-          <div className="mt-7 grid min-w-0 gap-7 lg:grid-cols-[1.15fr_.85fr] lg:items-stretch">
+          <div className="mt-7 grid min-w-0 gap-6 lg:grid-cols-[1.08fr_.92fr] lg:items-start">
             <RouteMap route={activeRoute} />
             <article className="relative min-w-0 overflow-hidden rounded-[2rem] bg-[#071d43] p-6 text-white shadow-[0_25px_80px_rgba(7,29,67,.22)] sm:p-8">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/15" />
@@ -212,8 +213,12 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 )}
 
                 {activeRoute.public_summary && <p className="mt-5 border-t border-white/10 pt-5 font-semibold leading-7 text-blue-100/75">{activeRoute.public_summary}</p>}
-                <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">Reservar en esta ruta <ArrowRight size={18} /></button>
-                <p className="mt-3 flex items-center justify-center gap-2 text-center text-xs font-semibold text-blue-100/55"><Clock3 size={13} /> Sujeto a disponibilidad de la ruta</p>
+                <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">Reservar recogida <ArrowRight size={18} /></button>
+                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
+                  <div><ShieldCheck size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Reserva sin costo</p></div>
+                  <div><Check size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Confirmación directa</p></div>
+                  <div><Clock3 size={16} className="mx-auto text-amber-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Según disponibilidad</p></div>
+                </div>
               </div>
             </article>
           </div>
@@ -265,7 +270,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
               </ol>
             </div>
             <div className="border-t border-slate-200 p-5 sm:px-7">
-              <button type="button" onClick={() => { setShowAllStops(false); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">Reservar en esta ruta <ArrowRight size={18} /></button>
+              <button type="button" onClick={() => { setShowAllStops(false); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">Reservar recogida <ArrowRight size={18} /></button>
             </div>
           </div>
         </div>
