@@ -54,7 +54,10 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
 
+  // Un envío puede crearse sin viaje. El consecutivo general se asigna
+  // igualmente y trip_order permanece nulo hasta que se asigne a uno.
   const tripId = input.trip_id || null;
+
   const data = {
     trip_id: tripId,
     store_id: storeId,
@@ -103,8 +106,8 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
   if (!shipmentId) {
     const ids = identity();
 
-    // V20: Supabase asigna el consecutivo global y, si existe viaje,
-    // también la posición dentro del viaje en una sola transacción.
+    // V21: Supabase asigna order_number una sola vez y, cuando hay viaje,
+    // asigna trip_order independientemente.
     const result = await supabase.rpc("create_numbered_shipment", {
       p_store_id: storeId,
       p_id: ids.id,
@@ -123,6 +126,27 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       return {
         data: null,
         error: { message: "El envío fue procesado, pero Supabase no devolvió el registro creado." },
+      };
+    }
+
+    if (shipment.trip_id !== tripId) {
+      return {
+        data: shipment,
+        error: { message: "El envío fue creado, pero el viaje devuelto no coincide con el seleccionado." },
+      };
+    }
+
+    if (!shipment.order_number) {
+      return {
+        data: shipment,
+        error: { message: "El envío fue creado, pero no recibió su consecutivo general." },
+      };
+    }
+
+    if (tripId && !shipment.trip_order) {
+      return {
+        data: shipment,
+        error: { message: "El envío fue creado, pero no recibió su posición dentro del viaje." },
       };
     }
 
@@ -147,8 +171,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 export function createShipment(storeId: string, input: ShipmentInput, createdBy?: string | null) { return save(storeId, null, input, createdBy); }
 export function updateShipment(storeId: string, shipmentId: string, input: ShipmentInput, updatedBy?: string | null) { return save(storeId, shipmentId, input, updatedBy); }
 export function moveShipmentToTrash(storeId: string, shipmentId: string, deletedBy?: string | null) {
-  const now = new Date().toISOString();
-  return supabase.rpc("trash_shipments_v20", {
+  return supabase.rpc("trash_shipments_v21", {
     p_store_id: storeId,
     p_shipment_ids: [shipmentId],
     p_deleted_by: deletedBy || null,
@@ -160,14 +183,14 @@ export function getTrashedShipmentsByStoreId(storeId: string) {
 }
 
 export function restoreShipment(storeId: string, shipmentId: string) {
-  return supabase.rpc("restore_shipment_v20", {
+  return supabase.rpc("restore_shipment_v21", {
     p_store_id: storeId,
     p_shipment_id: shipmentId,
   });
 }
 
 export function permanentlyDeleteShipment(storeId: string, shipmentId: string) {
-  return supabase.rpc("permanently_delete_shipment_v20", {
+  return supabase.rpc("permanently_delete_shipment_v21", {
     p_store_id: storeId,
     p_shipment_id: shipmentId,
   });
@@ -213,9 +236,8 @@ export function bulkUpdateShipmentStatus(
 }
 
 export function bulkMoveShipmentsToTrash(storeId: string, shipmentIds: string[], deletedBy?: string | null) {
-  if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
-  const now = new Date().toISOString();
-  return supabase.rpc("trash_shipments_v20", {
+  if (!shipmentIds.length) return Promise.resolve({ data: 0, error: null });
+  return supabase.rpc("trash_shipments_v21", {
     p_store_id: storeId,
     p_shipment_ids: shipmentIds,
     p_deleted_by: deletedBy || null,
@@ -246,7 +268,7 @@ export function bulkMoveShipmentsToTrip(
   tripId: string,
 ) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
-  return supabase.rpc("move_shipments_to_trip_v20", {
+  return supabase.rpc("move_shipments_to_trip_v21", {
     p_store_id: storeId,
     p_shipment_ids: shipmentIds,
     p_trip_id: tripId,
