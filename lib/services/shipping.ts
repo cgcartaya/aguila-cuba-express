@@ -55,13 +55,6 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
   const now = new Date().toISOString();
 
   const tripId = input.trip_id || null;
-  if (!shipmentId && !tripId) {
-    return {
-      data: null,
-      error: { message: "Selecciona el viaje al que pertenece este envío." },
-    };
-  }
-
   const data = {
     trip_id: tripId,
     store_id: storeId,
@@ -110,9 +103,8 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
   if (!shipmentId) {
     const ids = identity();
 
-    // El trigger V17.2 ya asigna el consecutivo por viaje. No hacemos una
-    // segunda finalización RPC porque puede bloquear la creación si la función
-    // no coincide exactamente con la versión instalada en Supabase.
+    // V20: Supabase asigna el consecutivo global y, si existe viaje,
+    // también la posición dentro del viaje en una sola transacción.
     const result = await supabase.rpc("create_numbered_shipment", {
       p_store_id: storeId,
       p_id: ids.id,
@@ -131,36 +123,6 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       return {
         data: null,
         error: { message: "El envío fue procesado, pero Supabase no devolvió el registro creado." },
-      };
-    }
-
-    // Compatibilidad con versiones antiguas del RPC que no copian trip_id.
-    // Al actualizar trip_id se ejecuta el trigger V17.2 y se asigna el siguiente
-    // número dentro del viaje.
-    if (shipment.trip_id !== tripId) {
-      const assignment = await supabase
-        .from("shipments")
-        .update({
-          trip_id: tripId,
-          updated_at: now,
-          updated_by: userId || null,
-        })
-        .eq("store_id", storeId)
-        .eq("id", shipment.id)
-        .select("*")
-        .single<Shipment>();
-
-      if (assignment.error) {
-        await supabase.from("shipments").delete().eq("store_id", storeId).eq("id", shipment.id);
-        return { data: null, error: assignment.error };
-      }
-      shipment = assignment.data;
-    }
-
-    if (shipment.trip_id !== tripId || !shipment.trip_order) {
-      return {
-        data: shipment,
-        error: { message: "El envío no quedó vinculado o numerado correctamente dentro del viaje." },
       };
     }
 
@@ -186,7 +148,11 @@ export function createShipment(storeId: string, input: ShipmentInput, createdBy?
 export function updateShipment(storeId: string, shipmentId: string, input: ShipmentInput, updatedBy?: string | null) { return save(storeId, shipmentId, input, updatedBy); }
 export function moveShipmentToTrash(storeId: string, shipmentId: string, deletedBy?: string | null) {
   const now = new Date().toISOString();
-  return supabase.from("shipments").update({ deleted_at: now, deleted_by: deletedBy || null, deleted_with_trip_id: null, updated_at: now }).eq("store_id", storeId).eq("id", shipmentId).is("deleted_at", null);
+  return supabase.rpc("trash_shipments_v20", {
+    p_store_id: storeId,
+    p_shipment_ids: [shipmentId],
+    p_deleted_by: deletedBy || null,
+  });
 }
 
 export function getTrashedShipmentsByStoreId(storeId: string) {
@@ -194,14 +160,17 @@ export function getTrashedShipmentsByStoreId(storeId: string) {
 }
 
 export function restoreShipment(storeId: string, shipmentId: string) {
-  return supabase.from("shipments").update({ deleted_at: null, deleted_by: null, deleted_with_trip_id: null, updated_at: new Date().toISOString() }).eq("store_id", storeId).eq("id", shipmentId).not("deleted_at", "is", null).select("*").single<Shipment>();
+  return supabase.rpc("restore_shipment_v20", {
+    p_store_id: storeId,
+    p_shipment_id: shipmentId,
+  });
 }
 
-export async function permanentlyDeleteShipment(storeId: string, shipmentId: string) {
-  const itemResult = await supabase.from("shipment_items").delete().eq("store_id", storeId).eq("shipment_id", shipmentId);
-  if (itemResult.error) return itemResult;
-  await supabase.from("shipment_extra_fees").delete().eq("shipment_id", shipmentId);
-  return supabase.from("shipments").delete().eq("store_id", storeId).eq("id", shipmentId).not("deleted_at", "is", null);
+export function permanentlyDeleteShipment(storeId: string, shipmentId: string) {
+  return supabase.rpc("permanently_delete_shipment_v20", {
+    p_store_id: storeId,
+    p_shipment_id: shipmentId,
+  });
 }
 
 export function updateShipmentStatus(
@@ -246,12 +215,11 @@ export function bulkUpdateShipmentStatus(
 export function bulkMoveShipmentsToTrash(storeId: string, shipmentIds: string[], deletedBy?: string | null) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
   const now = new Date().toISOString();
-  return supabase
-    .from("shipments")
-    .update({ deleted_at: now, deleted_by: deletedBy || null, deleted_with_trip_id: null, updated_at: now })
-    .eq("store_id", storeId)
-    .in("id", shipmentIds)
-    .is("deleted_at", null);
+  return supabase.rpc("trash_shipments_v20", {
+    p_store_id: storeId,
+    p_shipment_ids: shipmentIds,
+    p_deleted_by: deletedBy || null,
+  });
 }
 
 export function bulkAssignShipmentDriver(
@@ -278,7 +246,7 @@ export function bulkMoveShipmentsToTrip(
   tripId: string,
 ) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
-  return supabase.rpc("move_shipments_to_trip_v17_2_2", {
+  return supabase.rpc("move_shipments_to_trip_v20", {
     p_store_id: storeId,
     p_shipment_ids: shipmentIds,
     p_trip_id: tripId,

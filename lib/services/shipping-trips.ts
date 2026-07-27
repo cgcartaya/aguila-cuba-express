@@ -65,7 +65,8 @@ export function getShipmentsByTripId(storeId: string, tripId: string) {
     .eq("store_id", storeId)
     .eq("trip_id", tripId)
     .is("deleted_at", null)
-    .order("order_number", { ascending: false, nullsFirst: false });
+    .order("trip_order", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true });
 }
 
 export function createShippingTrip(storeId: string, input: ShippingTripInput) {
