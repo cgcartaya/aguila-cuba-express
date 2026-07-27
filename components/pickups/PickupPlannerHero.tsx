@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
+import LocationPickerMap from "@/components/maps/LocationPickerMap";
 import {
   ArrowLeft,
   ArrowRight,
@@ -36,6 +37,8 @@ type AddressValidation = {
   postalCode: string;
   countryCode: string;
   suggestedZoneName: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type RequestedRoute = { id: string; name: string; date: string };
@@ -102,6 +105,7 @@ export default function PickupPlannerHero() {
   const [config, setConfig] = useState<PickupPublicConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [requestedRoute, setRequestedRoute] = useState<RequestedRoute | null>(null);
+  const [pin, setPin] = useState<{ latitude: number | null; longitude: number | null }>({ latitude: null, longitude: null });
 
   useEffect(() => {
     setMounted(true);
@@ -173,7 +177,10 @@ export default function PickupPlannerHero() {
 
   function update(name: string, value: string | boolean) {
     setForm((current) => ({ ...current, [name]: value }));
-    if (["address_line_1", "city", "region", "postal_code"].includes(name)) setAddressResult(null);
+    if (["address_line_1", "city", "region", "postal_code"].includes(name)) {
+      setAddressResult(null);
+      setPin({ latitude: null, longitude: null });
+    }
   }
 
   function openPlanner() {
@@ -192,6 +199,7 @@ export default function PickupPlannerHero() {
     setSuccessCode("");
     setError("");
     setRequestedRoute(null);
+    setPin({ latitude: null, longitude: null });
     setForm((current) => ({
       ...current,
       address_line_1: "",
@@ -238,6 +246,7 @@ export default function PickupPlannerHero() {
           region: result.region || current.region,
           postal_code: result.postalCode || current.postal_code,
         }));
+        setPin({ latitude: result.latitude ?? null, longitude: result.longitude ?? null });
       } else {
         setError(result.message || "Revisa la dirección.");
       }
@@ -278,13 +287,22 @@ export default function PickupPlannerHero() {
     if (addressOk) setStep(2);
   }
 
+  function continueMap() {
+    setError("");
+    if (pin.latitude == null || pin.longitude == null) {
+      setError("Confirma el punto exacto en el mapa antes de continuar.");
+      return;
+    }
+    setStep(3);
+  }
+
   function continueDates() {
     setError("");
     if (selectedDates.length === 0) {
       setError("Selecciona al menos un día que te convenga.");
       return;
     }
-    setStep(3);
+    setStep(4);
   }
 
   async function submit(event: FormEvent) {
@@ -310,12 +328,14 @@ export default function PickupPlannerHero() {
           requested_route_id: requestedRoute?.id || null,
           requested_route_name: requestedRoute?.name || null,
           requested_route_date: requestedRoute?.date || null,
+          latitude: pin.latitude,
+          longitude: pin.longitude,
         }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No pudimos registrar la solicitud.");
       setSuccessCode(result.request_code);
-      setStep(4);
+      setStep(5);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Ocurrió un error inesperado.");
     } finally {
@@ -323,7 +343,7 @@ export default function PickupPlannerHero() {
     }
   }
 
-  const stepLabels = ["Ubicación", "Fechas", "Detalles"];
+  const stepLabels = ["Ubicación", "Punto exacto", "Fechas", "Detalles"];
 
   return (
     <>
@@ -396,7 +416,7 @@ export default function PickupPlannerHero() {
               </button>
             </header>
 
-            {step < 4 && (
+            {step < 5 && (
               <div className="border-b border-slate-100 px-5 py-4 sm:px-8">
                 <div className="grid grid-cols-3 gap-2">
                   {stepLabels.map((label, index) => {
@@ -499,7 +519,30 @@ export default function PickupPlannerHero() {
               {step === 2 && (
                 <div className="mx-auto max-w-xl">
                   <button type="button" onClick={() => setStep(1)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
-                    <ArrowLeft size={18} /> Cambiar ubicación
+                    <ArrowLeft size={18} /> Cambiar dirección
+                  </button>
+                  <h3 className="text-2xl font-black text-slate-950">Confirma el punto exacto</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">El marcador se colocó usando tu dirección. Arrástralo hasta la entrada correcta si hace falta.</p>
+                  <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <LocationPickerMap
+                      latitude={pin.latitude}
+                      longitude={pin.longitude}
+                      onChange={(latitude, longitude) => setPin({ latitude, longitude })}
+                      onClear={() => setPin({ latitude: null, longitude: null })}
+                      enableGeolocation
+                    />
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                    <p className="font-black text-[#082b5c]">{addressResult?.formattedAddress || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", ")}</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-600">Este punto será el que verá Yoyo al organizar la ruta.</p>
+                  </div>
+                </div>
+              )}
+
+              {step === 3 && (
+                <div className="mx-auto max-w-xl">
+                  <button type="button" onClick={() => setStep(2)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
+                    <ArrowLeft size={18} /> Cambiar punto
                   </button>
                   <h3 className="text-2xl font-black text-slate-950">¿Qué días te convienen?</h3>
                   <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. Yoyo confirmará el día definitivo.`}</p>
@@ -530,9 +573,9 @@ export default function PickupPlannerHero() {
                 </div>
               )}
 
-              {step === 3 && (
+              {step === 4 && (
                 <form id="pickup-details-form" onSubmit={submit} className="mx-auto max-w-xl">
-                  <button type="button" onClick={() => setStep(2)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
+                  <button type="button" onClick={() => setStep(3)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
                     <ArrowLeft size={18} /> Cambiar fechas
                   </button>
                   <h3 className="text-2xl font-black text-slate-950">Cuéntanos sobre la recogida</h3>
@@ -584,7 +627,7 @@ export default function PickupPlannerHero() {
                 </form>
               )}
 
-              {step === 4 && (
+              {step === 5 && (
                 <div className="mx-auto flex min-h-full max-w-xl flex-col items-center justify-center py-10 text-center">
                   <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                     <CheckCircle2 size={46} />
@@ -599,26 +642,31 @@ export default function PickupPlannerHero() {
                 </div>
               )}
 
-              {error && step < 4 && (
+              {error && step < 5 && (
                 <p className="mx-auto mt-5 max-w-xl rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>
               )}
             </div>
 
-            {step < 4 && (
+            {step < 5 && (
               <footer className="shrink-0 border-t border-slate-200 bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-4">
                 <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
-                  <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 3</p>
+                  <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 4</p>
                   {step === 1 && (
                     <button type="button" onClick={continueLocation} disabled={validating} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#082b5c] px-6 font-black text-white transition hover:bg-[#0a3978] disabled:opacity-60">
                       {validating ? <Loader2 className="animate-spin" size={19} /> : <ArrowRight size={19} />} Continuar
                     </button>
                   )}
                   {step === 2 && (
-                    <button type="button" onClick={continueDates} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700">
+                    <button type="button" onClick={continueMap} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700">
                       Continuar <ArrowRight size={19} />
                     </button>
                   )}
                   {step === 3 && (
+                    <button type="button" onClick={continueDates} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700">
+                      Continuar <ArrowRight size={19} />
+                    </button>
+                  )}
+                  {step === 4 && (
                     <button type="submit" form="pickup-details-form" disabled={loading} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700 disabled:opacity-60">
                       {loading ? <Loader2 className="animate-spin" size={19} /> : <Truck size={19} />} Enviar solicitud
                     </button>

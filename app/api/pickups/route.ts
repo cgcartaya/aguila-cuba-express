@@ -13,6 +13,21 @@ function normalizePhone(value: unknown) {
   return clean(value, 30).replace(/[^0-9+]/g, "");
 }
 
+
+function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const earthRadius = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function validCoordinate(value: unknown, min: number, max: number) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= min && number <= max ? number : null;
+}
+
 function validDate(value: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(`${value}T12:00:00Z`))) return false;
   const today = new Date();
@@ -57,6 +72,28 @@ export async function POST(request: NextRequest) {
 
     if (!validation.valid) {
       return NextResponse.json({ error: validation.message, address_validation: validation }, { status: 422 });
+    }
+
+    const requestedLatitude = validCoordinate(body.latitude, -90, 90);
+    const requestedLongitude = validCoordinate(body.longitude, -180, 180);
+    let finalLatitude = validation.latitude;
+    let finalLongitude = validation.longitude;
+
+    if (requestedLatitude != null && requestedLongitude != null) {
+      const closeToValidatedAddress =
+        validation.latitude == null ||
+        validation.longitude == null ||
+        distanceKm(validation.latitude, validation.longitude, requestedLatitude, requestedLongitude) <= 25;
+
+      if (!closeToValidatedAddress) {
+        return NextResponse.json(
+          { error: "El punto seleccionado está demasiado lejos de la dirección validada. Revisa el marcador." },
+          { status: 422 }
+        );
+      }
+
+      finalLatitude = requestedLatitude;
+      finalLongitude = requestedLongitude;
     }
 
     const { data: store, error: storeError } = await supabaseAdmin
@@ -112,8 +149,8 @@ export async function POST(request: NextRequest) {
         country_code: validation.countryCode,
         county: validation.county,
         place_id: validation.placeId,
-        latitude: validation.latitude,
-        longitude: validation.longitude,
+        latitude: finalLatitude,
+        longitude: finalLongitude,
         address_verified: validation.verified,
         validation_provider: validation.provider,
         validation_payload: validation.raw || null,

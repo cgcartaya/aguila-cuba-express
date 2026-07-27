@@ -150,6 +150,8 @@ export type CreatePickupRequestInput = {
   requested_route_id?: string | null;
   requested_route_name?: string | null;
   requested_route_date?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export const PICKUP_STATUS_LABELS: Record<PickupRequestStatus, string> = {
