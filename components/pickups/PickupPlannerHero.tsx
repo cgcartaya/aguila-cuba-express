@@ -99,6 +99,7 @@ export default function PickupPlannerHero() {
   });
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [addressResult, setAddressResult] = useState<AddressValidation | null>(null);
   const [error, setError] = useState("");
   const [successCode, setSuccessCode] = useState("");
@@ -259,6 +260,35 @@ export default function PickupPlannerHero() {
     }
   }
 
+
+  async function geocodeAddress() {
+    setGeocoding(true);
+    setError("");
+    try {
+      const response = await fetch("/api/pickups/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address_line_1: form.address_line_1,
+          city: form.city,
+          region: form.region,
+          postal_code: form.postal_code,
+          country_code: config?.countryCode || "US",
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No pudimos localizar la dirección.");
+      setPin({ latitude: result.latitude, longitude: result.longitude });
+      setAddressResult((current) => current ? { ...current, formattedAddress: result.formattedAddress || current.formattedAddress, latitude: result.latitude, longitude: result.longitude } : current);
+      return true;
+    } catch (geocodeError) {
+      setError(geocodeError instanceof Error ? geocodeError.message : "No pudimos localizar la dirección.");
+      return false;
+    } finally {
+      setGeocoding(false);
+    }
+  }
+
   function toggleDate(date: string) {
     setSelectedDates((current) => {
       if (current.includes(date)) return current.filter((item) => item !== date);
@@ -284,7 +314,11 @@ export default function PickupPlannerHero() {
     }
 
     const addressOk = addressResult?.valid || (await validateAddress());
-    if (addressOk) setStep(2);
+    if (!addressOk) return;
+
+    const hasPoint = pin.latitude != null && pin.longitude != null;
+    const pointOk = hasPoint || (await geocodeAddress());
+    if (pointOk) setStep(2);
   }
 
   function continueMap() {
@@ -530,6 +564,8 @@ export default function PickupPlannerHero() {
                       onChange={(latitude, longitude) => setPin({ latitude, longitude })}
                       onClear={() => setPin({ latitude: null, longitude: null })}
                       enableGeolocation
+                      startLocked
+                      addressLabel={addressResult?.formattedAddress || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", ")}
                     />
                   </div>
                   <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
@@ -652,8 +688,9 @@ export default function PickupPlannerHero() {
                 <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
                   <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 4</p>
                   {step === 1 && (
-                    <button type="button" onClick={continueLocation} disabled={validating} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#082b5c] px-6 font-black text-white transition hover:bg-[#0a3978] disabled:opacity-60">
-                      {validating ? <Loader2 className="animate-spin" size={19} /> : <ArrowRight size={19} />} Continuar
+                    <button type="button" onClick={continueLocation} disabled={validating || geocoding} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#082b5c] px-6 font-black text-white transition hover:bg-[#0a3978] disabled:opacity-60">
+                      {validating || geocoding ? <Loader2 className="animate-spin" size={19} /> : <ArrowRight size={19} />}
+                      {validating ? "Validando..." : geocoding ? "Buscando tu casa..." : "Continuar"}
                     </button>
                   )}
                   {step === 2 && (

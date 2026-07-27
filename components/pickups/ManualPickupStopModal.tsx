@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Loader2, MapPin, Plus, Search, UserRound, X } from "lucide-react";
+import { Check, LocateFixed, Loader2, MapPin, Plus, Search, UserRound, X } from "lucide-react";
 import { createManualPickupRequest, getPickupServiceSettings, updateManualPickupRequest } from "@/lib/services/pickups";
 import { getCityOptions } from "@/lib/geo/location-catalog";
 import CityAutocomplete from "@/components/pickups/CityAutocomplete";
@@ -49,6 +49,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   const [customerSearching, setCustomerSearching] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [requestSource, setRequestSource] = useState("whatsapp");
+  const [geocoding, setGeocoding] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -105,6 +106,41 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
 
   if (!open) return null;
 
+  async function locateAddress() {
+    if (!form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) {
+      setError("Completa dirección, ciudad y ZIP Code para localizarla en el mapa.");
+      return;
+    }
+    setGeocoding(true);
+    setError("");
+    try {
+      const response = await fetch("/api/pickups/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address_line_1: form.address_line_1,
+          city: form.city,
+          region: form.region || "SC",
+          postal_code: form.postal_code,
+          country_code: "US",
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "No pudimos localizar esa dirección.");
+      setForm((current) => ({
+        ...current,
+        latitude: result.latitude,
+        longitude: result.longitude,
+        formatted_address: result.formattedAddress || [current.address_line_1, current.city, current.region, current.postal_code].filter(Boolean).join(", "),
+        address_verified: true,
+        place_id: "",
+      }));
+    } catch (locateError) {
+      setError(locateError instanceof Error ? locateError.message : "No pudimos localizar esa dirección.");
+    } finally {
+      setGeocoding(false);
+    }
+  }
 
   async function save() {
     if (!form.customer_name.trim() || !form.phone.trim() || !form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) {
@@ -177,11 +213,17 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
         <div className="sm:col-span-2"><Field label="Dirección *"><div className="relative"><MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input className="manual-input pl-11" value={form.address_line_1} onChange={(e) => setForm({ ...form, address_line_1: e.target.value, formatted_address: "", address_verified: false })} placeholder="Número y calle" /></div></Field></div>
         <div className="sm:col-span-2"><Field label="Apartamento, unidad o referencia"><input className="manual-input" value={form.address_line_2} onChange={(e) => setForm({ ...form, address_line_2: e.target.value })} placeholder="Opcional" /></Field></div>
         <div className="grid grid-cols-[110px_1fr] gap-3 sm:col-span-2"><Field label="Estado"><input className="manual-input" value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value.toUpperCase().slice(0, 2) })} /></Field><Field label="ZIP Code *"><input className="manual-input" inputMode="numeric" value={form.postal_code} onChange={(e) => setForm({ ...form, postal_code: e.target.value })} /></Field></div>
-        <div className="sm:col-span-2"><Field label="Ubicación en el mapa (opcional, recomendada)"><LocationPickerMap latitude={form.latitude} longitude={form.longitude} onChange={(latitude, longitude) => setForm((current) => ({ ...current, latitude, longitude, address_verified: true, place_id: "", formatted_address: [current.address_line_1, current.city, current.region, current.postal_code].filter(Boolean).join(", ") }))} onClear={() => setForm((current) => ({ ...current, latitude: null, longitude: null, address_verified: false }))}/></Field></div>
+        <div className="sm:col-span-2">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div><p className="text-sm font-black text-slate-700">Ubicación exacta en el mapa</p><p className="text-xs font-bold text-slate-500">Busca la dirección y corrige el marcador solo si hace falta.</p></div>
+            <button type="button" onClick={locateAddress} disabled={geocoding} className="inline-flex items-center gap-2 rounded-xl bg-[#082b5c] px-4 py-2.5 text-sm font-black text-white disabled:opacity-60">{geocoding ? <Loader2 className="animate-spin" size={16} /> : <LocateFixed size={16} />}{geocoding ? "Buscando..." : form.latitude != null ? "Buscar de nuevo" : "Buscar dirección"}</button>
+          </div>
+          <LocationPickerMap latitude={form.latitude} longitude={form.longitude} onChange={(latitude, longitude) => setForm((current) => ({ ...current, latitude, longitude, address_verified: true, place_id: "", formatted_address: [current.address_line_1, current.city, current.region, current.postal_code].filter(Boolean).join(", ") }))} onClear={() => setForm((current) => ({ ...current, latitude: null, longitude: null, address_verified: false }))} startLocked addressLabel={form.formatted_address || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", ")} />
+        </div>
         <div className="sm:col-span-2"><Field label="Notas"><textarea className="manual-input min-h-28 resize-y" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej. Escribir al llegar, tiene dos cajas..." /></Field></div>
         {error && <p className="sm:col-span-2 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-700">{error}</p>}
       </div>
-      <footer className="sticky bottom-0 flex justify-end gap-3 border-t bg-slate-50 p-5 sm:p-6"><button onClick={onClose} disabled={saving} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} {editRequest ? "Guardar cambios" : requestMode ? "Crear solicitud" : "Agregar parada"}</button></footer>
+      <footer className="sticky bottom-0 flex justify-end gap-3 border-t bg-slate-50 p-5 sm:p-6"><button onClick={onClose} disabled={saving} className="rounded-2xl border bg-white px-5 py-3 font-black">Cancelar</button><button onClick={save} disabled={saving || geocoding} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white disabled:opacity-50">{saving ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />} {editRequest ? "Guardar cambios" : requestMode ? "Crear solicitud" : "Agregar parada"}</button></footer>
       <style jsx>{`.manual-input{width:100%;border:1px solid #dbe3ee;border-radius:1rem;padding:.82rem 1rem;font-weight:700;outline:none;background:white}.manual-input:focus{border-color:#f97316;box-shadow:0 0 0 3px rgba(249,115,22,.12)}`}</style>
     </div>
   </div>;
