@@ -60,7 +60,7 @@ const initialForm: CheckoutForm = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart } = useCart();
+  const { cart } = useCart();
   const { store } = useStore();
 
   const isYoyo = store?.slug === YOYO_SLUG;
@@ -390,18 +390,25 @@ Ver pedido:
 ${orderUrl}`);
   }
 
-  function openWhatsappByDevice(message: string, orderNumber: string) {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isMobile) {
-      window.location.href = `whatsapp://send?phone=${businessWhatsapp}&text=${message}`;
-      setTimeout(() => router.push(`${orderUrlBase}/${orderNumber}`), 2000);
-      return;
-    }
-    window.open(
-      `https://web.whatsapp.com/send?phone=${businessWhatsapp}&text=${message}`,
-      "_blank"
+  function continueToWhatsappStep(params: {
+    orderNumber: string;
+    orderUrl: string;
+    whatsappMessage: string;
+  }) {
+    const storeUrl = store?.slug ? `/tienda/${store.slug}` : "/tienda";
+
+    window.sessionStorage.setItem(
+      "perla_pending_whatsapp_order",
+      JSON.stringify({
+        orderNumber: params.orderNumber,
+        orderUrl: params.orderUrl,
+        storeUrl,
+        businessWhatsapp,
+        whatsappMessage: params.whatsappMessage,
+      })
     );
-    router.push(`${orderUrlBase}/${orderNumber}`);
+
+    router.push(`/tienda/success?order=${encodeURIComponent(params.orderNumber)}`);
   }
 
   async function handleSubmit() {
@@ -496,8 +503,11 @@ ${orderUrl}`);
         },
       });
 
-      clearCart();
-      openWhatsappByDevice(whatsappMessage, orderNumber);
+      continueToWhatsappStep({
+        orderNumber,
+        orderUrl,
+        whatsappMessage,
+      });
     } catch (submitError: any) {
       console.error("ERROR CHECKOUT:", submitError);
       setError(submitError?.message || "Ocurrió un error al crear la orden.");

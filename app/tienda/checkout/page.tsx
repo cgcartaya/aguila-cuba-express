@@ -76,7 +76,6 @@ export default function CheckoutPage() {
       : "/tienda/cart";
 
   const orderUrlBase = "/pedido";
-  const successUrl = "/tienda/success";
 
   const [form, setForm] = useState<CheckoutForm>(initialForm);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
@@ -317,7 +316,7 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
     return order;
   }
 
-  function goToOrderSuccess(params: {
+  function continueToWhatsappStep(params: {
     orderNumber: string;
     orderUrl: string;
     whatsappMessage: string;
@@ -336,7 +335,7 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
       })
     );
 
-    router.push(`${successUrl}?order=${encodeURIComponent(params.orderNumber)}`);
+    router.push(`/tienda/success?order=${encodeURIComponent(params.orderNumber)}`);
   }
 
   async function handleSubmit() {
@@ -468,7 +467,7 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         });
       }
 
-      goToOrderSuccess({
+      continueToWhatsappStep({
         orderNumber,
         orderUrl,
         whatsappMessage,
