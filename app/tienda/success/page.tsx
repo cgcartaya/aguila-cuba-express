@@ -1,32 +1,126 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, ShoppingBag } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { CheckCircle, ExternalLink, MessageCircle, ShoppingBag } from "lucide-react";
+
+import { useCart } from "@/contexts/CartContext";
+
+type PendingWhatsappOrder = {
+  orderNumber: string;
+  orderUrl: string;
+  storeUrl: string;
+  businessWhatsapp: string;
+  whatsappMessage: string;
+};
+
+const STORAGE_KEY = "perla_pending_whatsapp_order";
 
 export default function SuccessPage() {
+  const searchParams = useSearchParams();
+  const { clearCart } = useCart();
+  const [pendingOrder, setPendingOrder] = useState<PendingWhatsappOrder | null>(null);
+  const [whatsappOpened, setWhatsappOpened] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = window.sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw) as PendingWhatsappOrder;
+      if (parsed?.orderNumber && parsed?.businessWhatsapp && parsed?.whatsappMessage) {
+        setPendingOrder(parsed);
+      }
+    } catch (error) {
+      console.error("No se pudo recuperar la orden para WhatsApp:", error);
+    }
+  }, []);
+
+  const orderNumber = pendingOrder?.orderNumber || searchParams.get("order") || "";
+  const orderUrl = pendingOrder?.orderUrl || (orderNumber ? `/pedido/${orderNumber}` : "/tienda");
+  const storeUrl = pendingOrder?.storeUrl || "/tienda";
+
+  const whatsappUrl = useMemo(() => {
+    if (!pendingOrder) return "";
+
+    const phone = pendingOrder.businessWhatsapp.replace(/\D/g, "");
+    return `https://wa.me/${phone}?text=${pendingOrder.whatsappMessage}`;
+  }, [pendingOrder]);
+
+  function handleOpenWhatsapp() {
+    if (!whatsappUrl) return;
+
+    setWhatsappOpened(true);
+    window.location.assign(whatsappUrl);
+  }
+
+  function handleFinishOrder() {
+    clearCart();
+    window.sessionStorage.removeItem(STORAGE_KEY);
+    window.location.assign(orderUrl);
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-sm">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+      <div className="w-full max-w-lg rounded-3xl bg-white p-7 text-center shadow-sm sm:p-8">
         <CheckCircle className="mx-auto mb-4 text-green-600" size={64} />
 
         <h1 className="text-2xl font-bold text-gray-900">
-          Orden creada correctamente
+          Pedido creado correctamente
         </h1>
 
         <p className="mt-3 text-gray-600">
-          Hemos recibido tu pedido. Próximamente conectaremos el pago real con
-          Stripe.
+          Tu pedido ya fue guardado. Ahora puedes enviarlo por WhatsApp sin perder
+          el carrito si decides regresar.
         </p>
 
-        <div className="mt-6 rounded-2xl bg-gray-50 p-4 text-sm text-gray-600">
-          Estado actual: <strong>Pendiente de pago</strong>
+        {orderNumber && (
+          <div className="mt-6 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
+            Número de orden:
+            <strong className="mt-1 block break-all text-gray-950">{orderNumber}</strong>
+          </div>
+        )}
+
+        <div className="mt-6 space-y-3">
+          {whatsappUrl ? (
+            <button
+              type="button"
+              onClick={handleOpenWhatsapp}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700"
+            >
+              <MessageCircle size={21} />
+              Enviar pedido por WhatsApp
+            </button>
+          ) : (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              No se pudo recuperar el mensaje de WhatsApp. La orden sí fue creada y
+              puedes abrirla con el botón de abajo.
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleFinishOrder}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-950 px-5 py-4 font-bold text-white transition hover:bg-gray-800"
+          >
+            <ExternalLink size={20} />
+            {whatsappOpened ? "Finalizar y ver pedido" : "Ver pedido guardado"}
+          </button>
+
+          <Link
+            href={storeUrl}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-4 font-semibold text-gray-800"
+          >
+            <ShoppingBag size={20} />
+            Volver a la tienda sin vaciar el carrito
+          </Link>
         </div>
 
-        <Link
-          href="/tienda"
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-black px-5 py-4 font-bold text-white"
-        >
-          <ShoppingBag size={20} />
-          Volver a la tienda
-        </Link>
+        <p className="mt-5 text-xs leading-5 text-gray-500">
+          El carrito se limpia únicamente cuando presionas “Finalizar y ver pedido”.
+          Abrir WhatsApp por sí solo no elimina los productos.
+        </p>
       </div>
     </main>
   );

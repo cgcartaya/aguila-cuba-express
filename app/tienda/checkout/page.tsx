@@ -64,7 +64,7 @@ const initialForm: CheckoutForm = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart } = useCart();
+  const { cart } = useCart();
 
   const { store } = useStore();
 
@@ -76,6 +76,7 @@ export default function CheckoutPage() {
       : "/tienda/cart";
 
   const orderUrlBase = "/pedido";
+  const successUrl = "/tienda/success";
 
   const [form, setForm] = useState<CheckoutForm>(initialForm);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
@@ -316,25 +317,26 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
     return order;
   }
 
-  function openWhatsappByDevice(whatsappMessage: string, orderNumber: string) {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  function goToOrderSuccess(params: {
+    orderNumber: string;
+    orderUrl: string;
+    whatsappMessage: string;
+  }) {
+    const storeUrl =
+      store?.slug && !isDefaultStore ? `/tienda/${store.slug}` : "/tienda";
 
-    if (isMobile) {
-      window.location.href = `whatsapp://send?phone=${businessWhatsapp}&text=${whatsappMessage}`;
-
-      setTimeout(() => {
-        router.push(`${orderUrlBase}/${orderNumber}`);
-      }, 2000);
-
-      return;
-    }
-
-    window.open(
-      `https://web.whatsapp.com/send?phone=${businessWhatsapp}&text=${whatsappMessage}`,
-      "_blank"
+    window.sessionStorage.setItem(
+      "perla_pending_whatsapp_order",
+      JSON.stringify({
+        orderNumber: params.orderNumber,
+        orderUrl: params.orderUrl,
+        storeUrl,
+        businessWhatsapp,
+        whatsappMessage: params.whatsappMessage,
+      })
     );
 
-    router.push(`${orderUrlBase}/${orderNumber}`);
+    router.push(`${successUrl}?order=${encodeURIComponent(params.orderNumber)}`);
   }
 
   async function handleSubmit() {
@@ -466,8 +468,11 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         });
       }
 
-      clearCart();
-      openWhatsappByDevice(whatsappMessage, orderNumber);
+      goToOrderSuccess({
+        orderNumber,
+        orderUrl,
+        whatsappMessage,
+      });
     } catch (err: any) {
       console.error("ERROR CHECKOUT:", err);
       setError(err?.message || "Ocurrió un error al crear la orden.");
