@@ -149,8 +149,23 @@ export default function AguilaLanding() {
               Paquetes, compras y ayuda para tu familia en Cuba, con una atención cercana y una plataforma para saber siempre qué está pasando.
             </p>
             <div className="mt-8 grid gap-3 sm:mt-9 sm:flex sm:flex-row">
-              <a href="#cotizar" className="inline-flex items-center justify-center gap-2 rounded-full bg-[#c9202f] px-7 py-4 text-sm font-black text-white shadow-[0_16px_35px_rgba(201,32,47,.22)] transition hover:-translate-y-0.5"><Calculator size={19} /> Cotizar envío <ArrowRight size={18} /></a>
-              <Link href={STORE_URL} className="inline-flex items-center justify-center gap-2 rounded-full border border-[#13233d]/15 bg-white/70 px-7 py-4 text-sm font-black transition hover:bg-white"><Store size={19} /> Visitar la tienda</Link>
+             <Link
+  href={STORE_URL}
+  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#c9202f] px-7 py-4 text-sm font-black text-white shadow-[0_16px_35px_rgba(201,32,47,.22)] transition hover:-translate-y-0.5"
+>
+  <Store size={19} />
+  Ir a la tienda
+  <ArrowRight size={18} />
+</Link>
+            <a
+  href={`${WHATSAPP_URL}?text=${quoteMessage}`}
+  target="_blank"
+  rel="noreferrer"
+  className="inline-flex items-center justify-center gap-2 rounded-full border border-[#13233d]/15 bg-white/70 px-7 py-4 text-sm font-black transition hover:bg-white"
+>
+  <Calculator size={19} />
+  Cotizar mi envío
+</a>
             </div>
             <div className="mt-8 grid gap-3 text-sm font-extrabold text-[#13233d]/65 sm:mt-10 sm:flex sm:flex-wrap sm:gap-x-7 sm:gap-y-3">
               {["Rastreo en línea", "Atención por WhatsApp", "Compra y envío juntos"].map((item) => <span key={item} className="inline-flex items-center gap-2"><Check size={16} className="text-[#c9202f]" />{item}</span>)}
