@@ -1,7 +1,7 @@
 import Image from "next/image";
 import {
   ArrowRight,
-  Calculator,
+  Store,
   CheckCircle2,
   MapPin,
   MessageCircle,
@@ -9,7 +9,7 @@ import {
   Truck,
 } from "lucide-react";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
-import { WHATSAPP_URL } from "./constants";
+import { STORE_URL, WHATSAPP_URL } from "./constants";
 
 const benefits = [
   [ShieldCheck, "Envío seguro"],
@@ -75,12 +75,12 @@ export default function YoyoHero() {
 
           <div className="mt-8 flex flex-col gap-3 sm:mt-9 sm:flex-row">
             <a
-              href="#cotizar"
+              href={STORE_URL}
               className="yoyo-primary-button group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-[#d71920] to-red-500 px-7 py-4 text-sm font-black shadow-[0_18px_48px_rgba(215,25,32,.35)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_64px_rgba(215,25,32,.5)]"
             >
               <span className="yoyo-button-shine absolute inset-y-0 -left-1/2 w-1/3 skew-x-[-18deg] bg-white/30 blur-sm" />
-              <Calculator size={20} className="relative" />
-              <span className="relative">Cotizar mi envío</span>
+              <Store size={20} className="relative" />
+              <span className="relative">Ir a la tienda</span>
               <ArrowRight size={18} className="relative transition-transform group-hover:translate-x-1" />
             </a>
             <a
