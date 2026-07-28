@@ -296,12 +296,19 @@ export default function OrdersManager({
 
       const deletedAt = new Date().toISOString();
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("orders")
         .update({ deleted_at: deletedAt })
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .select("id")
+        .maybeSingle();
 
       if (error) throw error;
+      if (!updated) {
+        throw new Error(
+          "No se pudo enviar la orden a la papelera: no tienes permiso sobre esta tienda, o la orden ya no existe."
+        );
+      }
 
       const deletedOrder = {
         ...order,
@@ -332,12 +339,19 @@ export default function OrdersManager({
       await validateOrderStock(orderItems);
       await processOrderInventory(orderItems);
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("orders")
         .update({ deleted_at: null })
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .select("id")
+        .maybeSingle();
 
       if (error) throw error;
+      if (!updated) {
+        throw new Error(
+          "No se pudo restaurar la orden: no tienes permiso sobre esta tienda, o la orden ya no existe."
+        );
+      }
 
       const restoredOrder = {
         ...order,
@@ -372,12 +386,19 @@ export default function OrdersManager({
 
       if (itemsError) throw itemsError;
 
-      const { error: orderError } = await supabase
+      const { data: deletedOrder, error: orderError } = await supabase
         .from("orders")
         .delete()
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .select("id")
+        .maybeSingle();
 
       if (orderError) throw orderError;
+      if (!deletedOrder) {
+        throw new Error(
+          "No se pudo eliminar la orden: no tienes permiso sobre esta tienda, o la orden ya no existe."
+        );
+      }
 
       setDeletedOrders((prev) => prev.filter((item) => item.id !== order.id));
     } catch (error: any) {
