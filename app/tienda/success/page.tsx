@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, ExternalLink, MessageCircle, ShoppingBag } from "lucide-react";
@@ -17,7 +17,7 @@ type PendingWhatsappOrder = {
 
 const STORAGE_KEY = "perla_pending_whatsapp_order";
 
-export default function SuccessPage() {
+function SuccessPageContent() {
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
   const [pendingOrder, setPendingOrder] = useState<PendingWhatsappOrder | null>(null);
@@ -123,5 +123,22 @@ export default function SuccessPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+
+export default function SuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
+          <div className="rounded-2xl bg-white px-6 py-5 text-sm text-gray-600 shadow-sm">
+            Cargando pedido...
+          </div>
+        </main>
+      }
+    >
+      <SuccessPageContent />
+    </Suspense>
   );
 }
