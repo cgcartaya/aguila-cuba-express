@@ -64,13 +64,6 @@ function SuccessPageContent() {
     return `https://wa.me/${phone}?text=${pendingOrder.whatsappMessage}`;
   }, [pendingOrder]);
 
-  function handleOpenWhatsapp() {
-    if (!whatsappUrl) return;
-
-    setWhatsappOpened(true);
-    window.location.assign(whatsappUrl);
-  }
-
   function handleFinishOrder() {
     clearCart();
     window.sessionStorage.removeItem(STORAGE_KEY);
@@ -100,14 +93,14 @@ function SuccessPageContent() {
 
         <div className="mt-6 space-y-3">
           {whatsappUrl ? (
-            <button
-              type="button"
-              onClick={handleOpenWhatsapp}
+            <a
+              href={whatsappUrl}
+              onClick={() => setWhatsappOpened(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700"
             >
               <MessageCircle size={21} />
-              Enviar pedido por WhatsApp
-            </button>
+              Abrir WhatsApp para enviar el pedido
+            </a>
           ) : (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               No se pudo recuperar el mensaje de WhatsApp. La orden sí fue creada y
@@ -135,7 +128,7 @@ function SuccessPageContent() {
 
         <p className="mt-5 text-xs leading-5 text-gray-500">
           El carrito se limpia únicamente cuando presionas “Finalizar y ver pedido”.
-          Abrir WhatsApp por sí solo no elimina los productos.
+          El botón de WhatsApp es un enlace directo compatible con iPhone, Android y WhatsApp Business. Abrirlo no elimina los productos.
         </p>
       </div>
     </main>
