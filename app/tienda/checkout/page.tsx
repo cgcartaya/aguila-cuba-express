@@ -26,10 +26,6 @@ import {
   getStoreSettings,
   type DeliveryZone,
 } from "@/lib/services/settings";
-import {
-  processOrderInventory,
-  validateOrderStock,
-} from "@/lib/services/inventory";
 
 import { CustomerInfoForm } from "@/components/checkout/CustomerInfoForm";
 import { RecipientInfoForm } from "@/components/checkout/RecipientInfoForm";
@@ -180,7 +176,7 @@ export default function CheckoutPage() {
     void trackAnalyticsEvent({
       storeId: store.id,
       eventName: "begin_checkout",
-      value: finalTotalWithDiscount,
+      value: Number(order.total),
       metadata: { items: cart.length },
     });
   }, [store?.id, cart.length]);
@@ -220,47 +216,6 @@ export default function CheckoutPage() {
     });
   }
 
-  async function createOrUpdateCustomer() {
-    const { data: existingCustomer, error: existingCustomerError } =
-      await supabase
-        .from("customers")
-        .select("*")
-        .eq("email", form.email)
-        .maybeSingle();
-
-    if (existingCustomerError) throw existingCustomerError;
-
-    if (existingCustomer) {
-      const { error: updateCustomerError } = await supabase
-        .from("customers")
-        .update({
-          name: form.name,
-          phone: form.phone,
-          city: form.municipality,
-        })
-        .eq("id", existingCustomer.id);
-
-      if (updateCustomerError) throw updateCustomerError;
-
-      return existingCustomer;
-    }
-
-    const { data: newCustomer, error: customerError } = await supabase
-      .from("customers")
-      .insert({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        city: form.municipality,
-      })
-      .select()
-      .single();
-
-    if (customerError) throw customerError;
-
-    return newCustomer;
-  }
-
   function buildOrderItemsBase() {
     return cart.map((item) => {
       const originalId = getOriginalCartItemId(item.id);
@@ -277,43 +232,37 @@ export default function CheckoutPage() {
     });
   }
 
-async function createOrder(customerId: string, zone: DeliveryZone) {
-  const { data: order, error: orderError } = await supabase
-    .from("orders")
-    .insert({
-      customer_id: customerId,
-      store_id: store?.id,
+  async function createOrderSecure(orderItems: ReturnType<typeof buildOrderItemsBase>) {
+    const response = await fetch("/api/checkout/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        storeId: store?.id,
+        method: "cuba",
+        isLocalDelivery: false,
+        form,
+        zoneId: selectedZone?.id || null,
+        items: orderItems,
+        discountCampaignId: appliedDiscount?.campaignId || null,
+        discountCode: appliedDiscount?.code || null,
+        customerPhone: form.phone,
+      }),
+    });
 
-      status: "pending",
-      payment_status: "pending",
+    const result = await response.json().catch(() => null);
 
-        subtotal: totals.subtotal,
-        delivery_fee: totals.shippingCost,
-        discount_campaign_id: appliedDiscount?.campaignId || null,
-        discount_code: appliedDiscount?.code || null,
-        discount_amount: discountAmount,
-        total: finalTotalWithDiscount,
+    if (!response.ok || !result?.success || !result?.order) {
+      throw new Error(result?.message || "No se pudo crear la orden.");
+    }
 
-        country: "Cuba",
-        state: "Cienfuegos",
-        municipality: form.municipality,
-        delivery_zone_id: zone.id,
-        zone_name: zone.zone_name,
-        exact_address: form.exact_address,
-
-        recipient_name: form.recipient_name,
-        recipient_phone: form.recipient_phone,
-        recipient_phone_alt: form.recipient_phone_alt,
-
-        address: form.exact_address,
-        notes: form.notes,
-      })
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    return order;
+    return result.order as {
+      id: string;
+      order_number?: string | null;
+      subtotal: number;
+      delivery_fee: number;
+      discount_amount: number;
+      total: number;
+    };
   }
 
   function continueToWhatsappStep(params: {
@@ -377,61 +326,8 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
 
     try {
       setLoading(true);
-
-      const customer = await createOrUpdateCustomer();
       const orderItemsBase = buildOrderItemsBase();
-
-      await validateOrderStock(orderItemsBase);
-
-      const order = await createOrder(customer.id, selectedZone);
-
-      if (appliedDiscount) {
-        const redeemResponse = await fetch("/api/discounts/redeem", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            campaignId: appliedDiscount.campaignId,
-            storeId: store.id,
-            phone: form.phone,
-            orderId: order.id,
-          }),
-        });
-
-        const redeemResult = await redeemResponse.json();
-
-        if (!redeemResponse.ok || !redeemResult.success) {
-          await supabase.from("orders").delete().eq("id", order.id);
-          throw new Error(
-            redeemResult.message || "El bono ya no está disponible."
-          );
-        }
-      }
-
-      const orderItems = orderItemsBase.map((item) => ({
-        ...item,
-        order_id: order.id,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) {
-        if (appliedDiscount) {
-          await fetch("/api/discounts/release", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              campaignId: appliedDiscount.campaignId,
-              phone: form.phone,
-              orderId: order.id,
-            }),
-          });
-        }
-        throw itemsError;
-      }
-
-      await processOrderInventory(orderItems);
+      const order = await createOrderSecure(orderItemsBase);
 
       const orderNumber = order.order_number || order.id;
       const origin = window.location.origin;
@@ -442,11 +338,11 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
         form,
         cart,
         selectedZone,
-        subtotal: totals.subtotal,
-        shippingCost: totals.shippingCost,
-        finalTotal: finalTotalWithDiscount,
+        subtotal: Number(order.subtotal),
+        shippingCost: Number(order.delivery_fee),
+        finalTotal: Number(order.total),
         discountCode: appliedDiscount?.code || null,
-        discountAmount,
+        discountAmount: Number(order.discount_amount),
         orderUrl,
       });
 
@@ -457,12 +353,12 @@ async function createOrder(customerId: string, zone: DeliveryZone) {
           storeId: store.id,
           eventName: "order_created",
           orderId: order.id,
-          value: finalTotalWithDiscount,
+          value: Number(order.total),
           metadata: {
             orderNumber,
             items: cart.length,
             discountCode: appliedDiscount?.code || null,
-            discountAmount,
+            discountAmount: Number(order.discount_amount),
           },
         });
       }

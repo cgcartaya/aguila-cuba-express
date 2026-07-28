@@ -1,31 +1,33 @@
-// Guardar en: app/api/checkout/create-order/route.ts
-//
-// Reemplaza el insert directo `supabase.from("orders").insert(...)`
-// que hoy corre en el navegador del cliente. Al mover esto a una
-// API route con supabaseAdmin, orders.SELECT / orders.INSERT ya no
-// necesitan estar abiertos a "true" en RLS — el navegador nunca
-// vuelve a tocar la tabla orders directamente durante el checkout.
-
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { normalizeCustomerPhone } from "@/lib/utils/phone";
 
-const clean = (value: unknown, max = 300) => String(value ?? "").trim().slice(0, max);
+const clean = (value: unknown, max = 300) =>
+  String(value ?? "").trim().slice(0, max);
+const money = (value: unknown) => Math.round(Number(value || 0) * 100) / 100;
 const fail = (message: string, status = 400) =>
   NextResponse.json({ success: false, message }, { status });
 
+type CheckoutItem = {
+  item_type?: "product" | "combo";
+  product_id?: string | null;
+  combo_id?: string | null;
+  quantity?: number;
+};
+
 type CreateOrderBody = {
   storeId?: string;
-  customerId?: string;
   method?: "delivery" | "cuba";
   isLocalDelivery?: boolean;
-  subtotal?: number;
-  shippingCost?: number;
-  total?: number;
+  zoneId?: string | null;
+  items?: CheckoutItem[];
   discountCampaignId?: string | null;
   discountCode?: string | null;
-  discountAmount?: number;
-  zone?: { id?: string; zone_name?: string } | null;
+  customerPhone?: string;
   form?: {
+    name?: string;
+    email?: string;
+    phone?: string;
     city?: string;
     municipality?: string;
     exact_address?: string;
@@ -34,10 +36,42 @@ type CreateOrderBody = {
     recipient_phone_alt?: string;
     reference?: string;
     notes?: string;
-    name?: string;
-    phone?: string;
   };
 };
+
+type PreparedItem = {
+  item_type: "product" | "combo";
+  product_id: string | null;
+  combo_id: string | null;
+  product_name: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+};
+
+type StockChange = { productId: string; quantity: number };
+
+async function restoreStock(changes: StockChange[]) {
+  for (const change of [...changes].reverse()) {
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select("stock")
+      .eq("id", change.productId)
+      .maybeSingle();
+
+    if (!data) continue;
+
+    await supabaseAdmin
+      .from("products")
+      .update({ stock: Number(data.stock || 0) + change.quantity })
+      .eq("id", change.productId);
+  }
+}
+
+async function deleteCreatedOrder(orderId: string) {
+  await supabaseAdmin.from("order_items").delete().eq("order_id", orderId);
+  await supabaseAdmin.from("orders").delete().eq("id", orderId);
+}
 
 export async function POST(request: Request) {
   let body: CreateOrderBody;
@@ -49,14 +83,22 @@ export async function POST(request: Request) {
   }
 
   const storeId = clean(body.storeId, 64);
-  const customerId = clean(body.customerId, 64);
+  const form = body.form || {};
+  const email = clean(form.email, 200).toLowerCase();
+  const customerName = clean(form.name, 150);
+  const customerPhone = normalizeCustomerPhone(
+    clean(body.customerPhone || form.phone, 40)
+  );
+  const requestedItems = Array.isArray(body.items) ? body.items : [];
 
-  if (!storeId || !customerId) {
-    return fail("Faltan datos obligatorios para crear la orden.");
+  if (!storeId || !email || !customerName || !customerPhone) {
+    return fail("Faltan datos obligatorios del cliente.");
   }
 
-  // Confirma que la tienda existe y está activa antes de aceptar
-  // la orden — evita crear pedidos contra un store_id inventado.
+  if (requestedItems.length === 0 || requestedItems.length > 100) {
+    return fail("El carrito está vacío o contiene demasiados artículos.");
+  }
+
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")
     .select("id, is_active, module_store_enabled")
@@ -64,56 +106,343 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (storeError) return fail("No se pudo validar la tienda.", 500);
-  if (!store || store.is_active === false) {
+  if (!store || store.is_active === false || store.module_store_enabled === false) {
     return fail("Esta tienda no está disponible.", 404);
   }
 
   const isLocalDelivery = Boolean(body.isLocalDelivery);
-  const form = body.form || {};
-  const zone = body.zone || null;
+  const preparedItems: PreparedItem[] = [];
+  const stockNeeds = new Map<string, number>();
 
-  const payload = {
-    customer_id: customerId,
-    store_id: storeId,
-    status: "pending",
-    payment_status: "pending",
-    subtotal: Number(body.subtotal) || 0,
-    delivery_fee: Number(body.shippingCost) || 0,
-    discount_campaign_id: body.discountCampaignId || null,
-    discount_code: body.discountCode || null,
-    discount_amount: Number(body.discountAmount) || 0,
-    total: Number(body.total) || 0,
-    country: isLocalDelivery ? "Estados Unidos" : "Cuba",
-    state: isLocalDelivery ? null : "Cienfuegos",
-    municipality: isLocalDelivery ? clean(form.city, 120) : clean(form.municipality, 120),
-    delivery_zone_id: zone?.id || null,
-    zone_name: zone?.zone_name || null,
-    exact_address: clean(form.exact_address, 300),
-    recipient_name: isLocalDelivery ? clean(form.name, 150) : clean(form.recipient_name, 150),
-    recipient_phone: isLocalDelivery ? clean(form.phone, 40) : clean(form.recipient_phone, 40),
-    recipient_phone_alt: isLocalDelivery ? null : clean(form.recipient_phone_alt, 40),
-    address: clean(form.exact_address, 300),
-    notes: [
-      form.reference ? `Referencia: ${clean(form.reference, 200)}` : "",
-      clean(form.notes, 500),
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  };
+  try {
+    for (const rawItem of requestedItems) {
+      const quantity = Math.trunc(Number(rawItem.quantity || 0));
+      if (quantity < 1 || quantity > 99) {
+        return fail("Una cantidad del carrito no es válida.");
+      }
 
-  const { data: order, error: orderError } = await supabaseAdmin
-    .from("orders")
-    .insert(payload)
-    .select("id, order_number")
-    .single();
+      if (rawItem.item_type === "product") {
+        const productId = clean(rawItem.product_id, 64);
+        const { data: product, error } = await supabaseAdmin
+          .from("products")
+          .select("id, name, price, stock, store_id")
+          .eq("id", productId)
+          .eq("store_id", storeId)
+          .maybeSingle();
 
-  if (orderError) {
-    console.error("CREATE ORDER ERROR:", orderError);
-    return fail("No se pudo crear la orden.", 500);
+        if (error || !product) {
+          return fail("Uno de los productos ya no está disponible.", 409);
+        }
+
+        const price = money(product.price);
+        preparedItems.push({
+          item_type: "product",
+          product_id: product.id,
+          combo_id: null,
+          product_name: clean(product.name, 200),
+          quantity,
+          price,
+          subtotal: money(price * quantity),
+        });
+        stockNeeds.set(product.id, (stockNeeds.get(product.id) || 0) + quantity);
+        continue;
+      }
+
+      if (rawItem.item_type === "combo") {
+        const comboId = clean(rawItem.combo_id, 64);
+        const { data: combo, error: comboError } = await supabaseAdmin
+          .from("combos")
+          .select("id, name, price, store_id")
+          .eq("id", comboId)
+          .eq("store_id", storeId)
+          .maybeSingle();
+
+        if (comboError || !combo) {
+          return fail("Uno de los combos ya no está disponible.", 409);
+        }
+
+        const { data: comboItems, error: comboItemsError } = await supabaseAdmin
+          .from("combo_items")
+          .select("product_id, quantity")
+          .eq("combo_id", combo.id);
+
+        if (comboItemsError) {
+          return fail("No se pudo validar el contenido de un combo.", 500);
+        }
+
+        for (const comboItem of comboItems || []) {
+          const needed = Math.trunc(Number(comboItem.quantity || 0)) * quantity;
+          if (needed > 0) {
+            stockNeeds.set(
+              comboItem.product_id,
+              (stockNeeds.get(comboItem.product_id) || 0) + needed
+            );
+          }
+        }
+
+        const price = money(combo.price);
+        preparedItems.push({
+          item_type: "combo",
+          product_id: null,
+          combo_id: combo.id,
+          product_name: clean(combo.name, 200),
+          quantity,
+          price,
+          subtotal: money(price * quantity),
+        });
+        continue;
+      }
+
+      return fail("El carrito contiene un tipo de artículo no permitido.");
+    }
+
+    for (const [productId, needed] of stockNeeds) {
+      const { data: product, error } = await supabaseAdmin
+        .from("products")
+        .select("id, name, stock, store_id")
+        .eq("id", productId)
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (error || !product || Number(product.stock || 0) < needed) {
+        return fail(
+          `Stock insuficiente para ${clean(product?.name || "un producto", 150)}.`,
+          409
+        );
+      }
+    }
+
+    let deliveryFee = 0;
+    let zone: { id: string; zone_name: string; minimum_order: number } | null = null;
+
+    if (isLocalDelivery) {
+      const { data: checkoutSettings } = await supabaseAdmin
+        .from("checkout_settings")
+        .select("show_delivery_price, fixed_delivery_fee")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      deliveryFee = checkoutSettings?.show_delivery_price
+        ? money(checkoutSettings.fixed_delivery_fee)
+        : 0;
+    } else {
+      const zoneId = clean(body.zoneId, 64);
+      if (!zoneId) return fail("Selecciona una zona de entrega.");
+
+      const { data: zoneData, error: zoneError } = await supabaseAdmin
+        .from("delivery_zones")
+        .select("id, zone_name, delivery_fee, minimum_order, store_id")
+        .eq("id", zoneId)
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (zoneError || !zoneData) {
+        return fail("La zona de entrega no es válida.", 409);
+      }
+
+      deliveryFee = money(zoneData.delivery_fee);
+      zone = {
+        id: zoneData.id,
+        zone_name: clean(zoneData.zone_name, 150),
+        minimum_order: money(zoneData.minimum_order),
+      };
+    }
+
+    const subtotal = money(
+      preparedItems.reduce((sum, item) => sum + item.subtotal, 0)
+    );
+
+    if (zone && subtotal < zone.minimum_order) {
+      return fail(
+        `La compra mínima para esta zona es de $${zone.minimum_order.toFixed(2)}.`,
+        409
+      );
+    }
+
+    let discountAmount = 0;
+    let discountCampaignId: string | null = null;
+    let discountCode: string | null = null;
+
+    if (body.discountCampaignId && body.discountCode) {
+      const campaignId = clean(body.discountCampaignId, 64);
+      const code = clean(body.discountCode, 80).toUpperCase();
+      const { data: campaign, error: campaignError } = await supabaseAdmin
+        .from("discount_campaigns")
+        .select("id, code, discount_amount, is_active, expires_at")
+        .eq("id", campaignId)
+        .eq("store_id", storeId)
+        .eq("code", code)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (campaignError || !campaign) {
+        return fail("El bono ya no está disponible.", 409);
+      }
+
+      const { data: authorized } = await supabaseAdmin
+        .from("discount_campaign_customers")
+        .select("id, status")
+        .eq("campaign_id", campaign.id)
+        .eq("store_id", storeId)
+        .eq("customer_phone", customerPhone)
+        .maybeSingle();
+
+      if (!authorized || authorized.status !== "available") {
+        return fail("Este teléfono ya no puede utilizar el bono.", 409);
+      }
+
+      discountAmount = money(
+        Math.min(Number(campaign.discount_amount || 0), subtotal + deliveryFee)
+      );
+      discountCampaignId = campaign.id;
+      discountCode = campaign.code;
+    }
+
+    const total = money(Math.max(subtotal + deliveryFee - discountAmount, 0));
+
+    const city = isLocalDelivery
+      ? clean(form.city, 120)
+      : clean(form.municipality, 120);
+
+    const { data: existingCustomer, error: customerLookupError } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (customerLookupError) return fail("No se pudo validar el cliente.", 500);
+
+    let customerId = existingCustomer?.id as string | undefined;
+    if (customerId) {
+      const { error } = await supabaseAdmin
+        .from("customers")
+        .update({ name: customerName, phone: customerPhone, city })
+        .eq("id", customerId);
+      if (error) return fail("No se pudo actualizar el cliente.", 500);
+    } else {
+      const { data: customer, error } = await supabaseAdmin
+        .from("customers")
+        .insert({ name: customerName, email, phone: customerPhone, city })
+        .select("id")
+        .single();
+      if (error || !customer) return fail("No se pudo crear el cliente.", 500);
+      customerId = customer.id;
+    }
+
+    const payload = {
+      customer_id: customerId,
+      store_id: storeId,
+      status: "pending",
+      payment_status: "pending",
+      subtotal,
+      delivery_fee: deliveryFee,
+      discount_campaign_id: discountCampaignId,
+      discount_code: discountCode,
+      discount_amount: discountAmount,
+      total,
+      country: isLocalDelivery ? "Estados Unidos" : "Cuba",
+      state: isLocalDelivery ? null : "Cienfuegos",
+      municipality: city,
+      delivery_zone_id: zone?.id || null,
+      zone_name: zone?.zone_name || null,
+      exact_address: clean(form.exact_address, 300),
+      recipient_name: isLocalDelivery
+        ? customerName
+        : clean(form.recipient_name, 150),
+      recipient_phone: isLocalDelivery
+        ? customerPhone
+        : clean(form.recipient_phone, 40),
+      recipient_phone_alt: isLocalDelivery
+        ? null
+        : clean(form.recipient_phone_alt, 40),
+      address: clean(form.exact_address, 300),
+      notes: [
+        form.reference ? `Referencia: ${clean(form.reference, 200)}` : "",
+        clean(form.notes, 500),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .insert(payload)
+      .select("id, order_number")
+      .single();
+
+    if (orderError || !order) return fail("No se pudo crear la orden.", 500);
+
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
+      preparedItems.map((item) => ({ ...item, order_id: order.id }))
+    );
+
+    if (itemsError) {
+      await deleteCreatedOrder(order.id);
+      return fail("No se pudieron guardar los productos de la orden.", 500);
+    }
+
+    if (discountCampaignId) {
+      const { data: claimData, error: claimError } = await supabaseAdmin.rpc(
+        "claim_discount_coupon",
+        {
+          p_campaign_id: discountCampaignId,
+          p_store_id: storeId,
+          p_customer_phone: customerPhone,
+          p_order_id: order.id,
+        }
+      );
+
+      const claimResult = claimData?.[0];
+      if (claimError || !claimResult?.success) {
+        await deleteCreatedOrder(order.id);
+        return fail(claimResult?.message || "El bono ya no está disponible.", 409);
+      }
+    }
+
+    const appliedStockChanges: StockChange[] = [];
+    for (const [productId, needed] of stockNeeds) {
+      const { data: product, error: stockReadError } = await supabaseAdmin
+        .from("products")
+        .select("stock")
+        .eq("id", productId)
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (stockReadError || !product || Number(product.stock || 0) < needed) {
+        await restoreStock(appliedStockChanges);
+        await deleteCreatedOrder(order.id);
+        return fail("El stock cambió mientras se procesaba el pedido.", 409);
+      }
+
+      const { error: stockUpdateError } = await supabaseAdmin
+        .from("products")
+        .update({ stock: Number(product.stock || 0) - needed })
+        .eq("id", productId)
+        .eq("store_id", storeId);
+
+      if (stockUpdateError) {
+        await restoreStock(appliedStockChanges);
+        await deleteCreatedOrder(order.id);
+        return fail("No se pudo actualizar el inventario.", 500);
+      }
+
+      appliedStockChanges.push({ productId, quantity: needed });
+    }
+
+    return NextResponse.json({
+      success: true,
+      order: {
+        id: order.id,
+        order_number: order.order_number,
+        subtotal,
+        delivery_fee: deliveryFee,
+        discount_amount: discountAmount,
+        total,
+      },
+    });
+  } catch (error) {
+    console.error("SECURE CHECKOUT ERROR:", error);
+    return fail("No se pudo completar el pedido.", 500);
   }
-
-  return NextResponse.json({
-    success: true,
-    order: { id: order.id, order_number: order.order_number },
-  });
 }
