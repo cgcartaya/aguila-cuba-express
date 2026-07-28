@@ -17,6 +17,22 @@ type PendingWhatsappOrder = {
 
 const STORAGE_KEY = "perla_pending_whatsapp_order";
 
+function normalizeWhatsappPhone(value: string) {
+  let digits = value.replace(/\D/g, "");
+
+  // Acepta números escritos como 0018032623676.
+  if (digits.startsWith("00")) {
+    digits = digits.slice(2);
+  }
+
+  // Si tiene 10 dígitos, se interpreta como EE. UU./Canadá y se añade +1.
+  if (digits.length === 10) {
+    return `1${digits}`;
+  }
+
+  return digits;
+}
+
 function SuccessPageContent() {
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
@@ -44,7 +60,7 @@ function SuccessPageContent() {
   const whatsappUrl = useMemo(() => {
     if (!pendingOrder) return "";
 
-    const phone = pendingOrder.businessWhatsapp.replace(/\D/g, "");
+    const phone = normalizeWhatsappPhone(pendingOrder.businessWhatsapp);
     return `https://wa.me/${phone}?text=${pendingOrder.whatsappMessage}`;
   }, [pendingOrder]);
 
