@@ -204,7 +204,7 @@ export default function CheckoutPage() {
     void trackAnalyticsEvent({
       storeId: store.id,
       eventName: "begin_checkout",
-      value: Number(order.total),
+      value: Number(finalTotalWithDiscount),
       metadata: { items: cart.length, fulfillmentMethod: method },
     });
   }, [store?.id, cart.length, method]);

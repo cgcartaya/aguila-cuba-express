@@ -308,6 +308,7 @@ export async function POST(request: Request) {
     const { data: existingCustomer, error: customerLookupError } = await supabaseAdmin
       .from("customers")
       .select("id")
+      .eq("store_id", storeId)
       .eq("email", email)
       .maybeSingle();
 
@@ -318,12 +319,13 @@ export async function POST(request: Request) {
       const { error } = await supabaseAdmin
         .from("customers")
         .update({ name: customerName, phone: customerPhone, city })
-        .eq("id", customerId);
+        .eq("id", customerId)
+        .eq("store_id", storeId);
       if (error) return fail("No se pudo actualizar el cliente.", 500);
     } else {
       const { data: customer, error } = await supabaseAdmin
         .from("customers")
-        .insert({ name: customerName, email, phone: customerPhone, city })
+        .insert({ store_id: storeId, name: customerName, email, phone: customerPhone, city })
         .select("id")
         .single();
       if (error || !customer) return fail("No se pudo crear el cliente.", 500);
