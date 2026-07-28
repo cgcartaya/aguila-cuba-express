@@ -254,19 +254,62 @@ export async function updateStore(
 }
 
 
+function getSafeExtension(file: File, fallback = "png") {
+  const extension = file.name.split(".").pop()?.toLowerCase().trim()
+  return extension && /^[a-z0-9]+$/.test(extension) ? extension : fallback
+}
+
+function withCacheVersion(publicUrl: string) {
+  const separator = publicUrl.includes("?") ? "&" : "?"
+  return `${publicUrl}${separator}v=${Date.now()}`
+}
+
+async function removeLegacyStoreAssets(
+  bucket: "store-logos" | "seo",
+  storeId: string,
+  keepPath: string,
+  prefixes: string[]
+) {
+  const { data: files, error } = await supabase.storage
+    .from(bucket)
+    .list(storeId, { limit: 100 })
+
+  if (error || !files?.length) return
+
+  const pathsToRemove = files
+    .filter((item) => {
+      const fullPath = `${storeId}/${item.name}`
+      return (
+        fullPath !== keepPath &&
+        prefixes.some((prefix) => item.name.startsWith(prefix))
+      )
+    })
+    .map((item) => `${storeId}/${item.name}`)
+
+  if (pathsToRemove.length > 0) {
+    const { error: removeError } = await supabase.storage
+      .from(bucket)
+      .remove(pathsToRemove)
+
+    if (removeError) {
+      console.warn(`No se pudieron limpiar recursos antiguos en ${bucket}.`, removeError)
+    }
+  }
+}
+
 async function uploadStoreAsset(
   storeId: string,
   file: File,
   assetName: "logo" | "favicon"
 ) {
-  const extension = file.name.split(".").pop()?.toLowerCase() || "png"
-  const filePath = `${storeId}/${assetName}-${crypto.randomUUID()}.${extension}`
+  const extension = getSafeExtension(file, assetName === "favicon" ? "ico" : "png")
+  const filePath = `${storeId}/${assetName}.${extension}`
 
   const { error: uploadError } = await supabase.storage
     .from("store-logos")
     .upload(filePath, file, {
       upsert: true,
-      cacheControl: "31536000",
+      cacheControl: "86400",
       contentType: file.type || undefined,
     })
 
@@ -277,12 +320,19 @@ async function uploadStoreAsset(
     }
   }
 
+  await removeLegacyStoreAssets(
+    "store-logos",
+    storeId,
+    filePath,
+    [`${assetName}-`, `${assetName}.`]
+  )
+
   const { data } = supabase.storage
     .from("store-logos")
     .getPublicUrl(filePath)
 
   return {
-    data: data.publicUrl,
+    data: withCacheVersion(data.publicUrl),
     error: null,
   }
 }
@@ -296,14 +346,14 @@ export async function uploadStoreFavicon(storeId: string, file: File) {
 }
 
 export async function uploadStoreOgImage(storeId: string, file: File) {
-  const extension = file.name.split(".").pop()?.toLowerCase() || "png"
-  const filePath = `${storeId}/open-graph-${crypto.randomUUID()}.${extension}`
+  const extension = getSafeExtension(file)
+  const filePath = `${storeId}/og-image.${extension}`
 
   const { error: uploadError } = await supabase.storage
     .from("seo")
     .upload(filePath, file, {
       upsert: true,
-      cacheControl: "31536000",
+      cacheControl: "86400",
       contentType: file.type || undefined,
     })
 
@@ -311,9 +361,16 @@ export async function uploadStoreOgImage(storeId: string, file: File) {
     return { data: null, error: uploadError }
   }
 
+  await removeLegacyStoreAssets(
+    "seo",
+    storeId,
+    filePath,
+    ["open-graph-", "og-image."]
+  )
+
   const { data } = supabase.storage.from("seo").getPublicUrl(filePath)
 
-  return { data: data.publicUrl, error: null }
+  return { data: withCacheVersion(data.publicUrl), error: null }
 }
 
 export async function markStoreAsPaid(
