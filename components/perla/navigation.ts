@@ -143,12 +143,24 @@ export const resources: NavigationItem[] = [
   },
 ];
 
-export const primaryNavigation = [
-  { label: "Plataforma", menu: "platform" as const },
-  { label: "Soluciones", menu: "solutions" as const },
+export type MenuKey = "platform" | "solutions" | "resources";
+
+export type PrimaryNavigationItem =
+  | {
+      label: string;
+      href: string;
+      menu?: never;
+    }
+  | {
+      label: string;
+      menu: MenuKey;
+      href?: never;
+    };
+
+export const primaryNavigation: PrimaryNavigationItem[] = [
+  { label: "Plataforma", menu: "platform" },
+  { label: "Soluciones", menu: "solutions" },
   { label: "Clientes", href: "#clientes" },
-  { label: "Recursos", menu: "resources" as const },
+  { label: "Recursos", menu: "resources" },
   { label: "Precios", href: "#planes" },
 ];
-
-export type MenuKey = "platform" | "solutions" | "resources";
