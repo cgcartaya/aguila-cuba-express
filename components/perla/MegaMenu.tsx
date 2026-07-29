@@ -32,9 +32,9 @@ export default function MegaMenu({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 6, scale: 0.99 }}
       transition={{ duration: 0.16, ease: "easeOut" }}
-      className="absolute left-1/2 top-[calc(100%+10px)] w-[min(880px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[24px] border border-violet-100/90 bg-white/96 p-2.5 shadow-[0_24px_70px_rgba(67,32,128,0.17)] backdrop-blur-2xl"
+      className="absolute left-1/2 top-[calc(100%+10px)] w-[min(960px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-[24px] border border-violet-100/90 bg-white/96 p-2.5 shadow-[0_24px_70px_rgba(67,32,128,0.17)] backdrop-blur-2xl"
     >
-      <div className="grid gap-2.5 lg:grid-cols-[1fr_225px]">
+      <div className="grid gap-2.5 lg:grid-cols-[1fr_240px]">
         <div
           className={`grid gap-1.5 rounded-[19px] bg-white p-1.5 ${
             groups ? "md:grid-cols-3" : "md:grid-cols-2"
@@ -43,11 +43,11 @@ export default function MegaMenu({
           {groups
             ? groups.map((group) => (
                 <section key={group.title} aria-label={group.title}>
-                  <p className="px-2.5 pb-1.5 pt-1 text-[10px] font-black uppercase tracking-[0.17em] text-violet-500">
+                  <p className="px-3 pb-2 pt-1.5 text-xs font-black uppercase tracking-[0.17em] text-violet-500">
                     {group.title}
                   </p>
 
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {group.items.map((item) => (
                       <MenuLink
                         key={item.label}
@@ -95,7 +95,7 @@ export default function MegaMenu({
             </div>
           </div>
 
-          <div className="relative flex min-h-44 flex-col justify-between">
+          <div className="relative flex min-h-48 flex-col justify-between">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/20 bg-white/10">
               <LayoutDashboard className="h-4.5 w-4.5" />
             </span>
@@ -107,11 +107,11 @@ export default function MegaMenu({
                 <BarChart3 className="h-3.5 w-3.5" />
               </div>
 
-              <p className="max-w-[180px] text-base font-black leading-tight">
+              <p className="max-w-[190px] text-lg font-black leading-tight">
                 Todo tu negocio desde una sola plataforma.
               </p>
 
-              <span className="mt-3 inline-flex items-center gap-2 text-xs font-black">
+              <span className="mt-3 inline-flex items-center gap-2 text-sm font-black">
                 Explorar la plataforma
                 <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
               </span>
@@ -137,21 +137,21 @@ function MenuLink({
       href={item.href}
       role="menuitem"
       onClick={onNavigate}
-      className="group flex gap-2.5 rounded-xl px-2.5 py-2 outline-none transition duration-200 hover:bg-violet-50 focus-visible:bg-violet-50 focus-visible:ring-2 focus-visible:ring-violet-400"
+      className="group flex gap-3 rounded-xl px-3 py-2.5 outline-none transition duration-200 hover:bg-violet-50 focus-visible:bg-violet-50 focus-visible:ring-2 focus-visible:ring-violet-400"
     >
       {Icon && (
-        <span className="flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[10px] border border-violet-100 bg-white text-violet-600 shadow-sm transition duration-200 group-hover:-translate-y-0.5">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border border-violet-100 bg-white text-violet-600 shadow-sm transition duration-200 group-hover:-translate-y-0.5">
           <Icon className="h-4 w-4" />
         </span>
       )}
 
       <span className="min-w-0">
-        <span className="block text-[13px] font-black leading-4 text-[#101a4d]">
+        <span className="block text-sm font-black leading-5 text-[#101a4d]">
           {item.label}
         </span>
 
         {item.description && (
-          <span className="mt-0.5 block text-[11px] font-semibold leading-4 text-[#667093]">
+          <span className="mt-0.5 block text-xs font-semibold leading-[1.15rem] text-[#667093]">
             {item.description}
           </span>
         )}
