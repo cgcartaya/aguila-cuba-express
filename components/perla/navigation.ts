@@ -29,6 +29,20 @@ export type NavigationGroup = {
   items: NavigationItem[];
 };
 
+export type MenuKey = "platform" | "solutions" | "resources";
+
+export type PrimaryNavigationItem =
+  | {
+      type: "link";
+      label: string;
+      href: string;
+    }
+  | {
+      type: "menu";
+      label: string;
+      menu: MenuKey;
+    };
+
 export const platformGroups: NavigationGroup[] = [
   {
     title: "Vender",
@@ -143,24 +157,10 @@ export const resources: NavigationItem[] = [
   },
 ];
 
-export type MenuKey = "platform" | "solutions" | "resources";
-
-export type PrimaryNavigationItem =
-  | {
-      label: string;
-      href: string;
-      menu?: never;
-    }
-  | {
-      label: string;
-      menu: MenuKey;
-      href?: never;
-    };
-
 export const primaryNavigation: PrimaryNavigationItem[] = [
-  { label: "Plataforma", menu: "platform" },
-  { label: "Soluciones", menu: "solutions" },
-  { label: "Clientes", href: "#clientes" },
-  { label: "Recursos", menu: "resources" },
-  { label: "Precios", href: "#planes" },
+  { type: "menu", label: "Plataforma", menu: "platform" },
+  { type: "menu", label: "Soluciones", menu: "solutions" },
+  { type: "link", label: "Clientes", href: "#clientes" },
+  { type: "menu", label: "Recursos", menu: "resources" },
+  { type: "link", label: "Precios", href: "#planes" },
 ];

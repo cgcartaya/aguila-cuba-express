@@ -94,7 +94,7 @@ export default function PerlaHeader() {
             }}
           >
             {primaryNavigation.map((item) => {
-              if (item.href) {
+              if (item.type === "link") {
                 return (
                   <Link
                     key={item.label}
@@ -107,21 +107,23 @@ export default function PerlaHeader() {
                 );
               }
 
-              const isOpen = activeMenu === item.menu;
+              const menu = item.menu;
+              const isOpen = activeMenu === menu;
+
               return (
                 <div
                   key={item.label}
                   className="relative"
-                  onMouseEnter={() => setActiveMenu(item.menu)}
+                  onMouseEnter={() => setActiveMenu(menu)}
                 >
                   <button
                     type="button"
-                    onClick={() => toggleMenu(item.menu)}
-                    onFocus={() => setActiveMenu(item.menu)}
+                    onClick={() => toggleMenu(menu)}
+                    onFocus={() => setActiveMenu(menu)}
                     className="flex min-h-11 items-center gap-1 rounded-xl px-3 text-sm font-black text-[#101a4d]/75 outline-none transition hover:bg-violet-50 hover:text-violet-700 focus-visible:bg-violet-50 focus-visible:ring-2 focus-visible:ring-violet-400"
                     aria-expanded={isOpen}
                     aria-haspopup="menu"
-                    aria-controls={`mega-menu-${item.menu}`}
+                    aria-controls={`mega-menu-${menu}`}
                   >
                     {item.label}
                     <ChevronDown
@@ -134,14 +136,12 @@ export default function PerlaHeader() {
                   <AnimatePresence>
                     {isOpen && (
                       <MegaMenu
-                        id={`mega-menu-${item.menu}`}
-                        groups={
-                          item.menu === "platform" ? platformGroups : undefined
-                        }
+                        id={`mega-menu-${menu}`}
+                        groups={menu === "platform" ? platformGroups : undefined}
                         items={
-                          item.menu === "solutions"
+                          menu === "solutions"
                             ? solutions
-                            : item.menu === "resources"
+                            : menu === "resources"
                               ? resources
                               : undefined
                         }
