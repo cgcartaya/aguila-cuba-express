@@ -94,7 +94,7 @@ export default function PerlaHeader() {
             }}
           >
             {primaryNavigation.map((item) => {
-              if ("href" in item) {
+              if (item.href) {
                 return (
                   <Link
                     key={item.label}
