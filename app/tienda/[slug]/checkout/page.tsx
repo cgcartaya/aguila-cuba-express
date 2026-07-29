@@ -227,6 +227,44 @@ export default function CheckoutPage() {
     );
   }, [cart, form, isYoyo, method, selectedZone, totals]);
 
+  const missingCheckoutFields = useMemo(() => {
+    const missing: Array<{ name: keyof CheckoutForm; label: string }> = [];
+    const requireField = (name: keyof CheckoutForm, label: string) => {
+      if (!String(form[name] || "").trim()) missing.push({ name, label });
+    };
+
+    requireField("name", "nombre del cliente");
+    requireField("email", "email");
+    requireField("phone", "teléfono del cliente");
+
+    if (isYoyo && method === "delivery") {
+      requireField("city", "ciudad");
+      requireField("exact_address", "dirección de entrega");
+    } else {
+      requireField("recipient_name", "nombre del destinatario");
+      requireField("recipient_phone", "teléfono del destinatario");
+      requireField("municipality", "municipio");
+      if (!selectedZone) {
+        missing.push({ name: "delivery_zone_id", label: "zona de entrega" });
+      }
+      requireField("exact_address", "dirección de entrega");
+    }
+
+    return missing;
+  }, [form, isYoyo, method, selectedZone]);
+
+  function showCheckoutError(message: string, fieldName?: keyof CheckoutForm) {
+    setError(message);
+
+    if (!fieldName) return;
+
+    window.requestAnimationFrame(() => {
+      const field = document.querySelector<HTMLElement>(`[name="${fieldName}"]`);
+      field?.scrollIntoView({ behavior: "smooth", block: "center" });
+      field?.focus();
+    });
+  }
+
   function handleChange(
     event: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
@@ -376,17 +414,29 @@ ${orderUrl}`);
   async function handleSubmit() {
     setError("");
 
-    if (!store?.id) return setError("No se pudo identificar la tienda del pedido.");
-    if (!businessWhatsapp) return setError("Esta tienda todavía no tiene WhatsApp configurado.");
-    if (cart.length === 0) return setError("Tu carrito está vacío.");
-    if (loadingRules) return setError("Espera un momento mientras verificamos las reglas de entrega.");
-    if (method === "cuba" && !selectedZone) return setError("Selecciona una zona de entrega.");
+    if (!store?.id) return showCheckoutError("No se pudo identificar la tienda del pedido. Recarga la página e inténtalo otra vez.");
+    if (!businessWhatsapp) return showCheckoutError("Esta tienda todavía no tiene WhatsApp configurado.");
+    if (cart.length === 0) return showCheckoutError("Tu carrito está vacío.");
+    if (loadingRules) return showCheckoutError("Espera un momento mientras verificamos las reglas de entrega.");
+
+    if (missingCheckoutFields.length > 0) {
+      const firstMissing = missingCheckoutFields[0];
+      const labels = missingCheckoutFields.map((field) => field.label);
+      return showCheckoutError(
+        `Falta completar: ${labels.join(", ")}.`,
+        firstMissing.name
+      );
+    }
+
     if (totals.subtotal < totals.minimumOrder) {
-      return setError(
+      return showCheckoutError(
         `La compra mínima para esta zona es de $${totals.minimumOrder.toFixed(2)}. Te faltan $${totals.missingAmount.toFixed(2)}.`
       );
     }
-    if (!canCheckout) return setError("Completa todos los campos obligatorios.");
+
+    if (!canCheckout) {
+      return showCheckoutError("Revisa los datos del pedido antes de continuar.");
+    }
 
     try {
       setLoading(true);
@@ -504,6 +554,7 @@ ${orderUrl}`);
               error={error}
               loading={loading}
               canCheckout={canCheckout}
+              missingFields={missingCheckoutFields.map((field) => field.label)}
               onSubmit={handleSubmit}
               storeId={store?.id || ""}
               customerPhone={form.phone}

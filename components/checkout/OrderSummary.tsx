@@ -20,6 +20,7 @@ type Props = {
   error: string;
   loading: boolean;
   canCheckout: boolean;
+  missingFields?: string[];
   onSubmit: () => void;
   storeId: string;
   customerPhone: string;
@@ -41,6 +42,7 @@ export function OrderSummary({
   error,
   loading,
   canCheckout,
+  missingFields = [],
   onSubmit,
   storeId,
   customerPhone,
@@ -167,15 +169,28 @@ export function OrderSummary({
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+        >
           {error}
         </div>
       )}
 
+      {!canCheckout && missingFields.length > 0 && !error && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-bold">Antes de enviar, completa:</p>
+          <p className="mt-1">{missingFields.join(", ")}.</p>
+        </div>
+      )}
+
       <button
+        type="button"
         onClick={onSubmit}
-        disabled={loading || !canCheckout}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={loading}
+        aria-disabled={loading}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? (
           <>
