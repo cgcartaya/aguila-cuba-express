@@ -14,7 +14,9 @@ import {
   solutions,
   type MenuKey,
 } from "./navigation";
-import { whatsappUrl } from "./links";
+
+const whatsappUrl =
+  "https://wa.me/13054974891?text=Hola,%20quiero%20solicitar%20una%20demo%20de%20Perla%20Marketplace.";
 
 export default function PerlaHeader() {
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
