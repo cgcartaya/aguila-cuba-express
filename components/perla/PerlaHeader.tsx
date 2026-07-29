@@ -127,7 +127,7 @@ export default function PerlaHeader() {
                   >
                     {item.label}
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform ${
+                      className={`h-4 w-4 transition-transform duration-300 ease-out ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -167,7 +167,7 @@ export default function PerlaHeader() {
               rel="noreferrer"
               className="flex min-h-11 items-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 text-sm font-black text-white shadow-lg shadow-violet-300/35 outline-none transition hover:-translate-y-0.5 hover:shadow-violet-400/45 focus-visible:ring-4 focus-visible:ring-violet-300"
             >
-              Solicitar demo
+              Solicitar una demo
             </a>
           </div>
 

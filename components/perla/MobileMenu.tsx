@@ -117,7 +117,7 @@ export default function MobileMenu({
                       >
                         {section.label}
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform ${
+                          className={`h-4 w-4 transition-transform duration-300 ease-out ${
                             isExpanded ? "rotate-180" : ""
                           }`}
                         />
@@ -190,7 +190,7 @@ export default function MobileMenu({
                   onClick={onClose}
                   className="flex min-h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 text-sm font-black text-white shadow-lg shadow-violet-300/35 outline-none transition hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-violet-300"
                 >
-                  Solicitar demo
+                  Solicitar una demo
                 </a>
               </div>
             </div>
