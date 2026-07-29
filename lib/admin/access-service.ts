@@ -129,3 +129,60 @@ export async function getCurrentAdminAccess(): Promise<{
     error: null,
   };
 }
+
+/* =========================================================
+   CACHE COMPARTIDA
+
+   useAdminAccess() se usa en decenas de componentes (nav, menús,
+   layout, cada página del admin). Sin esto, cada uno dispara sus
+   propias consultas a `profiles` + `store_users` por separado —
+   en una sola pantalla se pueden acumular 10+ peticiones
+   idénticas compitiendo por conexión con el resto de la página
+   (imágenes incluidas).
+
+   Esta cache comparte una misma promesa en vuelo entre llamadas
+   simultáneas, y guarda el resultado un rato corto para que los
+   componentes que montan casi al mismo tiempo (típico al navegar
+   entre páginas del admin) no vuelvan a pedirlo.
+========================================================= */
+
+type AdminAccessResult = {
+  data: AdminAccess | null;
+  error: string | null;
+};
+
+let cachedResult: AdminAccessResult | null = null;
+let cachedAt = 0;
+let inFlight: Promise<AdminAccessResult> | null = null;
+
+const CACHE_TTL_MS = 5000;
+
+export async function getCurrentAdminAccessCached(
+  options: { forceRefresh?: boolean } = {}
+): Promise<AdminAccessResult> {
+  const { forceRefresh = false } = options;
+  const now = Date.now();
+
+  if (!forceRefresh && cachedResult && now - cachedAt < CACHE_TTL_MS) {
+    return cachedResult;
+  }
+
+  if (!forceRefresh && inFlight) {
+    return inFlight;
+  }
+
+  inFlight = getCurrentAdminAccess().then((result) => {
+    cachedResult = result;
+    cachedAt = Date.now();
+    inFlight = null;
+    return result;
+  });
+
+  return inFlight;
+}
+
+export function invalidateAdminAccessCache() {
+  cachedResult = null;
+  cachedAt = 0;
+  inFlight = null;
+}
