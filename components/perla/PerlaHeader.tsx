@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Menu } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import { ArrowRight, ChevronDown, Menu } from "lucide-react";
 import PerlaLogo from "./PerlaLogo";
 import MegaMenu from "./MegaMenu";
 import MobileMenu from "./MobileMenu";
@@ -21,17 +21,9 @@ const whatsappUrl =
 export default function PerlaHeader() {
   const [activeMenu, setActiveMenu] = useState<MenuKey | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [compact, setCompact] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
 
   const closeMenus = useCallback(() => setActiveMenu(null), []);
-
-  useEffect(() => {
-    const updateHeader = () => setCompact(window.scrollY > 28);
-    updateHeader();
-    window.addEventListener("scroll", updateHeader, { passive: true });
-    return () => window.removeEventListener("scroll", updateHeader);
-  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -67,31 +59,14 @@ export default function PerlaHeader() {
     <>
       <header
         ref={headerRef}
-        className={`sticky z-50 px-4 transition-all duration-300 lg:px-6 ${
-          compact ? "top-2" : "top-4"
-        }`}
+        className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl"
       >
-        <motion.div
-          layout
-          transition={{ duration: 0.22, ease: "easeOut" }}
-          className={`relative mx-auto flex max-w-7xl items-center justify-between border border-white/75 bg-white/88 shadow-[0_18px_55px_rgba(87,58,155,0.14)] backdrop-blur-2xl transition-all duration-300 ${
-            compact
-              ? "rounded-[22px] px-4 py-2 lg:px-5"
-              : "rounded-[28px] px-5 py-3 lg:px-6"
-          }`}
-        >
-          <div className={compact ? "origin-left scale-[0.94]" : ""}>
-            <PerlaLogo />
-          </div>
+        <div className="relative mx-auto flex min-h-[104px] max-w-[1440px] items-center justify-between px-5 lg:px-8">
+          <PerlaLogo />
 
           <nav
             aria-label="Navegación principal"
-            className="hidden items-center gap-1 lg:flex"
-            onMouseLeave={() => {
-              window.setTimeout(() => {
-                if (!headerRef.current?.matches(":hover")) closeMenus();
-              }, 80);
-            }}
+            className="hidden h-full items-center gap-7 lg:flex"
           >
             {primaryNavigation.map((item) => {
               if (item.type === "link") {
@@ -100,7 +75,7 @@ export default function PerlaHeader() {
                     key={item.label}
                     href={item.href}
                     onFocus={closeMenus}
-                    className="flex min-h-11 items-center rounded-xl px-3 text-sm font-black text-[#101a4d]/75 outline-none transition hover:bg-violet-50 hover:text-violet-700 focus-visible:bg-violet-50 focus-visible:ring-2 focus-visible:ring-violet-400"
+                    className="flex min-h-12 items-center border-b-2 border-transparent px-1 text-[15px] font-black text-[#10152f] outline-none transition hover:text-violet-700 focus-visible:ring-4 focus-visible:ring-violet-200"
                   >
                     {item.label}
                   </Link>
@@ -113,21 +88,25 @@ export default function PerlaHeader() {
               return (
                 <div
                   key={item.label}
-                  className="relative"
+                  className="relative flex h-[104px] items-center"
                   onMouseEnter={() => setActiveMenu(menu)}
                 >
                   <button
                     type="button"
                     onClick={() => toggleMenu(menu)}
                     onFocus={() => setActiveMenu(menu)}
-                    className="flex min-h-11 items-center gap-1 rounded-xl px-3 text-sm font-black text-[#101a4d]/75 outline-none transition hover:bg-violet-50 hover:text-violet-700 focus-visible:bg-violet-50 focus-visible:ring-2 focus-visible:ring-violet-400"
+                    className={`flex min-h-12 items-center gap-2 border-b-2 px-1 text-[15px] font-black outline-none transition focus-visible:ring-4 focus-visible:ring-violet-200 ${
+                      isOpen
+                        ? "border-violet-600 text-violet-700"
+                        : "border-transparent text-[#10152f] hover:text-violet-700"
+                    }`}
                     aria-expanded={isOpen}
                     aria-haspopup="menu"
                     aria-controls={`mega-menu-${menu}`}
                   >
                     {item.label}
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-300 ease-out ${
+                      className={`h-4 w-4 transition-transform duration-300 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -154,10 +133,10 @@ export default function PerlaHeader() {
             })}
           </nav>
 
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-5 lg:flex">
             <Link
               href="/admin"
-              className="flex min-h-11 items-center rounded-xl px-4 text-sm font-black text-[#101a4d] outline-none transition hover:bg-violet-50 focus-visible:ring-4 focus-visible:ring-violet-200"
+              className="flex min-h-12 items-center px-2 text-sm font-black text-[#10152f] outline-none hover:text-violet-700 focus-visible:ring-4 focus-visible:ring-violet-200"
             >
               Iniciar sesión
             </Link>
@@ -165,22 +144,23 @@ export default function PerlaHeader() {
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex min-h-11 items-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 text-sm font-black text-white shadow-lg shadow-violet-300/35 outline-none transition hover:-translate-y-0.5 hover:shadow-violet-400/45 focus-visible:ring-4 focus-visible:ring-violet-300"
+              className="inline-flex min-h-12 items-center gap-3 rounded-xl bg-gradient-to-r from-[#5420e8] to-[#8b2cff] px-6 text-sm font-black text-white shadow-lg shadow-violet-300/35 outline-none transition hover:-translate-y-0.5 hover:shadow-violet-400/45 focus-visible:ring-4 focus-visible:ring-violet-300"
             >
               Solicitar una demo
+              <ArrowRight className="h-4 w-4" />
             </a>
           </div>
 
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 bg-white text-[#081044] shadow-sm outline-none transition hover:bg-violet-50 focus-visible:ring-4 focus-visible:ring-violet-200 lg:hidden"
+            className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-white text-[#10152f] shadow-sm outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-violet-200 lg:hidden"
             aria-label="Abrir menú"
             aria-expanded={mobileOpen}
           >
             <Menu className="h-5 w-5" />
           </button>
-        </motion.div>
+        </div>
       </header>
 
       <MobileMenu

@@ -1,18 +1,16 @@
 import {
   BarChart3,
   Boxes,
-  Building2,
   CreditCard,
-  FileText,
-  Globe2,
-  LayoutDashboard,
   Megaphone,
   PackageCheck,
+  Puzzle,
   Route,
   ShoppingBag,
-  Sparkles,
   Store,
+  Truck,
   UsersRound,
+  Warehouse,
   WandSparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -20,8 +18,8 @@ import {
 export type NavigationItem = {
   label: string;
   href: string;
-  description?: string;
-  icon?: LucideIcon;
+  description: string;
+  icon: LucideIcon;
 };
 
 export type NavigationGroup = {
@@ -32,37 +30,35 @@ export type NavigationGroup = {
 export type MenuKey = "platform" | "solutions" | "resources";
 
 export type PrimaryNavigationItem =
-  | {
-      type: "link";
-      label: string;
-      href: string;
-    }
-  | {
-      type: "menu";
-      label: string;
-      menu: MenuKey;
-    };
+  | { type: "link"; label: string; href: string }
+  | { type: "menu"; label: string; menu: MenuKey };
 
 export const platformGroups: NavigationGroup[] = [
   {
     title: "Vender",
     items: [
       {
-        label: "Ecommerce",
+        label: "Tienda online",
         href: "#caracteristicas",
-        description: "Tienda, catálogo y experiencia de compra.",
+        description: "Crea tu tienda profesional en minutos.",
         icon: Store,
       },
       {
-        label: "Checkout",
+        label: "Inventario",
+        href: "#caracteristicas",
+        description: "Control en tiempo real y sincronizado.",
+        icon: Boxes,
+      },
+      {
+        label: "Pagos",
         href: "#como-funciona",
-        description: "Formularios y métodos de entrega configurables.",
+        description: "Recibe pagos de forma segura y rápida.",
         icon: CreditCard,
       },
       {
         label: "Marketing",
         href: "#caracteristicas",
-        description: "Promociones, banners y contenido comercial.",
+        description: "Promociones, cupones y campañas efectivas.",
         icon: Megaphone,
       },
     ],
@@ -73,19 +69,25 @@ export const platformGroups: NavigationGroup[] = [
       {
         label: "Pedidos",
         href: "#como-funciona",
-        description: "Controla el ciclo completo de cada orden.",
-        icon: PackageCheck,
+        description: "Gestiona todos tus pedidos desde un solo lugar.",
+        icon: ShoppingBag,
       },
       {
-        label: "Inventario",
+        label: "Envíos",
+        href: "#como-funciona",
+        description: "Tarifas, guías y seguimiento en tiempo real.",
+        icon: Truck,
+      },
+      {
+        label: "Stock & almacenes",
         href: "#caracteristicas",
-        description: "Stock, entradas, ajustes y movimientos.",
-        icon: Boxes,
+        description: "Multi-almacén y control de existencias.",
+        icon: Warehouse,
       },
       {
         label: "Logística",
         href: "#como-funciona",
-        description: "Recogidas, rutas, envíos y seguimiento.",
+        description: "Reglas de envío, zonas y transportistas.",
         icon: Route,
       },
     ],
@@ -96,20 +98,26 @@ export const platformGroups: NavigationGroup[] = [
       {
         label: "CRM",
         href: "#caracteristicas",
-        description: "Clientes, historial y oportunidades.",
+        description: "Gestiona clientes y oportunidades.",
         icon: UsersRound,
       },
       {
         label: "Analytics",
         href: "#caracteristicas",
-        description: "Métricas para decidir con información real.",
+        description: "Reportes y métricas inteligentes.",
         icon: BarChart3,
       },
       {
         label: "Automatizaciones",
         href: "#como-funciona",
-        description: "Reduce tareas repetitivas y errores manuales.",
+        description: "Flujos de trabajo que ahorran tiempo.",
         icon: WandSparkles,
+      },
+      {
+        label: "Integraciones",
+        href: "#caracteristicas",
+        description: "Conecta tus herramientas favoritas.",
+        icon: Puzzle,
       },
     ],
   },
@@ -119,20 +127,20 @@ export const solutions: NavigationItem[] = [
   {
     label: "Comercio y retail",
     href: "#industrias",
-    description: "Venta digital, catálogo, inventario y pedidos.",
-    icon: ShoppingBag,
+    description: "Tienda digital, catálogo, inventario y pedidos.",
+    icon: Store,
   },
   {
     label: "Envíos y paquetería",
     href: "#industrias",
     description: "Operación logística, rastreo y facturación.",
-    icon: Globe2,
+    icon: Truck,
   },
   {
     label: "Servicios",
     href: "#industrias",
     description: "Cotizaciones, clientes y procesos internos.",
-    icon: Building2,
+    icon: PackageCheck,
   },
 ];
 
@@ -140,20 +148,20 @@ export const resources: NavigationItem[] = [
   {
     label: "Casos reales",
     href: "#clientes",
-    description: "Mira cómo empresas usan la plataforma.",
-    icon: Sparkles,
+    description: "Descubre cómo otras empresas usan Perla.",
+    icon: UsersRound,
   },
   {
     label: "Documentación",
     href: "#como-funciona",
-    description: "Conoce el funcionamiento de cada módulo.",
-    icon: FileText,
+    description: "Guías para conocer cada módulo.",
+    icon: Puzzle,
   },
   {
     label: "Vista general",
     href: "#caracteristicas",
-    description: "Explora el ecosistema Perla Marketplace.",
-    icon: LayoutDashboard,
+    description: "Explora todo el ecosistema Perla Marketplace.",
+    icon: BarChart3,
   },
 ];
 

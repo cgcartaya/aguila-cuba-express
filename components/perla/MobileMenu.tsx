@@ -61,7 +61,7 @@ export default function MobileMenu({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[80] lg:hidden"
+          className="fixed inset-0 z-[90] lg:hidden"
           role="dialog"
           aria-modal="true"
           aria-label="Menú principal"
@@ -72,7 +72,7 @@ export default function MobileMenu({
           <button
             type="button"
             aria-label="Cerrar menú"
-            className="absolute inset-0 bg-[#071044]/45 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#070b2d]/50 backdrop-blur-sm"
             onClick={onClose}
           />
 
@@ -81,14 +81,14 @@ export default function MobileMenu({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="absolute right-0 top-0 flex h-full w-[min(92vw,430px)] flex-col bg-white shadow-2xl"
+            className="absolute right-0 top-0 flex h-full w-[min(94vw,440px)] flex-col bg-white shadow-2xl"
           >
-            <div className="flex items-center justify-between border-b border-violet-100 px-5 py-4">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
               <PerlaLogo />
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-100 text-[#101a4d] outline-none transition hover:bg-violet-50 focus-visible:ring-4 focus-visible:ring-violet-200"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 text-[#10152f] outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-violet-200"
                 aria-label="Cerrar menú"
                 autoFocus
               >
@@ -104,20 +104,20 @@ export default function MobileMenu({
                   return (
                     <div
                       key={section.key}
-                      className="overflow-hidden rounded-2xl border border-violet-100"
+                      className="overflow-hidden rounded-2xl border border-slate-200"
                     >
                       <button
                         type="button"
                         onClick={() =>
                           setExpanded(isExpanded ? null : section.key)
                         }
-                        className="flex min-h-14 w-full items-center justify-between px-4 text-left text-sm font-black text-[#101a4d] outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-violet-200"
+                        className="flex min-h-14 w-full items-center justify-between px-4 text-left text-sm font-black text-[#10152f] outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-violet-200"
                         aria-expanded={isExpanded}
                         aria-controls={`mobile-${section.key}`}
                       >
                         {section.label}
                         <ChevronDown
-                          className={`h-4 w-4 transition-transform duration-300 ease-out ${
+                          className={`h-4 w-4 transition-transform duration-300 ${
                             isExpanded ? "rotate-180" : ""
                           }`}
                         />
@@ -132,7 +132,7 @@ export default function MobileMenu({
                             exit={{ height: 0, opacity: 0 }}
                             className="overflow-hidden"
                           >
-                            <div className="space-y-1 border-t border-violet-100 bg-violet-50/50 p-2">
+                            <div className="space-y-1 border-t border-slate-200 bg-slate-50 p-2">
                               {section.items.map((item) => {
                                 const Icon = item.icon;
                                 return (
@@ -140,11 +140,9 @@ export default function MobileMenu({
                                     key={`${section.key}-${item.label}`}
                                     href={item.href}
                                     onClick={onClose}
-                                    className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold text-[#394369] outline-none transition hover:bg-white focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-violet-400"
+                                    className="flex min-h-12 items-center gap-3 rounded-xl px-3 py-2 text-sm font-bold text-slate-700 outline-none hover:bg-white focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-violet-400"
                                   >
-                                    {Icon && (
-                                      <Icon className="h-4 w-4 text-violet-600" />
-                                    )}
+                                    <Icon className="h-4 w-4 text-violet-700" />
                                     {item.label}
                                   </Link>
                                 );
@@ -160,26 +158,26 @@ export default function MobileMenu({
                 <Link
                   href="#clientes"
                   onClick={onClose}
-                  className="flex min-h-14 items-center rounded-2xl px-4 text-sm font-black text-[#101a4d] outline-none hover:bg-violet-50 focus-visible:ring-4 focus-visible:ring-violet-200"
+                  className="flex min-h-14 items-center rounded-2xl px-4 text-sm font-black text-[#10152f] outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-violet-200"
                 >
                   Clientes
                 </Link>
                 <Link
                   href="#planes"
                   onClick={onClose}
-                  className="flex min-h-14 items-center rounded-2xl px-4 text-sm font-black text-[#101a4d] outline-none hover:bg-violet-50 focus-visible:ring-4 focus-visible:ring-violet-200"
+                  className="flex min-h-14 items-center rounded-2xl px-4 text-sm font-black text-[#10152f] outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-violet-200"
                 >
                   Precios
                 </Link>
               </nav>
             </div>
 
-            <div className="border-t border-violet-100 bg-white p-5">
+            <div className="border-t border-slate-200 bg-white p-5">
               <div className="grid gap-3">
                 <Link
                   href="/admin"
                   onClick={onClose}
-                  className="flex min-h-12 items-center justify-center rounded-2xl border border-violet-200 text-sm font-black text-[#101a4d] outline-none hover:bg-violet-50 focus-visible:ring-4 focus-visible:ring-violet-200"
+                  className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 text-sm font-black text-[#10152f] outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-violet-200"
                 >
                   Iniciar sesión
                 </Link>
@@ -188,7 +186,7 @@ export default function MobileMenu({
                   target="_blank"
                   rel="noreferrer"
                   onClick={onClose}
-                  className="flex min-h-12 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 px-5 text-sm font-black text-white shadow-lg shadow-violet-300/35 outline-none transition hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-violet-300"
+                  className="flex min-h-12 items-center justify-center rounded-xl bg-gradient-to-r from-[#5b22ef] to-[#8b2cff] px-5 text-sm font-black text-white shadow-lg shadow-violet-300/35 outline-none hover:-translate-y-0.5 focus-visible:ring-4 focus-visible:ring-violet-300"
                 >
                   Solicitar una demo
                 </a>

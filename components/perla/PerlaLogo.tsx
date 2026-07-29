@@ -1,18 +1,32 @@
-import { Gem } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 
 export default function PerlaLogo() {
   return (
-    <a href="/" className="group flex items-center gap-3">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-blue-500 text-white shadow-xl shadow-violet-300/70 transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-violet-400/70">
-        <Gem className="h-6 w-6" strokeWidth={2.5} />
-      </div>
+    <Link
+      href="/"
+      aria-label="Perla Marketplace — Inicio"
+      className="group inline-flex min-h-14 items-center gap-3 rounded-xl outline-none focus-visible:ring-4 focus-visible:ring-violet-200"
+    >
+      <span className="relative flex h-14 w-16 shrink-0 items-center justify-center">
+        <Image
+          src="/perla/perla-shell.png"
+          alt=""
+          width={128}
+          height={108}
+          priority
+          className="h-auto w-[62px] object-contain drop-shadow-[0_8px_16px_rgba(91,33,182,0.28)] transition-transform duration-300 group-hover:scale-[1.04]"
+        />
+      </span>
 
-      <div className="leading-tight">
-        <p className="text-lg font-black tracking-tight text-[#071044]">
+      <span className="leading-none">
+        <span className="block text-[30px] font-black tracking-[-0.045em] text-[#0d1238]">
           Perla
-        </p>
-        <p className="text-sm font-bold text-[#4c5a8a]">Marketplace</p>
-      </div>
-    </a>
+        </span>
+        <span className="mt-1 block text-[14px] font-bold tracking-[0.13em] text-violet-700">
+          Marketplace
+        </span>
+      </span>
+    </Link>
   );
 }
