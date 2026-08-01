@@ -5,6 +5,17 @@ const WRITE_ROLES = new Set(["OWNER", "ADMIN", "OPERATIONS", "DISPATCHER"]);
 const clean = (value: unknown, max = 160) => String(value ?? "").trim().slice(0, max);
 const fail = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
+// IMPORTANTE: no usar Number.isFinite(Number(value)) para esto.
+// Number(null) === 0 y Number.isFinite(0) === true, así que ese patrón
+// convertía "sin ubicación" (null) en coordenadas reales (0,0), que caen
+// en medio del océano Atlántico. Aquí tratamos null/undefined/"" como
+// "todavía no geocodificado" y solo aceptamos números finitos reales.
+function toCoordinate(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 async function authorize(request: NextRequest, storeId: string) {
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return { denied: fail("No se recibió la sesión.", 401), userId: null };
@@ -85,8 +96,8 @@ export async function POST(request: NextRequest) {
   const notes = clean(body.notes, 1000) || null;
   const formattedAddress = clean(body.formatted_address, 300) || null;
   const placeId = clean(body.place_id, 180) || null;
-  const latitude = Number.isFinite(Number(body.latitude)) ? Number(body.latitude) : null;
-  const longitude = Number.isFinite(Number(body.longitude)) ? Number(body.longitude) : null;
+  const latitude = toCoordinate(body.latitude);
+  const longitude = toCoordinate(body.longitude);
   const addressVerified = Boolean(body.address_verified);
   const preferredDate = clean(body.preferred_date, 10) || null;
   const requestSourceDetail = clean(body.request_source_detail, 30) || "whatsapp";
@@ -151,8 +162,8 @@ export async function PATCH(request: NextRequest) {
   const notes = clean(body.notes, 1000) || null;
   const formattedAddress = clean(body.formatted_address, 300) || null;
   const placeId = clean(body.place_id, 180) || null;
-  const latitude = Number.isFinite(Number(body.latitude)) ? Number(body.latitude) : null;
-  const longitude = Number.isFinite(Number(body.longitude)) ? Number(body.longitude) : null;
+  const latitude = toCoordinate(body.latitude);
+  const longitude = toCoordinate(body.longitude);
   const addressVerified = Boolean(body.address_verified);
   const preferredDate = clean(body.preferred_date, 10) || null;
   const { pickupKind, pickupDetail, pickupOption } = readPickupFields(body);
