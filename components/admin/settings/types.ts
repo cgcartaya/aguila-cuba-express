@@ -30,6 +30,7 @@ export type StoreSettings = {
   delivery_message?: string | null;
   logo_url?: string | null;
   favicon_url?: string | null;
+  hide_products_without_images?: boolean;
 
   // LANDING BUILDER V16.5
   show_hero?: boolean;

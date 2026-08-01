@@ -13,6 +13,8 @@ type Props = {
   setSortBy: (value: string) => void;
   stockFilter: "all" | "low";
   setStockFilter: (value: "all" | "low") => void;
+  imageFilter: "all" | "with" | "without";
+  setImageFilter: (value: "all" | "with" | "without") => void;
   categories: string[];
   showFilters: boolean;
   setShowFilters: (value: boolean) => void;
@@ -29,6 +31,8 @@ export default function ProductFilters({
   sortBy,
   setSortBy,
   setStockFilter,
+  imageFilter,
+  setImageFilter,
   categories,
   showFilters,
   setShowFilters,
@@ -59,7 +63,7 @@ export default function ProductFilters({
       </div>
 
       {showFilters && (
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
             <Filter size={16} className="text-slate-400" />
 
@@ -91,6 +95,20 @@ export default function ProductFilters({
             <option value="all">Todos los estados</option>
             <option value="active">Activos</option>
             <option value="inactive">Inactivos</option>
+          </select>
+
+          <select
+            value={imageFilter}
+            onChange={(e) =>
+              setImageFilter(
+                e.target.value as "all" | "with" | "without"
+              )
+            }
+            className="rounded-xl border px-3 py-2 text-sm outline-none"
+          >
+            <option value="all">Todas las imágenes</option>
+            <option value="with">Con imagen</option>
+            <option value="without">Sin imagen</option>
           </select>
 
           <div className="flex items-center gap-2 rounded-xl border px-3 py-2">

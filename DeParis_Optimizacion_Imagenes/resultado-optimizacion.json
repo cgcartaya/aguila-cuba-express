@@ -1,0 +1,2606 @@
+{
+  "mode": "apply",
+  "store": {
+    "id": "4c4a227c-5981-471c-afe4-2d5f91ff0201",
+    "name": "DeParis",
+    "slug": "deparis"
+  },
+  "settings": {
+    "bucket": "product-images",
+    "maxWidth": 1200,
+    "maxHeight": 1200,
+    "quality": 82
+  },
+  "totals": {
+    "products": 225,
+    "images": 96,
+    "candidates": 96,
+    "optimized": 85,
+    "skippedAlreadyOptimized": 0,
+    "skippedMissingStoragePath": 0,
+    "skippedNoSavings": 11,
+    "errors": 0,
+    "originalBytes": 10295295,
+    "optimizedBytes": 7336808,
+    "estimatedSavedBytes": 1689228
+  },
+  "items": [
+    {
+      "image_id": "acf60bfb-85e3-4a23-bc39-728b6eabd3ba",
+      "product_id": "df381cb5-0c43-4099-8a14-f03798e11da8",
+      "product_name": "Carrito Truck Pc",
+      "is_main": true,
+      "old_storage_path": "df381cb5-0c43-4099-8a14-f03798e11da8/deparis-initial-10.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/df381cb5-0c43-4099-8a14-f03798e11da8/deparis-initial-10.jpeg",
+      "original": {
+        "bytes": 107374,
+        "human": "104.9 KB",
+        "width": 699,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 95350,
+        "human": "93.1 KB",
+        "width": 699,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 12024,
+      "saved_percent": 11.2,
+      "new_storage_path": "df381cb5-0c43-4099-8a14-f03798e11da8/optimized/deparis-initial-10-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/df381cb5-0c43-4099-8a14-f03798e11da8/optimized/deparis-initial-10-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "f1f95bfc-c9fd-4b62-a796-70418f57f1c0",
+      "product_id": "fb624acd-ae50-4e5f-9343-9e9454fde7fd",
+      "product_name": "Tipo Crocs-Zapitos Rojos",
+      "is_main": true,
+      "old_storage_path": "fb624acd-ae50-4e5f-9343-9e9454fde7fd/deparis-initial-38.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/fb624acd-ae50-4e5f-9343-9e9454fde7fd/deparis-initial-38.jpeg",
+      "original": {
+        "bytes": 65278,
+        "human": "63.7 KB",
+        "width": 1080,
+        "height": 509,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 54870,
+        "human": "53.6 KB",
+        "width": 1080,
+        "height": 509,
+        "format": "webp"
+      },
+      "saved_bytes": 10408,
+      "saved_percent": 15.94,
+      "new_storage_path": "fb624acd-ae50-4e5f-9343-9e9454fde7fd/optimized/deparis-initial-38-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/fb624acd-ae50-4e5f-9343-9e9454fde7fd/optimized/deparis-initial-38-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5cb9185f-5e27-4ecb-96e6-fd4645d7634f",
+      "product_id": "ea8d3458-dc3c-4daf-94f0-af228e85f0bf",
+      "product_name": "Jamonilla Res",
+      "is_main": true,
+      "old_storage_path": "ea8d3458-dc3c-4daf-94f0-af228e85f0bf/deparis-initial-75.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/ea8d3458-dc3c-4daf-94f0-af228e85f0bf/deparis-initial-75.jpeg",
+      "original": {
+        "bytes": 115510,
+        "human": "112.8 KB",
+        "width": 713,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 113956,
+        "human": "111.3 KB",
+        "width": 713,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 1554,
+      "saved_percent": 1.35,
+      "new_storage_path": "ea8d3458-dc3c-4daf-94f0-af228e85f0bf/optimized/deparis-initial-75-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/ea8d3458-dc3c-4daf-94f0-af228e85f0bf/optimized/deparis-initial-75-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5f5570c0-8ad6-4e88-8e93-9243bfd8e068",
+      "product_id": "ffe6c63d-d8b7-4051-b56f-de92342ed3c4",
+      "product_name": "Sal",
+      "is_main": true,
+      "old_storage_path": "ffe6c63d-d8b7-4051-b56f-de92342ed3c4/deparis-initial-53.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/ffe6c63d-d8b7-4051-b56f-de92342ed3c4/deparis-initial-53.jpeg",
+      "original": {
+        "bytes": 104991,
+        "human": "102.5 KB",
+        "width": 754,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 89642,
+        "human": "87.5 KB",
+        "width": 754,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 15349,
+      "saved_percent": 14.62,
+      "new_storage_path": "ffe6c63d-d8b7-4051-b56f-de92342ed3c4/optimized/deparis-initial-53-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/ffe6c63d-d8b7-4051-b56f-de92342ed3c4/optimized/deparis-initial-53-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5fbe41cb-a0fa-4036-b9b3-af44417ca4cb",
+      "product_id": "916650bb-0dd3-4f5e-b8ed-9e6197bcdcf9",
+      "product_name": "Tipo Crocs-Zapitos Azul",
+      "is_main": true,
+      "old_storage_path": "916650bb-0dd3-4f5e-b8ed-9e6197bcdcf9/deparis-initial-36.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/916650bb-0dd3-4f5e-b8ed-9e6197bcdcf9/deparis-initial-36.jpeg",
+      "original": {
+        "bytes": 57197,
+        "human": "55.9 KB",
+        "width": 1000,
+        "height": 452,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 50610,
+        "human": "49.4 KB",
+        "width": 1000,
+        "height": 452,
+        "format": "webp"
+      },
+      "saved_bytes": 6587,
+      "saved_percent": 11.52,
+      "new_storage_path": "916650bb-0dd3-4f5e-b8ed-9e6197bcdcf9/optimized/deparis-initial-36-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/916650bb-0dd3-4f5e-b8ed-9e6197bcdcf9/optimized/deparis-initial-36-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "dbbc59ca-4f3d-41f3-bf45-55755079c86d",
+      "product_id": "75fdd1f3-47cc-4972-ae65-e6ab8545e001",
+      "product_name": "Crocs Original",
+      "is_main": true,
+      "old_storage_path": "75fdd1f3-47cc-4972-ae65-e6ab8545e001/deparis-initial-32.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/75fdd1f3-47cc-4972-ae65-e6ab8545e001/deparis-initial-32.jpeg",
+      "original": {
+        "bytes": 71170,
+        "human": "69.5 KB",
+        "width": 1080,
+        "height": 535,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 63646,
+        "human": "62.2 KB",
+        "width": 1080,
+        "height": 535,
+        "format": "webp"
+      },
+      "saved_bytes": 7524,
+      "saved_percent": 10.57,
+      "new_storage_path": "75fdd1f3-47cc-4972-ae65-e6ab8545e001/optimized/deparis-initial-32-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/75fdd1f3-47cc-4972-ae65-e6ab8545e001/optimized/deparis-initial-32-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "db8d77c9-83d9-413d-9187-4a43a64d9ad5",
+      "product_id": "c7fed61b-5d82-48c0-8b87-17e7dcb9dab3",
+      "product_name": "Arroz Blanco",
+      "is_main": true,
+      "old_storage_path": "c7fed61b-5d82-48c0-8b87-17e7dcb9dab3/deparis-initial-48.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c7fed61b-5d82-48c0-8b87-17e7dcb9dab3/deparis-initial-48.jpeg",
+      "original": {
+        "bytes": 150220,
+        "human": "146.7 KB",
+        "width": 805,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 140768,
+        "human": "137.5 KB",
+        "width": 805,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 9452,
+      "saved_percent": 6.29,
+      "new_storage_path": "c7fed61b-5d82-48c0-8b87-17e7dcb9dab3/optimized/deparis-initial-48-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c7fed61b-5d82-48c0-8b87-17e7dcb9dab3/optimized/deparis-initial-48-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "4f7050a3-09fe-49f3-bb00-25f5b82da739",
+      "product_id": "234cc7d4-d965-4907-8ecf-e5f6e1046995",
+      "product_name": "Tipo Crocs-Zapitos Gris",
+      "is_main": true,
+      "old_storage_path": "234cc7d4-d965-4907-8ecf-e5f6e1046995/deparis-initial-37.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/234cc7d4-d965-4907-8ecf-e5f6e1046995/deparis-initial-37.jpeg",
+      "original": {
+        "bytes": 77152,
+        "human": "75.3 KB",
+        "width": 1080,
+        "height": 548,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 69024,
+        "human": "67.4 KB",
+        "width": 1080,
+        "height": 548,
+        "format": "webp"
+      },
+      "saved_bytes": 8128,
+      "saved_percent": 10.54,
+      "new_storage_path": "234cc7d4-d965-4907-8ecf-e5f6e1046995/optimized/deparis-initial-37-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/234cc7d4-d965-4907-8ecf-e5f6e1046995/optimized/deparis-initial-37-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "b003c7e1-5ee0-42fc-83d6-0ab2c0f3fabb",
+      "product_id": "4daf1862-5a3f-4e7b-81c7-fd6aae58d8d1",
+      "product_name": "Diaria Alotof",
+      "is_main": true,
+      "old_storage_path": "4daf1862-5a3f-4e7b-81c7-fd6aae58d8d1/deparis-initial-45.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/4daf1862-5a3f-4e7b-81c7-fd6aae58d8d1/deparis-initial-45.jpeg",
+      "original": {
+        "bytes": 60865,
+        "human": "59.4 KB",
+        "width": 1000,
+        "height": 695,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 44058,
+        "human": "43.0 KB",
+        "width": 1000,
+        "height": 695,
+        "format": "webp"
+      },
+      "saved_bytes": 16807,
+      "saved_percent": 27.61,
+      "new_storage_path": "4daf1862-5a3f-4e7b-81c7-fd6aae58d8d1/optimized/deparis-initial-45-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/4daf1862-5a3f-4e7b-81c7-fd6aae58d8d1/optimized/deparis-initial-45-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "06b3a09e-900b-4433-b605-389a4a42dd4e",
+      "product_id": "66910c75-e0ba-467f-b1d8-403ec4fe3ff4",
+      "product_name": "Paparicas",
+      "is_main": true,
+      "old_storage_path": "66910c75-e0ba-467f-b1d8-403ec4fe3ff4/deparis-initial-231.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/66910c75-e0ba-467f-b1d8-403ec4fe3ff4/deparis-initial-231.jpeg",
+      "original": {
+        "bytes": 61258,
+        "human": "59.8 KB",
+        "width": 404,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 51974,
+        "human": "50.8 KB",
+        "width": 404,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 9284,
+      "saved_percent": 15.16,
+      "new_storage_path": "66910c75-e0ba-467f-b1d8-403ec4fe3ff4/optimized/deparis-initial-231-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/66910c75-e0ba-467f-b1d8-403ec4fe3ff4/optimized/deparis-initial-231-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "bdc612fb-716b-4661-83aa-6bf88d675d7f",
+      "product_id": "b7aedeec-d4c0-4e30-a1e2-84b110fd42c7",
+      "product_name": "Macarrones en caja",
+      "is_main": true,
+      "old_storage_path": "b7aedeec-d4c0-4e30-a1e2-84b110fd42c7/deparis-initial-65.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b7aedeec-d4c0-4e30-a1e2-84b110fd42c7/deparis-initial-65.jpeg",
+      "original": {
+        "bytes": 98578,
+        "human": "96.3 KB",
+        "width": 632,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 84586,
+        "human": "82.6 KB",
+        "width": 632,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 13992,
+      "saved_percent": 14.19,
+      "new_storage_path": "b7aedeec-d4c0-4e30-a1e2-84b110fd42c7/optimized/deparis-initial-65-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b7aedeec-d4c0-4e30-a1e2-84b110fd42c7/optimized/deparis-initial-65-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "88515c55-3970-4dcf-81f9-eec5ef9bacba",
+      "product_id": "709f497b-a6ef-47b4-89d3-484cb0d590e6",
+      "product_name": "Cascoss",
+      "is_main": true,
+      "old_storage_path": "709f497b-a6ef-47b4-89d3-484cb0d590e6/deparis-initial-72.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/709f497b-a6ef-47b4-89d3-484cb0d590e6/deparis-initial-72.jpeg",
+      "original": {
+        "bytes": 46648,
+        "human": "45.6 KB",
+        "width": 980,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 25768,
+        "human": "25.2 KB",
+        "width": 980,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 20880,
+      "saved_percent": 44.76,
+      "new_storage_path": "709f497b-a6ef-47b4-89d3-484cb0d590e6/optimized/deparis-initial-72-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/709f497b-a6ef-47b4-89d3-484cb0d590e6/optimized/deparis-initial-72-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "7092e150-59e0-4322-939a-406c76169a5e",
+      "product_id": "975c01d2-bbe8-4bc3-aba6-7aae7921d161",
+      "product_name": "Azucar Blanca",
+      "is_main": true,
+      "old_storage_path": "975c01d2-bbe8-4bc3-aba6-7aae7921d161/deparis-initial-52.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/975c01d2-bbe8-4bc3-aba6-7aae7921d161/deparis-initial-52.jpeg",
+      "original": {
+        "bytes": 127374,
+        "human": "124.4 KB",
+        "width": 797,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 115060,
+        "human": "112.4 KB",
+        "width": 797,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 12314,
+      "saved_percent": 9.67,
+      "new_storage_path": "975c01d2-bbe8-4bc3-aba6-7aae7921d161/optimized/deparis-initial-52-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/975c01d2-bbe8-4bc3-aba6-7aae7921d161/optimized/deparis-initial-52-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "066a45df-4a97-406e-8349-dded4510a35d",
+      "product_id": "39ecc655-37fc-4f9a-a20c-e8d0ba414ce5",
+      "product_name": "Bocinas",
+      "is_main": true,
+      "old_storage_path": "39ecc655-37fc-4f9a-a20c-e8d0ba414ce5/deparis-initial-188.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/39ecc655-37fc-4f9a-a20c-e8d0ba414ce5/deparis-initial-188.jpeg",
+      "original": {
+        "bytes": 73376,
+        "human": "71.7 KB",
+        "width": 842,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 45782,
+        "human": "44.7 KB",
+        "width": 842,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 27594,
+      "saved_percent": 37.61,
+      "new_storage_path": "39ecc655-37fc-4f9a-a20c-e8d0ba414ce5/optimized/deparis-initial-188-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/39ecc655-37fc-4f9a-a20c-e8d0ba414ce5/optimized/deparis-initial-188-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "fa051749-599a-4cb8-8d95-a5fab0a8efcc",
+      "product_id": "7de55599-c25f-456e-a8c0-5006f08bb990",
+      "product_name": "Paparicass",
+      "is_main": true,
+      "old_storage_path": "7de55599-c25f-456e-a8c0-5006f08bb990/deparis-initial-230.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/7de55599-c25f-456e-a8c0-5006f08bb990/deparis-initial-230.jpeg",
+      "original": {
+        "bytes": 60224,
+        "human": "58.8 KB",
+        "width": 436,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 49904,
+        "human": "48.7 KB",
+        "width": 436,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 10320,
+      "saved_percent": 17.14,
+      "new_storage_path": "7de55599-c25f-456e-a8c0-5006f08bb990/optimized/deparis-initial-230-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/7de55599-c25f-456e-a8c0-5006f08bb990/optimized/deparis-initial-230-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "e2153385-761b-4273-af26-ae1e0366a142",
+      "product_id": "6ee5caae-5626-4860-b3cd-c54331c626c8",
+      "product_name": "Tipo Crocs Infantil Verde",
+      "is_main": true,
+      "old_storage_path": "6ee5caae-5626-4860-b3cd-c54331c626c8/deparis-initial-35.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/6ee5caae-5626-4860-b3cd-c54331c626c8/deparis-initial-35.jpeg",
+      "original": {
+        "bytes": 76226,
+        "human": "74.4 KB",
+        "width": 1000,
+        "height": 581,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 69842,
+        "human": "68.2 KB",
+        "width": 1000,
+        "height": 581,
+        "format": "webp"
+      },
+      "saved_bytes": 6384,
+      "saved_percent": 8.38,
+      "new_storage_path": "6ee5caae-5626-4860-b3cd-c54331c626c8/optimized/deparis-initial-35-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/6ee5caae-5626-4860-b3cd-c54331c626c8/optimized/deparis-initial-35-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "1c1cc9a3-2d34-46d4-ab85-06e8855853b7",
+      "product_id": "23b7b8f5-cf68-403c-9a25-1a0ad96f144d",
+      "product_name": "Chancletas 2 Cintas",
+      "is_main": true,
+      "old_storage_path": "23b7b8f5-cf68-403c-9a25-1a0ad96f144d/deparis-initial-30.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/23b7b8f5-cf68-403c-9a25-1a0ad96f144d/deparis-initial-30.jpeg",
+      "original": {
+        "bytes": 79838,
+        "human": "78.0 KB",
+        "width": 1000,
+        "height": 535,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 82078,
+        "human": "80.2 KB",
+        "width": 1000,
+        "height": 535,
+        "format": "webp"
+      },
+      "saved_bytes": -2240,
+      "saved_percent": -2.81,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "d43960fb-edbc-440e-baa5-0e4ad1c64099",
+      "product_id": "08619d5a-60f1-4799-9ba3-11b681c0f7bb",
+      "product_name": "Salsa Rosa Rayan",
+      "is_main": true,
+      "old_storage_path": "08619d5a-60f1-4799-9ba3-11b681c0f7bb/deparis-initial-115.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/08619d5a-60f1-4799-9ba3-11b681c0f7bb/deparis-initial-115.jpeg",
+      "original": {
+        "bytes": 74676,
+        "human": "72.9 KB",
+        "width": 544,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 59610,
+        "human": "58.2 KB",
+        "width": 544,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 15066,
+      "saved_percent": 20.18,
+      "new_storage_path": "08619d5a-60f1-4799-9ba3-11b681c0f7bb/optimized/deparis-initial-115-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/08619d5a-60f1-4799-9ba3-11b681c0f7bb/optimized/deparis-initial-115-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5f6909ad-5f71-44d6-bbb4-0144bc19ab0f",
+      "product_id": "36d8dfbc-78b4-4914-827e-f2355c10f8f8",
+      "product_name": "Espáguetis",
+      "is_main": true,
+      "old_storage_path": "36d8dfbc-78b4-4914-827e-f2355c10f8f8/deparis-initial-63.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/36d8dfbc-78b4-4914-827e-f2355c10f8f8/deparis-initial-63.jpeg",
+      "original": {
+        "bytes": 68727,
+        "human": "67.1 KB",
+        "width": 1000,
+        "height": 350,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 65904,
+        "human": "64.4 KB",
+        "width": 1000,
+        "height": 350,
+        "format": "webp"
+      },
+      "saved_bytes": 2823,
+      "saved_percent": 4.11,
+      "new_storage_path": "36d8dfbc-78b4-4914-827e-f2355c10f8f8/optimized/deparis-initial-63-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/36d8dfbc-78b4-4914-827e-f2355c10f8f8/optimized/deparis-initial-63-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "964ba63b-6d05-4e83-8494-b04aee73a220",
+      "product_id": "44367d68-8394-4f77-8b0a-d5db2fb8fe3f",
+      "product_name": "Biskiato Miniun",
+      "is_main": true,
+      "old_storage_path": "44367d68-8394-4f77-8b0a-d5db2fb8fe3f/deparis-initial-74.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/44367d68-8394-4f77-8b0a-d5db2fb8fe3f/deparis-initial-74.jpeg",
+      "original": {
+        "bytes": 61710,
+        "human": "60.3 KB",
+        "width": 1000,
+        "height": 410,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 55360,
+        "human": "54.1 KB",
+        "width": 1000,
+        "height": 410,
+        "format": "webp"
+      },
+      "saved_bytes": 6350,
+      "saved_percent": 10.29,
+      "new_storage_path": "44367d68-8394-4f77-8b0a-d5db2fb8fe3f/optimized/deparis-initial-74-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/44367d68-8394-4f77-8b0a-d5db2fb8fe3f/optimized/deparis-initial-74-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "ab4ffc96-0686-4567-ac84-41fa0763991a",
+      "product_id": "5757543d-1ec3-46bb-bf42-03968dbca684",
+      "product_name": "Adsorbentes a Color",
+      "is_main": true,
+      "old_storage_path": "5757543d-1ec3-46bb-bf42-03968dbca684/deparis-initial-81.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5757543d-1ec3-46bb-bf42-03968dbca684/deparis-initial-81.jpeg",
+      "original": {
+        "bytes": 85569,
+        "human": "83.6 KB",
+        "width": 540,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 68384,
+        "human": "66.8 KB",
+        "width": 540,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 17185,
+      "saved_percent": 20.08,
+      "new_storage_path": "5757543d-1ec3-46bb-bf42-03968dbca684/optimized/deparis-initial-81-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5757543d-1ec3-46bb-bf42-03968dbca684/optimized/deparis-initial-81-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "4083bfd2-9e79-41fc-930e-b14cfb2ef45a",
+      "product_id": "fdc4f227-0157-49c0-9906-9eb3119cb63e",
+      "product_name": "Sorbeto Rancheiro",
+      "is_main": true,
+      "old_storage_path": "fdc4f227-0157-49c0-9906-9eb3119cb63e/deparis-initial-228.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/fdc4f227-0157-49c0-9906-9eb3119cb63e/deparis-initial-228.jpeg",
+      "original": {
+        "bytes": 112259,
+        "human": "109.6 KB",
+        "width": 1000,
+        "height": 521,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 114880,
+        "human": "112.2 KB",
+        "width": 1000,
+        "height": 521,
+        "format": "webp"
+      },
+      "saved_bytes": -2621,
+      "saved_percent": -2.33,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "6ece9406-ab84-4475-89f1-1c8d1666b9db",
+      "product_id": "6b8d7c24-1b9f-4215-a0b8-16276ba80a01",
+      "product_name": "Tipo Crocs Infantil Azul",
+      "is_main": true,
+      "old_storage_path": "6b8d7c24-1b9f-4215-a0b8-16276ba80a01/deparis-initial-34.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/6b8d7c24-1b9f-4215-a0b8-16276ba80a01/deparis-initial-34.jpeg",
+      "original": {
+        "bytes": 86560,
+        "human": "84.5 KB",
+        "width": 1000,
+        "height": 624,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 83534,
+        "human": "81.6 KB",
+        "width": 1000,
+        "height": 624,
+        "format": "webp"
+      },
+      "saved_bytes": 3026,
+      "saved_percent": 3.5,
+      "new_storage_path": "6b8d7c24-1b9f-4215-a0b8-16276ba80a01/optimized/deparis-initial-34-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/6b8d7c24-1b9f-4215-a0b8-16276ba80a01/optimized/deparis-initial-34-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "c658fa31-f5ee-4b76-a442-45f65f2e2d81",
+      "product_id": "15f1cc34-540b-4167-88f2-7857c1f3ba85",
+      "product_name": "Cascos Moto",
+      "is_main": true,
+      "old_storage_path": "15f1cc34-540b-4167-88f2-7857c1f3ba85/deparis-initial-71.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/15f1cc34-540b-4167-88f2-7857c1f3ba85/deparis-initial-71.jpeg",
+      "original": {
+        "bytes": 148068,
+        "human": "144.6 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 137598,
+        "human": "134.4 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 10470,
+      "saved_percent": 7.07,
+      "new_storage_path": "15f1cc34-540b-4167-88f2-7857c1f3ba85/optimized/deparis-initial-71-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/15f1cc34-540b-4167-88f2-7857c1f3ba85/optimized/deparis-initial-71-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "b33a5d07-888d-436b-a82a-fc7317eed93e",
+      "product_id": "6378ef2b-8ced-4601-9edd-b4af11e6c6fc",
+      "product_name": "Muneca Barbie",
+      "is_main": true,
+      "old_storage_path": "6378ef2b-8ced-4601-9edd-b4af11e6c6fc/deparis-initial-9.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/6378ef2b-8ced-4601-9edd-b4af11e6c6fc/deparis-initial-9.jpeg",
+      "original": {
+        "bytes": 157829,
+        "human": "154.1 KB",
+        "width": 774,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 155580,
+        "human": "151.9 KB",
+        "width": 774,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 2249,
+      "saved_percent": 1.42,
+      "new_storage_path": "6378ef2b-8ced-4601-9edd-b4af11e6c6fc/optimized/deparis-initial-9-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/6378ef2b-8ced-4601-9edd-b4af11e6c6fc/optimized/deparis-initial-9-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5250bea9-c86b-48fa-ba88-ed47b41fe83e",
+      "product_id": "1afcd365-0ed4-4663-9432-76b8983c066e",
+      "product_name": "Ventilador 3 en",
+      "is_main": true,
+      "old_storage_path": "1afcd365-0ed4-4663-9432-76b8983c066e/deparis-initial-27.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/1afcd365-0ed4-4663-9432-76b8983c066e/deparis-initial-27.jpeg",
+      "original": {
+        "bytes": 123738,
+        "human": "120.8 KB",
+        "width": 1000,
+        "height": 707,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 118550,
+        "human": "115.8 KB",
+        "width": 1000,
+        "height": 707,
+        "format": "webp"
+      },
+      "saved_bytes": 5188,
+      "saved_percent": 4.19,
+      "new_storage_path": "1afcd365-0ed4-4663-9432-76b8983c066e/optimized/deparis-initial-27-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/1afcd365-0ed4-4663-9432-76b8983c066e/optimized/deparis-initial-27-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "e5deaceb-48b5-4498-a10b-524e04218f36",
+      "product_id": "b93d072d-8eb0-4720-a46a-15b10ca77364",
+      "product_name": "Chancletas 3 Cintas",
+      "is_main": true,
+      "old_storage_path": "b93d072d-8eb0-4720-a46a-15b10ca77364/deparis-initial-31.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b93d072d-8eb0-4720-a46a-15b10ca77364/deparis-initial-31.jpeg",
+      "original": {
+        "bytes": 86210,
+        "human": "84.2 KB",
+        "width": 1000,
+        "height": 624,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 83860,
+        "human": "81.9 KB",
+        "width": 1000,
+        "height": 624,
+        "format": "webp"
+      },
+      "saved_bytes": 2350,
+      "saved_percent": 2.73,
+      "new_storage_path": "b93d072d-8eb0-4720-a46a-15b10ca77364/optimized/deparis-initial-31-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b93d072d-8eb0-4720-a46a-15b10ca77364/optimized/deparis-initial-31-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "a6af84da-eaa1-4485-a47d-543cee0c837c",
+      "product_id": "12002949-3830-4c3f-b1c8-7ed427d6082b",
+      "product_name": "Intimas A+",
+      "is_main": true,
+      "old_storage_path": "12002949-3830-4c3f-b1c8-7ed427d6082b/deparis-initial-44.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/12002949-3830-4c3f-b1c8-7ed427d6082b/deparis-initial-44.jpeg",
+      "original": {
+        "bytes": 105866,
+        "human": "103.4 KB",
+        "width": 1000,
+        "height": 756,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 91200,
+        "human": "89.1 KB",
+        "width": 1000,
+        "height": 756,
+        "format": "webp"
+      },
+      "saved_bytes": 14666,
+      "saved_percent": 13.85,
+      "new_storage_path": "12002949-3830-4c3f-b1c8-7ed427d6082b/optimized/deparis-initial-44-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/12002949-3830-4c3f-b1c8-7ed427d6082b/optimized/deparis-initial-44-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "ae01fdda-a81a-40e6-b01f-1f46e358fcb7",
+      "product_id": "b426874d-8754-4592-8233-34d685f0aedf",
+      "product_name": "Lampara Mesa",
+      "is_main": true,
+      "old_storage_path": "b426874d-8754-4592-8233-34d685f0aedf/deparis-initial-185.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b426874d-8754-4592-8233-34d685f0aedf/deparis-initial-185.jpeg",
+      "original": {
+        "bytes": 26802,
+        "human": "26.2 KB",
+        "width": 682,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 13390,
+        "human": "13.1 KB",
+        "width": 682,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 13412,
+      "saved_percent": 50.04,
+      "new_storage_path": "b426874d-8754-4592-8233-34d685f0aedf/optimized/deparis-initial-185-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b426874d-8754-4592-8233-34d685f0aedf/optimized/deparis-initial-185-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5cb45129-0660-4116-9d4d-76d68d799d3d",
+      "product_id": "386fb138-8347-4ea6-b376-7542684e5595",
+      "product_name": "Lampara de Mesa - 38500",
+      "is_main": true,
+      "old_storage_path": "386fb138-8347-4ea6-b376-7542684e5595/deparis-initial-184.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/386fb138-8347-4ea6-b376-7542684e5595/deparis-initial-184.jpeg",
+      "original": {
+        "bytes": 97200,
+        "human": "94.9 KB",
+        "width": 639,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 92704,
+        "human": "90.5 KB",
+        "width": 639,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 4496,
+      "saved_percent": 4.63,
+      "new_storage_path": "386fb138-8347-4ea6-b376-7542684e5595/optimized/deparis-initial-184-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/386fb138-8347-4ea6-b376-7542684e5595/optimized/deparis-initial-184-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "3ec30d44-71c7-4d8d-b173-bae4f6cca072",
+      "product_id": "5b4e2b89-8419-4a23-a154-9514a72360b0",
+      "product_name": "Audifonos-gris",
+      "is_main": true,
+      "old_storage_path": "5b4e2b89-8419-4a23-a154-9514a72360b0/deparis-initial-13.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5b4e2b89-8419-4a23-a154-9514a72360b0/deparis-initial-13.jpeg",
+      "original": {
+        "bytes": 62362,
+        "human": "60.9 KB",
+        "width": 1000,
+        "height": 1057,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 50838,
+        "human": "49.6 KB",
+        "width": 1000,
+        "height": 1057,
+        "format": "webp"
+      },
+      "saved_bytes": 11524,
+      "saved_percent": 18.48,
+      "new_storage_path": "5b4e2b89-8419-4a23-a154-9514a72360b0/optimized/deparis-initial-13-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5b4e2b89-8419-4a23-a154-9514a72360b0/optimized/deparis-initial-13-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "78cb5617-03b8-4dfa-b254-2aafbf71e6d6",
+      "product_id": "95a437c8-03fa-4182-bf9c-99f9a6fcc6e0",
+      "product_name": "Lampara de Mesa - 34300",
+      "is_main": true,
+      "old_storage_path": "95a437c8-03fa-4182-bf9c-99f9a6fcc6e0/deparis-initial-182.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/95a437c8-03fa-4182-bf9c-99f9a6fcc6e0/deparis-initial-182.jpeg",
+      "original": {
+        "bytes": 64739,
+        "human": "63.2 KB",
+        "width": 453,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 52512,
+        "human": "51.3 KB",
+        "width": 453,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 12227,
+      "saved_percent": 18.89,
+      "new_storage_path": "95a437c8-03fa-4182-bf9c-99f9a6fcc6e0/optimized/deparis-initial-182-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/95a437c8-03fa-4182-bf9c-99f9a6fcc6e0/optimized/deparis-initial-182-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "3bf07a5a-a8b8-4a2f-913d-cdf833c82a7f",
+      "product_id": "1f765e8a-9ddb-4947-ae97-91558bb39d24",
+      "product_name": "Chicharos Verdes partidos",
+      "is_main": true,
+      "old_storage_path": "1f765e8a-9ddb-4947-ae97-91558bb39d24/deparis-initial-46.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/1f765e8a-9ddb-4947-ae97-91558bb39d24/deparis-initial-46.jpeg",
+      "original": {
+        "bytes": 110035,
+        "human": "107.5 KB",
+        "width": 1000,
+        "height": 585,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 107764,
+        "human": "105.2 KB",
+        "width": 1000,
+        "height": 585,
+        "format": "webp"
+      },
+      "saved_bytes": 2271,
+      "saved_percent": 2.06,
+      "new_storage_path": "1f765e8a-9ddb-4947-ae97-91558bb39d24/optimized/deparis-initial-46-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/1f765e8a-9ddb-4947-ae97-91558bb39d24/optimized/deparis-initial-46-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "18ab5424-7b9d-481c-a55f-2e17c20831d2",
+      "product_id": "5e5894c7-de99-49b9-b6a5-b82ba2331623",
+      "product_name": "Galleta Pow Patrol",
+      "is_main": true,
+      "old_storage_path": "5e5894c7-de99-49b9-b6a5-b82ba2331623/deparis-initial-73.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5e5894c7-de99-49b9-b6a5-b82ba2331623/deparis-initial-73.jpeg",
+      "original": {
+        "bytes": 67831,
+        "human": "66.2 KB",
+        "width": 1000,
+        "height": 337,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 68148,
+        "human": "66.6 KB",
+        "width": 1000,
+        "height": 337,
+        "format": "webp"
+      },
+      "saved_bytes": -317,
+      "saved_percent": -0.47,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "1215c911-6378-482b-b664-b3af5b60d723",
+      "product_id": "be994c48-954b-41e9-a2de-2820de787806",
+      "product_name": "Frijoñes Negros",
+      "is_main": true,
+      "old_storage_path": "be994c48-954b-41e9-a2de-2820de787806/deparis-initial-50.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/be994c48-954b-41e9-a2de-2820de787806/deparis-initial-50.jpeg",
+      "original": {
+        "bytes": 165197,
+        "human": "161.3 KB",
+        "width": 739,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 168630,
+        "human": "164.7 KB",
+        "width": 739,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": -3433,
+      "saved_percent": -2.08,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "80932139-f5d7-4969-80f2-2b6af2c8012f",
+      "product_id": "328d31cb-3217-4766-9b4e-74035629654b",
+      "product_name": "Lata Pechuga Pollo",
+      "is_main": true,
+      "old_storage_path": "328d31cb-3217-4766-9b4e-74035629654b/deparis-initial-77.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/328d31cb-3217-4766-9b4e-74035629654b/deparis-initial-77.jpeg",
+      "original": {
+        "bytes": 92158,
+        "human": "90.0 KB",
+        "width": 1000,
+        "height": 809,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 73798,
+        "human": "72.1 KB",
+        "width": 1000,
+        "height": 809,
+        "format": "webp"
+      },
+      "saved_bytes": 18360,
+      "saved_percent": 19.92,
+      "new_storage_path": "328d31cb-3217-4766-9b4e-74035629654b/optimized/deparis-initial-77-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/328d31cb-3217-4766-9b4e-74035629654b/optimized/deparis-initial-77-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "4209539c-84dd-4f12-9bfe-4bf5d234995b",
+      "product_id": "69a2d0aa-0bb0-4470-9d6b-88a9e48be1eb",
+      "product_name": "Pasta Tomate Ada",
+      "is_main": true,
+      "old_storage_path": "69a2d0aa-0bb0-4470-9d6b-88a9e48be1eb/deparis-initial-116.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/69a2d0aa-0bb0-4470-9d6b-88a9e48be1eb/deparis-initial-116.jpeg",
+      "original": {
+        "bytes": 100338,
+        "human": "98.0 KB",
+        "width": 710,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 78640,
+        "human": "76.8 KB",
+        "width": 710,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 21698,
+      "saved_percent": 21.62,
+      "new_storage_path": "69a2d0aa-0bb0-4470-9d6b-88a9e48be1eb/optimized/deparis-initial-116-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/69a2d0aa-0bb0-4470-9d6b-88a9e48be1eb/optimized/deparis-initial-116-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "599e9790-57cf-4e37-9bf7-cbbec8292ed8",
+      "product_id": "727fd78e-8994-4de2-8a0b-6d2caa3c4ee4",
+      "product_name": "Toallitas Humedas",
+      "is_main": true,
+      "old_storage_path": "727fd78e-8994-4de2-8a0b-6d2caa3c4ee4/deparis-initial-43.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/727fd78e-8994-4de2-8a0b-6d2caa3c4ee4/deparis-initial-43.jpeg",
+      "original": {
+        "bytes": 76925,
+        "human": "75.1 KB",
+        "width": 1000,
+        "height": 630,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 63798,
+        "human": "62.3 KB",
+        "width": 1000,
+        "height": 630,
+        "format": "webp"
+      },
+      "saved_bytes": 13127,
+      "saved_percent": 17.06,
+      "new_storage_path": "727fd78e-8994-4de2-8a0b-6d2caa3c4ee4/optimized/deparis-initial-43-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/727fd78e-8994-4de2-8a0b-6d2caa3c4ee4/optimized/deparis-initial-43-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "09d839b8-ea47-4a95-9771-8e1027a7fbd6",
+      "product_id": "eaf59e0a-94f6-4392-bdf6-d22bbf486ac1",
+      "product_name": "Frijoles Blanco",
+      "is_main": true,
+      "old_storage_path": "eaf59e0a-94f6-4392-bdf6-d22bbf486ac1/deparis-initial-49.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/eaf59e0a-94f6-4392-bdf6-d22bbf486ac1/deparis-initial-49.jpeg",
+      "original": {
+        "bytes": 96407,
+        "human": "94.1 KB",
+        "width": 1000,
+        "height": 567,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 88334,
+        "human": "86.3 KB",
+        "width": 1000,
+        "height": 567,
+        "format": "webp"
+      },
+      "saved_bytes": 8073,
+      "saved_percent": 8.37,
+      "new_storage_path": "eaf59e0a-94f6-4392-bdf6-d22bbf486ac1/optimized/deparis-initial-49-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/eaf59e0a-94f6-4392-bdf6-d22bbf486ac1/optimized/deparis-initial-49-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "14b20649-acb2-47c2-a447-3aae525c81bc",
+      "product_id": "a9111dd3-77e8-42dc-89ac-b868e203b185",
+      "product_name": "Vegetales Mixtos",
+      "is_main": true,
+      "old_storage_path": "a9111dd3-77e8-42dc-89ac-b868e203b185/deparis-initial-118.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/a9111dd3-77e8-42dc-89ac-b868e203b185/deparis-initial-118.jpeg",
+      "original": {
+        "bytes": 82570,
+        "human": "80.6 KB",
+        "width": 658,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 64870,
+        "human": "63.3 KB",
+        "width": 658,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 17700,
+      "saved_percent": 21.44,
+      "new_storage_path": "a9111dd3-77e8-42dc-89ac-b868e203b185/optimized/deparis-initial-118-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/a9111dd3-77e8-42dc-89ac-b868e203b185/optimized/deparis-initial-118-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "d4144c6a-0745-4954-a407-35f874508403",
+      "product_id": "a37abf6c-708f-477f-ba82-8b3ccd5dcce7",
+      "product_name": "Jamonilla de Pollo",
+      "is_main": true,
+      "old_storage_path": "a37abf6c-708f-477f-ba82-8b3ccd5dcce7/deparis-initial-76.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/a37abf6c-708f-477f-ba82-8b3ccd5dcce7/deparis-initial-76.jpeg",
+      "original": {
+        "bytes": 118702,
+        "human": "115.9 KB",
+        "width": 699,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 120186,
+        "human": "117.4 KB",
+        "width": 699,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": -1484,
+      "saved_percent": -1.25,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "f14a7dbc-0add-4426-9092-e4bacef924ef",
+      "product_id": "abdde241-eefb-4795-b2e4-a9176223d7db",
+      "product_name": "Vino Seco",
+      "is_main": true,
+      "old_storage_path": "abdde241-eefb-4795-b2e4-a9176223d7db/deparis-initial-68.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/abdde241-eefb-4795-b2e4-a9176223d7db/deparis-initial-68.jpeg",
+      "original": {
+        "bytes": 64589,
+        "human": "63.1 KB",
+        "width": 402,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 57392,
+        "human": "56.0 KB",
+        "width": 402,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 7197,
+      "saved_percent": 11.14,
+      "new_storage_path": "abdde241-eefb-4795-b2e4-a9176223d7db/optimized/deparis-initial-68-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/abdde241-eefb-4795-b2e4-a9176223d7db/optimized/deparis-initial-68-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "7dd333e8-c7f7-47d2-aa5c-8b353555cc4d",
+      "product_id": "be31401a-b5b3-4c86-b6ea-0bbcd3d14adc",
+      "product_name": "Luncheras 3 Niveles",
+      "is_main": true,
+      "old_storage_path": "be31401a-b5b3-4c86-b6ea-0bbcd3d14adc/deparis-initial-8.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/be31401a-b5b3-4c86-b6ea-0bbcd3d14adc/deparis-initial-8.jpeg",
+      "original": {
+        "bytes": 76055,
+        "human": "74.3 KB",
+        "width": 633,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 57450,
+        "human": "56.1 KB",
+        "width": 633,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 18605,
+      "saved_percent": 24.46,
+      "new_storage_path": "be31401a-b5b3-4c86-b6ea-0bbcd3d14adc/optimized/deparis-initial-8-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/be31401a-b5b3-4c86-b6ea-0bbcd3d14adc/optimized/deparis-initial-8-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "ef6ad3ad-6538-4e9c-8bb2-124c2a1a6d97",
+      "product_id": "c048489f-313e-4ea4-9856-c752662193ac",
+      "product_name": "Lata Atun",
+      "is_main": true,
+      "old_storage_path": "c048489f-313e-4ea4-9856-c752662193ac/deparis-initial-79.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c048489f-313e-4ea4-9856-c752662193ac/deparis-initial-79.jpeg",
+      "original": {
+        "bytes": 90387,
+        "human": "88.3 KB",
+        "width": 1000,
+        "height": 784,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 72786,
+        "human": "71.1 KB",
+        "width": 1000,
+        "height": 784,
+        "format": "webp"
+      },
+      "saved_bytes": 17601,
+      "saved_percent": 19.47,
+      "new_storage_path": "c048489f-313e-4ea4-9856-c752662193ac/optimized/deparis-initial-79-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c048489f-313e-4ea4-9856-c752662193ac/optimized/deparis-initial-79-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "10cbc7ac-5132-44f6-af9b-1f11522a3b0b",
+      "product_id": "e4f3da79-fe38-4f71-b49a-3d4f1f7aa46e",
+      "product_name": "Carrito TurnOver",
+      "is_main": true,
+      "old_storage_path": "e4f3da79-fe38-4f71-b49a-3d4f1f7aa46e/deparis-initial-11.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/e4f3da79-fe38-4f71-b49a-3d4f1f7aa46e/deparis-initial-11.jpeg",
+      "original": {
+        "bytes": 138178,
+        "human": "134.9 KB",
+        "width": 835,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 124222,
+        "human": "121.3 KB",
+        "width": 835,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 13956,
+      "saved_percent": 10.1,
+      "new_storage_path": "e4f3da79-fe38-4f71-b49a-3d4f1f7aa46e/optimized/deparis-initial-11-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/e4f3da79-fe38-4f71-b49a-3d4f1f7aa46e/optimized/deparis-initial-11-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "3266b49f-38b5-4d0b-a550-cc3dce29b30a",
+      "product_id": "f86832d6-845e-4dac-ab51-81acf5725fc1",
+      "product_name": "Mostaza",
+      "is_main": true,
+      "old_storage_path": "f86832d6-845e-4dac-ab51-81acf5725fc1/deparis-initial-114.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/f86832d6-845e-4dac-ab51-81acf5725fc1/deparis-initial-114.jpeg",
+      "original": {
+        "bytes": 76089,
+        "human": "74.3 KB",
+        "width": 553,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 63400,
+        "human": "61.9 KB",
+        "width": 553,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 12689,
+      "saved_percent": 16.68,
+      "new_storage_path": "f86832d6-845e-4dac-ab51-81acf5725fc1/optimized/deparis-initial-114-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/f86832d6-845e-4dac-ab51-81acf5725fc1/optimized/deparis-initial-114-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "54a81ea5-ca31-4ccf-ad34-80bb006f6190",
+      "product_id": "10a2daa2-75fe-47e5-9cc5-82d15eb72f86",
+      "product_name": "Macarrones",
+      "is_main": true,
+      "old_storage_path": "10a2daa2-75fe-47e5-9cc5-82d15eb72f86/deparis-initial-64.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/10a2daa2-75fe-47e5-9cc5-82d15eb72f86/deparis-initial-64.jpeg",
+      "original": {
+        "bytes": 151843,
+        "human": "148.3 KB",
+        "width": 843,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 136424,
+        "human": "133.2 KB",
+        "width": 843,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 15419,
+      "saved_percent": 10.15,
+      "new_storage_path": "10a2daa2-75fe-47e5-9cc5-82d15eb72f86/optimized/deparis-initial-64-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/10a2daa2-75fe-47e5-9cc5-82d15eb72f86/optimized/deparis-initial-64-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "bd4038f5-68fe-4e8b-8439-99be7e13acf1",
+      "product_id": "9212c28f-3275-4888-9af6-1dcbcb9872a6",
+      "product_name": "Lentejas",
+      "is_main": true,
+      "old_storage_path": "9212c28f-3275-4888-9af6-1dcbcb9872a6/deparis-initial-78.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9212c28f-3275-4888-9af6-1dcbcb9872a6/deparis-initial-78.jpeg",
+      "original": {
+        "bytes": 102168,
+        "human": "99.8 KB",
+        "width": 666,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 95228,
+        "human": "93.0 KB",
+        "width": 666,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 6940,
+      "saved_percent": 6.79,
+      "new_storage_path": "9212c28f-3275-4888-9af6-1dcbcb9872a6/optimized/deparis-initial-78-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9212c28f-3275-4888-9af6-1dcbcb9872a6/optimized/deparis-initial-78-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "cbc88ec9-e72c-4f2f-9830-6a3e5fb2b075",
+      "product_id": "f974a2ea-a043-4b6d-ac09-74a5b9807628",
+      "product_name": "Lampara de Piso - 30800",
+      "is_main": true,
+      "old_storage_path": "f974a2ea-a043-4b6d-ac09-74a5b9807628/deparis-initial-177.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/f974a2ea-a043-4b6d-ac09-74a5b9807628/deparis-initial-177.jpeg",
+      "original": {
+        "bytes": 83539,
+        "human": "81.6 KB",
+        "width": 416,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 80050,
+        "human": "78.2 KB",
+        "width": 416,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 3489,
+      "saved_percent": 4.18,
+      "new_storage_path": "f974a2ea-a043-4b6d-ac09-74a5b9807628/optimized/deparis-initial-177-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/f974a2ea-a043-4b6d-ac09-74a5b9807628/optimized/deparis-initial-177-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "f5936d24-85ff-4e20-b3fa-008afbb2af4e",
+      "product_id": "4a9728ea-cecd-4684-86a0-8537407adb3f",
+      "product_name": "Harina",
+      "is_main": true,
+      "old_storage_path": "4a9728ea-cecd-4684-86a0-8537407adb3f/deparis-initial-54.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/4a9728ea-cecd-4684-86a0-8537407adb3f/deparis-initial-54.jpeg",
+      "original": {
+        "bytes": 86953,
+        "human": "84.9 KB",
+        "width": 622,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 73534,
+        "human": "71.8 KB",
+        "width": 622,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 13419,
+      "saved_percent": 15.43,
+      "new_storage_path": "4a9728ea-cecd-4684-86a0-8537407adb3f/optimized/deparis-initial-54-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/4a9728ea-cecd-4684-86a0-8537407adb3f/optimized/deparis-initial-54-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "06cf557a-93c2-44f5-8c0e-b76fbf3d3407",
+      "product_id": "103e479d-d2b7-40e4-9638-6db3623be922",
+      "product_name": "Malvavisco",
+      "is_main": true,
+      "old_storage_path": "103e479d-d2b7-40e4-9638-6db3623be922/deparis-initial-226.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/103e479d-d2b7-40e4-9638-6db3623be922/deparis-initial-226.jpeg",
+      "original": {
+        "bytes": 134978,
+        "human": "131.8 KB",
+        "width": 790,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 124430,
+        "human": "121.5 KB",
+        "width": 790,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 10548,
+      "saved_percent": 7.81,
+      "new_storage_path": "103e479d-d2b7-40e4-9638-6db3623be922/optimized/deparis-initial-226-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/103e479d-d2b7-40e4-9638-6db3623be922/optimized/deparis-initial-226-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "423c90f3-159b-445a-b0ec-850aabe38f6d",
+      "product_id": "d833336f-6433-4b23-bddf-bc4795106146",
+      "product_name": "Vasos y Sorbetes para Batidos",
+      "is_main": true,
+      "old_storage_path": "d833336f-6433-4b23-bddf-bc4795106146/0ccbdc0c-6fc6-4f02-98dc-e163ea5fc89a.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/d833336f-6433-4b23-bddf-bc4795106146/0ccbdc0c-6fc6-4f02-98dc-e163ea5fc89a.jpeg",
+      "original": {
+        "bytes": 205872,
+        "human": "201.0 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 153778,
+        "human": "150.2 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 52094,
+      "saved_percent": 25.3,
+      "new_storage_path": "d833336f-6433-4b23-bddf-bc4795106146/optimized/0ccbdc0c-6fc6-4f02-98dc-e163ea5fc89a-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/d833336f-6433-4b23-bddf-bc4795106146/optimized/0ccbdc0c-6fc6-4f02-98dc-e163ea5fc89a-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "17b86e11-88fe-4ec0-8275-7c01ec48ee6c",
+      "product_id": "c0bbb927-27a4-47c9-9342-cd14b22e581c",
+      "product_name": "Aire Acondicionado Split de Pared 9000 BTU",
+      "is_main": true,
+      "old_storage_path": "c0bbb927-27a4-47c9-9342-cd14b22e581c/c021ef46-52e3-4ed4-8c0e-45c90a159a4b.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c0bbb927-27a4-47c9-9342-cd14b22e581c/c021ef46-52e3-4ed4-8c0e-45c90a159a4b.jpeg",
+      "original": {
+        "bytes": 199208,
+        "human": "194.5 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 133912,
+        "human": "130.8 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 65296,
+      "saved_percent": 32.78,
+      "new_storage_path": "c0bbb927-27a4-47c9-9342-cd14b22e581c/optimized/c021ef46-52e3-4ed4-8c0e-45c90a159a4b-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c0bbb927-27a4-47c9-9342-cd14b22e581c/optimized/c021ef46-52e3-4ed4-8c0e-45c90a159a4b-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "3e18d798-0b05-4470-9765-231e60b465db",
+      "product_id": "098913cd-60cc-4d18-a89e-50600f95d4b2",
+      "product_name": "Ventilador de Piso 12 Pulgadas",
+      "is_main": true,
+      "old_storage_path": "098913cd-60cc-4d18-a89e-50600f95d4b2/a4511ea2-560e-4180-b25f-cc528fd606cc.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/098913cd-60cc-4d18-a89e-50600f95d4b2/a4511ea2-560e-4180-b25f-cc528fd606cc.jpeg",
+      "original": {
+        "bytes": 159154,
+        "human": "155.4 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 113058,
+        "human": "110.4 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 46096,
+      "saved_percent": 28.96,
+      "new_storage_path": "098913cd-60cc-4d18-a89e-50600f95d4b2/optimized/a4511ea2-560e-4180-b25f-cc528fd606cc-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/098913cd-60cc-4d18-a89e-50600f95d4b2/optimized/a4511ea2-560e-4180-b25f-cc528fd606cc-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "606d98f0-57ac-4f5d-92ea-674b4f3e2311",
+      "product_id": "4a8a98d3-ef09-4f93-a173-9b60646d21bc",
+      "product_name": "Congelador Horizontal 5 Pies",
+      "is_main": true,
+      "old_storage_path": "4a8a98d3-ef09-4f93-a173-9b60646d21bc/2189c20d-c465-4bdc-a01f-2292da52b14b.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/4a8a98d3-ef09-4f93-a173-9b60646d21bc/2189c20d-c465-4bdc-a01f-2292da52b14b.jpeg",
+      "original": {
+        "bytes": 198629,
+        "human": "194.0 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 135570,
+        "human": "132.4 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 63059,
+      "saved_percent": 31.75,
+      "new_storage_path": "4a8a98d3-ef09-4f93-a173-9b60646d21bc/optimized/2189c20d-c465-4bdc-a01f-2292da52b14b-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/4a8a98d3-ef09-4f93-a173-9b60646d21bc/optimized/2189c20d-c465-4bdc-a01f-2292da52b14b-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "c1d43f0d-e568-4cf8-9a93-a433d30191f9",
+      "product_id": "e238b1f5-6aca-4b3e-8422-0b3433c93da9",
+      "product_name": "Ventilador de Pie 18 Pulgadas",
+      "is_main": true,
+      "old_storage_path": "e238b1f5-6aca-4b3e-8422-0b3433c93da9/8ab2c79e-f101-4030-8da2-e962868adc69.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/e238b1f5-6aca-4b3e-8422-0b3433c93da9/8ab2c79e-f101-4030-8da2-e962868adc69.jpeg",
+      "original": {
+        "bytes": 179883,
+        "human": "175.7 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 140142,
+        "human": "136.9 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 39741,
+      "saved_percent": 22.09,
+      "new_storage_path": "e238b1f5-6aca-4b3e-8422-0b3433c93da9/optimized/8ab2c79e-f101-4030-8da2-e962868adc69-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/e238b1f5-6aca-4b3e-8422-0b3433c93da9/optimized/8ab2c79e-f101-4030-8da2-e962868adc69-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "772bc241-c341-40b3-9125-04f07e8a144b",
+      "product_id": "2bc8063d-1268-4d7b-896a-db3d4caf90ff",
+      "product_name": "Ventilador 18 Pulgadas 3 en 1",
+      "is_main": true,
+      "old_storage_path": "2bc8063d-1268-4d7b-896a-db3d4caf90ff/a2fd5bbd-d6cf-474c-882a-c95e40c6c38a.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/2bc8063d-1268-4d7b-896a-db3d4caf90ff/a2fd5bbd-d6cf-474c-882a-c95e40c6c38a.jpeg",
+      "original": {
+        "bytes": 179006,
+        "human": "174.8 KB",
+        "width": 720,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 128776,
+        "human": "125.8 KB",
+        "width": 720,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 50230,
+      "saved_percent": 28.06,
+      "new_storage_path": "2bc8063d-1268-4d7b-896a-db3d4caf90ff/optimized/a2fd5bbd-d6cf-474c-882a-c95e40c6c38a-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/2bc8063d-1268-4d7b-896a-db3d4caf90ff/optimized/a2fd5bbd-d6cf-474c-882a-c95e40c6c38a-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "83a1a3c4-b7ac-4f5c-8540-0f5ca368b46c",
+      "product_id": "024cfb38-d4e4-4bf4-b267-626fa198db99",
+      "product_name": "Casco para Moto con Visor",
+      "is_main": true,
+      "old_storage_path": "024cfb38-d4e4-4bf4-b267-626fa198db99/cf1d067c-004f-48fe-a2d5-ddcadb052d0d.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/024cfb38-d4e4-4bf4-b267-626fa198db99/cf1d067c-004f-48fe-a2d5-ddcadb052d0d.jpeg",
+      "original": {
+        "bytes": 201338,
+        "human": "196.6 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 137890,
+        "human": "134.7 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 63448,
+      "saved_percent": 31.51,
+      "new_storage_path": "024cfb38-d4e4-4bf4-b267-626fa198db99/optimized/cf1d067c-004f-48fe-a2d5-ddcadb052d0d-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/024cfb38-d4e4-4bf4-b267-626fa198db99/optimized/cf1d067c-004f-48fe-a2d5-ddcadb052d0d-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "95386304-f32d-4a8b-99be-1c072808a2bc",
+      "product_id": "9410a7aa-cebd-4ad4-b1e6-fda1fe175d93",
+      "product_name": "Campana Extractora de Cocina",
+      "is_main": true,
+      "old_storage_path": "9410a7aa-cebd-4ad4-b1e6-fda1fe175d93/5fa7f8a7-429d-4cf6-8764-5a00c6fea14b.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9410a7aa-cebd-4ad4-b1e6-fda1fe175d93/5fa7f8a7-429d-4cf6-8764-5a00c6fea14b.jpeg",
+      "original": {
+        "bytes": 181236,
+        "human": "177.0 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 122400,
+        "human": "119.5 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 58836,
+      "saved_percent": 32.46,
+      "new_storage_path": "9410a7aa-cebd-4ad4-b1e6-fda1fe175d93/optimized/5fa7f8a7-429d-4cf6-8764-5a00c6fea14b-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9410a7aa-cebd-4ad4-b1e6-fda1fe175d93/optimized/5fa7f8a7-429d-4cf6-8764-5a00c6fea14b-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "2f6a5dba-1543-4ff2-b36e-66a4569e2e4d",
+      "product_id": "b4d81e9e-c430-42aa-bc74-5c183fd3e406",
+      "product_name": "Aire Acondicionado Split de Pared 12000 BTU",
+      "is_main": true,
+      "old_storage_path": "b4d81e9e-c430-42aa-bc74-5c183fd3e406/91d266eb-1f44-4b6f-bf2b-096b578ac845.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b4d81e9e-c430-42aa-bc74-5c183fd3e406/91d266eb-1f44-4b6f-bf2b-096b578ac845.jpeg",
+      "original": {
+        "bytes": 181569,
+        "human": "177.3 KB",
+        "width": 720,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 124364,
+        "human": "121.4 KB",
+        "width": 720,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 57205,
+      "saved_percent": 31.51,
+      "new_storage_path": "b4d81e9e-c430-42aa-bc74-5c183fd3e406/optimized/91d266eb-1f44-4b6f-bf2b-096b578ac845-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b4d81e9e-c430-42aa-bc74-5c183fd3e406/optimized/91d266eb-1f44-4b6f-bf2b-096b578ac845-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "de9dc54a-8c1a-4985-a77b-b1a5daaab7bd",
+      "product_id": "d695c936-ca99-435d-a027-5534bf63c64d",
+      "product_name": "Lampara de Piso - 36400",
+      "is_main": true,
+      "old_storage_path": "d695c936-ca99-435d-a027-5534bf63c64d/deparis-initial-176.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/d695c936-ca99-435d-a027-5534bf63c64d/deparis-initial-176.jpeg",
+      "original": {
+        "bytes": 97928,
+        "human": "95.6 KB",
+        "width": 442,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 100526,
+        "human": "98.2 KB",
+        "width": 442,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": -2598,
+      "saved_percent": -2.65,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "118c8bdd-2443-4255-a071-c1e6fc364651",
+      "product_id": "21198ccb-85bd-467d-be4f-fcb848fc8e68",
+      "product_name": "Leche Condensada",
+      "is_main": true,
+      "old_storage_path": "21198ccb-85bd-467d-be4f-fcb848fc8e68/deparis-initial-92.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/21198ccb-85bd-467d-be4f-fcb848fc8e68/deparis-initial-92.jpeg",
+      "original": {
+        "bytes": 108092,
+        "human": "105.6 KB",
+        "width": 837,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 88638,
+        "human": "86.6 KB",
+        "width": 837,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 19454,
+      "saved_percent": 18,
+      "new_storage_path": "21198ccb-85bd-467d-be4f-fcb848fc8e68/optimized/deparis-initial-92-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/21198ccb-85bd-467d-be4f-fcb848fc8e68/optimized/deparis-initial-92-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "cb9de9bf-65f4-497f-88d8-292c2a12963b",
+      "product_id": "9d6c263a-0d6c-493e-ac2b-fd938696118a",
+      "product_name": "Cafe Pilon",
+      "is_main": true,
+      "old_storage_path": "9d6c263a-0d6c-493e-ac2b-fd938696118a/deparis-initial-102.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9d6c263a-0d6c-493e-ac2b-fd938696118a/deparis-initial-102.jpeg",
+      "original": {
+        "bytes": 104341,
+        "human": "101.9 KB",
+        "width": 1000,
+        "height": 621,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 94250,
+        "human": "92.0 KB",
+        "width": 1000,
+        "height": 621,
+        "format": "webp"
+      },
+      "saved_bytes": 10091,
+      "saved_percent": 9.67,
+      "new_storage_path": "9d6c263a-0d6c-493e-ac2b-fd938696118a/optimized/deparis-initial-102-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9d6c263a-0d6c-493e-ac2b-fd938696118a/optimized/deparis-initial-102-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "f5bba224-a2e4-464c-8433-35e51e9d9276",
+      "product_id": "e27f26c0-a975-4fe2-9a70-2bdd9ade8b6a",
+      "product_name": "Pasta Bocadito",
+      "is_main": true,
+      "old_storage_path": "e27f26c0-a975-4fe2-9a70-2bdd9ade8b6a/deparis-initial-112.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/e27f26c0-a975-4fe2-9a70-2bdd9ade8b6a/deparis-initial-112.jpeg",
+      "original": {
+        "bytes": 89983,
+        "human": "87.9 KB",
+        "width": 594,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 75800,
+        "human": "74.0 KB",
+        "width": 594,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 14183,
+      "saved_percent": 15.76,
+      "new_storage_path": "e27f26c0-a975-4fe2-9a70-2bdd9ade8b6a/optimized/deparis-initial-112-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/e27f26c0-a975-4fe2-9a70-2bdd9ade8b6a/optimized/deparis-initial-112-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "493504ee-f6a6-4ea9-89aa-4e7f7945ead6",
+      "product_id": "19242870-8e76-4005-92f0-6f942f81a76b",
+      "product_name": "Sopas",
+      "is_main": true,
+      "old_storage_path": "19242870-8e76-4005-92f0-6f942f81a76b/deparis-initial-133.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/19242870-8e76-4005-92f0-6f942f81a76b/deparis-initial-133.jpeg",
+      "original": {
+        "bytes": 129513,
+        "human": "126.5 KB",
+        "width": 1000,
+        "height": 687,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 130572,
+        "human": "127.5 KB",
+        "width": 1000,
+        "height": 687,
+        "format": "webp"
+      },
+      "saved_bytes": -1059,
+      "saved_percent": -0.82,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "bf89db8c-034c-44d5-8237-23dfd66293dc",
+      "product_id": "b6bdc4ba-5781-425f-a558-956cdb0aae3f",
+      "product_name": "Crema Xtree Care",
+      "is_main": true,
+      "old_storage_path": "b6bdc4ba-5781-425f-a558-956cdb0aae3f/deparis-initial-203.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b6bdc4ba-5781-425f-a558-956cdb0aae3f/deparis-initial-203.jpeg",
+      "original": {
+        "bytes": 42981,
+        "human": "42.0 KB",
+        "width": 600,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 31250,
+        "human": "30.5 KB",
+        "width": 600,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 11731,
+      "saved_percent": 27.29,
+      "new_storage_path": "b6bdc4ba-5781-425f-a558-956cdb0aae3f/optimized/deparis-initial-203-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b6bdc4ba-5781-425f-a558-956cdb0aae3f/optimized/deparis-initial-203-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "d9a5734f-6ac3-43ad-865c-09bcf7d260ab",
+      "product_id": "9cf6e286-fc97-43de-b77c-7b9a1842b7db",
+      "product_name": "Lampara de Mesa - 25000",
+      "is_main": true,
+      "old_storage_path": "9cf6e286-fc97-43de-b77c-7b9a1842b7db/deparis-initial-187.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9cf6e286-fc97-43de-b77c-7b9a1842b7db/deparis-initial-187.jpeg",
+      "original": {
+        "bytes": 59270,
+        "human": "57.9 KB",
+        "width": 486,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 51704,
+        "human": "50.5 KB",
+        "width": 486,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 7566,
+      "saved_percent": 12.77,
+      "new_storage_path": "9cf6e286-fc97-43de-b77c-7b9a1842b7db/optimized/deparis-initial-187-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9cf6e286-fc97-43de-b77c-7b9a1842b7db/optimized/deparis-initial-187-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5a4f22ac-1447-4bc8-94d2-b7328e8b816f",
+      "product_id": "8d9bdde4-06b5-4b60-b993-9932e8f5e701",
+      "product_name": "Ketchut",
+      "is_main": true,
+      "old_storage_path": "8d9bdde4-06b5-4b60-b993-9932e8f5e701/deparis-initial-117.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/8d9bdde4-06b5-4b60-b993-9932e8f5e701/deparis-initial-117.jpeg",
+      "original": {
+        "bytes": 76234,
+        "human": "74.4 KB",
+        "width": 533,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 63282,
+        "human": "61.8 KB",
+        "width": 533,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 12952,
+      "saved_percent": 16.99,
+      "new_storage_path": "8d9bdde4-06b5-4b60-b993-9932e8f5e701/optimized/deparis-initial-117-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/8d9bdde4-06b5-4b60-b993-9932e8f5e701/optimized/deparis-initial-117-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "f1912770-7827-4756-b7f0-28e22e60f4f4",
+      "product_id": "53164eb1-1133-4fd0-99e7-b8f075e47ba3",
+      "product_name": "Cafe El Dorado",
+      "is_main": true,
+      "old_storage_path": "53164eb1-1133-4fd0-99e7-b8f075e47ba3/deparis-initial-103.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/53164eb1-1133-4fd0-99e7-b8f075e47ba3/deparis-initial-103.jpeg",
+      "original": {
+        "bytes": 73316,
+        "human": "71.6 KB",
+        "width": 1000,
+        "height": 590,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 54628,
+        "human": "53.3 KB",
+        "width": 1000,
+        "height": 590,
+        "format": "webp"
+      },
+      "saved_bytes": 18688,
+      "saved_percent": 25.49,
+      "new_storage_path": "53164eb1-1133-4fd0-99e7-b8f075e47ba3/optimized/deparis-initial-103-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/53164eb1-1133-4fd0-99e7-b8f075e47ba3/optimized/deparis-initial-103-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "bc505652-e125-4bac-aa75-3ad06025fcd4",
+      "product_id": "b250eb4f-7486-4ce2-9fa0-3e01ea6b7007",
+      "product_name": "Avena",
+      "is_main": true,
+      "old_storage_path": "b250eb4f-7486-4ce2-9fa0-3e01ea6b7007/deparis-initial-89.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b250eb4f-7486-4ce2-9fa0-3e01ea6b7007/deparis-initial-89.jpeg",
+      "original": {
+        "bytes": 124761,
+        "human": "121.8 KB",
+        "width": 1000,
+        "height": 604,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 127370,
+        "human": "124.4 KB",
+        "width": 1000,
+        "height": 604,
+        "format": "webp"
+      },
+      "saved_bytes": -2609,
+      "saved_percent": -2.09,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "bdd5f931-2126-40f6-89a2-15100275a9e1",
+      "product_id": "86916c9d-3bb8-466d-a969-fc23b96e200f",
+      "product_name": "Mayoneza",
+      "is_main": true,
+      "old_storage_path": "86916c9d-3bb8-466d-a969-fc23b96e200f/deparis-initial-111.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/86916c9d-3bb8-466d-a969-fc23b96e200f/deparis-initial-111.jpeg",
+      "original": {
+        "bytes": 68319,
+        "human": "66.7 KB",
+        "width": 572,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 53584,
+        "human": "52.3 KB",
+        "width": 572,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 14735,
+      "saved_percent": 21.57,
+      "new_storage_path": "86916c9d-3bb8-466d-a969-fc23b96e200f/optimized/deparis-initial-111-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/86916c9d-3bb8-466d-a969-fc23b96e200f/optimized/deparis-initial-111-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "9c6d8ed2-ba14-4ed6-bbd7-62fc7b80113e",
+      "product_id": "9e4a1c9e-32bd-44a7-abb0-3e33e0b8ccd3",
+      "product_name": "Cafe La Carreta",
+      "is_main": true,
+      "old_storage_path": "9e4a1c9e-32bd-44a7-abb0-3e33e0b8ccd3/deparis-initial-108.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9e4a1c9e-32bd-44a7-abb0-3e33e0b8ccd3/deparis-initial-108.jpeg",
+      "original": {
+        "bytes": 97318,
+        "human": "95.0 KB",
+        "width": 1000,
+        "height": 589,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 88156,
+        "human": "86.1 KB",
+        "width": 1000,
+        "height": 589,
+        "format": "webp"
+      },
+      "saved_bytes": 9162,
+      "saved_percent": 9.41,
+      "new_storage_path": "9e4a1c9e-32bd-44a7-abb0-3e33e0b8ccd3/optimized/deparis-initial-108-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9e4a1c9e-32bd-44a7-abb0-3e33e0b8ccd3/optimized/deparis-initial-108-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "01a25a7d-8c3c-408e-8ac5-8bdcfa69149d",
+      "product_id": "90c24168-0093-40cf-abda-5e18ece50e1e",
+      "product_name": "Cafe Express",
+      "is_main": true,
+      "old_storage_path": "90c24168-0093-40cf-abda-5e18ece50e1e/deparis-initial-105.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/90c24168-0093-40cf-abda-5e18ece50e1e/deparis-initial-105.jpeg",
+      "original": {
+        "bytes": 99249,
+        "human": "96.9 KB",
+        "width": 1000,
+        "height": 531,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 89024,
+        "human": "86.9 KB",
+        "width": 1000,
+        "height": 531,
+        "format": "webp"
+      },
+      "saved_bytes": 10225,
+      "saved_percent": 10.3,
+      "new_storage_path": "90c24168-0093-40cf-abda-5e18ece50e1e/optimized/deparis-initial-105-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/90c24168-0093-40cf-abda-5e18ece50e1e/optimized/deparis-initial-105-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "f956f351-a4b3-4a91-9b4e-c064d02ad8a6",
+      "product_id": "532b7d19-1775-4c22-98cb-1a8ecf74932e",
+      "product_name": "Lampara de Mesa - 43700",
+      "is_main": true,
+      "old_storage_path": "532b7d19-1775-4c22-98cb-1a8ecf74932e/deparis-initial-183.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/532b7d19-1775-4c22-98cb-1a8ecf74932e/deparis-initial-183.jpeg",
+      "original": {
+        "bytes": 71618,
+        "human": "69.9 KB",
+        "width": 604,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 51380,
+        "human": "50.2 KB",
+        "width": 604,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 20238,
+      "saved_percent": 28.26,
+      "new_storage_path": "532b7d19-1775-4c22-98cb-1a8ecf74932e/optimized/deparis-initial-183-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/532b7d19-1775-4c22-98cb-1a8ecf74932e/optimized/deparis-initial-183-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "6061e8a5-147e-40ab-a732-27df52d885dc",
+      "product_id": "2ef10e39-d34b-4e9a-9dca-8d4f3e5ba020",
+      "product_name": "Salsa Soja",
+      "is_main": true,
+      "old_storage_path": "2ef10e39-d34b-4e9a-9dca-8d4f3e5ba020/deparis-initial-113.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/2ef10e39-d34b-4e9a-9dca-8d4f3e5ba020/deparis-initial-113.jpeg",
+      "original": {
+        "bytes": 44601,
+        "human": "43.6 KB",
+        "width": 379,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 34146,
+        "human": "33.3 KB",
+        "width": 379,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 10455,
+      "saved_percent": 23.44,
+      "new_storage_path": "2ef10e39-d34b-4e9a-9dca-8d4f3e5ba020/optimized/deparis-initial-113-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/2ef10e39-d34b-4e9a-9dca-8d4f3e5ba020/optimized/deparis-initial-113-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "7a56ced6-ca51-41f0-9934-1f14fe4a75d5",
+      "product_id": "f9101ec9-6522-4302-9218-ef28f89ef83a",
+      "product_name": "Malta Guajira",
+      "is_main": true,
+      "old_storage_path": "f9101ec9-6522-4302-9218-ef28f89ef83a/deparis-initial-123.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/f9101ec9-6522-4302-9218-ef28f89ef83a/deparis-initial-123.jpeg",
+      "original": {
+        "bytes": 60817,
+        "human": "59.4 KB",
+        "width": 336,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 58910,
+        "human": "57.5 KB",
+        "width": 336,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 1907,
+      "saved_percent": 3.14,
+      "new_storage_path": "f9101ec9-6522-4302-9218-ef28f89ef83a/optimized/deparis-initial-123-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/f9101ec9-6522-4302-9218-ef28f89ef83a/optimized/deparis-initial-123-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "92e5a8b1-9a46-4fed-92c9-c228f39873dc",
+      "product_id": "3fc21a0d-0fdd-4873-ba6f-96d34b75e85b",
+      "product_name": "Caffe Mate",
+      "is_main": true,
+      "old_storage_path": "3fc21a0d-0fdd-4873-ba6f-96d34b75e85b/deparis-initial-109.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/3fc21a0d-0fdd-4873-ba6f-96d34b75e85b/deparis-initial-109.jpeg",
+      "original": {
+        "bytes": 77822,
+        "human": "76.0 KB",
+        "width": 548,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 65698,
+        "human": "64.2 KB",
+        "width": 548,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 12124,
+      "saved_percent": 15.58,
+      "new_storage_path": "3fc21a0d-0fdd-4873-ba6f-96d34b75e85b/optimized/deparis-initial-109-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/3fc21a0d-0fdd-4873-ba6f-96d34b75e85b/optimized/deparis-initial-109-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "e5119a8e-2220-4a35-93a9-a0f31ee0b3a4",
+      "product_id": "434f6ce9-41f2-4db5-a3b7-a43f5a43db87",
+      "product_name": "Olla Frijolera",
+      "is_main": true,
+      "old_storage_path": "434f6ce9-41f2-4db5-a3b7-a43f5a43db87/deparis-initial-162.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/434f6ce9-41f2-4db5-a3b7-a43f5a43db87/deparis-initial-162.jpeg",
+      "original": {
+        "bytes": 128911,
+        "human": "125.9 KB",
+        "width": 941,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 113010,
+        "human": "110.4 KB",
+        "width": 941,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 15901,
+      "saved_percent": 12.33,
+      "new_storage_path": "434f6ce9-41f2-4db5-a3b7-a43f5a43db87/optimized/deparis-initial-162-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/434f6ce9-41f2-4db5-a3b7-a43f5a43db87/optimized/deparis-initial-162-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "aa5af873-72b1-43d7-ae2a-a2a0cbd9c3e4",
+      "product_id": "07710d2a-342d-48ec-b2bb-8f4cab721b46",
+      "product_name": "Lampara de Techo",
+      "is_main": true,
+      "old_storage_path": "07710d2a-342d-48ec-b2bb-8f4cab721b46/deparis-initial-175.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/07710d2a-342d-48ec-b2bb-8f4cab721b46/deparis-initial-175.jpeg",
+      "original": {
+        "bytes": 171404,
+        "human": "167.4 KB",
+        "width": 1000,
+        "height": 953,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 158206,
+        "human": "154.5 KB",
+        "width": 1000,
+        "height": 953,
+        "format": "webp"
+      },
+      "saved_bytes": 13198,
+      "saved_percent": 7.7,
+      "new_storage_path": "07710d2a-342d-48ec-b2bb-8f4cab721b46/optimized/deparis-initial-175-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/07710d2a-342d-48ec-b2bb-8f4cab721b46/optimized/deparis-initial-175-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "f206474a-4b40-46f3-aebf-7f25e0ea86ea",
+      "product_id": "026f10e7-5442-46ff-aca0-911c57c75d1c",
+      "product_name": "Olla Arrocera",
+      "is_main": true,
+      "old_storage_path": "026f10e7-5442-46ff-aca0-911c57c75d1c/deparis-initial-161.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/026f10e7-5442-46ff-aca0-911c57c75d1c/deparis-initial-161.jpeg",
+      "original": {
+        "bytes": 42705,
+        "human": "41.7 KB",
+        "width": 1000,
+        "height": 1000,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 21508,
+        "human": "21.0 KB",
+        "width": 1000,
+        "height": 1000,
+        "format": "webp"
+      },
+      "saved_bytes": 21197,
+      "saved_percent": 49.64,
+      "new_storage_path": "026f10e7-5442-46ff-aca0-911c57c75d1c/optimized/deparis-initial-161-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/026f10e7-5442-46ff-aca0-911c57c75d1c/optimized/deparis-initial-161-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "dc53d81e-9ab2-4493-abe0-17643baab647",
+      "product_id": "5b23f87b-e0d3-42d6-bd8e-c4894299adca",
+      "product_name": "Leche entera",
+      "is_main": true,
+      "old_storage_path": "5b23f87b-e0d3-42d6-bd8e-c4894299adca/deparis-initial-94.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5b23f87b-e0d3-42d6-bd8e-c4894299adca/deparis-initial-94.jpeg",
+      "original": {
+        "bytes": 84552,
+        "human": "82.6 KB",
+        "width": 822,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 55866,
+        "human": "54.6 KB",
+        "width": 822,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 28686,
+      "saved_percent": 33.93,
+      "new_storage_path": "5b23f87b-e0d3-42d6-bd8e-c4894299adca/optimized/deparis-initial-94-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/5b23f87b-e0d3-42d6-bd8e-c4894299adca/optimized/deparis-initial-94-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "5ef5b1b4-9e2f-4fda-9abf-04c16b747887",
+      "product_id": "ee6d95dd-27f2-457b-81e1-f998b43740fa",
+      "product_name": "Cafe Sello Rojo",
+      "is_main": true,
+      "old_storage_path": "ee6d95dd-27f2-457b-81e1-f998b43740fa/deparis-initial-106.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/ee6d95dd-27f2-457b-81e1-f998b43740fa/deparis-initial-106.jpeg",
+      "original": {
+        "bytes": 60948,
+        "human": "59.5 KB",
+        "width": 1000,
+        "height": 661,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 47226,
+        "human": "46.1 KB",
+        "width": 1000,
+        "height": 661,
+        "format": "webp"
+      },
+      "saved_bytes": 13722,
+      "saved_percent": 22.51,
+      "new_storage_path": "ee6d95dd-27f2-457b-81e1-f998b43740fa/optimized/deparis-initial-106-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/ee6d95dd-27f2-457b-81e1-f998b43740fa/optimized/deparis-initial-106-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "3886b04d-f36a-4dbe-a930-75864c70882f",
+      "product_id": "b4f48769-d8dd-434a-97cd-ab7cb0544203",
+      "product_name": "Congelador Horizontal 7 Pies",
+      "is_main": true,
+      "old_storage_path": "b4f48769-d8dd-434a-97cd-ab7cb0544203/9aaa7dcc-a9fd-4429-b253-b1874e08c2a7.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b4f48769-d8dd-434a-97cd-ab7cb0544203/9aaa7dcc-a9fd-4429-b253-b1874e08c2a7.jpeg",
+      "original": {
+        "bytes": 196722,
+        "human": "192.1 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 133862,
+        "human": "130.7 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 62860,
+      "saved_percent": 31.95,
+      "new_storage_path": "b4f48769-d8dd-434a-97cd-ab7cb0544203/optimized/9aaa7dcc-a9fd-4429-b253-b1874e08c2a7-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/b4f48769-d8dd-434a-97cd-ab7cb0544203/optimized/9aaa7dcc-a9fd-4429-b253-b1874e08c2a7-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "721c38ad-42eb-4d5c-abe8-6c0d7e1e365e",
+      "product_id": "d8abc12e-da07-4ed3-a344-170dff849ffe",
+      "product_name": "Calentador de Agua Eléctrico 40L",
+      "is_main": true,
+      "old_storage_path": "d8abc12e-da07-4ed3-a344-170dff849ffe/899ebe22-1178-4b8d-856d-6ab48a5d74d7.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/d8abc12e-da07-4ed3-a344-170dff849ffe/899ebe22-1178-4b8d-856d-6ab48a5d74d7.jpeg",
+      "original": {
+        "bytes": 175020,
+        "human": "170.9 KB",
+        "width": 720,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 117424,
+        "human": "114.7 KB",
+        "width": 720,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 57596,
+      "saved_percent": 32.91,
+      "new_storage_path": "d8abc12e-da07-4ed3-a344-170dff849ffe/optimized/899ebe22-1178-4b8d-856d-6ab48a5d74d7-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/d8abc12e-da07-4ed3-a344-170dff849ffe/optimized/899ebe22-1178-4b8d-856d-6ab48a5d74d7-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "bd5a84ab-9a1b-4d1b-bb77-dee3821defc5",
+      "product_id": "860c7032-c0eb-454a-872d-64d34a62d718",
+      "product_name": "Máquina de Hielo Industrial 160KG/24H",
+      "is_main": true,
+      "old_storage_path": "860c7032-c0eb-454a-872d-64d34a62d718/24910e53-a481-4215-a762-e0e3f03485c1.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/860c7032-c0eb-454a-872d-64d34a62d718/24910e53-a481-4215-a762-e0e3f03485c1.jpeg",
+      "original": {
+        "bytes": 207460,
+        "human": "202.6 KB",
+        "width": 884,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 158380,
+        "human": "154.7 KB",
+        "width": 884,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 49080,
+      "saved_percent": 23.66,
+      "new_storage_path": "860c7032-c0eb-454a-872d-64d34a62d718/optimized/24910e53-a481-4215-a762-e0e3f03485c1-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/860c7032-c0eb-454a-872d-64d34a62d718/optimized/24910e53-a481-4215-a762-e0e3f03485c1-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "9594fd2e-62d7-4bad-b7b8-992142d3543b",
+      "product_id": "305f04cc-01bd-43a0-b469-7ae5692f0287",
+      "product_name": "Set de Calabaza 2 en 1",
+      "is_main": true,
+      "old_storage_path": "305f04cc-01bd-43a0-b469-7ae5692f0287/ddd80a53-eaff-429e-987a-d6d370d1c74c.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/305f04cc-01bd-43a0-b469-7ae5692f0287/ddd80a53-eaff-429e-987a-d6d370d1c74c.jpeg",
+      "original": {
+        "bytes": 202865,
+        "human": "198.1 KB",
+        "width": 932,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 132418,
+        "human": "129.3 KB",
+        "width": 932,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 70447,
+      "saved_percent": 34.73,
+      "new_storage_path": "305f04cc-01bd-43a0-b469-7ae5692f0287/optimized/ddd80a53-eaff-429e-987a-d6d370d1c74c-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/305f04cc-01bd-43a0-b469-7ae5692f0287/optimized/ddd80a53-eaff-429e-987a-d6d370d1c74c-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "0b97e30a-26b0-48ca-b25a-0e1908d8d372",
+      "product_id": "cb53335b-6fae-49fd-a169-53f3d65b7728",
+      "product_name": "Audífonos Inalámbricos Qinghan",
+      "is_main": true,
+      "old_storage_path": "cb53335b-6fae-49fd-a169-53f3d65b7728/10bd770e-3c4e-4189-abf8-dff572b84f80.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/cb53335b-6fae-49fd-a169-53f3d65b7728/10bd770e-3c4e-4189-abf8-dff572b84f80.jpeg",
+      "original": {
+        "bytes": 167400,
+        "human": "163.5 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 115284,
+        "human": "112.6 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 52116,
+      "saved_percent": 31.13,
+      "new_storage_path": "cb53335b-6fae-49fd-a169-53f3d65b7728/optimized/10bd770e-3c4e-4189-abf8-dff572b84f80-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/cb53335b-6fae-49fd-a169-53f3d65b7728/optimized/10bd770e-3c4e-4189-abf8-dff572b84f80-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "98c13bd2-de60-49e3-8892-303c109b72a2",
+      "product_id": "2d9b6403-1ae2-47b7-bd6f-4d8a2cb162ad",
+      "product_name": "Juego de Sartenes 3 Piezas",
+      "is_main": true,
+      "old_storage_path": "2d9b6403-1ae2-47b7-bd6f-4d8a2cb162ad/523cf838-5de2-4a40-8064-36e5a18e97bc.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/2d9b6403-1ae2-47b7-bd6f-4d8a2cb162ad/523cf838-5de2-4a40-8064-36e5a18e97bc.jpeg",
+      "original": {
+        "bytes": 157182,
+        "human": "153.5 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 110782,
+        "human": "108.2 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 46400,
+      "saved_percent": 29.52,
+      "new_storage_path": "2d9b6403-1ae2-47b7-bd6f-4d8a2cb162ad/optimized/523cf838-5de2-4a40-8064-36e5a18e97bc-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/2d9b6403-1ae2-47b7-bd6f-4d8a2cb162ad/optimized/523cf838-5de2-4a40-8064-36e5a18e97bc-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "cb27bd9d-c59f-4c1c-9d61-f7b42dc6908f",
+      "product_id": "9c105312-38ee-4fe6-9926-a0b0ca74924b",
+      "product_name": "Nylon Retráctil Industrial",
+      "is_main": true,
+      "old_storage_path": "9c105312-38ee-4fe6-9926-a0b0ca74924b/8b056a75-17ac-40c1-a1bc-95febfcbfed4.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9c105312-38ee-4fe6-9926-a0b0ca74924b/8b056a75-17ac-40c1-a1bc-95febfcbfed4.jpeg",
+      "original": {
+        "bytes": 168430,
+        "human": "164.5 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 117844,
+        "human": "115.1 KB",
+        "width": 810,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 50586,
+      "saved_percent": 30.03,
+      "new_storage_path": "9c105312-38ee-4fe6-9926-a0b0ca74924b/optimized/8b056a75-17ac-40c1-a1bc-95febfcbfed4-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9c105312-38ee-4fe6-9926-a0b0ca74924b/optimized/8b056a75-17ac-40c1-a1bc-95febfcbfed4-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "3f9db320-72f1-49c0-9bbe-e11b18011429",
+      "product_id": "78a5d576-b208-4fd4-82f9-5ccb36eaf440",
+      "product_name": "Lampara de Piso - 44100",
+      "is_main": true,
+      "old_storage_path": "78a5d576-b208-4fd4-82f9-5ccb36eaf440/deparis-initial-179.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/78a5d576-b208-4fd4-82f9-5ccb36eaf440/deparis-initial-179.jpeg",
+      "original": {
+        "bytes": 97391,
+        "human": "95.1 KB",
+        "width": 438,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 99810,
+        "human": "97.5 KB",
+        "width": 438,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": -2419,
+      "saved_percent": -2.48,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "820c240d-f5a6-45d4-9cae-837039f25728",
+      "product_id": "7c409856-174d-4c8d-9a8e-7c2352b2a0de",
+      "product_name": "Cookies Marilan",
+      "is_main": true,
+      "old_storage_path": "7c409856-174d-4c8d-9a8e-7c2352b2a0de/deparis-initial-219.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/7c409856-174d-4c8d-9a8e-7c2352b2a0de/deparis-initial-219.jpeg",
+      "original": {
+        "bytes": 72341,
+        "human": "70.6 KB",
+        "width": 1000,
+        "height": 403,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 70902,
+        "human": "69.2 KB",
+        "width": 1000,
+        "height": 403,
+        "format": "webp"
+      },
+      "saved_bytes": 1439,
+      "saved_percent": 1.99,
+      "new_storage_path": "7c409856-174d-4c8d-9a8e-7c2352b2a0de/optimized/deparis-initial-219-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/7c409856-174d-4c8d-9a8e-7c2352b2a0de/optimized/deparis-initial-219-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "cc90dce9-a196-4082-8b4c-f4042a413b62",
+      "product_id": "c07ced06-fc01-4632-9073-13ae22eccdca",
+      "product_name": "Galletas Kreme",
+      "is_main": true,
+      "old_storage_path": "c07ced06-fc01-4632-9073-13ae22eccdca/deparis-initial-218.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c07ced06-fc01-4632-9073-13ae22eccdca/deparis-initial-218.jpeg",
+      "original": {
+        "bytes": 65008,
+        "human": "63.5 KB",
+        "width": 1000,
+        "height": 375,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 62610,
+        "human": "61.1 KB",
+        "width": 1000,
+        "height": 375,
+        "format": "webp"
+      },
+      "saved_bytes": 2398,
+      "saved_percent": 3.69,
+      "new_storage_path": "c07ced06-fc01-4632-9073-13ae22eccdca/optimized/deparis-initial-218-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/c07ced06-fc01-4632-9073-13ae22eccdca/optimized/deparis-initial-218-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "bc14d81f-c4aa-4b7b-833f-e8cd7149cd00",
+      "product_id": "a6871259-e844-4b21-b384-ffa1bd633541",
+      "product_name": "Pqt Caramelos Toffee",
+      "is_main": true,
+      "old_storage_path": "a6871259-e844-4b21-b384-ffa1bd633541/deparis-initial-225.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/a6871259-e844-4b21-b384-ffa1bd633541/deparis-initial-225.jpeg",
+      "original": {
+        "bytes": 186765,
+        "human": "182.4 KB",
+        "width": 914,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 186996,
+        "human": "182.6 KB",
+        "width": 914,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": -231,
+      "saved_percent": -0.12,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "cdd93d27-7460-4076-8999-fafccf23ec1c",
+      "product_id": "501f36b0-5d2a-40f7-8041-81f4d10b3bf6",
+      "product_name": "Crema Afeitar",
+      "is_main": true,
+      "old_storage_path": "501f36b0-5d2a-40f7-8041-81f4d10b3bf6/deparis-initial-207.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/501f36b0-5d2a-40f7-8041-81f4d10b3bf6/deparis-initial-207.jpeg",
+      "original": {
+        "bytes": 57539,
+        "human": "56.2 KB",
+        "width": 526,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 45976,
+        "human": "44.9 KB",
+        "width": 526,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 11563,
+      "saved_percent": 20.1,
+      "new_storage_path": "501f36b0-5d2a-40f7-8041-81f4d10b3bf6/optimized/deparis-initial-207-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/501f36b0-5d2a-40f7-8041-81f4d10b3bf6/optimized/deparis-initial-207-q82-1200x1200.webp",
+      "status": "optimized"
+    },
+    {
+      "image_id": "2301e7a9-0395-4898-9eb9-1a8412c4837c",
+      "product_id": "9c4f57bb-9eeb-4414-97c4-37be407480a5",
+      "product_name": "Rellenitas",
+      "is_main": true,
+      "old_storage_path": "9c4f57bb-9eeb-4414-97c4-37be407480a5/deparis-initial-220.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/9c4f57bb-9eeb-4414-97c4-37be407480a5/deparis-initial-220.jpeg",
+      "original": {
+        "bytes": 89074,
+        "human": "87.0 KB",
+        "width": 1000,
+        "height": 496,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 91886,
+        "human": "89.7 KB",
+        "width": 1000,
+        "height": 496,
+        "format": "webp"
+      },
+      "saved_bytes": -2812,
+      "saved_percent": -3.16,
+      "status": "skipped_no_savings"
+    },
+    {
+      "image_id": "06145189-ad8a-4ae1-8822-a5e2940a0b99",
+      "product_id": "36ff2ccb-1f37-491a-b05e-d7b14e9a7a09",
+      "product_name": "Gomita Fini",
+      "is_main": true,
+      "old_storage_path": "36ff2ccb-1f37-491a-b05e-d7b14e9a7a09/deparis-initial-223.jpeg",
+      "old_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/36ff2ccb-1f37-491a-b05e-d7b14e9a7a09/deparis-initial-223.jpeg",
+      "original": {
+        "bytes": 140984,
+        "human": "137.7 KB",
+        "width": 791,
+        "height": 1080,
+        "format": "jpeg"
+      },
+      "optimized": {
+        "bytes": 129186,
+        "human": "126.2 KB",
+        "width": 791,
+        "height": 1080,
+        "format": "webp"
+      },
+      "saved_bytes": 11798,
+      "saved_percent": 8.37,
+      "new_storage_path": "36ff2ccb-1f37-491a-b05e-d7b14e9a7a09/optimized/deparis-initial-223-q82-1200x1200.webp",
+      "new_image_url": "https://ejjftyknfqskxqhokeqd.supabase.co/storage/v1/object/public/product-images/36ff2ccb-1f37-491a-b05e-d7b14e9a7a09/optimized/deparis-initial-223-q82-1200x1200.webp",
+      "status": "optimized"
+    }
+  ],
+  "errors": [],
+  "summary": {
+    "original": "9.82 MB",
+    "optimized": "7.00 MB",
+    "estimated_saved": "1.61 MB",
+    "estimated_saved_percent": 16.41
+  }
+}

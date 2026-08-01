@@ -5,11 +5,13 @@ import type { Product } from "./types";
 type Props = {
   product: Product;
   children?: React.ReactNode;
+  editHref?: string;
 };
 
 export default function ProductCard({
   product,
   children,
+  editHref,
 }: Props) {
   /* =========================================================
      ESTADO DEL INVENTARIO
@@ -144,7 +146,7 @@ export default function ProductCard({
 
           <div className="mt-3 flex gap-2">
             <Link
-              href={`/admin/products/${product.id}/edit`}
+              href={editHref || `/admin/products/${product.id}/edit`}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium text-slate-700"
             >
               <Pencil size={15} />

@@ -10,9 +10,10 @@
    - No elimina definitivamente desde el listado.
 ========================================================= */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { EyeOff, Loader2, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
@@ -20,6 +21,7 @@ import {
   moveProductToTrashByStoreId,
   toggleProductStatus as toggleProductStatusService,
 } from "@/lib/services/products";
+import { getStoreSettings, saveStoreSettings } from "@/lib/services/settings";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -45,6 +47,9 @@ type ProductWithImages = Product & {
 };
 
 export default function AdminProductsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
 
@@ -55,15 +60,27 @@ export default function AdminProductsPage() {
   const [trashCount, setTrashCount] = useState(0);
   const [movingToTrashId, setMovingToTrashId] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [status, setStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("newest");
-  const [stockFilter, setStockFilter] = useState<"all" | "low">("all");
-  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState(() => searchParams.get("q") || "");
+  const [category, setCategory] = useState(() => searchParams.get("category") || "all");
+  const [status, setStatus] = useState(() => searchParams.get("status") || "all");
+  const [sortBy, setSortBy] = useState(() => searchParams.get("sort") || "newest");
+  const [stockFilter, setStockFilter] = useState<"all" | "low">(() =>
+    searchParams.get("stock") === "low" ? "low" : "all"
+  );
+  const [imageFilter, setImageFilter] = useState<"all" | "with" | "without">(() => {
+    const value = searchParams.get("images");
+    return value === "with" || value === "without" ? value : "all";
+  });
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page") || "1");
+    return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [hideProductsWithoutImages, setHideProductsWithoutImages] = useState(false);
+  const [savingVisibilitySetting, setSavingVisibilitySetting] = useState(false);
+  const initialFilterEffect = useRef(true);
 
   const pageSize = 8;
 
@@ -94,9 +111,14 @@ export default function AdminProductsPage() {
       return;
     }
 
-    const [{ data, error }, { count, error: countError }] = await Promise.all([
+    const [
+      { data, error },
+      { count, error: countError },
+      { data: settings, error: settingsError },
+    ] = await Promise.all([
       getAdminProductsByStoreId(activeStore.id),
       getTrashProductsCountByStoreId(activeStore.id),
+      getStoreSettings(activeStore.id),
     ]);
 
     if (error) {
@@ -110,6 +132,14 @@ export default function AdminProductsPage() {
     if (countError) {
       console.error("Error cargando contador de papelera:", countError);
     }
+
+    if (settingsError) {
+      console.error("Error cargando ajustes de visibilidad:", settingsError);
+    }
+
+    setHideProductsWithoutImages(
+      settings?.hide_products_without_images ?? false
+    );
 
     const productsWithMainImage =
       (data as ProductWithImages[])?.map((product) => {
@@ -177,8 +207,30 @@ export default function AdminProductsPage() {
     setSearch("");
     setCategory("all");
     setStockFilter("all");
+    setImageFilter("all");
     setPage(1);
     setStatus(type === "active" ? "active" : "all");
+  }
+
+  async function toggleHideProductsWithoutImages() {
+    if (!activeStore?.id || savingVisibilitySetting) return;
+
+    const nextValue = !hideProductsWithoutImages;
+    setHideProductsWithoutImages(nextValue);
+    setSavingVisibilitySetting(true);
+
+    const { error } = await saveStoreSettings(
+      { hide_products_without_images: nextValue },
+      activeStore.id
+    );
+
+    if (error) {
+      console.error("Error guardando ajuste de visibilidad:", error);
+      setHideProductsWithoutImages(!nextValue);
+      alert("No se pudo guardar la configuración.");
+    }
+
+    setSavingVisibilitySetting(false);
   }
 
   const categories = useMemo(() => {
@@ -215,6 +267,12 @@ export default function AdminProductsPage() {
       result = result.filter((p) => p.stock <= 5);
     }
 
+    if (imageFilter !== "all") {
+      result = result.filter((p) =>
+        imageFilter === "with" ? Boolean(p.image_url) : !p.image_url
+      );
+    }
+
     result.sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
       if (sortBy === "price-high") return b.price - a.price;
@@ -226,7 +284,7 @@ export default function AdminProductsPage() {
     });
 
     return result;
-  }, [products, search, category, status, sortBy, stockFilter]);
+  }, [products, search, category, status, sortBy, stockFilter, imageFilter]);
 
   const totalPages = Math.ceil(filteredProducts.length / pageSize);
 
@@ -236,13 +294,55 @@ export default function AdminProductsPage() {
   );
 
   useEffect(() => {
+    if (initialFilterEffect.current) {
+      initialFilterEffect.current = false;
+      return;
+    }
+
     setPage(1);
-  }, [search, category, status, sortBy, stockFilter]);
+  }, [search, category, status, sortBy, stockFilter, imageFilter]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    if (page > 1) params.set("page", String(page));
+    if (search.trim()) params.set("q", search.trim());
+    if (category !== "all") params.set("category", category);
+    if (status !== "all") params.set("status", status);
+    if (sortBy !== "newest") params.set("sort", sortBy);
+    if (stockFilter !== "all") params.set("stock", stockFilter);
+    if (imageFilter !== "all") params.set("images", imageFilter);
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [
+    category,
+    imageFilter,
+    page,
+    pathname,
+    router,
+    search,
+    sortBy,
+    status,
+    stockFilter,
+  ]);
+
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const returnTo = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
 
   const activeFilters =
     (category !== "all" ? 1 : 0) +
     (status !== "all" ? 1 : 0) +
-    (stockFilter === "low" ? 1 : 0);
+    (stockFilter === "low" ? 1 : 0) +
+    (imageFilter !== "all" ? 1 : 0);
 
   return (
     <main className="min-h-screen bg-slate-50 pb-[calc(7rem+env(safe-area-inset-bottom))]">
@@ -282,11 +382,49 @@ export default function AdminProductsPage() {
           setSortBy={setSortBy}
           stockFilter={stockFilter}
           setStockFilter={setStockFilter}
+          imageFilter={imageFilter}
+          setImageFilter={setImageFilter}
           categories={categories}
           showFilters={showFilters}
           setShowFilters={setShowFilters}
           activeFilters={activeFilters}
         />
+
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={toggleHideProductsWithoutImages}
+            disabled={savingVisibilitySetting}
+            className="flex w-full items-center justify-between gap-4 text-left disabled:opacity-60"
+          >
+            <span className="flex items-center gap-3">
+              <span className="rounded-xl bg-slate-100 p-2 text-slate-700">
+                <EyeOff size={19} />
+              </span>
+              <span>
+                <span className="block text-sm font-black text-slate-900">
+                  No publicar productos sin imágenes
+                </span>
+                <span className="block text-xs font-semibold text-slate-500">
+                  Los productos siguen en el administrador y aparecen automáticamente al agregarles una foto.
+                </span>
+              </span>
+            </span>
+
+            <span
+              className={`relative h-7 w-12 shrink-0 rounded-full transition ${
+                hideProductsWithoutImages ? "bg-slate-900" : "bg-slate-300"
+              }`}
+              aria-hidden="true"
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${
+                  hideProductsWithoutImages ? "left-6" : "left-1"
+                }`}
+              />
+            </span>
+          </button>
+        </div>
 
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Link
@@ -329,7 +467,13 @@ export default function AdminProductsPage() {
         ) : (
           <div className="space-y-3">
             {paginatedProducts.map((product) => (
-              <ProductCard key={product.id} product={product}>
+              <ProductCard
+                key={product.id}
+                product={product}
+                editHref={`/admin/products/${product.id}/edit?returnTo=${encodeURIComponent(
+                  returnTo
+                )}`}
+              >
                 <ProductActionsMenu
                   product={product}
                   openMenuId={openMenuId}

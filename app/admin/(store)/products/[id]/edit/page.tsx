@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
@@ -24,7 +24,13 @@ import type { Category } from "@/components/admin/settings/types";
 export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const productId = params.id as string;
+  const requestedReturnTo = searchParams.get("returnTo");
+  const returnTo =
+    requestedReturnTo?.startsWith("/admin/products")
+      ? requestedReturnTo
+      : "/admin/products";
 
   const { loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
@@ -179,7 +185,7 @@ export default function EditProductPage() {
 
       if (error) throw error;
 
-      router.push("/admin/products");
+      router.push(returnTo);
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -204,7 +210,7 @@ export default function EditProductPage() {
     <main className="min-h-screen bg-gray-50 p-4 pb-[calc(12rem+env(safe-area-inset-bottom))] md:p-6">
       <div className="mx-auto max-w-4xl">
         <Link
-          href="/admin/products"
+          href={returnTo}
           className="mb-6 inline-flex items-center gap-2 text-sm font-bold text-gray-600"
         >
           <ArrowLeft size={18} />
@@ -321,7 +327,7 @@ export default function EditProductPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-3 sm:flex sm:justify-end">
             <Link
-              href="/admin/products"
+              href={returnTo}
               className="rounded-2xl border px-5 py-3 text-center font-black text-gray-700"
             >
               Cancelar

@@ -1,0 +1,802 @@
+[
+  {
+    "source_row": 10,
+    "source_title": "05 Carrito Truck Pc   - 7500.00",
+    "image_file": "fila_010_Carrito_Truck_Pc_-_750000.jpeg",
+    "product_name": "Carrito Truck Pc",
+    "product_price": 7500.0,
+    "score": 1.2,
+    "gap": 0.375,
+    "status": "READY"
+  },
+  {
+    "source_row": 133,
+    "source_title": "19 Sopas 300",
+    "image_file": "fila_133_Sopas_300.jpeg",
+    "product_name": "Sopas",
+    "product_price": 300.0,
+    "score": 1.2,
+    "gap": 0.585,
+    "status": "READY"
+  },
+  {
+    "source_row": 188,
+    "source_title": "50 Bocinas 12000.00",
+    "image_file": "fila_188_Bocinas_1200000.jpeg",
+    "product_name": "Bocinas",
+    "product_price": 12000.0,
+    "score": 1.2,
+    "gap": 0.667,
+    "status": "READY"
+  },
+  {
+    "source_row": 117,
+    "source_title": "176 Ketchut 1500",
+    "image_file": "fila_117_Ketchut_1500.jpeg",
+    "product_name": "Ketchut",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.692,
+    "status": "READY"
+  },
+  {
+    "source_row": 176,
+    "source_title": "39 Lampara de Piso 36400.00",
+    "image_file": "fila_176_Lampara_de_Piso_3640000.jpeg",
+    "product_name": "Lampara de Piso - 36400",
+    "product_price": 36400.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  },
+  {
+    "source_row": 37,
+    "source_title": "10 Tipo Crocs-Zapitos Gris 8000.00",
+    "image_file": "fila_037_Tipo_Crocs-Zapitos_Gris_800000.jpeg",
+    "product_name": "Tipo Crocs-Zapitos Gris",
+    "product_price": 8000.0,
+    "score": 1.2,
+    "gap": 0.106,
+    "status": "READY"
+  },
+  {
+    "source_row": 74,
+    "source_title": "131 Biskiato Miniun 300.00",
+    "image_file": "fila_074_Biskiato_Miniun_30000.jpeg",
+    "product_name": "Biskiato Miniun",
+    "product_price": 300.0,
+    "score": 1.2,
+    "gap": 0.655,
+    "status": "READY"
+  },
+  {
+    "source_row": 230,
+    "source_title": "99 Paparicas 1500",
+    "image_file": "fila_230_Paparicas_1500.jpeg",
+    "product_name": "Paparicass",
+    "product_price": 1500.0,
+    "score": 1.267,
+    "gap": 0.067,
+    "status": "READY"
+  },
+  {
+    "source_row": 44,
+    "source_title": "106 Intimas A+ 800.00",
+    "image_file": "fila_044_Intimas_A_80000.jpeg",
+    "product_name": "Intimas A+",
+    "product_price": 800.0,
+    "score": 1.2,
+    "gap": 0.556,
+    "status": "READY"
+  },
+  {
+    "source_row": 218,
+    "source_title": "85 Galletas Kreme 600",
+    "image_file": "fila_218_Galletas_Kreme_600.jpeg",
+    "product_name": "Galletas Kreme",
+    "product_price": 600.0,
+    "score": 1.2,
+    "gap": 0.185,
+    "status": "READY"
+  },
+  {
+    "source_row": 8,
+    "source_title": "03 Luncheras 3 Niveles - 7500.00",
+    "image_file": "fila_008_Luncheras_3_Niveles_-_750000.jpeg",
+    "product_name": "Luncheras 3 Niveles",
+    "product_price": 7500.0,
+    "score": 1.2,
+    "gap": 0.636,
+    "status": "READY"
+  },
+  {
+    "source_row": 35,
+    "source_title": "10 Tipo Crocs Infantil Verde 7500.00",
+    "image_file": "fila_035_Tipo_Crocs_Infantil_Verde_750000.jpeg",
+    "product_name": "Tipo Crocs Infantil Verde",
+    "product_price": 7500.0,
+    "score": 1.2,
+    "gap": 0.184,
+    "status": "READY"
+  },
+  {
+    "source_row": 185,
+    "source_title": "47 Lampara Mesa 13500.00",
+    "image_file": "fila_185_Lampara_Mesa_1350000.jpeg",
+    "product_name": "Lampara Mesa",
+    "product_price": 13500.0,
+    "score": 1.2,
+    "gap": 0.473,
+    "status": "READY"
+  },
+  {
+    "source_row": 46,
+    "source_title": "109 Chicharos Verdes partidos 1200",
+    "image_file": "fila_046_Chicharos_Verdes_partidos_1200.jpeg",
+    "product_name": "Chicharos Verdes partidos",
+    "product_price": 1200.0,
+    "score": 1.2,
+    "gap": 0.551,
+    "status": "READY"
+  },
+  {
+    "source_row": 161,
+    "source_title": "23 Olla Arrocera 26 000",
+    "image_file": "fila_161_Olla_Arrocera_26_000.jpeg",
+    "product_name": "Olla Arrocera",
+    "product_price": 26000.0,
+    "score": 1.2,
+    "gap": 0.459,
+    "status": "READY"
+  },
+  {
+    "source_row": 30,
+    "source_title": "10 Chancletas 2 Cintas 5500",
+    "image_file": "fila_030_Chancletas_2_Cintas_5500.jpeg",
+    "product_name": "Chancletas 2 Cintas",
+    "product_price": 5500.0,
+    "score": 1.2,
+    "gap": 0.053,
+    "status": "READY"
+  },
+  {
+    "source_row": 38,
+    "source_title": "10 Tipo Crocs-Zapitos Rojos 8000.00",
+    "image_file": "fila_038_Tipo_Crocs-Zapitos_Rojos_800000.jpeg",
+    "product_name": "Tipo Crocs-Zapitos Rojos",
+    "product_price": 8000.0,
+    "score": 1.2,
+    "gap": 0.106,
+    "status": "READY"
+  },
+  {
+    "source_row": 183,
+    "source_title": "45 Lampara de Mesa -43700.00",
+    "image_file": "fila_183_Lampara_de_Mesa_-4370000.jpeg",
+    "product_name": "Lampara de Mesa - 43700",
+    "product_price": 43700.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  },
+  {
+    "source_row": 75,
+    "source_title": "134 Jamonilla Res 1500",
+    "image_file": "fila_075_Jamonilla_Res_1500.jpeg",
+    "product_name": "Jamonilla Res",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.49,
+    "status": "READY"
+  },
+  {
+    "source_row": 203,
+    "source_title": "67 Crema Xtree Care 2500.00",
+    "image_file": "fila_203_Crema_Xtree_Care_250000.jpeg",
+    "product_name": "Crema Xtree Care",
+    "product_price": 2500.0,
+    "score": 1.2,
+    "gap": 0.379,
+    "status": "READY"
+  },
+  {
+    "source_row": 81,
+    "source_title": "14 Adsorbentes a Color 1200",
+    "image_file": "fila_081_Adsorbentes_a_Color_1200.jpeg",
+    "product_name": "Adsorbentes a Color",
+    "product_price": 1200.0,
+    "score": 1.2,
+    "gap": 0.561,
+    "status": "READY"
+  },
+  {
+    "source_row": 103,
+    "source_title": "161 Cafe El Dorado 4500",
+    "image_file": "fila_103_Cafe_El_Dorado_4500.jpeg",
+    "product_name": "Cafe El Dorado",
+    "product_price": 4500.0,
+    "score": 1.2,
+    "gap": 0.51,
+    "status": "READY"
+  },
+  {
+    "source_row": 79,
+    "source_title": "138 Lata Atun 800",
+    "image_file": "fila_079_Lata_Atun_800.jpeg",
+    "product_name": "Lata Atun",
+    "product_price": 800.0,
+    "score": 1.2,
+    "gap": 0.343,
+    "status": "READY"
+  },
+  {
+    "source_row": 73,
+    "source_title": "130 Galleta Pow Patrol 400",
+    "image_file": "fila_073_Galleta_Pow_Patrol_400.jpeg",
+    "product_name": "Galleta Pow Patrol",
+    "product_price": 400.0,
+    "score": 1.2,
+    "gap": 0.555,
+    "status": "READY"
+  },
+  {
+    "source_row": 113,
+    "source_title": "172 Salsa Soja 1500.00",
+    "image_file": "fila_113_Salsa_Soja_150000.jpeg",
+    "product_name": "Salsa Soja",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.565,
+    "status": "READY"
+  },
+  {
+    "source_row": 53,
+    "source_title": "115 Sal 1300.00",
+    "image_file": "fila_053_Sal_130000.jpeg",
+    "product_name": "Sal",
+    "product_price": 1300.0,
+    "score": 1.2,
+    "gap": 0.48,
+    "status": "READY"
+  },
+  {
+    "source_row": 45,
+    "source_title": "107 Diaria Alotof 750.00",
+    "image_file": "fila_045_Diaria_Alotof_75000.jpeg",
+    "product_name": "Diaria Alotof",
+    "product_price": 750.0,
+    "score": 1.2,
+    "gap": 0.667,
+    "status": "READY"
+  },
+  {
+    "source_row": 228,
+    "source_title": "97 Sorbeto Rancheiro 500",
+    "image_file": "fila_228_Sorbeto_Rancheiro_500.jpeg",
+    "product_name": "Sorbeto Rancheiro",
+    "product_price": 500.0,
+    "score": 1.2,
+    "gap": 0.555,
+    "status": "READY"
+  },
+  {
+    "source_row": 115,
+    "source_title": "174 Salsa Rosa Rayan 1300",
+    "image_file": "fila_115_Salsa_Rosa_Rayan_1300.jpeg",
+    "product_name": "Salsa Rosa Rayan",
+    "product_price": 1300.0,
+    "score": 1.2,
+    "gap": 0.564,
+    "status": "READY"
+  },
+  {
+    "source_row": 11,
+    "source_title": "05 Carrito TurnOver - 7500.00",
+    "image_file": "fila_011_Carrito_TurnOver_-_750000.jpeg",
+    "product_name": "Carrito TurnOver",
+    "product_price": 7500.0,
+    "score": 1.2,
+    "gap": 0.375,
+    "status": "READY"
+  },
+  {
+    "source_row": 50,
+    "source_title": "112 Frijoñes Negros 1100",
+    "image_file": "fila_050_Frijo#U00f1es_Negros_1100.jpeg",
+    "product_name": "Frijoñes Negros",
+    "product_price": 1100.0,
+    "score": 1.2,
+    "gap": 0.533,
+    "status": "READY"
+  },
+  {
+    "source_row": 184,
+    "source_title": "46 Lampara de Mesa -38500.00",
+    "image_file": "fila_184_Lampara_de_Mesa_-3850000.jpeg",
+    "product_name": "Lampara de Mesa - 38500",
+    "product_price": 38500.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  },
+  {
+    "source_row": 92,
+    "source_title": "150 Leche Condensada 850",
+    "image_file": "fila_092_Leche_Condensada_850.jpeg",
+    "product_name": "Leche Condensada",
+    "product_price": 850.0,
+    "score": 1.2,
+    "gap": 0.557,
+    "status": "READY"
+  },
+  {
+    "source_row": 231,
+    "source_title": "99 Paparicass 1500",
+    "image_file": "fila_231_Paparicass_1500.jpeg",
+    "product_name": "Paparicas",
+    "product_price": 1500.0,
+    "score": 1.267,
+    "gap": 0.067,
+    "status": "READY"
+  },
+  {
+    "source_row": 34,
+    "source_title": "10 Tipo Crocs Infantil Azul 7500.00",
+    "image_file": "fila_034_Tipo_Crocs_Infantil_Azul_750000.jpeg",
+    "product_name": "Tipo Crocs Infantil Azul",
+    "product_price": 7500.0,
+    "score": 1.2,
+    "gap": 0.184,
+    "status": "READY"
+  },
+  {
+    "source_row": 63,
+    "source_title": "120 Espáguetis 480",
+    "image_file": "fila_063_Esp#U00e1guetis_480.jpeg",
+    "product_name": "Espáguetis",
+    "product_price": 480.0,
+    "score": 1.2,
+    "gap": 0.644,
+    "status": "READY"
+  },
+  {
+    "source_row": 225,
+    "source_title": "94 Pqt Caramelos Toffee  1500.00",
+    "image_file": "fila_225_Pqt_Caramelos_Toffee_150000.jpeg",
+    "product_name": "Pqt Caramelos Toffee",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.697,
+    "status": "READY"
+  },
+  {
+    "source_row": 77,
+    "source_title": "136 Lata Pechuga Pollo 850.00",
+    "image_file": "fila_077_Lata_Pechuga_Pollo_85000.jpeg",
+    "product_name": "Lata Pechuga Pollo",
+    "product_price": 850.0,
+    "score": 1.2,
+    "gap": 0.644,
+    "status": "READY"
+  },
+  {
+    "source_row": 123,
+    "source_title": "182 Malta Guajira 1800",
+    "image_file": "fila_123_Malta_Guajira_1800.jpeg",
+    "product_name": "Malta Guajira",
+    "product_price": 1800.0,
+    "score": 1.2,
+    "gap": 0.629,
+    "status": "READY"
+  },
+  {
+    "source_row": 116,
+    "source_title": "175 Pasta Tomate Ada 650",
+    "image_file": "fila_116_Pasta_Tomate_Ada_650.jpeg",
+    "product_name": "Pasta Tomate Ada",
+    "product_price": 650.0,
+    "score": 1.2,
+    "gap": 0.637,
+    "status": "READY"
+  },
+  {
+    "source_row": 71,
+    "source_title": "13 Cascos Moto 9000",
+    "image_file": "fila_071_Cascos_Moto_9000.jpeg",
+    "product_name": "Cascos Moto",
+    "product_price": 9000.0,
+    "score": 1.2,
+    "gap": 0.333,
+    "status": "READY"
+  },
+  {
+    "source_row": 187,
+    "source_title": "49 Lampara de Mesa - 25000.00",
+    "image_file": "fila_187_Lampara_de_Mesa_-_2500000.jpeg",
+    "product_name": "Lampara de Mesa - 25000",
+    "product_price": 25000.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  },
+  {
+    "source_row": 111,
+    "source_title": "170 Mayoneza 1500",
+    "image_file": "fila_111_Mayoneza_1500.jpeg",
+    "product_name": "Mayoneza",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.619,
+    "status": "READY"
+  },
+  {
+    "source_row": 114,
+    "source_title": "173 Mostaza 750",
+    "image_file": "fila_114_Mostaza_750.jpeg",
+    "product_name": "Mostaza",
+    "product_price": 750.0,
+    "score": 1.2,
+    "gap": 0.63,
+    "status": "READY"
+  },
+  {
+    "source_row": 43,
+    "source_title": "105 Toallitas Humedass 1000.00",
+    "image_file": "fila_043_Toallitas_Humedass_100000.jpeg",
+    "product_name": "Toallitas Humedas",
+    "product_price": 1000.0,
+    "score": 1.291,
+    "gap": 0.091,
+    "status": "READY"
+  },
+  {
+    "source_row": 109,
+    "source_title": "167 Caffe Mate 4000",
+    "image_file": "fila_109_Caffe_Mate_4000.jpeg",
+    "product_name": "Caffe Mate",
+    "product_price": 4000.0,
+    "score": 1.2,
+    "gap": 0.3,
+    "status": "READY"
+  },
+  {
+    "source_row": 102,
+    "source_title": "160 Cafe Pilon 6000",
+    "image_file": "fila_102_Cafe_Pilon_6000.jpeg",
+    "product_name": "Cafe Pilon",
+    "product_price": 6000.0,
+    "score": 1.2,
+    "gap": 0.364,
+    "status": "READY"
+  },
+  {
+    "source_row": 65,
+    "source_title": "122 Macarrones en caja 850",
+    "image_file": "fila_065_Macarrones_en_caja_850.jpeg",
+    "product_name": "Macarrones en caja",
+    "product_price": 850.0,
+    "score": 1.2,
+    "gap": 0.166,
+    "status": "READY"
+  },
+  {
+    "source_row": 108,
+    "source_title": "166 Cafe La Carreta 5000",
+    "image_file": "fila_108_Cafe_La_Carreta_5000.jpeg",
+    "product_name": "Cafe La Carreta",
+    "product_price": 5000.0,
+    "score": 1.2,
+    "gap": 0.467,
+    "status": "READY"
+  },
+  {
+    "source_row": 89,
+    "source_title": "147 Avena 1800",
+    "image_file": "fila_089_Avena_1800.jpeg",
+    "product_name": "Avena",
+    "product_price": 1800.0,
+    "score": 1.2,
+    "gap": 0.455,
+    "status": "READY"
+  },
+  {
+    "source_row": 64,
+    "source_title": "122 Macarrones 850",
+    "image_file": "fila_064_Macarrones_850.jpeg",
+    "product_name": "Macarrones",
+    "product_price": 850.0,
+    "score": 1.2,
+    "gap": 0.166,
+    "status": "READY"
+  },
+  {
+    "source_row": 49,
+    "source_title": "111 Frijoles Blanco 1500",
+    "image_file": "fila_049_Frijoles_Blanco_1500.jpeg",
+    "product_name": "Frijoles Blanco",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.5,
+    "status": "READY"
+  },
+  {
+    "source_row": 13,
+    "source_title": "06 Audifonos-gris - 7500.00",
+    "image_file": "fila_013_Audifonos-gris_-_750000.jpeg",
+    "product_name": "Audifonos-gris",
+    "product_price": 7500.0,
+    "score": 1.2,
+    "gap": 0.097,
+    "status": "READY"
+  },
+  {
+    "source_row": 36,
+    "source_title": "10 Tipo Crocs-Zapitos Azul 8000.00",
+    "image_file": "fila_036_Tipo_Crocs-Zapitos_Azul_800000.jpeg",
+    "product_name": "Tipo Crocs-Zapitos Azul",
+    "product_price": 8000.0,
+    "score": 1.2,
+    "gap": 0.174,
+    "status": "READY"
+  },
+  {
+    "source_row": 72,
+    "source_title": "13 Cascoss 9000",
+    "image_file": "fila_072_Cascoss_9000.jpeg",
+    "product_name": "Cascoss",
+    "product_price": 9000.0,
+    "score": 1.2,
+    "gap": 0.333,
+    "status": "READY"
+  },
+  {
+    "source_row": 105,
+    "source_title": "163 Cafe Express 3000",
+    "image_file": "fila_105_Cafe_Express_3000.jpeg",
+    "product_name": "Cafe Express",
+    "product_price": 3000.0,
+    "score": 1.2,
+    "gap": 0.364,
+    "status": "READY"
+  },
+  {
+    "source_row": 78,
+    "source_title": "137 Lentejas 850",
+    "image_file": "fila_078_Lentejas_850.jpeg",
+    "product_name": "Lentejas",
+    "product_price": 850.0,
+    "score": 1.2,
+    "gap": 0.474,
+    "status": "READY"
+  },
+  {
+    "source_row": 54,
+    "source_title": "116 Harina 1800",
+    "image_file": "fila_054_Harina_1800.jpeg",
+    "product_name": "Harina",
+    "product_price": 1800.0,
+    "score": 1.2,
+    "gap": 0.455,
+    "status": "READY"
+  },
+  {
+    "source_row": 118,
+    "source_title": "177 Vegetales Mixtos 1200",
+    "image_file": "fila_118_Vegetales_Mixtos_1200.jpeg",
+    "product_name": "Vegetales Mixtos",
+    "product_price": 1200.0,
+    "score": 1.2,
+    "gap": 0.61,
+    "status": "READY"
+  },
+  {
+    "source_row": 182,
+    "source_title": "44 Lampara de Mesa - 34300.00",
+    "image_file": "fila_182_Lampara_de_Mesa_-_3430000.jpeg",
+    "product_name": "Lampara de Mesa - 34300",
+    "product_price": 34300.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  },
+  {
+    "source_row": 32,
+    "source_title": "10 Crocs Original 12500.00",
+    "image_file": "fila_032_Crocs_Original_1250000.jpeg",
+    "product_name": "Crocs Original",
+    "product_price": 12500.0,
+    "score": 1.2,
+    "gap": 0.08,
+    "status": "READY"
+  },
+  {
+    "source_row": 52,
+    "source_title": "114 Azucar Blanca 1200.00",
+    "image_file": "fila_052_Azucar_Blanca_120000.jpeg",
+    "product_name": "Azucar Blanca",
+    "product_price": 1200.0,
+    "score": 1.2,
+    "gap": 0.56,
+    "status": "READY"
+  },
+  {
+    "source_row": 9,
+    "source_title": "04 Muneca Barbie - 5000.00",
+    "image_file": "fila_009_Muneca_Barbie_-_500000.jpeg",
+    "product_name": "Muneca Barbie",
+    "product_price": 5000.0,
+    "score": 1.2,
+    "gap": 0.571,
+    "status": "READY"
+  },
+  {
+    "source_row": 94,
+    "source_title": "153 Leche entera 4800",
+    "image_file": "fila_094_Leche_entera_4800.jpeg",
+    "product_name": "Leche entera",
+    "product_price": 4800.0,
+    "score": 1.2,
+    "gap": 0.557,
+    "status": "READY"
+  },
+  {
+    "source_row": 106,
+    "source_title": "164 Cafe Sello Rojo 5000",
+    "image_file": "fila_106_Cafe_Sello_Rojo_5000.jpeg",
+    "product_name": "Cafe Sello Rojo",
+    "product_price": 5000.0,
+    "score": 1.2,
+    "gap": 0.51,
+    "status": "READY"
+  },
+  {
+    "source_row": 76,
+    "source_title": "135 Jamonilla de Pollo 1300",
+    "image_file": "fila_076_Jamonilla_de_Pollo_1300.jpeg",
+    "product_name": "Jamonilla de Pollo",
+    "product_price": 1300.0,
+    "score": 1.2,
+    "gap": 0.49,
+    "status": "READY"
+  },
+  {
+    "source_row": 162,
+    "source_title": "24 Olla Frijolera 57 600",
+    "image_file": "fila_162_Olla_Frijolera_57_600.jpeg",
+    "product_name": "Olla Frijolera",
+    "product_price": 57600.0,
+    "score": 1.2,
+    "gap": 0.459,
+    "status": "READY"
+  },
+  {
+    "source_row": 112,
+    "source_title": "171 Pasta Bocadito 1750.00",
+    "image_file": "fila_112_Pasta_Bocadito_175000.jpeg",
+    "product_name": "Pasta Bocadito",
+    "product_price": 1750.0,
+    "score": 1.2,
+    "gap": 0.6,
+    "status": "READY"
+  },
+  {
+    "source_row": 220,
+    "source_title": "87 Rellenitas 250",
+    "image_file": "fila_220_Rellenitas_250.jpeg",
+    "product_name": "Rellenitas",
+    "product_price": 250.0,
+    "score": 1.2,
+    "gap": 0.533,
+    "status": "READY"
+  },
+  {
+    "source_row": 48,
+    "source_title": "110 Arroz Blanco 900.00",
+    "image_file": "fila_048_Arroz_Blanco_90000.jpeg",
+    "product_name": "Arroz Blanco",
+    "product_price": 900.0,
+    "score": 1.2,
+    "gap": 0.533,
+    "status": "READY"
+  },
+  {
+    "source_row": 223,
+    "source_title": "92 Gomita Fini 850",
+    "image_file": "fila_223_Gomita_Fini_850.jpeg",
+    "product_name": "Gomita Fini",
+    "product_price": 850.0,
+    "score": 1.2,
+    "gap": 0.727,
+    "status": "READY"
+  },
+  {
+    "source_row": 27,
+    "source_title": "0Ventilador 3 en 1",
+    "image_file": "fila_027_Ventilador_3_en_1.jpeg",
+    "product_name": "Ventilador 3 en",
+    "product_price": 1.0,
+    "score": 1.2,
+    "gap": 0.435,
+    "status": "READY"
+  },
+  {
+    "source_row": 207,
+    "source_title": "71 Crema Afeitar 2500",
+    "image_file": "fila_207_Crema_Afeitar_2500.jpeg",
+    "product_name": "Crema Afeitar",
+    "product_price": 2500.0,
+    "score": 1.2,
+    "gap": 0.355,
+    "status": "READY"
+  },
+  {
+    "source_row": 226,
+    "source_title": "95 Malvavisco 1500",
+    "image_file": "fila_226_Malvavisco_1500.jpeg",
+    "product_name": "Malvavisco",
+    "product_price": 1500.0,
+    "score": 1.2,
+    "gap": 0.5,
+    "status": "READY"
+  },
+  {
+    "source_row": 68,
+    "source_title": "125 Vino Seco 650",
+    "image_file": "fila_068_Vino_Seco_650.jpeg",
+    "product_name": "Vino Seco",
+    "product_price": 650.0,
+    "score": 1.2,
+    "gap": 0.5,
+    "status": "READY"
+  },
+  {
+    "source_row": 175,
+    "source_title": "38 Lampara de Techo - 31850.00",
+    "image_file": "fila_175_Lampara_de_Techo_-_3185000.jpeg",
+    "product_name": "Lampara de Techo",
+    "product_price": 31850.0,
+    "score": 1.2,
+    "gap": 0.551,
+    "status": "READY"
+  },
+  {
+    "source_row": 219,
+    "source_title": "86 Cookies Marilan 500",
+    "image_file": "fila_219_Cookies_Marilan_500.jpeg",
+    "product_name": "Cookies Marilan",
+    "product_price": 500.0,
+    "score": 1.2,
+    "gap": 0.562,
+    "status": "READY"
+  },
+  {
+    "source_row": 179,
+    "source_title": "42 Lampara de Piso -44100.00",
+    "image_file": "fila_179_Lampara_de_Piso_-4410000.jpeg",
+    "product_name": "Lampara de Piso - 44100",
+    "product_price": 44100.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  },
+  {
+    "source_row": 31,
+    "source_title": "10 Chancletas 3 Cintas 5500",
+    "image_file": "fila_031_Chancletas_3_Cintas_5500.jpeg",
+    "product_name": "Chancletas 3 Cintas",
+    "product_price": 5500.0,
+    "score": 1.2,
+    "gap": 0.053,
+    "status": "READY"
+  },
+  {
+    "source_row": 177,
+    "source_title": "40 Lampara de Piso -30800.00",
+    "image_file": "fila_177_Lampara_de_Piso_-3080000.jpeg",
+    "product_name": "Lampara de Piso - 30800",
+    "product_price": 30800.0,
+    "score": 1.153,
+    "gap": 0.2,
+    "status": "READY"
+  }
+]

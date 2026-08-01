@@ -1,0 +1,13 @@
+{
+  "store": {
+    "id": "4c4a227c-5981-471c-afe4-2d5f91ff0201",
+    "name": "DeParis",
+    "slug": "deparis"
+  },
+  "total": 80,
+  "matched": 80,
+  "uploaded": 80,
+  "skipped": 0,
+  "errors": [],
+  "dry_run": false
+}

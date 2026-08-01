@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getDefaultStore } from "@/lib/services/stores";
+import { getStoreSettings } from "@/lib/services/settings";
 
 import type { Product } from "@/components/admin/products/types";
 
@@ -66,6 +67,17 @@ const PRODUCT_INVENTORY_SELECT = `
   )
 `;
 
+
+
+function productHasImage(product: {
+  image_url?: string | null;
+  product_images?: Array<{ image_url?: string | null }> | null;
+}) {
+  return Boolean(
+    product.image_url ||
+      product.product_images?.some((image) => Boolean(image.image_url))
+  );
+}
 
 /* =========================================================
    PRODUCTS SERVICE
@@ -215,16 +227,28 @@ export async function getStoreProducts() {
 
 // Obtener productos visibles por tienda sin volver a consultar stores.
 export async function getStoreProductsByStoreId(storeId: string) {
-  return supabase
-    .from("products")
-    .select(PRODUCT_PUBLIC_SELECT)
-    .eq("store_id", storeId)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("category", { ascending: true })
-    .order("is_category_featured", { ascending: false })
-    .order("category_sort_order", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false });
+  const [productsResult, settingsResult] = await Promise.all([
+    supabase
+      .from("products")
+      .select(PRODUCT_PUBLIC_SELECT)
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("category", { ascending: true })
+      .order("is_category_featured", { ascending: false })
+      .order("category_sort_order", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    getStoreSettings(storeId),
+  ]);
+
+  if (productsResult.error || !settingsResult.data?.hide_products_without_images) {
+    return productsResult;
+  }
+
+  return {
+    ...productsResult,
+    data: (productsResult.data || []).filter(productHasImage),
+  };
 }
 
 /*
@@ -250,6 +274,13 @@ export async function getRelatedProducts(
   limit = 4,
   storeId?: string
 ) {
+  let resolvedStoreId = storeId;
+
+  if (!resolvedStoreId) {
+    const { data: defaultStore } = await getDefaultStore();
+    resolvedStoreId = defaultStore?.id;
+  }
+
   let query = supabase
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
@@ -258,14 +289,25 @@ export async function getRelatedProducts(
     .eq("category", category)
     .neq("id", currentProductId)
     .order("is_category_featured", { ascending: false })
-    .order("category_sort_order", { ascending: true, nullsFirst: false })
-    .limit(limit);
+    .order("category_sort_order", { ascending: true, nullsFirst: false });
 
-  if (storeId) {
-    query = query.eq("store_id", storeId);
+  if (resolvedStoreId) {
+    query = query.eq("store_id", resolvedStoreId);
   }
 
-  return query;
+  const [productsResult, settingsResult] = await Promise.all([
+    query.limit(limit),
+    getStoreSettings(resolvedStoreId),
+  ]);
+
+  if (productsResult.error || !settingsResult.data?.hide_products_without_images) {
+    return productsResult;
+  }
+
+  return {
+    ...productsResult,
+    data: (productsResult.data || []).filter(productHasImage),
+  };
 }
 
 

@@ -33,6 +33,7 @@ export type StoreSettings = {
 
   logo_url?: string | null;
   favicon_url?: string | null;
+  hide_products_without_images?: boolean;
 
   updated_at?: string;
 };
