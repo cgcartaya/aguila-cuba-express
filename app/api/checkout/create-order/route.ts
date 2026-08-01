@@ -213,7 +213,7 @@ export async function POST(request: Request) {
     }
 
     let deliveryFee = 0;
-    let zone: { id: string; zone_name: string; minimum_order: number } | null = null;
+    let zone: { id: string; zone_name: string; minimum_order: number; free_delivery_from: number } | null = null;
 
     if (isLocalDelivery) {
       const { data: checkoutSettings } = await supabaseAdmin
@@ -231,7 +231,7 @@ export async function POST(request: Request) {
 
       const { data: zoneData, error: zoneError } = await supabaseAdmin
         .from("delivery_zones")
-        .select("id, zone_name, delivery_fee, minimum_order, store_id")
+        .select("id, zone_name, delivery_fee, minimum_order, free_delivery_from, store_id")
         .eq("id", zoneId)
         .eq("store_id", storeId)
         .maybeSingle();
@@ -245,12 +245,22 @@ export async function POST(request: Request) {
         id: zoneData.id,
         zone_name: clean(zoneData.zone_name, 150),
         minimum_order: money(zoneData.minimum_order),
+        free_delivery_from: money(zoneData.free_delivery_from),
       };
     }
 
     const subtotal = money(
       preparedItems.reduce((sum, item) => sum + item.subtotal, 0)
     );
+
+    // Igual que el cálculo del cliente (calculateCheckoutTotals): si el
+    // subtotal alcanza el umbral de la zona, el domicilio sale gratis.
+    // Antes esto solo se aplicaba en la vista previa del checkout y nunca
+    // se recalculaba aquí, así que la orden guardada siempre cobraba el
+    // delivery completo aunque el cliente calificara para envío gratis.
+    if (zone && zone.free_delivery_from > 0 && subtotal >= zone.free_delivery_from) {
+      deliveryFee = 0;
+    }
 
     if (zone && subtotal < zone.minimum_order) {
       return fail(

@@ -72,6 +72,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [loadingCheckout, setLoadingCheckout] = useState(true);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  // Telefono con el que se valido el bono. Si el cliente lo cambia despues
+  // de aplicarlo, el bono deja de ser valido para ese numero y hay que
+  // quitarlo (y avisar), en vez de dejarlo aplicado en silencio.
+  const [discountAppliedForPhone, setDiscountAppliedForPhone] = useState<string | null>(null);
   const [checkoutRuleMap, setCheckoutRuleMap] = useState<Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }>>({});
   const [loadingRules, setLoadingRules] = useState(false);
 
@@ -271,7 +275,14 @@ export default function CheckoutPage() {
     >
   ) {
     const { name, value } = event.target;
-    if (name === "phone") setAppliedDiscount(null);
+    // Solo se quita el bono si el telefono realmente cambio respecto al
+    // que se uso para validarlo (antes se borraba en cada tecla, incluso
+    // sin cambios reales, y quedaba sin avisar).
+    if (name === "phone" && appliedDiscount && value !== discountAppliedForPhone) {
+      setAppliedDiscount(null);
+      setDiscountAppliedForPhone(null);
+      setError("El bono se quitó porque cambiaste el teléfono. Puedes volver a aplicarlo si sigue siendo válido para este número.");
+    }
 
     setForm((current) => {
       if (name === "municipality") {
@@ -281,11 +292,21 @@ export default function CheckoutPage() {
     });
   }
 
+  function applyDiscount(discount: AppliedDiscount) {
+    setAppliedDiscount(discount);
+    setDiscountAppliedForPhone(form.phone);
+  }
+
+  function removeDiscount() {
+    setAppliedDiscount(null);
+    setDiscountAppliedForPhone(null);
+  }
+
   function changeMethod(nextMethod: CheckoutMethod) {
     if (nextMethod === "pickup") return;
     setMethod(nextMethod);
     setError("");
-    setAppliedDiscount(null);
+    removeDiscount();
   }
 
   function buildOrderItemsBase() {
@@ -559,8 +580,8 @@ ${orderUrl}`);
               storeId={store?.id || ""}
               customerPhone={form.phone}
               appliedDiscount={appliedDiscount}
-              onApplyDiscount={setAppliedDiscount}
-              onRemoveDiscount={() => setAppliedDiscount(null)}
+              onApplyDiscount={applyDiscount}
+              onRemoveDiscount={removeDiscount}
               showCoupon={showCoupon}
               showDelivery={showDelivery}
               deliveryLabel="Delivery"
