@@ -213,7 +213,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 )}
 
                 {activeRoute.public_summary && <p className="mt-5 border-t border-white/10 pt-5 font-semibold leading-7 text-blue-100/75">{activeRoute.public_summary}</p>}
-                <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">Reservar recogida <ArrowRight size={18} /></button>
+                <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">{activeRoute.status === "in_progress" ? "Solicitar para la próxima ruta" : "Reservar recogida"} <ArrowRight size={18} /></button>{activeRoute.status === "in_progress" && <p className="mt-2 text-center text-xs font-bold text-blue-100/60">Esta ruta ya salió. Tu solicitud quedará pendiente para el próximo recorrido.</p>}
                 <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
                   <div><ShieldCheck size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Reserva sin costo</p></div>
                   <div><Check size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Confirmación directa</p></div>
@@ -270,7 +270,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
               </ol>
             </div>
             <div className="border-t border-slate-200 p-5 sm:px-7">
-              <button type="button" onClick={() => { setShowAllStops(false); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">Reservar recogida <ArrowRight size={18} /></button>
+              <button type="button" onClick={() => { setShowAllStops(false); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">{activeRoute.status === "in_progress" ? "Solicitar para la próxima ruta" : "Reservar recogida"} <ArrowRight size={18} /></button>
             </div>
           </div>
         </div>

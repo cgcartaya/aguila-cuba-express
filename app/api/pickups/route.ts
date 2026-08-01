@@ -115,7 +115,10 @@ export async function POST(request: NextRequest) {
         .eq("id", requestedRouteId)
         .eq("store_id", store.id)
         .eq("is_public", true)
-        .in("status", ["published", "in_progress"])
+        // Solo se permite auto-agregarse a rutas "published"; una ruta "in_progress"
+        // ya salio a recorrer, asi que esas solicitudes quedan pendientes normales
+        // y el negocio coordina por WhatsApp si se puede sumar a la siguiente.
+        .eq("status", "published")
         .maybeSingle();
 
       if (route) {

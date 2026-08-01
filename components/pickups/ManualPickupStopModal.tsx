@@ -51,6 +51,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   const [requestSource, setRequestSource] = useState("whatsapp");
   const [availableDate, setAvailableDate] = useState(routeDate);
   const [geocoding, setGeocoding] = useState(false);
+  const [confirmNoLocation, setConfirmNoLocation] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -74,6 +75,7 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
     setAvailableDate(savedDate);
     setError("");
     setCustomerMatches([]);
+    setConfirmNoLocation(false);
     setSelectedCustomerId(editRequest ? "editing" : null);
     setCitiesLoading(true);
     getPickupServiceSettings(storeId).then(({ data }) => {
@@ -148,6 +150,9 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
   async function save() {
     if (!form.customer_name.trim() || !form.phone.trim() || !availableDate || !form.address_line_1.trim() || !form.city.trim() || !form.postal_code.trim()) {
       return setError("Completa nombre, teléfono, día disponible, dirección, ciudad y ZIP Code.");
+    }
+    if ((form.latitude == null || form.longitude == null) && !confirmNoLocation) {
+      return setError("Marca la casilla para confirmar que quieres guardar esta parada sin un punto exacto en el mapa.");
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -230,6 +235,12 @@ export default function ManualPickupStopModal({ open, storeId, routeId, routeDat
             <button type="button" onClick={locateAddress} disabled={geocoding} className="inline-flex items-center gap-2 rounded-xl bg-[#082b5c] px-4 py-2.5 text-sm font-black text-white disabled:opacity-60">{geocoding ? <Loader2 className="animate-spin" size={16} /> : <LocateFixed size={16} />}{geocoding ? "Buscando..." : form.latitude != null ? "Buscar de nuevo" : "Buscar dirección"}</button>
           </div>
           <LocationPickerMap latitude={form.latitude} longitude={form.longitude} onChange={(latitude, longitude) => setForm((current) => ({ ...current, latitude, longitude, address_verified: true, place_id: "", formatted_address: [current.address_line_1, current.city, current.region, current.postal_code].filter(Boolean).join(", ") }))} onClear={() => setForm((current) => ({ ...current, latitude: null, longitude: null, address_verified: false }))} startLocked addressLabel={form.formatted_address || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", ")} />
+          {(form.latitude == null || form.longitude == null) && (
+            <label className="mt-3 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">
+              <input type="checkbox" className="mt-0.5 h-5 w-5" checked={confirmNoLocation} onChange={(e) => setConfirmNoLocation(e.target.checked)} />
+              Entiendo que esta parada no tiene un punto exacto en el mapa y no aparecerá en el recorrido público hasta que lo agregue.
+            </label>
+          )}
         </div>
         <div className="sm:col-span-2"><Field label="Notas"><textarea className="manual-input min-h-28 resize-y" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Ej. Escribir al llegar, tiene dos cajas..." /></Field></div>
         {error && <p className="sm:col-span-2 rounded-2xl bg-red-50 p-4 text-sm font-black text-red-700">{error}</p>}

@@ -2,7 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, Pencil, PlayCircle, Plus, Save, Search, Trash2, Truck, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, Navigation, Pencil, PlayCircle, Plus, Save, Search, Trash2, Truck, X } from "lucide-react";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import {
@@ -67,6 +67,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   const cities = useMemo(() => Array.from(new Set((route?.stops || []).map((stop) => stop.pickup_request?.city).filter(Boolean))), [route]);
   const completedStops = useMemo(() => (route?.stops || []).filter((stop) => stop.status === "picked_up").length, [route]);
   const activeStops = useMemo(() => (route?.stops || []).filter((stop) => ["en_route", "arrived"].includes(stop.status)).length, [route]);
+  const failedStops = useMemo(() => (route?.stops || []).filter((stop) => stop.status === "failed").length, [route]);
   const progress = route?.stops?.length ? Math.round((completedStops / route.stops.length) * 100) : 0;
   const filteredEligibleRequests = useMemo(() => {
     const query = requestSearch.trim().toLowerCase();
@@ -149,6 +150,37 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     if (result.error) { setError(result.error.message); load(); }
   }
 
+  async function optimizeOrder() {
+    if (!route?.stops || route.stops.length < 3) return;
+    const withPoint = route.stops.filter((stop) => stop.pickup_request?.latitude != null && stop.pickup_request?.longitude != null);
+    if (withPoint.length < route.stops.length) {
+      setError("Hay paradas sin ubicación confirmada; no se pueden incluir en la optimización automática. Corrígelas primero.");
+      return;
+    }
+    if (!confirm(`¿Reordenar las ${route.stops.length} paradas por la ruta más corta calculada? Puedes ajustar manualmente después.`)) return;
+
+    setSaving(true);
+    setError("");
+    // Nearest-neighbor: parte de la primera parada y siempre salta a la más cercana no visitada.
+    const remaining = [...route.stops];
+    const ordered = [remaining.shift()!];
+    while (remaining.length) {
+      const last = ordered[ordered.length - 1].pickup_request!;
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+      remaining.forEach((stop, index) => {
+        const distance = haversineKm(last as any, stop.pickup_request as any);
+        if (distance < bestDistance) { bestDistance = distance; bestIndex = index; }
+      });
+      ordered.push(remaining.splice(bestIndex, 1)[0]);
+    }
+    ordered.forEach((item, order) => { item.stop_order = order + 1; });
+    setRoute({ ...route, stops: ordered });
+    const result = await reorderPickupRouteStops(route.id, ordered.map((item) => item.id));
+    setSaving(false);
+    if (result.error) { setError(result.error.message); load(); }
+  }
+
   async function changeStopStatus(stopId: string, status: PickupRouteStopStatus) {
     if (!route?.stops) return;
     const { error: updateError } = await updatePickupRouteStopStatus(stopId, route.id, status);
@@ -212,7 +244,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   return <div className="space-y-6">
     <header className="overflow-hidden rounded-[2rem] bg-[#071d43] p-6 text-white sm:p-8">
       <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><Link href="/admin/pickups/routes" className="text-sm font-black text-blue-200">← Volver a rutas</Link><div className="mt-3 flex flex-wrap items-center gap-3"><h1 className="text-3xl font-black sm:text-4xl">{route.name}</h1><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-blue-100">{PICKUP_ROUTE_STATUS_LABELS[route.status]}</span></div><p className="mt-2 text-blue-100/75">{route.route_date} · {route.stops?.length || 0} paradas · {cities.join(" · ") || "Sin ciudades"}</p></div><div className="flex flex-wrap gap-3"><select value={route.status} onChange={(e) => changeRouteStatus(e.target.value as PickupRouteStatus)} className="rounded-2xl bg-white px-4 py-3 font-black text-[#071d43]">{Object.entries(PICKUP_ROUTE_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{route.status === "published" && <button onClick={() => changeRouteStatus("in_progress")} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black"><PlayCircle size={18} /> Iniciar recorrido</button>}<button onClick={saveInfo} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 font-black"><Save size={18} /> Guardar</button></div></div>
-      <div className="mt-7 grid gap-3 sm:grid-cols-4"><Metric label="Paradas" value={route.stops?.length || 0} /><Metric label="Recogidas" value={completedStops} /><Metric label="En proceso" value={activeStops} /><Metric label="Progreso" value={`${progress}%`} /></div>
+      <div className="mt-7 grid gap-3 sm:grid-cols-5"><Metric label="Paradas" value={route.stops?.length || 0} /><Metric label="Recogidas" value={completedStops} /><Metric label="En proceso" value={activeStops} /><Metric label="Fallidas" value={failedStops} /><Metric label="Progreso" value={`${progress}%`} /></div>
       <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div>
     </header>
 
@@ -272,8 +304,8 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black">Orden de paradas</h2><p className="text-slate-500">Consulta la lista o visualiza el recorrido en el mapa.</p><div className="mt-3 inline-flex rounded-2xl bg-slate-100 p-1"><button onClick={() => setStopsView("list")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "list" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Lista</button><button onClick={() => setStopsView("map")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "map" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Mapa</button></div></div><div className="flex items-center gap-3"><button onClick={() => { setEditingManualRequest(null); setManualOpen(true); }} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Parada manual</button><button onClick={openAddRequests} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Solicitudes web</button><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div></div>
-        {stopsView === "map" ? <div className="mt-6"><PickupRouteMap stops={route.stops || []} /></div> : <div className="mt-6 space-y-3">{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const whatsapp = encodeURIComponent(`Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{item.customer_name} · {item.city}</h3><SourceBadge source={item.request_source} /></div><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a>{item.request_source === "manual" && <button onClick={() => { setEditingManualRequest(item); setManualOpen(true); }} title="Editar parada manual" className="rounded-xl border border-orange-200 p-2 text-orange-600"><Pencil size={17} /></button>}{item.request_source === "manual" ? <button onClick={() => deleteManualStop(item.id)} title="Eliminar parada manual" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button> : <button onClick={() => removeStop(stop.id)} title="Quitar solicitud web de esta ruta" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button>}</div></div></article>; })}</div>}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black">Orden de paradas</h2><p className="text-slate-500">Consulta la lista o visualiza el recorrido en el mapa.</p><div className="mt-3 inline-flex rounded-2xl bg-slate-100 p-1"><button onClick={() => setStopsView("list")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "list" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Lista</button><button onClick={() => setStopsView("map")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "map" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Mapa</button></div></div><div className="flex items-center gap-3"><button onClick={() => { setEditingManualRequest(null); setManualOpen(true); }} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Parada manual</button><button onClick={openAddRequests} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Solicitudes web</button><button onClick={optimizeOrder} disabled={saving || ["completed", "cancelled"].includes(route.status) || (route.stops?.length || 0) < 3} title="Reordena las paradas por la ruta más corta calculada" className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Navigation size={18} /> Optimizar orden</button><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div></div>
+        {stopsView === "map" ? <div className="mt-6"><PickupRouteMap stops={route.stops || []} /></div> : <div className="mt-6 space-y-3">{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const whatsapp = encodeURIComponent(`Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{item.customer_name} · {item.city}</h3><SourceBadge source={item.request_source} /><LocationBadge verified={Boolean(item.address_verified)} hasPoint={item.latitude != null && item.longitude != null} /></div><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a>{item.request_source === "manual" && <button onClick={() => { setEditingManualRequest(item); setManualOpen(true); }} title="Editar parada manual" className="rounded-xl border border-orange-200 p-2 text-orange-600"><Pencil size={17} /></button>}{item.request_source === "manual" ? <button onClick={() => deleteManualStop(item.id)} title="Eliminar parada manual" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button> : <button onClick={() => removeStop(stop.id)} title="Quitar solicitud web de esta ruta" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button>}</div></div></article>; })}</div>}
       </section>
     </div>
     {addOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target && !addingRequests) setAddOpen(false); }}>
@@ -297,3 +329,17 @@ function Metric({ label, value }: { label: string; value: string | number }) { r
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <label className="block"><span className="mb-2 block text-sm font-black">{label}</span>{children}</label>; }
 
 function SourceBadge({ source }: { source?: "web" | "manual" }) { return source === "manual" ? <span className="rounded-full bg-orange-100 px-2 py-1 text-[10px] font-black text-orange-700">Manual</span> : <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">Web</span>; }
+
+function LocationBadge({ verified, hasPoint }: { verified: boolean; hasPoint: boolean }) {
+  if (hasPoint && verified) return null;
+  return <span className="rounded-full bg-red-100 px-2 py-1 text-[10px] font-black text-red-700" title="Esta parada no tiene un punto confirmado en el mapa">Sin ubicación confirmada</span>;
+}
+
+function haversineKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const earthRadius = 6371;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const sinA = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLon / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(sinA), Math.sqrt(1 - sinA));
+}

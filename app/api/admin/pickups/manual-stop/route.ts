@@ -16,6 +16,14 @@ function toCoordinate(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+// Valida que el teléfono tenga 10 dígitos (o 11 con el 1 de país).
+// Evita crear clientes duplicados por un typo que cambia el
+// phone_normalized usado como llave de upsert.
+function isValidUsPhone(phone: string): boolean {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10 || (digits.length === 11 && digits.startsWith("1"));
+}
+
 async function authorize(request: NextRequest, storeId: string) {
   const token = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (!token) return { denied: fail("No se recibió la sesión.", 401), userId: null };
@@ -105,6 +113,7 @@ export async function POST(request: NextRequest) {
 
   if (!storeId || !customerName || !phone || !preferredDate || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, día disponible, dirección, ciudad y ZIP Code.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return fail("Selecciona un día disponible válido.");
+  if (!isValidUsPhone(phone)) return fail("El teléfono debe tener 10 dígitos (o 11 con el 1 de país).");
   const access = await authorize(request, storeId);
   if (access.denied) return access.denied;
 
@@ -170,6 +179,7 @@ export async function PATCH(request: NextRequest) {
 
   if (!storeId || !requestId || !customerName || !phone || !preferredDate || !addressLine1 || !city || !postalCode) return fail("Completa nombre, teléfono, día disponible, dirección, ciudad y ZIP Code.");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return fail("Selecciona un día disponible válido.");
+  if (!isValidUsPhone(phone)) return fail("El teléfono debe tener 10 dígitos (o 11 con el 1 de país).");
   const access = await authorize(request, storeId);
   if (access.denied) return access.denied;
 

@@ -48,6 +48,9 @@ type Row = {
   suggested_zone_id: string | null;
   preferred_dates: string[];
   zone: Zone | null;
+  address_verified?: boolean;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type ViewMode = "pending" | "scheduled" | "cancelled" | "completed" | "all";
@@ -383,6 +386,9 @@ export default function PickupsAdminPage() {
                       <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
                         <Clock3 size={12} className="mr-1 inline" />{age(row.created_at)} días
                       </span>
+                      {(!row.address_verified || row.latitude == null || row.longitude == null) && (
+                        <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700" title="Esta solicitud no tiene un punto confirmado en el mapa">Sin ubicación confirmada</span>
+                      )}
                     </div>
                     <h2 className="mt-3 text-lg font-black">{row.customer_name}</h2>
                     <p className="mt-1 text-sm font-bold text-slate-600">
