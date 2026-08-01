@@ -56,10 +56,18 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
   // Un envío puede crearse sin viaje. El consecutivo general se asigna
   // igualmente y trip_order permanece nulo hasta que se asigne a uno.
-  const tripId = input.trip_id || null;
+  const tripId = input.trip_id ?? null;
 
-  const data = {
-    trip_id: tripId,
+  // IMPORTANTE: trip_id sólo se incluye en el payload cuando el llamador lo
+  // especificó explícitamente. Si se defaulteara a null cada vez que el
+  // formulario no lo trae (como pasa en la edición, que no gestiona viajes),
+  // cada guardado desvincularía el envío de su viaje y rompería el
+  // consecutivo (trip_order) sin que nadie lo pidiera. Para crear, trip_id
+  // siempre se especifica (incluso null, válido para un envío sin viaje);
+  // para actualizar, el cambio de viaje debe pedirse a propósito.
+  const tripIdProvided = input.trip_id !== undefined;
+
+  const data: Record<string, unknown> = {
     store_id: storeId,
     location: input.location,
     country_id: input.country_id,
@@ -114,6 +122,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       p_tracking_code: ids.trackingCode,
       p_payload: {
         ...data,
+        trip_id: tripId,
         created_date: now,
         created_by: userId || null,
       },
@@ -163,7 +172,8 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     return { data: shipment, error: null };
   }
 
-  const result = await supabase.from("shipments").update(data).eq("store_id", storeId).eq("id", shipmentId).select("*").single<Shipment>();
+  const updateData = tripIdProvided ? { ...data, trip_id: tripId } : data;
+  const result = await supabase.from("shipments").update(updateData).eq("store_id", storeId).eq("id", shipmentId).select("*").single<Shipment>();
   if (!result.error) await replaceItems(storeId, shipmentId, input);
   return result;
 }

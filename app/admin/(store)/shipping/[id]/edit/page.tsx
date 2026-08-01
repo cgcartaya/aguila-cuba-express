@@ -123,7 +123,11 @@ export default function EditShipmentPage({
     const { error } = await updateShipment(
       activeStore.id,
       shipment.id,
-      input,
+      // ShipmentForm no expone el campo trip_id, así que hay que preservar
+      // explícitamente el viaje actual del envío. Si no se hace, input.trip_id
+      // llega undefined y save() lo convierte en null, desvinculando el envío
+      // de su viaje en cada edición y rompiendo el consecutivo (trip_order).
+      { ...input, trip_id: shipment.trip_id },
       access?.profile?.id
     );
     setSubmitting(false);
