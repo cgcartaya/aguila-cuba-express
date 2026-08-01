@@ -30,7 +30,6 @@ export async function GET(request: NextRequest) {
   if (error) return NextResponse.json({ routes: [], coverageCities: [] }, { status: 500 });
 
   const routes = (data || []).map((route: any) => {
-    const seen = new Set<string>();
     const cities = (route.pickup_route_stops || [])
       .sort((a: any, b: any) => a.stop_order - b.stop_order)
       .map((stop: any) => ({
@@ -39,12 +38,7 @@ export async function GET(request: NextRequest) {
         longitude: stop.pickup_requests?.longitude == null ? null : Number(stop.pickup_requests.longitude),
         order: Number(stop.stop_order || 0),
       }))
-      .filter((city: any) => {
-        const key = city.name.toLocaleLowerCase("es");
-        if (!city.name || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      .filter((city: any) => Boolean(city.name));
     return { id: route.id, name: route.name, route_date: route.route_date, status: route.status, public_summary: route.public_summary, color: route.color, cities };
   }).sort((a: any, b: any) => (a.status === "in_progress" ? -1 : b.status === "in_progress" ? 1 : a.route_date.localeCompare(b.route_date)));
 

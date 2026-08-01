@@ -72,7 +72,7 @@ export default function PublicPickupRouteMap({ route }: { route: PublicRoute }) 
       <div ref={ref} className="h-[350px] w-full sm:h-[380px]" aria-label={`Mapa público de ${route.name}`} />
       <div className="absolute left-5 top-5 z-[500] rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
         <p className="text-xs font-black uppercase tracking-[.15em] text-slate-400">Recorrido público</p>
-        <p className="mt-1 font-black text-slate-900">{route.name} · {cities.length} ciudades</p>
+        <p className="mt-1 font-black text-slate-900">{route.name} · {cities.length} paradas</p>
       </div>
       <div className="absolute bottom-3 left-3 right-3 z-[500] rounded-xl bg-white/90 px-3 py-2 text-center text-[11px] font-bold text-slate-500 backdrop-blur">Mostramos ciudades del recorrido, nunca direcciones privadas de clientes.</div>
       {loading && <div className="absolute inset-0 z-[600] flex items-center justify-center bg-white/80"><Loader2 className="animate-spin text-red-600" /><span className="ml-2 font-black">Cargando recorrido…</span></div>}

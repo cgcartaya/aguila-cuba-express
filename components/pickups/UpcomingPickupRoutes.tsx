@@ -156,7 +156,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                     <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.14em] ${selected ? "text-blue-200" : "text-slate-400"}`}><CalendarDays size={12} /> {routeDate(route.route_date)}</p>
                     <p className="mt-1 truncate text-base font-black">{route.name}</p>
                     <div className={`mt-3 flex items-center justify-between text-xs font-bold ${selected ? "text-blue-100/75" : "text-slate-500"}`}>
-                      <span>{route.cities.length} ciudades</span>
+                      <span>{route.cities.length} paradas</span>
                       <span className={`rounded-full px-2 py-1 ${route.status === "in_progress" ? "bg-emerald-500/20 text-emerald-300" : selected ? "bg-white/10" : "bg-amber-50 text-amber-700"}`}>{route.status === "in_progress" ? "En recorrido" : "Abierta"}</span>
                     </div>
                   </button>
@@ -176,7 +176,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 <h3 className="mt-3 break-words text-3xl font-black sm:text-4xl">{activeRoute.name}</h3>
 
                 <div className="mt-5 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/[.06] p-3"><p className="text-[10px] font-black uppercase tracking-[.15em] text-blue-200/70">Ciudades</p><p className="mt-1 text-xl font-black">{activeRoute.cities.length}</p></div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[.06] p-3"><p className="text-[10px] font-black uppercase tracking-[.15em] text-blue-200/70">Paradas</p><p className="mt-1 text-xl font-black">{activeRoute.cities.length}</p></div>
                   <div className="rounded-2xl border border-white/10 bg-white/[.06] p-3"><p className="text-[10px] font-black uppercase tracking-[.15em] text-blue-200/70">Estado</p><p className="mt-1 text-sm font-black">{activeRoute.status === "in_progress" ? "En recorrido" : "Abierta"}</p></div>
                 </div>
 
