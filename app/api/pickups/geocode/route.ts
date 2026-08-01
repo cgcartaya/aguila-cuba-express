@@ -58,6 +58,30 @@ async function geocodeWithNominatim(addressLine1: string, city: string, region: 
   return { latitude, longitude, formattedAddress: first.display_name || query };
 }
 
+async function geocodeWithCensus(addressLine1: string, city: string, region: string, postalCode: string, countryCode: string): Promise<GeocodeResult> {
+  // Solo cubre EE.UU. Gratis, sin API key, y suele resolver bien direcciones
+  // exactas que Nominatim no encuentra. https://geocoding.geo.census.gov
+  if (countryCode !== "US") return null;
+
+  const query = [addressLine1, city, region, postalCode].filter(Boolean).join(", ");
+  const url = new URL("https://geocoding.geo.census.gov/geocoder/locations/onelineaddress");
+  url.searchParams.set("address", query);
+  url.searchParams.set("benchmark", "Public_AR_Current");
+  url.searchParams.set("format", "json");
+
+  const response = await fetch(url.toString(), { cache: "no-store" });
+  if (!response.ok) return null;
+  const payload = await response.json();
+  const match = payload?.result?.addressMatches?.[0];
+  if (!match?.coordinates) return null;
+
+  const latitude = Number(match.coordinates.y);
+  const longitude = Number(match.coordinates.x);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  return { latitude, longitude, formattedAddress: match.matchedAddress || query };
+}
+
 async function geocodeWithGoogle(addressLine1: string, city: string, region: string, postalCode: string, countryCode: string): Promise<GeocodeResult> {
   const apiKey = process.env.GOOGLE_MAPS_SERVER_API_KEY;
   if (!apiKey) return null;
@@ -100,8 +124,16 @@ export async function POST(request: NextRequest) {
       console.error("pickup geocode: nominatim failed", nominatimError);
     }
 
-    // Fallback a Google si Nominatim no encontró nada (frecuente con direcciones
-    // exactas de EE.UU.) y hay API key configurada.
+    // Fallback 2: Census Bureau (gratis, sin key, solo EE.UU.).
+    if (!result) {
+      try {
+        result = await geocodeWithCensus(addressLine1, city, region, postalCode, countryCode);
+      } catch (censusError) {
+        console.error("pickup geocode: census fallback failed", censusError);
+      }
+    }
+
+    // Fallback 3: Google, solo si hay API key configurada.
     if (!result) {
       try {
         result = await geocodeWithGoogle(addressLine1, city, region, postalCode, countryCode);
