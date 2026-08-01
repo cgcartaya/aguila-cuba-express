@@ -22,6 +22,7 @@ import { TiendaSearchProvider } from "@/components/tienda/search/TiendaSearchCon
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
+import { getStoreBySlug } from "@/lib/services/stores";
 
 import type { Category } from "@/components/admin/settings/types";
 
@@ -38,6 +39,18 @@ const reservedTiendaRoutes = [
   "combos",
   "categorias",
 ];
+
+
+function getStoreSlugFromPathname(pathname: string) {
+  const pathParts = pathname.split("/").filter(Boolean);
+
+  const isSlugHomeOrChild =
+    pathParts.length >= 2 &&
+    pathParts[0] === "tienda" &&
+    !reservedTiendaRoutes.includes(pathParts[1]);
+
+  return isSlugHomeOrChild ? pathParts[1] : null;
+}
 
 function isPublicStoreHome(pathname: string) {
   const pathParts = pathname.split("/").filter(Boolean);
@@ -65,6 +78,7 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
   }, 0);
 
   const showStickyCategories = isPublicStoreHome(pathname);
+  const pathnameStoreSlug = getStoreSlugFromPathname(pathname);
 
   const isCartPage = pathname.endsWith("/cart") || pathname.includes("/cart/");
   const isCheckoutPage =
@@ -87,14 +101,39 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
     let mounted = true;
 
     async function loadCategories() {
-      if (!store?.id || !showStickyCategories) {
+      if (!showStickyCategories) {
         setCategories([]);
         return;
       }
 
-      const { data } = await getActiveCategoriesByStoreId(store.id);
+      /*
+        En tiendas por slug no dependemos solamente de StoreContext.
+        Al recargar directamente /tienda/deparis, el contexto puede tardar
+        en resolver la tienda y las pestañas sticky quedaban vacías.
+      */
+      let resolvedStoreId = store?.id || null;
+
+      if (pathnameStoreSlug) {
+        const pathnameStore = await getStoreBySlug(pathnameStoreSlug);
+        resolvedStoreId = pathnameStore?.id || null;
+      }
+
+      if (!resolvedStoreId) {
+        if (mounted) setCategories([]);
+        return;
+      }
+
+      const { data, error } = await getActiveCategoriesByStoreId(
+        resolvedStoreId
+      );
 
       if (!mounted) return;
+
+      if (error) {
+        console.error("Error cargando categorías sticky:", error);
+        setCategories([]);
+        return;
+      }
 
       setCategories((data as Category[]) || []);
     }
@@ -104,7 +143,7 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
     return () => {
       mounted = false;
     };
-  }, [store?.id, showStickyCategories]);
+  }, [pathnameStoreSlug, showStickyCategories, store?.id]);
 
   const stickyCategories = useMemo(() => {
     if (!showStickyCategories) return [];

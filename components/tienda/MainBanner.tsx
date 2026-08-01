@@ -127,10 +127,10 @@ export default function MainBanner({ storeId, storeSlug }: MainBannerProps) {
   if (banners.length === 0) return null;
 
   return (
-    <section className="relative w-full overflow-hidden min-h-[220px] md:min-h-[420px]">
+    <section className="relative mx-auto w-full overflow-hidden">
       <div
         ref={emblaRef}
-        className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl md:rounded-3xl"
+        className="mx-auto w-full max-w-6xl overflow-hidden rounded-2xl md:max-w-5xl md:rounded-3xl xl:max-w-[980px]"
       >
         <div className="flex">
           {banners.map((banner, index) => (
@@ -152,7 +152,7 @@ export default function MainBanner({ storeId, storeSlug }: MainBannerProps) {
                     fill
                     unoptimized
                     priority={index === 0}
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 1152px"
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 88vw, 980px"
                     className="bg-white object-contain transition-transform duration-500 hover:scale-[1.01]"
                   />
                 </Link>
