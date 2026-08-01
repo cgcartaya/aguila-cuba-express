@@ -39,6 +39,7 @@ export default function EditStorePage() {
     plan: "basic",
     monthly_price: 20,
     is_active: true,
+    has_landing: false,
     last_payment_date: "",
     next_payment_date: "",
     payment_status: "pending",
@@ -73,6 +74,7 @@ export default function EditStorePage() {
         plan: store.plan || "basic",
         monthly_price: Number(store.monthly_price || 20),
         is_active: Boolean(store.is_active),
+        has_landing: Boolean(store.has_landing),
         last_payment_date: store.last_payment_date || "",
         next_payment_date: store.next_payment_date || "",
         payment_status: store.payment_status || "pending",
@@ -166,6 +168,7 @@ export default function EditStorePage() {
         plan: form.plan,
         monthly_price: Number(form.monthly_price),
         is_active: form.is_active,
+        has_landing: form.has_landing,
         last_payment_date: form.last_payment_date || null,
         next_payment_date: form.next_payment_date || null,
         payment_status: form.payment_status,
@@ -336,6 +339,40 @@ export default function EditStorePage() {
               https://{form.subdomain || "mi-tienda"}.perlamarketplace.com
             </span>
           </p>
+
+          <label className="mt-4 flex items-start gap-3 rounded-2xl border p-4">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={form.has_landing}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  has_landing: e.target.checked,
+                })
+              }
+            />
+            <span>
+              <span className="block font-medium text-slate-800">
+                Mostrar landing en el subdominio
+              </span>
+              <span className="mt-1 block text-sm text-slate-500">
+                {form.has_landing ? (
+                  <>
+                    Activo: <strong>{form.subdomain || "mi-tienda"}.perlamarketplace.com</strong>{" "}
+                    muestra la landing de la tienda y la tienda queda disponible en{" "}
+                    <strong>/tienda</strong> dentro de ese mismo subdominio.
+                  </>
+                ) : (
+                  <>
+                    Desactivado: <strong>{form.subdomain || "mi-tienda"}.perlamarketplace.com</strong>{" "}
+                    abre la tienda directamente. Actívalo solo si esta tienda ya tiene una
+                    landing publicada en el código.
+                  </>
+                )}
+              </span>
+            </span>
+          </label>
         </div>
 
         <div>

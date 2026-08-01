@@ -15,6 +15,7 @@ const STORE_PUBLIC_FIELDS = `
   primary_color,
   secondary_color,
   is_active,
+  has_landing,
   plan,
   monthly_price,
   payment_status,
@@ -231,6 +232,7 @@ export async function updateStore(
     primary_color?: string | null
     secondary_color?: string | null
     is_active?: boolean
+    has_landing?: boolean
     plan?: string
     monthly_price?: number | null
     next_payment_date?: string | null

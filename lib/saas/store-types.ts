@@ -18,6 +18,7 @@ export interface Store {
   primary_color: string | null
   secondary_color: string | null
   is_active: boolean
+  has_landing: boolean
   plan: StorePlan
   monthly_price: number | null
 
