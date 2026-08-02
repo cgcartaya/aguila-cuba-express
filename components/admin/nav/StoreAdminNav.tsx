@@ -22,8 +22,12 @@ export default function StoreAdminNav() {
 
   const activeStore = isSuperAdmin ? selectedStore || accessStore : accessStore;
   const theme = getStoreTheme(activeStore);
-  const primaryColor = theme.primary;
-  const textColor = theme.textOnPrimary;
+  // Probando: el lateral ahora se pinta con el color SECUNDARIO en vez
+  // del primario. El primario queda como acento (botón "Agregar
+  // producto", ítem activo del menú) para que siga resaltando encima.
+  const sidebarBg = theme.secondary;
+  const textColor = theme.textOnSecondary;
+  const accentColor = theme.primary;
   const storeName = activeStore?.name || "Tienda activa";
 
   const publicStoreHref = "/portal";
@@ -46,7 +50,7 @@ export default function StoreAdminNav() {
         xl:flex
         xl:flex-col
       "
-      style={{ backgroundColor: primaryColor, color: textColor }}
+      style={{ backgroundColor: sidebarBg, color: textColor }}
     >
       <div className="mb-6 shrink-0">
         <div
@@ -79,7 +83,7 @@ export default function StoreAdminNav() {
       <Link
         href="/admin/products/new"
         className="mb-7 flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-bold shadow-lg transition hover:opacity-90"
-        style={{ color: primaryColor }}
+        style={{ color: accentColor }}
       >
         <Plus size={18} />
         Agregar producto
@@ -111,7 +115,7 @@ export default function StoreAdminNav() {
                     }`}
                     style={
                       active
-                        ? { color: primaryColor }
+                        ? { color: accentColor }
                         : { color: textColor, backgroundColor: "transparent" }
                     }
                     onMouseEnter={(e) => {
