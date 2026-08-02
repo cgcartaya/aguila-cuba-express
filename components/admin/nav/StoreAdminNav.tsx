@@ -8,6 +8,7 @@ import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { getVisibleAdminSections } from "@/lib/admin/nav-config";
+import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
@@ -20,7 +21,9 @@ export default function StoreAdminNav() {
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
   const activeStore = isSuperAdmin ? selectedStore || accessStore : accessStore;
-  const primaryColor = activeStore?.primary_color || "#0B1F4D";
+  const theme = getStoreTheme(activeStore);
+  const primaryColor = theme.primary;
+  const textColor = theme.textOnPrimary;
   const storeName = activeStore?.name || "Tienda activa";
 
   const publicStoreHref = "/portal";
@@ -39,25 +42,34 @@ export default function StoreAdminNav() {
         w-72
         overflow-hidden
         p-5
-        text-white
         shadow-xl
         xl:flex
         xl:flex-col
       "
-      style={{ backgroundColor: primaryColor }}
+      style={{ backgroundColor: primaryColor, color: textColor }}
     >
       <div className="mb-6 shrink-0">
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+        <div
+          className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl"
+          style={{ backgroundColor: withAlpha(textColor, 0.15) }}
+        >
           <Store size={24} />
         </div>
-        <h1 className="line-clamp-2 text-xl font-black text-white">{storeName}</h1>
-        <p className="text-sm font-semibold text-white/70">Administración de tienda</p>
+        <h1 className="line-clamp-2 text-xl font-black">{storeName}</h1>
+        <p className="text-sm font-semibold" style={{ color: withAlpha(textColor, 0.7) }}>
+          Administración de tienda
+        </p>
       </div>
 
       {isSuperAdmin && (
         <Link
           href="/admin/saas"
-          className="mb-4 flex items-center justify-center gap-2 rounded-2xl border border-white/30 bg-white/10 px-4 py-3 font-bold text-white shadow-lg transition hover:bg-white/20"
+          className="mb-4 flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 font-bold shadow-lg transition hover:opacity-80"
+          style={{
+            borderColor: withAlpha(textColor, 0.3),
+            backgroundColor: withAlpha(textColor, 0.1),
+            color: textColor,
+          }}
         >
           <Rocket size={18} />
           Volver al SaaS
@@ -73,10 +85,16 @@ export default function StoreAdminNav() {
         Agregar producto
       </Link>
 
-      <nav className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain pr-2 pb-4 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.28)_transparent]">
+      <nav
+        className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain pr-2 pb-4 [scrollbar-width:thin]"
+        style={{ scrollbarColor: `${withAlpha(textColor, 0.28)} transparent` }}
+      >
         {sections.map((section) => (
           <section key={section.title}>
-            <p className="mb-2 px-4 text-[11px] font-black uppercase tracking-[0.18em] text-white/50">
+            <p
+              className="mb-2 px-4 text-[11px] font-black uppercase tracking-[0.18em]"
+              style={{ color: withAlpha(textColor, 0.5) }}
+            >
               {section.title}
             </p>
             <div className="space-y-1.5">
@@ -89,9 +107,19 @@ export default function StoreAdminNav() {
                     key={link.href}
                     href={link.href}
                     className={`flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition ${
-                      active ? "bg-white shadow-lg" : "text-white hover:bg-white/10"
+                      active ? "bg-white shadow-lg" : "hover:opacity-80"
                     }`}
-                    style={active ? { color: primaryColor } : undefined}
+                    style={
+                      active
+                        ? { color: primaryColor }
+                        : { color: textColor, backgroundColor: "transparent" }
+                    }
+                    onMouseEnter={(e) => {
+                      if (!active) e.currentTarget.style.backgroundColor = withAlpha(textColor, 0.1);
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) e.currentTarget.style.backgroundColor = "transparent";
+                    }}
                   >
                     <Icon size={19} />
                     {link.label}
@@ -103,11 +131,12 @@ export default function StoreAdminNav() {
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-white/20 pt-4">
+      <div className="shrink-0 border-t pt-4" style={{ borderColor: withAlpha(textColor, 0.2) }}>
         <Link
           href={publicStoreHref}
           target="_blank"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold text-white transition hover:bg-white/10"
+          className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80"
+          style={{ color: textColor }}
         >
           <ExternalLink size={20} />
           Ver experiencia pública

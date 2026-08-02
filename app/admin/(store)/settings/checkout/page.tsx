@@ -70,15 +70,24 @@ const blockOptions: Array<{
   { key: "whatsapp", label: "WhatsApp", icon: MessageCircle },
 ];
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Toggle({
+  checked,
+  onChange,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+}) {
   return (
     <button
       type="button"
       onClick={onChange}
+      disabled={disabled}
       aria-pressed={checked}
       className={`relative h-7 w-12 rounded-full transition ${
         checked ? "bg-blue-600" : "bg-slate-300"
-      }`}
+      } ${disabled ? "cursor-not-allowed opacity-50" : ""}`}
     >
       <span
         className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${
@@ -96,9 +105,18 @@ function isMethodEnabled(settings: CheckoutSettings, method: CheckoutMethod) {
 }
 
 export default function CheckoutBuilderPage() {
-  const { store: accessStore, loading: accessLoading, error: accessError } = useAdminAccess();
+  const {
+    store: accessStore,
+    isSuperAdmin,
+    loading: accessLoading,
+    error: accessError,
+  } = useAdminAccess();
   const { store: selectedStore, loading: storeLoading } = useStore();
   const store = accessStore || selectedStore;
+  // El Super Admin siempre puede configurar cualquier método (igual que
+  // en el menú); una tienda normal solo puede usar "Enviar a Cuba" si
+  // tiene contratado el módulo de Envíos.
+  const canUseCubaMethod = isSuperAdmin || accessStore?.module_shipping_enabled === true;
   const [settings, setSettings] = useState<CheckoutSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -136,6 +154,7 @@ export default function CheckoutBuilderPage() {
 
   function toggleMethod(method: CheckoutMethod) {
     if (!settings) return;
+    if (method === "cuba" && !canUseCubaMethod) return;
     const next = { ...settings };
     if (method === "delivery") next.enabled_delivery = !settings.enabled_delivery;
     if (method === "cuba") next.enabled_cuba = !settings.enabled_cuba;
@@ -231,16 +250,31 @@ export default function CheckoutBuilderPage() {
                 {methodOptions.map((method) => {
                   const Icon = method.icon;
                   const enabled = isMethodEnabled(settings, method.key);
+                  const locked = method.key === "cuba" && !canUseCubaMethod;
                   return (
-                    <div key={method.key} className={`rounded-3xl border p-5 transition ${enabled ? "border-blue-300 bg-blue-50/50" : "border-slate-200"}`}>
+                    <div
+                      key={method.key}
+                      className={`rounded-3xl border p-5 transition ${
+                        locked
+                          ? "border-slate-200 bg-slate-50 opacity-60"
+                          : enabled
+                            ? "border-blue-300 bg-blue-50/50"
+                            : "border-slate-200"
+                      }`}
+                    >
                       <div className="flex items-start justify-between gap-3">
-                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${enabled ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${enabled && !locked ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
                           <Icon size={22} />
                         </div>
-                        <Toggle checked={enabled} onChange={() => toggleMethod(method.key)} />
+                        <Toggle checked={enabled} onChange={() => toggleMethod(method.key)} disabled={locked} />
                       </div>
                       <h3 className="mt-4 font-bold text-[#0B1F4D]">{method.title}</h3>
                       <p className="mt-2 text-sm leading-5 text-slate-500">{method.description}</p>
+                      {locked && (
+                        <p className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-600">
+                          Requiere el módulo de Envíos activo
+                        </p>
+                      )}
                     </div>
                   );
                 })}
