@@ -30,6 +30,15 @@ type AdminPageHeaderProps = {
   actionHref?: string;
 };
 
+/*
+ * Header plano tipo panel de administración "serio" (Stripe/Linear/
+ * Vercel), no un hero de landing. El color de marca de la tienda
+ * aparece como ACENTO puntual — borde izquierdo, chip del ícono,
+ * eyebrow y botón principal — nunca como fondo grande de color. Esto
+ * también lo hace más robusto: el título y el texto siempre son
+ * neutros (slate-900 / slate-500), así que ningún color que elija
+ * ninguna tienda puede volverlos ilegibles.
+ */
 export default function AdminPageHeader({
   eyebrow,
   badge,
@@ -54,129 +63,89 @@ export default function AdminPageHeader({
     !actions && actionHref && actionLabel ? (
       <Link
         href={actionHref}
-        className="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-2.5 text-sm font-extrabold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-        style={{ color: theme.primary }}
+        className="inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+        style={{ backgroundColor: theme.primary, color: theme.textOnPrimary }}
       >
         {actionLabel}
       </Link>
     ) : null;
 
   return (
-    <header className="mb-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+    <header className="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div
-        className="relative overflow-hidden px-5 py-6 md:px-7 md:py-7"
-        style={{ background: theme.headerGradient, color: theme.textOnPrimary }}
+        className="border-l-4 px-5 py-5 md:px-7 md:py-6"
+        style={{ borderLeftColor: theme.primary }}
       >
-        {/* El color secundario resalta del lado derecho, con forma e
-            intensidad suficiente para notarse de verdad — nunca detrás
-            del título (que vive a la izquierda), así el contraste del
-            texto queda garantizado sin importar qué colores use cada
-            tienda. */}
-        <div
-          className="absolute -right-10 -top-24 h-72 w-72 rounded-full blur-xl"
-          style={{ backgroundColor: theme.secondaryGlowStrong }}
-        />
-        <div
-          className="absolute -bottom-16 -right-6 h-40 w-64 rounded-full blur-lg"
-          style={{ backgroundColor: theme.secondaryGlow }}
-        />
+        <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-400">
+          <Link href="/admin" className="inline-flex items-center gap-1.5 transition hover:text-slate-600">
+            <Home size={13} />
+            Administración
+          </Link>
 
-        <div className="relative">
-          <nav
-            className="mb-4 flex flex-wrap items-center gap-1.5 text-xs font-bold"
-            style={{ color: theme.mutedTextOnPrimary }}
-          >
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-1.5 transition hover:opacity-80"
-            >
-              <Home size={13} />
-              Administración
-            </Link>
+          {breadcrumbs.map((item) => (
+            <span key={`${item.label}-${item.href || "current"}`} className="inline-flex items-center gap-1.5">
+              <ChevronRight size={13} className="opacity-60" />
+              {item.href ? (
+                <Link href={item.href} className="transition hover:text-slate-600">
+                  {item.label}
+                </Link>
+              ) : (
+                <span className="text-slate-600">{item.label}</span>
+              )}
+            </span>
+          ))}
+        </nav>
 
-            {breadcrumbs.map((item) => (
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex items-start gap-3">
+            {Icon && (
               <span
-                key={`${item.label}-${item.href || "current"}`}
-                className="inline-flex items-center gap-1.5"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
+                  color: theme.textOnPrimary,
+                }}
               >
-                <ChevronRight size={13} className="opacity-60" />
-                {item.href ? (
-                  <Link
-                    href={item.href}
-                    className="transition hover:opacity-80"
-                    style={{ color: theme.textOnPrimary }}
-                  >
-                    {item.label}
-                  </Link>
-                ) : (
-                  <span style={{ color: theme.textOnPrimary }}>{item.label}</span>
-                )}
+                <Icon size={18} />
               </span>
-            ))}
-          </nav>
+            )}
 
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
+            <div className="min-w-0">
               {visibleEyebrow && (
-                <div className="flex items-center gap-2">
-                  {Icon && (
-                    <span
-                      className="flex h-8 w-8 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: theme.secondaryChipBg, color: theme.textOnPrimary }}
-                    >
-                      <Icon size={16} />
-                    </span>
-                  )}
-
-                  <p
-                    className="text-xs font-extrabold uppercase tracking-[0.16em]"
-                    style={{ color: theme.secondary }}
-                  >
-                    {visibleEyebrow}
-                  </p>
-                </div>
+                <p
+                  className="text-xs font-extrabold uppercase tracking-[0.14em]"
+                  style={{ color: theme.primary }}
+                >
+                  {visibleEyebrow}
+                </p>
               )}
 
-              <h1 className="mt-1 text-3xl font-extrabold tracking-tight md:text-4xl">
+              <h1 className="mt-0.5 text-2xl font-extrabold tracking-tight text-slate-900 md:text-3xl">
                 {title}
               </h1>
 
               {description && (
-                <p
-                  className="mt-2 max-w-2xl text-sm font-medium leading-6 md:text-base"
-                  style={{ color: theme.mutedTextOnPrimary }}
-                >
+                <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-500">
                   {description}
                 </p>
               )}
 
               {storeName && (
-                <p
-                  className="mt-3 inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
-                  style={{ backgroundColor: theme.secondary, color: theme.textOnSecondary }}
-                >
+                <p className="mt-3 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
                   {storeName}
                 </p>
               )}
             </div>
-
-            {(actions || legacyAction) && (
-              <div className="flex flex-wrap gap-2">
-                {actions}
-                {legacyAction}
-              </div>
-            )}
           </div>
+
+          {(actions || legacyAction) && (
+            <div className="flex shrink-0 flex-wrap gap-2">
+              {actions}
+              {legacyAction}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Franja de acento: pasa del primario al secundario de izquierda a
-          derecha — el mismo criterio "izquierda=principal,
-          derecha=secundario" aplicado también aquí, visible siempre. */}
-      <div
-        className="h-1.5"
-        style={{ background: `linear-gradient(90deg, ${theme.primary} 0%, ${theme.secondary} 100%)` }}
-      />
 
       {stats && (
         <div className="border-t border-slate-100 bg-slate-50/70 p-4 md:px-7">

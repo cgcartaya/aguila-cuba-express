@@ -22,6 +22,7 @@ import {
 
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { useStore } from "@/hooks/useStore";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 
@@ -238,43 +239,34 @@ export default function AdminDashboardPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-4 pb-24 md:p-6">
       <div className="mx-auto max-w-7xl">
-        <section className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#0B1F4D] via-[#123D8D] to-[#2563EB] p-6 text-white shadow-xl md:p-8">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-blue-100 ring-1 ring-white/15">
-                <Store size={16} />
-                Panel administrativo
-              </div>
-
-              <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-                {activeStore?.name ||
-                  (isSuperAdmin
-                    ? "Administración General"
-                    : "Tienda activa")}
-              </h1>
-
-              <p className="mt-3 max-w-2xl text-blue-100">
-                {isSuperAdmin && !activeStore
-                  ? "Selecciona una tienda para comenzar a administrar sus productos, inventario, órdenes y configuración."
-                  : "Controla productos, órdenes, clientes y el crecimiento de la tienda desde un solo lugar."}
-              </p>
-            </div>
-
-            {activeStore && (
-            <Link
-              href={
-                activeStore?.slug && activeStore.slug !== "aguila"
-                  ? `/tienda/${activeStore.slug}`
-                  : "/tienda"
-              }
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 font-bold text-white shadow-lg shadow-red-900/20 transition hover:bg-red-700"
-            >
-              Ver tienda
-              <ArrowRight size={18} />
-            </Link>
-            )}
-          </div>
-        </section>
+        <AdminPageHeader
+          eyebrow="Panel administrativo"
+          icon={Store}
+          title={
+            activeStore?.name ||
+            (isSuperAdmin ? "Administración General" : "Tienda activa")
+          }
+          description={
+            isSuperAdmin && !activeStore
+              ? "Selecciona una tienda para comenzar a administrar sus productos, inventario, órdenes y configuración."
+              : "Controla productos, órdenes, clientes y el crecimiento de la tienda desde un solo lugar."
+          }
+          actions={
+            activeStore ? (
+              <Link
+                href={
+                  activeStore?.slug && activeStore.slug !== "aguila"
+                    ? `/tienda/${activeStore.slug}`
+                    : "/tienda"
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-red-700"
+              >
+                Ver tienda
+                <ArrowRight size={18} />
+              </Link>
+            ) : undefined
+          }
+        />
 
         {isSuperAdmin && !activeStore ? (
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">

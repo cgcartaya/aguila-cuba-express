@@ -13,6 +13,8 @@ import {
   ShoppingBag,
 } from "lucide-react";
 
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+
 const settingsCards = [
 
   {
@@ -105,34 +107,21 @@ export default function AdminSettingsPage() {
   return (
     <main className="min-h-screen bg-[#F8FAFC] p-6">
       <div className="mx-auto max-w-7xl">
-        {/* HERO */}
-        <section className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#0B1F4D] via-[#123D8D] to-[#2563EB] p-8 text-white shadow-xl">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-blue-100 ring-1 ring-white/15">
-                <Settings size={16} />
-                Centro de configuración
-              </div>
-
-              <h1 className="text-3xl font-bold tracking-tight md:text-5xl">
-                Ajustes de la tienda
-              </h1>
-
-              <p className="mt-3 max-w-2xl text-blue-100">
-                Controla desde aquí las opciones principales del negocio sin
-                tocar código.
-              </p>
-            </div>
-
+        <AdminPageHeader
+          eyebrow="Centro de configuración"
+          icon={Settings}
+          title="Ajustes de la tienda"
+          description="Controla desde aquí las opciones principales del negocio sin tocar código."
+          actions={
             <Link
               href="/tienda"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 font-bold text-white shadow-lg shadow-red-900/20 transition hover:bg-red-700"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-red-700"
             >
               Ver tienda
               <ArrowRight size={18} />
             </Link>
-          </div>
-        </section>
+          }
+        />
 
         {/* CARDS */}
         <section className="grid gap-5 md:grid-cols-2">
