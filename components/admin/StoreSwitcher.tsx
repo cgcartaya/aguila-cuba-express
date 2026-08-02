@@ -6,6 +6,7 @@ import { Building2, Lock } from "lucide-react";
 import { getStores } from "@/lib/services/stores";
 import { useStore } from "@/contexts/StoreContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { getStoreTheme } from "@/lib/admin/theme";
 
 import type { Store } from "@/lib/saas/store-types";
 
@@ -47,14 +48,19 @@ export default function StoreSwitcher() {
   if (!isSuperAdmin) {
     if (!accessStore) return null;
 
+    const theme = getStoreTheme(accessStore);
+
     return (
-      <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm">
-        <Lock className="h-5 w-5 text-slate-500" />
+      <div
+        className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 shadow-sm"
+        style={{ borderLeftWidth: 3, borderLeftColor: theme.primary }}
+      >
+        <Lock className="h-5 w-5 text-slate-400" />
 
         <div className="min-w-0 flex-1 flex flex-col">
           <span className="text-xs text-slate-500">Tienda asignada</span>
 
-          <span className="font-semibold text-[#061b3a]">
+          <span className="font-semibold" style={{ color: theme.accentOnWhite }}>
             {accessStore.name}
           </span>
         </div>

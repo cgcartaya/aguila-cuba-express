@@ -58,6 +58,19 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+/**
+ * Para usar un color de marca como TEXTO sobre fondo BLANCO (topbars,
+ * tarjetas, etc.) — problema de contraste distinto al de arriba: ahí
+ * evaluábamos texto sobre el color; aquí evaluamos el color sobre
+ * blanco. Si el color es demasiado claro para leerse sobre blanco
+ * (ej. un secundario tipo crema), lo oscurece; si no, lo deja tal cual.
+ */
+export function getSafeAccentOnWhite(hex?: string | null, fallback: string = FALLBACK_PRIMARY): string {
+  const normalized = normalizeHex(hex, fallback);
+  const luminance = relativeLuminance(hexToRgb(normalized));
+  return luminance > 0.78 ? shade(normalized, -45) : normalized;
+}
+
 export type StoreThemeInput = {
   primary_color?: string | null;
   secondary_color?: string | null;
@@ -77,15 +90,18 @@ export function getStoreTheme(store?: StoreThemeInput | null) {
   const primary = normalizeHex(store?.primary_color, FALLBACK_PRIMARY);
   const secondary = normalizeHex(store?.secondary_color, FALLBACK_SECONDARY);
   const textOnPrimary = getContrastTextColor(primary);
+  const textOnSecondary = getContrastTextColor(secondary);
 
   return {
     primary,
     secondary,
     textOnPrimary,
+    textOnSecondary,
     mutedTextOnPrimary: withAlpha(textOnPrimary, 0.72),
+    accentOnWhite: getSafeAccentOnWhite(primary),
     headerGradient: `linear-gradient(135deg, ${shade(primary, -22)} 0%, ${primary} 55%, ${shade(primary, 10)} 100%)`,
-    secondaryGlow: withAlpha(secondary, 0.24),
-    secondaryGlowStrong: withAlpha(secondary, 0.4),
+    secondaryGlow: withAlpha(secondary, 0.35),
+    secondaryGlowStrong: withAlpha(secondary, 0.55),
     secondaryChipBg: withAlpha(secondary, 0.18),
   };
 }

@@ -67,16 +67,18 @@ export default function AdminPageHeader({
         className="relative overflow-hidden px-5 py-6 md:px-7 md:py-7"
         style={{ background: theme.headerGradient, color: theme.textOnPrimary }}
       >
-        {/* El color secundario se usa como acento (glow difuminado + borde
-            inferior), nunca detrás del texto, así el contraste queda
-            garantizado sin importar qué color elija cada tienda. */}
+        {/* El color secundario resalta del lado derecho, con forma e
+            intensidad suficiente para notarse de verdad — nunca detrás
+            del título (que vive a la izquierda), así el contraste del
+            texto queda garantizado sin importar qué colores use cada
+            tienda. */}
         <div
-          className="absolute -right-14 -top-20 h-52 w-52 rounded-full blur-2xl"
-          style={{ backgroundColor: theme.secondaryGlow }}
+          className="absolute -right-10 -top-24 h-72 w-72 rounded-full blur-xl"
+          style={{ backgroundColor: theme.secondaryGlowStrong }}
         />
         <div
-          className="absolute -bottom-24 left-1/3 h-48 w-48 rounded-full blur-2xl"
-          style={{ backgroundColor: theme.secondaryGlowStrong }}
+          className="absolute -bottom-16 -right-6 h-40 w-64 rounded-full blur-lg"
+          style={{ backgroundColor: theme.secondaryGlow }}
         />
 
         <div className="relative">
@@ -151,7 +153,7 @@ export default function AdminPageHeader({
               {storeName && (
                 <p
                   className="mt-3 inline-flex rounded-full px-3 py-1.5 text-xs font-bold"
-                  style={{ backgroundColor: theme.secondaryChipBg, color: theme.textOnPrimary }}
+                  style={{ backgroundColor: theme.secondary, color: theme.textOnSecondary }}
                 >
                   {storeName}
                 </p>
@@ -168,10 +170,13 @@ export default function AdminPageHeader({
         </div>
       </div>
 
-      {/* Franja fina con el color secundario: el "acento" que separa el
-          header del contenido, visible incluso cuando el glow de arriba
-          casi no se nota (colores muy claros u oscuros). */}
-      <div className="h-1" style={{ backgroundColor: theme.secondary }} />
+      {/* Franja de acento: pasa del primario al secundario de izquierda a
+          derecha — el mismo criterio "izquierda=principal,
+          derecha=secundario" aplicado también aquí, visible siempre. */}
+      <div
+        className="h-1.5"
+        style={{ background: `linear-gradient(90deg, ${theme.primary} 0%, ${theme.secondary} 100%)` }}
+      />
 
       {stats && (
         <div className="border-t border-slate-100 bg-slate-50/70 p-4 md:px-7">

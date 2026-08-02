@@ -11,6 +11,7 @@ import MobileAdminBottomNav from "@/components/admin/MobileAdminBottomNav";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import { getStoreTheme } from "@/lib/admin/theme";
 
 export default function StoreAdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -40,6 +41,8 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
     activeStore?.name ||
     (isSuperAdmin ? "Administración General" : "Tienda activa");
 
+  const theme = getStoreTheme(activeStore);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <StoreAdminNav />
@@ -57,8 +60,8 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
             </button>
 
             <div className="flex min-w-0 items-center gap-2">
-              <Store className="h-5 w-5 shrink-0 text-[#061b3a]" />
-              <span className="truncate text-sm font-black text-[#061b3a]">
+              <Store className="h-5 w-5 shrink-0" style={{ color: theme.accentOnWhite }} />
+              <span className="truncate text-sm font-black" style={{ color: theme.accentOnWhite }}>
                 {accessLoading ? "Cargando tienda..." : storeName}
               </span>
             </div>
@@ -90,7 +93,7 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
                 Panel operativo
               </p>
 
-              <h2 className="text-2xl font-black text-[#061b3a]">
+              <h2 className="text-2xl font-black" style={{ color: theme.accentOnWhite }}>
                 {accessLoading ? "Cargando tienda..." : storeName}
               </h2>
             </div>
