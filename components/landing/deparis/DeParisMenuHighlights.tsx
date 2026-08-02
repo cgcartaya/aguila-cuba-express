@@ -1,67 +1,96 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 
 /*
- * Cada categoría admite una foto opcional en `image`. Si el archivo no
- * existe todavía, la tarjeta simplemente muestra su color de fondo (no
- * se rompe ni aparece un ícono de "imagen rota").
+ * Cada categoría admite una foto opcional en `image` (SIN extensión).
+ * El componente prueba automáticamente .jpg, .jpeg, .png y .webp, así
+ * que no importa en qué formato la guardes. Si ningún archivo existe
+ * todavía, la tarjeta simplemente muestra su color de fondo (no se
+ * rompe ni aparece un ícono de "imagen rota").
  *
- * Para activar las fotos, guarda tus imágenes (idealmente cuadradas o
- * 4:3, tomadas por ustedes mismos — se ven mucho más reales que un
- * stock genérico) en:
+ * Guarda tus fotos (idealmente cuadradas o 4:3, tomadas por ustedes
+ * mismos) en public/deparis/menu/ con estos nombres:
  *
- *   public/deparis/menu/panaderia.jpg
- *   public/deparis/menu/quesos.jpg
- *   public/deparis/menu/vinos.jpg
- *   public/deparis/menu/bistro.jpg
- *   public/deparis/menu/desayuno.jpg
- *   public/deparis/menu/mercado-gourmet.jpg
+ *   panaderia.(jpg|jpeg|png|webp)        -> "Panadería & Pastelería"
+ *   quesos.(jpg|jpeg|png|webp)            -> "Quesos & Charcutería"
+ *   vinos.(jpg|jpeg|png|webp)              -> "Vinos & Espumantes"
+ *   bistro.(jpg|jpeg|png|webp)              -> "Platos del Bistró"
+ *   desayuno.(jpg|jpeg|png|webp)          -> "Desayuno Francés"
+ *   mercado-gourmet.(jpg|jpeg|png|webp) -> "Mercado Gourmet"
  *
- * con esos mismos nombres, y listo — no hay que tocar más código.
+ * Importante: el archivo tiene que estar dentro de la carpeta
+ * public/ del proyecto (y desplegado), no subido desde un panel
+ * aparte — Next.js sirve /public tal cual, sin base de datos de por
+ * medio.
  */
+const EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
+
+function CategoryPhoto({ base }: { base: string }) {
+  const [extIndex, setExtIndex] = useState(0);
+  const [failed, setFailed] = useState(false);
+
+  if (failed || extIndex >= EXTENSIONS.length) return null;
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`${base}.${EXTENSIONS[extIndex]}`}
+      alt=""
+      className="absolute inset-0 h-full w-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+      onError={() => {
+        if (extIndex + 1 < EXTENSIONS.length) {
+          setExtIndex((v) => v + 1);
+        } else {
+          setFailed(true);
+        }
+      }}
+    />
+  );
+}
 const CATEGORIES = [
   {
     n: "01",
     name: "Panadería & Pastelería",
     desc: "Croissants, baguettes y viennoiserie horneada con técnica francesa.",
     tone: "dark",
-    image: "/deparis/menu/panaderia.jpg",
+    image: "/deparis/menu/panaderia",
   },
   {
     n: "02",
     name: "Quesos & Charcutería",
     desc: "Selección curada de quesos, embutidos y conservas importadas.",
     tone: "orange",
-    image: "/deparis/menu/quesos.jpg",
+    image: "/deparis/menu/quesos",
   },
   {
     n: "03",
     name: "Vinos & Espumantes",
     desc: "Etiquetas francesas y del mundo para acompañar cada ocasión.",
     tone: "cream",
-    image: "/deparis/menu/vinos.jpg",
+    image: "/deparis/menu/vinos",
   },
   {
     n: "04",
     name: "Platos del Bistró",
     desc: "Clásicos franceses con un toque propio, servidos en sala.",
     tone: "cream",
-    image: "/deparis/menu/bistro.jpg",
+    image: "/deparis/menu/bistro",
   },
   {
     n: "05",
     name: "Desayuno Francés",
     desc: "Café, jugos y bollería recién horneada para empezar el día.",
     tone: "orange",
-    image: "/deparis/menu/desayuno.jpg",
+    image: "/deparis/menu/desayuno",
   },
   {
     n: "06",
     name: "Mercado Gourmet",
     desc: "Aceites, mermeladas, chocolates y despensa para llevar a casa.",
     tone: "dark",
-    image: "/deparis/menu/mercado-gourmet.jpg",
+    image: "/deparis/menu/mercado-gourmet",
   },
 ] as const;
 
@@ -112,12 +141,9 @@ export default function DeParisMenuHighlights() {
               transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: [0.2, 0.8, 0.2, 1] }}
               className={`group relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-2xl p-7 shadow-[0_18px_40px_rgba(27,20,16,0.06)] transition-transform duration-300 hover:-translate-y-1.5 ${toneStyles[cat.tone]}`}
             >
-              {/* Foto de fondo (si existe el archivo). Si no existe, no pasa nada raro:
-                  el navegador simplemente no pinta nada y queda el color sólido de arriba. */}
-              <div
-                className="absolute inset-0 bg-cover bg-center opacity-90 transition-transform duration-500 group-hover:scale-105"
-                style={{ backgroundImage: `url(${cat.image})` }}
-              />
+              {/* Foto de fondo (si existe el archivo, en cualquiera de los formatos
+                  soportados). Si no existe, no pasa nada raro: queda el color sólido. */}
+              <CategoryPhoto base={cat.image} />
               {/* Velo de color de marca sobre la foto */}
               <div className={`absolute inset-0 ${overlayStyles[cat.tone]}`} />
               <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-current opacity-[0.06] transition-transform duration-500 group-hover:scale-125" />
