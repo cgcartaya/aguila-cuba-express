@@ -99,7 +99,7 @@ export default function DeParisDualWorlds() {
             </h3>
             <p className="mt-4 max-w-md text-sm leading-7 text-[#1B1410]/75">
               Panadería, quesos, vinos y productos importados listos para
-              pedir desde tu celular, con delivery en Miami o retiro en
+              pedir desde tu celular, con delivery en Cienfuegos o retiro en
               tienda.
             </p>
           </div>

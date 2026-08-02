@@ -47,7 +47,7 @@ export default function DeParisFooter() {
               />
             </div>
             <p className="mt-4 max-w-[220px] text-sm leading-6 text-[#1B1410]/60">
-              Mercado y bistró de inspiración francesa en Miami.
+              Mercado y bistró de inspiración francesa en Cienfuegos, Cuba.
             </p>
           </div>
 
@@ -130,7 +130,7 @@ export default function DeParisFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[#1B1410]/10 pt-6 text-xs text-[#1B1410]/45 sm:flex-row">
           <p>© {year} De Paris. Todos los derechos reservados.</p>
-          <p>Mercado &amp; Bistró francés · Miami, FL</p>
+          <p>Mercado &amp; Bistró francés · Cienfuegos, Cuba</p>
         </div>
       </div>
     </footer>

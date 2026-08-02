@@ -19,7 +19,7 @@ const fadeUp: Variants = {
 const stats = [
   ["2", "experiencias en un solo lugar"],
   ["100%", "curado con acento francés"],
-  ["Miami", "delivery y retiro en tienda"],
+  ["Cienfuegos", "delivery y retiro en tienda"],
 ] as const;
 
 export default function DeParisHero() {
@@ -44,7 +44,7 @@ export default function DeParisHero() {
             className="inline-flex items-center gap-2 rounded-full border border-[#1B1410]/15 bg-white/50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1B1410]/80 backdrop-blur-sm"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#FC6C26]" />
-            Miami · Mercado &amp; Bistró francés
+            Cienfuegos, Cuba · Mercado &amp; Bistró francés
           </motion.div>
 
           <motion.h1
@@ -135,6 +135,7 @@ export default function DeParisHero() {
           initial={{ opacity: 0, scale: 0.9, rotate: -4 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ duration: 0.9, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+          style={{ perspective: "1200px" }}
           className="relative mx-auto flex aspect-square w-full max-w-[440px] items-center justify-center"
         >
           <div className="dp-orbit absolute inset-0 rounded-full border border-dashed border-[#C89B3C]/50" />
@@ -142,7 +143,10 @@ export default function DeParisHero() {
 
           <div className="dp-float relative flex h-[78%] w-[78%] items-center justify-center rounded-full bg-gradient-to-b from-white to-[#FFF4D6] p-3 shadow-[0_40px_80px_rgba(27,20,16,0.18)] ring-1 ring-[#1B1410]/5">
             <div className="dp-medallion-shine absolute inset-0 rounded-full" />
-            <div className="relative flex h-full w-full items-center justify-center rounded-full border-[3px] border-[#C89B3C]/70 bg-white p-6">
+            <div
+              className="dp-coin relative flex h-full w-full items-center justify-center rounded-full border-[3px] border-[#C89B3C]/70 bg-white p-6"
+              style={{ transformStyle: "preserve-3d" }}
+            >
               <div className="relative h-full w-full">
                 <Image
                   src="/deparis/logo.png"
@@ -171,6 +175,7 @@ export default function DeParisHero() {
         .dp-orbit { animation: dpSpin 40s linear infinite; }
         .dp-orbit-2 { animation: dpSpin 60s linear infinite reverse; }
         .dp-float { animation: dpFloat 6.5s ease-in-out infinite; }
+        .dp-coin { animation: dpCoinSpin 2s linear infinite; }
         .dp-dot { animation: dpPulse 3.2s ease-in-out infinite; }
         .dp-dot-2 { animation: dpPulse 3.6s 0.4s ease-in-out infinite; }
         .dp-medallion-shine {
@@ -200,6 +205,10 @@ export default function DeParisHero() {
           0%,100% { transform: translate3d(0,0,0); }
           50% { transform: translate3d(0,-10px,0); }
         }
+        @keyframes dpCoinSpin {
+          from { transform: rotateY(0deg); }
+          to { transform: rotateY(360deg); }
+        }
         @keyframes dpPulse {
           0%,100% { opacity: .5; transform: scale(.85); }
           50% { opacity: 1; transform: scale(1.15); }
@@ -210,7 +219,7 @@ export default function DeParisHero() {
           55% { background-position: 100% 100%; opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .dp-hero-glow, .dp-hero-glow-2, .dp-orbit, .dp-orbit-2, .dp-float, .dp-dot, .dp-dot-2, .dp-medallion-shine {
+          .dp-hero-glow, .dp-hero-glow-2, .dp-orbit, .dp-orbit-2, .dp-float, .dp-dot, .dp-dot-2, .dp-medallion-shine, .dp-coin {
             animation: none !important;
           }
         }

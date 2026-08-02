@@ -6,7 +6,7 @@ import { Clock, Sparkles, Truck, Wine } from "lucide-react";
 const VALUES = [
   {
     icon: Truck,
-    title: "Delivery en Miami",
+    title: "Delivery en Cienfuegos",
     desc: "Pide desde la tienda online y recibe en tu casa u oficina.",
   },
   {
@@ -73,7 +73,7 @@ export default function DeParisFeatures() {
             className="text-2xl leading-snug text-[#1B1410] sm:text-3xl"
             style={{ fontFamily: "var(--font-dp-display)", fontStyle: "italic", fontWeight: 500 }}
           >
-            &ldquo;Se siente como una escapada a París sin salir de Miami.&rdquo;
+            &ldquo;Se siente como una escapada a París sin salir de Cienfuegos.&rdquo;
           </p>
           <footer className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-[#1B1410]/45">
             Reseña de un cliente — De Paris

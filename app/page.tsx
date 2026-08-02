@@ -45,10 +45,10 @@ function resolveLanding(host: string): LandingType {
 
   // Dominio y subdominios de De Paris.
   if (
-    normalizedHost === "deparismiami.com" ||
+    normalizedHost === "depariscuba.com" ||
     normalizedHost === `deparis.${PLATFORM_DOMAIN}` ||
     normalizedHost.startsWith("deparis.") ||
-    normalizedHost.startsWith("deparismiami.")
+    normalizedHost.startsWith("depariscuba.")
   ) {
     return "deparis";
   }
@@ -85,9 +85,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (landing === "deparis") {
     return {
-      title: "De Paris | Mercado & Bistró francés en Miami",
+      title: "De Paris | Mercado & Bistró francés en Cienfuegos",
       description:
-        "De Paris es un bar restaurante y mercado online de inspiración francesa en Miami: panadería, quesos, vinos y platos de bistró con delivery o retiro en tienda.",
+        "De Paris es un bar restaurante y mercado online de inspiración francesa en Cienfuegos, Cuba: panadería, quesos, vinos y platos de bistró con delivery o retiro en tienda.",
     };
   }
 
