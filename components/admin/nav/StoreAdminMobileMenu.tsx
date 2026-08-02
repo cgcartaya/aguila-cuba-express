@@ -2,74 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  X,
-  LayoutDashboard,
-  Package,
-  Tags,
-  Boxes,
-  ClipboardList,
-  Settings,
-  Users,
-  Rocket,
-  Building2,
-  Layers3,
-  ExternalLink,
-  BarChart3,
-  Truck,
-  Route,
-  Wrench,
-  Calculator,
-  ClipboardCheck,
-  CalendarDays,
-  MapPin,
-  Megaphone,
-  Globe2,
-} from "lucide-react";
+import { Building2, ExternalLink, Rocket, X } from "lucide-react";
 
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { getVisibleAdminSections, type AdminLink } from "@/lib/admin/nav-config";
 
 type AdminMobileMenuProps = {
   open: boolean;
   onClose: () => void;
 };
 
-type MenuItem = {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-};
-
-const saasLinks: MenuItem[] = [
+const saasLinks: AdminLink[] = [
   { label: "Dashboard SaaS", href: "/admin/saas", icon: Rocket },
   { label: "Tiendas", href: "/admin/stores", icon: Building2 },
-];
-
-const storeLinks: MenuItem[] = [
-  { label: "Dashboard tienda", href: "/admin", icon: LayoutDashboard },
-  { label: "Productos", href: "/admin/products", icon: Package },
-  { label: "Combos", href: "/admin/combos", icon: Layers3 },
-  { label: "Inventario", href: "/admin/inventory", icon: Boxes },
-  { label: "Órdenes", href: "/admin/orders", icon: ClipboardList },
-  { label: "Recogidas", href: "/admin/pickups", icon: CalendarDays },
-  { label: "Rutas de recogida", href: "/admin/pickups/routes", icon: Route },
-  { label: "Clientes de recogida", href: "/admin/pickups/customers", icon: Users },
-  { label: "Zonas y ciudades", href: "/admin/pickups/zones", icon: Layers3 },
-  { label: "Cobertura de recogidas", href: "/admin/pickups/settings", icon: MapPin },
-  { label: "Dashboard de envíos", href: "/admin/shipping", icon: LayoutDashboard },
-  { label: "Viajes", href: "/admin/shipping/trips", icon: Route },
-  { label: "Todos los envíos", href: "/admin/shipping/shipments", icon: Truck },
-  { label: "Ajustes de envíos", href: "/admin/shipping/settings", icon: Wrench },
-  { label: "Portal comercial", href: "/admin/portal-comercial", icon: Globe2 },
-  { label: "Cotizador público", href: "/admin/portal/cotizador", icon: Calculator },
-  { label: "Cotizaciones", href: "/admin/portal/cotizaciones", icon: ClipboardCheck },
-  { label: "Clientes", href: "/admin/customers", icon: Users },
-  { label: "Visitas", href: "/admin/analytics", icon: BarChart3 },
-  { label: "Promociones", href: "/admin/marketing/promotions", icon: Megaphone },
-  { label: "Ajustes tienda", href: "/admin/settings", icon: Settings },
-  { label: "Ver tienda pública", href: "/tienda", icon: ExternalLink },
 ];
 
 function isActivePath(pathname: string, href: string) {
@@ -85,7 +32,7 @@ function MenuSection({
   onClose,
 }: {
   title: string;
-  links: MenuItem[];
+  links: AdminLink[];
   pathname: string;
   onClose: () => void;
 }) {
@@ -121,12 +68,13 @@ function MenuSection({
   );
 }
 
-export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
+export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
   const pathname = usePathname();
   const { store } = useStore();
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
   const activeStore = isSuperAdmin ? store || accessStore : accessStore;
+  const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
 
   if (!open) return null;
 
@@ -174,9 +122,19 @@ export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps)
             />
           )}
 
+          {sections.map((section) => (
+            <MenuSection
+              key={section.title}
+              title={section.title}
+              links={section.links}
+              pathname={pathname}
+              onClose={onClose}
+            />
+          ))}
+
           <MenuSection
-            title="Tienda activa"
-            links={storeLinks}
+            title="Tienda"
+            links={[{ label: "Ver tienda pública", href: "/tienda", icon: ExternalLink }]}
             pathname={pathname}
             onClose={onClose}
           />

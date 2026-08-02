@@ -2,103 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BarChart3,
-  Boxes,
-  Calculator,
-  ClipboardCheck,
-  ExternalLink,
-  Globe2,
-  LayoutDashboard,
-  Layers3,
-  Package,
-  Plus,
-  Rocket,
-  Settings,
-  ShoppingCart,
-  Store,
-  Truck,
-  CalendarDays,
-  MapPin,
-  Megaphone,
-  Route,
-  Users,
-  Wrench,
-} from "lucide-react";
+import { ExternalLink, Plus, Rocket, Store } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
-
-type AdminLink = {
-  href: string;
-  label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-};
-
-type AdminSection = {
-  title: string;
-  links: AdminLink[];
-};
-
-const sections: AdminSection[] = [
-  {
-    title: "Operación",
-    links: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
-      { href: "/admin/customers", label: "Clientes", icon: Users },
-      { href: "/admin/analytics", label: "Visitas", icon: BarChart3 },
-    ],
-  },
-  {
-    title: "Marketplace",
-    links: [
-      { href: "/admin/products", label: "Productos", icon: Package },
-      { href: "/admin/combos", label: "Combos", icon: Layers3 },
-      { href: "/admin/inventory", label: "Inventario", icon: Boxes },
-    ],
-  },
-  {
-    title: "Recogidas",
-    links: [
-      { href: "/admin/pickups", label: "Solicitudes de recogida", icon: CalendarDays },
-      { href: "/admin/pickups/routes", label: "Rutas de recogida", icon: Route },
-      { href: "/admin/pickups/customers", label: "Clientes de recogida", icon: Users },
-      { href: "/admin/pickups/zones", label: "Zonas y ciudades", icon: Layers3 },
-      { href: "/admin/pickups/settings", label: "Configurar cobertura", icon: MapPin },
-    ],
-  },
-  {
-    title: "Envíos",
-    links: [
-      { href: "/admin/shipping", label: "Dashboard de envíos", icon: LayoutDashboard },
-      { href: "/admin/shipping/trips", label: "Viajes", icon: Route },
-      { href: "/admin/shipping/shipments", label: "Todos los envíos", icon: Truck },
-      { href: "/admin/shipping/settings", label: "Ajustes de envíos", icon: Wrench },
-    ],
-  },
-  {
-    title: "Portal comercial",
-    links: [
-      { href: "/admin/portal-comercial", label: "Configuración general", icon: Globe2 },
-      { href: "/admin/portal/cotizador", label: "Cotizador público", icon: Calculator },
-      { href: "/admin/portal/cotizaciones", label: "Cotizaciones", icon: ClipboardCheck },
-    ],
-  },
-  {
-    title: "Marketing",
-    links: [
-      { href: "/admin/marketing/promotions", label: "Promociones", icon: Megaphone },
-    ],
-  },
-  {
-    title: "Configuración",
-    links: [
-      { href: "/admin/settings", label: "Ajustes de tienda", icon: Settings },
-    ],
-  },
-];
+import { getVisibleAdminSections } from "@/lib/admin/nav-config";
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
@@ -115,6 +24,8 @@ export default function StoreAdminNav() {
   const storeName = activeStore?.name || "Tienda activa";
 
   const publicStoreHref = "/portal";
+
+  const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
 
   return (
     <aside
