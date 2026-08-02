@@ -1,14 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { Menu, Rocket } from "lucide-react";
 
 import SaasAdminNav from "@/components/admin/nav/SaasAdminNav";
 import SaasAdminMobileMenu from "@/components/admin/nav/SaasAdminMobileMenu";
+import { getSaasSettings, type SaasSettings } from "@/lib/saas/settings-service";
+import { getStoreTheme } from "@/lib/admin/theme";
 
 export default function SaasAdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [settings, setSettings] = useState<SaasSettings | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    getSaasSettings().then((data) => {
+      if (mounted) setSettings(data);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const theme = getStoreTheme(settings);
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -27,8 +42,8 @@ export default function SaasAdminShell({ children }: { children: ReactNode }) {
             </button>
 
             <div className="flex min-w-0 items-center gap-2">
-              <Rocket className="h-5 w-5 shrink-0 text-[#061b3a]" />
-              <span className="truncate text-sm font-black text-[#061b3a]">
+              <Rocket className="h-5 w-5 shrink-0" style={{ color: theme.accentOnWhite }} />
+              <span className="truncate text-sm font-black" style={{ color: theme.accentOnWhite }}>
                 Administración SaaS
               </span>
             </div>
@@ -37,7 +52,7 @@ export default function SaasAdminShell({ children }: { children: ReactNode }) {
 
         <div className="hidden border-b bg-white px-6 py-4 xl:block">
           <p className="text-sm font-bold text-slate-500">Super Admin</p>
-          <h2 className="text-2xl font-black text-[#061b3a]">
+          <h2 className="text-2xl font-black" style={{ color: theme.accentOnWhite }}>
             Plataforma SaaS multitienda
           </h2>
         </div>
