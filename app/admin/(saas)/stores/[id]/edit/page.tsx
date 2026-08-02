@@ -40,6 +40,9 @@ export default function EditStorePage() {
     monthly_price: 20,
     is_active: true,
     has_landing: false,
+    module_store_enabled: true,
+    module_shipping_enabled: false,
+    module_pickups_enabled: false,
     last_payment_date: "",
     next_payment_date: "",
     payment_status: "pending",
@@ -75,6 +78,9 @@ export default function EditStorePage() {
         monthly_price: Number(store.monthly_price || 20),
         is_active: Boolean(store.is_active),
         has_landing: Boolean(store.has_landing),
+        module_store_enabled: store.module_store_enabled !== false,
+        module_shipping_enabled: Boolean(store.module_shipping_enabled),
+        module_pickups_enabled: Boolean(store.module_pickups_enabled),
         last_payment_date: store.last_payment_date || "",
         next_payment_date: store.next_payment_date || "",
         payment_status: store.payment_status || "pending",
@@ -169,6 +175,9 @@ export default function EditStorePage() {
         monthly_price: Number(form.monthly_price),
         is_active: form.is_active,
         has_landing: form.has_landing,
+        module_store_enabled: form.module_store_enabled,
+        module_shipping_enabled: form.module_shipping_enabled,
+        module_pickups_enabled: form.module_pickups_enabled,
         last_payment_date: form.last_payment_date || null,
         next_payment_date: form.next_payment_date || null,
         payment_status: form.payment_status,
@@ -373,6 +382,84 @@ export default function EditStorePage() {
               </span>
             </span>
           </label>
+        </div>
+
+        <div>
+          <label className="mb-2 block font-medium">Módulos contratados</label>
+          <p className="mb-3 text-sm text-slate-500">
+            Controla qué secciones ve esta tienda en su menú de administración.
+            El Super Admin (tú) siempre ve todo, sin importar esta selección.
+          </p>
+
+          <div className="space-y-3">
+            <label className="flex items-start gap-3 rounded-2xl border p-4">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={form.module_store_enabled}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    module_store_enabled: e.target.checked,
+                  })
+                }
+              />
+              <span>
+                <span className="block font-medium text-slate-800">
+                  Tienda / Marketplace
+                </span>
+                <span className="mt-1 block text-sm text-slate-500">
+                  Dashboard, órdenes, productos, combos, inventario, clientes y
+                  visitas. Está activo por defecto: casi toda tienda lo necesita.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 rounded-2xl border p-4">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={form.module_pickups_enabled}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    module_pickups_enabled: e.target.checked,
+                  })
+                }
+              />
+              <span>
+                <span className="block font-medium text-slate-800">
+                  Recogidas
+                </span>
+                <span className="mt-1 block text-sm text-slate-500">
+                  Solicitudes, rutas, clientes y zonas de recogida, más el
+                  portal comercial (cotizador y cotizaciones).
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 rounded-2xl border p-4">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={form.module_shipping_enabled}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    module_shipping_enabled: e.target.checked,
+                  })
+                }
+              />
+              <span>
+                <span className="block font-medium text-slate-800">
+                  Envíos
+                </span>
+                <span className="mt-1 block text-sm text-slate-500">
+                  Dashboard de envíos, viajes, todos los envíos y sus ajustes.
+                </span>
+              </span>
+            </label>
+          </div>
         </div>
 
         <div>

@@ -19,6 +19,9 @@ export interface Store {
   secondary_color: string | null
   is_active: boolean
   has_landing: boolean
+  module_store_enabled: boolean
+  module_shipping_enabled: boolean
+  module_pickups_enabled: boolean
   plan: StorePlan
   monthly_price: number | null
 

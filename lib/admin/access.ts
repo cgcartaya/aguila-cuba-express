@@ -33,6 +33,7 @@ export type AccessStore = {
   module_store_enabled?: boolean;
   module_landing_enabled?: boolean;
   module_shipping_enabled?: boolean;
+  module_pickups_enabled?: boolean;
 };
 
 export type StoreMembership = {

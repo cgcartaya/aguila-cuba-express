@@ -28,20 +28,24 @@ import type { AccessStore } from "@/lib/admin/access";
  * La usan tanto StoreAdminNav (desktop) como StoreAdminMobileMenu
  * (mobile), así nunca vuelven a desincronizarse entre sí.
  *
- * Cada sección puede declarar un `module`: si lo hace, la sección
- * solo se muestra cuando la tienda tiene ese módulo contratado
- * (según el flag correspondiente en `stores`). Si no declara
- * `module`, es una sección "core" y se muestra siempre.
+ * Taxonomía de módulos confirmada con Carlos:
+ *   - "store"    -> Dashboard, Órdenes, Productos, Combos, Clientes,
+ *                   Inventario, Visitas (todo el "Marketplace" base).
+ *   - "pickups"  -> Recogidas + Portal comercial (cotizador y
+ *                   cotizaciones van de la mano con recogidas).
+ *   - "shipping" -> todo lo de Envíos.
+ * "Marketing" y "Configuración" quedan sin módulo (core, siempre
+ * visibles) hasta que se diga lo contrario.
  *
  * Para agregar un módulo nuevo en el futuro:
- *   1. Agrega la columna module_x_enabled en `stores`.
+ *   1. Agrega la columna module_x_enabled en `stores` (migración SQL).
  *   2. Agrégala a AccessStore en lib/admin/access.ts y al SELECT
  *      de access-service.ts.
  *   3. Agrega la key en AdminModuleKey y en isModuleEnabled() abajo.
  *   4. Márcala en la sección correspondiente con `module: "x"`.
  */
 
-export type AdminModuleKey = "shipping";
+export type AdminModuleKey = "store" | "pickups" | "shipping";
 
 export type AdminLink = {
   href: string;
@@ -57,30 +61,30 @@ export type AdminSection = {
 
 export const adminNavSections: AdminSection[] = [
   {
-    title: "Operación",
+    title: "Marketplace",
+    module: "store",
     links: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
       { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
+      { href: "/admin/products", label: "Productos", icon: Package },
+      { href: "/admin/combos", label: "Combos", icon: Layers3 },
+      { href: "/admin/inventory", label: "Inventario", icon: Boxes },
       { href: "/admin/customers", label: "Clientes", icon: Users },
       { href: "/admin/analytics", label: "Visitas", icon: BarChart3 },
     ],
   },
   {
-    title: "Marketplace",
-    links: [
-      { href: "/admin/products", label: "Productos", icon: Package },
-      { href: "/admin/combos", label: "Combos", icon: Layers3 },
-      { href: "/admin/inventory", label: "Inventario", icon: Boxes },
-    ],
-  },
-  {
     title: "Recogidas",
+    module: "pickups",
     links: [
       { href: "/admin/pickups", label: "Solicitudes de recogida", icon: CalendarDays },
       { href: "/admin/pickups/routes", label: "Rutas de recogida", icon: Route },
       { href: "/admin/pickups/customers", label: "Clientes de recogida", icon: Users },
       { href: "/admin/pickups/zones", label: "Zonas y ciudades", icon: Layers3 },
       { href: "/admin/pickups/settings", label: "Configurar cobertura", icon: MapPin },
+      { href: "/admin/portal-comercial", label: "Portal comercial", icon: Globe2 },
+      { href: "/admin/portal/cotizador", label: "Cotizador público", icon: Calculator },
+      { href: "/admin/portal/cotizaciones", label: "Cotizaciones", icon: ClipboardCheck },
     ],
   },
   {
@@ -91,18 +95,6 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/shipping/trips", label: "Viajes", icon: Route },
       { href: "/admin/shipping/shipments", label: "Todos los envíos", icon: Truck },
       { href: "/admin/shipping/settings", label: "Ajustes de envíos", icon: Wrench },
-    ],
-  },
-  {
-    title: "Portal comercial",
-    // TODO: este módulo en realidad se activa vía la tabla
-    // customer_portal_settings.is_enabled (por tienda), no por un
-    // flag en `stores`. No lo até a "shipping" para no adivinar mal
-    // — confirmar con Carlos antes de gatearlo.
-    links: [
-      { href: "/admin/portal-comercial", label: "Configuración general", icon: Globe2 },
-      { href: "/admin/portal/cotizador", label: "Cotizador público", icon: Calculator },
-      { href: "/admin/portal/cotizaciones", label: "Cotizaciones", icon: ClipboardCheck },
     ],
   },
   {
@@ -119,16 +111,35 @@ export const adminNavSections: AdminSection[] = [
   },
 ];
 
-/** Un módulo sin section.module se considera "core" y siempre visible. */
+/**
+ * Cada módulo replica el MISMO criterio "activado/desactivado" que ya
+ * usa el resto del código para ese flag específico — no asumí que
+ * todos se comportan igual:
+ *   - "store": ya se usa en la API de checkout como
+ *     `=== false` para BLOQUEAR (o sea, por defecto está permitido).
+ *     Aquí replico ese mismo criterio: solo se oculta si es false.
+ *   - "shipping": ya se usa en ShippingAccessGuard como
+ *     `!store?.module_shipping_enabled` para bloquear (por defecto
+ *     está BLOQUEADO salvo que sea true explícito).
+ *   - "pickups": es un flag nuevo, lo trato igual que shipping
+ *     (opt-in, por defecto false) porque así quedó la migración SQL.
+ */
 export function isModuleEnabled(
-  store: Pick<AccessStore, "module_shipping_enabled"> | null | undefined,
+  store:
+    | Pick<AccessStore, "module_store_enabled" | "module_shipping_enabled" | "module_pickups_enabled">
+    | null
+    | undefined,
   moduleKey: AdminModuleKey | undefined,
 ): boolean {
   if (!moduleKey) return true;
 
   switch (moduleKey) {
+    case "store":
+      return store?.module_store_enabled !== false;
     case "shipping":
       return store?.module_shipping_enabled === true;
+    case "pickups":
+      return store?.module_pickups_enabled === true;
     default:
       return true;
   }
@@ -138,12 +149,13 @@ export function isModuleEnabled(
  * El Super Admin siempre ve todas las secciones (necesita poder
  * entrar a configurar/inspeccionar cualquier módulo de cualquier
  * tienda). Un usuario de tienda normal solo ve las secciones cuyo
- * módulo esté contratado — igual que ya hace ShippingAccessGuard
- * a nivel de página, esto solo evita que llegue a un callejón sin
- * salida desde el menú.
+ * módulo esté contratado.
  */
 export function getVisibleAdminSections(
-  store: Pick<AccessStore, "module_shipping_enabled"> | null | undefined,
+  store:
+    | Pick<AccessStore, "module_store_enabled" | "module_shipping_enabled" | "module_pickups_enabled">
+    | null
+    | undefined,
   isSuperAdmin: boolean,
 ): AdminSection[] {
   if (isSuperAdmin) return adminNavSections;
