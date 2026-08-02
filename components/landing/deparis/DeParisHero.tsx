@@ -175,7 +175,7 @@ export default function DeParisHero() {
         .dp-orbit { animation: dpSpin 40s linear infinite; }
         .dp-orbit-2 { animation: dpSpin 60s linear infinite reverse; }
         .dp-float { animation: dpFloat 6.5s ease-in-out infinite; }
-        .dp-coin { animation: dpCoinSpin 2s linear infinite; }
+        .dp-coin { animation: dpCoinSpin 5.5s cubic-bezier(0.45,0,0.2,1) infinite; }
         .dp-dot { animation: dpPulse 3.2s ease-in-out infinite; }
         .dp-dot-2 { animation: dpPulse 3.6s 0.4s ease-in-out infinite; }
         .dp-medallion-shine {
@@ -206,8 +206,9 @@ export default function DeParisHero() {
           50% { transform: translate3d(0,-10px,0); }
         }
         @keyframes dpCoinSpin {
-          from { transform: rotateY(0deg); }
-          to { transform: rotateY(360deg); }
+          0%, 68% { transform: rotateY(0deg); }
+          85% { transform: rotateY(360deg); }
+          100% { transform: rotateY(360deg); }
         }
         @keyframes dpPulse {
           0%,100% { opacity: .5; transform: scale(.85); }

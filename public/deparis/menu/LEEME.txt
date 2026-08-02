@@ -1,0 +1,14 @@
+Coloca aquí las fotos reales de De Paris (ideal: tomadas por ustedes,
+formato cuadrado o 4:3, buena luz) con estos nombres exactos:
+
+  panaderia.jpg        -> tarjeta "Panadería & Pastelería"
+  quesos.jpg            -> tarjeta "Quesos & Charcutería"
+  vinos.jpg              -> tarjeta "Vinos & Espumantes"
+  bistro.jpg              -> tarjeta "Platos del Bistró"
+  desayuno.jpg          -> tarjeta "Desayuno Francés"
+  mercado-gourmet.jpg -> tarjeta "Mercado Gourmet"
+
+No hace falta tocar código: en cuanto subas un archivo con ese nombre
+a esta carpeta, la tarjeta correspondiente lo muestra automáticamente
+con el velo de color de marca encima. Mientras un archivo no exista,
+esa tarjeta simplemente se ve con su color sólido, sin errores.

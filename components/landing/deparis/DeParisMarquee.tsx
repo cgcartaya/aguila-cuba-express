@@ -4,7 +4,7 @@ const ITEMS = [
   "VINOS SELECTOS",
   "BAR & BISTRÓ",
   "MERCADO GOURMET",
-  "DELIVERY EN MIAMI",
+  "DELIVERY EN CIENFUEGOS",
 ];
 
 export default function DeParisMarquee() {
