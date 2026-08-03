@@ -1,14 +1,18 @@
 "use client";
 
 /* =========================================================
-   PRODUCT DETAIL PAGE
-   El Header y BottomNavigation son manejados por:
-   app/tienda/layout.tsxiiii
+   PRODUCT DETAIL PAGE - MULTITIENDA
+
+   Ruta:
+   /tienda/[slug]/producto/[id]
+
+   Ejemplo:
+   /tienda/dl-racing-cyber/producto/123
 ========================================================= */
 
 import Image from "next/image";
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, X } from "lucide-react";
 
 import ProductGallery from "@/components/tienda/product-detail/ProductGallery";
@@ -34,28 +38,41 @@ type StoreProduct = Product & {
   product_images?: ProductImage[];
 };
 
-type PageProps = {
-  params: Promise<{
-    id: string;
-  }>;
+type ProductDetailClientProps = {
+  slug: string;
+  id: string;
 };
 
-export default function ProductDetailPage({ params }: PageProps) {
-  const { id } = use(params);
+export default function ProductDetailClient({
+  slug,
+  id,
+}: ProductDetailClientProps) {
   const { addToCart } = useCart();
 
-  const [product, setProduct] = useState<StoreProduct | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [selectedImage, setSelectedImage] = useState("");
+  const [product, setProduct] =
+    useState<StoreProduct | null>(null);
+
+  const [relatedProducts, setRelatedProducts] =
+    useState<Product[]>([]);
+
+  const [selectedImage, setSelectedImage] =
+    useState("");
+
   const [quantity, setQuantity] = useState(1);
-  const [isZoomOpen, setIsZoomOpen] = useState(false);
+
+  const [isZoomOpen, setIsZoomOpen] =
+    useState(false);
 
   useEffect(() => {
     async function loadProduct() {
-      const { data, error } = await getStoreProductById(id);
+      const { data, error } =
+        await getStoreProductById(id);
 
       if (error || !data) {
-        console.error("Error cargando producto:", error);
+        console.error(
+          "Error cargando producto:",
+          error
+        );
         return;
       }
 
@@ -64,10 +81,16 @@ export default function ProductDetailPage({ params }: PageProps) {
       const orderedImages =
         productData.product_images
           ?.slice()
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
+          .sort(
+            (a, b) =>
+              (a.position ?? 0) -
+              (b.position ?? 0)
+          ) || [];
 
       const mainImage =
-        orderedImages.find((img) => img.is_main) || orderedImages[0];
+        orderedImages.find(
+          (img) => img.is_main
+        ) || orderedImages[0];
 
       setProduct(productData);
 
@@ -78,12 +101,15 @@ export default function ProductDetailPage({ params }: PageProps) {
       );
 
       if (productData.category) {
-        const { data: relatedData } = await getRelatedProducts(
-          productData.category,
-          String(productData.id)
-        );
+        const { data: relatedData } =
+          await getRelatedProducts(
+            productData.category,
+            String(productData.id)
+          );
 
-        setRelatedProducts((relatedData as Product[]) || []);
+        setRelatedProducts(
+          (relatedData as Product[]) || []
+        );
       }
     }
 
@@ -103,7 +129,11 @@ export default function ProductDetailPage({ params }: PageProps) {
   const productImages =
     product.product_images
       ?.slice()
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0)) || [];
+      .sort(
+        (a, b) =>
+          (a.position ?? 0) -
+          (b.position ?? 0)
+      ) || [];
 
   const imagesToShow =
     productImages.length > 0
@@ -111,20 +141,25 @@ export default function ProductDetailPage({ params }: PageProps) {
       : [
           {
             id: "fallback",
-            image_url: product.image_url || "/placeholder-product.png",
+            image_url:
+              product.image_url ||
+              "/placeholder-product.png",
             is_main: true,
             position: 0,
           },
         ];
 
   const handleAddToCart = () => {
-    if (Number(product.stock) <= 0) return;
+    if (Number(product.stock) <= 0)
+      return;
 
     for (let i = 0; i < quantity; i++) {
       addToCart({
         ...product,
         image_url:
-          selectedImage || product.image_url || "/placeholder-product.png",
+          selectedImage ||
+          product.image_url ||
+          "/placeholder-product.png",
       });
     }
   };
@@ -133,10 +168,10 @@ export default function ProductDetailPage({ params }: PageProps) {
     <>
       <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
       <div className="mx-auto max-w-6xl px-4 py-5">
-        {/* BOTÓN VOLVER A TIENDA */}
+        {/* BOTÓN VOLVER */}
         <div className="mb-5">
           <Link
-            href="/tienda"
+            href={`/tienda/${slug}`}
             className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#061b3a] shadow-sm transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50 hover:text-red-600 hover:shadow-md"
           >
             <ArrowLeft size={18} />
@@ -144,20 +179,24 @@ export default function ProductDetailPage({ params }: PageProps) {
           </Link>
         </div>
 
-        {/* INFORMACIÓN PRINCIPAL DEL PRODUCTO */}
+        {/* INFO PRINCIPAL */}
         <div className="grid gap-8 md:grid-cols-2">
           <ProductGallery
             productName={product.name}
             selectedImage={selectedImage}
             images={imagesToShow}
             onSelectImage={setSelectedImage}
-            onOpenZoom={() => setIsZoomOpen(true)}
+            onOpenZoom={() =>
+              setIsZoomOpen(true)
+            }
           />
 
           <ProductInfo
             name={product.name}
             price={Number(product.price)}
-            description={product.description}
+            description={
+              product.description
+            }
             tag={product.tag}
             stock={Number(product.stock)}
             quantity={quantity}
@@ -166,29 +205,34 @@ export default function ProductDetailPage({ params }: PageProps) {
           />
         </div>
 
-        {/* PRODUCTOS RELACIONADOS */}
-        <RelatedProducts products={relatedProducts} />
+        <RelatedProducts
+          products={relatedProducts}
+        />
       </div>
 
       {isZoomOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4">
           <button
             type="button"
-            onClick={() => setIsZoomOpen(false)}
+            onClick={() =>
+              setIsZoomOpen(false)
+            }
             className="absolute right-4 top-4 rounded-full bg-white p-3 text-black"
           >
             <X size={22} />
           </button>
 
           <div className="relative h-[80vh] w-full max-w-4xl">
-           <img
-  src={selectedImage || "/placeholder-product.png"}
-  alt={product.name}
-  className="h-full w-full object-contain"
-  onError={(event) => {
-    event.currentTarget.src = "/placeholder-product.png";
-  }}
-/>
+            <Image
+              src={
+                selectedImage ||
+                "/placeholder-product.png"
+              }
+              alt={product.name}
+              fill
+              sizes="100vw"
+              className="object-contain"
+            />
           </div>
         </div>
       )}

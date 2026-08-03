@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: "Contacto | Águila Cuba Express",
+  description:
+    "Habla directamente con Águila Cuba Express. Envíos y compras para Cuba.",
+};
 
 export default function ContactoPage() {
   return (

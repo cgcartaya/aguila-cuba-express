@@ -78,7 +78,11 @@ async function fetchStore(
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
-      cache: "no-store",
+      // Antes: cache:"no-store" -> una consulta a Supabase en CADA request,
+      // incluso aunque el layout se siga renderizando de forma dinámica.
+      // Con esto se reutiliza la respuesta 5 minutos, así que si 100 personas
+      // visitan la tienda en ese lapso, solo se hace 1 consulta real.
+      next: { revalidate: 300 },
     });
 
     if (!response.ok) {

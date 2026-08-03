@@ -27,8 +27,6 @@ import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
 import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
 import SearchResultsSection from "@/components/tienda/search/SearchResultsSection";
-import VisitTracker from "@/components/analytics/VisitTracker";
-
 import { useCart } from "@/contexts/CartContext";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import type { Product } from "@/types/cart";
@@ -158,8 +156,7 @@ export default function StoreSlugTiendaPage() {
 
   return (
     <>
-      <VisitTracker storeId={storeId} pageType="store" />
-    <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+     <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
       {hayBusqueda ? (
         <SearchResultsSection
           products={productosBuscados}

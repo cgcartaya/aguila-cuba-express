@@ -146,8 +146,9 @@ function getLandingStoreRewritePath(pathname: string, slug: string) {
    STORE RESOLUTION
 ========================================================= */
 
-async function getStoreBySubdomain(
-  subdomain: string
+async function getStoreByColumn(
+  column: "subdomain" | "domain",
+  value: string
 ): Promise<StoreResolution | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -161,7 +162,7 @@ async function getStoreBySubdomain(
 
   const url = new URL(`${supabaseUrl}/rest/v1/stores`);
   url.searchParams.set("select", "slug,has_landing");
-  url.searchParams.set("subdomain", `eq.${subdomain}`);
+  url.searchParams.set(column, `eq.${value}`);
   url.searchParams.set("is_active", "eq.true");
   url.searchParams.set("limit", "1");
 
@@ -178,7 +179,7 @@ async function getStoreBySubdomain(
 
     if (!response.ok) {
       console.error(
-        `Middleware: Supabase respondió ${response.status} al resolver ${subdomain}.`
+        `Middleware: Supabase respondió ${response.status} al resolver ${column}=${value}.`
       );
       return null;
     }
@@ -200,11 +201,29 @@ async function getStoreBySubdomain(
     };
   } catch (error) {
     console.error(
-      `Middleware: error resolviendo el subdominio ${subdomain}.`,
+      `Middleware: error resolviendo ${column}=${value}.`,
       error
     );
     return null;
   }
+}
+
+function getStoreBySubdomain(subdomain: string) {
+  return getStoreByColumn("subdomain", subdomain);
+}
+
+/*
+ * Dominios propios (aguilacubaexpress.com, depariscuba.com, etc.).
+ * Reutiliza exactamente la misma resolución/rewrite que ya usan los
+ * subdominios *.perlamarketplace.com, para que esas tiendas también
+ * rendericen a través de /tienda/[slug]/... en vez de las rutas
+ * "planas" de /tienda/producto, /tienda/categorias, etc.
+ *
+ * Esto es lo que permite que esas páginas puedan cachearse (ISR) en
+ * vez de ejecutar una función en cada visita.
+ */
+function getStoreByCustomDomain(host: string) {
+  return getStoreByColumn("domain", host);
 }
 
 /* =========================================================
@@ -226,16 +245,24 @@ export async function middleware(request: NextRequest) {
   const subdomain = getSubdomain(host);
 
   /*
-   * En localhost, el dominio raíz y dominios personalizados como
-   * aguilacubaexpress.com, la aplicación conserva sus rutas normales.
-   * Los dominios personalizados pueden seguir resolviéndose desde la
-   * lógica existente de app/page.tsx.
+   * En localhost y en el dominio raíz (perlamarketplace.com sin
+   * subdominio) no hay tienda que resolver: se conservan las rutas
+   * normales de la plataforma.
    */
-  if (!subdomain) {
+  const normalizedHost = normalizeHost(host);
+
+  if (
+    !subdomain &&
+    (normalizedHost === PLATFORM_DOMAIN ||
+      normalizedHost === "localhost" ||
+      normalizedHost.endsWith(".vercel.app"))
+  ) {
     return NextResponse.next();
   }
 
-  const store = await getStoreBySubdomain(subdomain);
+  const store = subdomain
+    ? await getStoreBySubdomain(subdomain)
+    : await getStoreByCustomDomain(normalizedHost);
 
   if (!store) {
     return NextResponse.next();

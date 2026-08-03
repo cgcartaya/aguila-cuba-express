@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { getStoreBySlug } from "@/lib/services/stores";
 import StorePageClient from "./StorePageClient";
 
+export const revalidate = 1800;
+export const dynamicParams = true;
+
 type PageProps = {
   params: Promise<{ slug: string }> | { slug: string };
 };
