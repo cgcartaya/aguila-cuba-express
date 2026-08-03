@@ -5,6 +5,11 @@ import AguilaLanding from "@/components/landing/AguilaLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
+import {
+  buildPerlaMetadata,
+  buildStoreMetadata,
+  resolveStoreByHost,
+} from "@/lib/saas/store-metadata";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
@@ -56,50 +61,67 @@ function resolveLanding(host: string): LandingType {
   return "perla";
 }
 
-async function getCurrentLanding(): Promise<LandingType> {
+async function getCurrentHost(): Promise<string> {
   const requestHeaders = await headers();
   const forwardedHost = requestHeaders.get("x-forwarded-host");
-  const host = forwardedHost || requestHeaders.get("host");
-
-  return resolveLanding(host || "");
+  return forwardedHost || requestHeaders.get("host") || "";
 }
 
-export async function generateMetadata(): Promise<Metadata> {
-  const landing = await getCurrentLanding();
-
-  if (landing === "aguila") {
-    return {
-      title: "Águila Cuba Express | Envíos y compras para Cuba",
-      description:
-        "Envíos, compras, rastreo y atención personalizada de Miami a Cuba.",
-    };
-  }
-
-  if (landing === "yoyo") {
-    return {
-      title: "YOYO Envíos | Envíos seguros a Cuba",
-      description:
-        "Envíos express, aéreos y marítimos a Cuba con rastreo y atención personalizada.",
-    };
-  }
-
-  if (landing === "deparis") {
-    return {
-      title: "De Paris | Mercado & Bistró francés en Cienfuegos",
-      description:
-        "De Paris es un bar restaurante y mercado online de inspiración francesa en Cienfuegos, Cuba: panadería, quesos, vinos y platos de bistró con delivery o retiro en tienda.",
-    };
-  }
-
-  return {
+const FALLBACK_METADATA: Record<LandingType, { title: string; description: string }> = {
+  aguila: {
+    title: "Águila Cuba Express | Envíos y compras para Cuba",
+    description:
+      "Envíos, compras, rastreo y atención personalizada de Miami a Cuba.",
+  },
+  yoyo: {
+    title: "YOYO Envíos | Envíos seguros a Cuba",
+    description:
+      "Envíos express, aéreos y marítimos a Cuba con rastreo y atención personalizada.",
+  },
+  deparis: {
+    title: "De Paris | Mercado & Bistró francés en Cienfuegos",
+    description:
+      "De Paris es un bar restaurante y mercado online de inspiración francesa en Cienfuegos, Cuba: panadería, quesos, vinos y platos de bistró con delivery o retiro en tienda.",
+  },
+  perla: {
     title: "Perla Marketplace | Tu negocio conectado",
     description:
       "Marketplace y plataforma de gestión para comercios y agencias de envíos.",
-  };
+  },
+};
+
+export async function generateMetadata(): Promise<Metadata> {
+  const host = await getCurrentHost();
+
+  /*
+   * Prioridad 1: lo que la tienda configuró en su panel (logo,
+   * favicon, título SEO, descripción, imagen para compartir).
+   * Esto es lo que se ve en Ajustes > SEO y vista al compartir.
+   */
+  const store = await resolveStoreByHost(host);
+
+  if (store) {
+    const cleanHost = normalizeHost(host);
+    return buildStoreMetadata(store, `https://${cleanHost}`);
+  }
+
+  /*
+   * Prioridad 2 (respaldo): si el dominio no tiene fila en `stores`
+   * (o le faltan campos), usamos el texto fijo histórico para las
+   * landings especiales, y si tampoco aplica, el genérico de Perla.
+   */
+  const landing = resolveLanding(host);
+
+  if (landing === "perla") {
+    return buildPerlaMetadata();
+  }
+
+  return FALLBACK_METADATA[landing];
 }
 
 export default async function HomePage() {
-  const landing = await getCurrentLanding();
+  const host = await getCurrentHost();
+  const landing = resolveLanding(host);
 
   if (landing === "aguila") {
     return <AguilaLanding />;
