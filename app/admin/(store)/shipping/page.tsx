@@ -199,6 +199,14 @@ export default function ShippingOperationalDashboardPage() {
                 </Link>
 
                 <Link
+                  href="/admin/shipping/settings/pagos"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
+                >
+                  <WalletCards size={18} />
+                  Cobros en línea
+                </Link>
+
+                <Link
                   href="/admin/shipping/settings"
                   className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
                 >
