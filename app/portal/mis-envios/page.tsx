@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FileText, Loader2, Package, Search, CreditCard } from "lucide-react";
@@ -33,7 +33,7 @@ function money(value: number) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
-export default function MisEnviosPage() {
+function MisEnviosContent() {
   const searchParams = useSearchParams();
   const slug = searchParams.get("slug") || "";
 
@@ -206,5 +206,13 @@ export default function MisEnviosPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function MisEnviosPage() {
+  return (
+    <Suspense fallback={null}>
+      <MisEnviosContent />
+    </Suspense>
   );
 }

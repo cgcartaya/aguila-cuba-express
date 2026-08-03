@@ -1,10 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 
-export default function PagoExitosoPage() {
+function PagoExitosoContent() {
   const searchParams = useSearchParams();
   const tracking = searchParams.get("tracking");
 
@@ -21,5 +22,13 @@ export default function PagoExitosoPage() {
         </Link>
       </div>
     </main>
+  );
+}
+
+export default function PagoExitosoPage() {
+  return (
+    <Suspense fallback={null}>
+      <PagoExitosoContent />
+    </Suspense>
   );
 }
