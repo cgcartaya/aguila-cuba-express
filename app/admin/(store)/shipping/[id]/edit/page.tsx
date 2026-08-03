@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import ShipmentForm from "@/components/admin/shipping/ShipmentForm";
+import ShipmentHistory from "@/components/admin/shipping/ShipmentHistory";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import {
@@ -200,6 +201,12 @@ export default function EditShipmentPage({
               submitting={submitting}
               onSubmit={submit}
             />
+
+            {activeStore?.id && (
+              <div className="mt-6">
+                <ShipmentHistory storeId={activeStore.id} shipmentId={shipment.id} />
+              </div>
+            )}
           </>
         )}
       </div>

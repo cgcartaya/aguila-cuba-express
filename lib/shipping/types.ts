@@ -350,3 +350,40 @@ export type ShipmentItem = {
   metadata: Record<string, unknown>;
   sort_order: number;
 };
+
+export type ShipmentEventType =
+  | "created"
+  | "status_change"
+  | "trip_change"
+  | "trashed"
+  | "restored"
+  | "delivered";
+
+export type ShipmentEvent = {
+  id: string;
+  shipment_id: string;
+  event_type: ShipmentEventType | string;
+  from_value: string | null;
+  to_value: string | null;
+  actor_id: string | null;
+  created_at: string;
+};
+
+export function getShipmentEventLabel(event: ShipmentEvent): string {
+  switch (event.event_type) {
+    case "created":
+      return "Envío creado";
+    case "status_change":
+      return `Estado: ${getShippingStatusLabel(event.from_value || "")} → ${getShippingStatusLabel(event.to_value || "")}`;
+    case "trip_change":
+      return event.to_value ? "Asignado a un viaje" : "Removido de su viaje";
+    case "trashed":
+      return "Enviado a la papelera";
+    case "restored":
+      return "Restaurado de la papelera";
+    case "delivered":
+      return "Marcado como entregado";
+    default:
+      return event.event_type;
+  }
+}
