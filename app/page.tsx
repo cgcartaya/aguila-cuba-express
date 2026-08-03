@@ -22,7 +22,7 @@ function normalizeHost(value: string | null) {
 function resolveLanding(host: string): LandingType {
   const normalizedHost = normalizeHost(host);
 
-  // Dominios personalizados de Águila.
+  // Dominios personalizados de Águila..
   if (
     normalizedHost === "aguilacubaexpress.com" ||
     normalizedHost === "aguila-cuba-express.com" ||
