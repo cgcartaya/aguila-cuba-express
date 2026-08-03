@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   Archive,
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CircleDollarSign,
   Edit3,
   Loader2,
@@ -27,7 +29,13 @@ import ShippingAdvancedFilters, {
 import ShippingStatusBadge from "@/components/admin/shipping/ShippingStatusBadge";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
-import { bulkMoveShipmentsToTrip, getShipmentsByStoreId, moveShipmentToTrash } from "@/lib/services/shipping";
+import {
+  bulkMoveShipmentsToTrip,
+  getShipmentsPage,
+  getShipmentsSummaryCounts,
+  getShippingDriversByStoreId,
+  moveShipmentToTrash,
+} from "@/lib/services/shipping";
 import { getShippingConfiguration } from "@/lib/services/shipping-settings";
 import { getShippingTripsByStoreId } from "@/lib/services/shipping-trips";
 import type {
@@ -37,6 +45,8 @@ import type {
   ShippingProvince,
   ShippingTrip,
 } from "@/lib/shipping/types";
+
+const PAGE_SIZE = 50;
 
 const defaultFilters: ShippingListFilters = {
   tripId: "all",
@@ -57,12 +67,6 @@ function money(value: number | null | undefined) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
-function asLocalDate(value: string | null | undefined) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
 export default function ShippingShipmentsPage() {
   const searchParams = useSearchParams();
   const { access, loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
@@ -73,12 +77,17 @@ export default function ShippingShipmentsPage() {
   );
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [trips, setTrips] = useState<ShippingTrip[]>([]);
   const [provinces, setProvinces] = useState<ShippingProvince[]>([]);
   const [municipalities, setMunicipalities] = useState<ShippingMunicipality[]>([]);
   const [locations, setLocations] = useState<ShippingLocation[]>([]);
+  const [driverNames, setDriverNames] = useState<string[]>([]);
+  const [summary, setSummary] = useState({ total: 0, pending: 0, unassigned: 0 });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ShippingListFilters>({
     ...defaultFilters,
@@ -89,33 +98,30 @@ export default function ShippingShipmentsPage() {
   const [assigningShipmentId, setAssigningShipmentId] = useState<string | null>(null);
   const [tripSelections, setTripSelections] = useState<Record<string, string>>({});
 
-  async function load() {
+  // Espera a que la persona deje de escribir antes de volver a consultar.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Cualquier cambio de filtros o búsqueda regresa a la página 1.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, filters]);
+
+  // Catálogos y viajes: se cargan una sola vez por tienda (son livianos).
+  async function loadStatic() {
     if (!activeStore?.id) {
-      setShipments([]);
       setTrips([]);
-      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setErrorMessage("");
-
-    const [shipmentResult, configResult, tripResult] = await Promise.all([
-      getShipmentsByStoreId(activeStore.id),
+    const [configResult, tripResult, driversResult, summaryResult] = await Promise.all([
       getShippingConfiguration(activeStore.id),
       getShippingTripsByStoreId(activeStore.id),
+      getShippingDriversByStoreId(activeStore.id),
+      getShipmentsSummaryCounts(activeStore.id),
     ]);
-
-    if (shipmentResult.error) {
-      setErrorMessage(shipmentResult.error.message);
-      setShipments([]);
-    } else {
-      setShipments(shipmentResult.data || []);
-    }
-
-    if (configResult.error) {
-      setErrorMessage((current) => current || configResult.error?.message || "No se pudo cargar la configuración territorial.");
-    }
 
     if (tripResult.error) {
       setErrorMessage((current) => current || tripResult.error.message);
@@ -124,15 +130,65 @@ export default function ShippingShipmentsPage() {
       setTrips(tripResult.data || []);
     }
 
+    if (!driversResult.error) setDriverNames((driversResult.data || []).map((driver) => driver.name).sort());
+    if (!summaryResult.error) setSummary(summaryResult);
+
     setProvinces(configResult.provinces || []);
     setMunicipalities(configResult.municipalities || []);
     setLocations(configResult.locations || []);
+  }
+
+  // Página de envíos: se recarga cada vez que cambian filtros/búsqueda/página.
+  async function loadPage() {
+    if (!activeStore?.id) {
+      setShipments([]);
+      setTotalCount(0);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setErrorMessage("");
+
+    const result = await getShipmentsPage(activeStore.id, {
+      page,
+      pageSize: PAGE_SIZE,
+      search: debouncedSearch,
+      status: filters.status,
+      tripId: filters.tripId,
+      provinceId: filters.provinceId,
+      municipalityId: filters.municipalityId,
+      locationId: filters.locationId,
+      driverName: filters.driverName,
+      contentType: filters.contentType,
+      paymentStatus: filters.paymentStatus,
+      assignment: filters.assignment,
+      dateFrom: filters.dateFrom,
+      dateTo: filters.dateTo,
+      sort: filters.sort,
+    });
+
+    if (result.error) {
+      setErrorMessage(result.error.message);
+      setShipments([]);
+      setTotalCount(0);
+    } else {
+      setShipments(result.data || []);
+      setTotalCount(result.count || 0);
+    }
+
     setLoading(false);
   }
 
   useEffect(() => {
-    if (!accessLoading && !storeLoading) void load();
+    if (!accessLoading && !storeLoading) void loadStatic();
   }, [accessLoading, storeLoading, activeStore?.id]);
+
+  useEffect(() => {
+    if (!accessLoading && !storeLoading) void loadPage();
+  }, [accessLoading, storeLoading, activeStore?.id, debouncedSearch, filters, page]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   async function assignShipmentToTrip(shipment: Shipment) {
     if (!activeStore?.id) return;
@@ -156,7 +212,8 @@ export default function ShippingShipmentsPage() {
         delete next[shipment.id];
         return next;
       });
-      await load();
+      await loadPage();
+      await loadStatic();
     }
     setAssigningShipmentId(null);
   }
@@ -164,11 +221,6 @@ export default function ShippingShipmentsPage() {
   const tripMap = useMemo(
     () => new Map(trips.map((trip) => [trip.id, trip])),
     [trips]
-  );
-
-  const driverNames = useMemo(
-    () => Array.from(new Set(shipments.map((item) => item.assigned_driver_name).filter((value): value is string => Boolean(value)))).sort((a, b) => a.localeCompare(b)),
-    [shipments]
   );
 
   const activeFilterCount = useMemo(() => {
@@ -188,81 +240,16 @@ export default function ShippingShipmentsPage() {
     return count;
   }, [filters]);
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const from = filters.dateFrom ? new Date(`${filters.dateFrom}T00:00:00`) : null;
-    const to = filters.dateTo ? new Date(`${filters.dateTo}T23:59:59`) : null;
-
-    const result = shipments.filter((shipment) => {
-      const orderNumber = shipment.order_number;
-      const created = asLocalDate(shipment.created_at || shipment.created_date);
-      const trip = shipment.trip_id ? tripMap.get(shipment.trip_id) : null;
-
-      const matchesSearch =
-        !query ||
-        String(orderNumber || "").includes(query) ||
-        shipment.tracking_code?.toLowerCase().includes(query) ||
-        shipment.recipient_name?.toLowerCase().includes(query) ||
-        shipment.recipient_phone?.includes(query) ||
-        shipment.sender_name?.toLowerCase().includes(query) ||
-        shipment.sender_phone?.includes(query) ||
-        shipment.recipient_identity_card?.toLowerCase().includes(query) ||
-        shipment.recipient_address?.toLowerCase().includes(query) ||
-        shipment.location?.toLowerCase().includes(query) ||
-        trip?.name.toLowerCase().includes(query) ||
-        String(trip?.trip_number || "").includes(query);
-
-      const matchesContent =
-        filters.contentType === "all" ||
-        (filters.contentType === "package" && shipment.contains_package && !shipment.contains_money) ||
-        (filters.contentType === "money" && shipment.contains_money && !shipment.contains_package) ||
-        (filters.contentType === "mixed" && shipment.contains_package && shipment.contains_money);
-
-      const matchesAssignment =
-        filters.assignment === "all" ||
-        (filters.assignment === "assigned" && Boolean(shipment.assigned_driver_id || shipment.assigned_driver_name)) ||
-        (filters.assignment === "unassigned" && !shipment.assigned_driver_id && !shipment.assigned_driver_name);
-
-      const matchesTrip =
-        filters.tripId === "all" ||
-        (filters.tripId === "unassigned" ? !shipment.trip_id : shipment.trip_id === filters.tripId);
-
-      return (
-        matchesSearch &&
-        matchesTrip &&
-        (filters.status === "all" || shipment.status === filters.status) &&
-        (!filters.provinceId || shipment.province_id === filters.provinceId) &&
-        (!filters.municipalityId || shipment.municipality_id === filters.municipalityId) &&
-        (!filters.locationId || shipment.shipping_location_id === filters.locationId) &&
-        (!filters.driverName || shipment.assigned_driver_name === filters.driverName) &&
-        matchesContent &&
-        (filters.paymentStatus === "all" || shipment.payment_status === filters.paymentStatus) &&
-        matchesAssignment &&
-        (!from || (created && created >= from)) &&
-        (!to || (created && created <= to))
-      );
-    });
-
-    return result.sort((a, b) => {
-      if (filters.sort === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (filters.sort === "order_asc") return Number(a.order_number || Number.MAX_SAFE_INTEGER) - Number(b.order_number || Number.MAX_SAFE_INTEGER);
-      if (filters.sort === "order_desc") return Number(b.order_number || -1) - Number(a.order_number || -1);
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [filters, search, shipments, tripMap]);
-
   async function trash(shipment: Shipment) {
     if (!activeStore?.id || !window.confirm(`¿Mover ${shipment.tracking_code || "este envío"} a la papelera?`)) return;
     const { error } = await moveShipmentToTrash(activeStore.id, shipment.id, access?.profile?.id);
     if (error) return alert(error.message);
     setShipments((current) => current.filter((item) => item.id !== shipment.id));
+    setTotalCount((current) => Math.max(0, current - 1));
   }
 
   const canCreate =
     access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
-
-  const pendingCount = shipments.filter((item) => item.payment_status !== "paid").length;
-  const unassignedCount = shipments.filter((item) => !item.assigned_driver_id && !item.assigned_driver_name).length;
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] p-4 pb-24 md:p-6">
@@ -296,9 +283,9 @@ export default function ShippingShipmentsPage() {
           }
           stats={
             <div className="grid gap-3 sm:grid-cols-3">
-              <HeaderStat label="Envíos activos" value={shipments.length} icon={<Truck size={17} />} />
-              <HeaderStat label="Cobro pendiente/parcial" value={pendingCount} icon={<CircleDollarSign size={17} />} />
-              <HeaderStat label="Sin repartidor" value={unassignedCount} icon={<UserRound size={17} />} />
+              <HeaderStat label="Envíos activos" value={summary.total} icon={<Truck size={17} />} />
+              <HeaderStat label="Cobro pendiente/parcial" value={summary.pending} icon={<CircleDollarSign size={17} />} />
+              <HeaderStat label="Sin repartidor" value={summary.unassigned} icon={<UserRound size={17} />} />
             </div>
           }
         />
@@ -317,7 +304,7 @@ export default function ShippingShipmentsPage() {
 
             <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-100 px-4 py-3 text-sm font-bold text-slate-600 lg:min-w-44">
               <span>Resultados</span>
-              <span className="rounded-full bg-white px-3 py-1 text-[#061b3a] shadow-sm">{filtered.length}</span>
+              <span className="rounded-full bg-white px-3 py-1 text-[#061b3a] shadow-sm">{totalCount}</span>
             </div>
           </div>
 
@@ -340,7 +327,7 @@ export default function ShippingShipmentsPage() {
 
         {loading || accessLoading || storeLoading ? (
           <div className="rounded-3xl border bg-white p-10 text-center font-bold text-slate-500"><Loader2 className="mx-auto mb-3 animate-spin" />Cargando envíos...</div>
-        ) : filtered.length === 0 ? (
+        ) : shipments.length === 0 ? (
           <div className="rounded-3xl border bg-white p-10 text-center"><PackageSearch className="mx-auto mb-4 text-slate-300" size={44} /><h2 className="text-xl font-extrabold">No hay envíos con estos filtros</h2><p className="mt-2 text-sm text-slate-500">Prueba limpiando alguno de los criterios de búsqueda.</p></div>
         ) : (
           <section className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
@@ -355,7 +342,7 @@ export default function ShippingShipmentsPage() {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {filtered.map((shipment) => {
+              {shipments.map((shipment) => {
                 const trip = shipment.trip_id ? tripMap.get(shipment.trip_id) : null;
                 return (
                   <article key={shipment.id} className="group px-4 py-3 transition hover:bg-blue-50/35">
@@ -455,6 +442,34 @@ export default function ShippingShipmentsPage() {
               })}
             </div>
           </section>
+        )}
+
+        {!loading && totalCount > PAGE_SIZE && (
+          <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+            <span className="text-xs font-bold text-slate-500">
+              Página {page} de {totalPages} · {totalCount} envíos
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                disabled={page <= 1}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft size={16} />
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                disabled={page >= totalPages}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Siguiente
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </main>

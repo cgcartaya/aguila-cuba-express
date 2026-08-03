@@ -16,6 +16,106 @@ export function getShipmentsByStoreId(storeId: string) {
   return supabase.from("shipments").select("*").eq("store_id", storeId).is("deleted_at", null).order("order_number", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).returns<Shipment[]>();
 }
 
+export type ShipmentsPageFilters = {
+  page: number; // 1-based
+  pageSize: number;
+  search?: string;
+  status?: string; // "all" | ShippingStatus
+  tripId?: string; // "all" | "unassigned" | uuid
+  provinceId?: string;
+  municipalityId?: string;
+  locationId?: string;
+  driverName?: string;
+  contentType?: "all" | "package" | "money" | "mixed";
+  paymentStatus?: string; // "all" | pending | partial | paid
+  assignment?: "all" | "assigned" | "unassigned";
+  dateFrom?: string; // yyyy-mm-dd
+  dateTo?: string;
+  sort?: "newest" | "oldest" | "order_asc" | "order_desc";
+};
+
+// Trae solo una página de envíos, con todos los filtros y el orden
+// aplicados en el servidor (Supabase), en vez de traer la tienda
+// completa y filtrar en el navegador. Devuelve también el conteo total
+// que cumple los filtros (para pintar "página X de Y").
+export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters) {
+  let query = supabase
+    .from("shipments")
+    .select("*", { count: "exact" })
+    .eq("store_id", storeId)
+    .is("deleted_at", null);
+
+  const search = filters.search?.trim();
+  if (search) {
+    const like = `%${search}%`;
+    query = query.or(
+      [
+        `order_number::text.ilike.${like}`,
+        `tracking_code.ilike.${like}`,
+        `recipient_name.ilike.${like}`,
+        `recipient_phone.ilike.${like}`,
+        `sender_name.ilike.${like}`,
+        `sender_phone.ilike.${like}`,
+        `recipient_identity_card.ilike.${like}`,
+        `recipient_address.ilike.${like}`,
+        `location.ilike.${like}`,
+      ].join(",")
+    );
+  }
+
+  if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
+
+  if (filters.tripId && filters.tripId !== "all") {
+    query = filters.tripId === "unassigned" ? query.is("trip_id", null) : query.eq("trip_id", filters.tripId);
+  }
+
+  if (filters.provinceId) query = query.eq("province_id", filters.provinceId);
+  if (filters.municipalityId) query = query.eq("municipality_id", filters.municipalityId);
+  if (filters.locationId) query = query.eq("shipping_location_id", filters.locationId);
+  if (filters.driverName) query = query.eq("assigned_driver_name", filters.driverName);
+  if (filters.paymentStatus && filters.paymentStatus !== "all") query = query.eq("payment_status", filters.paymentStatus);
+
+  if (filters.assignment === "assigned") query = query.not("assigned_driver_id", "is", null);
+  if (filters.assignment === "unassigned") query = query.is("assigned_driver_id", null);
+
+  if (filters.contentType === "package") query = query.eq("contains_package", true).eq("contains_money", false);
+  if (filters.contentType === "money") query = query.eq("contains_money", true).eq("contains_package", false);
+  if (filters.contentType === "mixed") query = query.eq("contains_package", true).eq("contains_money", true);
+
+  if (filters.dateFrom) query = query.gte("created_at", `${filters.dateFrom}T00:00:00`);
+  if (filters.dateTo) query = query.lte("created_at", `${filters.dateTo}T23:59:59`);
+
+  if (filters.sort === "oldest") query = query.order("created_at", { ascending: true });
+  else if (filters.sort === "order_asc") query = query.order("order_number", { ascending: true, nullsFirst: false });
+  else if (filters.sort === "order_desc") query = query.order("order_number", { ascending: false, nullsFirst: true });
+  else query = query.order("created_at", { ascending: false });
+
+  const start = (filters.page - 1) * filters.pageSize;
+  const end = start + filters.pageSize - 1;
+
+  return query.range(start, end).returns<Shipment[]>();
+}
+
+// Conteos livianos para las tarjetas del encabezado. Son consultas
+// "head" (count-only), no traen filas, así que son baratas incluso con
+// muchos envíos.
+export async function getShipmentsSummaryCounts(storeId: string) {
+  const base = () => supabase.from("shipments").select("id", { count: "exact", head: true }).eq("store_id", storeId).is("deleted_at", null);
+
+  const [totalResult, pendingResult, unassignedResult] = await Promise.all([
+    base(),
+    base().neq("payment_status", "paid"),
+    base().is("assigned_driver_id", null).is("assigned_driver_name", null),
+  ]);
+
+  return {
+    total: totalResult.count || 0,
+    pending: pendingResult.count || 0,
+    unassigned: unassignedResult.count || 0,
+    error: totalResult.error || pendingResult.error || unassignedResult.error || null,
+  };
+}
+
 export function getShipmentById(storeId: string, shipmentId: string) {
   return supabase.from("shipments").select("*").eq("store_id", storeId).eq("id", shipmentId).is("deleted_at", null).maybeSingle<Shipment>();
 }
