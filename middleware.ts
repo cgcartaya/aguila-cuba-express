@@ -121,6 +121,23 @@ function getCanonicalStorefrontPath(pathname: string, slug: string) {
 function getLandingStoreRewritePath(pathname: string, slug: string) {
   const storeBasePath = `/tienda/${slug}`;
 
+  /*
+   * Estas rutas todavía no tienen versión bajo /tienda/[slug]/...,
+   * así que se dejan pasar tal cual para que sigan resolviendo la
+   * tienda del lado del cliente (como ya hacían antes).
+   * Sin esto, un dominio propio con landing (ej. Águila) recibía
+   * un 404 al entrar a /tienda/combos o /tienda/productos-destacados.
+   */
+  const noSlugEquivalent = ["/tienda/combos", "/tienda/productos-destacados"];
+
+  if (
+    noSlugEquivalent.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
+  ) {
+    return null;
+  }
+
   if (
     pathname === "/tienda" ||
     pathname === "/tienda/" ||
