@@ -1,6 +1,5 @@
 import type { ComponentType } from "react";
 import {
-  BarChart3,
   Boxes,
   Calculator,
   ClipboardCheck,
@@ -29,8 +28,8 @@ import type { AccessStore } from "@/lib/admin/access";
  * (mobile), así nunca vuelven a desincronizarse entre sí.
  *
  * Taxonomía de módulos confirmada con Carlos:
- *   - "store"    -> Dashboard, Órdenes, Productos, Combos, Clientes,
- *                   Inventario, Visitas (todo el "Marketplace" base).
+ *   - "store"    -> Dashboard, Órdenes, Productos, Combos, Clientes e
+ *                   Inventario (todo el "Marketplace" base).
  *   - "pickups"  -> Recogidas + Portal comercial (cotizador y
  *                   cotizaciones van de la mano con recogidas).
  *   - "shipping" -> todo lo de Envíos.
@@ -70,7 +69,6 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
       { href: "/admin/customers", label: "Clientes", icon: Users },
-      { href: "/admin/analytics", label: "Visitas", icon: BarChart3 },
     ],
   },
   {
