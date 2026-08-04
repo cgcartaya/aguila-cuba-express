@@ -169,6 +169,8 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
   const data: Record<string, unknown> = {
     store_id: storeId,
+    customer_id: input.customer_id,
+    recipient_id: input.recipient_id,
     location: input.location,
     country_id: input.country_id,
     province_id: input.province_id,
@@ -179,6 +181,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     recipient_name: input.recipient_name.trim(),
     recipient_address: input.recipient_address.trim(),
     recipient_phone: input.recipient_phone.trim(),
+    recipient_identity_card: input.recipient_identity_card?.trim() || null,
     sender_name: input.sender_name.trim(),
     sender_phone: input.sender_phone.trim(),
     notes: input.notes.trim(),
