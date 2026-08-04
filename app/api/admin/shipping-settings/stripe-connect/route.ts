@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { requireStripe } from "@/lib/services/stripe-admin";
+import { stripeV2Fetch } from "@/lib/services/stripe-admin";
 
 const WRITE_ROLES = new Set(["OWNER", "ADMIN"]);
 const clean = (v: unknown, n = 120) => String(v ?? "").trim().slice(0, n);
@@ -21,6 +21,19 @@ async function access(request: NextRequest, storeId: string) {
   return { denied: null };
 }
 
+// Traduce el status de la capability de Stripe v2 a nuestros 2 flags.
+// "active" = puede cobrar. Cualquier otra cosa (pending/restricted/
+// unsupported/ausente) la tratamos como "todavía no".
+function readMerchantStatus(account: any) {
+  const capability = account?.configuration?.merchant?.capabilities?.card_payments;
+  const chargesEnabled = capability?.status === "active";
+  // v2 no tiene un solo booleano "details_submitted" como v1: se infiere de
+  // si ya no hay requisitos pendientes bloqueando la cuenta.
+  const pendingRequirements = Array.isArray(account?.requirements?.entries) ? account.requirements.entries.length : 0;
+  const detailsSubmitted = chargesEnabled || pendingRequirements === 0;
+  return { chargesEnabled, detailsSubmitted };
+}
+
 export async function GET(request: NextRequest) {
   const storeId = clean(request.nextUrl.searchParams.get("store_id"), 64);
   if (!storeId) return fail("store_id es obligatorio.");
@@ -35,37 +48,32 @@ export async function GET(request: NextRequest) {
 
   if (error || !store) return fail("No se pudo consultar la tienda.", 500);
 
-  // Si ya hay cuenta conectada, refresca el estado real desde Stripe
-  // (por si el onboarding se completó después del último webhook).
   if (store.stripe_account_id) {
     try {
-      const stripe = requireStripe();
-      const account = await stripe.accounts.retrieve(store.stripe_account_id);
+      const account = await stripeV2Fetch(
+        `core/accounts/${store.stripe_account_id}?include[]=configuration.merchant&include[]=requirements`
+      );
+      const { chargesEnabled, detailsSubmitted } = readMerchantStatus(account);
+
       await supabaseAdmin
         .from("stores")
-        .update({
-          stripe_charges_enabled: account.charges_enabled,
-          stripe_details_submitted: account.details_submitted,
-        })
+        .update({ stripe_charges_enabled: chargesEnabled, stripe_details_submitted: detailsSubmitted })
         .eq("id", storeId);
 
+      return NextResponse.json({ ok: true, connected: true, chargesEnabled, detailsSubmitted });
+    } catch (e) {
+      // Si Stripe no responde, devolvemos lo último que sabíamos en vez de tronar.
       return NextResponse.json({
         ok: true,
         connected: true,
-        chargesEnabled: account.charges_enabled,
-        detailsSubmitted: account.details_submitted,
+        chargesEnabled: store.stripe_charges_enabled,
+        detailsSubmitted: store.stripe_details_submitted,
+        warning: (e as Error).message,
       });
-    } catch {
-      // Si Stripe no está configurado o falla, devolvemos lo que hay en BD.
     }
   }
 
-  return NextResponse.json({
-    ok: true,
-    connected: Boolean(store.stripe_account_id),
-    chargesEnabled: store.stripe_charges_enabled,
-    detailsSubmitted: store.stripe_details_submitted,
-  });
+  return NextResponse.json({ ok: true, connected: false, chargesEnabled: false, detailsSubmitted: false });
 }
 
 export async function POST(request: NextRequest) {
@@ -74,13 +82,6 @@ export async function POST(request: NextRequest) {
   if (!storeId) return fail("store_id es obligatorio.");
   const { denied } = await access(request, storeId);
   if (denied) return denied;
-
-  let stripe;
-  try {
-    stripe = requireStripe();
-  } catch (e) {
-    return fail((e as Error).message, 500);
-  }
 
   const { data: store, error } = await supabaseAdmin
     .from("stores")
@@ -91,24 +92,47 @@ export async function POST(request: NextRequest) {
 
   let accountId = store.stripe_account_id;
 
-  if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: "express",
-      business_type: "company",
-      company: { name: store.name },
-      metadata: { store_id: storeId },
+  try {
+    if (!accountId) {
+      const account = await stripeV2Fetch("core/accounts", {
+        method: "POST",
+        body: {
+          display_name: store.name,
+          dashboard: "express",
+          identity: { country: "us" },
+          // Águila (la cuenta conectada) es quien absorbe el 2.9%+$0.30 de
+          // Stripe por procesar tarjetas — así te lo expliqué en la tabla
+          // de costos. Si prefieres que lo absorba la plataforma, cambia
+          // "account" por "application" aquí.
+          defaults: { responsibilities: { fees_collector: "account", losses_collector: "stripe" } },
+          configuration: {
+            merchant: { capabilities: { card_payments: { requested: true } } },
+          },
+          include: ["configuration.merchant"],
+        },
+      });
+      accountId = account.id;
+      await supabaseAdmin.from("stores").update({ stripe_account_id: accountId, stripe_connected_at: new Date().toISOString() }).eq("id", storeId);
+    }
+
+    const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
+    const accountLink = await stripeV2Fetch("core/account_links", {
+      method: "POST",
+      body: {
+        account: accountId,
+        use_case: {
+          type: "account_onboarding",
+          account_onboarding: {
+            configurations: ["merchant"],
+            refresh_url: `${origin}/admin/shipping/settings/pagos?refresh=1`,
+            return_url: `${origin}/admin/shipping/settings/pagos?done=1`,
+          },
+        },
+      },
     });
-    accountId = account.id;
-    await supabaseAdmin.from("stores").update({ stripe_account_id: accountId, stripe_connected_at: new Date().toISOString() }).eq("id", storeId);
+
+    return NextResponse.json({ ok: true, url: accountLink.url });
+  } catch (e) {
+    return fail((e as Error).message, 500);
   }
-
-  const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${origin}/admin/shipping/settings/pagos?refresh=1`,
-    return_url: `${origin}/admin/shipping/settings/pagos?done=1`,
-    type: "account_onboarding",
-  });
-
-  return NextResponse.json({ ok: true, url: accountLink.url });
 }
