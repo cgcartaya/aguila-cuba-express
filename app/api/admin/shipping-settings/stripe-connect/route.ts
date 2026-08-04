@@ -98,7 +98,11 @@ export async function POST(request: NextRequest) {
         method: "POST",
         body: {
           display_name: store.name,
-          dashboard: "express",
+          // "full" (no "express") porque Stripe exige fees_collector =
+          // "application" cuando dashboard es "express". Con "full", cada
+          // tienda conectada paga directo la comisión de Stripe, y tu %
+          // de plataforma queda limpio, sin que tú tengas que cubrir nada.
+          dashboard: "full",
           identity: { country: "us" },
           // Águila (la cuenta conectada) es quien absorbe el 2.9%+$0.30 de
           // Stripe por procesar tarjetas — así te lo expliqué en la tabla

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
   const amountCents = Math.round(Number(shipment.balance_due) * 100);
-  const PLATFORM_FEE_RATE = 0.03; // 3% — tu comisión como dueño de la plataforma
+  const PLATFORM_FEE_RATE = 0.02; // 2% — tu comisión como dueño de la plataforma
   const applicationFeeCents = Math.round(amountCents * PLATFORM_FEE_RATE);
 
   const session = await stripe.checkout.sessions.create(
