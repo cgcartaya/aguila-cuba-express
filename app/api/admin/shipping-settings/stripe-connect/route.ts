@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
           // Stripe por procesar tarjetas — así te lo expliqué en la tabla
           // de costos. Si prefieres que lo absorba la plataforma, cambia
           // "account" por "application" aquí.
-          defaults: { responsibilities: { fees_collector: "account", losses_collector: "stripe" } },
+          defaults: { responsibilities: { fees_collector: "stripe", losses_collector: "stripe" } },
           configuration: {
             merchant: { capabilities: { card_payments: { requested: true } } },
           },
