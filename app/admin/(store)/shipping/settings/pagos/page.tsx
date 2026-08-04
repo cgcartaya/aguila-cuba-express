@@ -18,7 +18,7 @@ export default function StripeConnectSettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
-  const [status, setStatus] = useState<{ connected: boolean; chargesEnabled: boolean; detailsSubmitted: boolean; raw?: unknown; warning?: string } | null>(null);
+  const [status, setStatus] = useState<{ connected: boolean; chargesEnabled: boolean; detailsSubmitted: boolean; warning?: string } | null>(null);
   const [error, setError] = useState("");
 
   async function authHeader() {
@@ -117,17 +117,6 @@ export default function StripeConnectSettingsPage() {
               <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs font-bold text-amber-700">
                 No se pudo refrescar el estado en vivo: {status.warning}
               </p>
-            )}
-
-            {status?.raw != null && (
-              <details className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
-                <summary className="cursor-pointer font-bold text-slate-500">
-                  Info técnica (temporal, para depurar)
-                </summary>
-                <pre className="mt-2 overflow-auto whitespace-pre-wrap break-all text-slate-600">
-                  {JSON.stringify(status.raw, null, 2)}
-                </pre>
-              </details>
             )}
           </div>
         )}
