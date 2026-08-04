@@ -236,7 +236,7 @@ export default function ShippingInvoicePage({
                   </p>
 
                   <h1 className="mt-2 text-2xl font-black tracking-tight">
-                    Águila Cuba Express
+                    Aguila Express USA
                   </h1>
 
                   <p className="mt-1 text-sm font-semibold text-blue-100">
@@ -462,7 +462,7 @@ export default function ShippingInvoicePage({
                 <div className="flex flex-col justify-between gap-3 text-xs font-semibold text-slate-500 sm:flex-row">
                   <div>
                     <p className="font-black text-[#061b3a]">
-                      Gracias por confiar en Águila Cuba Express.
+                      Gracias por confiar en Aguila Express USA.
                     </p>
                     <p className="mt-1">
                       Conserve esta factura y el código de rastreo para
@@ -479,7 +479,7 @@ export default function ShippingInvoicePage({
                     </p>
 
                     <p className="mt-1">
-                      www.aguilacubaexpress.com
+                      www.aguilaexpressusa.com
                     </p>
                   </div>
                 </div>

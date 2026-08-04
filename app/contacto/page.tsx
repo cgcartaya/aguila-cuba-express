@@ -1,11 +1,4 @@
-import type { Metadata } from "next";
 import Image from "next/image";
-
-export const metadata: Metadata = {
-  title: "Contacto | Águila Cuba Express",
-  description:
-    "Habla directamente con Águila Cuba Express. Envíos y compras para Cuba.",
-};
 
 export default function ContactoPage() {
   return (
@@ -18,7 +11,7 @@ export default function ContactoPage() {
             </p>
 
             <h1 className="mt-4 text-4xl font-black md:text-6xl">
-              Habla directamente con Águila Cuba Express
+              Habla directamente con Aguila Express USA
             </h1>
 
             <p className="mt-5 text-lg text-white/80">
@@ -47,7 +40,7 @@ export default function ContactoPage() {
           <div className="overflow-hidden rounded-[2rem] bg-white p-3 shadow-xl">
             <Image
               src="/frank-contacto.jpg"
-              alt="Águila Cuba Express"
+              alt="Aguila Express USA"
               width={900}
               height={1100}
               className="h-[650px] w-full rounded-[1.5rem] object-cover object-top"

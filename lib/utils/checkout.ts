@@ -126,7 +126,7 @@ export function buildWhatsappOrderMessage({
   });
 
   return encodeURIComponent(`
-AGUILA CUBA EXPRESS
+AGUILA EXPRESS USA
 --------------------
 
 PEDIDO NUEVO

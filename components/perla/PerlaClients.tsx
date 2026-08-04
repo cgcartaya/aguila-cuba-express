@@ -31,7 +31,7 @@ export default function PerlaClients() {
             <div className="grid gap-5 sm:grid-cols-[1fr_220px] sm:items-center">
               <div>
                 <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-black text-sky-700">Envíos a Cuba</span>
-                <h3 className="mt-4 text-2xl font-black text-[#071044]">Águila Cuba Express</h3>
+                <h3 className="mt-4 text-2xl font-black text-[#071044]">Aguila Express USA</h3>
                 <p className="mt-3 text-sm leading-6 text-[#5c6794]">Envíos, compras y entregas desde Miami hacia Cuba.</p>
                 <p className="mt-5 inline-flex items-center gap-2 font-black text-sky-700">
                   Ver tienda <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />

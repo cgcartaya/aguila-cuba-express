@@ -32,7 +32,7 @@ export default function Header({ cartCount }: HeaderProps) {
 
   const primaryColor = store?.primary_color || "#061b3a";
   const secondaryColor = store?.secondary_color || "#ef233c";
-  const storeName = store?.name || "Águila Cuba Express";
+  const storeName = store?.name || "Aguila Express USA";
   const isDefaultStore = store?.slug === "aguila";
 
   const storeBaseUrl =

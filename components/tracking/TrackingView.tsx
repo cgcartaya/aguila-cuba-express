@@ -74,7 +74,7 @@ export default function TrackingView({ code }: { code: string }) {
       <section className="mx-auto max-w-4xl">
         <header className="text-center">
           <span className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 sm:px-4 sm:py-2 sm:text-sm">
-            Águila Cuba Express
+            Aguila Express USA
           </span>
 
           <h1 className="mt-3 text-3xl font-black text-[#062446] sm:mt-5 sm:text-5xl">

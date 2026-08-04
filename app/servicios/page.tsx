@@ -1,11 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Nuestros Servicios | Águila Cuba Express",
-  description:
-    "Soluciones rápidas, seguras y confiables para enviar paquetes, compras y carga hacia Cuba.",
-};
-
 export default function ServiciosPage() {
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-slate-900">
@@ -15,7 +7,7 @@ export default function ServiciosPage() {
         </h1>
 
         <p className="mt-4 max-w-2xl text-lg text-slate-600">
-          En Águila Cuba Express ofrecemos soluciones rápidas, seguras y confiables
+          En Aguila Express USA ofrecemos soluciones rápidas, seguras y confiables
           para enviar paquetes, compras y carga hacia Cuba.
         </p>
 

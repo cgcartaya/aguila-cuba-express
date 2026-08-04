@@ -2,7 +2,7 @@
    STORE CONFIG
 
    Configuración temporal para preparar el SaaS multi-tienda
-   sin romper Águila Cuba Express.
+   sin romper Aguila Express USA.
 
    Más adelante este valor se resolverá automáticamente por:
 

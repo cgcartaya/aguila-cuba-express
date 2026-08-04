@@ -4,7 +4,7 @@ export const WHATSAPP_PHONE = "17862031226";
 export const CONTACT_EMAIL = "carlosgarciacartaya@gmail.com";
 
 export const demoUrl = "https://dlracing.perlamarketplace.com";
-export const aguilaStoreUrl = "https://aguilacubaexpress.com/tienda";
+export const aguilaStoreUrl = "https://aguilaexpressusa.com/tienda";
 
 export function buildWhatsAppUrl(message: string) {
   return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;

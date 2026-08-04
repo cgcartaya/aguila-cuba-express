@@ -37,7 +37,7 @@ export default function ProductHeader({
         <Link href="/tienda" className="flex items-center gap-2">
           <Image
             src="/logo.png"
-            alt="Águila Cuba Express"
+            alt="Aguila Express USA"
             width={42}
             height={42}
             className="rounded-full"
@@ -45,7 +45,7 @@ export default function ProductHeader({
 
           <div className="hidden leading-tight sm:block">
             <p className="text-sm font-black uppercase">
-              Águila Cuba Express
+              Aguila Express USA
             </p>
             <p className="text-xs font-bold text-slate-500">
               Tienda online

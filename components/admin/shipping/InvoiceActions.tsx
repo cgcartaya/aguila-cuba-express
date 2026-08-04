@@ -44,7 +44,7 @@ function buildInvoiceMessage(shipment: Shipment) {
     `${baseUrl}/rastrear/${encodeURIComponent(trackingCode)}`;
 
   return [
-    "🧾 *Águila Cuba Express*",
+    "🧾 *Aguila Express USA*",
     "",
     `Hola ${shipment.sender_name || ""}, aquí tiene la información de su operación.`,
     "",

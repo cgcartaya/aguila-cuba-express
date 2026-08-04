@@ -91,7 +91,7 @@ export default function AguilaLanding() {
   }, [weight]);
 
   const quoteMessage = encodeURIComponent(
-    `Hola, quiero cotizar un envío con Águila Cuba Express.\n\nPeso aproximado: ${weight || "0"} lb\nEstimado mostrado: $${estimatedTotal.toFixed(2)}\n\nQuisiera confirmar la tarifa y los detalles.`
+    `Hola, quiero cotizar un envío con Aguila Express USA.\n\nPeso aproximado: ${weight || "0"} lb\nEstimado mostrado: $${estimatedTotal.toFixed(2)}\n\nQuisiera confirmar la tarifa y los detalles.`
   );
 
   return (
@@ -100,10 +100,10 @@ export default function AguilaLanding() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-6">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#13233d]/10">
-              <Image src="/logo.webp" alt="Águila Cuba Express" width={72} height={72} priority className="h-10 w-10 object-contain" />
+              <Image src="/logo.webp" alt="Aguila Express USA" width={72} height={72} priority className="h-10 w-10 object-contain" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-base font-black tracking-tight sm:text-lg">ÁGUILA <span className="text-[#c9202f]">CUBA EXPRESS</span></p>
+              <p className="truncate text-base font-black tracking-tight sm:text-lg">AGUILA <span className="text-[#c9202f]">EXPRESS USA</span></p>
               <p className="text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#13233d]/55 sm:text-[10px]">Más cerca de tu familia</p>
             </div>
           </Link>
@@ -330,7 +330,7 @@ export default function AguilaLanding() {
       <section className="bg-white py-20">
         <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-6 lg:grid-cols-[1.08fr_.92fr] lg:items-center">
           <div className="relative min-h-[500px] overflow-hidden rounded-[1rem_3.5rem_3.5rem_3.5rem] bg-[#13233d]">
-            <Image src="/slide-store.webp" alt="Tienda online Águila Cuba Express" fill className="object-cover" />
+            <Image src="/slide-store.webp" alt="Tienda online Aguila Express USA" fill className="object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#13233d]/90 via-transparent to-transparent" />
             <div className="absolute bottom-0 p-8 text-white"><p className="text-xs font-black uppercase tracking-[.2em] text-[#e2b75b]">Tienda online</p><p className="mt-3 max-w-lg text-3xl font-black">Compra desde Estados Unidos. Nosotros acercamos el resto.</p></div>
           </div>
@@ -361,13 +361,13 @@ export default function AguilaLanding() {
       <footer className="bg-[#13233d] text-white">
         <div className="mx-auto grid max-w-7xl gap-9 px-5 py-12 sm:px-6 md:grid-cols-[1.3fr_.7fr_.7fr]">
           <div>
-            <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-white"><Image src="/logo.webp" alt="Águila Cuba Express" width={56} height={56} className="h-10 w-10 object-contain" /></div><p className="font-black">ÁGUILA <span className="text-[#ef4b57]">CUBA EXPRESS</span></p></div>
+            <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-full bg-white"><Image src="/logo.webp" alt="Aguila Express USA" width={56} height={56} className="h-10 w-10 object-contain" /></div><p className="font-black">AGUILA <span className="text-[#ef4b57]">EXPRESS USA</span></p></div>
             <p className="mt-5 max-w-md text-sm font-semibold leading-6 text-white/50">Envíos, compras y seguimiento para acercar a las familias entre Miami y Cuba.</p>
           </div>
           <div><p className="font-black">Navegación</p><div className="mt-4 grid gap-2 text-sm font-semibold text-white/50">{links.map((item) => <Link key={item.label} href={item.href}>{item.label}</Link>)}</div></div>
           <div><p className="font-black">Contacto</p><div className="mt-4 space-y-3 text-sm font-semibold text-white/50"><p className="flex items-center gap-2"><MapPin size={16} /> Miami, Florida</p><a href={WHATSAPP_URL} target="_blank" rel="noreferrer" className="flex items-center gap-2"><MessageCircle size={16} /> WhatsApp</a><p className="flex items-center gap-2"><ShieldCheck size={16} /> Atención personalizada</p></div></div>
         </div>
-        <div className="border-t border-white/10 px-5 py-5 text-center text-xs font-semibold text-white/35">© {new Date().getFullYear()} Águila Cuba Express. Todos los derechos reservados.</div>
+        <div className="border-t border-white/10 px-5 py-5 text-center text-xs font-semibold text-white/35">© {new Date().getFullYear()} Aguila Express USA. Todos los derechos reservados.</div>
       </footer>
     </main>
   );

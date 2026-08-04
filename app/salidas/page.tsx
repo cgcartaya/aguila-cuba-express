@@ -98,7 +98,7 @@ export default function StoreDeparturesPage() {
         <section className="relative min-h-[245px] overflow-hidden rounded-[1.75rem] bg-sky-100 shadow-sm sm:min-h-[330px] md:min-h-[420px]">
           <Image
             src="/departures/departures-hero.png"
-            alt="Próximas salidas de Águila Cuba Express"
+            alt="Próximas salidas de Aguila Express USA"
             fill
             priority
             sizes="(max-width: 768px) 100vw, 1024px"

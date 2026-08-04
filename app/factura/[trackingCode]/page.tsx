@@ -232,7 +232,7 @@ export default function PublicInvoicePage({
                   </p>
 
                   <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
-                    Águila Cuba Express
+                    Aguila Express USA
                   </h2>
 
                   <p className="mt-1 text-sm font-medium text-blue-100">
@@ -471,7 +471,7 @@ export default function PublicInvoicePage({
                 <div className="flex flex-col justify-between gap-3 text-xs font-medium text-slate-500 sm:flex-row">
                   <div>
                     <p className="font-extrabold text-slate-950">
-                      Gracias por confiar en Águila Cuba Express.
+                      Gracias por confiar en Aguila Express USA.
                     </p>
 
                     <p className="mt-1">
@@ -485,7 +485,7 @@ export default function PublicInvoicePage({
                     </p>
 
                     <p className="mt-1">
-                      www.aguilacubaexpress.com
+                      www.aguilaexpressusa.com
                     </p>
                   </div>
                 </div>
