@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   if (store.stripe_account_id) {
     try {
       const account = await stripeV2Fetch(
-        `core/accounts/${store.stripe_account_id}?include[]=configuration.merchant&include[]=requirements`
+        `core/accounts/${store.stripe_account_id}?include[0]=configuration.merchant&include[1]=requirements`
       );
       const { chargesEnabled, detailsSubmitted } = readMerchantStatus(account);
 
