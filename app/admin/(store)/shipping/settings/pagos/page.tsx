@@ -18,7 +18,7 @@ export default function StripeConnectSettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
-  const [status, setStatus] = useState<{ connected: boolean; chargesEnabled: boolean; detailsSubmitted: boolean } | null>(null);
+  const [status, setStatus] = useState<{ connected: boolean; chargesEnabled: boolean; detailsSubmitted: boolean; raw?: unknown } | null>(null);
   const [error, setError] = useState("");
 
   async function authHeader() {
@@ -112,6 +112,17 @@ export default function StripeConnectSettingsPage() {
               {connecting ? <Loader2 className="animate-spin" size={16} /> : <WalletCards size={16} />}
               {status?.connected ? "Continuar configuración en Stripe" : "Conectar con Stripe"}
             </button>
+
+            {status?.raw != null && (
+              <details className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs">
+                <summary className="cursor-pointer font-bold text-slate-500">
+                  Info técnica (temporal, para depurar)
+                </summary>
+                <pre className="mt-2 overflow-auto whitespace-pre-wrap break-all text-slate-600">
+                  {JSON.stringify(status.raw, null, 2)}
+                </pre>
+              </details>
+            )}
           </div>
         )}
       </div>

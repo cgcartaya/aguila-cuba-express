@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
         .update({ stripe_charges_enabled: chargesEnabled, stripe_details_submitted: detailsSubmitted })
         .eq("id", storeId);
 
-      return NextResponse.json({ ok: true, connected: true, chargesEnabled, detailsSubmitted });
+      return NextResponse.json({ ok: true, connected: true, chargesEnabled, detailsSubmitted, raw: account });
     } catch (e) {
       // Si Stripe no responde, devolvemos lo último que sabíamos en vez de tronar.
       return NextResponse.json({
