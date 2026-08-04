@@ -37,6 +37,7 @@ const links = [
   { label: "Cómo funciona", href: "#proceso" },
   { label: "Tienda", href: STORE_URL },
   { label: "Rastreo", href: "#rastreo" },
+  { label: "Mis envíos", href: "/portal/mis-envios" },
 ];
 
 const services = [
