@@ -34,6 +34,7 @@ export default function ShipmentForm(props: Props) {
   const { storeId, shipment, drivers, settings, countries, provinces, municipalities, locations, serviceTypes, rates, extraFees, initialSelectedFees = [], initialCustomerId = "", initialRecipientId = "", submitting, onSubmit } = props;
   const [error, setError] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
+  const [confirmNoCustomer, setConfirmNoCustomer] = useState(false);
   const [form, setForm] = useState<ShipmentInput>({
     customer_id: shipment?.customer_id || null,
     recipient_id: shipment?.recipient_id || null,
@@ -161,6 +162,10 @@ export default function ShipmentForm(props: Props) {
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
     if (form.recipient_phone.length < (settings?.phone_digits_min || 1)) return setError("El teléfono del destinatario no es válido.");
+    if (!form.customer_id && !confirmNoCustomer) {
+      requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      return setError("No seleccionaste un cliente del buscador arriba (el remitente quedó escrito a mano). Búscalo y dale clic al resultado, o marca la casilla de excepción abajo si de verdad no quieres vincularlo.");
+    }
     try {
       await onSubmit(form);
     } catch (e) {
@@ -236,6 +241,20 @@ export default function ShipmentForm(props: Props) {
         <Select label="Estado" value={form.status} onChange={v=>set("status",v as ShippingStatus)} options={SHIPPING_STATUSES.map(x=>[x,getShippingStatusLabel(x)])} />
         <Select label="Repartidor" value={form.assigned_driver_id || ""} onChange={v=>{ const d=drivers.find(x=>x.id===v); set("assigned_driver_id",d?.id||null); set("assigned_driver_name",d?.name||null); }} options={drivers.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
       </div>
+      {!form.customer_id && (
+        <label className="mt-3 flex items-start gap-2 text-sm text-amber-700">
+          <input
+            type="checkbox"
+            className="mt-1"
+            checked={confirmNoCustomer}
+            onChange={(e) => setConfirmNoCustomer(e.target.checked)}
+          />
+          <span>
+            <strong>Sin cliente vinculado.</strong> Este remitente no viene del buscador de arriba, así que este envío no
+            quedará ligado a un cliente en el CRM. Marca esto solo si es intencional (cliente eventual, sin registro).
+          </span>
+        </label>
+      )}
     </Section>
 
     {form.contains_package && <Section title="Cálculo del paquete">
