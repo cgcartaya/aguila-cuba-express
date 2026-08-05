@@ -76,6 +76,31 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ ok: true, connected: false, chargesEnabled: false, detailsSubmitted: false });
 }
 
+export async function DELETE(request: NextRequest) {
+  const body = await request.json().catch(() => ({}));
+  const storeId = clean(body.store_id, 64);
+  if (!storeId) return fail("store_id es obligatorio.");
+  const { denied } = await access(request, storeId);
+  if (denied) return denied;
+
+  // Solo limpia la referencia guardada en nuestra base — no borra nada en
+  // Stripe. Se usa para soltar una cuenta conectada de otro modo (ej.
+  // sandbox) cuando la plataforma cambia a modo real y esa cuenta vieja
+  // ya no es válida para las llaves actuales.
+  const { error } = await supabaseAdmin
+    .from("stores")
+    .update({
+      stripe_account_id: null,
+      stripe_charges_enabled: false,
+      stripe_details_submitted: false,
+      stripe_connected_at: null,
+    })
+    .eq("id", storeId);
+
+  if (error) return fail("No se pudo desconectar Stripe.", 500);
+  return NextResponse.json({ ok: true });
+}
+
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const storeId = clean(body.store_id, 64);

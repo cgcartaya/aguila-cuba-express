@@ -18,6 +18,7 @@ export default function StripeConnectSettingsPage() {
 
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
   const [status, setStatus] = useState<{ connected: boolean; chargesEnabled: boolean; detailsSubmitted: boolean; warning?: string } | null>(null);
   const [error, setError] = useState("");
 
@@ -58,6 +59,23 @@ export default function StripeConnectSettingsPage() {
     window.location.href = body.url;
   }
 
+  async function disconnect() {
+    if (!activeStore?.id) return;
+    if (!window.confirm("Esto va a soltar la cuenta de Stripe guardada actualmente (por ejemplo, si era de prueba). No borra nada en Stripe, solo la referencia aquí. ¿Continuar?")) return;
+    setDisconnecting(true);
+    setError("");
+    const headers = await authHeader();
+    const response = await fetch("/api/admin/shipping-settings/stripe-connect", {
+      method: "DELETE",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ store_id: activeStore.id }),
+    });
+    const body = await response.json().catch(() => ({}));
+    setDisconnecting(false);
+    if (!response.ok) return setError(body.error || "No se pudo desconectar.");
+    void loadStatus();
+  }
+
   return (
     <main className="min-h-screen bg-[#f5f7fb] p-4 pb-24 md:p-6">
       <div className="mx-auto max-w-2xl">
@@ -83,7 +101,7 @@ export default function StripeConnectSettingsPage() {
           </div>
         ) : (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
-            {status?.chargesEnabled ? (
+            {status?.chargesEnabled && !status?.warning ? (
               <div className="flex items-center gap-3 text-emerald-700">
                 <CheckCircle2 size={22} />
                 <div>
@@ -95,8 +113,12 @@ export default function StripeConnectSettingsPage() {
               <div className="flex items-center gap-3 text-amber-700">
                 <CircleAlert size={22} />
                 <div>
-                  <p className="font-black">Falta terminar el registro en Stripe</p>
-                  <p className="text-sm text-amber-600">Empezaste la conexión pero Stripe todavía necesita más datos.</p>
+                  <p className="font-black">{status?.warning ? "No se pudo confirmar el estado" : "Falta terminar el registro en Stripe"}</p>
+                  <p className="text-sm text-amber-600">
+                    {status?.warning
+                      ? "La cuenta guardada no responde con las llaves actuales — puede ser de otro modo (prueba/real). Desconecta y conecta de nuevo."
+                      : "Empezaste la conexión pero Stripe todavía necesita más datos."}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -112,6 +134,18 @@ export default function StripeConnectSettingsPage() {
               {connecting ? <Loader2 className="animate-spin" size={16} /> : <WalletCards size={16} />}
               {status?.connected ? "Continuar configuración en Stripe" : "Conectar con Stripe"}
             </button>
+
+            {status?.connected && (
+              <button
+                type="button"
+                onClick={() => void disconnect()}
+                disabled={disconnecting}
+                className="mt-3 ml-3 inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-5 py-3 text-sm font-black text-red-700 disabled:opacity-50"
+              >
+                {disconnecting ? <Loader2 className="animate-spin" size={16} /> : null}
+                Desconectar
+              </button>
+            )}
 
             {status?.warning && (
               <p className="mt-3 rounded-xl bg-amber-50 p-3 text-xs font-bold text-amber-700">
