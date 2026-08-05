@@ -123,11 +123,31 @@ export function getOpenShippingTripsByStoreId(storeId: string) {
     .returns<ShippingTrip[]>();
 }
 
-export function setDefaultShippingTrip(storeId: string, tripId: string) {
-  return supabase.rpc("set_default_shipping_trip", {
-    p_store_id: storeId,
-    p_trip_id: tripId,
-  });
+export async function setDefaultShippingTrip(storeId: string, tripId: string) {
+  // Antes esto llamaba al RPC set_default_shipping_trip, pero no hay
+  // evidencia de que esa función exista en la base (nada más en este
+  // archivo la invocaba). Se reemplaza por dos updates directos sobre la
+  // tabla, igual que hacen moveShippingTripToTrash/restoreShippingTrip acá
+  // mismo: primero se desmarca cualquier otro viaje predeterminado de la
+  // tienda, y recién después se marca el nuevo. Así nunca quedan dos
+  // viajes con is_default = true al mismo tiempo.
+  const unsetResult = await supabase
+    .from("shipping_trips")
+    .update({ is_default: false, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .eq("is_default", true)
+    .neq("id", tripId);
+
+  if (unsetResult.error) return unsetResult;
+
+  return supabase
+    .from("shipping_trips")
+    .update({ is_default: true, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .eq("id", tripId)
+    .is("deleted_at", null)
+    .select("*")
+    .single();
 }
 
 
