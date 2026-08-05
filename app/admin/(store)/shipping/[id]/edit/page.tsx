@@ -135,7 +135,15 @@ export default function EditShipmentPage({
 
     if (error) throw new Error(error.message);
 
-    router.push("/admin/shipping");
+    // Antes esto mandaba siempre a /admin/shipping (dashboard general),
+    // sacando al usuario del viaje que estaba viendo. Ahora vuelve a la
+    // vista del viaje al que pertenece el envío, igual que hace la
+    // pantalla de "Nuevo envío".
+    if (shipment.trip_id) {
+      router.push(`/admin/shipping/trips/${shipment.trip_id}`);
+    } else {
+      router.push("/admin/shipping");
+    }
     router.refresh();
   }
 
