@@ -9,6 +9,7 @@ import {
   Clock3,
   DollarSign,
   Loader2,
+  MapPin,
   PackageCheck,
   Plus,
   Scale,
@@ -23,7 +24,6 @@ import DriverPerformance from "@/components/admin/shipping/dashboard/DriverPerfo
 import OperationalMetricCard from "@/components/admin/shipping/dashboard/OperationalMetricCard";
 import RecentShipments from "@/components/admin/shipping/dashboard/RecentShipments";
 import SevenDayActivity from "@/components/admin/shipping/dashboard/SevenDayActivity";
-import ShippingQuickActions from "@/components/admin/shipping/dashboard/ShippingQuickActions";
 import StatusOverview from "@/components/admin/shipping/dashboard/StatusOverview";
 import TopDestinations from "@/components/admin/shipping/dashboard/TopDestinations";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -190,6 +190,16 @@ export default function ShippingOperationalDashboardPage() {
                   </Link>
                 )}
 
+                {canCreate && (
+                  <Link
+                    href="/admin/shipping/recoger"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
+                  >
+                    <MapPin size={18} />
+                    Recogida en casa
+                  </Link>
+                )}
+
                 <Link
                   href="/admin/shipping/shipments"
                   className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
@@ -246,8 +256,6 @@ export default function ShippingOperationalDashboardPage() {
             {errorMessage}
           </div>
         )}
-
-        <ShippingQuickActions />
 
         <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <OperationalMetricCard

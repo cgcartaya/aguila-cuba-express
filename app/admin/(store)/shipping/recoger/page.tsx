@@ -174,7 +174,7 @@ export default function PickupShipmentPage() {
       if (error) throw new Error(error.message);
       if (!data?.id) throw new Error("El envío se creó sin devolver un identificador válido.");
 
-      setShipment({ id: data.id, trackingCode: data.tracking_code, servicePrice: Number(data.service_price || 0) });
+      setShipment({ id: data.id, trackingCode: data.tracking_code || data.id, servicePrice: Number(data.service_price || 0) });
       setStep("payment");
     } finally {
       setSubmitting(false);
