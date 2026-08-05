@@ -22,6 +22,12 @@ async function access(request: NextRequest, storeId: string) {
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const shipmentId = String(body.shipmentId || "").trim();
+  // "tablet" = se abre aquí mismo, en el dispositivo de quien cobra.
+  // "customer" = el link se manda por WhatsApp o por QR para que el
+  // cliente pague desde su propio teléfono; en ese caso no podemos
+  // mandarlo de vuelta al panel admin (no tiene sesión), así que usa
+  // las mismas páginas públicas que ya usa el portal de clientes.
+  const deliveryChannel = body.deliveryChannel === "customer" ? "customer" : "tablet";
   if (!shipmentId) return fail("Falta el envío.");
 
   const { data: shipment, error } = await supabaseAdmin
@@ -79,10 +85,15 @@ export async function POST(request: NextRequest) {
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
       },
-      // Vuelve a la pantalla de recogida, no al portal público de clientes.
-      success_url: `${origin}/admin/shipping/recoger?cobrado=1&shipment=${shipment.id}`,
-      cancel_url: `${origin}/admin/shipping/recoger?cancelado=1&shipment=${shipment.id}`,
-      metadata: { shipment_id: shipment.id, store_id: store.id, channel: "pickup" },
+      success_url:
+        deliveryChannel === "customer"
+          ? `${origin}/portal/pago-exitoso?tracking=${encodeURIComponent(shipment.tracking_code || "")}`
+          : `${origin}/admin/shipping/recoger?cobrado=1&shipment=${shipment.id}`,
+      cancel_url:
+        deliveryChannel === "customer"
+          ? `${origin}/portal/pago-cancelado`
+          : `${origin}/admin/shipping/recoger?cancelado=1&shipment=${shipment.id}`,
+      metadata: { shipment_id: shipment.id, store_id: store.id, channel: `pickup-${deliveryChannel}` },
     },
     { stripeAccount: store.stripe_account_id }
   );
