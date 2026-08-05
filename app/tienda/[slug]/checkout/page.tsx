@@ -100,7 +100,11 @@ export default function CheckoutPage() {
         setBusinessWhatsapp(
           storeSettingsResponse.data?.whatsapp?.replace(/\D/g, "") || ""
         );
-        setCardPaymentAvailable(Boolean(paymentAvailabilityResponse?.available));
+        const cardAvailable = Boolean(paymentAvailabilityResponse?.available);
+        setCardPaymentAvailable(cardAvailable);
+        // Tarjeta es el método preferido cuando está disponible; WhatsApp
+        // queda como segunda opción, no como la que viene marcada.
+        if (cardAvailable) setPayWith("card");
 
         const settings = builderResponse.data || createDefaultCheckoutSettings(store.id);
         setCheckoutSettings(settings);

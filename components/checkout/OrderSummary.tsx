@@ -198,21 +198,21 @@ export function OrderSummary({
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => onChangePayWith?.("whatsapp")}
-              className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
-                payWith === "whatsapp" ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 bg-white text-gray-600"
-              }`}
-            >
-              <MessageCircle size={17} /> WhatsApp
-            </button>
-            <button
-              type="button"
               onClick={() => onChangePayWith?.("card")}
               className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
                 payWith === "card" ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 bg-white text-gray-600"
               }`}
             >
               <CreditCard size={17} /> Tarjeta
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangePayWith?.("whatsapp")}
+              className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
+                payWith === "whatsapp" ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 bg-white text-gray-600"
+              }`}
+            >
+              <MessageCircle size={17} /> WhatsApp
             </button>
           </div>
         </div>
