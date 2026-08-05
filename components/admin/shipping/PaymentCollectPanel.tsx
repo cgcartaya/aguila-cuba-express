@@ -15,6 +15,7 @@ import {
 
 import { supabase } from "@/lib/supabase";
 import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/config/features";
 
 type CardMode = null | "choose" | "customer-link";
 
@@ -224,7 +225,7 @@ export default function PaymentCollectPanel({
       {payError && <div className="mx-auto mt-5 max-w-md rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center text-sm font-bold text-rose-700">{payError}</div>}
 
       {cardMode !== "choose" ? (
-        <div className="mx-auto mt-6 grid max-w-xl gap-4 sm:grid-cols-2">
+        <div className={`mx-auto mt-6 grid max-w-xl gap-4 ${CARD_PAYMENTS_ENABLED ? "sm:grid-cols-2" : ""}`}>
           <button
             type="button"
             onClick={payCash}
@@ -235,15 +236,21 @@ export default function PaymentCollectPanel({
             <span className="text-base font-black">Efectivo</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setCardMode("choose")}
-            disabled={payBusy !== null}
-            className="flex flex-col items-center gap-3 rounded-3xl border-2 border-blue-200 bg-blue-50 p-7 text-blue-800 transition hover:border-blue-400 disabled:opacity-50"
-          >
-            <CreditCard size={36} />
-            <span className="text-base font-black">Tarjeta</span>
-          </button>
+          {CARD_PAYMENTS_ENABLED ? (
+            <button
+              type="button"
+              onClick={() => setCardMode("choose")}
+              disabled={payBusy !== null}
+              className="flex flex-col items-center gap-3 rounded-3xl border-2 border-blue-200 bg-blue-50 p-7 text-blue-800 transition hover:border-blue-400 disabled:opacity-50"
+            >
+              <CreditCard size={36} />
+              <span className="text-base font-black">Tarjeta</span>
+            </button>
+          ) : (
+            <p className="mt-3 text-center text-xs font-semibold text-slate-400">
+              El cobro con tarjeta está pausado por unas horas — vuelve pronto.
+            </p>
+          )}
         </div>
       ) : (
         <div className="mx-auto mt-6 max-w-xl">

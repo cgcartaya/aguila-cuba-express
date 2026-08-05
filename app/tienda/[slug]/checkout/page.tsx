@@ -29,6 +29,7 @@ import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSele
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
 import type { AppliedDiscount } from "@/components/checkout/DiscountCouponBox";
+import { CARD_PAYMENTS_ENABLED } from "@/lib/config/features";
 
 import {
   buildWhatsappOrderMessage,
@@ -100,7 +101,7 @@ export default function CheckoutPage() {
         setBusinessWhatsapp(
           storeSettingsResponse.data?.whatsapp?.replace(/\D/g, "") || ""
         );
-        const cardAvailable = Boolean(paymentAvailabilityResponse?.available);
+        const cardAvailable = Boolean(paymentAvailabilityResponse?.available) && CARD_PAYMENTS_ENABLED;
         setCardPaymentAvailable(cardAvailable);
         // Tarjeta es el método preferido cuando está disponible; WhatsApp
         // queda como segunda opción, no como la que viene marcada.
