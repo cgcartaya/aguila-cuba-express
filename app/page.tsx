@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import AguilaLanding from "@/components/landing/AguilaLanding";
+import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
-type LandingType = "aguila" | "yoyo" | "perla";
+type LandingType = "aguila" | "yoyo" | "deparis" | "perla";
 
 function normalizeHost(value: string | null) {
   return (value || "")
@@ -44,6 +45,16 @@ function resolveLanding(host: string): LandingType {
     return "yoyo";
   }
 
+  // Subdominio y dominios personalizados de De Paris.
+  if (
+    normalizedHost === `deparis.${PLATFORM_DOMAIN}` ||
+    normalizedHost.startsWith("deparis.") ||
+    normalizedHost === "depariscuba.com" ||
+    normalizedHost.startsWith("depariscuba.")
+  ) {
+    return "deparis";
+  }
+
   return "perla";
 }
 
@@ -74,6 +85,14 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
+  if (landing === "deparis") {
+    return {
+      title: "De Paris | Panadería, bistró y mercado gourmet",
+      description:
+        "Panadería francesa, bistró y mercado gourmet — pide en línea con entrega y rastreo.",
+    };
+  }
+
   return {
     title: "Perla Marketplace | Tu negocio conectado",
     description:
@@ -90,6 +109,10 @@ export default async function HomePage() {
 
   if (landing === "yoyo") {
     return <YoyoLanding />;
+  }
+
+  if (landing === "deparis") {
+    return <DeParisLanding />;
   }
 
   return <PerlaMarketplaceLanding />;
