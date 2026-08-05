@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CircleAlert, ExternalLink, ShoppingBag } from "lucide-react";
 
+// Ver el comentario equivalente en /tienda/pago-exitoso/page.tsx.
+function displayOrderNumber(value: string) {
+  const looksLikeRawId = value.length > 20 && value.includes("-");
+  return looksLikeRawId ? `#${value.slice(0, 8).toUpperCase()}` : value;
+}
+
 function CancelledPageContent() {
   const searchParams = useSearchParams();
   const orderNumber = searchParams.get("order") || "";
@@ -23,7 +29,7 @@ function CancelledPageContent() {
         {orderNumber && (
           <div className="mt-6 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
             Número de orden:
-            <strong className="mt-1 block break-all text-gray-950">{orderNumber}</strong>
+            <strong className="mt-1 block break-all text-gray-950">{displayOrderNumber(orderNumber)}</strong>
           </div>
         )}
 

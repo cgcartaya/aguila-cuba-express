@@ -1,20 +1,35 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, ExternalLink, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
 
+// Si no hay un order_number amigable, la orden cae al id completo (uuid) —
+// se ve feo y se corta en pantallas chicas. Mostramos una versión corta
+// solo para lectura; el link a "Ver mi pedido" sigue usando el valor
+// completo, que es el que la página del pedido necesita para encontrarlo.
+function displayOrderNumber(value: string) {
+  const looksLikeRawId = value.length > 20 && value.includes("-");
+  return looksLikeRawId ? `#${value.slice(0, 8).toUpperCase()}` : value;
+}
+
 function SuccessPageContent() {
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
   const orderNumber = searchParams.get("order") || "";
 
-  function handleFinish() {
+  // El pago con tarjeta ya quedó confirmado en este punto — a diferencia
+  // del flujo de WhatsApp (donde el pedido no está "cerrado" hasta que se
+  // manda el mensaje), aquí no hay razón para dejar el carrito lleno
+  // esperando un clic. Si no se vacía, la barra flotante de "Ver carrito"
+  // se queda tapando esta pantalla.
+  useEffect(() => {
     clearCart();
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-10">
@@ -30,7 +45,7 @@ function SuccessPageContent() {
         {orderNumber && (
           <div className="mt-6 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
             Número de orden:
-            <strong className="mt-1 block break-all text-gray-950">{orderNumber}</strong>
+            <strong className="mt-1 block break-all text-gray-950">{displayOrderNumber(orderNumber)}</strong>
           </div>
         )}
 
@@ -38,7 +53,6 @@ function SuccessPageContent() {
           {orderNumber && (
             <Link
               href={`/pedido/${encodeURIComponent(orderNumber)}`}
-              onClick={handleFinish}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-950 px-5 py-4 font-bold text-white transition hover:bg-gray-800"
             >
               <ExternalLink size={20} />
