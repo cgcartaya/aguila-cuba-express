@@ -35,15 +35,26 @@ export async function POST(request: NextRequest) {
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as { id: string; metadata?: Record<string, string> };
     const shipmentId = session.metadata?.shipment_id;
+    const orderId = session.metadata?.order_id;
+
+    if (orderId) {
+      // Pedido de la tienda pagado con tarjeta en el checkout.
+      await supabaseAdmin.from("orders").update({ payment_status: "paid" }).eq("id", orderId);
+    }
 
     if (shipmentId) {
       const { data: shipment } = await supabaseAdmin
         .from("shipments")
-        .select("id, store_id, service_price")
+        .select("id, store_id, service_price, balance_due")
         .eq("id", shipmentId)
         .maybeSingle();
 
       if (shipment) {
+        // El recibo debe reflejar lo que se cobró EN ESTA transacción, no
+        // el total de la factura — importante si el envío ya traía un
+        // pago parcial anterior (efectivo o tarjeta).
+        const amountCollectedNow = Number(shipment.balance_due || 0);
+
         await supabaseAdmin
           .from("shipments")
           .update({ amount_paid: shipment.service_price, balance_due: 0, payment_status: "paid", payment_method: "card" })
@@ -52,11 +63,11 @@ export async function POST(request: NextRequest) {
         // Recibo de pago inmutable con folio consecutivo — separado de la
         // factura, que se genera desde que se crea el envío.
         const storeId = session.metadata?.store_id || shipment.store_id;
-        if (storeId) {
+        if (storeId && amountCollectedNow > 0) {
           await createPaymentReceipt({
             storeId,
             shipmentId: shipment.id,
-            amount: Number(shipment.service_price || 0),
+            amount: amountCollectedNow,
             paymentMethod: "card",
             stripeCheckoutSessionId: session.id,
           });

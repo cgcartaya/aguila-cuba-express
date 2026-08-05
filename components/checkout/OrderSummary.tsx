@@ -1,4 +1,5 @@
 import {
+  CreditCard,
   Loader2,
   MessageCircle,
   Package,
@@ -32,6 +33,9 @@ type Props = {
   deliveryLabel?: string;
   deliveryRequiresZone?: boolean;
   locationLabel?: string;
+  cardPaymentAvailable?: boolean;
+  payWith?: "whatsapp" | "card";
+  onChangePayWith?: (value: "whatsapp" | "card") => void;
 };
 
 export function OrderSummary({
@@ -54,6 +58,9 @@ export function OrderSummary({
   deliveryLabel = "Domicilio",
   deliveryRequiresZone = true,
   locationLabel,
+  cardPaymentAvailable = false,
+  payWith = "whatsapp",
+  onChangePayWith,
 }: Props) {
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
@@ -185,17 +192,50 @@ export function OrderSummary({
         </div>
       )}
 
+      {cardPaymentAvailable && (
+        <div className="mb-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">¿Cómo prefieres pagar?</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onChangePayWith?.("whatsapp")}
+              className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
+                payWith === "whatsapp" ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 bg-white text-gray-600"
+              }`}
+            >
+              <MessageCircle size={17} /> WhatsApp
+            </button>
+            <button
+              type="button"
+              onClick={() => onChangePayWith?.("card")}
+              className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
+                payWith === "card" ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 bg-white text-gray-600"
+              }`}
+            >
+              <CreditCard size={17} /> Tarjeta
+            </button>
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={onSubmit}
         disabled={loading}
         aria-disabled={loading}
-        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          payWith === "card" ? "bg-blue-700 hover:bg-blue-800" : "bg-green-600 hover:bg-green-700"
+        }`}
       >
         {loading ? (
           <>
             <Loader2 className="animate-spin" size={20} />
-            Creando orden...
+            {payWith === "card" ? "Preparando el pago..." : "Creando orden..."}
+          </>
+        ) : payWith === "card" ? (
+          <>
+            <CreditCard size={20} />
+            Pagar con tarjeta
           </>
         ) : (
           <>

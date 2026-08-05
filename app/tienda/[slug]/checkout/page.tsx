@@ -78,6 +78,8 @@ export default function CheckoutPage() {
   const [discountAppliedForPhone, setDiscountAppliedForPhone] = useState<string | null>(null);
   const [checkoutRuleMap, setCheckoutRuleMap] = useState<Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }>>({});
   const [loadingRules, setLoadingRules] = useState(false);
+  const [cardPaymentAvailable, setCardPaymentAvailable] = useState(false);
+  const [payWith, setPayWith] = useState<"whatsapp" | "card">("whatsapp");
 
   useEffect(() => {
     async function loadCheckoutData() {
@@ -85,10 +87,11 @@ export default function CheckoutPage() {
 
       try {
         setLoadingCheckout(true);
-        const [zonesResponse, storeSettingsResponse, builderResponse] = await Promise.all([
+        const [zonesResponse, storeSettingsResponse, builderResponse, paymentAvailabilityResponse] = await Promise.all([
           getActiveDeliveryZones(store.id),
           getStoreSettings(store.id),
           getCheckoutSettings(store.id),
+          fetch(`/api/checkout/payment-availability?storeId=${encodeURIComponent(store.id)}`).then((r) => r.json()).catch(() => ({ available: false })),
         ]);
 
         if (zonesResponse.error) throw zonesResponse.error;
@@ -97,6 +100,7 @@ export default function CheckoutPage() {
         setBusinessWhatsapp(
           storeSettingsResponse.data?.whatsapp?.replace(/\D/g, "") || ""
         );
+        setCardPaymentAvailable(Boolean(paymentAvailabilityResponse?.available));
 
         const settings = builderResponse.data || createDefaultCheckoutSettings(store.id);
         setCheckoutSettings(settings);
@@ -436,7 +440,7 @@ ${orderUrl}`);
     setError("");
 
     if (!store?.id) return showCheckoutError("No se pudo identificar la tienda del pedido. Recarga la página e inténtalo otra vez.");
-    if (!businessWhatsapp) return showCheckoutError("Esta tienda todavía no tiene WhatsApp configurado.");
+    if (payWith === "whatsapp" && !businessWhatsapp) return showCheckoutError("Esta tienda todavía no tiene WhatsApp configurado.");
     if (cart.length === 0) return showCheckoutError("Tu carrito está vacío.");
     if (loadingRules) return showCheckoutError("Espera un momento mientras verificamos las reglas de entrega.");
 
@@ -465,6 +469,38 @@ ${orderUrl}`);
       const order = await createOrderSecure(orderItemsBase);
 
       const orderNumber = order.order_number || order.id;
+
+      if (payWith === "card") {
+        const payResponse = await fetch("/api/checkout/pay-with-card", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: order.id }),
+        });
+        const payResult = await payResponse.json().catch(() => null);
+
+        if (!payResponse.ok || !payResult?.success || !payResult?.url) {
+          throw new Error(payResult?.message || "No se pudo iniciar el cobro con tarjeta.");
+        }
+
+        void trackAnalyticsEvent({
+          storeId: store.id,
+          eventName: "order_created",
+          orderId: order.id,
+          value: Number(order.total),
+          metadata: {
+            orderNumber,
+            items: cart.length,
+            fulfillmentMethod: method,
+            discountCode: appliedDiscount?.code || null,
+            discountAmount: Number(order.discount_amount),
+            paymentMethod: "card",
+          },
+        });
+
+        window.location.href = payResult.url;
+        return;
+      }
+
       const orderUrl = `${window.location.origin}${orderUrlBase}/${orderNumber}`;
       const whatsappMessage = isYoyo
         ? buildYoyoWhatsappMessage(orderNumber, orderUrl)
@@ -591,6 +627,9 @@ ${orderUrl}`);
                   ? `Entrega en ${form.city}`
                   : undefined
               }
+              cardPaymentAvailable={cardPaymentAvailable}
+              payWith={payWith}
+              onChangePayWith={setPayWith}
             />
           </div>
         )}

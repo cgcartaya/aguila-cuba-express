@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
   const { data: shipment, error: shipmentError } = await supabaseAdmin
     .from("shipments")
-    .select("id, store_id, service_price, payment_status")
+    .select("id, store_id, service_price, balance_due, payment_status")
     .eq("id", shipmentId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -40,6 +40,11 @@ export async function POST(request: NextRequest) {
   if (shipment.payment_status === "paid") {
     return fail("Este envío ya está marcado como pagado.");
   }
+
+  // Lo que se cobra AHORA en efectivo es el saldo pendiente, no
+  // necesariamente el total de la factura — puede haber un pago parcial
+  // anterior (efectivo o tarjeta).
+  const amountCollectedNow = Number(shipment.balance_due || 0);
 
   const { error: updateError } = await supabaseAdmin
     .from("shipments")
@@ -56,7 +61,7 @@ export async function POST(request: NextRequest) {
   const { data: receipt, error: receiptError } = await createPaymentReceipt({
     storeId: shipment.store_id,
     shipmentId: shipment.id,
-    amount: Number(shipment.service_price || 0),
+    amount: amountCollectedNow,
     paymentMethod: "cash",
     createdBy: userId,
   });
