@@ -1,24 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import QRCode from "qrcode";
 import {
   ArrowLeft,
-  Banknote,
   CheckCircle2,
-  CreditCard,
   FileText,
   Loader2,
-  MessageCircle,
-  QrCode,
   Receipt,
   RefreshCcw,
-  Smartphone,
-  Tablet,
 } from "lucide-react";
 
+import PaymentCollectPanel from "@/components/admin/shipping/PaymentCollectPanel";
 import ShipmentForm from "@/components/admin/shipping/ShipmentForm";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -26,7 +20,6 @@ import { supabase } from "@/lib/supabase";
 import { createShipment, getShippingDriversByStoreId } from "@/lib/services/shipping";
 import { getShippingConfiguration } from "@/lib/services/shipping-settings";
 import { getOpenShippingTripsByStoreId } from "@/lib/services/shipping-trips";
-import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 import type {
   ShipmentInput,
   ShippingCountry,
@@ -42,7 +35,6 @@ import type {
 } from "@/lib/shipping/types";
 
 type Step = "form" | "payment" | "done";
-type CardMode = null | "choose" | "customer-link";
 
 async function authHeaders() {
   const { data } = await supabase.auth.getSession();
@@ -80,18 +72,12 @@ export default function PickupShipmentPage() {
 
   const [step, setStep] = useState<Step>("form");
   const [shipment, setShipment] = useState<{ id: string; trackingCode: string; servicePrice: number; customerPhone: string } | null>(null);
-  const [payError, setPayError] = useState("");
-  const [payBusy, setPayBusy] = useState<"cash" | "card" | null>(null);
+  const [returnPollError, setReturnPollError] = useState("");
   const [folio, setFolio] = useState<string | null>(null);
 
-  // Cobro con tarjeta: en la tablet directamente, o en el teléfono del
-  // cliente (WhatsApp / QR) — un solo link generado, sin duplicar cobros.
-  const [cardMode, setCardMode] = useState<CardMode>(null);
-  const [cardCheckoutUrl, setCardCheckoutUrl] = useState<string | null>(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Vuelta desde el Checkout de Stripe (cobro con tarjeta en la recogida).
+  // Vuelta desde el Checkout de Stripe (cobro con tarjeta en este mismo
+  // dispositivo, desde este flujo o desde el botón "Cobrar" de otra
+  // pantalla que haya usado la opción "En este dispositivo").
   const returningShipmentId = searchParams.get("shipment");
   const returningPaid = searchParams.get("cobrado");
   const returningCancelled = searchParams.get("cancelado");
@@ -134,19 +120,15 @@ export default function PickupShipmentPage() {
     if (!accessLoading && !storeLoading) void loadData();
   }, [accessLoading, storeLoading, activeStore?.id]);
 
-  // Si venimos de vuelta del Checkout de Stripe abierto en esta misma
-  // tablet, consultamos el estado real del envío (el webhook puede
-  // tardar un instante en llegar).
   useEffect(() => {
     async function checkReturn() {
       if (!returningShipmentId || (!returningPaid && !returningCancelled)) return;
 
       if (returningCancelled) {
-        setPayError("El cobro con tarjeta se canceló. Puedes intentarlo de nuevo o cobrar en efectivo.");
+        setReturnPollError("El cobro con tarjeta se canceló. Vuelve a intentarlo desde el envío.");
         return;
       }
 
-      setPayBusy("card");
       const headers = await authHeaders();
 
       for (let attempt = 0; attempt < 5; attempt++) {
@@ -157,51 +139,18 @@ export default function PickupShipmentPage() {
           setShipment({ id: returningShipmentId, trackingCode: json.trackingCode, servicePrice: Number(json.servicePrice || 0), customerPhone: "" });
           setFolio(json.folio || null);
           setStep("done");
-          setPayBusy(null);
           return;
         }
 
         await new Promise((resolve) => setTimeout(resolve, 1500));
       }
 
-      setPayError("El pago con tarjeta todavía no se confirma. Espera unos segundos y actualiza, o revisa el Dashboard de Stripe.");
-      setPayBusy(null);
+      setReturnPollError("El pago con tarjeta todavía no se confirma. Espera unos segundos y actualiza, o revisa el Dashboard de Stripe.");
     }
 
     void checkReturn();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [returningShipmentId, returningPaid, returningCancelled]);
-
-  // Mientras se muestra el link para el teléfono del cliente (QR o
-  // WhatsApp), revisamos cada pocos segundos si ya pagó, para que la
-  // tablet pase sola a la pantalla de "Cobrado y listo".
-  useEffect(() => {
-    if (cardMode !== "customer-link" || !shipment) {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-      return;
-    }
-
-    async function poll() {
-      const headers = await authHeaders();
-      const res = await fetch(`/api/admin/shipping/payment-status?shipmentId=${encodeURIComponent(shipment!.id)}`, { headers });
-      const json = await res.json().catch(() => ({}));
-      if (json.paymentStatus === "paid") {
-        setFolio(json.folio || null);
-        setStep("done");
-      }
-    }
-
-    pollRef.current = setInterval(() => void poll(), 4000);
-    return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    };
-  }, [cardMode, shipment]);
 
   async function submit(input: ShipmentInput) {
     if (!activeStore?.id) throw new Error("No se pudo resolver la empresa.");
@@ -230,105 +179,11 @@ export default function PickupShipmentPage() {
     }
   }
 
-  async function payCash() {
-    if (!shipment) return;
-    setPayBusy("cash");
-    setPayError("");
-    try {
-      const headers = await authHeaders();
-      const res = await fetch("/api/admin/shipping/mark-paid-cash", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ shipmentId: shipment.id }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || "No se pudo marcar el pago en efectivo.");
-      setFolio(json.folio || null);
-      setStep("done");
-    } catch (e) {
-      setPayError((e as Error).message);
-    } finally {
-      setPayBusy(null);
-    }
-  }
-
-  async function payCardOnTablet() {
-    if (!shipment) return;
-    setPayBusy("card");
-    setPayError("");
-    try {
-      const headers = await authHeaders();
-      const res = await fetch("/api/admin/shipping/charge-card", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ shipmentId: shipment.id, deliveryChannel: "tablet" }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || "No se pudo iniciar el cobro con tarjeta.");
-      window.location.href = json.url;
-    } catch (e) {
-      setPayError((e as Error).message);
-      setPayBusy(null);
-    }
-  }
-
-  async function generateCustomerLink() {
-    if (!shipment) return;
-    setPayBusy("card");
-    setPayError("");
-    try {
-      const headers = await authHeaders();
-      const res = await fetch("/api/admin/shipping/charge-card", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ shipmentId: shipment.id, deliveryChannel: "customer" }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) throw new Error(json.error || "No se pudo generar el link de pago.");
-
-      setCardCheckoutUrl(json.url);
-      const dataUrl = await QRCode.toDataURL(json.url, { width: 320, margin: 1 });
-      setQrDataUrl(dataUrl);
-      setCardMode("customer-link");
-    } catch (e) {
-      setPayError((e as Error).message);
-    } finally {
-      setPayBusy(null);
-    }
-  }
-
-  function sendCheckoutByWhatsApp() {
-    if (!shipment || !cardCheckoutUrl) return;
-    if (!shipment.customerPhone) {
-      setPayError("No hay un teléfono guardado para este cliente — usa el QR en su lugar, o escríbelo a mano en WhatsApp.");
-      return;
-    }
-    try {
-      openWhatsAppMessage({
-        app: "personal",
-        phone: shipment.customerPhone,
-        message: `Hola! Para completar el pago de tu envío ${shipment.trackingCode} (${currency(shipment.servicePrice)}) con Aguila Express USA, paga aquí con tu tarjeta: ${cardCheckoutUrl}`,
-      });
-    } catch (e) {
-      setPayError((e as Error).message);
-    }
-  }
-
-  function backToCardChoice() {
-    setCardMode(null);
-    setCardCheckoutUrl(null);
-    setQrDataUrl(null);
-    setPayError("");
-  }
-
   function startAnother() {
     setStep("form");
     setShipment(null);
     setFolio(null);
-    setPayError("");
-    setCardMode(null);
-    setCardCheckoutUrl(null);
-    setQrDataUrl(null);
+    setReturnPollError("");
     router.replace("/admin/shipping/recoger");
   }
 
@@ -351,6 +206,7 @@ export default function PickupShipmentPage() {
         </div>
 
         {configError && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{configError}</div>}
+        {returnPollError && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{returnPollError}</div>}
 
         {step === "form" && (
           <>
@@ -378,119 +234,19 @@ export default function PickupShipmentPage() {
           </>
         )}
 
-        {step === "payment" && shipment && cardMode !== "customer-link" && (
+        {step === "payment" && shipment && (
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-10">
-            <div className="text-center">
-              <p className="text-xs font-black uppercase tracking-[.16em] text-blue-700">Envío {shipment.trackingCode} creado</p>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">Cobrar {currency(shipment.servicePrice)}</h2>
-              <p className="mt-2 font-semibold text-slate-500">
-                {cardMode === "choose" ? "¿Dónde va a pagar con tarjeta?" : "Elige cómo te está pagando el cliente ahora mismo."}
-              </p>
-            </div>
-
-            {payError && <div className="mx-auto mt-5 max-w-md rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center font-bold text-rose-700">{payError}</div>}
-
-            {cardMode !== "choose" ? (
-              <div className="mx-auto mt-8 grid max-w-xl gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={payCash}
-                  disabled={payBusy !== null}
-                  className="flex flex-col items-center gap-3 rounded-3xl border-2 border-emerald-200 bg-emerald-50 p-8 text-emerald-800 transition hover:border-emerald-400 disabled:opacity-50"
-                >
-                  {payBusy === "cash" ? <Loader2 size={40} className="animate-spin" /> : <Banknote size={40} />}
-                  <span className="text-lg font-black">Efectivo</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setCardMode("choose")}
-                  disabled={payBusy !== null}
-                  className="flex flex-col items-center gap-3 rounded-3xl border-2 border-blue-200 bg-blue-50 p-8 text-blue-800 transition hover:border-blue-400 disabled:opacity-50"
-                >
-                  <CreditCard size={40} />
-                  <span className="text-lg font-black">Tarjeta</span>
-                </button>
-              </div>
-            ) : (
-              <div className="mx-auto mt-8 max-w-xl">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={payCardOnTablet}
-                    disabled={payBusy !== null}
-                    className="flex flex-col items-center gap-3 rounded-3xl border-2 border-blue-200 bg-blue-50 p-8 text-blue-800 transition hover:border-blue-400 disabled:opacity-50"
-                  >
-                    {payBusy === "card" ? <Loader2 size={36} className="animate-spin" /> : <Tablet size={36} />}
-                    <span className="text-center text-base font-black">En esta tablet</span>
-                    <span className="text-center text-xs font-semibold text-blue-700/70">El cliente teclea su tarjeta aquí mismo.</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={generateCustomerLink}
-                    disabled={payBusy !== null}
-                    className="flex flex-col items-center gap-3 rounded-3xl border-2 border-violet-200 bg-violet-50 p-8 text-violet-800 transition hover:border-violet-400 disabled:opacity-50"
-                  >
-                    {payBusy === "card" ? <Loader2 size={36} className="animate-spin" /> : <Smartphone size={36} />}
-                    <span className="text-center text-base font-black">En su teléfono</span>
-                    <span className="text-center text-xs font-semibold text-violet-700/70">Le mandas el link por WhatsApp o escanea un QR.</span>
-                  </button>
-                </div>
-
-                <button type="button" onClick={() => setCardMode(null)} className="mx-auto mt-5 flex items-center gap-2 text-sm font-bold text-slate-500">
-                  <ArrowLeft size={16} /> Volver
-                </button>
-              </div>
-            )}
+            <PaymentCollectPanel
+              shipment={shipment}
+              onPaid={(receivedFolio) => {
+                setFolio(receivedFolio);
+                setStep("done");
+              }}
+            />
 
             <p className="mt-8 text-center text-sm font-semibold text-slate-400">
               También puedes dejarlo pendiente y cobrarlo después desde el panel — solo cierra esta pantalla.
             </p>
-          </section>
-        )}
-
-        {step === "payment" && shipment && cardMode === "customer-link" && (
-          <section className="rounded-[2rem] border border-violet-200 bg-white p-6 shadow-sm md:p-10">
-            <div className="text-center">
-              <p className="text-xs font-black uppercase tracking-[.16em] text-violet-700">Envío {shipment.trackingCode}</p>
-              <h2 className="mt-2 text-3xl font-black text-slate-950">Pago desde su teléfono — {currency(shipment.servicePrice)}</h2>
-              <p className="mt-2 font-semibold text-slate-500">
-                Esta pantalla se actualiza sola en cuanto el cliente termine de pagar.
-              </p>
-            </div>
-
-            {payError && <div className="mx-auto mt-5 max-w-md rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center font-bold text-rose-700">{payError}</div>}
-
-            <div className="mx-auto mt-8 flex max-w-xs flex-col items-center gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              {qrDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrDataUrl} alt="Código QR para pagar" className="h-56 w-56 rounded-2xl border border-slate-200 bg-white p-2" />
-              ) : (
-                <div className="flex h-56 w-56 items-center justify-center rounded-2xl border border-dashed border-slate-300">
-                  <QrCode size={40} className="text-slate-300" />
-                </div>
-              )}
-              <p className="text-center text-xs font-bold uppercase tracking-wide text-slate-400">Que el cliente escanee con la cámara de su teléfono</p>
-            </div>
-
-            <div className="mx-auto mt-6 flex max-w-xs flex-col gap-3">
-              <button
-                type="button"
-                onClick={sendCheckoutByWhatsApp}
-                className="flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black text-white transition hover:bg-emerald-700"
-              >
-                <MessageCircle size={18} /> Enviar por WhatsApp
-              </button>
-
-              <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-200 bg-white px-5 py-3 text-center text-xs font-semibold text-slate-400">
-                <Loader2 size={14} className="animate-spin" /> Esperando confirmación de pago...
-              </div>
-
-              <button type="button" onClick={backToCardChoice} className="mx-auto mt-2 flex items-center gap-2 text-sm font-bold text-slate-500">
-                <ArrowLeft size={16} /> Volver a las opciones de cobro
-              </button>
-            </div>
           </section>
         )}
 

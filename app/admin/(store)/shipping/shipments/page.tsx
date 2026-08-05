@@ -23,6 +23,7 @@ import {
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import InvoiceActions from "@/components/admin/shipping/InvoiceActions";
+import PaymentCollectButton from "@/components/admin/shipping/PaymentCollectButton";
 import ShippingAdvancedFilters, {
   type ShippingListFilters,
 } from "@/components/admin/shipping/ShippingAdvancedFilters";
@@ -331,7 +332,7 @@ export default function ShippingShipmentsPage() {
           <div className="rounded-3xl border bg-white p-10 text-center"><PackageSearch className="mx-auto mb-4 text-slate-300" size={44} /><h2 className="text-xl font-extrabold">No hay envíos con estos filtros</h2><p className="mt-2 text-sm text-slate-500">Prueba limpiando alguno de los criterios de búsqueda.</p></div>
         ) : (
           <section className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-            <div className="hidden grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_210px] gap-3 border-b bg-slate-50 px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 xl:grid">
+            <div className="hidden grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] gap-3 border-b bg-slate-50 px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 xl:grid">
               <span>Orden</span>
               <span>Cliente / rastreo</span>
               <span>Destinatario</span>
@@ -346,7 +347,7 @@ export default function ShippingShipmentsPage() {
                 const trip = shipment.trip_id ? tripMap.get(shipment.trip_id) : null;
                 return (
                   <article key={shipment.id} className="group px-4 py-3 transition hover:bg-blue-50/35">
-                    <div className="grid gap-3 xl:grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_210px] xl:items-center">
+                    <div className="grid gap-3 xl:grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] xl:items-center">
                       <div className="flex items-center justify-between xl:block">
                         <span className="text-[10px] font-extrabold uppercase text-slate-400 xl:hidden">Orden</span>
                         <span className="text-base font-black text-[#061b3a]">{shipment.order_number ? `#${shipment.order_number}` : "—"}</span>
@@ -415,6 +416,7 @@ export default function ShippingShipmentsPage() {
 
                       <div className="flex flex-wrap items-center gap-1.5 xl:justify-end">
                         <InvoiceActions shipment={shipment} compact />
+                        <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
                         <Link
                           href={`/admin/shipping/${shipment.id}/edit`}
                           title="Editar envío"
