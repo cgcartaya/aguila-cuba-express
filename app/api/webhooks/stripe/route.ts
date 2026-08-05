@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { requireStripe } from "@/lib/services/stripe-admin";
+import { createPaymentReceipt } from "@/lib/services/receipts";
 
 export async function POST(request: NextRequest) {
   let stripe;
@@ -38,15 +39,28 @@ export async function POST(request: NextRequest) {
     if (shipmentId) {
       const { data: shipment } = await supabaseAdmin
         .from("shipments")
-        .select("id, service_price")
+        .select("id, store_id, service_price")
         .eq("id", shipmentId)
         .maybeSingle();
 
       if (shipment) {
         await supabaseAdmin
           .from("shipments")
-          .update({ amount_paid: shipment.service_price, balance_due: 0, payment_status: "paid" })
+          .update({ amount_paid: shipment.service_price, balance_due: 0, payment_status: "paid", payment_method: "card" })
           .eq("id", shipmentId);
+
+        // Recibo de pago inmutable con folio consecutivo — separado de la
+        // factura, que se genera desde que se crea el envío.
+        const storeId = session.metadata?.store_id || shipment.store_id;
+        if (storeId) {
+          await createPaymentReceipt({
+            storeId,
+            shipmentId: shipment.id,
+            amount: Number(shipment.service_price || 0),
+            paymentMethod: "card",
+            stripeCheckoutSessionId: session.id,
+          });
+        }
       }
 
       await supabaseAdmin
