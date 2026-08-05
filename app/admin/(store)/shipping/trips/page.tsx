@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Archive, CalendarDays, CircleDollarSign, Loader2, Package, Plus, Route, Scale, Trash2, Truck } from "lucide-react";
+import { Archive, CalendarDays, CircleDollarSign, Loader2, Package, Plus, Route, Scale, Star, Trash2, Truck } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
-import { getShippingTripsWithStats, moveShippingTripToTrash } from "@/lib/services/shipping-trips";
+import { getShippingTripsWithStats, moveShippingTripToTrash, setDefaultShippingTrip } from "@/lib/services/shipping-trips";
 import { getShippingTripStatusLabel, type ShippingTripWithStats } from "@/lib/shipping/types";
 
 function currency(value: number) {
@@ -35,6 +35,7 @@ export default function ShippingTripsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [defaultWorkingId, setDefaultWorkingId] = useState<string | null>(null);
 
   const canManage = access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
 
@@ -64,6 +65,22 @@ export default function ShippingTripsPage() {
     if (result.error) setError(result.error.message || "No se pudo mover el viaje a la papelera.");
     else setTrips((current) => current.filter((item) => item.id !== trip.id));
     setWorkingId(null);
+  }
+
+  async function markAsDefault(trip: ShippingTripWithStats) {
+    if (!activeStore?.id || trip.is_default) return;
+    // Este es el viaje que la APK (admin y repartidores) va a leer como
+    // "viaje actual" — solo puede haber uno predeterminado a la vez.
+    if (!window.confirm(`¿Marcar “${trip.name}” como el viaje actual? La APK dejará de mostrar el viaje predeterminado anterior.`)) return;
+    setDefaultWorkingId(trip.id);
+    setError("");
+    const result = await setDefaultShippingTrip(activeStore.id, trip.id);
+    if (result.error) {
+      setError(result.error.message || "No se pudo marcar el viaje como predeterminado.");
+    } else {
+      setTrips((current) => current.map((item) => ({ ...item, is_default: item.id === trip.id })));
+    }
+    setDefaultWorkingId(null);
   }
 
   if (loading || accessLoading || storeLoading) {
@@ -107,7 +124,10 @@ export default function ShippingTripsPage() {
                     <h2 className="mt-1 text-2xl font-black text-[#061b3a]">{trip.name}</h2>
                     <p className="mt-2 text-sm font-semibold text-slate-500">{trip.origin || "Origen sin definir"} → {trip.destination || "Destino sin definir"}</p>
                   </div>
-                  <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-black ${statusClass(trip.status)}`}>{getShippingTripStatusLabel(trip.status)}</span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`w-fit rounded-full px-3 py-1.5 text-xs font-black ${statusClass(trip.status)}`}>{getShippingTripStatusLabel(trip.status)}</span>
+                    {trip.is_default && <span className="inline-flex w-fit items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[10px] font-black uppercase text-amber-800"><Star size={12} className="fill-amber-800" /> Viaje actual (APK)</span>}
+                  </div>
                 </div>
 
                 <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -123,7 +143,14 @@ export default function ShippingTripsPage() {
                   <span className="rounded-full bg-rose-50 px-3 py-1.5 text-rose-700">{trip.stats.issue_shipments} incidencias</span>
                 </div>
                 </div>
-                {canManage && <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void trashTrip(trip); }} disabled={workingId === trip.id} className="relative z-10 mt-5 inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-black text-rose-700 hover:bg-rose-50 disabled:opacity-50"><Trash2 size={16}/>{workingId === trip.id ? "Moviendo..." : "Mover a papelera"}</button>}
+                {canManage && (
+                  <div className="relative z-10 mt-5 flex flex-wrap gap-2">
+                    {!trip.is_default && trip.status !== "completed" && trip.status !== "cancelled" && (
+                      <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void markAsDefault(trip); }} disabled={defaultWorkingId === trip.id} className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-800 hover:bg-amber-100 disabled:opacity-50"><Star size={16}/>{defaultWorkingId === trip.id ? "Marcando..." : "Marcar como viaje actual"}</button>
+                    )}
+                    <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void trashTrip(trip); }} disabled={workingId === trip.id} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2.5 text-sm font-black text-rose-700 hover:bg-rose-50 disabled:opacity-50"><Trash2 size={16}/>{workingId === trip.id ? "Moviendo..." : "Mover a papelera"}</button>
+                  </div>
+                )}
               </article>
             ))}
           </div>
