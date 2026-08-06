@@ -26,6 +26,7 @@ import CategoryProductsSection from "@/components/tienda/CategoryProductsSection
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
 import CategoriesShowcaseCarousel from "@/components/tienda/CategoriesShowcaseCarousel";
+import HomeFeaturedProducts from "@/components/tienda/HomeFeaturedProducts";
 import SearchResultsSection from "@/components/tienda/search/SearchResultsSection";
 import { useCart } from "@/contexts/CartContext";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
@@ -142,6 +143,16 @@ export default function StoreSlugTiendaPage() {
     );
   }, [productos, busqueda, hayBusqueda]);
 
+  const productosDestacados = useMemo(() => {
+    return productos
+      .filter((producto) => producto.is_home_featured)
+      .sort((a, b) => {
+        const orderA = a.home_featured_order ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.home_featured_order ?? Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
+  }, [productos]);
+
   const productosPorCategoria = useMemo(() => {
     return categorias
       .map((categoria) => ({
@@ -170,6 +181,13 @@ export default function StoreSlugTiendaPage() {
                 <MainBanner storeId={storeId} storeSlug={slug} />
               )}
             </div>
+          )}
+
+          {sectionEnabled(storeSettings?.show_featured_products) && (
+            <HomeFeaturedProducts
+              products={productosDestacados}
+              onAddToCart={addToCart}
+            />
           )}
 
           {sectionEnabled(storeSettings?.show_categories) && (
