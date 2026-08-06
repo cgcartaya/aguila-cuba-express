@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   Edit3,
   Loader2,
+  MessageCircle,
   Package,
   Printer,
   Search,
@@ -74,6 +75,26 @@ function date(value: string | null) {
     : "Sin definir";
 }
 
+// Categoría usada por el filtro "Tipo de paquete". Se apoya en la misma
+// lógica que shipmentTypeLabel (booleanos primero, texto solo para afinar
+// entre "grande" y "normal") para que el filtro y la etiqueta que se ve
+// en cada fila siempre coincidan.
+type ShipmentTypeCategory = "grande" | "normal" | "dinero" | "mixto" | "otro";
+
+function shipmentTypeCategory(shipment: Shipment): ShipmentTypeCategory {
+  if (shipment.contains_package && shipment.contains_money) return "mixto";
+
+  if (shipment.contains_package) {
+    const name = String(shipment.service_type_name || "").trim();
+    if (/grande|bulto/i.test(name)) return "grande";
+    return "normal";
+  }
+
+  if (shipment.contains_money) return "dinero";
+
+  return "otro";
+}
+
 function shipmentTypeLabel(shipment: Shipment) {
   // IMPORTANTE: contains_package/contains_money son los campos que reflejan
   // el estado real y actual del envío (se actualizan siempre al editar).
@@ -123,6 +144,7 @@ export default function ShippingTripDetailPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [bulkStatus, setBulkStatus] = useState<ShippingStatus | "">("");
   const [driverChoice, setDriverChoice] = useState("");
   const [tripChoice, setTripChoice] = useState("");
@@ -217,7 +239,8 @@ export default function ShippingTripDetailPage() {
     return (
       matchesSearch &&
       (statusFilter === "all" || shipment.status === statusFilter) &&
-      (paymentFilter === "all" || shipment.payment_status === paymentFilter)
+      (paymentFilter === "all" || shipment.payment_status === paymentFilter) &&
+      (typeFilter === "all" || shipmentTypeCategory(shipment) === typeFilter)
     );
   });
 
@@ -349,10 +372,49 @@ export default function ShippingTripDetailPage() {
     printWindow.document.close();
   }
 
+  function shareManifestWhatsApp() {
+    if (!trip || selectedShipments.length === 0) return;
+
+    const totalWeight = selectedShipments.reduce((sum, item) => sum + (item.contains_package ? Number(item.weight_lb || 0) : 0), 0);
+    const totalMoney = selectedShipments.reduce((sum, item) => sum + (item.contains_money ? Number(item.money_amount || 0) : 0), 0);
+
+    const lines = [
+      `📋 *Manifiesto parcial · Viaje ${trip.trip_number}*`,
+      `${trip.name}`,
+      `${trip.origin || "Origen sin definir"} → ${trip.destination || "Destino sin definir"}`,
+      "",
+      `Envíos: ${selectedShipments.length}`,
+    ];
+    if (totalWeight > 0) lines.push(`Peso: ${totalWeight.toFixed(1)} lb`);
+    if (totalMoney > 0) lines.push(`Dinero: ${money(totalMoney)}`);
+    lines.push("");
+
+    selectedShipments.forEach((shipment) => {
+      const cantidadParts: string[] = [];
+      if (shipment.contains_package) cantidadParts.push(`${Number(shipment.weight_lb || 0).toFixed(1)} lb`);
+      if (shipment.contains_money) cantidadParts.push(money(shipment.money_amount));
+
+      lines.push(
+        `#${shipment.trip_order || "—"} · ${shipment.tracking_code || shipment.id.slice(0, 8)} · ${shipmentTypeLabel(shipment)}`,
+        `De: ${shipment.sender_name || "Sin cliente"}  →  Para: ${shipment.recipient_name || "Sin destinatario"}`,
+        `Destino: ${shipment.location || "Sin lugar"}${shipment.recipient_address ? " · " + shipment.recipient_address : ""}`,
+        `Cantidad: ${cantidadParts.length ? cantidadParts.join(" + ") : "—"} · Estado: ${getShippingStatusLabel(shipment.status)} · Repartidor: ${shipment.assigned_driver_name || "Sin asignar"}`,
+        "",
+      );
+    });
+
+    const message = lines.join("\n");
+    // Sin número de teléfono a propósito: se deja que quien comparte elija
+    // el chat o grupo de WhatsApp al que enviarlo (p.ej. a quien lo va a
+    // imprimir), en vez de forzar un contacto fijo.
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+  }
+
   function clearFilters() {
     setSearch("");
     setStatusFilter("all");
     setPaymentFilter("all");
+    setTypeFilter("all");
   }
 
   if (loading) {
@@ -370,7 +432,7 @@ export default function ShippingTripDetailPage() {
   const issues = shipments.filter((shipment) => shipment.status === "issue").length;
   const open = shipments.length - delivered - issues;
   const progress = shipments.length > 0 ? Math.round(((delivered + issues) / shipments.length) * 100) : 0;
-  const filtersActive = Boolean(normalizedSearch) || statusFilter !== "all" || paymentFilter !== "all";
+  const filtersActive = Boolean(normalizedSearch) || statusFilter !== "all" || paymentFilter !== "all" || typeFilter !== "all";
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] p-4 pb-28 md:p-7">
@@ -393,9 +455,9 @@ export default function ShippingTripDetailPage() {
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black text-[#061b3a]">Envíos del viaje</h2><p className="text-sm font-semibold text-slate-500">Factura y WhatsApp permanecen disponibles incluso después de cerrar el viaje.</p></div>{!tripClosed && canManage && <Link href={`/admin/shipping/new?tripId=${encodeURIComponent(trip.id)}`} className="rounded-2xl bg-[#0a2d63] px-5 py-3 text-center font-black text-white">Registrar envío</Link>}</div>
 
-          {shipments.length > 0 && <div className="border-b border-slate-100 bg-slate-50/70 p-4 md:p-5"><div className="grid gap-3 xl:grid-cols-[1fr_220px_220px_auto]"><label className="relative block"><Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar orden, rastreo, cliente, destinatario, teléfono o lugar" className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" /></label><label className="relative block"><SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-11 pr-4 font-bold text-slate-700 outline-none focus:border-blue-400"><option value="all">Todos los estados</option>{shipmentStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select></label><select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-700 outline-none focus:border-blue-400"><option value="all">Todos los cobros</option><option value="pending">Pendiente</option><option value="partial">Pago parcial</option><option value="paid">Pagado</option></select><div className="flex items-center gap-2"><span className="inline-flex h-12 min-w-[120px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700">{filteredShipments.length} resultado{filteredShipments.length === 1 ? "" : "s"}</span>{filtersActive && <button type="button" onClick={clearFilters} title="Limpiar filtros" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"><X size={18} /></button>}</div></div></div>}
+          {shipments.length > 0 && <div className="border-b border-slate-100 bg-slate-50/70 p-4 md:p-5"><div className="grid gap-3 xl:grid-cols-[1fr_200px_190px_190px_auto]"><label className="relative block"><Search className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar orden, rastreo, cliente, destinatario, teléfono o lugar" className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 font-semibold text-slate-800 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100" /></label><label className="relative block"><SlidersHorizontal className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={17} /><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="h-12 w-full appearance-none rounded-2xl border border-slate-200 bg-white pl-11 pr-4 font-bold text-slate-700 outline-none focus:border-blue-400"><option value="all">Todos los estados</option>{shipmentStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select></label><select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-700 outline-none focus:border-blue-400"><option value="all">Todos los cobros</option><option value="pending">Pendiente</option><option value="partial">Pago parcial</option><option value="paid">Pagado</option></select><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 font-bold text-slate-700 outline-none focus:border-blue-400"><option value="all">Todos los tipos</option><option value="grande">Paquete grande</option><option value="normal">Paquete normal</option><option value="dinero">Dinero</option><option value="mixto">Paquete + Dinero</option></select><div className="flex items-center gap-2"><span className="inline-flex h-12 min-w-[120px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700">{filteredShipments.length} resultado{filteredShipments.length === 1 ? "" : "s"}</span>{filtersActive && <button type="button" onClick={clearFilters} title="Limpiar filtros" className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"><X size={18} /></button>}</div></div></div>}
 
-          {selectedIds.size > 0 && canManage && !tripClosed && <div className="sticky top-0 z-20 border-b border-blue-200 bg-blue-50 p-4 shadow-sm"><div className="flex flex-col gap-3 xl:flex-row xl:items-center"><div className="shrink-0 rounded-2xl bg-[#0a2d63] px-4 py-3 font-black text-white">{selectedIds.size} seleccionado{selectedIds.size === 1 ? "" : "s"}</div><div className="flex flex-1 flex-wrap gap-2"><select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as ShippingStatus | "")} className="h-11 rounded-xl border border-blue-200 bg-white px-3 font-bold"><option value="">Cambiar estado…</option>{shipmentStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select><button disabled={!bulkStatus || working} onClick={runBulkStatus} className="h-11 rounded-xl bg-blue-700 px-4 font-black text-white disabled:opacity-40">Aplicar estado</button><select value={driverChoice} onChange={(e) => setDriverChoice(e.target.value)} className="h-11 rounded-xl border border-blue-200 bg-white px-3 font-bold"><option value="">Quitar repartidor</option>{drivers.filter((driver) => driver.is_active).map((driver) => <option key={driver.id} value={driver.id}>{driver.name}</option>)}</select><button disabled={working} onClick={runBulkDriver} className="inline-flex h-11 items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 font-black text-blue-800"><UserRoundCheck size={17} />Asignar</button><select value={tripChoice} onChange={(e) => setTripChoice(e.target.value)} className="h-11 rounded-xl border border-blue-200 bg-white px-3 font-bold"><option value="">Mover a otro viaje…</option>{openTrips.map((item) => <option key={item.id} value={item.id}>#{item.trip_number} · {item.name}</option>)}</select><button disabled={!tripChoice || working} onClick={runBulkTrip} className="h-11 rounded-xl border border-blue-200 bg-white px-4 font-black text-blue-800 disabled:opacity-40">Mover</button><button disabled={working} onClick={printSelectedManifest} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-black text-slate-800"><Printer size={17} />Manifiesto</button><button disabled={working} onClick={runBulkTrash} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 font-black text-white"><Trash2 size={17} />Papelera</button><button onClick={() => setSelectedIds(new Set())} className="inline-flex h-11 items-center gap-2 rounded-xl px-3 font-black text-slate-600"><X size={17} />Cancelar</button></div></div></div>}
+          {selectedIds.size > 0 && canManage && !tripClosed && <div className="sticky top-0 z-20 border-b border-blue-200 bg-blue-50 p-4 shadow-sm"><div className="flex flex-col gap-3 xl:flex-row xl:items-center"><div className="shrink-0 rounded-2xl bg-[#0a2d63] px-4 py-3 font-black text-white">{selectedIds.size} seleccionado{selectedIds.size === 1 ? "" : "s"}</div><div className="flex flex-1 flex-wrap gap-2"><select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value as ShippingStatus | "")} className="h-11 rounded-xl border border-blue-200 bg-white px-3 font-bold"><option value="">Cambiar estado…</option>{shipmentStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select><button disabled={!bulkStatus || working} onClick={runBulkStatus} className="h-11 rounded-xl bg-blue-700 px-4 font-black text-white disabled:opacity-40">Aplicar estado</button><select value={driverChoice} onChange={(e) => setDriverChoice(e.target.value)} className="h-11 rounded-xl border border-blue-200 bg-white px-3 font-bold"><option value="">Quitar repartidor</option>{drivers.filter((driver) => driver.is_active).map((driver) => <option key={driver.id} value={driver.id}>{driver.name}</option>)}</select><button disabled={working} onClick={runBulkDriver} className="inline-flex h-11 items-center gap-2 rounded-xl border border-blue-200 bg-white px-4 font-black text-blue-800"><UserRoundCheck size={17} />Asignar</button><select value={tripChoice} onChange={(e) => setTripChoice(e.target.value)} className="h-11 rounded-xl border border-blue-200 bg-white px-3 font-bold"><option value="">Mover a otro viaje…</option>{openTrips.map((item) => <option key={item.id} value={item.id}>#{item.trip_number} · {item.name}</option>)}</select><button disabled={!tripChoice || working} onClick={runBulkTrip} className="h-11 rounded-xl border border-blue-200 bg-white px-4 font-black text-blue-800 disabled:opacity-40">Mover</button><button disabled={working} onClick={printSelectedManifest} className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 font-black text-slate-800"><Printer size={17} />Manifiesto</button><button disabled={working} onClick={shareManifestWhatsApp} className="inline-flex h-11 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 font-black text-emerald-700"><MessageCircle size={17} />Compartir</button><button disabled={working} onClick={runBulkTrash} className="inline-flex h-11 items-center gap-2 rounded-xl bg-rose-600 px-4 font-black text-white"><Trash2 size={17} />Papelera</button><button onClick={() => setSelectedIds(new Set())} className="inline-flex h-11 items-center gap-2 rounded-xl px-3 font-black text-slate-600"><X size={17} />Cancelar</button></div></div></div>}
 
           {shipments.length === 0 ? <div className="p-12 text-center text-slate-500"><Package className="mx-auto mb-3 text-slate-300" size={48} /><p className="font-black">Este viaje todavía está vacío.</p></div> : filteredShipments.length === 0 ? <div className="p-12 text-center text-slate-500"><Search className="mx-auto mb-3 text-slate-300" size={46} /><p className="font-black text-slate-800">No hay envíos que coincidan.</p><p className="mt-1 text-sm font-semibold">Prueba otra búsqueda o limpia los filtros.</p><button type="button" onClick={clearFilters} className="mt-4 rounded-2xl bg-[#0a2d63] px-5 py-3 font-black text-white">Limpiar filtros</button></div> : <div className="overflow-x-auto"><div className="min-w-[1290px]"><div className="grid grid-cols-[42px_80px_1.25fr_1.1fr_1fr_190px_120px_340px] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-[11px] font-black uppercase tracking-wider text-slate-500"><label className="flex items-center"><input ref={selectAllRef} type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} aria-label="Seleccionar todos los envíos visibles" className="h-5 w-5 rounded border-slate-300 accent-blue-700" /></label><span>Parada</span><span>Cliente / rastreo</span><span>Destinatario</span><span>Destino</span><span>Estado</span><span>Total</span><span className="text-right">Acciones</span></div><div className="divide-y divide-slate-100">{filteredShipments.map((shipment) => <article key={shipment.id} className={`grid grid-cols-[42px_80px_1.25fr_1.1fr_1fr_190px_120px_340px] items-center gap-4 px-5 py-4 transition ${selectedIds.has(shipment.id) ? "bg-blue-50" : "hover:bg-slate-50"}`}><label className="flex items-center"><input type="checkbox" checked={selectedIds.has(shipment.id)} onChange={() => toggleShipment(shipment.id)} aria-label={`Seleccionar envío ${shipment.trip_order || shipment.order_number || shipment.tracking_code || shipment.id}`} className="h-5 w-5 rounded border-slate-300 accent-blue-700" /></label><div className="font-black text-[#0a2d63]">#{shipment.trip_order || "—"}</div><div className="min-w-0"><p className="truncate font-black text-slate-900">{shipment.sender_name || "Sin cliente"}</p><p className="truncate text-xs font-bold text-blue-700">{shipment.tracking_code || shipment.id.slice(0, 8)}</p><p className="truncate text-xs text-slate-500">{shipment.sender_phone || "Sin teléfono"}</p></div><div className="min-w-0"><p className="truncate font-bold text-slate-800">{shipment.recipient_name || "Sin destinatario"}</p><p className="truncate text-xs text-slate-500">{shipment.recipient_phone || "Sin teléfono"}</p></div><div className="min-w-0"><p className="truncate font-bold text-slate-800">{shipment.location || "Sin lugar"}</p><p className="truncate text-xs text-slate-500">{shipment.recipient_address || "Sin dirección"}</p><span className={`mt-1 inline-flex rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide ${/grande|bulto/i.test(shipmentTypeLabel(shipment)) ? "bg-violet-100 text-violet-700" : shipmentTypeLabel(shipment) === "Dinero" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}>{shipmentTypeLabel(shipment)}</span><p className="mt-1 truncate text-[11px] font-bold text-blue-700">{shipment.assigned_driver_name || "Sin repartidor"}</p></div><div>{canManage && !tripClosed ? <select value={shipment.status} disabled={working} onChange={(event) => void changeOneStatus(shipment, event.target.value as ShippingStatus)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 outline-none focus:border-blue-400">{shipmentStatuses.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}</select> : <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{getShippingStatusLabel(shipment.status)}</span>}</div><div><p className="font-black text-slate-900">{money(shipment.service_price)}</p><p className="mt-1 text-xs font-bold text-slate-500">{shipment.payment_status === "paid" ? "Pagado" : shipment.payment_status === "partial" ? "Pago parcial" : "Pendiente"}</p></div><div className="flex items-center justify-end gap-2"><InvoiceActions shipment={shipment} compact /><PaymentCollectButton shipment={shipment} onPaid={() => void load({ preserveSelection: true })} compact />{!tripClosed && canManage && <Link href={`/admin/shipping/${shipment.id}/edit`} title="Editar envío" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"><Edit3 size={17} /></Link>}</div></article>)}</div></div></div>}
         </section>
