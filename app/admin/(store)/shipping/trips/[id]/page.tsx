@@ -6,18 +6,24 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
+  Banknote,
   CheckCircle2,
+  Clock,
   Edit3,
+  Flag,
   Loader2,
   MessageCircle,
   Package,
   Printer,
+  Scale,
   Search,
   Ship,
   SlidersHorizontal,
   Trash2,
   Truck,
   UserRoundCheck,
+  Wallet,
   X,
 } from "lucide-react";
 
@@ -427,6 +433,7 @@ export default function ShippingTripDetailPage() {
 
   const tripClosed = trip.status === "completed";
   const totalWeight = shipments.reduce((sum, shipment) => sum + Number(shipment.weight_lb || 0), 0);
+  const totalMoney = shipments.reduce((sum, shipment) => sum + Number(shipment.money_amount || 0), 0);
   const billed = shipments.reduce((sum, shipment) => sum + Number(shipment.service_price || 0), 0);
   const delivered = shipments.filter((shipment) => shipment.status === "delivered").length;
   const issues = shipments.filter((shipment) => shipment.status === "issue").length;
@@ -439,18 +446,51 @@ export default function ShippingTripDetailPage() {
       <div className="mx-auto max-w-[1500px]">
         <button onClick={() => router.push("/admin/shipping/trips")} className="mb-5 inline-flex items-center gap-2 font-black text-slate-600"><ArrowLeft size={18} />Volver a viajes</button>
 
-        <header className="rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0a2d63] to-[#1554a6] p-6 text-white shadow-xl md:p-8">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div><p className="text-xs font-black uppercase tracking-[0.2em] text-blue-200">Viaje {trip.trip_number}</p><h1 className="mt-2 text-3xl font-black md:text-4xl">{trip.name}</h1><p className="mt-2 font-semibold text-blue-100/80">{trip.origin || "Origen sin definir"} → {trip.destination || "Destino sin definir"}</p><span className="mt-4 inline-flex rounded-full bg-white/15 px-4 py-2 text-sm font-black">{getShippingTripStatusLabel(trip.status)}</span></div>
-            {canManage && !tripClosed && <div className="flex flex-wrap gap-2">{trip.status === "preparing" && <Action icon={<Truck size={18} />} label="Salió hacia Cuba" onClick={() => setTripStatus("in_transit")} disabled={working} />}{trip.status === "in_transit" && <Action icon={<Ship size={18} />} label="Recibido en Cuba" onClick={() => setTripStatus("received_cuba")} disabled={working} />}{trip.status === "received_cuba" && <Action icon={<Package size={18} />} label="Comenzar reparto" onClick={() => setTripStatus("in_delivery")} disabled={working} />}<button onClick={() => closeTrip(false)} disabled={working} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black text-white disabled:opacity-50"><CheckCircle2 size={18} />Cerrar viaje</button></div>}
+        <header className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0a2d63] to-[#155ab0] text-white shadow-xl shadow-blue-950/20">
+          <div className="p-6 md:p-8">
+            <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-black uppercase tracking-[0.25em] text-blue-200">Viaje {trip.trip_number}</span>
+                  <span className="h-1 w-1 rounded-full bg-blue-300/50" />
+                  <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[11px] font-black uppercase tracking-wide">{getShippingTripStatusLabel(trip.status)}</span>
+                </div>
+                <h1 className="mt-3 text-3xl font-black leading-tight md:text-4xl">{trip.name}</h1>
+                <p className="mt-2 flex items-center gap-2 font-semibold text-blue-100/80">
+                  <span>{trip.origin || "Origen sin definir"}</span>
+                  <ArrowRight className="text-blue-300" size={15} />
+                  <span>{trip.destination || "Destino sin definir"}</span>
+                </p>
+              </div>
+              {canManage && !tripClosed && <div className="flex flex-wrap gap-2">{trip.status === "preparing" && <Action icon={<Truck size={18} />} label="Salió hacia Cuba" onClick={() => setTripStatus("in_transit")} disabled={working} />}{trip.status === "in_transit" && <Action icon={<Ship size={18} />} label="Recibido en Cuba" onClick={() => setTripStatus("received_cuba")} disabled={working} />}{trip.status === "received_cuba" && <Action icon={<Package size={18} />} label="Comenzar reparto" onClick={() => setTripStatus("in_delivery")} disabled={working} />}<button onClick={() => closeTrip(false)} disabled={working} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-400 disabled:opacity-50"><CheckCircle2 size={18} />Cerrar viaje</button></div>}
+            </div>
+
+            <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              <Metric icon={<Package size={16} />} label="Envíos" value={shipments.length.toString()} />
+              <Metric icon={<Clock size={16} />} label="Pendientes" value={open.toString()} />
+              <Metric icon={<CheckCircle2 size={16} />} label="Entregados" value={delivered.toString()} />
+              <Metric icon={<Scale size={16} />} label="Peso" value={`${totalWeight.toFixed(1)} lb`} muted={totalWeight === 0} />
+              <Metric icon={<Banknote size={16} />} label="Dinero" value={money(totalMoney)} muted={totalMoney === 0} />
+              <Metric icon={<Wallet size={16} />} label="Facturado" value={money(billed)} accent />
+            </div>
+
+            <div className="mt-6 rounded-2xl bg-white/10 p-4">
+              <div className="flex items-center justify-between gap-4 text-sm font-black"><span>Progreso operativo</span><span>{progress}%</span></div>
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div>
+              <p className="mt-2 text-xs font-semibold text-blue-100/80">
+                {issues > 0 ? `${issues} incidencia${issues === 1 ? "" : "s"} reportada${issues === 1 ? "" : "s"}` : "Sin incidencias reportadas"}
+              </p>
+            </div>
           </div>
-          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-5"><Metric label="Envíos" value={shipments.length.toString()} /><Metric label="Pendientes" value={open.toString()} /><Metric label="Entregados" value={delivered.toString()} /><Metric label="Libras" value={totalWeight.toFixed(1)} /><Metric label="Facturado" value={money(billed)} /></div>
-          <div className="mt-5 rounded-2xl bg-white/10 p-4"><div className="flex items-center justify-between gap-4 text-sm font-black"><span>Progreso operativo</span><span>{progress}%</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-xs font-semibold text-blue-100/80">{delivered} entregados · {issues} incidencias · {open} pendientes</p></div>
         </header>
 
         {error && <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700"><AlertTriangle className="mr-2 inline" size={18} />{error}</div>}
 
-        <section className="mt-6 grid gap-4 md:grid-cols-3"><Info title="Salida" value={date(trip.departure_date)} /><Info title="Llegada estimada" value={date(trip.estimated_arrival_date)} /><Info title="Responsable" value={trip.driver_name || "Sin asignar"} /></section>
+        <section className="mt-6 grid gap-4 md:grid-cols-3">
+          <Info icon={<Clock size={17} />} title="Salida" value={date(trip.departure_date)} />
+          <Info icon={<Flag size={17} />} title="Llegada estimada" value={date(trip.estimated_arrival_date)} />
+          <Info icon={<UserRoundCheck size={17} />} title="Responsable" value={trip.driver_name || "Sin asignar"} />
+        </section>
 
         <section className="mt-6 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black text-[#061b3a]">Envíos del viaje</h2><p className="text-sm font-semibold text-slate-500">Factura y WhatsApp permanecen disponibles incluso después de cerrar el viaje.</p></div>{!tripClosed && canManage && <Link href={`/admin/shipping/new?tripId=${encodeURIComponent(trip.id)}`} className="rounded-2xl bg-[#0a2d63] px-5 py-3 text-center font-black text-white">Registrar envío</Link>}</div>
@@ -470,6 +510,23 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#039;", '"': "&quot;" })[character] || character);
 }
 
-function Metric({ label, value }: { label: string; value: string }) { return <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-black uppercase tracking-wider text-blue-200">{label}</p><p className="mt-2 text-2xl font-black">{value}</p></div>; }
-function Info({ title, value }: { title: string; value: string }) { return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-wider text-slate-400">{title}</p><p className="mt-2 font-black text-slate-900">{value}</p></div>; }
+function Metric({ icon, label, value, accent, muted }: { icon: ReactNode; label: string; value: string; accent?: boolean; muted?: boolean }) {
+  return (
+    <div className={`rounded-2xl p-4 transition ${accent ? "bg-emerald-400/20 ring-1 ring-emerald-300/30" : "bg-white/10"}`}>
+      <div className="flex items-center gap-2">
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${accent ? "bg-emerald-400/25 text-emerald-200" : "bg-white/10 text-blue-200"}`}>{icon}</span>
+        <p className="truncate text-[11px] font-black uppercase tracking-wider text-blue-200">{label}</p>
+      </div>
+      <p className={`mt-2 text-xl font-black md:text-2xl ${muted ? "text-white/45" : "text-white"}`}>{value}</p>
+    </div>
+  );
+}
+function Info({ icon, title, value }: { icon: ReactNode; title: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">{icon}</span>
+      <div className="min-w-0"><p className="text-xs font-black uppercase tracking-wider text-slate-400">{title}</p><p className="mt-1 truncate font-black text-slate-900">{value}</p></div>
+    </div>
+  );
+}
 function Action({ icon, label, onClick, disabled }: { icon: ReactNode; label: string; onClick: () => void; disabled: boolean }) { return <button onClick={onClick} disabled={disabled} className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a] disabled:opacity-50">{icon}{label}</button>; }
