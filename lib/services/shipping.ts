@@ -176,8 +176,14 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     province_id: input.province_id,
     municipality_id: input.municipality_id,
     shipping_location_id: input.shipping_location_id,
-    service_type_id: input.service_type_id,
-    service_type_name: input.service_type_name,
+    // Igual que con weight_lb/rate_per_lb más abajo: si el envío ya no
+    // incluye paquete, no puede quedar un tipo de paquete "fantasma"
+    // (p.ej. "Normal") guardado de una edición anterior, porque eso
+    // hace que las vistas que muestran el tipo por texto (como el
+    // manifiesto de viaje) sigan diciendo "Paquete normal" aunque el
+    // envío ahora sea solo de dinero.
+    service_type_id: input.contains_package ? input.service_type_id : null,
+    service_type_name: input.contains_package ? input.service_type_name : null,
     recipient_name: input.recipient_name.trim(),
     recipient_address: input.recipient_address.trim(),
     recipient_phone: input.recipient_phone.trim(),

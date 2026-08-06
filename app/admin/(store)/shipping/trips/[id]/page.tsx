@@ -75,17 +75,23 @@ function date(value: string | null) {
 }
 
 function shipmentTypeLabel(shipment: Shipment) {
-  const name = String(shipment.service_type_name || "").trim();
+  // IMPORTANTE: contains_package/contains_money son los campos que reflejan
+  // el estado real y actual del envío (se actualizan siempre al editar).
+  // service_type_name es solo texto descriptivo y puede quedar
+  // desactualizado (p.ej. "Normal" de cuando el envío era un paquete),
+  // así que los booleanos mandan primero y el nombre solo se usa para
+  // afinar la etiqueta cuando el envío sigue siendo un paquete.
+  if (shipment.contains_package && shipment.contains_money) return "Paquete + Dinero";
 
-  if (name) {
+  if (shipment.contains_package) {
+    const name = String(shipment.service_type_name || "").trim();
     if (/grande|bulto/i.test(name)) return "Bulto grande";
     if (/normal/i.test(name)) return "Paquete normal";
-    if (/dinero/i.test(name) && !shipment.contains_package) return "Dinero";
-    return name;
+    return name || "Paquete normal";
   }
 
-  if (shipment.contains_package) return "Paquete normal";
   if (shipment.contains_money) return "Dinero";
+
   return "Sin tipo";
 }
 
@@ -304,20 +310,34 @@ export default function ShippingTripDetailPage() {
   function printSelectedManifest() {
     if (!trip || selectedShipments.length === 0) return;
     const rows = selectedShipments
-      .map(
-        (shipment) => `<tr>
+      .map((shipment) => {
+        // La columna "Cantidad" muestra el peso cuando el envío es
+        // paquete, el monto de dinero cuando es dinero, y ambos cuando
+        // el envío incluye las dos cosas. Antes esta columna siempre
+        // mostraba weight_lb, así que un envío solo de dinero salía en
+        // el manifiesto sin ningún monto.
+        const cantidadParts: string[] = [];
+        if (shipment.contains_package) cantidadParts.push(`${Number(shipment.weight_lb || 0).toFixed(1)} lb`);
+        if (shipment.contains_money) cantidadParts.push(money(shipment.money_amount));
+        const cantidad = cantidadParts.length ? cantidadParts.join(" + ") : "—";
+
+        return `<tr>
           <td>#${shipment.trip_order || "—"}</td>
           <td>${escapeHtml(shipment.tracking_code || shipment.id.slice(0, 8))}</td>
           <td>${escapeHtml(shipment.sender_name || "Sin cliente")}<br><small>${escapeHtml(shipment.sender_phone || "")}</small></td>
           <td>${escapeHtml(shipment.recipient_name || "Sin destinatario")}<br><small>${escapeHtml(shipment.recipient_phone || "")}</small></td>
           <td>${escapeHtml(shipment.location || "Sin lugar")}<br><small>${escapeHtml(shipment.recipient_address || "")}</small><br><strong>${escapeHtml(shipmentTypeLabel(shipment))}</strong></td>
-          <td>${Number(shipment.weight_lb || 0).toFixed(1)} lb</td>
+          <td>${cantidad}</td>
           <td>${escapeHtml(getShippingStatusLabel(shipment.status))}</td>
           <td>${escapeHtml(shipment.assigned_driver_name || "Sin asignar")}</td>
-        </tr>`,
-      )
+        </tr>`;
+      })
       .join("");
-    const totalWeight = selectedShipments.reduce((sum, item) => sum + Number(item.weight_lb || 0), 0);
+    const totalWeight = selectedShipments.reduce((sum, item) => sum + (item.contains_package ? Number(item.weight_lb || 0) : 0), 0);
+    const totalMoney = selectedShipments.reduce((sum, item) => sum + (item.contains_money ? Number(item.money_amount || 0) : 0), 0);
+    const summaryParts = [`<span>Envíos: ${selectedShipments.length}</span>`];
+    if (totalWeight > 0) summaryParts.push(`<span>Peso: ${totalWeight.toFixed(1)} lb</span>`);
+    if (totalMoney > 0) summaryParts.push(`<span>Dinero: ${escapeHtml(money(totalMoney))}</span>`);
     const printWindow = window.open("", "_blank", "width=1200,height=800");
     if (!printWindow) {
       setError("El navegador bloqueó la ventana de impresión.");
@@ -325,7 +345,7 @@ export default function ShippingTripDetailPage() {
     }
     printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Manifiesto ${escapeHtml(trip.trip_number.toString())}</title><style>
       body{font-family:Arial,sans-serif;color:#0f172a;padding:24px}h1{margin:0}.meta{margin:8px 0 20px;color:#475569}.summary{display:flex;gap:24px;margin:16px 0;font-weight:700}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #cbd5e1;padding:7px;text-align:left;vertical-align:top}th{background:#e2e8f0}small{color:#64748b}@media print{body{padding:0}}
-    </style></head><body><h1>Manifiesto parcial · Viaje ${escapeHtml(trip.trip_number.toString())}</h1><div class="meta"><strong>${escapeHtml(trip.name)}</strong> · ${escapeHtml(trip.origin || "Origen sin definir")} → ${escapeHtml(trip.destination || "Destino sin definir")}<br>Impreso: ${escapeHtml(new Date().toLocaleString("es-US"))}</div><div class="summary"><span>Envíos: ${selectedShipments.length}</span><span>Peso: ${totalWeight.toFixed(1)} lb</span></div><table><thead><tr><th>Parada</th><th>Rastreo</th><th>Remitente</th><th>Destinatario</th><th>Destino</th><th>Peso</th><th>Estado</th><th>Repartidor</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();}</script></body></html>`);
+    </style></head><body><h1>Manifiesto parcial · Viaje ${escapeHtml(trip.trip_number.toString())}</h1><div class="meta"><strong>${escapeHtml(trip.name)}</strong> · ${escapeHtml(trip.origin || "Origen sin definir")} → ${escapeHtml(trip.destination || "Destino sin definir")}<br>Impreso: ${escapeHtml(new Date().toLocaleString("es-US"))}</div><div class="summary">${summaryParts.join("")}</div><table><thead><tr><th>Parada</th><th>Rastreo</th><th>Remitente</th><th>Destinatario</th><th>Destino</th><th>Cantidad</th><th>Estado</th><th>Repartidor</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>{window.print();}</script></body></html>`);
     printWindow.document.close();
   }
 
