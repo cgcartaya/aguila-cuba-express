@@ -54,23 +54,37 @@ export default function StaffRouteModal({ open, storeId, user, onClose }: Props)
   const initials = `${user.first_name.slice(0, 1)}${user.last_name.slice(0, 1)}`.toUpperCase();
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm md:items-center md:p-6">
-      <div className="max-h-[95vh] w-full overflow-y-auto rounded-t-[2rem] bg-[#f5f7fb] shadow-2xl md:max-w-5xl md:rounded-[2rem]">
-        <header className="sticky top-0 z-10 border-b border-white/10 bg-gradient-to-r from-[#061b3a] via-[#0a2d63] to-[#1554a6] px-5 py-5 text-white md:px-7">
+    <div className="fixed inset-0 z-[110] flex items-stretch justify-center bg-slate-950/60 p-0 backdrop-blur-sm md:items-center md:p-6">
+      <div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-[#f5f7fb] shadow-2xl md:h-auto md:max-h-[95vh] md:max-w-5xl md:rounded-[2rem]">
+        <header
+          className="relative z-20 shrink-0 border-b border-white/10 bg-gradient-to-r from-[#061b3a] via-[#0a2d63] to-[#1554a6] px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-white sm:px-5 md:px-7 md:py-5"
+        >
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {user.photo_url ? <img src={user.photo_url} alt="" className="h-16 w-16 rounded-2xl border-2 border-white/30 object-cover" /> : <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 text-xl font-black">{initials}</div>}
-              <div>
-                <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-black"><Route size={14}/> Ruta y progreso</div>
-                <h2 className="text-2xl font-black">{user.first_name} {user.last_name}</h2>
-                <p className="text-sm font-semibold text-blue-100/80">{user.vehicle_type || "Sin vehículo"}{user.vehicle_plate ? ` · ${user.vehicle_plate}` : ""}</p>
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              {user.photo_url ? (
+                <img
+                  src={user.photo_url}
+                  alt={`${user.first_name} ${user.last_name}`}
+                  className="h-14 w-14 shrink-0 rounded-2xl border-2 border-white/30 object-cover sm:h-16 sm:w-16"
+                />
+              ) : (
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-lg font-black sm:h-16 sm:w-16 sm:text-xl">
+                  {initials}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="mb-1 inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[10px] font-black sm:px-3 sm:text-xs">
+                  <Route size={13}/> Ruta y progreso
+                </div>
+                <h2 className="truncate text-xl font-black sm:text-2xl">{user.first_name} {user.last_name}</h2>
+                <p className="truncate text-xs font-semibold text-blue-100/80 sm:text-sm">{user.vehicle_type || "Sin vehículo"}{user.vehicle_plate ? ` · ${user.vehicle_plate}` : ""}</p>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="rounded-xl bg-white/10 p-2 hover:bg-white/20" aria-label="Cerrar"><X /></button>
+            <button type="button" onClick={onClose} className="shrink-0 rounded-xl bg-white/10 p-2 hover:bg-white/20" aria-label="Cerrar"><X /></button>
           </div>
         </header>
 
-        <div className="space-y-5 p-4 md:p-7">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:p-7">
           <section className="grid gap-3 sm:grid-cols-4">
             <Metric icon={<Truck size={19}/>} label="Paradas" value={stats.total} tone="blue" />
             <Metric icon={<PackageCheck size={19}/>} label="Completadas" value={stats.delivered} tone="green" />
