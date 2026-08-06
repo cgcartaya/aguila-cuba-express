@@ -316,6 +316,27 @@ export async function deleteShippingRate(storeId: string, rateId: string) {
     .eq("store_id", storeId);
 }
 
+/**
+ * Actualiza SOLO el peso mínimo facturable en TODAS las tarifas ya
+ * existentes de la tienda, sin tocar rate_per_lb, minimum_charge ni
+ * ningún otro campo. Pensado para cuando cambia una política general
+ * (ej. "todo pasa a mínimo 1 lb") y hacerlo tarifa por tarifa desde el
+ * formulario sería tedioso.
+ */
+export async function updateAllRatesMinimumWeight(
+  storeId: string,
+  minimumWeightLb: number,
+) {
+  return supabase
+    .from("shipping_rates")
+    .update({
+      minimum_weight_lb: minimumWeightLb,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("store_id", storeId)
+    .select("id");
+}
+
 export async function upsertShippingRatesBulk(input: {
   store_id: string;
   scope_type: "country" | "province" | "municipality" | "location";

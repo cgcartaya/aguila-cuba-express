@@ -38,6 +38,7 @@ import {
   createServiceType,
   deleteShippingConfigItem,
   deleteShippingRate,
+  updateAllRatesMinimumWeight,
   getShippingConfiguration,
   setShippingConfigItemActive,
   updateActiveShipmentsStatusBulk,
@@ -524,6 +525,36 @@ export default function ShippingSettingsPage() {
       "Tarifa eliminada correctamente.",
     );
     setDeletingRateId(null);
+  }
+
+  async function bulkUpdateMinimumWeight() {
+    if (!activeStore?.id || !rates.length) return;
+
+    const input = window.prompt(
+      `Vas a cambiar el peso mínimo facturable en las ${rates.length} tarifa(s) configuradas, sin tocar el precio por libra ni el cobro mínimo de cada una.\n\nEscribe el nuevo peso mínimo en libras:`,
+      "1",
+    );
+
+    if (input === null) return;
+
+    const minimumWeightLb = Number(input.replace(",", "."));
+
+    if (!Number.isFinite(minimumWeightLb) || minimumWeightLb < 0) {
+      setMessage("Escribe un peso mínimo válido (0 o mayor).");
+      setIsError(true);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `¿Aplicar ${minimumWeightLb} lb como peso mínimo facturable a las ${rates.length} tarifa(s) de esta tienda? Esta acción no se puede deshacer.`,
+    );
+
+    if (!confirmed) return;
+
+    await runAction(
+      () => updateAllRatesMinimumWeight(activeStore.id, minimumWeightLb),
+      `Peso mínimo actualizado a ${minimumWeightLb} lb en ${rates.length} tarifa(s).`,
+    );
   }
 
   async function changeGlobalShipmentStatus(
@@ -1797,6 +1828,7 @@ export default function ShippingSettingsPage() {
               serviceTypes={serviceTypes}
               deletingRateId={deletingRateId}
               onDelete={(rate) => void removeRate(rate)}
+              onBulkUpdateMinimumWeight={() => void bulkUpdateMinimumWeight()}
             />
           </SettingsCard>
 
@@ -2421,6 +2453,7 @@ function CollapsibleRateList({
   serviceTypes,
   deletingRateId,
   onDelete,
+  onBulkUpdateMinimumWeight,
 }: {
   rates: ShippingRate[];
   countries: ShippingCountry[];
@@ -2430,6 +2463,7 @@ function CollapsibleRateList({
   serviceTypes: ShippingServiceType[];
   deletingRateId: string | null;
   onDelete: (rate: ShippingRate) => void;
+  onBulkUpdateMinimumWeight: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const visibleRates = expanded ? rates : rates.slice(0, 5);
@@ -2464,6 +2498,19 @@ function CollapsibleRateList({
             {expanded ? "Mostrar 5" : `Ver ${rates.length - 5} más`}
           </button>
         )}
+      </div>
+
+      <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-2.5">
+        <p className="text-[11px] font-semibold text-slate-400">
+          ¿Cambió la política de peso mínimo? Actualízalo en todas las tarifas de una vez, sin editarlas una por una.
+        </p>
+        <button
+          type="button"
+          onClick={onBulkUpdateMinimumWeight}
+          className="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+        >
+          Aplicar peso mínimo a todas
+        </button>
       </div>
 
       <div className="divide-y divide-slate-100">
