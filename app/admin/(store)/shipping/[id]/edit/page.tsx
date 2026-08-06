@@ -206,6 +206,8 @@ export default function EditShipmentPage({
               rates={rates}
               extraFees={extraFees}
               initialSelectedFees={selectedFees}
+              initialCustomerId={shipment.customer_id ?? ""}
+              initialRecipientId={shipment.recipient_id ?? ""}
               submitting={submitting}
               onSubmit={submit}
             />

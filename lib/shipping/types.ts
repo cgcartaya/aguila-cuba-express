@@ -117,6 +117,7 @@ export type Shipment = {
   tracking_code: string | null;
   status: ShippingStatus;
   public_tracking_enabled: boolean;
+  assigned_staff_id: string | null;
   assigned_driver_id: string | null;
   assigned_driver_name: string | null;
   weight_lb: number;
@@ -141,10 +142,11 @@ export type Shipment = {
 };
 
 export type ShippingDriver = {
-  id: string;
+  id: string; // staff_users.id
   name: string;
   username: string;
   is_active: boolean;
+  legacy_driver_id: string | null; // app_users.id mientras la APK vieja siga activa
 };
 
 export type ShippingCountry = {
@@ -278,6 +280,7 @@ export type ShipmentInput = {
   sender_phone: string;
   notes: string;
   status: ShippingStatus;
+  assigned_staff_id: string | null;
   assigned_driver_id: string | null;
   assigned_driver_name: string | null;
   public_tracking_enabled: boolean;

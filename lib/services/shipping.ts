@@ -75,8 +75,8 @@ export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters)
   if (filters.driverName) query = query.eq("assigned_driver_name", filters.driverName);
   if (filters.paymentStatus && filters.paymentStatus !== "all") query = query.eq("payment_status", filters.paymentStatus);
 
-  if (filters.assignment === "assigned") query = query.not("assigned_driver_id", "is", null);
-  if (filters.assignment === "unassigned") query = query.is("assigned_driver_id", null);
+  if (filters.assignment === "assigned") query = query.or("assigned_staff_id.not.is.null,assigned_driver_id.not.is.null,assigned_driver_name.not.is.null");
+  if (filters.assignment === "unassigned") query = query.is("assigned_staff_id", null).is("assigned_driver_id", null).is("assigned_driver_name", null);
 
   if (filters.contentType === "package") query = query.eq("contains_package", true).eq("contains_money", false);
   if (filters.contentType === "money") query = query.eq("contains_money", true).eq("contains_package", false);
@@ -105,7 +105,7 @@ export async function getShipmentsSummaryCounts(storeId: string) {
   const [totalResult, pendingResult, unassignedResult] = await Promise.all([
     base(),
     base().neq("payment_status", "paid"),
-    base().is("assigned_driver_id", null).is("assigned_driver_name", null),
+    base().is("assigned_staff_id", null).is("assigned_driver_id", null).is("assigned_driver_name", null),
   ]);
 
   return {
@@ -133,8 +133,24 @@ export function getShipmentFees(shipmentId: string) {
   return supabase.from("shipment_extra_fees").select("*").eq("shipment_id", shipmentId).order("created_at");
 }
 
-export function getShippingDriversByStoreId(storeId: string) {
-  return supabase.from("app_users").select("id,name,username,is_active").eq("store_id", storeId).eq("role", "DRIVER").order("name").returns<ShippingDriver[]>();
+export async function getShippingDriversByStoreId(storeId: string) {
+  const { data, error } = await supabase
+    .from("staff_users")
+    .select("id,first_name,last_name,username,status,legacy_app_user_id")
+    .eq("store_id", storeId)
+    .eq("role", "DELIVERY")
+    .order("first_name", { ascending: true })
+    .order("last_name", { ascending: true });
+
+  const drivers: ShippingDriver[] = (data || []).map((staff) => ({
+    id: staff.id,
+    name: `${staff.first_name || ""} ${staff.last_name || ""}`.trim() || staff.username,
+    username: staff.username,
+    is_active: staff.status === "ACTIVE",
+    legacy_driver_id: staff.legacy_app_user_id || null,
+  }));
+
+  return { data: drivers, error };
 }
 
 async function replaceItems(storeId: string, shipmentId: string, input: ShipmentInput) {
@@ -195,6 +211,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     delivered: input.status === "delivered",
     delivered_date: input.status === "delivered" ? now : null,
     public_tracking_enabled: input.public_tracking_enabled,
+    assigned_staff_id: input.assigned_staff_id,
     assigned_driver_id: input.assigned_driver_id,
     assigned_driver_name: input.assigned_driver_name,
     contains_package: input.contains_package,
@@ -366,13 +383,14 @@ export function bulkMoveShipmentsToTrash(storeId: string, shipmentIds: string[],
 export function bulkAssignShipmentDriver(
   storeId: string,
   shipmentIds: string[],
-  driver: Pick<ShippingDriver, "id" | "name"> | null,
+  driver: Pick<ShippingDriver, "id" | "name" | "legacy_driver_id"> | null,
 ) {
   if (!shipmentIds.length) return Promise.resolve({ data: null, error: null });
   return supabase
     .from("shipments")
     .update({
-      assigned_driver_id: driver?.id || null,
+      assigned_staff_id: driver?.id || null,
+      assigned_driver_id: driver?.legacy_driver_id || null,
       assigned_driver_name: driver?.name || null,
       updated_at: new Date().toISOString(),
     })

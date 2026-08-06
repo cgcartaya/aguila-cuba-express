@@ -53,6 +53,7 @@ export default function ShipmentForm(props: Props) {
     sender_phone: shipment?.sender_phone || "",
     notes: shipment?.notes || "",
     status: (shipment?.status || "preparing") as ShippingStatus,
+    assigned_staff_id: shipment?.assigned_staff_id || null,
     assigned_driver_id: shipment?.assigned_driver_id || null,
     assigned_driver_name: shipment?.assigned_driver_name || null,
     public_tracking_enabled: shipment?.public_tracking_enabled ?? true,
@@ -239,7 +240,7 @@ export default function ShipmentForm(props: Props) {
         <Input label="Remitente" value={form.sender_name} onChange={v=>set("sender_name",v)} />
         <Input label="Teléfono remitente" value={form.sender_phone} onChange={v=>set("sender_phone",phone(v))} inputMode="numeric" />
         <Select label="Estado" value={form.status} onChange={v=>set("status",v as ShippingStatus)} options={SHIPPING_STATUSES.map(x=>[x,getShippingStatusLabel(x)])} />
-        <Select label="Repartidor" value={form.assigned_driver_id || ""} onChange={v=>{ const d=drivers.find(x=>x.id===v); set("assigned_driver_id",d?.id||null); set("assigned_driver_name",d?.name||null); }} options={drivers.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
+        <Select label="Repartidor" value={form.assigned_staff_id || ""} onChange={v=>{ const d=drivers.find(x=>x.id===v); set("assigned_staff_id",d?.id||null); set("assigned_driver_id",d?.legacy_driver_id||null); set("assigned_driver_name",d?.name||null); }} options={drivers.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
       </div>
       {!form.customer_id && (
         <label className="mt-3 flex items-start gap-2 text-sm text-amber-700">
