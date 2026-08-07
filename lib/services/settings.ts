@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { getDefaultStore } from "@/lib/services/stores";
 
 import type {
   Category,
@@ -48,11 +47,11 @@ function readCurrentStoreFromLocalStorage(): {
 async function resolveStoreId(storeId?: string | null) {
   if (storeId) return storeId;
 
+  // Compatibilidad temporal para pantallas admin antiguas:
+  // solo usamos la tienda seleccionada explícitamente por el usuario.
+  // Nunca existe fallback a una "tienda por defecto".
   const currentStore = readCurrentStoreFromLocalStorage();
-  if (currentStore?.id) return currentStore.id;
-
-  const { data: store } = await getDefaultStore();
-  return store?.id || null;
+  return currentStore?.id || null;
 }
 
 function cleanPayload<T extends Record<string, unknown>>(payload: T) {
@@ -75,24 +74,34 @@ export async function getCategoriesByStoreId(storeId: string) {
     .order("sort_order", { ascending: true });
 }
 
-export async function getCategories() {
-  const { data: store } = await getDefaultStore();
+export async function getCategories(storeId?: string | null) {
+  const resolvedStoreId = await resolveStoreId(storeId);
 
-  if (!store) {
-    return { data: [], error: null };
+  if (!resolvedStoreId) {
+    return {
+      data: [],
+      error: {
+        message: "Se requiere una tienda activa para cargar categorías.",
+      },
+    };
   }
 
-  return getCategoriesByStoreId(store.id);
+  return getCategoriesByStoreId(resolvedStoreId);
 }
 
-export async function getActiveCategories() {
-  const { data: store } = await getDefaultStore();
+export async function getActiveCategories(storeId?: string | null) {
+  const resolvedStoreId = await resolveStoreId(storeId);
 
-  if (!store) {
-    return { data: [], error: null };
+  if (!resolvedStoreId) {
+    return {
+      data: [],
+      error: {
+        message: "Se requiere una tienda activa para cargar categorías.",
+      },
+    };
   }
 
-  return getActiveCategoriesByStoreId(store.id);
+  return getActiveCategoriesByStoreId(resolvedStoreId);
 }
 
 export async function getActiveCategoriesByStoreId(storeId: string) {
@@ -107,11 +116,7 @@ export async function getActiveCategoriesByStoreId(storeId: string) {
 }
 
 export async function getAdminActiveCategories(storeId?: string) {
-  if (storeId) {
-    return getActiveCategoriesByStoreId(storeId);
-  }
-
-  return getActiveCategories();
+  return getActiveCategories(storeId);
 }
 
 export async function createCategoryForStore(
@@ -133,20 +138,21 @@ export async function createCategoryForStore(
 }
 
 export async function createCategory(
-  category: Omit<Category, "id" | "created_at" | "store_id">
+  category: Omit<Category, "id" | "created_at" | "store_id">,
+  storeId?: string | null
 ) {
-  const storeId = await resolveStoreId();
+  const resolvedStoreId = await resolveStoreId(storeId);
 
-  if (!storeId) {
+  if (!resolvedStoreId) {
     return {
       data: null,
       error: {
-        message: "No se encontró la tienda activa",
+        message: "Se requiere una tienda activa para crear la categoría.",
       },
     };
   }
 
-  return createCategoryForStore(storeId, category);
+  return createCategoryForStore(resolvedStoreId, category);
 }
 
 export async function updateCategory(
@@ -360,14 +366,19 @@ export async function deleteDeliveryZone(
    BANNERS
 ========================================================= */
 
-export async function getBanners() {
-  const { data: store } = await getDefaultStore();
+export async function getBanners(storeId?: string | null) {
+  const resolvedStoreId = await resolveStoreId(storeId);
 
-  if (!store) {
-    return { data: [], error: null };
+  if (!resolvedStoreId) {
+    return {
+      data: [],
+      error: {
+        message: "Se requiere una tienda activa para cargar banners.",
+      },
+    };
   }
 
-  return getBannersByStoreId(store.id);
+  return getBannersByStoreId(resolvedStoreId);
 }
 
 export async function getAdminBannersByStoreId(storeId: string) {
@@ -380,14 +391,19 @@ export async function getAdminBannersByStoreId(storeId: string) {
     .order("sort_order", { ascending: true });
 }
 
-export async function getAdminBanners() {
-  const storeId = await resolveStoreId();
+export async function getAdminBanners(storeId?: string | null) {
+  const resolvedStoreId = await resolveStoreId(storeId);
 
-  if (!storeId) {
-    return { data: [], error: null };
+  if (!resolvedStoreId) {
+    return {
+      data: [],
+      error: {
+        message: "Se requiere una tienda activa para cargar banners.",
+      },
+    };
   }
 
-  return getAdminBannersByStoreId(storeId);
+  return getAdminBannersByStoreId(resolvedStoreId);
 }
 
 export async function getBannersByStoreId(storeId: string) {
@@ -417,37 +433,71 @@ export async function createBannerForStore(
 }
 
 export async function createBanner(
-  banner: Omit<Banner, "id" | "created_at">
+  banner: Omit<Banner, "id" | "created_at">,
+  storeId?: string | null
 ) {
-  const storeId = await resolveStoreId();
+  const resolvedStoreId = await resolveStoreId(storeId);
 
-  if (!storeId) {
+  if (!resolvedStoreId) {
     return {
       data: null,
       error: {
-        message: "No se encontró la tienda activa",
+        message: "Se requiere una tienda activa para crear el banner.",
       },
     };
   }
 
-  return createBannerForStore(storeId, banner);
+  return createBannerForStore(resolvedStoreId, banner);
 }
 
 export async function updateBanner(
   id: string,
-  banner: Partial<Banner>
+  banner: Partial<Banner>,
+  storeId?: string | null
 ) {
+  const resolvedStoreId = await resolveStoreId(
+    storeId || banner.store_id || undefined
+  );
+
+  if (!resolvedStoreId) {
+    return {
+      data: null,
+      error: {
+        message: "Se requiere una tienda activa para actualizar el banner.",
+      },
+    };
+  }
+
   return supabase
     .from("banners")
-    .update(banner)
+    .update({
+      ...banner,
+      store_id: resolvedStoreId,
+    })
     .eq("id", id)
+    .eq("store_id", resolvedStoreId)
     .select()
     .single();
 }
 
-export async function deleteBanner(id: string) {
+export async function deleteBanner(
+  id: string,
+  storeId?: string | null
+) {
+  const resolvedStoreId = await resolveStoreId(storeId);
+
+  if (!resolvedStoreId) {
+    return {
+      data: null,
+      error: {
+        message: "Se requiere una tienda activa para eliminar el banner.",
+      },
+    };
+  }
+
   return supabase
     .from("banners")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .eq("store_id", resolvedStoreId);
 }

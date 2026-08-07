@@ -146,9 +146,15 @@ export default function AdminBannersSettingsPage() {
     field: keyof Banner,
     value: string | number | boolean | null
   ) => {
-    await updateBanner(id, {
-      [field]: value,
-    });
+    if (!activeStore?.id) return;
+
+    await updateBanner(
+      id,
+      {
+        [field]: value,
+      },
+      activeStore.id
+    );
 
     setBanners((prev) =>
       prev.map((banner) =>
@@ -167,9 +173,13 @@ export default function AdminBannersSettingsPage() {
 
     await Promise.all(
       updatedBanners.map((banner) =>
-        updateBanner(banner.id, {
-          sort_order: banner.sort_order,
-        })
+        updateBanner(
+          banner.id,
+          {
+            sort_order: banner.sort_order,
+          },
+          activeStore?.id
+        )
       )
     );
   };
@@ -178,7 +188,9 @@ export default function AdminBannersSettingsPage() {
     const ok = confirm("¿Seguro que deseas eliminar este banner?");
     if (!ok) return;
 
-    await deleteBanner(id);
+    if (!activeStore?.id) return;
+
+    await deleteBanner(id, activeStore.id);
     await loadData();
   };
 
@@ -203,10 +215,16 @@ export default function AdminBannersSettingsPage() {
   ) => {
     const buttonLink = getBannerTargetLink(categories, categoryId);
 
-    await updateBanner(bannerId, {
-      category_id: categoryId || null,
-      button_link: buttonLink,
-    });
+    if (!activeStore?.id) return;
+
+    await updateBanner(
+      bannerId,
+      {
+        category_id: categoryId || null,
+        button_link: buttonLink,
+      },
+      activeStore.id
+    );
 
     setBanners((prev) =>
       prev.map((banner) =>
