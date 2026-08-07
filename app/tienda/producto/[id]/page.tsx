@@ -21,6 +21,7 @@ import {
 } from "@/lib/services/products";
 
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 
 type ProductImage = {
@@ -43,6 +44,7 @@ type PageProps = {
 export default function ProductDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { addToCart } = useCart();
+  const { store, loading: storeLoading } = useStore();
 
   const [product, setProduct] = useState<StoreProduct | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -52,7 +54,15 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   useEffect(() => {
     async function loadProduct() {
-      const { data, error } = await getStoreProductById(id);
+      if (storeLoading) return;
+
+      if (!store?.id) {
+        setProduct(null);
+        setRelatedProducts([]);
+        return;
+      }
+
+      const { data, error } = await getStoreProductById(id, store.id);
 
       if (error || !data) {
         console.error("Error cargando producto:", error);
@@ -80,7 +90,9 @@ export default function ProductDetailPage({ params }: PageProps) {
       if (productData.category) {
         const { data: relatedData } = await getRelatedProducts(
           productData.category,
-          String(productData.id)
+          String(productData.id),
+          4,
+          store.id
         );
 
         setRelatedProducts((relatedData as Product[]) || []);
@@ -88,7 +100,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     }
 
     loadProduct();
-  }, [id]);
+  }, [id, store?.id, storeLoading]);
 
   if (!product) {
     return (

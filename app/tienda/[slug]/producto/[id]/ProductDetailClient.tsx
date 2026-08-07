@@ -25,6 +25,7 @@ import {
 } from "@/lib/services/products";
 
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 
 type ProductImage = {
@@ -48,6 +49,7 @@ export default function ProductDetailClient({
   id,
 }: ProductDetailClientProps) {
   const { addToCart } = useCart();
+  const { store, loading: storeLoading } = useStore();
 
   const [product, setProduct] =
     useState<StoreProduct | null>(null);
@@ -65,8 +67,16 @@ export default function ProductDetailClient({
 
   useEffect(() => {
     async function loadProduct() {
+      if (storeLoading) return;
+
+      if (!store?.id || store.slug !== slug) {
+        setProduct(null);
+        setRelatedProducts([]);
+        return;
+      }
+
       const { data, error } =
-        await getStoreProductById(id);
+        await getStoreProductById(id, store.id);
 
       if (error || !data) {
         console.error(
@@ -104,7 +114,9 @@ export default function ProductDetailClient({
         const { data: relatedData } =
           await getRelatedProducts(
             productData.category,
-            String(productData.id)
+            String(productData.id),
+            4,
+            store.id
           );
 
         setRelatedProducts(
@@ -114,7 +126,7 @@ export default function ProductDetailClient({
     }
 
     loadProduct();
-  }, [id]);
+  }, [id, slug, store?.id, store?.slug, storeLoading]);
 
   if (!product) {
     return (

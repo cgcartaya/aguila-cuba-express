@@ -6,7 +6,8 @@
 ========================================================= */
 
 import { useEffect, useState } from "react";
-import { getStoreProducts } from "@/lib/services/products";
+import { getStoreProductsByStoreId } from "@/lib/services/products";
+import { useStore } from "@/hooks/useStore";
 
 import ProductCard from "@/components/tienda/ProductCard";
 import ProductSearch from "@/components/tienda/ProductSearch";
@@ -25,6 +26,7 @@ type ProductFromSupabase = Product & {
 };
 
 export default function TiendaProductosPage() {
+  const { store, loading: storeLoading } = useStore();
   const [busqueda, setBusqueda] = useState("");
   const [productos, setProductos] = useState<Product[]>([]);
 
@@ -32,9 +34,17 @@ export default function TiendaProductosPage() {
 
   useEffect(() => {
     const cargarProductos = async () => {
-      const { data, error } = await getStoreProducts();
+      if (storeLoading) return;
+
+      if (!store?.id) {
+        setProductos([]);
+        return;
+      }
+
+      const { data, error } = await getStoreProductsByStoreId(store.id);
 
       if (error) {
+        setProductos([]);
         return;
       }
 
@@ -56,7 +66,7 @@ export default function TiendaProductosPage() {
     };
 
     cargarProductos();
-  }, []);
+  }, [store?.id, storeLoading]);
 
   const productosBuscados = productos.filter((producto) =>
     producto.name.toLowerCase().includes(busqueda.toLowerCase())

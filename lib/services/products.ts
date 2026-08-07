@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { getDefaultStore } from "@/lib/services/stores";
 import { getStoreSettings } from "@/lib/services/settings";
 
 import type { Product } from "@/components/admin/products/types";
@@ -83,6 +82,16 @@ function productHasImage(product: {
    PRODUCTS SERVICE
 ========================================================= */
 
+function missingStoreIdResult() {
+  return {
+    data: [],
+    error: {
+      message: "Se requiere storeId explícito para esta operación.",
+    },
+  };
+}
+
+
 // Obtener un producto por ID
 export async function getProductById(id: string) {
   return supabase
@@ -92,18 +101,16 @@ export async function getProductById(id: string) {
     .single();
 }
 
-// Obtener productos activos
-export async function getActiveProducts() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
+// Compatibilidad temporal: ya no resuelve ninguna tienda por defecto.
+export async function getActiveProducts(storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
   return supabase
     .from("products")
     .select("*")
-    .eq("store_id", store.id)
+    .eq("store_id", storeId)
     .eq("is_active", true)
     .is("deleted_at", null)
     .order("category", { ascending: true })
@@ -150,20 +157,12 @@ export async function getProductsForCombosByStoreId(storeId: string) {
     .order("name", { ascending: true });
 }
 
-export async function getProductsForCombos() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
+export async function getProductsForCombos(storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  return supabase
-    .from("products")
-    .select(PRODUCT_PUBLIC_SELECT)
-    .eq("store_id", store.id)
-    .eq("is_active", true)
-    .is("deleted_at", null)
-    .order("name", { ascending: true });
+  return getProductsForCombosByStoreId(storeId);
 }
 
 // Obtener productos inactivos por tienda explícita.
@@ -177,21 +176,13 @@ export async function getInactiveProductsByStoreId(storeId: string) {
     .order("created_at", { ascending: false });
 }
 
-// Obtener productos inactivos
-export async function getInactiveProducts() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
+// Compatibilidad temporal: requiere storeId explícito.
+export async function getInactiveProducts(storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  return supabase
-    .from("products")
-    .select("*")
-    .eq("store_id", store.id)
-    .eq("is_active", false)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  return getInactiveProductsByStoreId(storeId);
 }
 
 // Obtener productos con bajo stock por tienda explícita.
@@ -208,46 +199,34 @@ export async function getLowStockProductsByStoreId(
     .order("created_at", { ascending: false });
 }
 
-// Obtener productos con bajo stock
-export async function getLowStockProducts(limit = 5) {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
+// Compatibilidad temporal: requiere storeId explícito.
+export async function getLowStockProducts(limit = 5, storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  return supabase
-    .from("products")
-    .select("*")
-    .eq("store_id", store.id)
-    .is("deleted_at", null)
-    .lte("stock", limit)
-    .order("created_at", { ascending: false });
+  return getLowStockProductsByStoreId(storeId, limit);
 }
 
 /* =========================================================
    TIENDA PÚBLICA - CONSULTAS
 ========================================================= */
 
-export async function getProducts() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
+export async function getProducts(storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  return getStoreProductsByStoreId(store.id);
+  return getStoreProductsByStoreId(storeId);
 }
 
-// Obtener productos visibles en la tienda pública
-export async function getStoreProducts() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
+// Compatibilidad temporal: requiere storeId explícito.
+export async function getStoreProducts(storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  return getStoreProductsByStoreId(store.id);
+  return getStoreProductsByStoreId(storeId);
 }
 
 // Obtener productos visibles por tienda sin volver a consultar stores.
@@ -280,11 +259,24 @@ export async function getStoreProductsByStoreId(storeId: string) {
   Obtener un producto específico para la página
   de detalle estilo Amazon/Shopify.
 */
-export async function getStoreProductById(id: string) {
+export async function getStoreProductById(
+  id: string,
+  storeId?: string
+) {
+  if (!storeId) {
+    return {
+      data: null,
+      error: {
+        message: "Se requiere storeId explícito para cargar el producto.",
+      },
+    };
+  }
+
   return supabase
     .from("products")
     .select(PRODUCT_DETAIL_SELECT)
     .eq("id", id)
+    .eq("store_id", storeId)
     .eq("is_active", true)
     .is("deleted_at", null)
     .single();
@@ -299,16 +291,14 @@ export async function getRelatedProducts(
   limit = 4,
   storeId?: string
 ) {
-  let resolvedStoreId = storeId;
-
-  if (!resolvedStoreId) {
-    const { data: defaultStore } = await getDefaultStore();
-    resolvedStoreId = defaultStore?.id;
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  let query = supabase
+  const query = supabase
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
+    .eq("store_id", storeId)
     .eq("is_active", true)
     .is("deleted_at", null)
     .eq("category", category)
@@ -316,13 +306,9 @@ export async function getRelatedProducts(
     .order("is_category_featured", { ascending: false })
     .order("category_sort_order", { ascending: true, nullsFirst: false });
 
-  if (resolvedStoreId) {
-    query = query.eq("store_id", resolvedStoreId);
-  }
-
   const [productsResult, settingsResult] = await Promise.all([
     query.limit(limit),
-    getStoreSettings(resolvedStoreId),
+    getStoreSettings(storeId),
   ]);
 
   if (productsResult.error || !settingsResult.data?.hide_products_without_images) {
@@ -386,14 +372,12 @@ export async function getInventoryProductsByStoreId(storeId: string) {
     .order("name", { ascending: true });
 }
 
-export async function getInventoryProducts() {
-  const storeResult = await getDefaultStore();
-
-  if (!storeResult?.data) {
-    return { data: [], error: null };
+export async function getInventoryProducts(storeId?: string) {
+  if (!storeId) {
+    return missingStoreIdResult();
   }
 
-  return getInventoryProductsByStoreId(storeResult.data.id);
+  return getInventoryProductsByStoreId(storeId);
 }
 
 /* =========================================================
@@ -415,29 +399,21 @@ export async function createProductForStore(
     .single();
 }
 
-// Crear producto
+// Compatibilidad temporal: requiere storeId explícito.
 export async function createProduct(
-  product: Omit<Product, "id" | "created_at">
+  product: Omit<Product, "id" | "created_at">,
+  storeId?: string
 ) {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
+  if (!storeId) {
     return {
       data: null,
       error: {
-        message: "No se encontró la tienda activa",
+        message: "Se requiere storeId explícito para crear el producto.",
       },
     };
   }
 
-  return supabase
-    .from("products")
-    .insert({
-      ...product,
-      store_id: store.id,
-    })
-    .select()
-    .single();
+  return createProductForStore(storeId, product);
 }
 
 // Actualizar producto
