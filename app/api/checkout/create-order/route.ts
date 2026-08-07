@@ -599,7 +599,7 @@ export async function POST(request: Request) {
         .eq("store_id", storeId);
 
       if (orderNumberError) {
-        await deleteCreatedOrder(order.id, storeId);
+        await deleteCreatedOrder(order.id);
         return fail("No se pudo asignar el número de orden.", 500);
       }
     }
@@ -622,7 +622,7 @@ export async function POST(request: Request) {
     if (itemsError) {
       console.error("ERROR GUARDANDO ORDER_ITEMS:", itemsError);
 
-      await deleteCreatedOrder(order.id, storeId);
+      await deleteCreatedOrder(order.id);
 
       return fail(
         "No se pudieron guardar los productos de la orden.",
@@ -643,7 +643,7 @@ export async function POST(request: Request) {
 
       const claimResult = claimData?.[0];
       if (claimError || !claimResult?.success) {
-        await deleteCreatedOrder(order.id, storeId);
+        await deleteCreatedOrder(order.id);
         return fail(claimResult?.message || "El bono ya no está disponible.", 409);
       }
     }
@@ -659,7 +659,7 @@ export async function POST(request: Request) {
 
       if (stockReadError || !product || Number(product.stock || 0) < needed) {
         await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id, storeId);
+        await deleteCreatedOrder(order.id);
         return fail("El stock cambió mientras se procesaba el pedido.", 409);
       }
 
@@ -671,7 +671,7 @@ export async function POST(request: Request) {
 
       if (stockUpdateError) {
         await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id, storeId);
+        await deleteCreatedOrder(order.id);
         return fail("No se pudo actualizar el inventario.", 500);
       }
 
