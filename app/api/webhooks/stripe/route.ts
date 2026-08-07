@@ -37,17 +37,31 @@ export async function POST(request: NextRequest) {
     const shipmentId = session.metadata?.shipment_id;
     const orderId = session.metadata?.order_id;
 
-    if (orderId) {
-      // Pedido de la tienda pagado con tarjeta en el checkout.
-      await supabaseAdmin.from("orders").update({ payment_status: "paid" }).eq("id", orderId);
+    const metadataStoreId = session.metadata?.store_id;
+
+    if (orderId && metadataStoreId) {
+      // Pedido de tienda: el evento solo puede modificar la orden
+      // indicada dentro del mismo tenant que quedó grabado en Stripe.
+      await supabaseAdmin
+        .from("orders")
+        .update({ payment_status: "paid" })
+        .eq("id", orderId)
+        .eq("store_id", metadataStoreId)
+        .is("deleted_at", null);
     }
 
     if (shipmentId) {
-      const { data: shipment } = await supabaseAdmin
+      let shipmentQuery = supabaseAdmin
         .from("shipments")
         .select("id, store_id, service_price, balance_due")
         .eq("id", shipmentId)
-        .maybeSingle();
+        .is("deleted_at", null);
+
+      if (metadataStoreId) {
+        shipmentQuery = shipmentQuery.eq("store_id", metadataStoreId);
+      }
+
+      const { data: shipment } = await shipmentQuery.maybeSingle();
 
       if (shipment) {
         // El recibo debe reflejar lo que se cobró EN ESTA transacción, no
@@ -57,15 +71,22 @@ export async function POST(request: NextRequest) {
 
         await supabaseAdmin
           .from("shipments")
-          .update({ amount_paid: shipment.service_price, balance_due: 0, payment_status: "paid", payment_method: "card" })
-          .eq("id", shipmentId);
+          .update({
+            amount_paid: shipment.service_price,
+            balance_due: 0,
+            payment_status: "paid",
+            payment_method: "card",
+          })
+          .eq("id", shipmentId)
+          .eq("store_id", shipment.store_id)
+          .is("deleted_at", null);
 
         // Recibo de pago inmutable con folio consecutivo — separado de la
         // factura, que se genera desde que se crea el envío.
-        const storeId = session.metadata?.store_id || shipment.store_id;
-        if (storeId && amountCollectedNow > 0) {
+        const receiptStoreId = metadataStoreId || shipment.store_id;
+        if (receiptStoreId && amountCollectedNow > 0) {
           await createPaymentReceipt({
-            storeId,
+            storeId: receiptStoreId,
             shipmentId: shipment.id,
             amount: amountCollectedNow,
             paymentMethod: "card",
@@ -74,10 +95,19 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      await supabaseAdmin
+      let paymentSessionQuery = supabaseAdmin
         .from("shipment_payment_sessions")
         .update({ status: "paid" })
         .eq("stripe_checkout_session_id", session.id);
+
+      if (metadataStoreId) {
+        paymentSessionQuery = paymentSessionQuery.eq(
+          "store_id",
+          metadataStoreId
+        );
+      }
+
+      await paymentSessionQuery;
     }
   }
 

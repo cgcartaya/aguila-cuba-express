@@ -54,7 +54,9 @@ export async function POST(request: NextRequest) {
       payment_status: "paid",
       payment_method: "cash",
     })
-    .eq("id", shipmentId);
+    .eq("id", shipmentId)
+    .eq("store_id", shipment.store_id)
+    .is("deleted_at", null);
 
   if (updateError) return fail("No se pudo marcar el envío como pagado.", 500);
 

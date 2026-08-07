@@ -51,12 +51,16 @@ type PreparedItem = {
 
 type StockChange = { productId: string; quantity: number };
 
-async function restoreStock(changes: StockChange[]) {
+async function restoreStock(
+  changes: StockChange[],
+  storeId: string
+) {
   for (const change of [...changes].reverse()) {
     const { data } = await supabaseAdmin
       .from("products")
       .select("stock")
       .eq("id", change.productId)
+      .eq("store_id", storeId)
       .maybeSingle();
 
     if (!data) continue;
@@ -64,13 +68,37 @@ async function restoreStock(changes: StockChange[]) {
     await supabaseAdmin
       .from("products")
       .update({ stock: Number(data.stock || 0) + change.quantity })
-      .eq("id", change.productId);
+      .eq("id", change.productId)
+      .eq("store_id", storeId);
   }
 }
 
-async function deleteCreatedOrder(orderId: string) {
-  await supabaseAdmin.from("order_items").delete().eq("order_id", orderId);
-  await supabaseAdmin.from("orders").delete().eq("id", orderId);
+async function deleteCreatedOrder(
+  orderId: string,
+  storeId: string
+) {
+  // order_items no tiene store_id, así que primero verificamos que
+  // la orden realmente pertenece a la tienda que está ejecutando
+  // este checkout antes de tocar sus líneas.
+  const { data: ownedOrder } = await supabaseAdmin
+    .from("orders")
+    .select("id")
+    .eq("id", orderId)
+    .eq("store_id", storeId)
+    .maybeSingle();
+
+  if (!ownedOrder) return;
+
+  await supabaseAdmin
+    .from("order_items")
+    .delete()
+    .eq("order_id", ownedOrder.id);
+
+  await supabaseAdmin
+    .from("orders")
+    .delete()
+    .eq("id", ownedOrder.id)
+    .eq("store_id", storeId);
 }
 
 export async function POST(request: Request) {
@@ -401,7 +429,7 @@ export async function POST(request: Request) {
         .eq("store_id", storeId);
 
       if (orderNumberError) {
-        await deleteCreatedOrder(order.id);
+        await deleteCreatedOrder(order.id, storeId);
         return fail("No se pudo asignar el número de orden.", 500);
       }
     }
@@ -411,7 +439,7 @@ export async function POST(request: Request) {
     );
 
     if (itemsError) {
-      await deleteCreatedOrder(order.id);
+      await deleteCreatedOrder(order.id, storeId);
       return fail("No se pudieron guardar los productos de la orden.", 500);
     }
 
@@ -428,7 +456,7 @@ export async function POST(request: Request) {
 
       const claimResult = claimData?.[0];
       if (claimError || !claimResult?.success) {
-        await deleteCreatedOrder(order.id);
+        await deleteCreatedOrder(order.id, storeId);
         return fail(claimResult?.message || "El bono ya no está disponible.", 409);
       }
     }
@@ -443,8 +471,8 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (stockReadError || !product || Number(product.stock || 0) < needed) {
-        await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id);
+        await restoreStock(appliedStockChanges, storeId);
+        await deleteCreatedOrder(order.id, storeId);
         return fail("El stock cambió mientras se procesaba el pedido.", 409);
       }
 
@@ -455,8 +483,8 @@ export async function POST(request: Request) {
         .eq("store_id", storeId);
 
       if (stockUpdateError) {
-        await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id);
+        await restoreStock(appliedStockChanges, storeId);
+        await deleteCreatedOrder(order.id, storeId);
         return fail("No se pudo actualizar el inventario.", 500);
       }
 

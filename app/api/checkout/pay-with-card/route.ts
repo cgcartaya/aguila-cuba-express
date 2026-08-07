@@ -7,12 +7,18 @@ const fail = (message: string, status = 400) => NextResponse.json({ success: fal
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const orderId = String(body.orderId || "").trim();
-  if (!orderId) return fail("Falta la orden.");
+  const storeId = String(body.storeId || "").trim();
+
+  if (!orderId || !storeId) {
+    return fail("Falta la orden o la tienda.");
+  }
 
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select("id, store_id, order_number, total, payment_status")
     .eq("id", orderId)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error || !order) return fail("Orden no encontrada.", 404);
@@ -28,7 +34,7 @@ export async function POST(request: NextRequest) {
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")
     .select("id, name, stripe_account_id, stripe_charges_enabled")
-    .eq("id", order.store_id)
+    .eq("id", storeId)
     .maybeSingle();
 
   if (storeError || !store?.stripe_account_id || !store.stripe_charges_enabled) {
@@ -60,7 +66,10 @@ export async function POST(request: NextRequest) {
       },
       success_url: `${origin}/tienda/pago-exitoso?order=${encodeURIComponent(order.order_number || order.id)}`,
       cancel_url: `${origin}/tienda/pago-cancelado?order=${encodeURIComponent(order.order_number || order.id)}`,
-      metadata: { order_id: order.id, store_id: store.id },
+      metadata: {
+        order_id: order.id,
+        store_id: storeId,
+      },
     },
     { stripeAccount: store.stripe_account_id }
   );

@@ -479,7 +479,10 @@ ${orderUrl}`);
         const payResponse = await fetch("/api/checkout/pay-with-card", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: order.id }),
+          body: JSON.stringify({
+            orderId: order.id,
+            storeId: store.id,
+          }),
         });
         const payResult = await payResponse.json().catch(() => null);
 

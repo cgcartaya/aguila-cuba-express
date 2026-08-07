@@ -26,11 +26,15 @@ export async function createPaymentReceipt(params: {
   return { data, error };
 }
 
-export async function getReceiptByShipmentId(shipmentId: string) {
+export async function getReceiptByShipmentId(
+  shipmentId: string,
+  storeId: string
+) {
   const { data, error } = await supabaseAdmin
     .from("payment_receipts")
     .select("id, folio, amount, payment_method, created_at")
     .eq("shipment_id", shipmentId)
+    .eq("store_id", storeId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

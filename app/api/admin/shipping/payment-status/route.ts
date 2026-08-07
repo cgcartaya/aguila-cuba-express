@@ -33,7 +33,10 @@ export async function GET(request: NextRequest) {
   const denied = await access(request, shipment.store_id);
   if (denied) return denied;
 
-  const { data: receipt } = await getReceiptByShipmentId(shipmentId);
+  const { data: receipt } = await getReceiptByShipmentId(
+    shipmentId,
+    shipment.store_id
+  );
 
   return NextResponse.json({
     ok: true,
