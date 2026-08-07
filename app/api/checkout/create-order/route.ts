@@ -385,6 +385,27 @@ export async function POST(request: Request) {
 
     if (orderError || !order) return fail("No se pudo crear la orden.", 500);
 
+    // Algunas instalaciones antiguas no generan order_number automáticamente.
+    // Nunca exponemos el UUID completo al cliente: si la BD no asignó uno,
+    // creamos un identificador público corto, legible y persistente.
+    let publicOrderNumber = clean(order.order_number, 80);
+
+    if (!publicOrderNumber) {
+      const compactId = order.id.replace(/-/g, "").toUpperCase();
+      publicOrderNumber = `ORD-${compactId.slice(0, 8)}-${compactId.slice(-4)}`;
+
+      const { error: orderNumberError } = await supabaseAdmin
+        .from("orders")
+        .update({ order_number: publicOrderNumber })
+        .eq("id", order.id)
+        .eq("store_id", storeId);
+
+      if (orderNumberError) {
+        await deleteCreatedOrder(order.id);
+        return fail("No se pudo asignar el número de orden.", 500);
+      }
+    }
+
     const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
       preparedItems.map((item) => ({ ...item, order_id: order.id }))
     );
@@ -446,7 +467,7 @@ export async function POST(request: Request) {
       success: true,
       order: {
         id: order.id,
-        order_number: order.order_number,
+        order_number: publicOrderNumber,
         subtotal,
         delivery_fee: deliveryFee,
         discount_amount: discountAmount,
