@@ -31,9 +31,6 @@ const STORE_PUBLIC_FIELDS = `
   created_at
 `
 
-let defaultStoreCache: Store | null = null
-let defaultStorePromise: Promise<{ data: Store | null; error: unknown }> | null = null
-
 export async function getStores(): Promise<Store[]> {
   const { data, error } = await supabase
     .from("stores")
@@ -115,33 +112,11 @@ export async function getStoreBySubdomain(
 }
 
 export async function getDefaultStore(): Promise<{ data: Store | null; error: unknown }> {
-  if (defaultStoreCache) {
-    return { data: defaultStoreCache, error: null }
+  console.warn("getDefaultStore() está obsoleto. La tienda debe resolverse por dominio, subdominio o slug.")
+  return {
+    data: null,
+    error: new Error("Default store disabled"),
   }
-
-  if (!defaultStorePromise) {
-    defaultStorePromise = Promise.resolve(
-      supabase
-        .from("stores")
-        .select(STORE_PUBLIC_FIELDS)
-        .eq("slug", "aguila")
-        .maybeSingle()
-        .then(({ data, error }) => {
-          if (!error && data) {
-            defaultStoreCache = data as Store
-          }
-
-          defaultStorePromise = null
-
-          return {
-            data: (data as Store | null) || null,
-            error,
-          }
-        })
-    )
-  }
-
-  return await defaultStorePromise
 }
 
 export async function getCurrentStore(): Promise<{
@@ -182,13 +157,15 @@ export async function getCurrentStore(): Promise<{
     }
   }
 
-  // 3. Tienda por defecto
-  return getDefaultStore()
+  // 3. No existe una tienda por defecto en el cliente.
+  return {
+    data: null,
+    error: new Error("Store could not be resolved from current host"),
+  }
 }
 
 export function clearDefaultStoreCache() {
-  defaultStoreCache = null
-  defaultStorePromise = null
+  // Compatibilidad temporal.
 }
 
 export async function createStore(store: {
