@@ -71,9 +71,9 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (landing === "aguila") {
     return {
-      title: "Aguila Express USA | Envíos y compras para Cuba",
+      title: "Aguila Express USA | Paquetería, compras y envíos",
       description:
-        "Envíos, compras, rastreo y atención personalizada de Miami a Cuba.",
+        "Envíos puerta a puerta, compras y rastreo en tiempo real, con atención personalizada.",
     };
   }
 
