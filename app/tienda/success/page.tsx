@@ -37,20 +37,30 @@ function SuccessPageContent() {
   const searchParams = useSearchParams();
   const { clearCart } = useCart();
   const [pendingOrder, setPendingOrder] = useState<PendingWhatsappOrder | null>(null);
-  const [whatsappOpened, setWhatsappOpened] = useState(false);
 
   useEffect(() => {
+    // La orden ya fue confirmada antes de llegar aquí.
+    // Limpiamos de nuevo como protección adicional por si esta pantalla
+    // se abrió directamente, se recargó o el cambio de ruta ocurrió muy rápido.
+    clearCart();
+
     try {
       const raw = window.sessionStorage.getItem(STORAGE_KEY);
       if (!raw) return;
 
       const parsed = JSON.parse(raw) as PendingWhatsappOrder;
-      if (parsed?.orderNumber && parsed?.businessWhatsapp && parsed?.whatsappMessage) {
+      if (
+        parsed?.orderNumber &&
+        parsed?.businessWhatsapp &&
+        parsed?.whatsappMessage
+      ) {
         setPendingOrder(parsed);
       }
     } catch (error) {
       console.error("No se pudo recuperar la orden para WhatsApp:", error);
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const orderNumber = pendingOrder?.orderNumber || searchParams.get("order") || "";
@@ -64,9 +74,7 @@ function SuccessPageContent() {
     return `https://wa.me/${phone}?text=${pendingOrder.whatsappMessage}`;
   }, [pendingOrder]);
 
-  function handleFinishOrder() {
-    clearCart();
-    window.sessionStorage.removeItem(STORAGE_KEY);
+  function handleViewOrder() {
     window.location.assign(orderUrl);
   }
 
@@ -80,8 +88,8 @@ function SuccessPageContent() {
         </h1>
 
         <p className="mt-3 text-gray-600">
-          Tu pedido ya fue guardado. Ahora puedes enviarlo por WhatsApp sin perder
-          el carrito si decides regresar.
+          Tu pedido ya fue guardado correctamente. Puedes enviarlo por WhatsApp,
+          ver el pedido o volver a la tienda para seguir comprando.
         </p>
 
         {orderNumber && (
@@ -95,7 +103,6 @@ function SuccessPageContent() {
           {whatsappUrl ? (
             <a
               href={whatsappUrl}
-              onClick={() => setWhatsappOpened(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700"
             >
               <MessageCircle size={21} />
@@ -110,11 +117,11 @@ function SuccessPageContent() {
 
           <button
             type="button"
-            onClick={handleFinishOrder}
+            onClick={handleViewOrder}
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gray-950 px-5 py-4 font-bold text-white transition hover:bg-gray-800"
           >
             <ExternalLink size={20} />
-            {whatsappOpened ? "Finalizar y ver pedido" : "Ver pedido guardado"}
+            Ver pedido guardado
           </button>
 
           <Link
@@ -122,13 +129,13 @@ function SuccessPageContent() {
             className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-4 font-semibold text-gray-800"
           >
             <ShoppingBag size={20} />
-            Volver a la tienda sin vaciar el carrito
+            Volver a la tienda
           </Link>
         </div>
 
         <p className="mt-5 text-xs leading-5 text-gray-500">
-          El carrito se limpia únicamente cuando presionas “Finalizar y ver pedido”.
-          El botón de WhatsApp es un enlace directo compatible con iPhone, Android y WhatsApp Business. Abrirlo no elimina los productos.
+          La compra ya quedó registrada y el carrito fue vaciado para evitar
+          pedidos duplicados. Abrir WhatsApp no cambia ni elimina la orden guardada.
         </p>
       </div>
     </main>

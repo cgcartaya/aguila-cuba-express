@@ -57,7 +57,7 @@ const initialForm: CheckoutForm = {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart } = useCart();
+  const { cart, clearCart } = useCart();
   const { store } = useStore();
 
   const isYoyo = store?.slug === YOYO_SLUG;
@@ -425,7 +425,23 @@ ${orderUrl}`);
     orderUrl: string;
     whatsappMessage: string;
   }) {
-    const storeUrl = store?.slug ? `/tienda/${store.slug}` : "/tienda";
+    const host = window.location.hostname
+      .replace(/^www\./, "")
+      .toLowerCase();
+
+    const isPlatformHost =
+      host === "perlamarketplace.com" ||
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host.endsWith(".vercel.app");
+
+    const storeUrl = isPlatformHost
+      ? store?.slug
+        ? `/tienda/${store.slug}`
+        : "/tienda"
+      : store?.has_landing
+        ? "/tienda"
+        : "/";
 
     window.sessionStorage.setItem(
       "perla_pending_whatsapp_order",
@@ -438,7 +454,15 @@ ${orderUrl}`);
       })
     );
 
-    router.push(`/tienda/success?order=${encodeURIComponent(params.orderNumber)}`);
+    // La orden ya fue creada correctamente en el servidor.
+    // A partir de aquí el carrito no representa una compra pendiente:
+    // lo limpiamos antes de entrar a la pantalla de éxito para impedir
+    // duplicados accidentales y para que otra pestaña no recupere la compra vieja.
+    clearCart();
+
+    router.push(
+      `/tienda/success?order=${encodeURIComponent(params.orderNumber)}`
+    );
   }
 
   async function handleSubmit() {
