@@ -87,10 +87,53 @@ export function OrderSummary({
               </span>
               <p className="font-medium text-gray-900">{item.name}</p>
               <p className="text-gray-500">Cantidad: {item.quantity}</p>
+
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-bold text-gray-600">
+                  ${Number(item.price).toFixed(2)} c/u
+                </span>
+
+                {item.type === "product" &&
+                  Number(item.base_price ?? item.price) >
+                    Number(item.price) && (
+                    <>
+                      <span className="text-gray-400 line-through">
+                        ${Number(item.base_price ?? item.price).toFixed(2)}
+                      </span>
+
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-black text-emerald-700">
+                        Precio por cantidad
+                      </span>
+                    </>
+                  )}
+              </div>
+
+              {item.type === "product" &&
+                item.max_quantity_per_order != null && (
+                  <p className="mt-1 text-[11px] font-bold text-amber-700">
+                    Máximo {item.max_quantity_per_order} por pedido
+                  </p>
+                )}
             </div>
-            <p className="font-semibold">
-              ${(Number(item.price) * item.quantity).toFixed(2)}
-            </p>
+
+            <div className="text-right">
+              <p className="font-semibold">
+                ${(Number(item.price) * item.quantity).toFixed(2)}
+              </p>
+
+              {item.type === "product" &&
+                Number(item.base_price ?? item.price) >
+                  Number(item.price) && (
+                  <p className="mt-1 text-[11px] font-bold text-emerald-700">
+                    Ahorras $
+                    {(
+                      (Number(item.base_price ?? item.price) -
+                        Number(item.price)) *
+                      item.quantity
+                    ).toFixed(2)}
+                  </p>
+                )}
+            </div>
           </div>
         ))}
       </div>

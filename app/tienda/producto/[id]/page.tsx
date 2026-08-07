@@ -132,13 +132,16 @@ export default function ProductDetailPage({ params }: PageProps) {
   const handleAddToCart = () => {
     if (Number(product.stock) <= 0) return;
 
-    for (let i = 0; i < quantity; i++) {
-      addToCart({
+    addToCart(
+      {
         ...product,
         image_url:
-          selectedImage || product.image_url || "/placeholder-product.png",
-      });
-    }
+          selectedImage ||
+          product.image_url ||
+          "/placeholder-product.png",
+      },
+      quantity
+    );
   };
 
   return (
@@ -172,6 +175,8 @@ export default function ProductDetailPage({ params }: PageProps) {
             description={product.description}
             tag={product.tag}
             stock={Number(product.stock)}
+            maxQuantityPerOrder={product.max_quantity_per_order}
+            priceTiers={product.product_price_tiers}
             quantity={quantity}
             setQuantity={setQuantity}
             onAddToCart={handleAddToCart}

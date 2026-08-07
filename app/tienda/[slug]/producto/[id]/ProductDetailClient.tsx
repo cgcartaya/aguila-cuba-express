@@ -165,15 +165,16 @@ export default function ProductDetailClient({
     if (Number(product.stock) <= 0)
       return;
 
-    for (let i = 0; i < quantity; i++) {
-      addToCart({
+    addToCart(
+      {
         ...product,
         image_url:
           selectedImage ||
           product.image_url ||
           "/placeholder-product.png",
-      });
-    }
+      },
+      quantity
+    );
   };
 
   return (
@@ -211,6 +212,8 @@ export default function ProductDetailClient({
             }
             tag={product.tag}
             stock={Number(product.stock)}
+            maxQuantityPerOrder={product.max_quantity_per_order}
+            priceTiers={product.product_price_tiers}
             quantity={quantity}
             setQuantity={setQuantity}
             onAddToCart={handleAddToCart}

@@ -18,6 +18,10 @@ export type Product = {
   minimum_order_exempt?: boolean | null;
   delivery_included?: boolean | null;
   max_quantity_per_order?: number | null;
+  product_price_tiers?: Array<{
+    min_quantity: number;
+    unit_price: number;
+  }> | null;
   product_images?: ProductImage[] | null;
 };
 

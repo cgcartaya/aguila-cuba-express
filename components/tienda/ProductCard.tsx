@@ -14,6 +14,12 @@ import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
+import {
+  getNextQuantityPriceTier,
+  getPurchaseQuantityLimit,
+  getUnitPriceForQuantity,
+  normalizeQuantityPriceTiers,
+} from "@/lib/storefront/product-quantity-pricing";
 
 type ProductCardProps = {
   product: Product;
@@ -44,10 +50,32 @@ export default function ProductCard({
       : `/tienda/producto/${product.id}`;
 
   const imageUrl = getSafeImageUrl(product.image_url);
-  const price = Number(product.price || 0).toFixed(2);
+  const basePrice = Number(product.price || 0);
+  const tiers = normalizeQuantityPriceTiers(
+    product.product_price_tiers
+  );
   const outOfStock = Number(product.stock || 0) <= 0;
   const cartItemId = `product-${product.id}`;
   const quantity = getItemQuantity(cartItemId);
+
+  const effectivePrice = getUnitPriceForQuantity(
+    basePrice,
+    Math.max(1, quantity),
+    tiers
+  );
+
+  const maxAllowed = getPurchaseQuantityLimit({
+    stock: product.stock,
+    maxQuantityPerOrder: product.max_quantity_per_order,
+  });
+
+  const nextTier = getNextQuantityPriceTier(
+    quantity,
+    tiers
+  );
+
+  const hasQuantityDiscount =
+    quantity > 0 && effectivePrice < basePrice;
 
   function handleAddToCart() {
     if (store?.id) {
@@ -57,7 +85,11 @@ export default function ProductCard({
         productId: String(product.id),
         itemName: product.name,
         quantity: 1,
-        value: Number(product.price || 0),
+        value: getUnitPriceForQuantity(
+          basePrice,
+          Math.max(1, quantity + 1),
+          tiers
+        ),
       });
     }
 
@@ -114,9 +146,32 @@ export default function ProductCard({
           </span>
         </div>
 
-        <p className="mt-2 text-lg font-black text-[#061b3a]">
-          ${price}
-        </p>
+        <div className="mt-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <p className="text-lg font-black text-[#061b3a]">
+              ${effectivePrice.toFixed(2)}
+            </p>
+
+            {hasQuantityDiscount && (
+              <span className="text-xs font-bold text-slate-400 line-through">
+                ${basePrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          {nextTier && (
+            <p className="mt-1 text-[11px] font-bold text-emerald-700">
+              {nextTier.min_quantity}+ unidades: $
+              {nextTier.unit_price.toFixed(2)} c/u
+            </p>
+          )}
+
+          {product.max_quantity_per_order != null && (
+            <p className="mt-1 text-[11px] font-bold text-amber-700">
+              Máximo {product.max_quantity_per_order} por pedido
+            </p>
+          )}
+        </div>
 
         {outOfStock ? (
           <button
@@ -150,7 +205,7 @@ export default function ProductCard({
             <button
               type="button"
               onClick={() => increaseQuantity(cartItemId)}
-              disabled={quantity >= Number(product.stock)}
+              disabled={quantity >= maxAllowed}
               className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white shadow-sm transition hover:bg-red-700 disabled:bg-slate-300"
             >
               <Plus size={16} />

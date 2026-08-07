@@ -21,10 +21,12 @@ export type CheckoutCartItem = {
   id: string;
   name: string;
   price: number;
+  base_price?: number;
   quantity: number;
   type: "product" | "combo";
-  minimum_order_exempt?: boolean;
-  delivery_included?: boolean;
+  max_quantity_per_order?: number | null;
+  minimum_order_exempt?: boolean | null;
+  delivery_included?: boolean | null;
 };
 
 export type CheckoutTotals = {

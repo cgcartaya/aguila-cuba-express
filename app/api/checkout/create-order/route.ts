@@ -47,20 +47,52 @@ type PreparedItem = {
   quantity: number;
   price: number;
   subtotal: number;
+  minimum_order_exempt: boolean;
+  delivery_included: boolean;
 };
 
 type StockChange = { productId: string; quantity: number };
 
-async function restoreStock(
-  changes: StockChange[],
-  storeId: string
+type PriceTierRow = {
+  min_quantity: number;
+  unit_price: number;
+};
+
+function getServerUnitPriceForQuantity(
+  basePrice: number,
+  quantity: number,
+  tiers: PriceTierRow[]
 ) {
+  let unitPrice = money(basePrice);
+
+  const orderedTiers = [...tiers]
+    .map((tier) => ({
+      min_quantity: Math.trunc(Number(tier.min_quantity || 0)),
+      unit_price: money(tier.unit_price),
+    }))
+    .filter(
+      (tier) =>
+        tier.min_quantity >= 2 &&
+        Number.isFinite(tier.unit_price) &&
+        tier.unit_price >= 0
+    )
+    .sort((a, b) => a.min_quantity - b.min_quantity);
+
+  for (const tier of orderedTiers) {
+    if (quantity >= tier.min_quantity) {
+      unitPrice = Math.min(unitPrice, tier.unit_price);
+    }
+  }
+
+  return money(unitPrice);
+}
+
+async function restoreStock(changes: StockChange[]) {
   for (const change of [...changes].reverse()) {
     const { data } = await supabaseAdmin
       .from("products")
       .select("stock")
       .eq("id", change.productId)
-      .eq("store_id", storeId)
       .maybeSingle();
 
     if (!data) continue;
@@ -68,37 +100,13 @@ async function restoreStock(
     await supabaseAdmin
       .from("products")
       .update({ stock: Number(data.stock || 0) + change.quantity })
-      .eq("id", change.productId)
-      .eq("store_id", storeId);
+      .eq("id", change.productId);
   }
 }
 
-async function deleteCreatedOrder(
-  orderId: string,
-  storeId: string
-) {
-  // order_items no tiene store_id, así que primero verificamos que
-  // la orden realmente pertenece a la tienda que está ejecutando
-  // este checkout antes de tocar sus líneas.
-  const { data: ownedOrder } = await supabaseAdmin
-    .from("orders")
-    .select("id")
-    .eq("id", orderId)
-    .eq("store_id", storeId)
-    .maybeSingle();
-
-  if (!ownedOrder) return;
-
-  await supabaseAdmin
-    .from("order_items")
-    .delete()
-    .eq("order_id", ownedOrder.id);
-
-  await supabaseAdmin
-    .from("orders")
-    .delete()
-    .eq("id", ownedOrder.id)
-    .eq("store_id", storeId);
+async function deleteCreatedOrder(orderId: string) {
+  await supabaseAdmin.from("order_items").delete().eq("order_id", orderId);
+  await supabaseAdmin.from("orders").delete().eq("id", orderId);
 }
 
 export async function POST(request: Request) {
@@ -142,6 +150,44 @@ export async function POST(request: Request) {
   const preparedItems: PreparedItem[] = [];
   const stockNeeds = new Map<string, number>();
 
+  const directProductQuantities = new Map<string, number>();
+
+  for (const rawItem of requestedItems) {
+    if (rawItem.item_type !== "product") continue;
+
+    const productId = clean(rawItem.product_id, 64);
+    const quantity = Math.trunc(Number(rawItem.quantity || 0));
+
+    if (productId && quantity > 0) {
+      directProductQuantities.set(
+        productId,
+        (directProductQuantities.get(productId) || 0) + quantity
+      );
+    }
+  }
+
+  const { data: categoryRows, error: categoryRulesError } =
+    await supabaseAdmin
+      .from("categories")
+      .select("name, minimum_order_exempt, delivery_included")
+      .eq("store_id", storeId);
+
+  if (categoryRulesError) {
+    return fail("No se pudieron validar las reglas de categorías.", 500);
+  }
+
+  const categoryRuleMap = new Map(
+    (categoryRows || []).map((category) => [
+      clean(category.name, 160).toLowerCase(),
+      {
+        minimum_order_exempt:
+          category.minimum_order_exempt === true,
+        delivery_included:
+          category.delivery_included === true,
+      },
+    ])
+  );
+
   try {
     for (const rawItem of requestedItems) {
       const quantity = Math.trunc(Number(rawItem.quantity || 0));
@@ -153,16 +199,73 @@ export async function POST(request: Request) {
         const productId = clean(rawItem.product_id, 64);
         const { data: product, error } = await supabaseAdmin
           .from("products")
-          .select("id, name, price, stock, store_id")
+          .select(
+            "id, name, price, stock, store_id, category, minimum_order_exempt, delivery_included, max_quantity_per_order"
+          )
           .eq("id", productId)
           .eq("store_id", storeId)
+          .eq("is_active", true)
+          .is("deleted_at", null)
           .maybeSingle();
 
         if (error || !product) {
           return fail("Uno de los productos ya no está disponible.", 409);
         }
 
-        const price = money(product.price);
+        const totalRequestedQuantity =
+          directProductQuantities.get(product.id) || quantity;
+
+        const configuredMaximum =
+          product.max_quantity_per_order == null
+            ? null
+            : Math.trunc(Number(product.max_quantity_per_order));
+
+        if (
+          configuredMaximum !== null &&
+          configuredMaximum >= 1 &&
+          totalRequestedQuantity > configuredMaximum
+        ) {
+          return fail(
+            `${clean(product.name, 150)} permite un máximo de ${configuredMaximum} unidades por pedido.`,
+            409
+          );
+        }
+
+        const { data: tierRows, error: tierError } =
+          await supabaseAdmin
+            .from("product_price_tiers")
+            .select("min_quantity, unit_price")
+            .eq("store_id", storeId)
+            .eq("product_id", product.id)
+            .order("min_quantity", { ascending: true });
+
+        if (tierError) {
+          return fail(
+            `No se pudo validar el precio de ${clean(product.name, 150)}.`,
+            500
+          );
+        }
+
+        const price = getServerUnitPriceForQuantity(
+          money(product.price),
+          totalRequestedQuantity,
+          (tierRows || []) as PriceTierRow[]
+        );
+
+        const categoryRule = categoryRuleMap.get(
+          clean(product.category, 160).toLowerCase()
+        );
+
+        const minimumOrderExempt =
+          product.minimum_order_exempt ??
+          categoryRule?.minimum_order_exempt ??
+          false;
+
+        const deliveryIncluded =
+          product.delivery_included ??
+          categoryRule?.delivery_included ??
+          false;
+
         preparedItems.push({
           item_type: "product",
           product_id: product.id,
@@ -171,8 +274,14 @@ export async function POST(request: Request) {
           quantity,
           price,
           subtotal: money(price * quantity),
+          minimum_order_exempt: minimumOrderExempt === true,
+          delivery_included: deliveryIncluded === true,
         });
-        stockNeeds.set(product.id, (stockNeeds.get(product.id) || 0) + quantity);
+
+        stockNeeds.set(
+          product.id,
+          (stockNeeds.get(product.id) || 0) + quantity
+        );
         continue;
       }
 
@@ -217,6 +326,8 @@ export async function POST(request: Request) {
           quantity,
           price,
           subtotal: money(price * quantity),
+          minimum_order_exempt: false,
+          delivery_included: false,
         });
         continue;
       }
@@ -227,14 +338,39 @@ export async function POST(request: Request) {
     for (const [productId, needed] of stockNeeds) {
       const { data: product, error } = await supabaseAdmin
         .from("products")
-        .select("id, name, stock, store_id")
+        .select("id, name, stock, store_id, max_quantity_per_order")
         .eq("id", productId)
         .eq("store_id", storeId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
         .maybeSingle();
 
-      if (error || !product || Number(product.stock || 0) < needed) {
+      if (error || !product) {
         return fail(
-          `Stock insuficiente para ${clean(product?.name || "un producto", 150)}.`,
+          `Uno de los productos de la orden ya no está disponible.`,
+          409
+        );
+      }
+
+      const configuredMaximum =
+        product.max_quantity_per_order == null
+          ? null
+          : Math.trunc(Number(product.max_quantity_per_order));
+
+      if (
+        configuredMaximum !== null &&
+        configuredMaximum >= 1 &&
+        needed > configuredMaximum
+      ) {
+        return fail(
+          `${clean(product.name, 150)} permite un máximo de ${configuredMaximum} unidades por pedido.`,
+          409
+        );
+      }
+
+      if (Number(product.stock || 0) < needed) {
+        return fail(
+          `Stock insuficiente para ${clean(product.name || "un producto", 150)}.`,
           409
         );
       }
@@ -281,20 +417,54 @@ export async function POST(request: Request) {
       preparedItems.reduce((sum, item) => sum + item.subtotal, 0)
     );
 
-    // Igual que el cálculo del cliente (calculateCheckoutTotals): si el
-    // subtotal alcanza el umbral de la zona, el domicilio sale gratis.
-    // Antes esto solo se aplicaba en la vista previa del checkout y nunca
-    // se recalculaba aquí, así que la orden guardada siempre cobraba el
-    // delivery completo aunque el cliente calificara para envío gratis.
-    if (zone && zone.free_delivery_from > 0 && subtotal >= zone.free_delivery_from) {
-      deliveryFee = 0;
-    }
+    const minimumOrderExempt =
+      preparedItems.length > 0 &&
+      preparedItems.every(
+        (item) => item.minimum_order_exempt === true
+      );
 
-    if (zone && subtotal < zone.minimum_order) {
+    const deliveryIncludedForAllItems =
+      preparedItems.length > 0 &&
+      preparedItems.every(
+        (item) => item.delivery_included === true
+      );
+
+    /*
+     * Regla de mínimo:
+     *
+     * - Si TODOS los artículos son exentos, no exigimos mínimo.
+     * - Si la orden es mixta, se exige el mínimo normal de la zona,
+     *   pero se usa el SUBTOTAL COMPLETO. Por eso un cake exento de
+     *   $20 + otros productos por $10 sí alcanza una zona de $30.
+     */
+    const effectiveMinimumOrder =
+      zone && !minimumOrderExempt
+        ? zone.minimum_order
+        : 0;
+
+    if (
+      zone &&
+      !minimumOrderExempt &&
+      subtotal < effectiveMinimumOrder
+    ) {
       return fail(
-        `La compra mínima para esta zona es de $${zone.minimum_order.toFixed(2)}.`,
+        `La compra mínima para esta zona es de $${effectiveMinimumOrder.toFixed(2)}.`,
         409
       );
+    }
+
+    /*
+     * Regla de domicilio:
+     * - Si TODOS los artículos incluyen domicilio, costo 0.
+     * - Si no, todavía puede quedar gratis por free_delivery_from.
+     */
+    if (
+      deliveryIncludedForAllItems ||
+      (zone &&
+        zone.free_delivery_from > 0 &&
+        subtotal >= zone.free_delivery_from)
+    ) {
+      deliveryFee = 0;
     }
 
     let discountAmount = 0;
@@ -429,7 +599,7 @@ export async function POST(request: Request) {
         .eq("store_id", storeId);
 
       if (orderNumberError) {
-        await deleteCreatedOrder(order.id, storeId);
+        await deleteCreatedOrder(order.id);
         return fail("No se pudo asignar el número de orden.", 500);
       }
     }
@@ -439,7 +609,7 @@ export async function POST(request: Request) {
     );
 
     if (itemsError) {
-      await deleteCreatedOrder(order.id, storeId);
+      await deleteCreatedOrder(order.id);
       return fail("No se pudieron guardar los productos de la orden.", 500);
     }
 
@@ -456,7 +626,7 @@ export async function POST(request: Request) {
 
       const claimResult = claimData?.[0];
       if (claimError || !claimResult?.success) {
-        await deleteCreatedOrder(order.id, storeId);
+        await deleteCreatedOrder(order.id);
         return fail(claimResult?.message || "El bono ya no está disponible.", 409);
       }
     }
@@ -471,8 +641,8 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       if (stockReadError || !product || Number(product.stock || 0) < needed) {
-        await restoreStock(appliedStockChanges, storeId);
-        await deleteCreatedOrder(order.id, storeId);
+        await restoreStock(appliedStockChanges);
+        await deleteCreatedOrder(order.id);
         return fail("El stock cambió mientras se procesaba el pedido.", 409);
       }
 
@@ -483,8 +653,8 @@ export async function POST(request: Request) {
         .eq("store_id", storeId);
 
       if (stockUpdateError) {
-        await restoreStock(appliedStockChanges, storeId);
-        await deleteCreatedOrder(order.id, storeId);
+        await restoreStock(appliedStockChanges);
+        await deleteCreatedOrder(order.id);
         return fail("No se pudo actualizar el inventario.", 500);
       }
 

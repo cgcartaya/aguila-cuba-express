@@ -1,15 +1,13 @@
 "use client";
 
-/* =========================================================
-   IMPORTS
-========================================================= */
-
 import { useState } from "react";
 import { ShoppingCart, ShieldCheck, Truck } from "lucide-react";
 
-/* =========================================================
-   TYPES
-========================================================= */
+import {
+  getPurchaseQuantityLimit,
+  getUnitPriceForQuantity,
+  normalizeQuantityPriceTiers,
+} from "@/lib/storefront/product-quantity-pricing";
 
 type ProductInfoProps = {
   name: string;
@@ -17,14 +15,15 @@ type ProductInfoProps = {
   description?: string | null;
   tag?: string | null;
   stock: number;
+  maxQuantityPerOrder?: number | null;
+  priceTiers?: Array<{
+    min_quantity: number;
+    unit_price: number;
+  }> | null;
   quantity: number;
   setQuantity: (value: number | ((prev: number) => number)) => void;
   onAddToCart: () => void;
 };
-
-/* =========================================================
-   PRODUCT INFO
-========================================================= */
 
 export default function ProductInfo({
   name,
@@ -32,39 +31,85 @@ export default function ProductInfo({
   description,
   tag,
   stock,
+  maxQuantityPerOrder,
+  priceTiers,
   quantity,
   setQuantity,
   onAddToCart,
 }: ProductInfoProps) {
   const hasStock = Number(stock) > 0;
+  const tiers = normalizeQuantityPriceTiers(priceTiers);
+
+  const maxAllowed = getPurchaseQuantityLimit({
+    stock,
+    maxQuantityPerOrder,
+  });
+
+  const effectivePrice = getUnitPriceForQuantity(
+    price,
+    quantity,
+    tiers
+  );
+
+  const hasQuantityDiscount =
+    effectivePrice < Number(price);
 
   const [expanded, setExpanded] = useState(false);
 
   return (
     <section>
-      {/* TAG */}
       {tag && (
         <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-600">
           {tag}
         </span>
       )}
 
-      {/* NOMBRE */}
       <h1 className="mt-3 text-3xl font-black leading-tight md:text-5xl">
         {name}
       </h1>
 
-      {/* PRECIO */}
-      <p className="mt-4 text-3xl font-black text-red-600">
-        ${Number(price).toFixed(2)}
-      </p>
+      <div className="mt-4">
+        <div className="flex flex-wrap items-baseline gap-3">
+          <p className="text-3xl font-black text-red-600">
+            ${effectivePrice.toFixed(2)}
+          </p>
 
-      {/* STOCK */}
+          {hasQuantityDiscount && (
+            <span className="text-base font-bold text-slate-400 line-through">
+              ${Number(price).toFixed(2)}
+            </span>
+          )}
+        </div>
+
+        {tiers.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {tiers.map((tier) => (
+              <span
+                key={`${tier.min_quantity}-${tier.unit_price}`}
+                className={`rounded-full px-3 py-1 text-xs font-black ${
+                  quantity >= tier.min_quantity
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-slate-100 text-slate-600"
+                }`}
+              >
+                {tier.min_quantity}+ por ${tier.unit_price.toFixed(2)} c/u
+              </span>
+            ))}
+          </div>
+        )}
+
+        {maxQuantityPerOrder != null && (
+          <p className="mt-3 text-sm font-black text-amber-700">
+            Máximo {maxQuantityPerOrder} unidades por pedido.
+          </p>
+        )}
+      </div>
+
       <div className="mt-4 rounded-2xl bg-slate-50 p-4">
         {hasStock ? (
           <>
             <p className="text-sm font-black text-green-600">
-              ?? En stock
+              En stock
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
@@ -74,7 +119,7 @@ export default function ProductInfo({
         ) : (
           <>
             <p className="text-sm font-black text-red-600">
-              ?? Agotado
+              Agotado
             </p>
 
             <p className="mt-1 text-sm text-slate-500">
@@ -84,7 +129,6 @@ export default function ProductInfo({
         )}
       </div>
 
-      {/* BENEFICIOS COMPACTOS */}
       <div className="mt-4 flex flex-wrap gap-3 text-sm text-slate-600">
         <div className="flex items-center gap-1">
           <Truck size={16} className="text-red-500" />
@@ -97,7 +141,6 @@ export default function ProductInfo({
         </div>
       </div>
 
-      {/* DESCRIPCIÓN */}
       {description && (
         <div className="mt-5">
           <h3 className="mb-2 font-black">
@@ -124,7 +167,6 @@ export default function ProductInfo({
         </div>
       )}
 
-      {/* CANTIDAD */}
       {hasStock && (
         <div className="mt-6">
           <p className="mb-3 text-sm font-black">
@@ -137,7 +179,8 @@ export default function ProductInfo({
               onClick={() =>
                 setQuantity((prev) => Math.max(1, prev - 1))
               }
-              className="px-5 py-3 text-xl font-black hover:bg-slate-100"
+              disabled={quantity <= 1}
+              className="px-5 py-3 text-xl font-black hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
             >
               -
             </button>
@@ -150,10 +193,11 @@ export default function ProductInfo({
               type="button"
               onClick={() =>
                 setQuantity((prev) =>
-                  Math.min(Number(stock), prev + 1)
+                  Math.min(maxAllowed, prev + 1)
                 )
               }
-              className="px-5 py-3 text-xl font-black hover:bg-slate-100"
+              disabled={quantity >= maxAllowed}
+              className="px-5 py-3 text-xl font-black hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-300"
             >
               +
             </button>
@@ -161,7 +205,6 @@ export default function ProductInfo({
         </div>
       )}
 
-      {/* BOTÓN */}
       <button
         type="button"
         disabled={!hasStock}

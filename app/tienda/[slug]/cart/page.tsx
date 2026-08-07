@@ -16,6 +16,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import { useEffect } from "react";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
+import { getPurchaseQuantityLimit } from "@/lib/storefront/product-quantity-pricing";
 
 export default function CartPage() {
   const {
@@ -124,9 +125,36 @@ const checkoutUrl =
 
                         <h2 className="font-black">{item.name}</h2>
 
-                        <p className="mt-1 text-sm text-slate-500">
-                          Precio unidad: ${Number(item.price).toFixed(2)}
-                        </p>
+                        <div className="mt-1">
+                          <p className="text-sm text-slate-500">
+                            Precio unidad: ${Number(item.price).toFixed(2)}
+                            {item.type === "product" &&
+                              Number(item.base_price ?? item.price) >
+                                Number(item.price) && (
+                                <span className="ml-2 text-xs line-through">
+                                  $
+                                  {Number(
+                                    item.base_price ?? item.price
+                                  ).toFixed(2)}
+                                </span>
+                              )}
+                          </p>
+
+                          {item.type === "product" &&
+                            Number(item.base_price ?? item.price) >
+                              Number(item.price) && (
+                              <p className="mt-1 text-xs font-black text-emerald-700">
+                                Descuento por cantidad aplicado
+                              </p>
+                            )}
+
+                          {item.type === "product" &&
+                            item.max_quantity_per_order != null && (
+                              <p className="mt-1 text-xs font-bold text-amber-700">
+                                Máximo {item.max_quantity_per_order} por pedido
+                              </p>
+                            )}
+                        </div>
                       </div>
 
                       <div className="mt-3 flex items-center justify-between gap-3">
@@ -144,7 +172,16 @@ const checkoutUrl =
 
                           <button
                             onClick={() => increaseQuantity(item.id)}
-                            className="flex h-9 w-9 items-center justify-center"
+                            disabled={
+                              item.type === "product" &&
+                              item.quantity >=
+                                getPurchaseQuantityLimit({
+                                  stock: item.stock,
+                                  maxQuantityPerOrder:
+                                    item.max_quantity_per_order,
+                                })
+                            }
+                            className="flex h-9 w-9 items-center justify-center disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-300"
                           >
                             <Plus size={16} />
                           </button>

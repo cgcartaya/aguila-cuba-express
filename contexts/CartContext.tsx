@@ -1,17 +1,5 @@
 "use client";
 
-/* =========================================================
-   CART CONTEXT
-
-   Soporta:
-   - Productos
-   - Combos
-   - Persistencia con localStorage
-   - Carrito separado por tienda
-   - Validación de stock
-   - Consulta de cantidad por itemId
-========================================================= */
-
 import {
   createContext,
   useContext,
@@ -23,15 +11,16 @@ import {
 
 import { useStore } from "@/hooks/useStore";
 import type { Product, Combo, CartItem } from "@/types/cart";
-
-/* =========================================================
-   CONTEXTO DEL CARRITO
-========================================================= */
+import {
+  getPurchaseQuantityLimit,
+  getUnitPriceForQuantity,
+  normalizeQuantityPriceTiers,
+} from "@/lib/storefront/product-quantity-pricing";
 
 type CartContextType = {
   cart: CartItem[];
 
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   addComboToCart: (combo: Combo) => void;
 
   increaseQuantity: (itemId: string) => void;
@@ -52,9 +41,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartLoaded, setCartLoaded] = useState(false);
 
   const cartStorageKey = useMemo(() => {
-    const isDefaultStore = store?.slug === "aguila";
+    const isAguilaStore = store?.slug === "aguila";
 
-    return store?.slug && !isDefaultStore
+    return store?.slug && !isAguilaStore
       ? `cart-${store.slug}`
       : "cart-aguila";
   }, [store?.slug]);
@@ -69,11 +58,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       const savedCart = localStorage.getItem(cartStorageKey);
 
-      if (savedCart) {
-        setCart(JSON.parse(savedCart));
-      } else {
+      if (!savedCart) {
         setCart([]);
+        return;
       }
+
+      const parsed = JSON.parse(savedCart) as CartItem[];
+
+      const normalizedCart = parsed.map((item) => {
+        const basePrice = Number(
+          item.base_price ?? item.price ?? 0
+        );
+
+        if (item.type !== "product") {
+          return {
+            ...item,
+            base_price: basePrice,
+          };
+        }
+
+        const tiers = normalizeQuantityPriceTiers(
+          item.product_price_tiers
+        );
+
+        return {
+          ...item,
+          base_price: basePrice,
+          product_price_tiers: tiers,
+          price: getUnitPriceForQuantity(
+            basePrice,
+            item.quantity,
+            tiers
+          ),
+        };
+      });
+
+      setCart(normalizedCart);
     } catch (error) {
       console.error("Error cargando carrito:", error);
       setCart([]);
@@ -89,33 +109,85 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!cartLoaded) return;
 
-    localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+    localStorage.setItem(
+      cartStorageKey,
+      JSON.stringify(cart)
+    );
   }, [cart, cartLoaded, cartStorageKey]);
 
   /* =========================================================
      AGREGAR PRODUCTO
   ========================================================= */
 
-  const addToCart = (product: Product) => {
+  const addToCart = (
+    product: Product,
+    requestedQuantity = 1
+  ) => {
     const cartId = `product-${product.id}`;
+    const basePrice = Number(product.price || 0);
+
+    const tiers = normalizeQuantityPriceTiers(
+      product.product_price_tiers
+    );
+
+    const maxAllowed = getPurchaseQuantityLimit({
+      stock: product.stock,
+      maxQuantityPerOrder:
+        product.max_quantity_per_order,
+    });
 
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === cartId);
+      const existing = prevCart.find(
+        (item) => item.id === cartId
+      );
 
-      if (Number(product.stock || 0) <= 0) {
+      if (maxAllowed <= 0) {
         return prevCart;
       }
 
-      if (existing) {
-        if (existing.quantity >= Number(product.stock)) {
-          return prevCart;
-        }
+      const currentQuantity =
+        existing?.quantity || 0;
 
+      const quantityToAdd = Math.max(
+        1,
+        Math.floor(Number(requestedQuantity || 1))
+      );
+
+      const newQuantity = Math.min(
+        maxAllowed,
+        currentQuantity + quantityToAdd
+      );
+
+      if (newQuantity <= currentQuantity) {
+        return prevCart;
+      }
+
+      const effectivePrice =
+        getUnitPriceForQuantity(
+          basePrice,
+          newQuantity,
+          tiers
+        );
+
+      if (existing) {
         return prevCart.map((item) =>
           item.id === cartId
             ? {
                 ...item,
-                quantity: item.quantity + 1,
+                quantity: newQuantity,
+                base_price: basePrice,
+                price: effectivePrice,
+                stock:
+                  product.stock == null
+                    ? undefined
+                    : Number(product.stock),
+                max_quantity_per_order:
+                  product.max_quantity_per_order ?? null,
+                product_price_tiers: tiers,
+                minimum_order_exempt:
+                  product.minimum_order_exempt ?? null,
+                delivery_included:
+                  product.delivery_included ?? null,
               }
             : item
         );
@@ -126,11 +198,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           id: cartId,
           name: product.name,
-          price: Number(product.price),
-          image_url: product.image_url || "/placeholder-product.png",
-          quantity: 1,
+          price: effectivePrice,
+          base_price: basePrice,
+          image_url:
+            product.image_url ||
+            "/placeholder-product.png",
+          quantity: newQuantity,
           type: "product",
-          stock: product.stock,
+          stock:
+            product.stock == null
+              ? undefined
+              : Number(product.stock),
+          max_quantity_per_order:
+            product.max_quantity_per_order ?? null,
+          product_price_tiers: tiers,
+          minimum_order_exempt:
+            product.minimum_order_exempt ?? null,
+          delivery_included:
+            product.delivery_included ?? null,
         },
       ];
     });
@@ -144,7 +229,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const cartId = `combo-${combo.id}`;
 
     setCart((prevCart) => {
-      const existing = prevCart.find((item) => item.id === cartId);
+      const existing = prevCart.find(
+        (item) => item.id === cartId
+      );
 
       if (existing) {
         return prevCart.map((item) =>
@@ -163,7 +250,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
           id: cartId,
           name: combo.name,
           price: Number(combo.price),
-          image_url: combo.image_url || "/placeholder-product.png",
+          base_price: Number(combo.price),
+          image_url:
+            combo.image_url ||
+            "/placeholder-product.png",
           quantity: 1,
           type: "combo",
         },
@@ -172,11 +262,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   /* =========================================================
-     OBTENER CANTIDAD POR ID DEL CARRITO
+     OBTENER CANTIDAD
   ========================================================= */
 
   const getItemQuantity = (itemId: string) => {
-    const item = cart.find((item) => item.id === itemId);
+    const item = cart.find(
+      (item) => item.id === itemId
+    );
 
     return item?.quantity || 0;
   };
@@ -188,20 +280,43 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const increaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
       prevCart.map((item) => {
-        if (item.id === itemId && item.type === "product") {
-          const maxStock = Number(item.stock || 999999);
+        if (
+          item.id === itemId &&
+          item.type === "product"
+        ) {
+          const maxAllowed =
+            getPurchaseQuantityLimit({
+              stock: item.stock,
+              maxQuantityPerOrder:
+                item.max_quantity_per_order,
+            });
 
-          if (item.quantity >= maxStock) {
+          if (item.quantity >= maxAllowed) {
             return item;
           }
 
+          const newQuantity =
+            item.quantity + 1;
+
+          const basePrice = Number(
+            item.base_price ?? item.price
+          );
+
           return {
             ...item,
-            quantity: item.quantity + 1,
+            quantity: newQuantity,
+            price: getUnitPriceForQuantity(
+              basePrice,
+              newQuantity,
+              item.product_price_tiers
+            ),
           };
         }
 
-        if (item.id === itemId && item.type === "combo") {
+        if (
+          item.id === itemId &&
+          item.type === "combo"
+        ) {
           return {
             ...item,
             quantity: item.quantity + 1,
@@ -220,24 +335,52 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const decreaseQuantity = (itemId: string) => {
     setCart((prevCart) =>
       prevCart
-        .map((item) =>
-          item.id === itemId
-            ? {
-                ...item,
-                quantity: item.quantity - 1,
-              }
-            : item
-        )
+        .map((item) => {
+          if (item.id !== itemId) {
+            return item;
+          }
+
+          const newQuantity =
+            item.quantity - 1;
+
+          if (
+            item.type !== "product" ||
+            newQuantity <= 0
+          ) {
+            return {
+              ...item,
+              quantity: newQuantity,
+            };
+          }
+
+          const basePrice = Number(
+            item.base_price ?? item.price
+          );
+
+          return {
+            ...item,
+            quantity: newQuantity,
+            price: getUnitPriceForQuantity(
+              basePrice,
+              newQuantity,
+              item.product_price_tiers
+            ),
+          };
+        })
         .filter((item) => item.quantity > 0)
     );
   };
 
   /* =========================================================
-     ELIMINAR PRODUCTO / COMBO
+     ELIMINAR ITEM
   ========================================================= */
 
   const removeFromCart = (itemId: string) => {
-    setCart((prevCart) => prevCart.filter((item) => item.id !== itemId));
+    setCart((prevCart) =>
+      prevCart.filter(
+        (item) => item.id !== itemId
+      )
+    );
   };
 
   /* =========================================================
@@ -266,15 +409,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/* =========================================================
-   HOOK DEL CARRITO
-========================================================= */
-
 export function useCart() {
   const context = useContext(CartContext);
 
   if (!context) {
-    throw new Error("useCart debe usarse dentro de CartProvider");
+    throw new Error(
+      "useCart debe usarse dentro de CartProvider"
+    );
   }
 
   return context;

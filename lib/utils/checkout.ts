@@ -25,9 +25,21 @@ export function calculateCheckoutTotals(
     0
   );
 
-  const minimumOrderExempt = cart.some((item) => item.minimum_order_exempt === true);
+  // La orden completa queda exenta del mínimo únicamente cuando
+  // TODOS sus artículos son exentos. En una orden mixta, el subtotal
+  // completo (incluidos los productos exentos como cakes) cuenta para
+  // alcanzar el mínimo de la zona.
+  const minimumOrderExempt =
+    cart.length > 0 &&
+    cart.every(
+      (item) => item.minimum_order_exempt === true
+    );
+
   const deliveryIncludedForAllItems =
-    cart.length > 0 && cart.every((item) => item.delivery_included === true);
+    cart.length > 0 &&
+    cart.every(
+      (item) => item.delivery_included === true
+    );
 
   const minimumOrder = minimumOrderExempt
     ? 0

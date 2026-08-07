@@ -117,7 +117,7 @@ export default function CategoryClient({ slug, category }: Props) {
   const productosFiltrados = useMemo(() => {
     return productos.filter((producto) => {
       const mismaCategoria =
-        normalizarTexto(producto.category) === normalizarTexto(categoryName);
+        normalizarTexto(producto.category ?? "") === normalizarTexto(categoryName);
 
       const coincideBusqueda = productMatchesSearch(producto, busqueda);
 

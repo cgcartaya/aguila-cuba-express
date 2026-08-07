@@ -27,6 +27,10 @@ const PRODUCT_PUBLIC_SELECT = `
   minimum_order_exempt,
   delivery_included,
   max_quantity_per_order,
+  product_price_tiers (
+    min_quantity,
+    unit_price
+  ),
   product_images (
     image_url,
     is_main,
@@ -36,6 +40,10 @@ const PRODUCT_PUBLIC_SELECT = `
 
 const PRODUCT_DETAIL_SELECT = `
   *,
+  product_price_tiers (
+    min_quantity,
+    unit_price
+  ),
   product_images (
     id,
     image_url,
