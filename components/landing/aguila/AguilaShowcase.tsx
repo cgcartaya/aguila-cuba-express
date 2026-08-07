@@ -73,14 +73,14 @@ function Scene({ visible, children }: { visible: boolean; children: React.ReactN
 
 function WindowHeader({ badge }: { badge: string }) {
   return (
-    <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-2 border-b border-white/10 px-5 py-4 sm:px-6">
+      <div className="flex shrink-0 items-center gap-2">
         <span className="h-2.5 w-2.5 rounded-full bg-[#c31f2e]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#d7a13f]" />
         <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
       </div>
-      <p className="truncate px-3 text-xs font-black uppercase tracking-[0.16em] text-white/60">Aguila Express USA</p>
-      <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-black text-white/80">{badge}</span>
+      <p className="min-w-0 flex-1 truncate px-2 text-center text-xs font-black uppercase tracking-[0.16em] text-white/60">Aguila Express USA</p>
+      <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-[10px] font-black text-white/80">{badge}</span>
     </div>
   );
 }

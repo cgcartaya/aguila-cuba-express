@@ -14,7 +14,7 @@ export default function AguilaNavbar({ logoUrl }: { logoUrl?: string | null } = 
   return (
     <header className="sticky top-0 z-50 border-b border-[#0d1b30]/10 bg-[#f6f1e4]/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3.5 sm:px-6">
-        <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3">
+        <Link href="/" className="flex min-w-0 flex-1 items-center gap-3 lg:flex-initial">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#0d1b30]/10">
             <Image src={resolvedLogo} alt="Aguila Express USA" width={64} height={64} priority className="h-9 w-9 object-contain" />
           </div>
@@ -22,7 +22,7 @@ export default function AguilaNavbar({ logoUrl }: { logoUrl?: string | null } = 
             <p className="truncate text-[15px] font-black tracking-tight sm:text-base">
               AGUILA <span className="text-[#c31f2e]">EXPRESS USA</span>
             </p>
-            <p className="mt-1 text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#0d1b30]/45 sm:text-[10px]">
+            <p className="mt-1 hidden text-[9px] font-extrabold uppercase tracking-[0.24em] text-[#0d1b30]/45 sm:block sm:text-[10px]">
               Paquetería · Compras · Envíos
             </p>
           </div>
@@ -60,7 +60,7 @@ export default function AguilaNavbar({ logoUrl }: { logoUrl?: string | null } = 
           </Link>
         </div>
 
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex shrink-0 items-center gap-2 lg:hidden">
           <Link
             href={STORE_URL}
             className="inline-flex h-11 items-center gap-1.5 rounded-full bg-[#c31f2e] px-4 text-sm font-black text-white shadow-[0_10px_24px_rgba(195,31,46,.28)]"

@@ -43,6 +43,27 @@ function normalizeHostname(hostname: string) {
     .replace(/^www\./, "");
 }
 
+/*
+ * Dominios antiguos/alternos de Águila que ya no están guardados en
+ * stores.domain (esa columna solo tiene "aguilaexpressusa.com" tras la
+ * migración), pero que siguen recibiendo visitas reales. Sin este mapeo,
+ * entrar a /login desde uno de estos dominios no encontraba la tienda y
+ * el formulario caía al branding genérico de Perla Marketplace.
+ */
+function resolveCanonicalHostname(hostname: string) {
+  if (
+    hostname === "aguilacubaexpress.com" ||
+    hostname === "aguila-cuba-express.com" ||
+    hostname.startsWith("aguila.") ||
+    hostname.startsWith("aguila-cuba-express.") ||
+    hostname.startsWith("aguilacubaexpress.")
+  ) {
+    return "aguilaexpressusa.com";
+  }
+
+  return hostname;
+}
+
 function getPlatformSubdomain(hostname: string) {
   if (!hostname.endsWith(`.${PLATFORM_DOMAIN}`)) return null;
 
@@ -69,7 +90,7 @@ function mapStoreToBrand(store: StoreBrandRow): LoginBrand {
 export async function getLoginBrandByHostname(
   rawHostname: string
 ): Promise<LoginBrand> {
-  const hostname = normalizeHostname(rawHostname);
+  const hostname = resolveCanonicalHostname(normalizeHostname(rawHostname));
 
   if (
     !hostname ||
