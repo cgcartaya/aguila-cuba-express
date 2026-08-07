@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
 import ProductImageManager from "@/components/admin/products/ProductImageManager";
+import ProductPurchaseRulesEditor from "@/components/admin/products/ProductPurchaseRulesEditor";
 
 import {
   getProductById,
@@ -15,6 +16,14 @@ import {
 import {
   getAdminActiveCategories,
 } from "@/lib/services/settings";
+
+import {
+  createPriceTierDraft,
+  getProductPriceTiers,
+  normalizePriceTierDrafts,
+  replaceProductPriceTiers,
+  type ProductPriceTierDraft,
+} from "@/lib/services/product-pricing";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -57,7 +66,10 @@ export default function EditProductPage() {
     is_active: true,
     minimum_order_exempt: null as boolean | null,
     delivery_included: null as boolean | null,
+    max_quantity_per_order: "",
   });
+
+  const [priceTiers, setPriceTiers] = useState<ProductPriceTierDraft[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,13 +85,23 @@ export default function EditProductPage() {
         return;
       }
 
-      const [{ data: product, error }, { data: categoriesData }] =
-        await Promise.all([
-          getProductById(productId, activeStore.id),
-          getAdminActiveCategories(activeStore.id),
-        ]);
+      const [
+        { data: product, error },
+        { data: categoriesData },
+        { data: tierData, error: tierError },
+      ] = await Promise.all([
+        getProductById(productId, activeStore.id),
+        getAdminActiveCategories(activeStore.id),
+        getProductPriceTiers(productId, activeStore.id),
+      ]);
 
       setCategories(categoriesData || []);
+
+      if (tierError) {
+        setError("No se pudieron cargar las reglas de precio del producto.");
+        setLoading(false);
+        return;
+      }
 
       if (error || !product) {
         setError("No se pudo cargar el producto.");
@@ -103,7 +125,20 @@ export default function EditProductPage() {
         is_active: product.is_active ?? true,
         minimum_order_exempt: product.minimum_order_exempt ?? null,
         delivery_included: product.delivery_included ?? null,
+        max_quantity_per_order:
+          product.max_quantity_per_order == null
+            ? ""
+            : String(product.max_quantity_per_order),
       });
+
+      setPriceTiers(
+        (tierData || []).map((tier) =>
+          createPriceTierDraft(
+            String(tier.min_quantity),
+            String(tier.unit_price)
+          )
+        )
+      );
 
       setLoading(false);
     }
@@ -157,6 +192,9 @@ export default function EditProductPage() {
 
     const price = Number(form.price);
     const stock = Number(form.stock);
+    const maxQuantityPerOrder = form.max_quantity_per_order.trim()
+      ? Number(form.max_quantity_per_order)
+      : null;
 
     if (Number.isNaN(price) || price < 0) {
       setError("El precio no es válido.");
@@ -165,6 +203,27 @@ export default function EditProductPage() {
 
     if (Number.isNaN(stock) || stock < 0) {
       setError("El stock no es válido.");
+      return;
+    }
+
+    if (
+      maxQuantityPerOrder !== null &&
+      (!Number.isInteger(maxQuantityPerOrder) ||
+        maxQuantityPerOrder < 1)
+    ) {
+      setError(
+        "El máximo por orden debe ser un número entero mayor o igual a 1."
+      );
+      return;
+    }
+
+    const normalizedTiers = normalizePriceTierDrafts(
+      priceTiers,
+      price
+    );
+
+    if (normalizedTiers.error) {
+      setError(normalizedTiers.error);
       return;
     }
 
@@ -183,11 +242,20 @@ export default function EditProductPage() {
           is_active: form.is_active,
           minimum_order_exempt: form.minimum_order_exempt,
           delivery_included: form.delivery_included,
+          max_quantity_per_order: maxQuantityPerOrder,
         },
         activeStore.id
       );
 
       if (error) throw error;
+
+      const tierResult = await replaceProductPriceTiers(
+        productId,
+        activeStore.id,
+        normalizedTiers.data
+      );
+
+      if (tierResult.error) throw tierResult.error;
 
       router.push(returnTo);
       router.refresh();
@@ -296,6 +364,19 @@ export default function EditProductPage() {
                 className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
               />
             </div>
+
+            <ProductPurchaseRulesEditor
+              basePrice={form.price}
+              maxQuantityPerOrder={form.max_quantity_per_order}
+              onMaxQuantityChange={(value) =>
+                setForm((prev) => ({
+                  ...prev,
+                  max_quantity_per_order: value,
+                }))
+              }
+              tiers={priceTiers}
+              onTiersChange={setPriceTiers}
+            />
 
             <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 md:grid-cols-2">
               <RuleOverride label="Mínimo de compra" value={form.minimum_order_exempt} onChange={(value) => setForm((prev) => ({ ...prev, minimum_order_exempt: value }))} trueLabel="Exento" falseLabel="Aplicar mínimo" />

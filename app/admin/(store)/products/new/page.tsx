@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Images, Loader2, Save } from "lucide-react"
 
+import ProductPurchaseRulesEditor from "@/components/admin/products/ProductPurchaseRulesEditor"
+import {
+  normalizePriceTierDrafts,
+  replaceProductPriceTiers,
+  type ProductPriceTierDraft,
+} from "@/lib/services/product-pricing"
+
 import { supabase } from "@/lib/supabase"
 import { getAdminActiveCategories } from "@/lib/services/settings"
 import { useAdminAccess } from "@/hooks/useAdminAccess"
@@ -31,7 +38,10 @@ export default function NewProductPage() {
     is_active: true,
     minimum_order_exempt: null as boolean | null,
     delivery_included: null as boolean | null,
+    max_quantity_per_order: "",
   })
+
+  const [priceTiers, setPriceTiers] = useState<ProductPriceTierDraft[]>([])
 
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -98,6 +108,9 @@ export default function NewProductPage() {
 
     const price = Number(form.price)
     const stock = Number(form.stock)
+    const maxQuantityPerOrder = form.max_quantity_per_order.trim()
+      ? Number(form.max_quantity_per_order)
+      : null
 
     if (Number.isNaN(price) || price < 0) {
       setError("El precio no es válido.")
@@ -106,6 +119,25 @@ export default function NewProductPage() {
 
     if (Number.isNaN(stock) || stock < 0) {
       setError("El stock no es válido.")
+      return
+    }
+
+    if (
+      maxQuantityPerOrder !== null &&
+      (!Number.isInteger(maxQuantityPerOrder) ||
+        maxQuantityPerOrder < 1)
+    ) {
+      setError("El máximo por orden debe ser un número entero mayor o igual a 1.")
+      return
+    }
+
+    const normalizedTiers = normalizePriceTierDrafts(
+      priceTiers,
+      price
+    )
+
+    if (normalizedTiers.error) {
+      setError(normalizedTiers.error)
       return
     }
 
@@ -124,6 +156,7 @@ export default function NewProductPage() {
           is_active: form.is_active,
           minimum_order_exempt: form.minimum_order_exempt,
           delivery_included: form.delivery_included,
+          max_quantity_per_order: maxQuantityPerOrder,
           image_url: "",
           store_id: store.id,
         })
@@ -131,6 +164,24 @@ export default function NewProductPage() {
         .single()
 
       if (error) throw error
+
+      const tierResult = await replaceProductPriceTiers(
+        data.id,
+        store.id,
+        normalizedTiers.data
+      )
+
+      if (tierResult.error) {
+        // El producto acaba de crearse. Si no podemos guardar sus reglas,
+        // revertimos la creación para no dejar una configuración parcial.
+        await supabase
+          .from("products")
+          .delete()
+          .eq("id", data.id)
+          .eq("store_id", store.id)
+
+        throw tierResult.error
+      }
 
       router.push(`/admin/products/${data.id}/edit`)
       router.refresh()
@@ -234,6 +285,19 @@ export default function NewProductPage() {
                 className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
               />
             </div>
+
+            <ProductPurchaseRulesEditor
+              basePrice={form.price}
+              maxQuantityPerOrder={form.max_quantity_per_order}
+              onMaxQuantityChange={(value) =>
+                setForm((prev) => ({
+                  ...prev,
+                  max_quantity_per_order: value,
+                }))
+              }
+              tiers={priceTiers}
+              onTiersChange={setPriceTiers}
+            />
 
             <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 md:grid-cols-2">
               <RuleOverride label="Mínimo de compra" value={form.minimum_order_exempt} onChange={(value) => setForm((prev) => ({ ...prev, minimum_order_exempt: value }))} trueLabel="Exento" falseLabel="Aplicar mínimo" />

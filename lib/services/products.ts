@@ -26,6 +26,7 @@ const PRODUCT_PUBLIC_SELECT = `
   home_featured_label,
   minimum_order_exempt,
   delivery_included,
+  max_quantity_per_order,
   product_images (
     image_url,
     is_main,
@@ -59,6 +60,7 @@ const PRODUCT_INVENTORY_SELECT = `
   home_featured_label,
   minimum_order_exempt,
   delivery_included,
+  max_quantity_per_order,
   product_images (
     image_url,
     is_main,

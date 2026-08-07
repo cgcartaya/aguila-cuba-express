@@ -17,6 +17,7 @@ export type Product = {
   home_featured_label?: string | null;
   minimum_order_exempt?: boolean | null;
   delivery_included?: boolean | null;
+  max_quantity_per_order?: number | null;
   product_images?: ProductImage[] | null;
 };
 
