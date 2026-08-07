@@ -50,6 +50,7 @@ async function fetchStore(
     return null;
   }
 
+  const normalizedValue = value.trim().toLowerCase();
   const url = new URL(`${supabaseUrl}/rest/v1/stores`);
 
   url.searchParams.set(
@@ -70,7 +71,7 @@ async function fetchStore(
     ].join(",")
   );
 
-  url.searchParams.set(column, `eq.${value}`);
+  url.searchParams.set(column, `eq.${normalizedValue}`);
   url.searchParams.set("is_active", "eq.true");
   url.searchParams.set("limit", "1");
 
@@ -80,12 +81,22 @@ async function fetchStore(
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
-      next: { revalidate: 300 },
+
+      /*
+       * La identidad/branding de una tienda es demasiado sensible para
+       * compartir una respuesta ISR entre requests. El host/slug se consulta
+       * siempre de forma fresca y los datos funcionales siguen teniendo sus
+       * propios filtros por store_id.
+       *
+       * Esto elimina cualquier posibilidad de arrastrar durante varios
+       * minutos title/favicon/OG de una configuración anterior.
+       */
+      cache: "no-store",
     });
 
     if (!response.ok) {
       console.error(
-        `Metadata: Supabase respondió ${response.status} buscando ${column}=${value}.`
+        `Metadata: Supabase respondió ${response.status} buscando ${column}=${normalizedValue}.`
       );
       return null;
     }

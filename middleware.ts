@@ -177,9 +177,10 @@ async function getStoreByColumn(
     return null;
   }
 
+  const normalizedValue = value.trim().toLowerCase();
   const url = new URL(`${supabaseUrl}/rest/v1/stores`);
   url.searchParams.set("select", "slug,has_landing");
-  url.searchParams.set(column, `eq.${value}`);
+  url.searchParams.set(column, `eq.${normalizedValue}`);
   url.searchParams.set("is_active", "eq.true");
   url.searchParams.set("limit", "1");
 
@@ -189,14 +190,18 @@ async function getStoreByColumn(
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
-      next: {
-        revalidate: 60,
-      },
+
+      /*
+       * La resolución host -> tienda decide a qué tenant pertenece el request.
+       * No se cachea globalmente: preferimos una consulta pequeña y fresca
+       * antes que mantener durante 60 s una asociación dominio/slug antigua.
+       */
+      cache: "no-store",
     });
 
     if (!response.ok) {
       console.error(
-        `Middleware: Supabase respondió ${response.status} al resolver ${column}=${value}.`
+        `Middleware: Supabase respondió ${response.status} al resolver ${column}=${normalizedValue}.`
       );
       return null;
     }
@@ -218,7 +223,7 @@ async function getStoreByColumn(
     };
   } catch (error) {
     console.error(
-      `Middleware: error resolviendo ${column}=${value}.`,
+      `Middleware: error resolviendo ${column}=${normalizedValue}.`,
       error
     );
     return null;
@@ -236,8 +241,8 @@ function getStoreBySubdomain(subdomain: string) {
  * rendericen a través de /tienda/[slug]/... en vez de las rutas
  * "planas" de /tienda/producto, /tienda/categorias, etc.
  *
- * Esto es lo que permite que esas páginas puedan cachearse (ISR) en
- * vez de ejecutar una función en cada visita.
+ * Esto permite que las páginas internas sigan usando sus propias
+ * estrategias de caché sin cachear la identidad del tenant.
  */
 function getStoreByCustomDomain(host: string) {
   return getStoreByColumn("domain", host);
