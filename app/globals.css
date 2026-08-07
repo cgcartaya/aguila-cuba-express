@@ -19,6 +19,15 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Evita que Chrome/Android "engorde" el texto automáticamente en pantallas
+   angostas (font boosting). Eso hacía que en algunos Android/Samsung el
+   texto creciera más de lo esperado y se viera cortado por overflow-x:clip
+   de abajo, aunque en iPhone/Safari se viera perfecto. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 input,
 textarea,
 select {
