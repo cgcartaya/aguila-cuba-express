@@ -4,12 +4,12 @@
    STORE CONTEXT
 
    Multiempresa + dominios:
-   - Admin: no usa getDefaultStore().
+   - Admin: no usa una tienda por defecto.
    - /tienda/[slug]: resuelve por slug.
    - Dominios personalizados: resuelve por domain.
    - Subdominios de PerlaMarketplace:
      dlracing.perlamarketplace.com -> resuelve por subdomain.
-   - /tienda: fallback a tienda default actual.
+   - /tienda sin host/slug resoluble -> no asigna ninguna tienda.
 ========================================================= */
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -18,7 +18,6 @@ import { usePathname } from "next/navigation";
 import type { Store } from "@/lib/saas/store-types";
 
 import {
-  getDefaultStore,
   getStoreByDomain,
   getStoreBySlug,
   getStoreBySubdomain,
@@ -113,7 +112,7 @@ export function StoreProvider({
       /* ===============================================
          ADMIN
 
-         Nunca usamos getDefaultStore() en admin.
+         Nunca resolvemos una tienda pública por fallback.
          Si hay tienda en localStorage, se usa solo para
          Super Admin. Para Store Owner, los módulos usan
          useAdminAccess().store.
@@ -188,20 +187,11 @@ export function StoreProvider({
         }
       }
 
-      /* ===============================================
-         TIENDA PÚBLICA DEFAULT
-
-         Esto queda solo para /tienda mientras Águila siga
-         siendo la tienda principal pública.
-      =============================================== */
-
-      if (isTiendaRoute) {
-        const defaultStoreResult = await getDefaultStore();
-        const data = defaultStoreResult?.data ?? null;
-        await finish((data as Store) || null);
-        return;
-      }
-
+      /*
+       * No existe una tienda pública por defecto.
+       * Si el dominio/subdominio/slug no identifica una tienda,
+       * dejamos el contexto en null para evitar contaminación entre tenants.
+       */
       await finish(null);
     }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { getCurrentStore } from "@/lib/services/stores";
+import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 import type { Store } from "@/lib/saas/store-types";
 
@@ -48,8 +48,8 @@ function getProductUrl(store: Store | null, productId: string | number) {
 
 export default function TrackingProductsCarousel() {
   const [products, setProducts] = useState<StoreProduct[]>([]);
-  const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
+  const { store, loading: storeLoading } = useStore();
 
   useEffect(() => {
     let mounted = true;
@@ -58,12 +58,12 @@ export default function TrackingProductsCarousel() {
       try {
         setLoading(true);
 
-        const storeResult = await getCurrentStore();
-        const currentStore = storeResult?.data ?? null;
+        if (storeLoading) return;
+
+        const currentStore = store;
 
         if (!mounted || !currentStore) {
           if (mounted) {
-            setStore(null);
             setProducts([]);
           }
           return;
@@ -82,7 +82,6 @@ export default function TrackingProductsCarousel() {
 
         if (!mounted) return;
 
-        setStore(currentStore);
         setProducts((data as StoreProduct[] | null) ?? []);
       } catch (error) {
         console.error(
@@ -105,7 +104,7 @@ export default function TrackingProductsCarousel() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [store?.id, storeLoading]);
 
   const featuredProducts = useMemo(() => {
     const available = products.filter(

@@ -18,7 +18,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { getCurrentStore } from "@/lib/services/stores";
+import { useStore } from "@/hooks/useStore";
 import ProductCard from "@/components/tienda/ProductCard";
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
@@ -48,6 +48,7 @@ const normalizarTexto = (texto: string = "") =>
 
 export default function CategoryPage({ params }: Props) {
   const { addToCart } = useCart();
+  const { store, loading: storeLoading } = useStore();
 
   const [busqueda] = useState("");
   const [productos, setProductos] = useState<Product[]>([]);
@@ -63,8 +64,7 @@ export default function CategoryPage({ params }: Props) {
     async function cargarProductos() {
       setLoading(true);
 
-      const storeResult = await getCurrentStore();
-      const store = storeResult?.data ?? null;
+      if (storeLoading) return;
 
       if (!mounted) return;
 
@@ -108,7 +108,7 @@ export default function CategoryPage({ params }: Props) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [store?.id, storeLoading]);
 
   const productosFiltrados = useMemo(() => {
     return productos.filter((producto) => {

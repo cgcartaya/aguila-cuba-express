@@ -17,7 +17,7 @@ import {
   getActiveCategoriesByStoreId,
   getStoreSettings,
 } from "@/lib/services/settings";
-import { getCurrentStore } from "@/lib/services/stores";
+import { useStore } from "@/hooks/useStore";
 
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
@@ -34,7 +34,6 @@ import type {
   Category,
   StoreSettings,
 } from "@/components/admin/settings/types";
-import type { Store } from "@/lib/saas/store-types";
 
 type ProductImage = {
   image_url: string;
@@ -49,12 +48,11 @@ type ProductFromSupabase = Product & {
 export default function TiendaPage() {
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
-  const [storeId, setStoreId] = useState<string | null>(null);
-  const [store, setStore] = useState<Store | null>(null);
   const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
   const { search } = useTiendaSearch();
   const { addToCart } = useCart();
+  const { store, loading: storeLoading } = useStore();
 
   const busqueda = search.trim();
   const hayBusqueda = busqueda.length > 0;
@@ -67,22 +65,18 @@ export default function TiendaPage() {
     let mounted = true;
 
     async function cargarDatos() {
-      const storeResult = await getCurrentStore();
-      const currentStore = storeResult?.data ?? null;
+      if (storeLoading) return;
+
+      const currentStore = store;
 
       if (!mounted) return;
 
       if (!currentStore) {
         setProductos([]);
         setCategorias([]);
-        setStoreId(null);
-        setStore(null);
         setStoreSettings(null);
         return;
       }
-
-      setStore(currentStore);
-      setStoreId(currentStore.id);
 
       const [
         { data: productsData, error },
@@ -124,7 +118,7 @@ export default function TiendaPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [store?.id, storeLoading]);
 
   const productosBuscados = useMemo(() => {
     if (!hayBusqueda) return productos;
@@ -169,7 +163,7 @@ export default function TiendaPage() {
         <>
           {sectionEnabled(storeSettings?.show_hero) && (
             <div className="mt-4 md:mt-5">
-              <MainBanner storeId={storeId || undefined} />
+              <MainBanner storeId={store?.id || undefined} />
             </div>
           )}
 
@@ -187,7 +181,7 @@ export default function TiendaPage() {
           {sectionEnabled(storeSettings?.show_combos) && (
             <div className="-mt-2 md:-mt-3">
               <StoreCombosSection
-                storeId={storeId || undefined}
+                storeId={store?.id || undefined}
                 allowDefaultStore
               />
             </div>
