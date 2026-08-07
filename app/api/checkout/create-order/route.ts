@@ -599,18 +599,35 @@ export async function POST(request: Request) {
         .eq("store_id", storeId);
 
       if (orderNumberError) {
-        await deleteCreatedOrder(order.id);
+        await deleteCreatedOrder(order.id, storeId);
         return fail("No se pudo asignar el número de orden.", 500);
       }
     }
 
-    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
-      preparedItems.map((item) => ({ ...item, order_id: order.id }))
-    );
+    const { error: itemsError } = await supabaseAdmin
+      .from("order_items")
+      .insert(
+        preparedItems.map((item) => ({
+          order_id: order.id,
+          item_type: item.item_type,
+          product_id: item.product_id,
+          combo_id: item.combo_id,
+          product_name: item.product_name,
+          quantity: item.quantity,
+          price: item.price,
+          subtotal: item.subtotal,
+        }))
+      );
 
     if (itemsError) {
-      await deleteCreatedOrder(order.id);
-      return fail("No se pudieron guardar los productos de la orden.", 500);
+      console.error("ERROR GUARDANDO ORDER_ITEMS:", itemsError);
+
+      await deleteCreatedOrder(order.id, storeId);
+
+      return fail(
+        "No se pudieron guardar los productos de la orden.",
+        500
+      );
     }
 
     if (discountCampaignId) {
@@ -626,7 +643,7 @@ export async function POST(request: Request) {
 
       const claimResult = claimData?.[0];
       if (claimError || !claimResult?.success) {
-        await deleteCreatedOrder(order.id);
+        await deleteCreatedOrder(order.id, storeId);
         return fail(claimResult?.message || "El bono ya no está disponible.", 409);
       }
     }
@@ -642,7 +659,7 @@ export async function POST(request: Request) {
 
       if (stockReadError || !product || Number(product.stock || 0) < needed) {
         await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id);
+        await deleteCreatedOrder(order.id, storeId);
         return fail("El stock cambió mientras se procesaba el pedido.", 409);
       }
 
@@ -654,7 +671,7 @@ export async function POST(request: Request) {
 
       if (stockUpdateError) {
         await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id);
+        await deleteCreatedOrder(order.id, storeId);
         return fail("No se pudo actualizar el inventario.", 500);
       }
 
