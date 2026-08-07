@@ -161,7 +161,15 @@ export default function AdminProductsPage() {
   }
 
   async function toggleProductStatus(product: Product) {
-    const { error } = await toggleProductStatusService(product);
+    if (!activeStore?.id) {
+      alert("No se pudo resolver la tienda activa.");
+      return;
+    }
+
+    const { error } = await toggleProductStatusService(
+      product,
+      activeStore.id
+    );
 
     if (error) {
       alert("Error actualizando el producto");

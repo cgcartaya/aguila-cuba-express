@@ -92,12 +92,13 @@ function missingStoreIdResult() {
 }
 
 
-// Obtener un producto por ID
-export async function getProductById(id: string) {
+// Obtener un producto por ID dentro de una tienda específica.
+export async function getProductById(id: string, storeId: string) {
   return supabase
     .from("products")
     .select("*")
     .eq("id", id)
+    .eq("store_id", storeId)
     .single();
 }
 
@@ -416,43 +417,86 @@ export async function createProduct(
   return createProductForStore(storeId, product);
 }
 
-// Actualizar producto
+// Actualizar producto dentro de la tienda activa.
 export async function updateProduct(
   id: string,
-  product: Partial<Omit<Product, "id" | "created_at">>
+  product: Partial<Omit<Product, "id" | "created_at">>,
+  storeId: string
 ) {
   return supabase
     .from("products")
     .update(product)
     .eq("id", id)
+    .eq("store_id", storeId)
     .select()
     .single();
 }
 
-// Activar o desactivar producto
-export async function toggleProductStatus(product: Product) {
+// Activar o desactivar producto dentro de la tienda activa.
+export async function toggleProductStatus(
+  product: Product,
+  storeId: string
+) {
   return supabase
     .from("products")
     .update({
       is_active: !product.is_active,
     })
-    .eq("id", product.id);
+    .eq("id", product.id)
+    .eq("store_id", storeId);
 }
 
-// Eliminar producto definitivamente
-export async function deleteProductForever(id: string) {
+// Compatibilidad: eliminación física siempre debe estar acotada por tienda.
+export async function deleteProductForever(
+  id: string,
+  storeId: string
+) {
   return supabase
     .from("products")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .eq("store_id", storeId);
 }
 
 /* =========================================================
    PRODUCT IMAGES - CONSULTAS
 ========================================================= */
 
-// Obtener imágenes de un producto
-export async function getProductImages(productId: string) {
+async function productBelongsToStore(
+  productId: string,
+  storeId: string
+) {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  return {
+    ok: Boolean(data) && !error,
+    error,
+  };
+}
+
+// Obtener imágenes de un producto dentro de una tienda específica.
+export async function getProductImages(
+  productId: string,
+  storeId: string
+) {
+  const productCheck = await productBelongsToStore(productId, storeId);
+
+  if (!productCheck.ok) {
+    return {
+      data: [],
+      error:
+        productCheck.error || {
+          message: "El producto no pertenece a la tienda activa.",
+        },
+    };
+  }
+
   return supabase
     .from("product_images")
     .select("id, product_id, image_url, storage_path, is_main, position")
@@ -469,8 +513,21 @@ export async function uploadProductImage(
   productId: string,
   file: File,
   isMain = false,
-  position = 0
+  position = 0,
+  storeId: string
 ) {
+  const productCheck = await productBelongsToStore(productId, storeId);
+
+  if (!productCheck.ok) {
+    return {
+      data: null,
+      error:
+        productCheck.error || {
+          message: "El producto no pertenece a la tienda activa.",
+        },
+    };
+  }
+
   const fileExt = file.name.split(".").pop()?.toLowerCase() || "webp";
   const fileName = `${crypto.randomUUID()}.${fileExt}`;
   const filePath = `${productId}/${fileName}`;
@@ -512,10 +569,44 @@ export async function uploadProductImage(
 }
 
 // Eliminar imagen
-export async function deleteProductImage(image: {
-  id: string;
-  storage_path?: string | null;
-}) {
+export async function deleteProductImage(
+  image: {
+    id: string;
+    storage_path?: string | null;
+  },
+  storeId: string
+) {
+  const { data: imageRow, error: imageError } = await supabase
+    .from("product_images")
+    .select("id, product_id")
+    .eq("id", image.id)
+    .maybeSingle();
+
+  if (imageError || !imageRow?.product_id) {
+    return {
+      data: null,
+      error:
+        imageError || {
+          message: "No se encontró la imagen del producto.",
+        },
+    };
+  }
+
+  const productCheck = await productBelongsToStore(
+    imageRow.product_id,
+    storeId
+  );
+
+  if (!productCheck.ok) {
+    return {
+      data: null,
+      error:
+        productCheck.error || {
+          message: "La imagen no pertenece a la tienda activa.",
+        },
+    };
+  }
+
   if (image.storage_path) {
     await supabase.storage
       .from("product-images")
@@ -531,8 +622,38 @@ export async function deleteProductImage(image: {
 // Marcar imagen principal
 export async function setMainProductImage(
   productId: string,
-  imageId: string
+  imageId: string,
+  storeId: string
 ) {
+  const productCheck = await productBelongsToStore(productId, storeId);
+
+  if (!productCheck.ok) {
+    return {
+      data: null,
+      error:
+        productCheck.error || {
+          message: "El producto no pertenece a la tienda activa.",
+        },
+    };
+  }
+
+  const { data: imageRow, error: imageError } = await supabase
+    .from("product_images")
+    .select("id")
+    .eq("id", imageId)
+    .eq("product_id", productId)
+    .maybeSingle();
+
+  if (imageError || !imageRow) {
+    return {
+      data: null,
+      error:
+        imageError || {
+          message: "La imagen no pertenece al producto indicado.",
+        },
+    };
+  }
+
   await supabase
     .from("product_images")
     .update({ is_main: false })

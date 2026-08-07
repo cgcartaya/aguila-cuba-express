@@ -158,37 +158,30 @@ export async function createCategory(
 export async function updateCategory(
   id: string,
   category: Partial<Omit<Category, "id" | "created_at" | "store_id">>,
-  storeId?: string
+  storeId: string
 ) {
   const payload = cleanPayload(category);
 
-  let query = supabase
+  return supabase
     .from("categories")
     .update(payload)
-    .eq("id", id);
-
-  if (storeId) {
-    query = query.eq("store_id", storeId);
-  }
-
-  return query
+    .eq("id", id)
+    .eq("store_id", storeId)
     .select(
       "id, store_id, name, slug, color, icon, sort_order, is_active, minimum_order_exempt, delivery_included, created_at"
     )
     .single();
 }
 
-export async function deleteCategory(id: string, storeId?: string) {
-  let query = supabase
+export async function deleteCategory(
+  id: string,
+  storeId: string
+) {
+  return supabase
     .from("categories")
     .delete()
-    .eq("id", id);
-
-  if (storeId) {
-    query = query.eq("store_id", storeId);
-  }
-
-  return query;
+    .eq("id", id)
+    .eq("store_id", storeId);
 }
 
 /* =========================================================

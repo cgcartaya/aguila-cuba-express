@@ -22,9 +22,13 @@ import {
 
 type Props = {
   productId: string;
+  storeId: string;
 };
 
-export default function ProductImageManager({ productId }: Props) {
+export default function ProductImageManager({
+  productId,
+  storeId,
+}: Props) {
   const [images, setImages] = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -35,12 +39,15 @@ export default function ProductImageManager({ productId }: Props) {
   useEffect(() => {
     fetchImages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productId]);
+  }, [productId, storeId]);
 
   async function fetchImages() {
     setLoading(true);
 
-    const { data, error } = await getProductImages(productId);
+    const { data, error } = await getProductImages(
+      productId,
+      storeId
+    );
 
     if (error) {
       console.error("Error cargando imágenes:", error.message);
@@ -77,7 +84,8 @@ export default function ProductImageManager({ productId }: Props) {
         productId,
         optimizedFile,
         shouldBeMain,
-        images.length + index
+        images.length + index,
+        storeId
       );
 
       if (error) {
@@ -103,7 +111,11 @@ export default function ProductImageManager({ productId }: Props) {
 
     setSettingMainId(image.id);
 
-    const { error } = await setMainProductImage(productId, image.id);
+    const { error } = await setMainProductImage(
+      productId,
+      image.id,
+      storeId
+    );
 
     if (error) {
       alert("Error marcando imagen principal");
@@ -126,7 +138,10 @@ export default function ProductImageManager({ productId }: Props) {
 
     setDeletingId(imageToDelete.id);
 
-    const { error } = await deleteProductImage(imageToDelete);
+    const { error } = await deleteProductImage(
+      imageToDelete,
+      storeId
+    );
 
     if (error) {
       alert("Error eliminando imagen");

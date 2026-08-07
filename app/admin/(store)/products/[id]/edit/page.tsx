@@ -75,7 +75,7 @@ export default function EditProductPage() {
 
       const [{ data: product, error }, { data: categoriesData }] =
         await Promise.all([
-          getProductById(productId),
+          getProductById(productId, activeStore.id),
           getAdminActiveCategories(activeStore.id),
         ]);
 
@@ -171,17 +171,21 @@ export default function EditProductPage() {
     try {
       setSaving(true);
 
-      const { error } = await updateProduct(productId, {
-        name: form.name,
-        category: form.category,
-        description: form.description,
-        price,
-        stock,
-        tag: form.tag,
-        is_active: form.is_active,
-        minimum_order_exempt: form.minimum_order_exempt,
-        delivery_included: form.delivery_included,
-      });
+      const { error } = await updateProduct(
+        productId,
+        {
+          name: form.name,
+          category: form.category,
+          description: form.description,
+          price,
+          stock,
+          tag: form.tag,
+          is_active: form.is_active,
+          minimum_order_exempt: form.minimum_order_exempt,
+          delivery_included: form.delivery_included,
+        },
+        activeStore.id
+      );
 
       if (error) throw error;
 
@@ -355,7 +359,12 @@ export default function EditProductPage() {
         </section>
 
         <div className="mt-6">
-          <ProductImageManager productId={productId} />
+          {activeStore?.id ? (
+            <ProductImageManager
+              productId={productId}
+              storeId={activeStore.id}
+            />
+          ) : null}
         </div>
       </div>
     </main>
