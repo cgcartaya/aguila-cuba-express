@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import {
   buildPerlaMetadata,
   buildStoreMetadata,
+  getStorefrontCanonicalUrl,
   resolveStoreBySlug,
 } from "@/lib/saas/store-metadata";
 
@@ -24,7 +25,7 @@ export async function generateMetadata({
 
   return buildStoreMetadata(
     store,
-    `https://perlamarketplace.com/tienda/${store.slug}`
+    getStorefrontCanonicalUrl(store)
   );
 }
 

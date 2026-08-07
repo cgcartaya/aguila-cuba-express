@@ -4,7 +4,7 @@ const PLATFORM_DOMAIN = "perlamarketplace.com";
 const PERLA_FAVICON = "/perla-favicon.ico";
 const PERLA_OG_IMAGE = "/og-image.jpg";
 
-type StoreMetadataRow = {
+export type StoreMetadataRow = {
   id: string;
   name: string;
   slug: string;
@@ -16,9 +16,10 @@ type StoreMetadataRow = {
   meta_description: string | null;
   og_image_url: string | null;
   is_active: boolean | null;
+  has_landing: boolean | null;
 };
 
-function normalizeHost(value: string) {
+export function normalizeStoreHost(value: string) {
   return value
     .split(",")[0]
     .trim()
@@ -65,6 +66,7 @@ async function fetchStore(
       "meta_description",
       "og_image_url",
       "is_active",
+      "has_landing",
     ].join(",")
   );
 
@@ -78,10 +80,6 @@ async function fetchStore(
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
-      // Antes: cache:"no-store" -> una consulta a Supabase en CADA request,
-      // incluso aunque el layout se siga renderizando de forma dinámica.
-      // Con esto se reutiliza la respuesta 5 minutos, así que si 100 personas
-      // visitan la tienda en ese lapso, solo se hace 1 consulta real.
       next: { revalidate: 300 },
     });
 
@@ -104,7 +102,7 @@ async function fetchStore(
 export async function resolveStoreByHost(
   rawHost: string
 ): Promise<StoreMetadataRow | null> {
-  const host = normalizeHost(rawHost);
+  const host = normalizeStoreHost(rawHost);
 
   if (
     !host ||
@@ -129,6 +127,50 @@ export async function resolveStoreBySlug(
   slug: string
 ): Promise<StoreMetadataRow | null> {
   return fetchStore("slug", slug.trim().toLowerCase());
+}
+
+export function getStorePublicBaseUrl(store: StoreMetadataRow) {
+  const domain = normalizeStoreHost(store.domain || "");
+
+  if (domain) {
+    return `https://${domain}`;
+  }
+
+  const subdomain = (store.subdomain || "").trim().toLowerCase();
+
+  if (subdomain) {
+    return `https://${subdomain}.${PLATFORM_DOMAIN}`;
+  }
+
+  return `https://${PLATFORM_DOMAIN}/tienda/${store.slug}`;
+}
+
+/**
+ * URL pública real de la tienda.
+ *
+ * - Tienda con landing + dominio propio: https://dominio.com/tienda
+ * - Tienda sin landing + dominio/subdominio: https://dominio.com
+ * - Sin dominio propio: https://perlamarketplace.com/tienda/slug
+ *
+ * Esto evita publicar como canonical una ruta interna generada por middleware.
+ */
+export function getStorefrontCanonicalUrl(store: StoreMetadataRow) {
+  const hasOwnHost = Boolean(
+    normalizeStoreHost(store.domain || "") ||
+      (store.subdomain || "").trim()
+  );
+
+  if (!hasOwnHost) {
+    return `https://${PLATFORM_DOMAIN}/tienda/${store.slug}`;
+  }
+
+  const baseUrl = getStorePublicBaseUrl(store);
+
+  if (store.has_landing === true) {
+    return `${baseUrl}/tienda`;
+  }
+
+  return baseUrl;
 }
 
 export function buildPerlaMetadata(): Metadata {
@@ -162,6 +204,13 @@ export function buildPerlaMetadata(): Metadata {
       title,
       description,
       images: [PERLA_OG_IMAGE],
+    },
+    alternates: {
+      canonical: "https://perlamarketplace.com",
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }
@@ -199,7 +248,7 @@ export function buildStoreMetadata(
       icon: [
         {
           url: favicon,
-          type: favicon.endsWith(".ico")
+          type: favicon.toLowerCase().includes(".ico")
             ? "image/x-icon"
             : undefined,
         },
@@ -224,6 +273,10 @@ export function buildStoreMetadata(
     },
     alternates: {
       canonical: canonicalUrl,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   };
 }

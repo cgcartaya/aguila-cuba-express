@@ -5,21 +5,20 @@ import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
-import { buildStoreMetadata, resolveStoreBySlug } from "@/lib/saas/store-metadata";
-
-const AGUILA_CANONICAL_URL = "https://www.aguilaexpressusa.com";
+import {
+  buildPerlaMetadata,
+  buildStoreMetadata,
+  normalizeStoreHost,
+  resolveStoreByHost,
+  resolveStoreBySlug,
+} from "@/lib/saas/store-metadata";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
 type LandingType = "aguila" | "yoyo" | "deparis" | "perla";
 
 function normalizeHost(value: string | null) {
-  return (value || "")
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split(":")[0]
-    .toLowerCase()
-    .trim();
+  return normalizeStoreHost(value || "");
 }
 
 function resolveLanding(host: string): LandingType {
@@ -38,7 +37,7 @@ function resolveLanding(host: string): LandingType {
     return "aguila";
   }
 
-  // Subdominios admitidos de YOYO.
+  // Subdominios/dominios admitidos de YOYO.
   if (
     normalizedHost === `yoyo.${PLATFORM_DOMAIN}` ||
     normalizedHost === `yoyo-envios.${PLATFORM_DOMAIN}` ||
@@ -61,52 +60,128 @@ function resolveLanding(host: string): LandingType {
   return "perla";
 }
 
-async function getCurrentLanding(): Promise<LandingType> {
+async function getCurrentHost() {
   const requestHeaders = await headers();
   const forwardedHost = requestHeaders.get("x-forwarded-host");
   const host = forwardedHost || requestHeaders.get("host");
 
-  return resolveLanding(host || "");
+  return normalizeHost(host);
+}
+
+async function getCurrentLanding(): Promise<LandingType> {
+  return resolveLanding(await getCurrentHost());
+}
+
+/**
+ * Fallback aislado.
+ *
+ * Si Supabase no pudiera resolver temporalmente una tienda, NO dejamos
+ * que OpenGraph/Twitter hereden datos de otra marca desde el layout raíz.
+ */
+function buildLandingFallbackMetadata(
+  title: string,
+  description: string,
+  canonicalUrl: string,
+  siteName: string
+): Metadata {
+  return {
+    metadataBase: new URL(canonicalUrl),
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName,
+      locale: "es_US",
+      type: "website",
+      images: [],
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: [],
+    },
+    icons: {
+      icon: [],
+      shortcut: [],
+      apple: [],
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const landing = await getCurrentLanding();
+  const host = await getCurrentHost();
 
-  if (landing === "aguila") {
-    const store = await resolveStoreBySlug("aguila");
+  /*
+   * PRIMERA REGLA:
+   * si el dominio/subdominio pertenece a una tienda registrada, toda la
+   * metadata sale de ESA tienda. No usamos slug fijo ni branding por defecto.
+   */
+  if (
+    host &&
+    host !== PLATFORM_DOMAIN &&
+    host !== "localhost" &&
+    host !== "127.0.0.1" &&
+    !host.endsWith(".vercel.app")
+  ) {
+    const store = await resolveStoreByHost(host);
 
     if (store) {
-      return buildStoreMetadata(store, AGUILA_CANONICAL_URL);
+      return buildStoreMetadata(store, `https://${host}`);
     }
+  }
 
-    return {
-      title: "Aguila Express USA | Paquetería, compras y envíos",
-      description:
-        "Envíos puerta a puerta, compras y rastreo en tiempo real, con atención personalizada.",
-    };
+  const landing = resolveLanding(host);
+
+  if (landing === "aguila") {
+    const canonicalUrl = host
+      ? `https://${host}`
+      : "https://aguilacubaexpress.com";
+
+    return buildLandingFallbackMetadata(
+      "Aguila Express USA | Paquetería, compras y envíos",
+      "Envíos puerta a puerta, compras y rastreo en tiempo real, con atención personalizada.",
+      canonicalUrl,
+      "Aguila Express USA"
+    );
   }
 
   if (landing === "yoyo") {
-    return {
-      title: "YOYO Envíos | Envíos seguros a Cuba",
-      description:
-        "Envíos express, aéreos y marítimos a Cuba con rastreo y atención personalizada.",
-    };
+    const canonicalUrl = host
+      ? `https://${host}`
+      : `https://yoyo.${PLATFORM_DOMAIN}`;
+
+    return buildLandingFallbackMetadata(
+      "YOYO Envíos | Envíos seguros a Cuba",
+      "Envíos express, aéreos y marítimos a Cuba con rastreo y atención personalizada.",
+      canonicalUrl,
+      "YOYO Envíos"
+    );
   }
 
   if (landing === "deparis") {
-    return {
-      title: "De Paris | Panadería, bistró y mercado gourmet",
-      description:
-        "Panadería francesa, bistró y mercado gourmet — pide en línea con entrega y rastreo.",
-    };
+    const canonicalUrl = host
+      ? `https://${host}`
+      : "https://depariscuba.com";
+
+    return buildLandingFallbackMetadata(
+      "De Paris | Panadería, bistró y mercado gourmet",
+      "Panadería francesa, bistró y mercado gourmet — pide en línea con entrega y rastreo.",
+      canonicalUrl,
+      "De Paris"
+    );
   }
 
-  return {
-    title: "Perla Marketplace | Tu negocio conectado",
-    description:
-      "Marketplace y plataforma de gestión para comercios y agencias de envíos.",
-  };
+  return buildPerlaMetadata();
 }
 
 export default async function HomePage() {
