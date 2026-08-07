@@ -166,6 +166,17 @@ export async function getProductsForCombos() {
     .order("name", { ascending: true });
 }
 
+// Obtener productos inactivos por tienda explícita.
+export async function getInactiveProductsByStoreId(storeId: string) {
+  return supabase
+    .from("products")
+    .select("*")
+    .eq("store_id", storeId)
+    .eq("is_active", false)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+}
+
 // Obtener productos inactivos
 export async function getInactiveProducts() {
   const { data: store } = await getDefaultStore();
@@ -180,6 +191,20 @@ export async function getInactiveProducts() {
     .eq("store_id", store.id)
     .eq("is_active", false)
     .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+}
+
+// Obtener productos con bajo stock por tienda explícita.
+export async function getLowStockProductsByStoreId(
+  storeId: string,
+  limit = 5
+) {
+  return supabase
+    .from("products")
+    .select("*")
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .lte("stock", limit)
     .order("created_at", { ascending: false });
 }
 

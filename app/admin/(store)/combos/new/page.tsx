@@ -7,14 +7,25 @@
    los datos al formulario principal de combos.
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import ComboForm from "@/components/admin/combos/ComboForm";
-import { getProductsForCombos } from "@/lib/services/products";
+import { getProductsForCombosByStoreId } from "@/lib/services/products";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 import type { ComboProduct } from "@/components/admin/combos/types";
 
 export default function NewComboPage() {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [products, setProducts] = useState<ComboProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +35,19 @@ export default function NewComboPage() {
 
   useEffect(() => {
     const loadProducts = async () => {
-      const { data, error } = await getProductsForCombos();
+      if (accessLoading || storeLoading) return;
+
+      if (!activeStore?.id) {
+        setProducts([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const { data, error } = await getProductsForCombosByStoreId(
+        activeStore.id
+      );
 
       if (error) {
         console.error("Error cargando productos para combos:", error);
@@ -37,7 +60,7 @@ export default function NewComboPage() {
     };
 
     loadProducts();
-  }, []);
+  }, [accessLoading, storeLoading, activeStore?.id]);
 
   /* =========================================================
      LOADING

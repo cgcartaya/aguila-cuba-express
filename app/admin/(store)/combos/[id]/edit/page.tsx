@@ -14,12 +14,14 @@
    - Evitamos type predicates conflictivos con SelectedComboProduct.
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
 import ComboForm from "@/components/admin/combos/ComboForm";
 import { getComboById } from "@/lib/services/combos";
-import { getProductsForCombos } from "@/lib/services/products";
+import { getProductsForCombosByStoreId } from "@/lib/services/products";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 import type {
   ComboFormData,
@@ -62,6 +64,15 @@ export default function EditComboPage() {
   const params = useParams();
   const comboId = params.id as string;
 
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<ComboProduct[]>([]);
   const [initialData, setInitialData] = useState<ComboFormData | null>(null);
@@ -71,13 +82,21 @@ export default function EditComboPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      if (!comboId) return;
+      if (!comboId || accessLoading || storeLoading) return;
+
+      if (!activeStore?.id) {
+        setProducts([]);
+        setInitialData(null);
+        setInitialProducts([]);
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
 
       const [comboResponse, productsResponse] = await Promise.all([
         getComboById(comboId),
-        getProductsForCombos(),
+        getProductsForCombosByStoreId(activeStore.id),
       ]);
 
       if (comboResponse.error || !comboResponse.data) {
@@ -130,7 +149,12 @@ export default function EditComboPage() {
     };
 
     loadData();
-  }, [comboId]);
+  }, [
+    comboId,
+    accessLoading,
+    storeLoading,
+    activeStore?.id,
+  ]);
 
   if (loading) {
     return (

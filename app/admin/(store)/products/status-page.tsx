@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Package } from "lucide-react";
 import {
-  getLowStockProducts,
-  getInactiveProducts,
+  getLowStockProductsByStoreId,
+  getInactiveProductsByStoreId,
 } from "@/lib/services/products";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 import ProductCard from "@/components/admin/products/ProductCard";
 import type { Product } from "@/components/admin/products/types";
 
@@ -21,20 +23,38 @@ export default function ProductsStatusPage({
   description,
   filter,
 }: Props) {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessLoading, storeLoading, activeStore?.id, filter]);
 
   async function fetchProducts() {
+    if (accessLoading || storeLoading) return;
+
+    if (!activeStore?.id) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
-  const { data, error } =
-  filter === "low-stock"
-    ? await getLowStockProducts()
-    : await getInactiveProducts();
+    const { data, error } =
+      filter === "low-stock"
+        ? await getLowStockProductsByStoreId(activeStore.id)
+        : await getInactiveProductsByStoreId(activeStore.id);
 
     if (error) {
       console.error(error.message);
