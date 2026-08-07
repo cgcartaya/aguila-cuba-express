@@ -144,11 +144,13 @@ function buildWhatsAppStatusMessage(order: any, newStatus: string) {
 export default function OrdersManager({
   initialOrders,
   initialDeletedOrders = [],
+  storeId,
   storeName = "",
   storeSlug = "",
 }: {
   initialOrders: any[];
   initialDeletedOrders?: any[];
+  storeId: string;
   storeName?: string;
   storeSlug?: string;
 }) {
@@ -184,6 +186,18 @@ export default function OrdersManager({
       ...prev,
       [orderId]: !prev[orderId],
     }));
+  }
+
+  function assertOrderBelongsToActiveStore(order: any) {
+    if (!storeId) {
+      throw new Error("No se pudo resolver la tienda activa.");
+    }
+
+    if (!order?.store_id || order.store_id !== storeId) {
+      throw new Error(
+        "Esta orden no pertenece a la tienda activa. La operación fue bloqueada."
+      );
+    }
   }
 
   const stats = useMemo(() => {
@@ -243,13 +257,23 @@ export default function OrdersManager({
 
     try {
       setActionLoadingId(order.id);
+      assertOrderBelongsToActiveStore(order);
 
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("orders")
         .update({ status })
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .eq("store_id", storeId)
+        .is("deleted_at", null)
+        .select("id")
+        .maybeSingle();
 
       if (error) throw error;
+      if (!updated) {
+        throw new Error(
+          "No se pudo actualizar la orden dentro de la tienda activa."
+        );
+      }
 
       setOrders((prev) =>
         prev.map((item) =>
@@ -290,14 +314,10 @@ export default function OrdersManager({
 
     try {
       setActionLoadingId(order.id);
+      assertOrderBelongsToActiveStore(order);
 
       const orderItems = normalizeOrderItems(order);
-
-      if (!order.store_id) {
-        throw new Error("La orden no tiene tienda asignada.");
-      }
-
-      await restoreOrderInventory(orderItems, order.store_id);
+      await restoreOrderInventory(orderItems, storeId);
 
       const deletedAt = new Date().toISOString();
 
@@ -305,6 +325,8 @@ export default function OrdersManager({
         .from("orders")
         .update({ deleted_at: deletedAt })
         .eq("id", order.id)
+        .eq("store_id", storeId)
+        .is("deleted_at", null)
         .select("id")
         .maybeSingle();
 
@@ -339,20 +361,19 @@ export default function OrdersManager({
 
     try {
       setActionLoadingId(order.id);
+      assertOrderBelongsToActiveStore(order);
 
       const orderItems = normalizeOrderItems(order);
 
-      if (!order.store_id) {
-        throw new Error("La orden no tiene tienda asignada.");
-      }
-
-      await validateOrderStock(orderItems, order.store_id);
-      await processOrderInventory(orderItems, order.store_id);
+      await validateOrderStock(orderItems, storeId);
+      await processOrderInventory(orderItems, storeId);
 
       const { data: updated, error } = await supabase
         .from("orders")
         .update({ deleted_at: null })
         .eq("id", order.id)
+        .eq("store_id", storeId)
+        .not("deleted_at", "is", null)
         .select("id")
         .maybeSingle();
 
@@ -388,18 +409,38 @@ export default function OrdersManager({
 
     try {
       setActionLoadingId(order.id);
+      assertOrderBelongsToActiveStore(order);
+
+      // order_items no tiene store_id, así que primero demostramos que la
+      // orden pertenece a la tienda activa y está realmente en papelera.
+      const { data: ownedOrder, error: ownershipError } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("id", order.id)
+        .eq("store_id", storeId)
+        .not("deleted_at", "is", null)
+        .maybeSingle();
+
+      if (ownershipError) throw ownershipError;
+      if (!ownedOrder) {
+        throw new Error(
+          "La orden no pertenece a la tienda activa o ya no está en papelera."
+        );
+      }
 
       const { error: itemsError } = await supabase
         .from("order_items")
         .delete()
-        .eq("order_id", order.id);
+        .eq("order_id", ownedOrder.id);
 
       if (itemsError) throw itemsError;
 
       const { data: deletedOrder, error: orderError } = await supabase
         .from("orders")
         .delete()
-        .eq("id", order.id)
+        .eq("id", ownedOrder.id)
+        .eq("store_id", storeId)
+        .not("deleted_at", "is", null)
         .select("id")
         .maybeSingle();
 
