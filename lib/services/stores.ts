@@ -111,62 +111,7 @@ export async function getStoreBySubdomain(
   return data as Store | null
 }
 
-export async function getDefaultStore(): Promise<{ data: Store | null; error: unknown }> {
-  console.warn("getDefaultStore() está obsoleto. La tienda debe resolverse por dominio, subdominio o slug.")
-  return {
-    data: null,
-    error: new Error("Default store disabled"),
-  }
-}
 
-export async function getCurrentStore(): Promise<{
-  data: Store | null
-  error: unknown
-}> {
-  if (typeof window === "undefined") {
-    return getDefaultStore()
-  }
-
-  const host = window.location.hostname
-    .replace(/^www\./, "")
-    .toLowerCase()
-
-  // 1. Buscar por dominio personalizado
-  const byDomain = await getStoreByDomain(host)
-
-  if (byDomain) {
-    return {
-      data: byDomain,
-      error: null,
-    }
-  }
-
-  // 2. Buscar por subdominio
-  if (host.endsWith("perlamarketplace.com")) {
-    const subdomain = host.split(".")[0]
-
-    if (subdomain !== "www" && subdomain !== "perlamarketplace") {
-      const bySubdomain = await getStoreBySubdomain(subdomain)
-
-      if (bySubdomain) {
-        return {
-          data: bySubdomain,
-          error: null,
-        }
-      }
-    }
-  }
-
-  // 3. No existe una tienda por defecto en el cliente.
-  return {
-    data: null,
-    error: new Error("Store could not be resolved from current host"),
-  }
-}
-
-export function clearDefaultStoreCache() {
-  // Compatibilidad temporal.
-}
 
 export async function createStore(store: {
   name: string
@@ -193,7 +138,6 @@ export async function createStore(store: {
     .select()
     .single()
 
-  clearDefaultStoreCache()
   return result
 }
 
@@ -234,7 +178,6 @@ export async function updateStore(
     .select()
     .single()
 
-  clearDefaultStoreCache()
   return result
 }
 
@@ -372,6 +315,5 @@ export async function markStoreAsPaid(
     .update(paymentData)
     .eq("id", id)
 
-  clearDefaultStoreCache()
   return result
 }
