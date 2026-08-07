@@ -292,7 +292,12 @@ export default function OrdersManager({
       setActionLoadingId(order.id);
 
       const orderItems = normalizeOrderItems(order);
-      await restoreOrderInventory(orderItems);
+
+      if (!order.store_id) {
+        throw new Error("La orden no tiene tienda asignada.");
+      }
+
+      await restoreOrderInventory(orderItems, order.store_id);
 
       const deletedAt = new Date().toISOString();
 
@@ -336,8 +341,13 @@ export default function OrdersManager({
       setActionLoadingId(order.id);
 
       const orderItems = normalizeOrderItems(order);
-      await validateOrderStock(orderItems);
-      await processOrderInventory(orderItems);
+
+      if (!order.store_id) {
+        throw new Error("La orden no tiene tienda asignada.");
+      }
+
+      await validateOrderStock(orderItems, order.store_id);
+      await processOrderInventory(orderItems, order.store_id);
 
       const { data: updated, error } = await supabase
         .from("orders")

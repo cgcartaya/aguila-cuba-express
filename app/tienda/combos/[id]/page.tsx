@@ -16,6 +16,7 @@ import Link from "next/link";
 import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
 import { getComboById } from "@/lib/services/combos";
+import { useStore } from "@/hooks/useStore";
 
 type ComboProduct = {
   id: string;
@@ -118,17 +119,24 @@ function normalizeCombo(combo: ComboFromDB): ComboDetail {
 export default function ComboDetailPage() {
   const params = useParams();
   const comboId = params.id as string;
+  const { store, loading: storeLoading } = useStore();
 
   const [combo, setCombo] = useState<ComboDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCombo = async () => {
-      if (!comboId) return;
+      if (!comboId || storeLoading) return;
+
+      if (!store?.id) {
+        setCombo(null);
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
 
-      const { data, error } = await getComboById(comboId);
+      const { data, error } = await getComboById(comboId, store.id);
 
       if (error || !data) {
         console.error("Error cargando combo:", error);
@@ -142,7 +150,7 @@ export default function ComboDetailPage() {
     };
 
     loadCombo();
-  }, [comboId]);
+  }, [comboId, store?.id, storeLoading]);
 
   const regularPrice =
     combo?.combo_items.reduce((total, item) => {

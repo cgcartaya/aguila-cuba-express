@@ -24,7 +24,7 @@ import ComboPriceCalculator from "./ComboPriceCalculator";
 import ComboImageUploader from "./ComboImageUploader";
 
 import {
-  createCombo,
+  createComboForStore,
   updateCombo,
   addProductToCombo,
   removeProductFromCombo,
@@ -38,6 +38,7 @@ import type {
 
 type ComboFormProps = {
   products: ComboProduct[];
+  storeId: string;
 
   mode?: "create" | "edit";
 
@@ -50,6 +51,7 @@ type ComboFormProps = {
 
 export default function ComboForm({
   products,
+  storeId,
   mode = "create",
   comboId,
   initialData,
@@ -105,7 +107,7 @@ export default function ComboForm({
   ========================================================= */
 
   const handleCreate = async () => {
-    const { data: combo, error: comboError } = await createCombo({
+    const { data: combo, error: comboError } = await createComboForStore(storeId, {
       name: formData.name,
       description: formData.description,
       image_url: formData.image_url || "",
@@ -120,11 +122,14 @@ export default function ComboForm({
     }
 
     for (const item of selectedProducts) {
-      const { error } = await addProductToCombo({
-        combo_id: combo.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-      });
+      const { error } = await addProductToCombo(
+        {
+          combo_id: combo.id,
+          product_id: item.product.id,
+          quantity: item.quantity,
+        },
+        storeId
+      );
 
       if (error) {
         console.error("Error agregando producto al combo:", error);
@@ -153,13 +158,17 @@ export default function ComboForm({
   const handleEdit = async () => {
     if (!comboId) return;
 
-    const { error: comboError } = await updateCombo(comboId, {
-      name: formData.name,
-      description: formData.description,
-      image_url: formData.image_url || "",
-      price: Number(formData.price),
-      is_active: formData.is_active,
-    });
+    const { error: comboError } = await updateCombo(
+      comboId,
+      {
+        name: formData.name,
+        description: formData.description,
+        image_url: formData.image_url || "",
+        price: Number(formData.price),
+        is_active: formData.is_active,
+      },
+      storeId
+    );
 
     if (comboError) {
       console.error("Error actualizando combo:", comboError);
@@ -169,7 +178,11 @@ export default function ComboForm({
 
     for (const item of initialProducts) {
       if (item.combo_item_id) {
-        const { error } = await removeProductFromCombo(item.combo_item_id);
+        const { error } = await removeProductFromCombo(
+          item.combo_item_id,
+          comboId,
+          storeId
+        );
 
         if (error) {
           console.error("Error eliminando producto anterior:", error);
@@ -180,11 +193,14 @@ export default function ComboForm({
     }
 
     for (const item of selectedProducts) {
-      const { error } = await addProductToCombo({
-        combo_id: comboId,
-        product_id: item.product.id,
-        quantity: item.quantity,
-      });
+      const { error } = await addProductToCombo(
+        {
+          combo_id: comboId,
+          product_id: item.product.id,
+          quantity: item.quantity,
+        },
+        storeId
+      );
 
       if (error) {
         console.error("Error agregando producto actualizado:", error);

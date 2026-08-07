@@ -40,12 +40,18 @@ export async function getCombosByStoreId(storeId: string) {
     .order("created_at", { ascending: false });
 }
 
-export async function getCombos() {
-  return await supabase
-    .from("combos")
-    .select(COMBO_PUBLIC_SELECT)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+// Compatibilidad temporal: la tienda debe llegar explícitamente.
+export async function getCombos(storeId?: string) {
+  if (!storeId) {
+    return {
+      data: [],
+      error: {
+        message: "Se requiere storeId explícito para cargar combos.",
+      },
+    };
+  }
+
+  return getCombosByStoreId(storeId);
 }
 
 export async function getActiveCombosByStoreId(storeId: string) {
@@ -59,11 +65,12 @@ export async function getActiveCombosByStoreId(storeId: string) {
     .limit(8);
 }
 
-export async function getComboById(id: string) {
+export async function getComboById(id: string, storeId: string) {
   return await supabase
     .from("combos")
     .select(COMBO_PUBLIC_SELECT)
     .eq("id", id)
+    .eq("store_id", storeId)
     .is("deleted_at", null)
     .single();
 }
@@ -88,35 +95,26 @@ export async function createComboForStore(
     .single();
 }
 
-export async function createCombo(combo: {
-  name: string;
-  description?: string;
-  image_url?: string;
-  price: number;
-  is_active?: boolean;
-}) {
-  if (typeof window !== "undefined") {
-    const savedStore = localStorage.getItem("saas-current-store");
-
-    if (savedStore) {
-      const currentStore = JSON.parse(savedStore);
-
-      return await supabase
-        .from("combos")
-        .insert({
-          ...combo,
-          store_id: currentStore.id,
-        })
-        .select()
-        .single();
-    }
+export async function createCombo(
+  combo: {
+    name: string;
+    description?: string;
+    image_url?: string;
+    price: number;
+    is_active?: boolean;
+  },
+  storeId?: string
+) {
+  if (!storeId) {
+    return {
+      data: null,
+      error: {
+        message: "Se requiere storeId explícito para crear el combo.",
+      },
+    };
   }
 
-  return await supabase
-    .from("combos")
-    .insert(combo)
-    .select()
-    .single();
+  return createComboForStore(storeId, combo);
 }
 
 export async function updateCombo(
@@ -127,7 +125,8 @@ export async function updateCombo(
     image_url?: string;
     price?: number;
     is_active?: boolean;
-  }
+  },
+  storeId: string
 ) {
   return await supabase
     .from("combos")
@@ -136,24 +135,76 @@ export async function updateCombo(
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
+    .eq("store_id", storeId)
     .select()
     .single();
 }
 
-export async function deleteCombo(id: string) {
+export async function deleteCombo(id: string, storeId: string) {
   return await supabase
     .from("combos")
     .update({
       deleted_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("store_id", storeId);
 }
 
-export async function addProductToCombo(data: {
-  combo_id: string;
-  product_id: string;
-  quantity: number;
-}) {
+async function comboBelongsToStore(comboId: string, storeId: string) {
+  const { data, error } = await supabase
+    .from("combos")
+    .select("id")
+    .eq("id", comboId)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  return {
+    ok: Boolean(data) && !error,
+    error,
+  };
+}
+
+async function productBelongsToStore(productId: string, storeId: string) {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  return {
+    ok: Boolean(data) && !error,
+    error,
+  };
+}
+
+export async function addProductToCombo(
+  data: {
+    combo_id: string;
+    product_id: string;
+    quantity: number;
+  },
+  storeId: string
+) {
+  const [comboCheck, productCheck] = await Promise.all([
+    comboBelongsToStore(data.combo_id, storeId),
+    productBelongsToStore(data.product_id, storeId),
+  ]);
+
+  if (!comboCheck.ok || !productCheck.ok) {
+    return {
+      data: null,
+      error:
+        comboCheck.error ||
+        productCheck.error || {
+          message:
+            "El combo o el producto no pertenece a la tienda activa.",
+        },
+    };
+  }
+
   return await supabase
     .from("combo_items")
     .insert(data)
@@ -163,19 +214,51 @@ export async function addProductToCombo(data: {
 
 export async function updateComboItemQuantity(
   comboItemId: string,
-  quantity: number
+  comboId: string,
+  quantity: number,
+  storeId: string
 ) {
+  const comboCheck = await comboBelongsToStore(comboId, storeId);
+
+  if (!comboCheck.ok) {
+    return {
+      data: null,
+      error:
+        comboCheck.error || {
+          message: "El combo no pertenece a la tienda activa.",
+        },
+    };
+  }
+
   return await supabase
     .from("combo_items")
     .update({ quantity })
     .eq("id", comboItemId)
+    .eq("combo_id", comboId)
     .select()
     .single();
 }
 
-export async function removeProductFromCombo(comboItemId: string) {
+export async function removeProductFromCombo(
+  comboItemId: string,
+  comboId: string,
+  storeId: string
+) {
+  const comboCheck = await comboBelongsToStore(comboId, storeId);
+
+  if (!comboCheck.ok) {
+    return {
+      data: null,
+      error:
+        comboCheck.error || {
+          message: "El combo no pertenece a la tienda activa.",
+        },
+    };
+  }
+
   return await supabase
     .from("combo_items")
     .delete()
-    .eq("id", comboItemId);
+    .eq("id", comboItemId)
+    .eq("combo_id", comboId);
 }

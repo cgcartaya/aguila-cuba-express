@@ -84,7 +84,9 @@ export default function AdminCombosPage() {
     const confirmDelete = confirm("¿Seguro que quieres eliminar este combo?");
     if (!confirmDelete) return;
 
-    const { error } = await deleteCombo(comboId);
+    if (!activeStore?.id) return;
+
+    const { error } = await deleteCombo(comboId, activeStore.id);
 
     if (error) {
       console.error("Error eliminando combo:", error);

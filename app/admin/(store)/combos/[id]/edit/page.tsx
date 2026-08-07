@@ -95,7 +95,7 @@ export default function EditComboPage() {
       setLoading(true);
 
       const [comboResponse, productsResponse] = await Promise.all([
-        getComboById(comboId),
+        getComboById(comboId, activeStore.id),
         getProductsForCombosByStoreId(activeStore.id),
       ]);
 
@@ -184,6 +184,7 @@ export default function EditComboPage() {
     <ComboForm
       mode="edit"
       comboId={comboId}
+      storeId={activeStore!.id}
       products={products}
       initialData={initialData}
       initialProducts={initialProducts}

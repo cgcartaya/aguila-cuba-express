@@ -96,5 +96,13 @@ export default function NewComboPage() {
      FORMULARIO PRINCIPAL
   ========================================================= */
 
-  return <ComboForm products={products} />;
+  if (!activeStore?.id) {
+    return (
+      <main className="min-h-screen bg-slate-50 px-4 py-10 text-center text-sm font-semibold text-slate-500">
+        No se encontró la tienda activa.
+      </main>
+    );
+  }
+
+  return <ComboForm products={products} storeId={activeStore.id} />;
 }

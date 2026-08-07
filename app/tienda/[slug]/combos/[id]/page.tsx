@@ -18,6 +18,7 @@ import Link from "next/link";
 import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
 import { getComboById } from "@/lib/services/combos";
+import { useStore } from "@/hooks/useStore";
 
 type ComboProduct = {
   id: string;
@@ -122,17 +123,24 @@ export default function ComboDetailPage() {
   const comboId = params.id as string;
   const slug = params.slug as string;
   const backHref = slug ? `/tienda/${slug}` : "/tienda";
+  const { store, loading: storeLoading } = useStore();
 
   const [combo, setCombo] = useState<ComboDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCombo = async () => {
-      if (!comboId) return;
+      if (!comboId || storeLoading) return;
+
+      if (!store?.id || store.slug !== slug) {
+        setCombo(null);
+        setLoading(false);
+        return;
+      }
 
       setLoading(true);
 
-      const { data, error } = await getComboById(comboId);
+      const { data, error } = await getComboById(comboId, store.id);
 
       if (error || !data) {
         console.error("Error cargando combo:", error);
@@ -146,7 +154,7 @@ export default function ComboDetailPage() {
     };
 
     loadCombo();
-  }, [comboId]);
+  }, [comboId, slug, store?.id, store?.slug, storeLoading]);
 
   const regularPrice =
     combo?.combo_items.reduce((total, item) => {
