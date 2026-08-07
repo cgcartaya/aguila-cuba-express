@@ -20,9 +20,9 @@ export const TRACKING_URL = "/rastrear";
 export const PORTAL_URL = "/portal/mis-envios";
 
 // TODO: reemplazar con las URLs reales de Aguila Express USA.
-export const FACEBOOK_URL = "https://www.facebook.com/aguilaexpressusa";
-export const INSTAGRAM_URL = "https://www.instagram.com/aguilaexpressusa";
-export const TIKTOK_URL = "https://www.tiktok.com/@aguilaexpressusa";
+export const FACEBOOK_URL = "https://www.facebook.com/share/1GtPMTG7wm/";
+export const INSTAGRAM_URL = "https://www.instagram.com/aguilaexpressusa?igsh=aHJsNm5rZDM5OXQ4";
+export const TIKTOK_URL = "https://www.tiktok.com/@aguilaexpressusa?_r=1&_t=ZT-98gaSdaYPUL";
 
 export const NAV_LINKS = [
   { label: "Inicio", href: "/" },
