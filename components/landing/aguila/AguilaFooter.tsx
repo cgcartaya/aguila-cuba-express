@@ -4,8 +4,9 @@ import { MapPin, MessageCircle, ShieldCheck } from "lucide-react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
 
-export default function AguilaFooter() {
+export default function AguilaFooter({ logoUrl }: { logoUrl?: string | null } = {}) {
   const links = [...NAV_LINKS, { label: "Tienda", href: STORE_URL }];
+  const resolvedLogo = logoUrl || "/logo.webp";
 
   return (
     <footer className="bg-[#0d1b30] text-white">
@@ -13,7 +14,7 @@ export default function AguilaFooter() {
         <div>
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-              <Image src="/logo.webp" alt="Aguila Express USA" width={56} height={56} className="h-10 w-10 object-contain" />
+              <Image src={resolvedLogo} alt="Aguila Express USA" width={56} height={56} className="h-10 w-10 object-contain" />
             </div>
             <p className="font-black">
               AGUILA <span className="text-[#ef4b57]">EXPRESS USA</span>

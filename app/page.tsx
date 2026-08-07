@@ -5,6 +5,9 @@ import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
+import { buildStoreMetadata, resolveStoreBySlug } from "@/lib/saas/store-metadata";
+
+const AGUILA_CANONICAL_URL = "https://www.aguilaexpressusa.com";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
@@ -70,6 +73,12 @@ export async function generateMetadata(): Promise<Metadata> {
   const landing = await getCurrentLanding();
 
   if (landing === "aguila") {
+    const store = await resolveStoreBySlug("aguila");
+
+    if (store) {
+      return buildStoreMetadata(store, AGUILA_CANONICAL_URL);
+    }
+
     return {
       title: "Aguila Express USA | Paquetería, compras y envíos",
       description:
@@ -104,7 +113,8 @@ export default async function HomePage() {
   const landing = await getCurrentLanding();
 
   if (landing === "aguila") {
-    return <AguilaLanding />;
+    const store = await resolveStoreBySlug("aguila");
+    return <AguilaLanding logoUrl={store?.logo_url || null} />;
   }
 
   if (landing === "yoyo") {

@@ -8,10 +8,10 @@ import AguilaServices from "./aguila/AguilaServices";
 import AguilaSocial from "./aguila/AguilaSocial";
 import AguilaStoreStrip from "./aguila/AguilaStoreStrip";
 
-export default function AguilaLanding() {
+export default function AguilaLanding({ logoUrl }: { logoUrl?: string | null } = {}) {
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f6f1e4] text-[#0d1b30]">
-      <AguilaNavbar />
+      <AguilaNavbar logoUrl={logoUrl} />
       <AguilaHero />
       <AguilaStoreStrip />
       <AguilaServices />
@@ -19,7 +19,7 @@ export default function AguilaLanding() {
       <AguilaQuoteTracking />
       <AguilaSocial />
       <AguilaCTA />
-      <AguilaFooter />
+      <AguilaFooter logoUrl={logoUrl} />
     </main>
   );
 }
