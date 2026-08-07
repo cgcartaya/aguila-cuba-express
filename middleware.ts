@@ -273,6 +273,25 @@ export async function middleware(request: NextRequest) {
    */
   const normalizedHost = normalizeHost(host);
 
+  /* =======================================================
+     DOMINIO HISTÓRICO DE ÁGUILA
+
+     Conservamos el comportamiento existente:
+     aguilacubaexpress.com -> aguilaexpressusa.com
+
+     Se mantiene pathname + query string para que enlaces de tienda,
+     rastreo, login, etc. sigan llegando a la misma ruta.
+  ======================================================= */
+  if (normalizedHost === "aguilacubaexpress.com") {
+    const redirectUrl = request.nextUrl.clone();
+
+    redirectUrl.protocol = "https:";
+    redirectUrl.hostname = "aguilaexpressusa.com";
+    redirectUrl.port = "";
+
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   if (
     !subdomain &&
     (normalizedHost === PLATFORM_DOMAIN ||

@@ -182,7 +182,6 @@ export default function TiendaPage() {
             <div className="-mt-2 md:-mt-3">
               <StoreCombosSection
                 storeId={store?.id || undefined}
-                allowDefaultStore
               />
             </div>
           )}

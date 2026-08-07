@@ -9,18 +9,31 @@
 import { useEffect, useState } from "react";
 import { Gift } from "lucide-react";
 
-import { getActiveCombos } from "@/lib/services/combos";
+import { getActiveCombosByStoreId } from "@/lib/services/combos";
+import { useStore } from "@/hooks/useStore";
 import StoreComboCard, {
   StoreCombo,
 } from "@/components/tienda/combos/StoreComboCard";
 
 export default function StoreCombosPage() {
+  const { store, loading: storeLoading } = useStore();
+
   const [combos, setCombos] = useState<StoreCombo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCombos = async () => {
-      const { data, error } = await getActiveCombos();
+      if (storeLoading) return;
+
+      if (!store?.id) {
+        setCombos([]);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const { data, error } = await getActiveCombosByStoreId(store.id);
 
       if (error) {
         console.error("Error cargando combos públicos:", error);
@@ -28,12 +41,37 @@ export default function StoreCombosPage() {
         return;
       }
 
-      setCombos((data as StoreCombo[]) || []);
+      const normalizedCombos: StoreCombo[] = (data || []).map((combo) => ({
+        id: String(combo.id),
+        name: combo.name,
+        description: combo.description,
+        image_url: combo.image_url,
+        price: Number(combo.price || 0),
+        combo_items: (combo.combo_items || []).map((item) => {
+          const relatedProduct = Array.isArray(item.products)
+            ? item.products[0] ?? null
+            : item.products ?? null;
+
+          return {
+            id: String(item.id),
+            quantity: Number(item.quantity || 1),
+            products: relatedProduct
+              ? {
+                  id: String(relatedProduct.id),
+                  name: relatedProduct.name,
+                  price: Number(relatedProduct.price || 0),
+                }
+              : null,
+          };
+        }),
+      }));
+
+      setCombos(normalizedCombos);
       setLoading(false);
     };
 
     loadCombos();
-  }, []);
+  }, [store?.id, storeLoading]);
 
   return (
     <main className="pb-6">

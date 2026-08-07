@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabase";
-import { getDefaultStore } from "@/lib/services/stores";
 
 /* =========================================================
    SERVICES - COMBOS
@@ -47,16 +46,6 @@ export async function getCombos() {
     .select(COMBO_PUBLIC_SELECT)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
-}
-
-export async function getActiveCombos() {
-  const { data: store } = await getDefaultStore();
-
-  if (!store) {
-    return { data: [], error: null };
-  }
-
-  return getActiveCombosByStoreId(store.id);
 }
 
 export async function getActiveCombosByStoreId(storeId: string) {

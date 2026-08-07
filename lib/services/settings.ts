@@ -308,21 +308,52 @@ export async function createDeliveryZone(
 
 export async function updateDeliveryZone(
   id: string,
-  zone: Partial<DeliveryZone>
+  zone: Partial<DeliveryZone>,
+  storeId?: string | null
 ) {
+  const resolvedStoreId = await resolveStoreId(storeId || zone.store_id || undefined);
+
+  if (!resolvedStoreId) {
+    return {
+      data: null,
+      error: {
+        message: "No se encontró la tienda activa",
+      },
+    };
+  }
+
   return supabase
     .from("delivery_zones")
-    .update(zone)
+    .update({
+      ...zone,
+      store_id: resolvedStoreId,
+    })
     .eq("id", id)
+    .eq("store_id", resolvedStoreId)
     .select()
     .single();
 }
 
-export async function deleteDeliveryZone(id: string) {
+export async function deleteDeliveryZone(
+  id: string,
+  storeId?: string | null
+) {
+  const resolvedStoreId = await resolveStoreId(storeId);
+
+  if (!resolvedStoreId) {
+    return {
+      data: null,
+      error: {
+        message: "No se encontró la tienda activa",
+      },
+    };
+  }
+
   return supabase
     .from("delivery_zones")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .eq("store_id", resolvedStoreId);
 }
 
 /* =========================================================

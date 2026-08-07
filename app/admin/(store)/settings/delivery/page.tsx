@@ -4,7 +4,7 @@
    AJUSTES DE DOMICILIO - ADMIN
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save, Truck } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
@@ -16,8 +16,19 @@ import {
   getStoreSettings,
   saveStoreSettings,
 } from "@/lib/services/settings";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 export default function AdminDeliverySettingsPage() {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [form, setForm] = useState({
     minimum_order: "20",
     delivery_fee: "0",
@@ -32,7 +43,16 @@ export default function AdminDeliverySettingsPage() {
 
   useEffect(() => {
     async function loadSettings() {
-      const { data } = await getStoreSettings();
+      if (accessLoading || storeLoading) return;
+
+      if (!activeStore?.id) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const { data } = await getStoreSettings(activeStore.id);
 
       if (data) {
         setForm({
@@ -49,7 +69,7 @@ export default function AdminDeliverySettingsPage() {
     }
 
     loadSettings();
-  }, []);
+  }, [accessLoading, storeLoading, activeStore?.id]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({
@@ -59,6 +79,8 @@ export default function AdminDeliverySettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!activeStore?.id) return;
+
     setSaving(true);
     setSuccess("");
 
@@ -68,7 +90,7 @@ export default function AdminDeliverySettingsPage() {
       free_delivery_from: Number(form.free_delivery_from || 0),
       delivery_message: form.delivery_message,
       updated_at: new Date().toISOString(),
-    });
+    }, activeStore.id);
 
     setSuccess("Reglas de domicilio guardadas correctamente.");
     setSaving(false);

@@ -7,7 +7,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { getBanners, getBannersByStoreId } from "@/lib/services/settings";
+import { getBannersByStoreId } from "@/lib/services/settings";
 
 import GeneratedBannerSlide from "@/components/tienda/GeneratedBannerSlide";
 import type { Banner } from "@/components/admin/settings/types";
@@ -74,9 +74,12 @@ export default function MainBanner({ storeId, storeSlug }: MainBannerProps) {
     let mounted = true;
 
     async function loadBanners() {
-      const { data, error } = storeId
-        ? await getBannersByStoreId(storeId)
-        : await getBanners();
+      if (!storeId) {
+        if (mounted) setBanners([]);
+        return;
+      }
+
+      const { data, error } = await getBannersByStoreId(storeId);
 
       if (!mounted) return;
 

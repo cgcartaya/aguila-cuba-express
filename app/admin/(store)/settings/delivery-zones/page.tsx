@@ -25,6 +25,8 @@ import {
   updateDeliveryZone,
   type DeliveryZone,
 } from "@/lib/services/settings";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 
 const MUNICIPALITIES = [
   "Cienfuegos",
@@ -48,6 +50,15 @@ const emptyForm = {
 };
 
 export default function AdminDeliveryZonesPage() {
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
+
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,14 +79,23 @@ export default function AdminDeliveryZonesPage() {
 
   useEffect(() => {
     loadZones();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessLoading, storeLoading, activeStore?.id]);
 
   async function loadZones() {
+    if (accessLoading || storeLoading) return;
+
+    if (!activeStore?.id) {
+      setZones([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
 
-      const { data, error } = await getDeliveryZones();
+      const { data, error } = await getDeliveryZones(activeStore.id);
 
       if (error) throw error;
 
@@ -155,9 +175,13 @@ export default function AdminDeliveryZonesPage() {
         sort_order: Number(form.sort_order || 0),
       };
 
+      if (!activeStore?.id) {
+        throw new Error("No se encontró la tienda activa.");
+      }
+
       const { error } = editingId
-        ? await updateDeliveryZone(editingId, payload)
-        : await createDeliveryZone(payload);
+        ? await updateDeliveryZone(editingId, payload, activeStore.id)
+        : await createDeliveryZone(payload, activeStore.id);
 
       if (error) throw error;
 
@@ -188,7 +212,11 @@ export default function AdminDeliveryZonesPage() {
       setError("");
       setSuccess("");
 
-      const { error } = await deleteDeliveryZone(id);
+      if (!activeStore?.id) {
+        throw new Error("No se encontró la tienda activa.");
+      }
+
+      const { error } = await deleteDeliveryZone(id, activeStore.id);
 
       if (error) throw error;
 

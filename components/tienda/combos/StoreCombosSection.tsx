@@ -4,47 +4,35 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Package2 } from "lucide-react";
 
-import {
-  getActiveCombos,
-  getActiveCombosByStoreId,
-} from "@/lib/services/combos";
+import { getActiveCombosByStoreId } from "@/lib/services/combos";
 
 import StoreComboCard, { StoreCombo } from "./StoreComboCard";
 
 type Props = {
   storeId?: string;
   storeSlug?: string;
-  /**
-   * Solo usar en /tienda.
-   * En /tienda/[slug] debe quedar false para evitar que cargue la tienda default
-   * mientras todavía se está resolviendo el slug.
-   */
-  allowDefaultStore?: boolean;
 };
 
 export default function StoreCombosSection({
   storeId,
   storeSlug,
-  allowDefaultStore = false,
 }: Props) {
   const [combos, setCombos] = useState<StoreCombo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadCombos = async () => {
-      // IMPORTANTE MULTIEMPRESA:
-      // En rutas por slug NO hacemos fallback a la tienda default.
-      // Si no hay storeId todavía, no cargamos combos para evitar mostrar
-      // combos de Águila dentro de DL Racing mientras carga el slug.
-      if (!storeId && !allowDefaultStore) {
+      // Nunca hacemos fallback a otra tienda.
+      // Esperamos a tener un storeId explícito antes de consultar.
+      if (!storeId) {
         setCombos([]);
         setLoading(false);
         return;
       }
 
-      const { data, error } = storeId
-        ? await getActiveCombosByStoreId(storeId)
-        : await getActiveCombos();
+      setLoading(true);
+
+      const { data, error } = await getActiveCombosByStoreId(storeId);
 
       if (error) {
         console.error("Error cargando combos públicos:", error);
@@ -52,12 +40,37 @@ export default function StoreCombosSection({
         return;
       }
 
-      setCombos((data as StoreCombo[]) || []);
+      const normalizedCombos: StoreCombo[] = (data || []).map((combo) => ({
+        id: String(combo.id),
+        name: combo.name,
+        description: combo.description,
+        image_url: combo.image_url,
+        price: Number(combo.price || 0),
+        combo_items: (combo.combo_items || []).map((item) => {
+          const relatedProduct = Array.isArray(item.products)
+            ? item.products[0] ?? null
+            : item.products ?? null;
+
+          return {
+            id: String(item.id),
+            quantity: Number(item.quantity || 1),
+            products: relatedProduct
+              ? {
+                  id: String(relatedProduct.id),
+                  name: relatedProduct.name,
+                  price: Number(relatedProduct.price || 0),
+                }
+              : null,
+          };
+        }),
+      }));
+
+      setCombos(normalizedCombos);
       setLoading(false);
     };
 
     loadCombos();
-  }, [storeId, allowDefaultStore]);
+  }, [storeId]);
 
   if (loading) return null;
   if (loading) {
