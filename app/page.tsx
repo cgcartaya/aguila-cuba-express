@@ -147,6 +147,17 @@ export async function generateMetadata(): Promise<Metadata> {
       ? `https://${host}`
       : "https://aguilacubaexpress.com";
 
+    /*
+     * Águila puede responder por varios dominios históricos.
+     * Si el host actual no coincide con stores.domain, recuperamos la misma
+     * tienda por su slug para conservar favicon, OG image y logo.
+     */
+    const store = await resolveStoreBySlug("aguila");
+
+    if (store) {
+      return buildStoreMetadata(store, canonicalUrl);
+    }
+
     return buildLandingFallbackMetadata(
       "Aguila Express USA | Paquetería, compras y envíos",
       "Envíos puerta a puerta, compras y rastreo en tiempo real, con atención personalizada.",
