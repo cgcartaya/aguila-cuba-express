@@ -723,8 +723,17 @@ export async function POST(request: Request) {
         .maybeSingle();
 
       const notifyEmail = notificationSettings?.order_notification_email;
+      const platformEmail = process.env.PLATFORM_NOTIFICATION_EMAIL;
 
-      if (notifyEmail) {
+      const recipients = Array.from(
+        new Set(
+          [notifyEmail, platformEmail]
+            .filter((email): email is string => Boolean(email))
+            .map((email) => email.trim().toLowerCase())
+        )
+      );
+
+      if (recipients.length > 0) {
         const { data: storeInfo } = await supabaseAdmin
           .from("stores")
           .select("name")
@@ -732,7 +741,7 @@ export async function POST(request: Request) {
           .maybeSingle();
 
         await sendNewOrderEmail({
-          toEmail: notifyEmail,
+          toEmails: recipients,
           storeName: storeInfo?.name || "tu tienda",
           orderNumber: publicOrderNumber,
           customerName,

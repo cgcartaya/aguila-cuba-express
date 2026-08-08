@@ -13,7 +13,7 @@
 ========================================================= */
 
 type NewOrderEmailParams = {
-  toEmail: string;
+  toEmails: string[];
   storeName: string;
   orderNumber: string;
   customerName: string;
@@ -33,7 +33,7 @@ export async function sendNewOrderEmail(params: NewOrderEmailParams) {
     return;
   }
 
-  if (!params.toEmail) return;
+  if (!params.toEmails || params.toEmails.length === 0) return;
 
   const deliveryLabel = params.isLocalDelivery
     ? `Entrega local${params.municipality ? ` — ${params.municipality}` : ""}`
@@ -67,7 +67,7 @@ export async function sendNewOrderEmail(params: NewOrderEmailParams) {
       },
       body: JSON.stringify({
         from: fromEmail,
-        to: params.toEmail,
+        to: params.toEmails,
         subject: `Nuevo pedido #${params.orderNumber} — ${params.storeName}`,
         html,
       }),
