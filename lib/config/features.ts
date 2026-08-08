@@ -7,4 +7,4 @@
 // Para reactivarlo: cambia esto a `true` y vuelve a desplegar. No hay
 // que tocar nada más — todo el código de tarjeta (Stripe Checkout, QR,
 // WhatsApp, webhook, recibos) sigue intacto, solo estaba oculto.
-export const CARD_PAYMENTS_ENABLED = false;
+export const CARD_PAYMENTS_ENABLED = true;
