@@ -4,15 +4,26 @@ import type { ShippingDashboardData } from "@/lib/shipping/dashboard-types";
 export async function getShippingDashboard(
   storeId: string
 ) {
-  const { data, error } = await supabase.rpc(
-    "get_shipping_operational_dashboard",
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token;
+
+  if (!token) {
+    return { data: null, error: new Error("No se encontró una sesión activa.") };
+  }
+
+  const response = await fetch(
+    `/api/admin/shipping/dashboard?store_id=${encodeURIComponent(storeId)}`,
     {
-      p_store_id: storeId,
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}` },
     }
   );
+  const payload = await response.json().catch(() => null);
 
   return {
-    data: (data || null) as ShippingDashboardData | null,
-    error,
+    data: response.ok ? (payload?.data as ShippingDashboardData) : null,
+    error: response.ok
+      ? null
+      : new Error(payload?.error || "No se pudieron calcular las estadísticas."),
   };
 }

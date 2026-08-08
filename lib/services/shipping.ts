@@ -12,6 +12,10 @@ function paymentStatus(total: number, paid: number) {
   return "pending";
 }
 
+function roundMoney(value: number) {
+  return Number(Math.max(Number(value || 0), 0).toFixed(2));
+}
+
 export function getShipmentsByStoreId(storeId: string) {
   return supabase.from("shipments").select("*").eq("store_id", storeId).is("deleted_at", null).order("order_number", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false }).returns<Shipment[]>();
 }
@@ -154,7 +158,13 @@ export async function getShippingDriversByStoreId(storeId: string) {
 }
 
 async function replaceItems(storeId: string, shipmentId: string, input: ShipmentInput) {
-  await supabase.from("shipment_items").delete().eq("store_id", storeId).eq("shipment_id", shipmentId);
+  const [itemsDelete, feesDelete] = await Promise.all([
+    supabase.from("shipment_items").delete().eq("store_id", storeId).eq("shipment_id", shipmentId),
+    supabase.from("shipment_extra_fees").delete().eq("shipment_id", shipmentId),
+  ]);
+  if (itemsDelete.error) throw itemsDelete.error;
+  if (feesDelete.error) throw feesDelete.error;
+
   const rows: Record<string, unknown>[] = [];
   let sort = 1;
   if (input.contains_package) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
@@ -165,10 +175,32 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
     const { error } = await supabase.from("shipment_items").insert(rows);
     if (error) throw error;
   }
+
+  if (input.selected_fees.length) {
+    const feeRows = input.selected_fees.map((fee) => ({
+      store_id: storeId,
+      shipment_id: shipmentId,
+      fee_id: fee.fee_id,
+      fee_name: fee.fee_name,
+      calculation_type: fee.calculation_type,
+      configured_amount: roundMoney(fee.configured_amount),
+      calculated_amount: roundMoney(fee.calculated_amount),
+    }));
+    const { error } = await supabase.from("shipment_extra_fees").insert(feeRows);
+    if (error) throw error;
+  }
 }
 
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
+  const servicePrice = roundMoney(
+    (input.contains_package ? input.weight_subtotal : 0) +
+      (input.contains_money ? input.money_total : 0) +
+      input.extra_fees_total -
+      input.discount_amount
+  );
+  const amountPaid = roundMoney(Math.min(servicePrice, input.amount_paid));
+  const balanceDue = roundMoney(servicePrice - amountPaid);
 
   // Un envío puede crearse sin viaje. El consecutivo general se asigna
   // igualmente y trip_order permanece nulo hasta que se asigne a uno.
@@ -228,10 +260,10 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     extra_fees_total: input.extra_fees_total,
     discount_amount: input.discount_amount,
     discount_reason: input.discount_reason || null,
-    service_price: input.service_price,
-    amount_paid: input.amount_paid,
-    balance_due: input.balance_due,
-    payment_status: paymentStatus(input.service_price, input.amount_paid),
+    service_price: servicePrice,
+    amount_paid: amountPaid,
+    balance_due: balanceDue,
+    payment_status: paymentStatus(servicePrice, amountPaid),
     payment_method: input.payment_method || null,
     updated_by: userId || null,
     updated_at: now,

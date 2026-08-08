@@ -131,7 +131,8 @@ export default function ShipmentForm(props: Props) {
     const moneyDiscount = maxDiscount == null ? requestedDiscount : Math.min(requestedDiscount, Number(maxDiscount));
     const moneyTotal = form.contains_money ? Math.max(money.commission - moneyDiscount, 0) : 0;
     const total = Math.max(packageSubtotal + moneyTotal + feesTotal - Math.max(form.discount_amount, 0), 0);
-    const balance = Math.max(total - Math.max(form.amount_paid, 0), 0);
+    const amountPaid = Math.min(total, Math.max(form.amount_paid, 0));
+    const balance = Math.max(total - amountPaid, 0);
     const legacy = location ? buildLegacyLocation(location.legacy_code, form.contains_package ? (service?.legacy_prefix || "") : "") : form.location;
 
     setForm(current => ({
@@ -147,6 +148,7 @@ export default function ShipmentForm(props: Props) {
       money_discount: Number(moneyDiscount.toFixed(2)),
       money_total: Number(moneyTotal.toFixed(2)),
       service_price: Number(total.toFixed(2)),
+      amount_paid: Number(amountPaid.toFixed(2)),
       balance_due: Number(balance.toFixed(2)),
     }));
   }, [form.contains_package, form.contains_money, form.shipping_location_id, form.service_type_id, form.weight_lb, form.money_amount, form.money_discount, form.discount_amount, form.amount_paid, form.selected_fees.map(x => x.fee_id).join(","), locations, serviceTypes, rates, settings]);
