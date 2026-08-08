@@ -20,6 +20,7 @@ export type StaffUser = {
   last_sync: string | null;
   created_at: string;
   updated_at: string;
+  legacy_app_user_id?: string | null;
 };
 
 export type StaffUserInput = {
@@ -54,6 +55,24 @@ export type StaffShipment = {
   created_at: string;
   assigned_driver_id: string | null;
   assigned_driver_name: string | null;
+};
+
+export type StaffAnalyticsShipment = {
+  id: string;
+  trip_id: string | null;
+  assigned_staff_id: string | null;
+  assigned_driver_id: string | null;
+  assigned_driver_name: string | null;
+  status: string;
+  delivered: boolean;
+  created_at: string;
+  delivered_date: string | null;
+};
+
+export type StaffAnalyticsTrip = {
+  id: string;
+  trip_number: number;
+  name: string;
 };
 
 export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {

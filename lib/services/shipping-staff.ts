@@ -1,7 +1,13 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import type { StaffShipment, StaffUser, StaffUserInput } from "@/lib/shipping/staff-types";
+import type {
+  StaffAnalyticsShipment,
+  StaffAnalyticsTrip,
+  StaffShipment,
+  StaffUser,
+  StaffUserInput,
+} from "@/lib/shipping/staff-types";
 
 const STAFF_PHOTOS_BUCKET = "staff-photos";
 
@@ -109,6 +115,31 @@ export async function getShippingStaff(storeId: string) {
     .order("last_name", { ascending: true });
 
   return { data: (data || []) as StaffUser[], error };
+}
+
+export async function getShippingStaffAnalytics(storeId: string) {
+  const [shipmentsResult, tripsResult] = await Promise.all([
+    supabase
+      .from("shipments")
+      .select("id,trip_id,assigned_staff_id,assigned_driver_id,assigned_driver_name,status,delivered,created_at,delivered_date")
+      .eq("store_id", storeId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .returns<StaffAnalyticsShipment[]>(),
+    supabase
+      .from("shipping_trips")
+      .select("id,trip_number,name")
+      .eq("store_id", storeId)
+      .is("deleted_at", null)
+      .order("trip_number", { ascending: false })
+      .returns<StaffAnalyticsTrip[]>(),
+  ]);
+
+  return {
+    shipments: shipmentsResult.data || [],
+    trips: tripsResult.data || [],
+    error: shipmentsResult.error || tripsResult.error,
+  };
 }
 
 export async function createShippingStaff(input: StaffUserInput) {
