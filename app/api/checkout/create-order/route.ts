@@ -21,6 +21,13 @@ type CreateOrderBody = {
   storeId?: string;
   method?: "delivery" | "cuba";
   isLocalDelivery?: boolean;
+  // Con qué pensaba pagar el cliente al momento de crear la orden — "card"
+  // si va a ir a Stripe Checkout ahora mismo, "whatsapp" si va a mandar el
+  // pedido por WhatsApp. Se graba tal cual en orders.payment_method para
+  // poder distinguir de un vistazo el origen de cada orden, sin depender
+  // de adivinar por el payment_status (una orden de WhatsApp también puede
+  // marcarse "paid" manualmente después, por ejemplo en efectivo).
+  intendedPaymentMethod?: "card" | "whatsapp";
   zoneId?: string | null;
   items?: CheckoutItem[];
   discountCampaignId?: string | null;
@@ -123,6 +130,7 @@ export async function POST(request: Request) {
   }
 
   const storeId = clean(body.storeId, 64);
+  const intendedPaymentMethod = body.intendedPaymentMethod === "card" ? "card" : "whatsapp";
   const form = body.form || {};
   const email = clean(form.email, 200).toLowerCase();
   const customerName = clean(form.name, 150);
@@ -576,6 +584,7 @@ export async function POST(request: Request) {
       store_id: storeId,
       status: "pending",
       payment_status: "pending",
+      payment_method: intendedPaymentMethod,
       subtotal,
       delivery_fee: deliveryFee,
       platform_fee_amount: platformFeeAmount,

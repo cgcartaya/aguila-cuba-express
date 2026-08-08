@@ -350,6 +350,7 @@ export default function CheckoutPage() {
         discountCampaignId: appliedDiscount?.campaignId || null,
         discountCode: appliedDiscount?.code || null,
         customerPhone: form.phone,
+        intendedPaymentMethod: payWith,
       }),
     });
 

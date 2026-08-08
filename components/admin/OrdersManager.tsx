@@ -732,6 +732,22 @@ export default function OrdersManager({
                         {getStatusLabel(order.status)}
                       </span>
 
+                      {order.payment_method === "card" ? (
+                        <span
+                          className={`rounded-full px-3 py-1 text-xs font-black ${
+                            order.payment_status === "paid"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          💳 Tarjeta {order.payment_status === "paid" ? "pagada" : "sin pagar todavía"}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                          🟢 WhatsApp
+                        </span>
+                      )}
+
                       {view === "active" && (
                         <select
                           value={order.status}
