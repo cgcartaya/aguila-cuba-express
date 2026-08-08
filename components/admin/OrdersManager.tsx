@@ -24,6 +24,8 @@ import {
   CheckCircle2,
   MessageCircle,
   X,
+  Download,
+  Loader2,
 } from "lucide-react";
 
 import {
@@ -35,6 +37,7 @@ import {
   cleanWhatsAppPhone,
   openWhatsAppMessage,
 } from "@/lib/utils/whatsapp";
+import { downloadCsv } from "@/lib/utils/csv";
 
 const STATUSES = [
   { value: "Todas", label: "Todas" },
@@ -148,12 +151,34 @@ export default function OrdersManager({
   storeId,
   storeName = "",
   storeSlug = "",
+  totalActiveCount,
+  totalTrashCount,
+  pendingCount,
+  confirmedCount,
+  transitoCount,
+  ventasTotal,
+  hasMoreActive = false,
+  hasMoreTrash = false,
+  loadingMore = false,
+  onLoadMoreActive,
+  onLoadMoreTrash,
 }: {
   initialOrders: any[];
   initialDeletedOrders?: any[];
   storeId: string;
   storeName?: string;
   storeSlug?: string;
+  totalActiveCount?: number;
+  totalTrashCount?: number;
+  pendingCount?: number;
+  confirmedCount?: number;
+  transitoCount?: number;
+  ventasTotal?: number;
+  hasMoreActive?: boolean;
+  hasMoreTrash?: boolean;
+  loadingMore?: boolean;
+  onLoadMoreActive?: () => void;
+  onLoadMoreTrash?: () => void;
 }) {
   const { isSuperAdmin } = useAdminAccess();
 
@@ -204,20 +229,34 @@ export default function OrdersManager({
   }
 
   const stats = useMemo(() => {
-    const totalSales = orders.reduce(
-      (sum, order) => sum + Number(order.total || 0),
-      0
-    );
+    const totalSales =
+      ventasTotal != null
+        ? ventasTotal
+        : orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
 
     return {
-      total: orders.length,
-      trash: deletedOrders.length,
-      pendientes: orders.filter((o) => o.status === "pending").length,
-      confirmadas: orders.filter((o) => o.status === "confirmed").length,
-      transito: orders.filter((o) => o.status === "in_transit").length,
+      total: totalActiveCount ?? orders.length,
+      trash: totalTrashCount ?? deletedOrders.length,
+      pendientes:
+        pendingCount ?? orders.filter((o) => o.status === "pending").length,
+      confirmadas:
+        confirmedCount ??
+        orders.filter((o) => o.status === "confirmed").length,
+      transito:
+        transitoCount ??
+        orders.filter((o) => o.status === "in_transit").length,
       ventas: totalSales,
     };
-  }, [orders, deletedOrders]);
+  }, [
+    orders,
+    deletedOrders,
+    totalActiveCount,
+    totalTrashCount,
+    pendingCount,
+    confirmedCount,
+    transitoCount,
+    ventasTotal,
+  ]);
 
   const filteredOrders = useMemo(() => {
     const query = normalizeText(search);
@@ -470,6 +509,38 @@ export default function OrdersManager({
     }
   }
 
+  function handleExportCsv() {
+    downloadCsv(
+      `ordenes-${view}-${new Date().toISOString().slice(0, 10)}`,
+      [
+        "Orden",
+        "Fecha",
+        "Cliente",
+        "Teléfono",
+        "Estado",
+        "Subtotal",
+        "Envío",
+        "Comisión plataforma",
+        "Total",
+      ],
+      filteredOrders.map((order) => {
+        const customer = getCustomer(order);
+
+        return [
+          getOrderNumber(order),
+          new Date(order.created_at).toLocaleDateString("es"),
+          customer?.name || "",
+          customer?.phone || order.recipient_phone || "",
+          getStatusLabel(order.status),
+          Number(order.subtotal || 0).toFixed(2),
+          Number(order.delivery_fee || 0).toFixed(2),
+          Number(order.platform_fee_amount || 0).toFixed(2),
+          Number(order.total || 0).toFixed(2),
+        ];
+      })
+    );
+  }
+
   return (
     <>
       <section className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
@@ -526,7 +597,7 @@ export default function OrdersManager({
               : "bg-slate-50 text-slate-600 hover:bg-slate-100"
           }`}
         >
-          Órdenes activas ({orders.length})
+          Órdenes activas ({totalActiveCount ?? orders.length})
         </button>
 
         <button
@@ -538,7 +609,7 @@ export default function OrdersManager({
               : "bg-red-50 text-red-600 hover:bg-red-100"
           }`}
         >
-          Papelera ({deletedOrders.length})
+          Papelera ({totalTrashCount ?? deletedOrders.length})
         </button>
       </section>
 
@@ -553,17 +624,38 @@ export default function OrdersManager({
       )}
 
       <section className="mb-5 rounded-3xl bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-          <Search size={20} className="text-slate-400" />
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <Search size={20} className="text-slate-400" />
 
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por orden, cliente, teléfono, email o dirección..."
-            className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-          />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por orden, cliente, teléfono, email o dirección..."
+              className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={filteredOrders.length === 0}
+            className="flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Exportar las órdenes visibles a CSV"
+          >
+            <Download size={18} />
+            Exportar CSV
+          </button>
         </div>
+
+        {(view === "active" ? hasMoreActive : hasMoreTrash) && (
+          <p className="mt-3 text-xs font-semibold text-amber-700">
+            La búsqueda y el filtro solo revisan las órdenes ya cargadas.
+            Usa "Cargar más" al final de la lista para traer órdenes más
+            antiguas.
+          </p>
+        )}
       </section>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -868,6 +960,29 @@ export default function OrdersManager({
           })}
         </div>
       )}
+
+      {(view === "active" ? hasMoreActive : hasMoreTrash) &&
+        filteredOrders.length > 0 && (
+          <div className="mt-5 flex justify-center">
+            <button
+              type="button"
+              onClick={() =>
+                view === "active" ? onLoadMoreActive?.() : onLoadMoreTrash?.()
+              }
+              disabled={loadingMore}
+              className="inline-flex items-center gap-2 rounded-2xl border bg-white px-6 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loadingMore ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Cargando...
+                </>
+              ) : (
+                "Cargar más órdenes"
+              )}
+            </button>
+          </div>
+        )}
 
 
       {whatsAppPrompt && (

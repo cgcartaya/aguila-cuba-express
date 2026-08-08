@@ -16,6 +16,7 @@ import {
   MapPin,
   Megaphone,
   Route,
+  TrendingUp,
   Users,
   Wallet,
   Wrench,
@@ -70,6 +71,17 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
       { href: "/admin/customers", label: "Clientes", icon: Users },
+    ],
+  },
+  {
+    title: "Reportes",
+    module: "store",
+    links: [
+      {
+        href: "/admin/reportes/productos-mas-vendidos",
+        label: "Productos más vendidos",
+        icon: TrendingUp,
+      },
     ],
   },
   {

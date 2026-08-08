@@ -7,6 +7,7 @@ import { Building2, ExternalLink, Rocket, X } from "lucide-react";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { getVisibleAdminSections, type AdminLink } from "@/lib/admin/nav-config";
 
 type AdminMobileMenuProps = {
@@ -30,11 +31,13 @@ function MenuSection({
   links,
   pathname,
   onClose,
+  lowStockCount,
 }: {
   title: string;
   links: AdminLink[];
   pathname: string;
   onClose: () => void;
+  lowStockCount: number;
 }) {
   if (links.length === 0) return null;
 
@@ -61,6 +64,12 @@ function MenuSection({
           >
             <Icon size={24} />
             {item.label}
+
+            {item.href === "/admin/inventory" && lowStockCount > 0 && (
+              <span className="ml-auto flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-black text-white">
+                {lowStockCount > 99 ? "99+" : lowStockCount}
+              </span>
+            )}
           </Link>
         );
       })}
@@ -75,6 +84,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
 
   const activeStore = isSuperAdmin ? store || accessStore : accessStore;
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
+  const lowStockCount = useLowStockCount(activeStore?.id);
 
   if (!open) return null;
 
@@ -119,6 +129,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
               links={saasLinks}
               pathname={pathname}
               onClose={onClose}
+              lowStockCount={lowStockCount}
             />
           )}
 
@@ -129,6 +140,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
               links={section.links}
               pathname={pathname}
               onClose={onClose}
+              lowStockCount={lowStockCount}
             />
           ))}
 
@@ -137,6 +149,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
             links={[{ label: "Ver tienda pública", href: "/tienda", icon: ExternalLink }]}
             pathname={pathname}
             onClose={onClose}
+            lowStockCount={lowStockCount}
           />
         </nav>
       </aside>

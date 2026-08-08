@@ -7,6 +7,7 @@ import { ExternalLink, Plus, Rocket, Store } from "lucide-react";
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { getVisibleAdminSections } from "@/lib/admin/nav-config";
 import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
 
@@ -33,6 +34,7 @@ export default function StoreAdminNav() {
   const publicStoreHref = "/portal";
 
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
+  const lowStockCount = useLowStockCount(activeStore?.id);
 
   return (
     <aside
@@ -127,6 +129,14 @@ export default function StoreAdminNav() {
                   >
                     <Icon size={19} />
                     {link.label}
+
+                    {link.href === "/admin/inventory" && lowStockCount > 0 && (
+                      <span
+                        className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
+                      >
+                        {lowStockCount > 99 ? "99+" : lowStockCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}

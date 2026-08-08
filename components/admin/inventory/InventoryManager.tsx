@@ -11,11 +11,12 @@
 ========================================================= */
 
 import { useMemo, useState } from "react";
-import { Search, Plus, History, Pencil } from "lucide-react";
+import { Search, Plus, History, Pencil, Download } from "lucide-react";
 
 import StockModal from "./StockModal";
 import StockEntryModal from "./StockEntryModal";
 import StockHistoryModal from "./StockHistoryModal";
+import { downloadCsv } from "@/lib/utils/csv";
 
 type InventoryProductImage = {
   image_url: string;
@@ -110,18 +111,47 @@ export default function InventoryManager({
     };
   }, [products]);
 
+  function handleExportCsv() {
+    downloadCsv(
+      `inventario-${new Date().toISOString().slice(0, 10)}`,
+      ["Producto", "SKU", "Categoría", "Precio", "Stock", "Valor en stock", "Estado"],
+      filteredProducts.map((p) => [
+        p.name,
+        p.sku || "",
+        p.category || "",
+        Number(p.price || 0).toFixed(2),
+        Number(p.stock || 0),
+        (Number(p.price || 0) * Number(p.stock || 0)).toFixed(2),
+        p.is_active === false ? "Inactivo" : "Activo",
+      ])
+    );
+  }
+
   return (
     <>
       <div className="mb-5 rounded-3xl bg-white p-4 shadow-sm">
-        <div className="flex items-center gap-3 rounded-2xl border p-3">
-          <Search size={20} className="text-slate-400" />
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="flex flex-1 items-center gap-3 rounded-2xl border p-3">
+            <Search size={20} className="text-slate-400" />
 
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar producto..."
-            className="w-full outline-none"
-          />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar producto..."
+              className="w-full outline-none"
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleExportCsv}
+            disabled={filteredProducts.length === 0}
+            className="flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Exportar la lista filtrada a CSV"
+          >
+            <Download size={18} />
+            Exportar CSV
+          </button>
         </div>
       </div>
 
