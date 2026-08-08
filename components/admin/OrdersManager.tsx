@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 import {
   User,
   MapPin,
@@ -154,6 +155,8 @@ export default function OrdersManager({
   storeName?: string;
   storeSlug?: string;
 }) {
+  const { isSuperAdmin } = useAdminAccess();
+
   const [orders, setOrders] = useState(initialOrders);
   const [deletedOrders, setDeletedOrders] = useState(initialDeletedOrders);
   const [view, setView] = useState<"active" | "trash">("active");
@@ -401,8 +404,15 @@ export default function OrdersManager({
   }
 
   async function deleteOrderPermanently(order: any) {
+    if (!isSuperAdmin) {
+      alert(
+        "Solo el Super Admin puede eliminar una orden definitivamente de la papelera."
+      );
+      return;
+    }
+
     const ok = confirm(
-      "Esta acción eliminará la orden definitivamente de la base de datos.\n\nNo se tocará inventario porque ya fue restaurado al enviarla a papelera.\n\n¿Deseas continuar?"
+      "Esta acción eliminará la orden definitivamente de la base de datos.\n\nNo se tocará inventario porque ya fue restaurado al enviarla a papelera.\n\nOJO: mientras una orden esté en la papelera (sin eliminar definitivo), su comisión de plataforma SIGUE contando como pendiente. Al eliminarla definitivo, esa comisión deja de contarse.\n\n¿Deseas continuar?"
     );
 
     if (!ok) return;
@@ -681,16 +691,18 @@ export default function OrdersManager({
                             Restaurar
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => deleteOrderPermanently(order)}
-                            disabled={isActionLoading}
-                            className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                            title="Eliminar definitivamente"
-                          >
-                            <Trash2 size={16} />
-                            Eliminar definitivo
-                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => deleteOrderPermanently(order)}
+                              disabled={isActionLoading}
+                              className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                              title="Eliminar definitivamente"
+                            >
+                              <Trash2 size={16} />
+                              Eliminar definitivo
+                            </button>
+                          )}
                         </>
                       )}
                     </div>
