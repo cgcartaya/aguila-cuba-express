@@ -12,6 +12,7 @@ import {
 import { useStore } from "@/hooks/useStore";
 import type { Product, Combo, CartItem } from "@/types/cart";
 import {
+  getPlatformFeePercent,
   getPurchaseQuantityLimit,
   getUnitPriceForQuantity,
   normalizeQuantityPriceTiers,
@@ -36,6 +37,8 @@ const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const { store } = useStore();
+
+  const feePercent = getPlatformFeePercent(store);
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
@@ -88,7 +91,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           price: getUnitPriceForQuantity(
             basePrice,
             item.quantity,
-            tiers
+            tiers,
+            feePercent
           ),
         };
       });
@@ -100,7 +104,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setCartLoaded(true);
     }
-  }, [cartStorageKey]);
+  }, [cartStorageKey, feePercent]);
 
   /* =========================================================
      GUARDAR CARRITO SEGÚN TIENDA
@@ -166,7 +170,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         getUnitPriceForQuantity(
           basePrice,
           newQuantity,
-          tiers
+          tiers,
+          feePercent
         );
 
       if (existing) {
@@ -308,7 +313,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             price: getUnitPriceForQuantity(
               basePrice,
               newQuantity,
-              item.product_price_tiers
+              item.product_price_tiers,
+              feePercent
             ),
           };
         }
@@ -363,7 +369,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             price: getUnitPriceForQuantity(
               basePrice,
               newQuantity,
-              item.product_price_tiers
+              item.product_price_tiers,
+              feePercent
             ),
           };
         })

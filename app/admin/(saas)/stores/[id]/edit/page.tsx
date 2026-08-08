@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ArrowLeft, ExternalLink, ImageIcon, Search, Share2, Upload } from "lucide-react"
 import {
   getStoreById,
+  getStorePlatformFeeSummary,
   updateStore,
   uploadStoreLogo,
   uploadStoreFavicon,
@@ -23,6 +24,11 @@ export default function EditStorePage() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null)
   const [ogImageFile, setOgImageFile] = useState<File | null>(null)
   const [ogPreviewUrl, setOgPreviewUrl] = useState("")
+  const [feeSummary, setFeeSummary] = useState<{
+    totalSales: number
+    totalFee: number
+    ordersCount: number
+  } | null>(null)
 
   const [form, setForm] = useState({
     name: "",
@@ -38,6 +44,8 @@ export default function EditStorePage() {
     secondary_color: "#DC2626",
     plan: "basic",
     monthly_price: 20,
+    platform_fee_enabled: false,
+    platform_fee_percent: "0",
     is_active: true,
     has_landing: false,
     module_store_enabled: true,
@@ -76,6 +84,8 @@ export default function EditStorePage() {
         secondary_color: store.secondary_color || "#DC2626",
         plan: store.plan || "basic",
         monthly_price: Number(store.monthly_price || 20),
+        platform_fee_enabled: Boolean(store.platform_fee_enabled),
+        platform_fee_percent: String(store.platform_fee_percent ?? "0"),
         is_active: Boolean(store.is_active),
         has_landing: Boolean(store.has_landing),
         module_store_enabled: store.module_store_enabled !== false,
@@ -91,6 +101,8 @@ export default function EditStorePage() {
       })
 
       setLoading(false)
+
+      getStorePlatformFeeSummary(storeId).then(setFeeSummary)
     }
 
     loadStore()
@@ -173,6 +185,8 @@ export default function EditStorePage() {
         secondary_color: form.secondary_color,
         plan: form.plan,
         monthly_price: Number(form.monthly_price),
+        platform_fee_enabled: form.platform_fee_enabled,
+        platform_fee_percent: Number(form.platform_fee_percent) || 0,
         is_active: form.is_active,
         has_landing: form.has_landing,
         module_store_enabled: form.module_store_enabled,
@@ -460,6 +474,103 @@ export default function EditStorePage() {
               </span>
             </label>
           </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block font-medium">Comisión de plataforma (Perla)</label>
+          <p className="mb-3 text-sm text-slate-500">
+            El dueño de la tienda sigue escribiendo siempre su precio base real.
+            Si activas esto, el sistema suma automáticamente el porcentaje
+            indicado al precio que ve el cliente en la tienda — el precio base
+            en el producto nunca se modifica. Actívalo tienda por tienda.
+          </p>
+
+          <label className="mb-3 flex items-start gap-3 rounded-2xl border p-4">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={form.platform_fee_enabled}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  platform_fee_enabled: e.target.checked,
+                })
+              }
+            />
+            <span>
+              <span className="block font-medium text-slate-800">
+                Aplicar comisión sobre el precio mostrado al cliente
+              </span>
+              <span className="mt-1 block text-sm text-slate-500">
+                Se aplica sobre el precio final de cada producto (después de
+                aplicar cualquier escala por cantidad).
+              </span>
+            </span>
+          </label>
+
+          {form.platform_fee_enabled && (
+            <div className="rounded-2xl border p-4">
+              <label className="mb-2 block text-sm font-medium">
+                Porcentaje de comisión (%)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                className="w-full max-w-[160px] rounded-xl border p-3"
+                value={form.platform_fee_percent}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    platform_fee_percent: e.target.value,
+                  })
+                }
+              />
+
+              {(() => {
+                const pct = Number(form.platform_fee_percent) || 0
+                const example = 12.5
+                const withFee = Math.round(example * (1 + pct / 100) * 100) / 100
+
+                return (
+                  <p className="mt-2 text-xs text-slate-500">
+                    Ejemplo: un producto de ${example.toFixed(2)} se mostraría
+                    al cliente en ${withFee.toFixed(2)} (ganancia de $
+                    {(withFee - example).toFixed(2)} por unidad).
+                  </p>
+                )
+              })()}
+
+              {feeSummary && (
+                <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm">
+                  <p className="font-medium text-slate-700">
+                    Resumen histórico de esta tienda
+                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-lg font-black text-slate-800">
+                        {feeSummary.ordersCount}
+                      </p>
+                      <p className="text-xs text-slate-500">Órdenes</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-black text-slate-800">
+                        ${feeSummary.totalSales.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-slate-500">Ventas totales</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-black text-emerald-700">
+                        ${feeSummary.totalFee.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-slate-500">Comisión generada</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { normalizeCustomerPhone } from "@/lib/utils/phone";
+import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 
 const clean = (value: unknown, max = 300) =>
   String(value ?? "").trim().slice(0, max);
@@ -46,6 +47,8 @@ type PreparedItem = {
   product_name: string;
   quantity: number;
   price: number;
+  base_price: number;
+  platform_fee_amount: number;
   subtotal: number;
   minimum_order_exempt: boolean;
   delivery_included: boolean;
@@ -137,7 +140,9 @@ export async function POST(request: Request) {
 
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")
-    .select("id, is_active, module_store_enabled")
+    .select(
+      "id, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent"
+    )
     .eq("id", storeId)
     .maybeSingle();
 
@@ -145,6 +150,16 @@ export async function POST(request: Request) {
   if (!store || store.is_active === false || store.module_store_enabled === false) {
     return fail("Esta tienda no está disponible.", 404);
   }
+
+  // Fee de plataforma (Perla): se calcula SIEMPRE en el servidor a
+  // partir de la configuración real de la tienda, nunca confiando en
+  // nada que venga del cliente.
+  const platformFeePercent =
+    store.platform_fee_enabled &&
+    Number.isFinite(Number(store.platform_fee_percent)) &&
+    Number(store.platform_fee_percent) > 0
+      ? Number(store.platform_fee_percent)
+      : 0;
 
   const isLocalDelivery = Boolean(body.isLocalDelivery);
   const preparedItems: PreparedItem[] = [];
@@ -246,11 +261,16 @@ export async function POST(request: Request) {
           );
         }
 
-        const price = getServerUnitPriceForQuantity(
+        const baseUnitPrice = getServerUnitPriceForQuantity(
           money(product.price),
           totalRequestedQuantity,
           (tierRows || []) as PriceTierRow[]
         );
+
+        // Precio que realmente paga el cliente (base + fee de
+        // plataforma, si la tienda lo tiene activado).
+        const price = applyPlatformFee(baseUnitPrice, platformFeePercent);
+        const unitFeeAmount = money(price - baseUnitPrice);
 
         const categoryRule = categoryRuleMap.get(
           clean(product.category, 160).toLowerCase()
@@ -273,6 +293,8 @@ export async function POST(request: Request) {
           product_name: clean(product.name, 200),
           quantity,
           price,
+          base_price: baseUnitPrice,
+          platform_fee_amount: money(unitFeeAmount * quantity),
           subtotal: money(price * quantity),
           minimum_order_exempt: minimumOrderExempt === true,
           delivery_included: deliveryIncluded === true,
@@ -317,6 +339,8 @@ export async function POST(request: Request) {
           }
         }
 
+        // Nota: por ahora el fee de plataforma solo aplica a
+        // productos individuales, no a combos (precio fijo).
         const price = money(combo.price);
         preparedItems.push({
           item_type: "combo",
@@ -325,6 +349,8 @@ export async function POST(request: Request) {
           product_name: clean(combo.name, 200),
           quantity,
           price,
+          base_price: price,
+          platform_fee_amount: 0,
           subtotal: money(price * quantity),
           minimum_order_exempt: false,
           delivery_included: false,
@@ -415,6 +441,10 @@ export async function POST(request: Request) {
 
     const subtotal = money(
       preparedItems.reduce((sum, item) => sum + item.subtotal, 0)
+    );
+
+    const platformFeeAmount = money(
+      preparedItems.reduce((sum, item) => sum + item.platform_fee_amount, 0)
     );
 
     const minimumOrderExempt =
@@ -547,6 +577,7 @@ export async function POST(request: Request) {
       payment_status: "pending",
       subtotal,
       delivery_fee: deliveryFee,
+      platform_fee_amount: platformFeeAmount,
       discount_campaign_id: discountCampaignId,
       discount_code: discountCode,
       discount_amount: discountAmount,
@@ -615,6 +646,8 @@ export async function POST(request: Request) {
           product_name: item.product_name,
           quantity: item.quantity,
           price: item.price,
+          base_price: item.base_price,
+          platform_fee_amount: item.platform_fee_amount,
           subtotal: item.subtotal,
         }))
       );
@@ -685,6 +718,7 @@ export async function POST(request: Request) {
         order_number: publicOrderNumber,
         subtotal,
         delivery_fee: deliveryFee,
+        platform_fee_amount: platformFeeAmount,
         discount_amount: discountAmount,
         total,
       },

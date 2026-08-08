@@ -21,6 +21,8 @@ const STORE_PUBLIC_FIELDS = `
   module_pickups_enabled,
   plan,
   monthly_price,
+  platform_fee_enabled,
+  platform_fee_percent,
   payment_status,
   last_payment_date,
   next_payment_date,
@@ -162,6 +164,8 @@ export async function updateStore(
     module_pickups_enabled?: boolean
     plan?: string
     monthly_price?: number | null
+    platform_fee_enabled?: boolean
+    platform_fee_percent?: number | null
     next_payment_date?: string | null
     last_payment_date?: string | null
     payment_status?: string | null
@@ -299,6 +303,39 @@ export async function uploadStoreOgImage(storeId: string, file: File) {
   const { data } = supabase.storage.from("seo").getPublicUrl(filePath)
 
   return { data: withCacheVersion(data.publicUrl), error: null }
+}
+
+/**
+ * Resumen de comisión de plataforma generada por una tienda.
+ * Suma orders.platform_fee_amount de todas las órdenes (cualquier
+ * estado, ya que el fee se cobró en el momento de la compra).
+ */
+export async function getStorePlatformFeeSummary(storeId: string): Promise<{
+  totalSales: number
+  totalFee: number
+  ordersCount: number
+}> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("total, platform_fee_amount")
+    .eq("store_id", storeId)
+
+  if (error || !data) {
+    console.error("Error loading platform fee summary:", error)
+    return { totalSales: 0, totalFee: 0, ordersCount: 0 }
+  }
+
+  const totalSales = data.reduce((sum, row) => sum + Number(row.total || 0), 0)
+  const totalFee = data.reduce(
+    (sum, row) => sum + Number((row as { platform_fee_amount?: number }).platform_fee_amount || 0),
+    0
+  )
+
+  return {
+    totalSales: Math.round(totalSales * 100) / 100,
+    totalFee: Math.round(totalFee * 100) / 100,
+    ordersCount: data.length,
+  }
 }
 
 export async function markStoreAsPaid(

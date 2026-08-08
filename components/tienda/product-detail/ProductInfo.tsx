@@ -4,10 +4,13 @@ import { useState } from "react";
 import { ShoppingCart, ShieldCheck, Truck } from "lucide-react";
 
 import {
+  applyPlatformFee,
+  getPlatformFeePercent,
   getPurchaseQuantityLimit,
   getUnitPriceForQuantity,
   normalizeQuantityPriceTiers,
 } from "@/lib/storefront/product-quantity-pricing";
+import { useStore } from "@/hooks/useStore";
 
 type ProductInfoProps = {
   name: string;
@@ -37,6 +40,9 @@ export default function ProductInfo({
   setQuantity,
   onAddToCart,
 }: ProductInfoProps) {
+  const { store } = useStore();
+  const feePercent = getPlatformFeePercent(store);
+
   const hasStock = Number(stock) > 0;
   const tiers = normalizeQuantityPriceTiers(priceTiers);
 
@@ -48,11 +54,14 @@ export default function ProductInfo({
   const effectivePrice = getUnitPriceForQuantity(
     price,
     quantity,
-    tiers
+    tiers,
+    feePercent
   );
 
+  const displayBasePrice = applyPlatformFee(Number(price), feePercent);
+
   const hasQuantityDiscount =
-    effectivePrice < Number(price);
+    effectivePrice < displayBasePrice;
 
   const [expanded, setExpanded] = useState(false);
 
@@ -76,7 +85,7 @@ export default function ProductInfo({
 
           {hasQuantityDiscount && (
             <span className="text-base font-bold text-slate-400 line-through">
-              ${Number(price).toFixed(2)}
+              ${displayBasePrice.toFixed(2)}
             </span>
           )}
         </div>
@@ -92,7 +101,8 @@ export default function ProductInfo({
                     : "bg-slate-100 text-slate-600"
                 }`}
               >
-                {tier.min_quantity}+ por ${tier.unit_price.toFixed(2)} c/u
+                {tier.min_quantity}+ por $
+                {applyPlatformFee(tier.unit_price, feePercent).toFixed(2)} c/u
               </span>
             ))}
           </div>

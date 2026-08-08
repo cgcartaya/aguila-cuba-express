@@ -15,7 +15,9 @@ import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
+  applyPlatformFee,
   getNextQuantityPriceTier,
+  getPlatformFeePercent,
   getPurchaseQuantityLimit,
   getUnitPriceForQuantity,
   normalizeQuantityPriceTiers,
@@ -42,6 +44,8 @@ export default function ProductCard({
 
   const { store } = useStore();
 
+  const feePercent = getPlatformFeePercent(store);
+
   const isDefaultStore = store?.slug === "aguila";
 
   const productUrl =
@@ -51,6 +55,12 @@ export default function ProductCard({
 
   const imageUrl = getSafeImageUrl(product.image_url);
   const basePrice = Number(product.price || 0);
+  const displayBasePrice = getUnitPriceForQuantity(
+    basePrice,
+    1,
+    [],
+    feePercent
+  );
   const tiers = normalizeQuantityPriceTiers(
     product.product_price_tiers
   );
@@ -61,7 +71,8 @@ export default function ProductCard({
   const effectivePrice = getUnitPriceForQuantity(
     basePrice,
     Math.max(1, quantity),
-    tiers
+    tiers,
+    feePercent
   );
 
   const maxAllowed = getPurchaseQuantityLimit({
@@ -75,7 +86,7 @@ export default function ProductCard({
   );
 
   const hasQuantityDiscount =
-    quantity > 0 && effectivePrice < basePrice;
+    quantity > 0 && effectivePrice < displayBasePrice;
 
   function handleAddToCart() {
     if (store?.id) {
@@ -88,7 +99,8 @@ export default function ProductCard({
         value: getUnitPriceForQuantity(
           basePrice,
           Math.max(1, quantity + 1),
-          tiers
+          tiers,
+          feePercent
         ),
       });
     }
@@ -154,7 +166,7 @@ export default function ProductCard({
 
             {hasQuantityDiscount && (
               <span className="text-xs font-bold text-slate-400 line-through">
-                ${basePrice.toFixed(2)}
+                ${displayBasePrice.toFixed(2)}
               </span>
             )}
           </div>
@@ -162,7 +174,7 @@ export default function ProductCard({
           {nextTier && (
             <p className="mt-1 text-[11px] font-bold text-emerald-700">
               {nextTier.min_quantity}+ unidades: $
-              {nextTier.unit_price.toFixed(2)} c/u
+              {applyPlatformFee(nextTier.unit_price, feePercent).toFixed(2)} c/u
             </p>
           )}
 

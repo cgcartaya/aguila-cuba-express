@@ -25,6 +25,9 @@ export interface Store {
   plan: StorePlan
   monthly_price: number | null
 
+  platform_fee_enabled: boolean
+  platform_fee_percent: number | null
+
   next_payment_date: string | null
   last_payment_date: string | null
   payment_status: StorePaymentStatus | null
