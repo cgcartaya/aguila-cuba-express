@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   Users,
   DollarSign,
+  Wallet,
   ArrowRight,
   Store,
   Loader2,
@@ -25,6 +26,10 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { useStore } from "@/hooks/useStore";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
+import {
+  getPendingPlatformFee,
+  type PendingPlatformFee,
+} from "@/lib/services/platform-fee-settlements";
 
 type MobileOrderStatus = "Pendiente" | "Preparando" | "En camino" | "Entregado";
 
@@ -67,6 +72,7 @@ export default function AdminDashboardPage() {
 
   const [loadingData, setLoadingData] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingFee, setPendingFee] = useState<PendingPlatformFee | null>(null);
 
   const activeStore = useMemo(() => {
     if (isSuperAdmin) {
@@ -131,7 +137,10 @@ export default function AdminDashboardPage() {
           .eq("store_id", activeStore.id)
           .is("deleted_at", null),
 
-        Promise.resolve({ count: 0, error: null }),
+        supabase
+          .from("customers")
+          .select("*", { count: "exact", head: true })
+          .eq("store_id", activeStore.id),
 
         supabase
           .from("orders")
@@ -175,6 +184,23 @@ export default function AdminDashboardPage() {
       mounted = false;
     };
   }, [accessLoading, storeLoading, activeStore?.id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    if (!activeStore?.id || !activeStore?.platform_fee_enabled) {
+      setPendingFee(null);
+      return;
+    }
+
+    getPendingPlatformFee(activeStore.id).then((result) => {
+      if (mounted) setPendingFee(result);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, [activeStore?.id, activeStore?.platform_fee_enabled]);
 
   const totalSales =
     data.recentOrders.reduce(
@@ -268,6 +294,36 @@ export default function AdminDashboardPage() {
           }
         />
 
+        {activeStore?.platform_fee_enabled && pendingFee && pendingFee.feeAmount > 0 && (
+          <Link
+            href="/admin/comision"
+            className="mb-6 flex flex-col gap-3 rounded-3xl border-2 border-emerald-200 bg-emerald-50 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                <Wallet size={20} />
+              </span>
+              <div>
+                <p className="text-sm font-bold text-emerald-800">
+                  Comisión de plataforma pendiente
+                </p>
+                <p className="text-xs text-emerald-700/80">
+                  {pendingFee.ordersCount} órdenes · $
+                  {pendingFee.salesAmount.toFixed(2)} en ventas desde el
+                  último corte
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 sm:pl-4">
+              <p className="text-2xl font-black text-emerald-800">
+                ${pendingFee.feeAmount.toFixed(2)}
+              </p>
+              <ArrowRight size={18} className="text-emerald-700" />
+            </div>
+          </Link>
+        )}
+
         {isSuperAdmin && !activeStore ? (
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-8">
             <div className="mx-auto max-w-2xl text-center">
@@ -287,7 +343,7 @@ export default function AdminDashboardPage() {
           </section>
         ) : (
           <>
-        <section className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((card) => {
             const Icon = card.icon;
 
@@ -313,7 +369,7 @@ export default function AdminDashboardPage() {
           })}
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-3">
+        <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
             <div className="mb-5 flex items-center justify-between">
               <div>
@@ -343,7 +399,7 @@ export default function AdminDashboardPage() {
               {data.recentOrders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:border-blue-100 hover:bg-blue-50/40"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:border-blue-100 hover:bg-blue-50/40"
                 >
                   <div>
                     <p className="font-bold text-[#0B1F4D]">
