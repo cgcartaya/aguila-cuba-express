@@ -264,6 +264,37 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       };
     }
 
+    // El RPC create_numbered_shipment se encarga de reservar los consecutivos
+    // generales y del viaje. Algunas versiones instaladas de esa función en
+    // Supabase sólo copian una lista antigua de campos de p_payload y omiten
+    // relaciones añadidas después, como customer_id, recipient_id y los datos
+    // del repartidor. Eso hacía que el formulario enviara correctamente esos
+    // valores, pero el registro recién creado los recibiera como null; al
+    // editar, el UPDATE directo sí los guardaba y por eso parecían requerir una
+    // segunda selección.
+    //
+    // Volvemos a persistir el payload normalizado sobre la fila ya numerada.
+    // No incluimos trip_id: el RPC ya lo asignó junto con trip_order y no
+    // debemos recalcular ni alterar esa relación en esta actualización.
+    const persistedResult = await supabase
+      .from("shipments")
+      .update(data)
+      .eq("store_id", storeId)
+      .eq("id", shipment.id)
+      .select("*")
+      .single<Shipment>();
+
+    if (persistedResult.error || !persistedResult.data) {
+      return {
+        data: shipment,
+        error:
+          persistedResult.error ||
+          { message: "El envío fue creado, pero no se pudieron confirmar todos sus datos." },
+      };
+    }
+
+    shipment = persistedResult.data;
+
     if (shipment.trip_id !== tripId) {
       return {
         data: shipment,
@@ -282,6 +313,31 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
       return {
         data: shipment,
         error: { message: "El envío fue creado, pero no recibió su posición dentro del viaje." },
+      };
+    }
+
+    if (shipment.customer_id !== input.customer_id) {
+      return {
+        data: shipment,
+        error: { message: "El envío fue creado, pero no conservó el cliente seleccionado." },
+      };
+    }
+
+    if (shipment.recipient_id !== input.recipient_id) {
+      return {
+        data: shipment,
+        error: { message: "El envío fue creado, pero no conservó el destinatario seleccionado." },
+      };
+    }
+
+    if (
+      shipment.assigned_staff_id !== input.assigned_staff_id ||
+      shipment.assigned_driver_id !== input.assigned_driver_id ||
+      shipment.assigned_driver_name !== input.assigned_driver_name
+    ) {
+      return {
+        data: shipment,
+        error: { message: "El envío fue creado, pero no conservó el repartidor seleccionado." },
       };
     }
 
