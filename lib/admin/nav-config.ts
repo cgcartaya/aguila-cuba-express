@@ -17,6 +17,7 @@ import {
   Megaphone,
   Route,
   Users,
+  Wallet,
   Wrench,
 } from "lucide-react";
 
@@ -106,6 +107,7 @@ export const adminNavSections: AdminSection[] = [
     title: "Configuración",
     links: [
       { href: "/admin/settings", label: "Ajustes de tienda", icon: Settings },
+      { href: "/admin/comision", label: "Comisión de plataforma", icon: Wallet },
     ],
   },
 ];

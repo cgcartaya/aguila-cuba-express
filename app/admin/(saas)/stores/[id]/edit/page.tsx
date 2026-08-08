@@ -12,6 +12,13 @@ import {
   uploadStoreFavicon,
   uploadStoreOgImage,
 } from "@/lib/services/stores"
+import {
+  getPendingPlatformFee,
+  getPlatformFeeSettlementHistory,
+  registerPlatformFeeSettlement,
+  type PendingPlatformFee,
+  type PlatformFeeSettlement,
+} from "@/lib/services/platform-fee-settlements"
 
 export default function EditStorePage() {
   const router = useRouter()
@@ -29,6 +36,9 @@ export default function EditStorePage() {
     totalFee: number
     ordersCount: number
   } | null>(null)
+  const [pendingFee, setPendingFee] = useState<PendingPlatformFee | null>(null)
+  const [settlementHistory, setSettlementHistory] = useState<PlatformFeeSettlement[]>([])
+  const [registeringSettlement, setRegisteringSettlement] = useState(false)
 
   const [form, setForm] = useState({
     name: "",
@@ -103,6 +113,8 @@ export default function EditStorePage() {
       setLoading(false)
 
       getStorePlatformFeeSummary(storeId).then(setFeeSummary)
+      getPendingPlatformFee(storeId).then(setPendingFee)
+      getPlatformFeeSettlementHistory(storeId).then(setSettlementHistory)
     }
 
     loadStore()
@@ -119,6 +131,40 @@ export default function EditStorePage() {
 
     return () => URL.revokeObjectURL(objectUrl)
   }, [ogImageFile, form.og_image_url])
+
+  async function handleRegisterSettlement() {
+    if (!pendingFee || pendingFee.feeAmount <= 0) return
+
+    const confirmed = window.confirm(
+      `¿Confirmas que ya recibiste $${pendingFee.feeAmount.toFixed(2)} de esta tienda? Esto cierra el periodo pendiente.`
+    )
+
+    if (!confirmed) return
+
+    try {
+      setRegisteringSettlement(true)
+
+      const { data, error } = await registerPlatformFeeSettlement(storeId)
+
+      if (error || !data) {
+        alert(error?.message || "No se pudo registrar el pago")
+        return
+      }
+
+      const [newPending, newHistory] = await Promise.all([
+        getPendingPlatformFee(storeId),
+        getPlatformFeeSettlementHistory(storeId),
+      ])
+
+      setPendingFee(newPending)
+      setSettlementHistory(newHistory)
+    } catch (error) {
+      console.error("ERROR REGISTRANDO LIQUIDACIÓN:", error)
+      alert("Error registrando el pago")
+    } finally {
+      setRegisteringSettlement(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -566,6 +612,85 @@ export default function EditStorePage() {
                       </p>
                       <p className="text-xs text-slate-500">Comisión generada</p>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4">
+                <p className="font-medium text-slate-700">
+                  Pendiente por cobrar
+                </p>
+                <p className="text-xs text-slate-500">
+                  Desde{" "}
+                  {pendingFee?.periodStart
+                    ? new Date(pendingFee.periodStart).toLocaleDateString("es")
+                    : "el inicio de la tienda"}{" "}
+                  hasta hoy. Tú decides cuándo cortar este periodo — no se
+                  cierra solo.
+                </p>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-2xl font-black text-emerald-700">
+                      ${(pendingFee?.feeAmount ?? 0).toFixed(2)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      sobre ${(pendingFee?.salesAmount ?? 0).toFixed(2)} en
+                      ventas ({pendingFee?.ordersCount ?? 0} órdenes)
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={
+                      registeringSettlement ||
+                      !pendingFee ||
+                      pendingFee.feeAmount <= 0
+                    }
+                    onClick={handleRegisterSettlement}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white shadow disabled:opacity-40"
+                  >
+                    {registeringSettlement ? "Registrando..." : "Registrar pago"}
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-slate-500">
+                  Úsalo solo cuando YA recibiste ese dinero de la tienda —
+                  cierra el periodo y arranca el contador en $0.
+                </p>
+              </div>
+
+              {settlementHistory.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-2 font-medium text-slate-700">
+                    Historial de pagos
+                  </p>
+                  <div className="space-y-2">
+                    {settlementHistory.map((settlement) => (
+                      <div
+                        key={settlement.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-white p-3 text-sm"
+                      >
+                        <div>
+                          <p className="font-semibold text-slate-700">
+                            {new Date(settlement.period_start).toLocaleDateString("es")}
+                            {" – "}
+                            {new Date(settlement.period_end).toLocaleDateString("es")}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            ${settlement.sales_amount.toFixed(2)} en ventas
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-emerald-700">
+                            ${settlement.fee_amount.toFixed(2)}
+                          </span>
+                          <span className="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">
+                            PAGADO
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
