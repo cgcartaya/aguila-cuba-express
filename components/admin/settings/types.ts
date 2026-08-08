@@ -20,6 +20,7 @@ export type StoreSettings = {
   phone?: string | null;
   whatsapp?: string | null;
   email?: string | null;
+  order_notification_email?: string | null;
   address?: string | null;
   city?: string | null;
   facebook?: string | null;

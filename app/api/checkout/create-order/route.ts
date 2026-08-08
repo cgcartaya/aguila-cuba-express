@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { normalizeCustomerPhone } from "@/lib/utils/phone";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
+import { sendNewOrderEmail } from "@/lib/notifications/order-email";
 
 const clean = (value: unknown, max = 300) =>
   String(value ?? "").trim().slice(0, max);
@@ -709,6 +710,44 @@ export async function POST(request: Request) {
       }
 
       appliedStockChanges.push({ productId, quantity: needed });
+    }
+
+    // Aviso por email — nunca debe tumbar el pedido si falla. La orden
+    // ya está creada y confirmada en este punto; esto es solo una
+    // notificación adicional para la tienda.
+    try {
+      const { data: notificationSettings } = await supabaseAdmin
+        .from("store_settings")
+        .select("order_notification_email")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      const notifyEmail = notificationSettings?.order_notification_email;
+
+      if (notifyEmail) {
+        const { data: storeInfo } = await supabaseAdmin
+          .from("stores")
+          .select("name")
+          .eq("id", storeId)
+          .maybeSingle();
+
+        await sendNewOrderEmail({
+          toEmail: notifyEmail,
+          storeName: storeInfo?.name || "tu tienda",
+          orderNumber: publicOrderNumber,
+          customerName,
+          customerPhone,
+          total,
+          itemsCount: preparedItems.length,
+          isLocalDelivery,
+          municipality: city,
+        });
+      }
+    } catch (notificationError) {
+      console.error(
+        "Error enviando notificación de nueva orden (no afecta la orden):",
+        notificationError
+      );
     }
 
     return NextResponse.json({

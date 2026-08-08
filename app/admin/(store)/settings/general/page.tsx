@@ -27,6 +27,7 @@ const emptyForm = {
   phone: "",
   whatsapp: "",
   email: "",
+  order_notification_email: "",
   address: "",
   city: "",
   facebook: "",
@@ -93,6 +94,7 @@ export default function AdminGeneralSettingsPage() {
           phone: data?.phone || "",
           whatsapp: data?.whatsapp || "",
           email: data?.email || "",
+          order_notification_email: data?.order_notification_email || "",
           address: data?.address || "",
           city: data?.city || "",
           facebook: data?.facebook || "",
@@ -236,6 +238,23 @@ export default function AdminGeneralSettingsPage() {
               onChange={(value) => handleChange("email", value)}
               placeholder="correo@negocio.com"
             />
+
+            <div className="md:col-span-2">
+              <AdminInput
+                label="Email para avisos de pedidos nuevos"
+                value={form.order_notification_email}
+                onChange={(value) =>
+                  handleChange("order_notification_email", value)
+                }
+                placeholder="pedidos@negocio.com"
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                Cada vez que entre un pedido nuevo, se manda un aviso
+                automático a este correo — sin depender de que el cliente
+                lo envíe por WhatsApp. Déjalo vacío si no quieres recibir
+                avisos por email.
+              </p>
+            </div>
 
             <AdminInput
               label="Ciudad"
