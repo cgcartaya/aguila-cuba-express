@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase-admin";
 import { requireStripe } from "@/lib/services/stripe-admin";
-import { createPaymentReceipt } from "@/lib/services/receipts";
+import { handleStripeWebhookEvent } from "@/lib/services/stripe-webhook-handler";
 
+// Webhook de la PLATAFORMA — para tiendas en modo "connect" (cuentas
+// conectadas v2). Firmado con STRIPE_WEBHOOK_SECRET, usando la secret key
+// de la plataforma. Para tiendas en modo "direct" ver en su lugar
+// app/api/webhooks/stripe-direct/[storeId]/route.ts.
 export async function POST(request: NextRequest) {
   let stripe;
   try {
@@ -24,92 +27,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `Firma inválida: ${(err as Error).message}` }, { status: 400 });
   }
 
-  if (event.type === "account.updated") {
-    const account = event.data.object as { id: string; charges_enabled: boolean; details_submitted: boolean };
-    await supabaseAdmin
-      .from("stores")
-      .update({ stripe_charges_enabled: account.charges_enabled, stripe_details_submitted: account.details_submitted })
-      .eq("stripe_account_id", account.id);
-  }
-
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as { id: string; metadata?: Record<string, string> };
-    const shipmentId = session.metadata?.shipment_id;
-    const orderId = session.metadata?.order_id;
-
-    const metadataStoreId = session.metadata?.store_id;
-
-    if (orderId && metadataStoreId) {
-      // Pedido de tienda: el evento solo puede modificar la orden
-      // indicada dentro del mismo tenant que quedó grabado en Stripe.
-      await supabaseAdmin
-        .from("orders")
-        .update({ payment_status: "paid" })
-        .eq("id", orderId)
-        .eq("store_id", metadataStoreId)
-        .is("deleted_at", null);
-    }
-
-    if (shipmentId) {
-      let shipmentQuery = supabaseAdmin
-        .from("shipments")
-        .select("id, store_id, service_price, balance_due")
-        .eq("id", shipmentId)
-        .is("deleted_at", null);
-
-      if (metadataStoreId) {
-        shipmentQuery = shipmentQuery.eq("store_id", metadataStoreId);
-      }
-
-      const { data: shipment } = await shipmentQuery.maybeSingle();
-
-      if (shipment) {
-        // El recibo debe reflejar lo que se cobró EN ESTA transacción, no
-        // el total de la factura — importante si el envío ya traía un
-        // pago parcial anterior (efectivo o tarjeta).
-        const amountCollectedNow = Number(shipment.balance_due || 0);
-
-        await supabaseAdmin
-          .from("shipments")
-          .update({
-            amount_paid: shipment.service_price,
-            balance_due: 0,
-            payment_status: "paid",
-            payment_method: "card",
-          })
-          .eq("id", shipmentId)
-          .eq("store_id", shipment.store_id)
-          .is("deleted_at", null);
-
-        // Recibo de pago inmutable con folio consecutivo — separado de la
-        // factura, que se genera desde que se crea el envío.
-        const receiptStoreId = metadataStoreId || shipment.store_id;
-        if (receiptStoreId && amountCollectedNow > 0) {
-          await createPaymentReceipt({
-            storeId: receiptStoreId,
-            shipmentId: shipment.id,
-            amount: amountCollectedNow,
-            paymentMethod: "card",
-            stripeCheckoutSessionId: session.id,
-          });
-        }
-      }
-
-      let paymentSessionQuery = supabaseAdmin
-        .from("shipment_payment_sessions")
-        .update({ status: "paid" })
-        .eq("stripe_checkout_session_id", session.id);
-
-      if (metadataStoreId) {
-        paymentSessionQuery = paymentSessionQuery.eq(
-          "store_id",
-          metadataStoreId
-        );
-      }
-
-      await paymentSessionQuery;
-    }
-  }
+  await handleStripeWebhookEvent(event);
 
   return NextResponse.json({ received: true });
 }

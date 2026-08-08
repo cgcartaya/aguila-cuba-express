@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { requireStripe } from "@/lib/services/stripe-admin";
+import { getStoreStripeContext } from "@/lib/services/stripe-admin";
 
 const fail = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
@@ -46,29 +46,27 @@ export async function POST(request: NextRequest) {
     return fail("Este envío no tiene saldo pendiente.");
   }
 
-  let stripe;
-  try {
-    stripe = requireStripe();
-  } catch {
-    return fail("Los cobros con tarjeta no están activos todavía.", 503);
-  }
-
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")
-    .select("id, name, stripe_account_id, stripe_charges_enabled")
+    .select("id, name, stripe_mode, stripe_account_id, stripe_charges_enabled, stripe_direct_secret_key")
     .eq("id", shipment.store_id)
     .maybeSingle();
 
-  if (storeError || !store?.stripe_account_id || !store.stripe_charges_enabled) {
+  if (storeError || !store) return fail("Tienda no encontrada.", 404);
+
+  const stripeCtx = getStoreStripeContext(store);
+  if (!stripeCtx) {
     return fail("Esta tienda todavía no tiene cobros con tarjeta activos.", 503);
   }
 
   const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
   const amountCents = Math.round(Number(shipment.balance_due) * 100);
-  const PLATFORM_FEE_RATE = 0.02; // 2% — misma comisión que el portal de clientes
+  // 2% — misma comisión que el portal de clientes. Solo aplica en modo
+  // "connect"; en "direct" no hay cuenta conectada donde repartirla.
+  const PLATFORM_FEE_RATE = 0.02;
   const applicationFeeCents = Math.round(amountCents * PLATFORM_FEE_RATE);
 
-  const session = await stripe.checkout.sessions.create(
+  const session = await stripeCtx.stripe.checkout.sessions.create(
     {
       mode: "payment",
       payment_method_types: ["card"],
@@ -82,9 +80,9 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      payment_intent_data: {
-        application_fee_amount: applicationFeeCents,
-      },
+      ...(stripeCtx.applyPlatformFee
+        ? { payment_intent_data: { application_fee_amount: applicationFeeCents } }
+        : {}),
       success_url:
         deliveryChannel === "customer"
           ? `${origin}/portal/pago-exitoso?tracking=${encodeURIComponent(shipment.tracking_code || "")}`
@@ -95,7 +93,7 @@ export async function POST(request: NextRequest) {
           : `${origin}/admin/shipping/recoger?cancelado=1&shipment=${shipment.id}`,
       metadata: { shipment_id: shipment.id, store_id: store.id, channel: `pickup-${deliveryChannel}` },
     },
-    { stripeAccount: store.stripe_account_id }
+    stripeCtx.requestOptions
   );
 
   await supabaseAdmin.from("shipment_payment_sessions").insert({
