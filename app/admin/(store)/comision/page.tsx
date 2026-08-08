@@ -10,10 +10,11 @@
    no se hace desde aquí.
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Wallet } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStore } from "@/hooks/useStore";
 import {
   getPendingPlatformFee,
   getPlatformFeeSettlementHistory,
@@ -30,28 +31,39 @@ function formatDate(value: string) {
 }
 
 export default function ComisionPage() {
-  const { store, loading: accessLoading } = useAdminAccess();
+  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+    useAdminAccess();
+  const { store: selectedStore, loading: storeLoading } = useStore();
+
+  // Igual que en el resto del admin de tienda: si eres Super Admin,
+  // la tienda "activa" es la que elegiste con el Store Switcher, no
+  // la de tu propia cuenta (que no tiene ninguna, porque tú no eres
+  // dueño de tienda). Si eres dueño/miembro de tienda, es la tuya.
+  const activeStore = useMemo(() => {
+    if (isSuperAdmin) return selectedStore || accessStore;
+    return accessStore;
+  }, [accessStore, isSuperAdmin, selectedStore]);
 
   const [pending, setPending] = useState<PendingPlatformFee | null>(null);
   const [history, setHistory] = useState<PlatformFeeSettlement[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!store?.id) return;
+    if (!activeStore?.id) return;
 
     setLoading(true);
 
     Promise.all([
-      getPendingPlatformFee(store.id),
-      getPlatformFeeSettlementHistory(store.id),
+      getPendingPlatformFee(activeStore.id),
+      getPlatformFeeSettlementHistory(activeStore.id),
     ]).then(([pendingData, historyData]) => {
       setPending(pendingData);
       setHistory(historyData);
       setLoading(false);
     });
-  }, [store?.id]);
+  }, [activeStore?.id]);
 
-  if (accessLoading || loading) {
+  if (accessLoading || storeLoading || loading) {
     return (
       <div className="flex h-64 items-center justify-center text-slate-400">
         <Loader2 className="animate-spin" size={28} />
@@ -59,7 +71,7 @@ export default function ComisionPage() {
     );
   }
 
-  if (!store?.platform_fee_enabled) {
+  if (!activeStore?.platform_fee_enabled) {
     return (
       <div className="p-6">
         <h1 className="text-2xl font-black text-[#061b3a]">
