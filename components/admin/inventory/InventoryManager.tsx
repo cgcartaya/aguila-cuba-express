@@ -15,6 +15,7 @@ import { Search, Plus, History, Pencil } from "lucide-react";
 
 import StockModal from "./StockModal";
 import StockEntryModal from "./StockEntryModal";
+import StockHistoryModal from "./StockHistoryModal";
 
 type InventoryProductImage = {
   image_url: string;
@@ -47,6 +48,8 @@ export default function InventoryManager({
   const [selectedProduct, setSelectedProduct] =
     useState<InventoryProduct | null>(null);
   const [entryProduct, setEntryProduct] =
+    useState<InventoryProduct | null>(null);
+  const [historyProduct, setHistoryProduct] =
     useState<InventoryProduct | null>(null);
   const [filter, setFilter] = useState<"all" | "low" | "empty">("all");
 
@@ -240,7 +243,10 @@ export default function InventoryManager({
                       Ajustar
                     </button>
 
-                    <button className="flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-bold">
+                    <button
+                      onClick={() => setHistoryProduct(product)}
+                      className="flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-bold"
+                    >
                       <History size={14} />
                       Historial
                     </button>
@@ -268,6 +274,10 @@ export default function InventoryManager({
         <StockModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          onSaved={(newStock) => {
+            handleStockUpdated(selectedProduct.id, newStock);
+            setSelectedProduct(null);
+          }}
         />
       )}
 
@@ -279,6 +289,13 @@ export default function InventoryManager({
             handleStockUpdated(entryProduct.id, newStock);
             setEntryProduct(null);
           }}
+        />
+      )}
+
+      {historyProduct && (
+        <StockHistoryModal
+          product={historyProduct}
+          onClose={() => setHistoryProduct(null)}
         />
       )}
     </>

@@ -6,15 +6,20 @@ import { supabase } from "@/lib/supabase";
 export default function StockModal({
   product,
   onClose,
+  onSaved,
 }: {
   product: any;
   onClose: () => void;
+  onSaved?: (newStock: number) => void;
 }) {
   const [stock, setStock] = useState(product.stock);
   const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   async function save() {
     const previousStock = product.stock;
+
+    setSaving(true);
 
     const { error } = await supabase
       .from("products")
@@ -25,6 +30,7 @@ export default function StockModal({
 
     if (error) {
       alert("Error actualizando stock");
+      setSaving(false);
       return;
     }
 
@@ -39,9 +45,7 @@ export default function StockModal({
         notes,
       });
 
-    alert("Stock actualizado");
-
-    window.location.reload();
+    onSaved?.(stock);
   }
 
   return (
@@ -100,9 +104,10 @@ export default function StockModal({
 
           <button
             onClick={save}
-            className="flex-1 rounded-xl bg-[#061b3a] p-3 font-bold text-white"
+            disabled={saving}
+            className="flex-1 rounded-xl bg-[#061b3a] p-3 font-bold text-white disabled:opacity-60"
           >
-            Guardar
+            {saving ? "Guardando..." : "Guardar"}
           </button>
 
         </div>

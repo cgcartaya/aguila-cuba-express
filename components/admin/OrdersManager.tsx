@@ -847,6 +847,11 @@ export default function OrdersManager({
                         ))}
 
                         <div className="border-t pt-4 text-right">
+                          {Number(order.platform_fee_amount || 0) > 0 && (
+                            <p className="mb-1 text-xs font-semibold text-emerald-700">
+                              Incluye ${Number(order.platform_fee_amount).toFixed(2)} de comisión de plataforma
+                            </p>
+                          )}
                           <p className="text-lg font-black">
                             Total:{" "}
                             <span className="text-green-600">

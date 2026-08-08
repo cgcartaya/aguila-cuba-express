@@ -28,6 +28,7 @@ const ORDERS_SELECT = `
   recipient_phone,
   recipient_phone_alt,
   store_id,
+  platform_fee_amount,
   customers (
     name,
     email,
@@ -42,6 +43,8 @@ const ORDERS_SELECT = `
     product_name,
     quantity,
     price,
+    base_price,
+    platform_fee_amount,
     subtotal
   )
 `;
