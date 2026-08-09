@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
+import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
 
 const fail = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
@@ -61,8 +62,12 @@ export async function POST(request: NextRequest) {
 
   const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
   const amountCents = Math.round(Number(shipment.balance_due) * 100);
-  // 2% — misma comisión que el portal de clientes. Solo aplica en modo
-  // "connect"; en "direct" no hay cuenta conectada donde repartirla.
+  // Recargo por pagar con tarjeta — para Frank, línea aparte, no afecta el
+  // saldo del envío (balance_due se sigue liquidando en su valor original).
+  const surchargeCents = Math.round(amountCents * CARD_SURCHARGE_RATE);
+  // 2% — misma comisión que el portal de clientes, solo sobre el saldo del
+  // envío, no sobre el recargo. Solo aplica en modo "connect"; en "direct"
+  // no hay cuenta conectada donde repartirla.
   const PLATFORM_FEE_RATE = 0.02;
   const applicationFeeCents = Math.round(amountCents * PLATFORM_FEE_RATE);
 
@@ -76,6 +81,14 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             product_data: { name: `Envío ${shipment.tracking_code || shipment.id.slice(0, 8)} (cobro en recogida)` },
             unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: `Recargo por pago con tarjeta (${(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)` },
+            unit_amount: surchargeCents,
           },
           quantity: 1,
         },
@@ -100,7 +113,10 @@ export async function POST(request: NextRequest) {
     store_id: store.id,
     shipment_id: shipment.id,
     stripe_checkout_session_id: session.id,
-    amount: shipment.balance_due,
+    // Se guarda lo que realmente se le cobra a la tarjeta (saldo +
+    // recargo), no solo el saldo del envío — para que cuadre con lo que
+    // Stripe reporta como cobrado en esta sesión.
+    amount: (amountCents + surchargeCents) / 100,
   });
 
   return NextResponse.json({ ok: true, url: session.url });

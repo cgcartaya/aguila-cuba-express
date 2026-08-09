@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
+import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
@@ -34,9 +35,13 @@ export async function POST(request: NextRequest) {
 
   const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
   const amountCents = Math.round(Number(shipment.balance_due) * 100);
-  // 2% — tu comisión como dueño de la plataforma. Solo aplica en modo
-  // "connect"; en "direct" no hay cuenta conectada donde repartirla (la
-  // comisión ya va incluida en el precio, vía el markup del 2.5%).
+  // Recargo por pagar con tarjeta — para Frank, línea aparte del saldo del
+  // envío (balance_due sigue liquidándose en su valor original).
+  const surchargeCents = Math.round(amountCents * CARD_SURCHARGE_RATE);
+  // 2% — tu comisión como dueño de la plataforma, solo sobre el saldo del
+  // envío, no sobre el recargo. Solo aplica en modo "connect"; en "direct"
+  // no hay cuenta conectada donde repartirla (la comisión ya va incluida
+  // en el precio, vía el markup del 2.5%).
   const PLATFORM_FEE_RATE = 0.02;
   const applicationFeeCents = Math.round(amountCents * PLATFORM_FEE_RATE);
 
@@ -50,6 +55,14 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             product_data: { name: `Envío ${shipment.tracking_code || shipment.id.slice(0, 8)}` },
             unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: `Recargo por pago con tarjeta (${(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)` },
+            unit_amount: surchargeCents,
           },
           quantity: 1,
         },
@@ -72,7 +85,7 @@ export async function POST(request: NextRequest) {
     store_id: store.id,
     shipment_id: shipment.id,
     stripe_checkout_session_id: session.id,
-    amount: shipment.balance_due,
+    amount: (amountCents + surchargeCents) / 100,
   });
 
   return NextResponse.json({ url: session.url });

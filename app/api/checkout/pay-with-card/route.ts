@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
+import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
 
 const fail = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
 
@@ -39,9 +40,15 @@ export async function POST(request: NextRequest) {
 
   const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;
   const amountCents = Math.round(Number(order.total) * 100);
+  // Recargo por pagar con tarjeta — es para Frank, no para la plataforma.
+  // Va como línea aparte en el Checkout, nunca mezclado con el precio del
+  // pedido, para que quede claro que es un cargo distinto.
+  const surchargeCents = Math.round(amountCents * CARD_SURCHARGE_RATE);
   // Misma comisión de plataforma que ya usa el resto de la app — solo
-  // aplica en modo "connect" (cuenta conectada). En modo "direct" no hay
-  // application_fee_amount: la comisión ya va incluida en el precio.
+  // aplica en modo "connect" (cuenta conectada), y solo sobre el precio
+  // del pedido, no sobre el recargo (el recargo es de Frank, no se reparte
+  // con la plataforma). En modo "direct" no hay application_fee_amount: la
+  // comisión ya va incluida en el precio.
   const PLATFORM_FEE_RATE = 0.02;
   const applicationFeeCents = Math.round(amountCents * PLATFORM_FEE_RATE);
 
@@ -55,6 +62,14 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             product_data: { name: `Pedido ${order.order_number || order.id.slice(0, 8)}` },
             unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: `Recargo por pago con tarjeta (${(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)` },
+            unit_amount: surchargeCents,
           },
           quantity: 1,
         },
