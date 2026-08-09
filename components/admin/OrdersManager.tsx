@@ -51,8 +51,14 @@ const STATUSES = [
   { value: "cancelled", label: "Cancelada" },
 ];
 
+// "cancelled" se deja en STATUSES para que las órdenes viejas que ya
+// tenían ese estado se sigan mostrando bien (filtro "Todas", etiquetas),
+// pero se excluye de ORDER_STATUS_OPTIONS para que ya no se pueda elegir
+// desde el dropdown — cancelar ahora se hace mandando la orden a la
+// papelera (restaura inventario) y, si de verdad no cuenta, Carlos la
+// elimina definitivo desde ahí (eso sí resta la comisión pendiente).
 const ORDER_STATUS_OPTIONS = STATUSES.filter(
-  (status) => status.value !== "Todas"
+  (status) => status.value !== "Todas" && status.value !== "cancelled"
 );
 
 const LEGACY_STATUS_LABELS: Record<string, string> = {

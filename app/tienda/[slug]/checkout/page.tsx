@@ -585,7 +585,7 @@ ${orderUrl}`);
   const showDelivery = !isYoyo || settings?.show_delivery_price === true;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-24">
+    <main className="min-h-screen bg-gray-50 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <Link href={cartUrl} className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600">
           <ArrowLeft size={18} />
