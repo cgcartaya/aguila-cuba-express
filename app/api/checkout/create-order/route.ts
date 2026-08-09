@@ -348,9 +348,13 @@ export async function POST(request: Request) {
           }
         }
 
-        // Nota: por ahora el fee de plataforma solo aplica a
-        // productos individuales, no a combos (precio fijo).
-        const price = money(combo.price);
+        // Los combos ahora cargan el mismo fee de plataforma que los
+        // productos individuales (antes tenían precio fijo, sin fee —
+        // eso dejaba sin comisión cualquier venta de combos).
+        const baseComboPrice = money(combo.price);
+        const price = applyPlatformFee(baseComboPrice, platformFeePercent);
+        const unitFeeAmount = money(price - baseComboPrice);
+
         preparedItems.push({
           item_type: "combo",
           product_id: null,
@@ -358,8 +362,8 @@ export async function POST(request: Request) {
           product_name: clean(combo.name, 200),
           quantity,
           price,
-          base_price: price,
-          platform_fee_amount: 0,
+          base_price: baseComboPrice,
+          platform_fee_amount: money(unitFeeAmount * quantity),
           subtotal: money(price * quantity),
           minimum_order_exempt: false,
           delivery_included: false,

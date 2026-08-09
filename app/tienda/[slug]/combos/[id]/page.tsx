@@ -19,6 +19,7 @@ import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
 import { getComboById } from "@/lib/services/combos";
 import { useStore } from "@/hooks/useStore";
+import { applyPlatformFee, getPlatformFeePercent } from "@/lib/storefront/product-quantity-pricing";
 
 type ComboProduct = {
   id: string;
@@ -156,15 +157,18 @@ export default function ComboDetailPage() {
     loadCombo();
   }, [comboId, slug, store?.id, store?.slug, storeLoading]);
 
+  const feePercent = getPlatformFeePercent(store);
+
   const regularPrice =
     combo?.combo_items.reduce((total, item) => {
       return (
         total +
-        Number(item.products.price || 0) * Number(item.quantity || 1)
+        applyPlatformFee(Number(item.products.price || 0), feePercent) *
+          Number(item.quantity || 1)
       );
     }, 0) || 0;
 
-  const comboPrice = Number(combo?.price || 0);
+  const comboPrice = applyPlatformFee(Number(combo?.price || 0), feePercent);
   const savings = regularPrice - comboPrice;
 
   if (loading) {

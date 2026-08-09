@@ -12,6 +12,7 @@ import {
 import { useStore } from "@/hooks/useStore";
 import type { Product, Combo, CartItem } from "@/types/cart";
 import {
+  applyPlatformFee,
   getPlatformFeePercent,
   getPurchaseQuantityLimit,
   getUnitPriceForQuantity,
@@ -232,6 +233,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addComboToCart = (combo: Combo) => {
     const cartId = `combo-${combo.id}`;
+    const baseComboPrice = Number(combo.price);
+    // Los combos ahora cargan el mismo fee de plataforma que los
+    // productos individuales (antes se guardaban con precio fijo, sin
+    // fee — eso hacía que la comisión de la plataforma quedara en $0
+    // para cualquier venta de combos).
+    const effectiveComboPrice = applyPlatformFee(baseComboPrice, feePercent);
 
     setCart((prevCart) => {
       const existing = prevCart.find(
@@ -254,8 +261,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           id: cartId,
           name: combo.name,
-          price: Number(combo.price),
-          base_price: Number(combo.price),
+          price: effectiveComboPrice,
+          base_price: baseComboPrice,
           image_url:
             combo.image_url ||
             "/placeholder-product.png",

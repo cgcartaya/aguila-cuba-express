@@ -7,6 +7,7 @@ import { BadgePercent, CheckCircle2, Package } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
+import { applyPlatformFee, getPlatformFeePercent } from "@/lib/storefront/product-quantity-pricing";
 
 type ComboItem = {
   id: string;
@@ -40,15 +41,18 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
   const { addComboToCart } = useCart();
   const { store } = useStore();
 
+  const feePercent = getPlatformFeePercent(store);
+
   const normalPrice =
     combo.combo_items?.reduce((total, item) => {
-      return (
-        total +
-        Number(item.products?.price || 0) * Number(item.quantity || 1)
+      const itemPrice = applyPlatformFee(
+        Number(item.products?.price || 0),
+        feePercent
       );
+      return total + itemPrice * Number(item.quantity || 1);
     }, 0) || 0;
 
-  const comboPrice = Number(combo.price || 0);
+  const comboPrice = applyPlatformFee(Number(combo.price || 0), feePercent);
   const savings = Math.max(normalPrice - comboPrice, 0);
   const comboImageUrl = getSafeImageUrl(combo.image_url);
 
