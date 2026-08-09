@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   MessageCircle,
+  Share2,
   X,
   Download,
   Loader2,
@@ -36,7 +37,9 @@ import {
 import {
   cleanWhatsAppPhone,
   openWhatsAppMessage,
+  openWhatsAppShare,
 } from "@/lib/utils/whatsapp";
+import { buildWhatsappOrderMessageFromDbOrder } from "@/lib/utils/checkout";
 import { downloadCsv } from "@/lib/utils/csv";
 
 const STATUSES = [
@@ -195,6 +198,10 @@ export default function OrdersManager({
     order: any;
     status: string;
     phone: string;
+    message: string;
+  } | null>(null);
+  const [shareOrderPrompt, setShareOrderPrompt] = useState<{
+    order: any;
     message: string;
   } | null>(null);
 
@@ -509,6 +516,19 @@ export default function OrdersManager({
     }
   }
 
+  function shareOrderByWhatsapp(order: any) {
+    const orderUrl = `${window.location.origin}/pedido/${getOrderNumber(order).replace("#", "")}`;
+
+    const message = buildWhatsappOrderMessageFromDbOrder({
+      order,
+      customer: getCustomer(order),
+      orderItems: normalizeOrderItems(order),
+      orderUrl,
+    });
+
+    setShareOrderPrompt({ order, message });
+  }
+
   function handleExportCsv() {
     downloadCsv(
       `ordenes-${view}-${new Date().toISOString().slice(0, 10)}`,
@@ -775,6 +795,16 @@ export default function OrdersManager({
                         ${Number(order.total || 0).toFixed(2)}
                       </span>
 
+                      <button
+                        type="button"
+                        onClick={() => shareOrderByWhatsapp(order)}
+                        className="rounded-xl bg-emerald-50 p-3 text-emerald-600 transition hover:bg-emerald-100"
+                        aria-label="Compartir orden por WhatsApp"
+                        title="Compartir esta orden por WhatsApp (para repartidores)"
+                      >
+                        <Share2 size={18} />
+                      </button>
+
                       {view === "active" ? (
                         <button
                           type="button"
@@ -883,7 +913,10 @@ export default function OrdersManager({
 
                     <p className="flex items-center gap-2 text-sm font-semibold text-slate-500">
                       <CalendarDays size={15} />
-                      {new Date(order.created_at).toLocaleDateString("es-US")}
+                      {new Date(order.created_at).toLocaleString("es-US", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
                     </p>
 
                     <p className="mt-3 text-2xl font-black">
@@ -1072,6 +1105,75 @@ export default function OrdersManager({
                 className="w-full rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-50"
               >
                 No enviar ahora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shareOrderPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/55 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wide text-emerald-600">
+                  Compartir orden
+                </p>
+                <h2 className="mt-1 text-xl font-black text-[#061b3a]">
+                  Enviar a un repartidor
+                </h2>
+                <p className="mt-2 text-sm font-semibold text-slate-500">
+                  Orden {getOrderNumber(shareOrderPrompt.order)} — elige el chat o grupo al que se manda.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShareOrderPrompt(null)}
+                className="rounded-xl bg-slate-100 p-2 text-slate-500 hover:bg-slate-200"
+                aria-label="Cerrar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {prefersWhatsAppBusiness && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    openWhatsAppShare({ app: "business", message: shareOrderPrompt.message });
+                    setShareOrderPrompt(null);
+                  }}
+                  className="flex w-full items-center justify-center gap-3 rounded-2xl bg-green-600 px-4 py-4 text-sm font-black text-white transition hover:bg-green-700"
+                >
+                  <Share2 size={21} />
+                  Abrir WhatsApp Business
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  openWhatsAppShare({ app: "personal", message: shareOrderPrompt.message });
+                  setShareOrderPrompt(null);
+                }}
+                className={`flex w-full items-center justify-center gap-3 rounded-2xl px-4 py-4 text-sm font-black transition ${
+                  prefersWhatsAppBusiness
+                    ? "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    : "bg-green-600 text-white hover:bg-green-700"
+                }`}
+              >
+                <Share2 size={21} />
+                Abrir WhatsApp normal
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShareOrderPrompt(null)}
+                className="w-full rounded-2xl px-4 py-3 text-sm font-black text-slate-500 hover:bg-slate-50"
+              >
+                Cancelar
               </button>
             </div>
           </div>

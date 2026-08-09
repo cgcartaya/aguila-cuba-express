@@ -82,3 +82,59 @@ export function openWhatsAppMessage({
     "noopener,noreferrer"
   );
 }
+
+// Igual que openWhatsAppMessage, pero SIN destinatario fijo — para cuando
+// se quiere compartir algo (ej. una orden a un repartidor) dejando que
+// quien comparte elija el chat o grupo, en vez de mandárselo a un
+// teléfono específico. La diferencia con simplemente abrir wa.me/?text=
+// es que esto sí respeta si Frank usa WhatsApp Business: en vez de dejar
+// que el sistema operativo decida cuál de las dos apps abrir (si tiene
+// las dos instaladas puede abrir la que no es), se apunta directo al
+// paquete/esquema de la app elegida.
+export function openWhatsAppShare({
+  app,
+  message,
+}: {
+  app: WhatsAppApp;
+  message: string;
+}) {
+  if (typeof window === "undefined") return;
+
+  const encodedMessage = encodeURIComponent(message);
+
+  if (app === "business") {
+    if (isAndroid()) {
+      window.location.href =
+        `intent://send?text=${encodedMessage}` +
+        `#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+      return;
+    }
+
+    if (isIOS()) {
+      window.location.href = `whatsapp-smb://send?text=${encodedMessage}`;
+      return;
+    }
+  }
+
+  if (app === "personal") {
+    if (isAndroid()) {
+      window.location.href =
+        `intent://send?text=${encodedMessage}` +
+        `#Intent;scheme=whatsapp;package=com.whatsapp;end`;
+      return;
+    }
+
+    if (isIOS()) {
+      window.location.href = `whatsapp://send?text=${encodedMessage}`;
+      return;
+    }
+  }
+
+  // Computadora / apps no detectadas por esquema: WhatsApp Web deja
+  // elegir el chat igual, sin importar si en el celular es Business o no.
+  window.open(
+    `https://wa.me/?text=${encodedMessage}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
