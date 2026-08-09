@@ -1,8 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ShoppingCart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import OrdersManager from "@/components/admin/OrdersManager";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 
@@ -253,12 +255,12 @@ export default function AdminOrdersPage() {
   return (
     <main className="min-h-screen bg-gray-50 p-4 pb-28 text-[#061b3a] md:p-6">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-black">Órdenes</h1>
-          <p className="mt-1 text-sm font-semibold text-slate-500">
-            Pedidos de {activeStore?.name || "la tienda activa"}.
-          </p>
-        </div>
+        <AdminPageHeader
+          eyebrow="Ventas"
+          icon={ShoppingCart}
+          title="Órdenes"
+          description={`Pedidos de ${activeStore?.name || "la tienda activa"}.`}
+        />
 
         {errorMessage && (
           <div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">

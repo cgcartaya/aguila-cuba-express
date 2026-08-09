@@ -6,7 +6,6 @@ import {
   Archive,
   ArrowRight,
   CheckCircle2,
-  Clock3,
   Copy,
   Loader2,
   MoreVertical,
@@ -15,16 +14,15 @@ import {
   Phone,
   RotateCcw,
   Search,
-  Sparkles,
   Trash2,
   UserRound,
   UsersRound,
-  WalletCards,
   X,
 } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import {
   archiveShippingCustomer,
   deleteShippingCustomer,
@@ -263,40 +261,24 @@ export default function ShippingCustomersPage() {
   return (
     <main className="min-h-screen bg-[#f4f7fb] p-3 pb-28 sm:p-5 lg:p-7 lg:pb-10">
       <div className="mx-auto max-w-[1500px] space-y-5">
-        <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0b3d7c] to-[#0878c9] p-5 text-white shadow-[0_24px_70px_-35px_rgba(2,32,71,.8)] sm:p-7 lg:p-9">
-          <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-cyan-300/10 blur-2xl" />
-          <div className="absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-blue-300/10 blur-2xl" />
-
-          <div className="relative flex flex-col gap-7 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-2 text-xs font-black uppercase tracking-[.16em] text-blue-100 backdrop-blur">
-                <Sparkles size={15} /> CRM de envíos
-              </div>
-              <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-                Clientes y destinatarios
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-blue-100/85 sm:text-base">
-                Edita clientes, conserva su historial y elimina con seguridad los registros de prueba.
-              </p>
-
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Link href="/admin/shipping/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-sm font-black text-[#061b3a] shadow-lg transition hover:-translate-y-0.5">
-                  <PackagePlus size={19} /> Crear envío
-                </Link>
-                <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-bold text-blue-50 backdrop-blur">
-                  {filtered.length} de {customers.length} clientes visibles
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[600px]">
-              <HeroMetric label="Clientes activos" value={String(activeCustomers.length)} icon={<UsersRound size={18} />} />
-              <HeroMetric label="Destinatarios" value={String(totalRecipients)} icon={<UserRound size={18} />} />
-              <HeroMetric label="Activos 30 días" value={String(activeThisMonth)} icon={<Clock3 size={18} />} />
-              <HeroMetric label="Saldo total" value={money(totalBalance)} icon={<WalletCards size={18} />} alert={totalBalance > 0} />
-            </div>
-          </div>
-        </header>
+        <AdminPageHeader
+          eyebrow="CRM de envíos"
+          icon={UsersRound}
+          title="Clientes y destinatarios"
+          description="Edita clientes, conserva su historial y elimina con seguridad los registros de prueba."
+          actions={<>
+            <span className="self-center rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-bold text-slate-600">{filtered.length} de {customers.length} clientes visibles</span>
+            <Link href="/admin/shipping/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#061b3a] px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <PackagePlus size={17} /> Crear envío
+            </Link>
+          </>}
+          stats={<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <MiniMetric label="Clientes activos" value={String(activeCustomers.length)} accent="blue" />
+            <MiniMetric label="Destinatarios" value={String(totalRecipients)} accent="blue" />
+            <MiniMetric label="Activos 30 días" value={String(activeThisMonth)} accent="blue" />
+            <MiniMetric label="Saldo total" value={money(totalBalance)} alert={totalBalance > 0} />
+          </div>}
+        />
 
         <section className="sticky top-2 z-20 rounded-[1.6rem] border border-slate-200/80 bg-white/95 p-3 shadow-lg shadow-slate-200/40 backdrop-blur sm:p-4">
           <div className="grid gap-3 md:grid-cols-[1fr_230px]">
@@ -455,10 +437,6 @@ export default function ShippingCustomersPage() {
       )}
     </main>
   );
-}
-
-function HeroMetric({ label, value, icon, alert = false }: { label: string; value: string; icon: React.ReactNode; alert?: boolean }) {
-  return <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur"><div className="flex items-center gap-2 text-xs font-bold text-blue-100">{icon}<span>{label}</span></div><p className={`mt-2 truncate text-xl font-black ${alert ? "text-amber-200" : "text-white"}`}>{value}</p></div>;
 }
 
 function MiniMetric({ label, value, alert = false, accent }: { label: string; value: string; alert?: boolean; accent?: "blue" }) {

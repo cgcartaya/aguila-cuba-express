@@ -14,7 +14,6 @@ import {
   Plus,
   Scale,
   Settings2,
-  Sparkles,
   Truck,
   UserRoundX,
   WalletCards,
@@ -26,6 +25,7 @@ import RecentShipments from "@/components/admin/shipping/dashboard/RecentShipmen
 import SevenDayActivity from "@/components/admin/shipping/dashboard/SevenDayActivity";
 import StatusOverview from "@/components/admin/shipping/dashboard/StatusOverview";
 import TopDestinations from "@/components/admin/shipping/dashboard/TopDestinations";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import { getShippingDashboard } from "@/lib/services/shipping-dashboard";
@@ -157,100 +157,44 @@ export default function ShippingOperationalDashboardPage() {
   return (
     <main className="min-h-screen bg-[#f5f7fb] p-4 pb-28 md:p-6 xl:p-8">
       <div className="mx-auto max-w-[1500px]">
-        <header className="relative mb-6 overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#0a2d63] to-[#1554a6] p-6 text-white shadow-xl md:p-8">
-          <div className="absolute -right-12 -top-16 h-56 w-56 rounded-full bg-blue-400/15 blur-2xl" />
-          <div className="absolute -bottom-20 left-1/3 h-52 w-52 rounded-full bg-violet-400/10 blur-2xl" />
-
-          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-blue-100">
-                <Sparkles size={15} />
-                Centro de operaciones
-              </div>
-
-              <h1 className="mt-4 text-3xl font-extrabold tracking-tight md:text-4xl">
-                Dashboard de envíos
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-blue-100/80 md:text-base">
-                Controla paquetes, remesas, repartidores y cobros de{" "}
-                <span className="font-extrabold text-white">
-                  {activeStore?.name || "la empresa"}
-                </span>{" "}
-                desde una sola vista.
-              </p>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                {canCreate && (
-                  <Link
-                    href="/admin/shipping/new"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-[#061b3a] shadow-lg transition hover:-translate-y-0.5"
-                  >
-                    <Plus size={18} />
-                    Nueva operación
-                  </Link>
-                )}
-
-                {canCreate && (
-                  <Link
-                    href="/admin/shipping/recoger"
-                    className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
-                  >
-                    <MapPin size={18} />
-                    Recogida en casa
-                  </Link>
-                )}
-
-                <Link
-                  href="/admin/shipping/shipments"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
-                >
-                  <Truck size={18} />
-                  Ver lista de envíos
-                </Link>
-
-                <Link
-                  href="/admin/shipping/settings/pagos"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
-                >
-                  <WalletCards size={18} />
-                  Cobros en línea
-                </Link>
-
-                <Link
-                  href="/admin/shipping/settings"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
-                >
-                  <Settings2 size={18} />
-                  Ajustes
-                </Link>
-              </div>
-            </div>
-
-            <div className="grid min-w-full grid-cols-2 gap-3 sm:min-w-[420px]">
-              <HeroMiniMetric
-                label="Creados hoy"
-                value={summary.created_today.toString()}
-                icon={<CalendarDays size={18} />}
-              />
-              <HeroMiniMetric
-                label="Entregados hoy"
-                value={summary.delivered_today.toString()}
-                icon={<PackageCheck size={18} />}
-              />
-              <HeroMiniMetric
-                label="Facturado hoy"
-                value={currency(summary.billed_today)}
-                icon={<DollarSign size={18} />}
-              />
-              <HeroMiniMetric
-                label="Libras hoy"
-                value={summary.weight_today_lb.toFixed(1)}
-                icon={<Scale size={18} />}
-              />
-            </div>
-          </div>
-        </header>
+        <AdminPageHeader
+          eyebrow="Centro de operaciones"
+          icon={Truck}
+          title="Dashboard de envíos"
+          description={`Controla paquetes, remesas, repartidores y cobros de ${activeStore?.name || "la empresa"} desde una sola vista.`}
+          actions={<>
+            {canCreate && (
+              <Link href="/admin/shipping/new" className="inline-flex items-center gap-2 rounded-xl bg-[#061b3a] px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                <Plus size={17} />
+                Nueva operación
+              </Link>
+            )}
+            {canCreate && (
+              <Link href="/admin/shipping/recoger" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+                <MapPin size={17} />
+                Recogida en casa
+              </Link>
+            )}
+            <Link href="/admin/shipping/shipments" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+              <Truck size={17} />
+              Ver lista de envíos
+            </Link>
+            <Link href="/admin/shipping/settings/pagos" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+              <WalletCards size={17} />
+              Cobros en línea
+            </Link>
+            <Link href="/admin/shipping/settings" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+              <Settings2 size={17} />
+              Ajustes
+            </Link>
+          </>}
+          stats={<div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl bg-white px-3 py-3 text-center"><div className="flex items-center justify-center gap-1.5 text-slate-400"><CalendarDays size={15} /><p className="text-xs font-bold">Creados hoy</p></div><p className="mt-1 text-lg font-black text-slate-900">{summary.created_today}</p></div>
+            <div className="rounded-xl bg-white px-3 py-3 text-center"><div className="flex items-center justify-center gap-1.5 text-slate-400"><PackageCheck size={15} /><p className="text-xs font-bold">Entregados hoy</p></div><p className="mt-1 text-lg font-black text-slate-900">{summary.delivered_today}</p></div>
+            <div className="rounded-xl bg-white px-3 py-3 text-center"><div className="flex items-center justify-center gap-1.5 text-slate-400"><DollarSign size={15} /><p className="text-xs font-bold">Facturado hoy</p></div><p className="mt-1 text-lg font-black text-slate-900">{currency(summary.billed_today)}</p></div>
+            <div className="rounded-xl bg-white px-3 py-3 text-center"><div className="flex items-center justify-center gap-1.5 text-slate-400"><Scale size={15} /><p className="text-xs font-bold">Libras hoy</p></div><p className="mt-1 text-lg font-black text-slate-900">{summary.weight_today_lb.toFixed(1)}</p></div>
+          </div>}
+        />
 
         {errorMessage && (
           <div className="mb-6 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-semibold text-rose-700">
@@ -335,25 +279,6 @@ export default function ShippingOperationalDashboardPage() {
   );
 }
 
-function HeroMiniMetric({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-      <div className="flex items-center gap-2 text-blue-100">
-        {icon}
-        <p className="text-xs font-semibold">{label}</p>
-      </div>
-      <p className="mt-2 text-xl font-extrabold text-white">{value}</p>
-    </div>
-  );
-}
 
 function AlertCard({
   icon,

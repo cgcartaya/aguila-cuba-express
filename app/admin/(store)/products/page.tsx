@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { EyeOff, Loader2, Plus, Trash2, Upload } from "lucide-react";
+import { EyeOff, Loader2, Package, Plus, Trash2, Upload } from "lucide-react";
 
 import {
   getAdminProductsByStoreId,
@@ -33,6 +33,7 @@ import ProductFilters from "@/components/admin/products/ProductFilters";
 import ProductPagination from "@/components/admin/products/ProductPagination";
 import ProductSectionTabs from "@/components/admin/products/ProductSectionTabs";
 import ProductsEmptyState from "@/components/admin/products/ProductsEmptyState";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 
 import type { Product } from "@/components/admin/products/types";
 
@@ -355,19 +356,12 @@ export default function AdminProductsPage() {
   return (
     <main className="min-h-screen bg-slate-50 pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <section className="mx-auto max-w-6xl px-4 py-5">
-        <div className="mb-5">
-          <p className="text-sm text-slate-500">Administración</p>
-
-          <h1 className="text-3xl font-bold text-slate-900">Productos</h1>
-
-          <p className="text-sm text-slate-500">
-            Gestiona el catálogo de{" "}
-            <span className="font-black text-[#061b3a]">
-              {activeStore?.name || "la tienda activa"}
-            </span>
-            .
-          </p>
-        </div>
+        <AdminPageHeader
+          eyebrow="Catálogo"
+          icon={Package}
+          title="Productos"
+          description={`Gestiona el catálogo de ${activeStore?.name || "la tienda activa"}.`}
+        />
 
         <ProductSectionTabs />
 
