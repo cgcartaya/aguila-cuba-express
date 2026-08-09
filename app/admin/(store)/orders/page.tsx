@@ -15,6 +15,7 @@ const ORDERS_SELECT = `
   platform_fee_amount,
   status,
   payment_status,
+  payment_method,
   address,
   exact_address,
   municipality,
