@@ -11,6 +11,7 @@ import {
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
+import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { supabase } from "@/lib/supabase";
 import { getPendingPlatformFee, type PendingPlatformFee } from "@/lib/services/platform-fee-settlements";
 
@@ -118,7 +119,16 @@ export default function AdminDashboardPage() {
   const area = points.length ? `${padding},${height - padding} ${line} ${width - padding},${height - padding}` : "";
 
   return <main className="min-h-screen bg-[#f4f7fb] p-4 pb-24 md:p-7"><div className="mx-auto max-w-[1500px]">
-    <header className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#061b3a] via-[#083d82] to-[#1769e8] p-6 text-white shadow-xl shadow-blue-950/15 md:p-8"><div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between"><div><div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.15em] text-blue-100"><Store size={14} />Panel operativo</div><h1 className="text-3xl font-black tracking-tight">Buenos días — {activeStore?.name}</h1><p className="mt-2 max-w-2xl text-sm font-semibold text-blue-100">Productos, órdenes, clientes e inventario en una sola vista rápida.</p></div><div className="flex flex-wrap items-center gap-3"><span className="inline-flex items-center gap-2 text-xs font-bold text-blue-100"><span className="h-2 w-2 rounded-full bg-emerald-400" />Actualizado ahora</span><Link href={storeHref} className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-black text-[#083d82] shadow-lg">Ver tienda <ExternalLink size={17} /></Link></div></div></header>
+    <AdminPageHeader
+      eyebrow="Panel operativo"
+      icon={Store}
+      title={`Buenos días — ${activeStore?.name || ""}`}
+      description="Productos, órdenes, clientes e inventario en una sola vista rápida."
+      actions={<>
+        <span className="inline-flex items-center gap-2 self-center text-xs font-bold text-slate-400"><span className="h-2 w-2 rounded-full bg-emerald-500" />Actualizado ahora</span>
+        <Link href={storeHref} className="inline-flex items-center gap-2 rounded-xl bg-[#061b3a] px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">Ver tienda <ExternalLink size={16} /></Link>
+      </>}
+    />
 
     {pendingFee && pendingFee.feeAmount > 0 && <Link href="/admin/comision" className="mt-5 flex flex-col gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white"><Wallet size={20} /></span><div><p className="font-black text-emerald-900">Comisión de plataforma pendiente</p><p className="text-xs font-semibold text-emerald-700">{pendingFee.ordersCount} órdenes · {money.format(pendingFee.salesAmount)} en ventas</p></div></div><p className="text-xl font-black text-emerald-800">{money.format(pendingFee.feeAmount)}</p></Link>}
 
