@@ -19,6 +19,7 @@ import type { Store } from "@/lib/saas/store-types";
 
 import {
   getStoreByDomain,
+  getStoreById,
   getStoreBySlug,
   getStoreBySubdomain,
 } from "@/lib/services/stores";
@@ -124,7 +125,29 @@ export function StoreProvider({
         if (savedStore) {
           try {
             const parsedStore = JSON.parse(savedStore) as Store;
+            // Mostramos la copia guardada de una vez (para que no haya
+            // parpadeo/carga), pero esa copia es de cuando se eligió la
+            // tienda en el switcher — si algo cambió en la base de datos
+            // después (ej. platform_fee_enabled), esta copia se queda
+            // vieja para siempre porque nada la refresca sola. Por eso
+            // revalidamos contra la base de datos en segundo plano y
+            // actualizamos tanto el estado como la copia guardada si hay
+            // diferencias — así el resto del admin (comisión, ajustes,
+            // etc.) nunca vuelve a quedarse viendo datos desactualizados.
             await finish(parsedStore);
+
+            const freshStore = await getStoreById(parsedStore.id);
+            if (mounted && freshStore) {
+              const changed =
+                JSON.stringify(freshStore) !== JSON.stringify(parsedStore);
+              if (changed) {
+                localStorage.setItem(
+                  "saas-current-store",
+                  JSON.stringify(freshStore)
+                );
+                setStore(freshStore);
+              }
+            }
             return;
           } catch {
             localStorage.removeItem("saas-current-store");
