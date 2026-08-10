@@ -1,31 +1,57 @@
 // Guardar en: app/api/checkout/create-order/route.ts
 //
-// NOTA IMPORTANTE (2026-08-10): esta ruta faltaba por completo en
-// producción — el .zip que la contenía (app/api/checkout.zip, del
-// 29 de julio) nunca se llegó a descomprimir en su carpeta real, así
-// que create-order/ y cancel-order/ quedaron vacías todo este tiempo.
-// Además, esa versión del 29 de julio ya no encajaba con lo que
-// checkout/page.tsx manda hoy (zoneId en vez de zone, items con
-// item_type/product_name/subtotal, customerPhone, sin customerId).
-// Esta versión se reconstruyó rastreando el body real que arma
-// createOrderSecure() en checkout/page.tsx y las tablas reales que
-// ya usa el resto del código (delivery_zones, checkout_settings,
-// discount_campaigns, discount_campaign_customers, order_items).
+// ARREGLO 2026-08-10 (tarde): la reconstrucción de esta mañana (ver
+// nota vieja más abajo) traía la orden y el checkout funcionando,
+// pero se le quedaron fuera varias cosas que sí existían en la
+// versión anterior (confirmada funcionando en producción hasta las
+// 2026-08-10 01:11 según las órdenes reales en la base de datos):
+//
+//   1) Comisión de plataforma (platform_fee_amount) — no se calculaba
+//      NI se guardaba, ni en orders ni en order_items. Esto es lo que
+//      reportaste: la orden de las 12:41 quedó con fee=0.00.
+//   2) El precio de cada línea se tomaba tal cual lo mandaba el
+//      cliente, sin volver a calcularlo en el servidor contra el
+//      precio real del producto + escalas por cantidad. Restaurado:
+//      ahora se recalcula todo server-side, igual que antes.
+//   3) order_number sin fallback — si la tabla no lo autogenera, ahora
+//      se genera uno corto (ORD-XXXXXXXX-XXXX) igual que antes. Por
+//      eso la orden de las 12:41 quedó con order_number = null.
+//   4) Descuento de stock — no se restaba el inventario en NINGUNA
+//      orden nueva desde ayer. Restaurado.
+//   5) Validación de compra mínima por zona — no se estaba exigiendo.
+//      Restaurado (con la excepción de items marcados
+//      minimum_order_exempt por producto o categoría).
+//   6) Aviso por email de nueva orden a la tienda — no se enviaba.
+//      Restaurado (nunca bloquea el pedido si falla).
+//   7) El descuento se reclamaba con un simple UPDATE en vez del RPC
+//      claim_discount_coupon (que además asocia el order_id al bono).
+//      Restaurado el RPC.
+//
+// Se mantuvieron las dos cosas de la reconstrucción de esta mañana que
+// SÍ eran mejoras reales y siguen igual:
+//   - Cliente se busca por teléfono (no por email) — esto fue el
+//     arreglo de "Cliente sin nombre" de hace unos días.
+//   - Lógica de Yoyo con entrega local (tarifa fija de
+//     checkout_settings en vez de zona).
 //
 // Puntos a probar con cuidado antes de confiar en esto al 100%:
-// - El flujo normal (Cuba) con y sin envío gratis por monto mínimo.
-// - El flujo de Yoyo con entrega local (isLocalDelivery).
-// - Un pedido con un bono/descuento aplicado.
-// Si algo no cuadra con lo que veías antes, es más fácil ajustarlo
-// aquí que adivinarlo de nuevo — avisa qué parte no calza.
+// - Una orden normal (Cuba) y revisar que platform_fee_amount salga
+//   > 0 en la tabla orders y que el stock del producto haya bajado.
+// - El flujo de Yoyo con entrega local.
+// - Un pedido con un bono/descuento aplicado (revisar que
+//   discount_campaign_customers quede "used" con el order_id).
+// - Un pedido que no alcance el mínimo de la zona — debe rechazarse.
 
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
+import { sendNewOrderEmail } from "@/lib/notifications/order-email";
 
 const YOYO_SLUG = "yoyo-envios";
 
 const clean = (value: unknown, max = 300) =>
   String(value ?? "").trim().slice(0, max);
+const money = (value: unknown) => Math.round(Number(value || 0) * 100) / 100;
 const fail = (message: string, status = 400) =>
   NextResponse.json({ success: false, message }, { status });
 
@@ -33,22 +59,19 @@ type OrderItemInput = {
   item_type?: "product" | "combo";
   product_id?: string | null;
   combo_id?: string | null;
-  product_name?: string;
   quantity?: number;
-  price?: number;
-  subtotal?: number;
 };
 
 type CreateOrderBody = {
   storeId?: string;
   method?: "delivery" | "cuba";
   isLocalDelivery?: boolean;
+  intendedPaymentMethod?: string;
   zoneId?: string | null;
   items?: OrderItemInput[];
   discountCampaignId?: string | null;
   discountCode?: string | null;
   customerPhone?: string;
-  intendedPaymentMethod?: string;
   form?: {
     name?: string;
     email?: string;
@@ -64,6 +87,75 @@ type CreateOrderBody = {
   };
 };
 
+type PreparedItem = {
+  item_type: "product" | "combo";
+  product_id: string | null;
+  combo_id: string | null;
+  product_name: string;
+  quantity: number;
+  price: number;
+  base_price: number;
+  platform_fee_amount: number;
+  subtotal: number;
+  minimum_order_exempt: boolean;
+  delivery_included: boolean;
+};
+
+type StockChange = { productId: string; quantity: number };
+
+type PriceTierRow = { min_quantity: number; unit_price: number };
+
+function getServerUnitPriceForQuantity(
+  basePrice: number,
+  quantity: number,
+  tiers: PriceTierRow[]
+) {
+  let unitPrice = money(basePrice);
+
+  const orderedTiers = [...tiers]
+    .map((tier) => ({
+      min_quantity: Math.trunc(Number(tier.min_quantity || 0)),
+      unit_price: money(tier.unit_price),
+    }))
+    .filter(
+      (tier) =>
+        tier.min_quantity >= 2 &&
+        Number.isFinite(tier.unit_price) &&
+        tier.unit_price >= 0
+    )
+    .sort((a, b) => a.min_quantity - b.min_quantity);
+
+  for (const tier of orderedTiers) {
+    if (quantity >= tier.min_quantity) {
+      unitPrice = Math.min(unitPrice, tier.unit_price);
+    }
+  }
+
+  return money(unitPrice);
+}
+
+async function restoreStock(changes: StockChange[]) {
+  for (const change of [...changes].reverse()) {
+    const { data } = await supabaseAdmin
+      .from("products")
+      .select("stock")
+      .eq("id", change.productId)
+      .maybeSingle();
+
+    if (!data) continue;
+
+    await supabaseAdmin
+      .from("products")
+      .update({ stock: Number(data.stock || 0) + change.quantity })
+      .eq("id", change.productId);
+  }
+}
+
+async function deleteCreatedOrder(orderId: string) {
+  await supabaseAdmin.from("order_items").delete().eq("order_id", orderId);
+  await supabaseAdmin.from("orders").delete().eq("id", orderId);
+}
+
 export async function POST(request: Request) {
   let body: CreateOrderBody;
 
@@ -73,154 +165,363 @@ export async function POST(request: Request) {
     return fail("Cuerpo de la solicitud inválido.");
   }
 
-  const storeId = clean(body.storeId, 64);
-  const items = Array.isArray(body.items) ? body.items : [];
+  try {
+    const storeId = clean(body.storeId, 64);
+    const intendedPaymentMethod =
+      body.intendedPaymentMethod === "card" ? "card" : "whatsapp";
+    const requestedItems = Array.isArray(body.items) ? body.items : [];
+    const form = body.form || {};
+    const customerName = clean(form.name, 150);
+    const email = clean(form.email, 200).toLowerCase();
+    const customerPhone = clean(body.customerPhone || form.phone, 40);
 
-  if (!storeId) return fail("Falta el id de la tienda.");
-  if (items.length === 0) return fail("El carrito está vacío.");
+    if (!storeId) return fail("Falta el id de la tienda.");
+    if (!customerName || !customerPhone) {
+      return fail("Faltan datos obligatorios del cliente.");
+    }
+    if (requestedItems.length === 0 || requestedItems.length > 100) {
+      return fail("El carrito está vacío o contiene demasiados artículos.");
+    }
 
-  // Confirma que la tienda existe y está activa antes de aceptar la
-  // orden — evita crear pedidos contra un store_id inventado.
-  const { data: store, error: storeError } = await supabaseAdmin
-    .from("stores")
-    .select("id, slug, is_active")
-    .eq("id", storeId)
-    .maybeSingle();
-
-  if (storeError) return fail("No se pudo validar la tienda.", 500);
-  if (!store || store.is_active === false) {
-    return fail("Esta tienda no está disponible.", 404);
-  }
-
-  const isYoyo = store.slug === YOYO_SLUG;
-  const isLocalDelivery = Boolean(body.isLocalDelivery);
-  const form = body.form || {};
-
-  // Cliente (el comprador, no el destinatario en Cuba): "Información
-  // del cliente" en el checkout siempre pide nombre/email/teléfono,
-  // sin importar el método de entrega. Se busca por teléfono dentro de
-  // la tienda; si no existe, se crea. Esto es lo que faltaba antes —
-  // sin esto, la orden quedaba sin customer_id y el admin mostraba
-  // "Cliente sin nombre" aunque el destinatario en Cuba sí se hubiera
-  // guardado bien.
-  const customerPhoneForRecord = clean(body.customerPhone || form.phone, 40);
-  let customerId: string | null = null;
-
-  if (customerPhoneForRecord) {
-    const { data: existingCustomer } = await supabaseAdmin
-      .from("customers")
-      .select("id")
-      .eq("store_id", storeId)
-      .eq("phone", customerPhoneForRecord)
+    const { data: store, error: storeError } = await supabaseAdmin
+      .from("stores")
+      .select(
+        "id, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent"
+      )
+      .eq("id", storeId)
       .maybeSingle();
 
-    if (existingCustomer) {
-      customerId = existingCustomer.id;
+    if (storeError) return fail("No se pudo validar la tienda.", 500);
+    if (
+      !store ||
+      store.is_active === false ||
+      store.module_store_enabled === false
+    ) {
+      return fail("Esta tienda no está disponible.", 404);
+    }
 
-      // Si ya existía pero mandó datos nuevos (nombre/email/ciudad),
-      // se actualizan para no quedar con un registro desactualizado.
-      await supabaseAdmin
-        .from("customers")
-        .update({
-          name: clean(form.name, 150) || undefined,
-          email: clean(form.email, 150) || undefined,
-          city: clean(form.city, 120) || undefined,
-        })
-        .eq("id", existingCustomer.id);
-    } else {
-      const { data: newCustomer, error: customerError } = await supabaseAdmin
-        .from("customers")
-        .insert({
-          store_id: storeId,
-          name: clean(form.name, 150) || "Cliente sin nombre",
-          email: clean(form.email, 150) || null,
-          phone: customerPhoneForRecord,
-          city: clean(form.city, 120) || null,
-        })
-        .select("id")
-        .single();
+    const isYoyo = store.slug === YOYO_SLUG;
+    const isLocalDelivery = Boolean(body.isLocalDelivery);
 
-      if (customerError) {
-        console.error("CREATE CUSTOMER ERROR:", customerError);
-        // No bloquea el pedido por esto: sigue como orden sin
-        // customer_id vinculado en vez de perder la venta.
-      } else {
-        customerId = newCustomer.id;
+    // Fee de plataforma (Perla): se calcula SIEMPRE en el servidor a
+    // partir de la configuración real de la tienda, nunca confiando en
+    // nada que venga del cliente.
+    const platformFeePercent =
+      store.platform_fee_enabled &&
+      Number.isFinite(Number(store.platform_fee_percent)) &&
+      Number(store.platform_fee_percent) > 0
+        ? Number(store.platform_fee_percent)
+        : 0;
+
+    const preparedItems: PreparedItem[] = [];
+    const stockNeeds = new Map<string, number>();
+    const directProductQuantities = new Map<string, number>();
+
+    for (const rawItem of requestedItems) {
+      if (rawItem.item_type !== "product") continue;
+      const productId = clean(rawItem.product_id, 64);
+      const quantity = Math.trunc(Number(rawItem.quantity || 0));
+      if (productId && quantity > 0) {
+        directProductQuantities.set(
+          productId,
+          (directProductQuantities.get(productId) || 0) + quantity
+        );
       }
     }
-  }
 
-  // El subtotal por línea ya viene calculado (con escalas de precio por
-  // cantidad incluidas) y es lo mismo que el cliente vio en pantalla
-  // antes de confirmar. Se recalcula sumándolo en el servidor en vez de
-  // aceptar un total suelto del cliente.
-  const subtotal = items.reduce(
-    (sum, item) => sum + Number(item.subtotal || 0),
-    0
-  );
+    const { data: categoryRows, error: categoryRulesError } =
+      await supabaseAdmin
+        .from("categories")
+        .select("name, minimum_order_exempt, delivery_included")
+        .eq("store_id", storeId);
 
-  let shippingCost = 0;
-  let deliveryZoneId: string | null = null;
-  let zoneName: string | null = null;
+    if (categoryRulesError) {
+      return fail("No se pudieron validar las reglas de categorías.", 500);
+    }
 
-  if (isYoyo && isLocalDelivery) {
-    // Yoyo con entrega local usa una tarifa fija de configuración, no
-    // zonas por municipio.
-    const { data: settings } = await supabaseAdmin
-      .from("checkout_settings")
-      .select("show_delivery_price, fixed_delivery_fee")
-      .eq("store_id", storeId)
-      .maybeSingle();
+    const categoryRuleMap = new Map(
+      (categoryRows || []).map((row) => [
+        clean(row.name, 160).toLowerCase(),
+        {
+          minimum_order_exempt: Boolean(row.minimum_order_exempt),
+          delivery_included: Boolean(row.delivery_included),
+        },
+      ])
+    );
 
-    shippingCost = settings?.show_delivery_price
-      ? Number(settings.fixed_delivery_fee || 0)
-      : 0;
-  } else {
-    const zoneId = clean(body.zoneId, 64);
+    for (const rawItem of requestedItems) {
+      const quantity = Math.trunc(Number(rawItem.quantity || 0));
+      if (quantity <= 0) return fail("Cantidad inválida en el carrito.");
 
-    if (zoneId) {
-      const { data: zone } = await supabaseAdmin
+      if (rawItem.item_type === "product") {
+        const productId = clean(rawItem.product_id, 64);
+        const { data: product, error: productError } = await supabaseAdmin
+          .from("products")
+          .select(
+            "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, is_active, deleted_at"
+          )
+          .eq("id", productId)
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .is("deleted_at", null)
+          .maybeSingle();
+
+        if (productError || !product) {
+          return fail("Uno de los productos ya no está disponible.", 409);
+        }
+
+        const totalRequestedQuantity =
+          directProductQuantities.get(product.id) || quantity;
+
+        const { data: tierRows, error: tierError } = await supabaseAdmin
+          .from("product_price_tiers")
+          .select("min_quantity, unit_price")
+          .eq("store_id", storeId)
+          .eq("product_id", product.id)
+          .order("min_quantity", { ascending: true });
+
+        if (tierError) {
+          return fail(
+            `No se pudo validar el precio de ${clean(product.name, 150)}.`,
+            500
+          );
+        }
+
+        const baseUnitPrice = getServerUnitPriceForQuantity(
+          money(product.price),
+          totalRequestedQuantity,
+          (tierRows || []) as PriceTierRow[]
+        );
+
+        // Precio que realmente paga el cliente (base + fee de
+        // plataforma, si la tienda lo tiene activado).
+        const price = applyPlatformFee(baseUnitPrice, platformFeePercent);
+        const unitFeeAmount = money(price - baseUnitPrice);
+
+        const categoryRule = categoryRuleMap.get(
+          clean(product.category, 160).toLowerCase()
+        );
+        const minimumOrderExempt =
+          product.minimum_order_exempt ??
+          categoryRule?.minimum_order_exempt ??
+          false;
+        const deliveryIncluded =
+          product.delivery_included ?? categoryRule?.delivery_included ?? false;
+
+        preparedItems.push({
+          item_type: "product",
+          product_id: product.id,
+          combo_id: null,
+          product_name: clean(product.name, 200),
+          quantity,
+          price,
+          base_price: baseUnitPrice,
+          platform_fee_amount: money(unitFeeAmount * quantity),
+          subtotal: money(price * quantity),
+          minimum_order_exempt: minimumOrderExempt === true,
+          delivery_included: deliveryIncluded === true,
+        });
+
+        stockNeeds.set(product.id, (stockNeeds.get(product.id) || 0) + quantity);
+        continue;
+      }
+
+      if (rawItem.item_type === "combo") {
+        const comboId = clean(rawItem.combo_id, 64);
+        const { data: combo, error: comboError } = await supabaseAdmin
+          .from("combos")
+          .select("id, name, price, store_id")
+          .eq("id", comboId)
+          .eq("store_id", storeId)
+          .maybeSingle();
+
+        if (comboError || !combo) {
+          return fail("Uno de los combos ya no está disponible.", 409);
+        }
+
+        const { data: comboItems, error: comboItemsError } =
+          await supabaseAdmin
+            .from("combo_items")
+            .select("product_id, quantity")
+            .eq("combo_id", combo.id);
+
+        if (comboItemsError) {
+          return fail("No se pudo validar el contenido de un combo.", 500);
+        }
+
+        for (const comboItem of comboItems || []) {
+          const needed = Math.trunc(Number(comboItem.quantity || 0)) * quantity;
+          if (needed > 0) {
+            stockNeeds.set(
+              comboItem.product_id,
+              (stockNeeds.get(comboItem.product_id) || 0) + needed
+            );
+          }
+        }
+
+        // El fee de plataforma solo aplica a productos individuales,
+        // no a combos (precio fijo).
+        const price = money(combo.price);
+        preparedItems.push({
+          item_type: "combo",
+          product_id: null,
+          combo_id: combo.id,
+          product_name: clean(combo.name, 200),
+          quantity,
+          price,
+          base_price: price,
+          platform_fee_amount: 0,
+          subtotal: money(price * quantity),
+          minimum_order_exempt: false,
+          delivery_included: false,
+        });
+        continue;
+      }
+
+      return fail("El carrito contiene un tipo de artículo no permitido.");
+    }
+
+    for (const [productId, needed] of stockNeeds) {
+      const { data: product, error } = await supabaseAdmin
+        .from("products")
+        .select("id, name, stock, store_id, max_quantity_per_order")
+        .eq("id", productId)
+        .eq("store_id", storeId)
+        .eq("is_active", true)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+      if (error || !product) {
+        return fail("Uno de los productos de la orden ya no está disponible.", 409);
+      }
+
+      const configuredMaximum =
+        product.max_quantity_per_order == null
+          ? null
+          : Math.trunc(Number(product.max_quantity_per_order));
+
+      if (
+        configuredMaximum !== null &&
+        configuredMaximum >= 1 &&
+        needed > configuredMaximum
+      ) {
+        return fail(
+          `${clean(product.name, 150)} permite un máximo de ${configuredMaximum} unidades por pedido.`,
+          409
+        );
+      }
+
+      if (Number(product.stock || 0) < needed) {
+        return fail(
+          `Stock insuficiente para ${clean(product.name || "un producto", 150)}.`,
+          409
+        );
+      }
+    }
+
+    let deliveryFee = 0;
+    let deliveryZoneId: string | null = null;
+    let zoneName: string | null = null;
+    let zoneMinimumOrder = 0;
+    let zoneFreeDeliveryFrom = 0;
+
+    if (isYoyo && isLocalDelivery) {
+      const { data: settings } = await supabaseAdmin
+        .from("checkout_settings")
+        .select("show_delivery_price, fixed_delivery_fee")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      deliveryFee = settings?.show_delivery_price
+        ? money(settings.fixed_delivery_fee)
+        : 0;
+    } else {
+      const zoneId = clean(body.zoneId, 64);
+      if (!zoneId) return fail("Selecciona una zona de entrega.");
+
+      const { data: zoneData, error: zoneError } = await supabaseAdmin
         .from("delivery_zones")
-        .select("id, zone_name, delivery_fee, minimum_order, free_delivery_from")
+        .select(
+          "id, zone_name, delivery_fee, minimum_order, free_delivery_from, store_id"
+        )
         .eq("id", zoneId)
         .eq("store_id", storeId)
         .maybeSingle();
 
-      if (zone) {
-        deliveryZoneId = zone.id;
-        zoneName = zone.zone_name;
-
-        const freeDeliveryFrom = Number(zone.free_delivery_from || 0);
-        const hasFreeDelivery =
-          freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom;
-
-        shippingCost = hasFreeDelivery
-          ? 0
-          : Number(zone.delivery_fee || 0);
+      if (zoneError || !zoneData) {
+        return fail("La zona de entrega no es válida.", 409);
       }
+
+      deliveryFee = money(zoneData.delivery_fee);
+      deliveryZoneId = zoneData.id;
+      zoneName = clean(zoneData.zone_name, 150);
+      zoneMinimumOrder = money(zoneData.minimum_order);
+      zoneFreeDeliveryFrom = money(zoneData.free_delivery_from);
     }
-  }
 
-  // Descuento: se re-valida acá con la MISMA lógica que
-  // /api/discounts/validate, en vez de confiar en un monto que mande
-  // el cliente — el cliente nunca manda un discountAmount a propósito,
-  // solo el código y su teléfono.
-  let discountAmount = 0;
-  let appliedCampaignId: string | null = null;
-  const discountCode = clean(body.discountCode, 40).toUpperCase();
-  const customerPhone = clean(body.customerPhone, 40);
+    const subtotal = money(
+      preparedItems.reduce((sum, item) => sum + item.subtotal, 0)
+    );
 
-  if (discountCode && customerPhone) {
-    const { data: campaign } = await supabaseAdmin
-      .from("discount_campaigns")
-      .select("*")
-      .eq("store_id", storeId)
-      .eq("code", discountCode)
-      .eq("is_active", true)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle();
+    const minimumOrderExemptForAll =
+      preparedItems.length > 0 &&
+      preparedItems.every((item) => item.minimum_order_exempt === true);
 
-    if (campaign) {
+    const deliveryIncludedForAllItems =
+      preparedItems.length > 0 &&
+      preparedItems.every((item) => item.delivery_included === true);
+
+    // Regla de mínimo: si TODOS los artículos son exentos, no se exige
+    // mínimo. Si la orden es mixta, se exige el mínimo normal de la
+    // zona usando el subtotal completo.
+    if (
+      deliveryZoneId &&
+      !minimumOrderExemptForAll &&
+      zoneMinimumOrder > 0 &&
+      subtotal < zoneMinimumOrder
+    ) {
+      return fail(
+        `La compra mínima para esta zona es de $${zoneMinimumOrder.toFixed(2)}.`,
+        409
+      );
+    }
+
+    if (
+      deliveryIncludedForAllItems ||
+      (deliveryZoneId && zoneFreeDeliveryFrom > 0 && subtotal >= zoneFreeDeliveryFrom)
+    ) {
+      deliveryFee = 0;
+    }
+
+    const platformFeeAmount = money(
+      preparedItems.reduce((sum, item) => sum + item.platform_fee_amount, 0)
+    );
+
+    // Descuento: se re-valida con la misma lógica que
+    // /api/discounts/validate, nunca confiando en un monto suelto que
+    // mande el cliente.
+    let discountAmount = 0;
+    let discountCampaignId: string | null = null;
+    let discountCode: string | null = null;
+
+    if (body.discountCampaignId && body.discountCode) {
+      const campaignId = clean(body.discountCampaignId, 64);
+      const code = clean(body.discountCode, 80).toUpperCase();
+
+      const { data: campaign, error: campaignError } = await supabaseAdmin
+        .from("discount_campaigns")
+        .select("id, code, discount_amount, is_active, expires_at")
+        .eq("id", campaignId)
+        .eq("store_id", storeId)
+        .eq("code", code)
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString())
+        .maybeSingle();
+
+      if (campaignError || !campaign) {
+        return fail("El bono ya no está disponible.", 409);
+      }
+
       const { data: authorized } = await supabaseAdmin
         .from("discount_campaign_customers")
         .select("id, status")
@@ -229,104 +530,262 @@ export async function POST(request: Request) {
         .eq("customer_phone", customerPhone)
         .maybeSingle();
 
-      if (authorized && authorized.status === "available") {
-        discountAmount = Math.min(
-          Number(campaign.discount_amount || 0),
-          Math.max(subtotal, 0)
-        );
-        appliedCampaignId = campaign.id;
+      if (!authorized || authorized.status !== "available") {
+        return fail("Este teléfono ya no puede utilizar el bono.", 409);
+      }
+
+      discountAmount = money(
+        Math.min(Number(campaign.discount_amount || 0), subtotal + deliveryFee)
+      );
+      discountCampaignId = campaign.id;
+      discountCode = campaign.code;
+    }
+
+    const total = money(Math.max(subtotal + deliveryFee - discountAmount, 0));
+
+    const city = isLocalDelivery
+      ? clean(form.city, 120)
+      : clean(form.municipality, 120);
+
+    // Cliente (el comprador, no el destinatario en Cuba): se busca por
+    // teléfono dentro de la tienda; si no existe, se crea. (Este es el
+    // arreglo de "Cliente sin nombre" — se mantiene igual.)
+    let customerId: string | null = null;
+    const { data: existingCustomer } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("store_id", storeId)
+      .eq("phone", customerPhone)
+      .maybeSingle();
+
+    if (existingCustomer) {
+      customerId = existingCustomer.id;
+      await supabaseAdmin
+        .from("customers")
+        .update({
+          name: customerName || undefined,
+          email: email || undefined,
+          city: city || undefined,
+        })
+        .eq("id", existingCustomer.id);
+    } else {
+      const { data: newCustomer, error: customerError } = await supabaseAdmin
+        .from("customers")
+        .insert({
+          store_id: storeId,
+          name: customerName || "Cliente sin nombre",
+          email: email || null,
+          phone: customerPhone,
+          city: city || null,
+        })
+        .select("id")
+        .single();
+
+      if (customerError) {
+        console.error("CREATE CUSTOMER ERROR:", customerError);
+      } else {
+        customerId = newCustomer.id;
       }
     }
-  }
 
-  const total = Math.max(subtotal + shippingCost - discountAmount, 0);
+    const payload = {
+      customer_id: customerId,
+      store_id: storeId,
+      status: "pending",
+      payment_status: "pending",
+      payment_method: intendedPaymentMethod,
+      subtotal,
+      delivery_fee: deliveryFee,
+      platform_fee_amount: platformFeeAmount,
+      discount_campaign_id: discountCampaignId,
+      discount_code: discountCode,
+      discount_amount: discountAmount,
+      total,
+      country: isLocalDelivery ? "Estados Unidos" : "Cuba",
+      state: isLocalDelivery ? null : "Cienfuegos",
+      municipality: city,
+      delivery_zone_id: deliveryZoneId,
+      zone_name: zoneName,
+      exact_address: clean(form.exact_address, 300),
+      recipient_name: isLocalDelivery
+        ? customerName
+        : clean(form.recipient_name, 150),
+      recipient_phone: isLocalDelivery
+        ? customerPhone
+        : clean(form.recipient_phone, 40),
+      recipient_phone_alt: isLocalDelivery
+        ? null
+        : clean(form.recipient_phone_alt, 40),
+      address: clean(form.exact_address, 300),
+      notes: [
+        form.reference ? `Referencia: ${clean(form.reference, 200)}` : "",
+        clean(form.notes, 500),
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    };
 
-  const payload = {
-    store_id: storeId,
-    customer_id: customerId,
-    status: "pending",
-    payment_status: "pending",
-    subtotal,
-    delivery_fee: shippingCost,
-    discount_campaign_id: appliedCampaignId,
-    discount_code: appliedCampaignId ? discountCode : null,
-    discount_amount: discountAmount,
-    total,
-    country: isLocalDelivery ? "Estados Unidos" : "Cuba",
-    state: isLocalDelivery ? null : "Cienfuegos",
-    municipality: isLocalDelivery
-      ? clean(form.city, 120)
-      : clean(form.municipality, 120),
-    delivery_zone_id: deliveryZoneId,
-    zone_name: zoneName,
-    exact_address: clean(form.exact_address, 300),
-    recipient_name: isLocalDelivery
-      ? clean(form.name, 150)
-      : clean(form.recipient_name, 150),
-    recipient_phone: isLocalDelivery
-      ? clean(form.phone, 40)
-      : clean(form.recipient_phone, 40),
-    recipient_phone_alt: isLocalDelivery
-      ? null
-      : clean(form.recipient_phone_alt, 40),
-    address: clean(form.exact_address, 300),
-    notes: [
-      form.reference ? `Referencia: ${clean(form.reference, 200)}` : "",
-      clean(form.notes, 500),
-    ]
-      .filter(Boolean)
-      .join("\n"),
-  };
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .insert(payload)
+      .select("id, order_number")
+      .single();
 
-  const { data: order, error: orderError } = await supabaseAdmin
-    .from("orders")
-    .insert(payload)
-    .select("id, order_number")
-    .single();
+    if (orderError || !order) {
+      console.error("CREATE ORDER ERROR:", orderError);
+      return fail("No se pudo crear la orden.", 500);
+    }
 
-  if (orderError) {
-    console.error("CREATE ORDER ERROR:", orderError);
-    return fail("No se pudo crear la orden.", 500);
-  }
+    // Algunas instalaciones antiguas no generan order_number
+    // automáticamente. Nunca exponemos el UUID completo al cliente: si
+    // la BD no asignó uno, creamos un identificador público corto,
+    // legible y persistente.
+    let publicOrderNumber = clean(order.order_number, 80);
 
-  const itemRows = items.map((item) => ({
-    order_id: order.id,
-    item_type: item.item_type === "combo" ? "combo" : "product",
-    product_id: item.item_type === "product" ? item.product_id || null : null,
-    combo_id: item.item_type === "combo" ? item.combo_id || null : null,
-    product_name: clean(item.product_name, 200),
-    quantity: Math.max(1, Number(item.quantity) || 1),
-    price: Number(item.price) || 0,
-    subtotal: Number(item.subtotal) || 0,
-  }));
+    if (!publicOrderNumber) {
+      const compactId = order.id.replace(/-/g, "").toUpperCase();
+      publicOrderNumber = `ORD-${compactId.slice(0, 8)}-${compactId.slice(-4)}`;
 
-  const { error: itemsError } = await supabaseAdmin
-    .from("order_items")
-    .insert(itemRows);
+      const { error: orderNumberError } = await supabaseAdmin
+        .from("orders")
+        .update({ order_number: publicOrderNumber })
+        .eq("id", order.id)
+        .eq("store_id", storeId);
 
-  if (itemsError) {
-    console.error("CREATE ORDER ITEMS ERROR:", itemsError);
-    // La orden ya quedó creada; no se revierte para no perder el pedido,
-    // pero hay que revisarla a mano si esto llega a pasar.
-    return fail(
-      "La orden se creó pero hubo un problema guardando los productos. Contacta soporte con el número de orden " +
-        (order.order_number || order.id) +
-        ".",
-      500
+      if (orderNumberError) {
+        await deleteCreatedOrder(order.id);
+        return fail("No se pudo asignar el número de orden.", 500);
+      }
+    }
+
+    const { error: itemsError } = await supabaseAdmin.from("order_items").insert(
+      preparedItems.map((item) => ({
+        order_id: order.id,
+        item_type: item.item_type,
+        product_id: item.product_id,
+        combo_id: item.combo_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        price: item.price,
+        base_price: item.base_price,
+        platform_fee_amount: item.platform_fee_amount,
+        subtotal: item.subtotal,
+      }))
     );
-  }
 
-  if (appliedCampaignId) {
-    await supabaseAdmin
-      .from("discount_campaign_customers")
-      .update({ status: "used" })
-      .eq("campaign_id", appliedCampaignId)
-      .eq("store_id", storeId)
-      .eq("customer_phone", customerPhone);
-  }
+    if (itemsError) {
+      console.error("ERROR GUARDANDO ORDER_ITEMS:", itemsError);
+      await deleteCreatedOrder(order.id);
+      return fail("No se pudieron guardar los productos de la orden.", 500);
+    }
 
-  return NextResponse.json({
-    success: true,
-    order: { id: order.id, order_number: order.order_number },
-  });
+    if (discountCampaignId) {
+      const { data: claimData, error: claimError } = await supabaseAdmin.rpc(
+        "claim_discount_coupon",
+        {
+          p_campaign_id: discountCampaignId,
+          p_store_id: storeId,
+          p_customer_phone: customerPhone,
+          p_order_id: order.id,
+        }
+      );
+
+      const claimResult = claimData?.[0];
+      if (claimError || !claimResult?.success) {
+        await deleteCreatedOrder(order.id);
+        return fail(claimResult?.message || "El bono ya no está disponible.", 409);
+      }
+    }
+
+    const appliedStockChanges: StockChange[] = [];
+    for (const [productId, needed] of stockNeeds) {
+      const { data: product, error: stockReadError } = await supabaseAdmin
+        .from("products")
+        .select("stock")
+        .eq("id", productId)
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      if (stockReadError || !product || Number(product.stock || 0) < needed) {
+        await restoreStock(appliedStockChanges);
+        await deleteCreatedOrder(order.id);
+        return fail("El stock cambió mientras se procesaba el pedido.", 409);
+      }
+
+      const { error: stockUpdateError } = await supabaseAdmin
+        .from("products")
+        .update({ stock: Number(product.stock || 0) - needed })
+        .eq("id", productId)
+        .eq("store_id", storeId);
+
+      if (stockUpdateError) {
+        await restoreStock(appliedStockChanges);
+        await deleteCreatedOrder(order.id);
+        return fail("No se pudo actualizar el inventario.", 500);
+      }
+
+      appliedStockChanges.push({ productId, quantity: needed });
+    }
+
+    // Aviso por email — nunca debe tumbar el pedido si falla.
+    try {
+      const { data: notificationSettings } = await supabaseAdmin
+        .from("store_settings")
+        .select("order_notification_email")
+        .eq("store_id", storeId)
+        .maybeSingle();
+
+      const notifyEmail = notificationSettings?.order_notification_email;
+      const platformEmail = process.env.PLATFORM_NOTIFICATION_EMAIL;
+
+      const recipients = Array.from(
+        new Set(
+          [notifyEmail, platformEmail]
+            .filter((addr): addr is string => Boolean(addr))
+            .map((addr) => addr.trim().toLowerCase())
+        )
+      );
+
+      if (recipients.length > 0) {
+        const { data: storeInfo } = await supabaseAdmin
+          .from("stores")
+          .select("name")
+          .eq("id", storeId)
+          .maybeSingle();
+
+        await sendNewOrderEmail({
+          toEmails: recipients,
+          storeName: storeInfo?.name || "tu tienda",
+          orderNumber: publicOrderNumber,
+          customerName,
+          customerPhone,
+          total,
+          itemsCount: preparedItems.length,
+          isLocalDelivery,
+          municipality: city,
+        });
+      }
+    } catch (notificationError) {
+      console.error(
+        "Error enviando notificación de nueva orden (no afecta la orden):",
+        notificationError
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      order: {
+        id: order.id,
+        order_number: publicOrderNumber,
+        subtotal,
+        delivery_fee: deliveryFee,
+        platform_fee_amount: platformFeeAmount,
+        discount_amount: discountAmount,
+        total,
+      },
+    });
+  } catch (error) {
+    console.error("CREATE ORDER ERROR (catch):", error);
+    return fail("No se pudo completar el pedido.", 500);
+  }
 }
