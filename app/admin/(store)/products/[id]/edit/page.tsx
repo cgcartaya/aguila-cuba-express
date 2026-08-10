@@ -485,6 +485,7 @@ function Input({
   onChange,
   placeholder,
   type = "text",
+  disabled = false,
 }: {
   label: string;
   name: string;
@@ -492,6 +493,7 @@ function Input({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   type?: string;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -505,7 +507,10 @@ function Input({
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full rounded-2xl border px-4 py-3 outline-none focus:border-black"
+        disabled={disabled}
+        className={`w-full rounded-2xl border px-4 py-3 outline-none focus:border-black ${
+          disabled ? "cursor-not-allowed bg-slate-100 text-slate-500" : ""
+        }`}
       />
     </div>
   );
