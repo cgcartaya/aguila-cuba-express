@@ -1,0 +1,79 @@
+"use client";
+
+/* =========================================================
+   CATEGORIES SHOWCASE CAROUSEL
+
+   - Swipe móvil.
+   - Flechas desktop.
+   - Sin encabezado azul.
+   - Protegido contra scroll horizontal del documento.
+========================================================= */
+
+import { useRef } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import CategoryShowcaseCard from "./CategoryShowcaseCard";
+import type { Product } from "@/types/cart";
+
+type CategoryGroup = {
+  categoria: string;
+  color?: string | null;
+  productos: Product[];
+};
+
+type Props = {
+  groups: CategoryGroup[];
+  storeSlug?: string;
+};
+
+export default function CategoriesShowcaseCarousel({ groups, storeSlug }: Props) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  if (!groups || groups.length === 0) return null;
+
+  const scroll = (direction: "left" | "right") => {
+    if (!scrollContainerRef.current) return;
+
+    scrollContainerRef.current.scrollBy({
+      left: direction === "left" ? -420 : 420,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <section className="relative w-full max-w-full overflow-x-hidden py-4">
+      <button
+        type="button"
+        onClick={() => scroll("left")}
+        className="absolute left-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl transition hover:scale-105 lg:flex"
+        aria-label="Categorías anteriores"
+      >
+        <ChevronLeft className="h-6 w-6 text-slate-700" />
+      </button>
+
+      <div
+        ref={scrollContainerRef}
+        className="flex w-full max-w-full snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-hidden px-4 pb-4 scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {groups.map((group) => (
+          <CategoryShowcaseCard
+            key={group.categoria}
+            category={group.categoria}
+            color={group.color}
+            products={group.productos}
+            storeSlug={storeSlug}
+          />
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => scroll("right")}
+        className="absolute right-2 top-1/2 z-20 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow-xl transition hover:scale-105 lg:flex"
+        aria-label="Siguientes categorías"
+      >
+        <ChevronRight className="h-6 w-6 text-slate-700" />
+      </button>
+    </section>
+  );
+}
