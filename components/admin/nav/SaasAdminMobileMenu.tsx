@@ -11,6 +11,7 @@ import {
   Settings,
   BarChart3,
   KeyRound,
+  History,
 } from "lucide-react";
 
 type Props = {
@@ -28,6 +29,11 @@ const links: MenuItem[] = [
   { label: "Dashboard SaaS", href: "/admin/saas", icon: LayoutDashboard },
   { label: "Tiendas", href: "/admin/stores", icon: Building2 },
   { label: "Métricas", href: "/admin/saas/metrics", icon: BarChart3 },
+  {
+    label: "Movimientos de inventario",
+    href: "/admin/saas/movimientos-inventario",
+    icon: History,
+  },
   { label: "Ajustes SaaS", href: "/admin/saas/settings", icon: Settings },
   { label: "Mi contraseña", href: "/admin/account/password", icon: KeyRound },
   { label: "Ir a tienda activa", href: "/admin", icon: Store },

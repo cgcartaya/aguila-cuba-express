@@ -237,7 +237,9 @@ export default function EditProductPage() {
           category: form.category,
           description: form.description,
           price,
-          stock,
+          // El stock ya no se manda desde esta pantalla — se maneja
+          // en Inventario para que cada cambio quede auditado en
+          // inventory_movements con motivo y quién lo hizo.
           tag: form.tag,
           is_active: form.is_active,
           minimum_order_exempt: form.minimum_order_exempt,
@@ -333,14 +335,25 @@ export default function EditProductPage() {
               placeholder="0.00"
             />
 
-            <Input
-              name="stock"
-              label="Stock *"
-              type="number"
-              value={form.stock}
-              onChange={handleChange}
-              placeholder="0"
-            />
+            <div>
+              <Input
+                name="stock"
+                label="Stock"
+                type="number"
+                value={form.stock}
+                onChange={() => {}}
+                disabled
+                placeholder="0"
+              />
+              <p className="mt-1 text-xs font-semibold text-slate-500">
+                El stock ya no se edita desde aquí. Ve a{" "}
+                <Link href="/admin/inventory" className="underline">
+                  Inventario
+                </Link>{" "}
+                para entradas, ajustes o bajas — así queda un registro de
+                cada cambio.
+              </p>
+            </div>
 
             <Input
               name="tag"

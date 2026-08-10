@@ -45,6 +45,9 @@ export default function StockEntryModal({
     const previousStock = Number(product.stock || 0);
     const newStock = previousStock + quantity;
 
+    const { data: sessionData } = await supabase.auth.getSession();
+    const createdByEmail = sessionData?.session?.user?.email || null;
+
     const { error } = await supabase
       .from("products")
       .update({
@@ -71,6 +74,7 @@ export default function StockEntryModal({
         supplier,
         cost: Number(cost || 0),
         notes,
+        created_by_email: createdByEmail,
       });
 
     if (movementError) {
