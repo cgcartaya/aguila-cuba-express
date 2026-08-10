@@ -96,6 +96,60 @@ export async function POST(request: Request) {
   const isLocalDelivery = Boolean(body.isLocalDelivery);
   const form = body.form || {};
 
+  // Cliente (el comprador, no el destinatario en Cuba): "Información
+  // del cliente" en el checkout siempre pide nombre/email/teléfono,
+  // sin importar el método de entrega. Se busca por teléfono dentro de
+  // la tienda; si no existe, se crea. Esto es lo que faltaba antes —
+  // sin esto, la orden quedaba sin customer_id y el admin mostraba
+  // "Cliente sin nombre" aunque el destinatario en Cuba sí se hubiera
+  // guardado bien.
+  const customerPhoneForRecord = clean(body.customerPhone || form.phone, 40);
+  let customerId: string | null = null;
+
+  if (customerPhoneForRecord) {
+    const { data: existingCustomer } = await supabaseAdmin
+      .from("customers")
+      .select("id")
+      .eq("store_id", storeId)
+      .eq("phone", customerPhoneForRecord)
+      .maybeSingle();
+
+    if (existingCustomer) {
+      customerId = existingCustomer.id;
+
+      // Si ya existía pero mandó datos nuevos (nombre/email/ciudad),
+      // se actualizan para no quedar con un registro desactualizado.
+      await supabaseAdmin
+        .from("customers")
+        .update({
+          name: clean(form.name, 150) || undefined,
+          email: clean(form.email, 150) || undefined,
+          city: clean(form.city, 120) || undefined,
+        })
+        .eq("id", existingCustomer.id);
+    } else {
+      const { data: newCustomer, error: customerError } = await supabaseAdmin
+        .from("customers")
+        .insert({
+          store_id: storeId,
+          name: clean(form.name, 150) || "Cliente sin nombre",
+          email: clean(form.email, 150) || null,
+          phone: customerPhoneForRecord,
+          city: clean(form.city, 120) || null,
+        })
+        .select("id")
+        .single();
+
+      if (customerError) {
+        console.error("CREATE CUSTOMER ERROR:", customerError);
+        // No bloquea el pedido por esto: sigue como orden sin
+        // customer_id vinculado en vez de perder la venta.
+      } else {
+        customerId = newCustomer.id;
+      }
+    }
+  }
+
   // El subtotal por línea ya viene calculado (con escalas de precio por
   // cantidad incluidas) y es lo mismo que el cliente vio en pantalla
   // antes de confirmar. Se recalcula sumándolo en el servidor en vez de
@@ -189,6 +243,7 @@ export async function POST(request: Request) {
 
   const payload = {
     store_id: storeId,
+    customer_id: customerId,
     status: "pending",
     payment_status: "pending",
     subtotal,
