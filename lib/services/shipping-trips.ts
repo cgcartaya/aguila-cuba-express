@@ -85,6 +85,42 @@ export function createShippingTrip(storeId: string, input: ShippingTripInput) {
   });
 }
 
+/**
+ * Edita los datos generales de un viaje ya creado (nombre, origen, destino,
+ * fechas, chofer/vehículo, tipo de transporte, notas del manifiesto).
+ *
+ * A diferencia de crearlo, esto NO pasa por un RPC: es un update directo
+ * sobre la tabla, igual que ya hacen setDefaultShippingTrip/moveShippingTripToTrash
+ * en este mismo archivo. No hace falta RPC aquí porque editar estos campos
+ * no reasigna trip_number ni tiene ningún otro efecto colateral en el
+ * servidor — es sólo actualizar los datos descriptivos del viaje.
+ */
+export function updateShippingTrip(
+  storeId: string,
+  tripId: string,
+  input: ShippingTripInput
+) {
+  return supabase
+    .from("shipping_trips")
+    .update({
+      name: input.name,
+      origin: input.origin || null,
+      destination: input.destination || null,
+      departure_date: input.departure_date || null,
+      estimated_arrival_date: input.estimated_arrival_date || null,
+      driver_name: input.driver_name || null,
+      vehicle: input.vehicle || null,
+      transport_mode: input.transport_mode,
+      manifest_notes: input.manifest_notes || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("store_id", storeId)
+    .eq("id", tripId)
+    .is("deleted_at", null)
+    .select("*")
+    .single<ShippingTrip>();
+}
+
 export function changeShippingTripStatus(
   storeId: string,
   tripId: string,

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Archive, CalendarDays, CircleDollarSign, Loader2, Package, Plus, Route, Scale, Star, Trash2, Truck } from "lucide-react";
+import { Archive, CalendarDays, CircleDollarSign, Loader2, Package, Pencil, Plus, Route, Scale, Star, Trash2, Truck } from "lucide-react";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -145,6 +145,7 @@ export default function ShippingTripsPage() {
                 </div>
                 {canManage && (
                   <div className="relative z-10 mt-5 flex flex-wrap gap-2">
+                    <Link href={`/admin/shipping/trips/${trip.id}/edit`} onClick={(event) => event.stopPropagation()} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-black text-slate-700 hover:bg-slate-50"><Pencil size={16}/> Editar</Link>
                     {!trip.is_default && trip.status !== "completed" && trip.status !== "cancelled" && (
                       <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); void markAsDefault(trip); }} disabled={defaultWorkingId === trip.id} className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-black text-amber-800 hover:bg-amber-100 disabled:opacity-50"><Star size={16}/>{defaultWorkingId === trip.id ? "Marcando..." : "Marcar como viaje actual"}</button>
                     )}

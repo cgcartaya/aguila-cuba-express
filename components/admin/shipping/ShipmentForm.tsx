@@ -160,7 +160,6 @@ export default function ShipmentForm(props: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError("");
     if (!form.contains_package && !form.contains_money) return setError("Selecciona paquete, dinero o ambos.");
-    if (!form.shipping_location_id) return setError("Selecciona el lugar de entrega.");
     if (form.contains_package && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
@@ -227,7 +226,7 @@ export default function ShipmentForm(props: Props) {
         <Select label="País" value={form.country_id || ""} onChange={v => { set("country_id", v || null); set("province_id", null); set("municipality_id", null); set("shipping_location_id", null); }} options={countries.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         <Select label="Provincia" value={form.province_id || ""} onChange={v => { set("province_id", v || null); set("municipality_id", null); set("shipping_location_id", null); }} options={filteredProvinces.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         <Select label="Municipio" value={form.municipality_id || ""} onChange={v => { set("municipality_id", v || null); set("shipping_location_id", null); }} options={filteredMunicipalities.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
-        <Select label="Lugar" value={form.shipping_location_id || ""} onChange={v => set("shipping_location_id", v || null)} options={filteredLocations.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
+        <Select label="Lugar (opcional)" value={form.shipping_location_id || ""} onChange={v => set("shipping_location_id", v || null)} options={filteredLocations.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         {form.contains_package && <Select label="Tipo de paquete" value={form.service_type_id || ""} onChange={v => set("service_type_id", v || null)} options={serviceTypes.filter(x=>x.is_active && x.code.toLowerCase() !== "money").map(x=>[x.id,x.name])} />}
         <Input label="Código APK" value={form.location} readOnly />
         <Input label="Destinatario" value={form.recipient_name} onChange={v=>set("recipient_name",v)} />
@@ -268,7 +267,7 @@ export default function ShipmentForm(props: Props) {
       </div>
       {form.rate_per_lb <= 0 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">
-          No existe una tarifa para este lugar y tipo de paquete. Configura una tarifa específica o la tarifa general en Ajustes de envíos.
+          No existe una tarifa para este destino (lugar, municipio, provincia o país) y tipo de paquete. Configura una tarifa específica o la tarifa general en Ajustes de envíos.
         </div>
       )}
     </Section>}

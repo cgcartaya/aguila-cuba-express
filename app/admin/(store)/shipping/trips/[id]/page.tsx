@@ -542,6 +542,7 @@ export default function ShippingTripDetailPage() {
                   <span>{trip.origin || "Origen sin definir"}</span>
                   <ArrowRight className="text-blue-300" size={15} />
                   <span>{trip.destination || "Destino sin definir"}</span>
+                  {canManage && !tripClosed && <Link href={`/admin/shipping/trips/${trip.id}/edit`} title="Editar viaje" className="ml-2 inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1 text-xs font-black text-white hover:bg-white/20"><Edit3 size={13} /> Editar</Link>}
                 </p>
               </div>
               {canManage && !tripClosed && <div className="flex flex-wrap gap-2">{trip.status === "preparing" && <Action icon={<Truck size={18} />} label="Salió hacia Cuba" onClick={() => setTripStatus("in_transit")} disabled={working} />}{trip.status === "in_transit" && <Action icon={<Ship size={18} />} label="Recibido en Cuba" onClick={() => setTripStatus("received_cuba")} disabled={working} />}{trip.status === "received_cuba" && <Action icon={<Package size={18} />} label="Comenzar reparto" onClick={() => setTripStatus("in_delivery")} disabled={working} />}<button onClick={() => closeTrip(false)} disabled={working} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-400 disabled:opacity-50"><CheckCircle2 size={18} />Cerrar viaje</button></div>}
