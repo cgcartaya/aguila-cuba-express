@@ -5,6 +5,7 @@ import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
+import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
 import {
   buildPerlaMetadata,
   buildStoreMetadata,
@@ -208,7 +209,25 @@ export default async function HomePage() {
   }
 
   if (landing === "deparis") {
-    return <DeParisLanding />;
+    const [menuEnabled, featuredItems] = await Promise.all([
+      isMenuModuleEnabled("deparis"),
+      getFeaturedMenuItems("deparis", 6),
+    ]);
+
+    const featuredDishes = featuredItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image_url: item.image_url,
+    }));
+
+    return (
+      <DeParisLanding
+        menuHref={menuEnabled ? "/menu/deparis" : undefined}
+        featuredDishes={featuredDishes}
+      />
+    );
   }
 
   return <PerlaMarketplaceLanding />;
