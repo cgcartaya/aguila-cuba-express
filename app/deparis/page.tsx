@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import { isMenuModuleEnabled } from "@/lib/services/menu";
 
+// Sin esto, Next.js puede cachear la respuesta de Supabase de un
+// build anterior y "congelar" el valor de module_menu_enabled hasta
+// el próximo redeploy. Con esto, se vuelve a consultar en cada visita.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "De Paris | Mercado & Bistró francés en Cienfuegos",
   description:
