@@ -55,6 +55,30 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
   const [cartOpen, setCartOpen] = useState(false);
   const [cart, setCart] = useState<MenuCartLine[]>([]);
   const [orderSentMessage, setOrderSentMessage] = useState(false);
+  const [addedToast, setAddedToast] = useState<string | null>(null);
+
+  // Un platillo se puede agregar directo (sin abrir el modal) si no
+  // tiene ningún grupo de opciones OBLIGATORIO — así lo simple sigue
+  // siendo un solo toque, y lo que de verdad necesita una elección
+  // (término, salsa, etc.) sigue abriendo el modal para elegir.
+  const isQuickAddable = (item: MenuItem) =>
+    item.menu_item_option_groups.every((group) => !group.is_required);
+
+  const showAddedToast = (name: string) => {
+    setAddedToast(name);
+    window.setTimeout(() => setAddedToast((current) => (current === name ? null : current)), 1600);
+  };
+
+  const handleQuickAdd = (item: MenuItem) => {
+    handleAddToCart({
+      lineId: crypto.randomUUID(),
+      menu_item_id: item.id,
+      name: item.name,
+      unit_base_price: item.price,
+      quantity: 1,
+      selected_options: [],
+    });
+  };
 
   const categoriesWithItems = categories.filter((cat) => cat.menu_items.length > 0);
 
@@ -72,7 +96,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
 
   const handleAddToCart = (line: MenuCartLine) => {
     setCart((prev) => [...prev, line]);
-    setCartOpen(true);
+    showAddedToast(line.name);
   };
 
   const handleUpdateQuantity = (lineId: string, quantity: number) => {
@@ -175,48 +199,69 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                   style={{ backgroundColor: "#C89B3C", opacity: 0.35 }}
                 />
 
-                <div className="mt-5 space-y-6">
+                <div className="mt-5 space-y-5">
                   {category.menu_items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveItem(item)}
-                      className="block w-full text-left"
-                    >
-                      <div className="flex items-baseline gap-2">
-                        <span
-                          className="text-base"
-                          style={{
-                            fontFamily: "var(--menu-font-display)",
-                            fontWeight: 600,
-                            color: INK,
-                          }}
+                    <div key={item.id} className="flex items-start gap-3">
+                      <button
+                        onClick={() => setActiveItem(item)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            className="text-base"
+                            style={{
+                              fontFamily: "var(--menu-font-display)",
+                              fontWeight: 600,
+                              color: INK,
+                            }}
+                          >
+                            {item.name}
+                          </span>
+                          <span
+                            className="relative top-[-3px] flex-1 border-b border-dotted"
+                            style={{ borderColor: "rgba(27,20,16,0.35)" }}
+                          />
+                          <span
+                            className="text-base"
+                            style={{
+                              fontFamily: "var(--menu-font-display)",
+                              fontWeight: 600,
+                              color: INK,
+                            }}
+                          >
+                            ${item.price.toFixed(2)}
+                          </span>
+                        </div>
+                        {item.description && (
+                          <p
+                            className="mt-1 text-[13px] italic"
+                            style={{ color: INK, opacity: 0.55 }}
+                          >
+                            {item.description}
+                          </p>
+                        )}
+                      </button>
+
+                      {isQuickAddable(item) ? (
+                        <button
+                          onClick={() => handleQuickAdd(item)}
+                          aria-label={`Agregar ${item.name}`}
+                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg font-bold transition active:scale-90"
+                          style={{ backgroundColor: accent, color: INK }}
                         >
-                          {item.name}
-                        </span>
-                        <span
-                          className="relative top-[-3px] flex-1 border-b border-dotted"
-                          style={{ borderColor: "rgba(27,20,16,0.35)" }}
-                        />
-                        <span
-                          className="text-base"
-                          style={{
-                            fontFamily: "var(--menu-font-display)",
-                            fontWeight: 600,
-                            color: INK,
-                          }}
+                          +
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setActiveItem(item)}
+                          aria-label={`Elegir opciones de ${item.name}`}
+                          className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
+                          style={{ borderColor: accent, color: accent }}
                         >
-                          ${item.price.toFixed(2)}
-                        </span>
-                      </div>
-                      {item.description && (
-                        <p
-                          className="mt-1 text-[13px] italic"
-                          style={{ color: INK, opacity: 0.55 }}
-                        >
-                          {item.description}
-                        </p>
+                          Elegir
+                        </button>
                       )}
-                    </button>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -260,6 +305,15 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
             setCartOpen(false);
           }}
         />
+      )}
+
+      {addedToast && (
+        <div
+          className="fixed bottom-20 left-1/2 z-40 -translate-x-1/2 rounded-full px-4 py-2 text-xs font-bold text-white shadow-lg transition-opacity"
+          style={{ backgroundColor: INK }}
+        >
+          ✓ {addedToast} agregado
+        </div>
       )}
 
       {orderSentMessage && (
