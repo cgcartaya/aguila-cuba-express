@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, MessageCircle, ShoppingBag, UtensilsCrossed, X } from "lucide-react";
+import { Menu, MessageCircle, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
@@ -17,6 +17,15 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // El link "Menú" del nav original apuntaba a la sección vitrina
+  // "#menu" dentro de la misma landing. Si el módulo de menú digital
+  // está activo para esta tienda, ese mismo link ahora lleva directo
+  // a /menu/deparis para pedir de verdad; si no, se queda igual que
+  // siempre (solo vitrina).
+  const resolvedNavLinks = NAV_LINKS.map(([label, href]) =>
+    label === "Menú" && menuHref ? ([label, menuHref] as const) : ([label, href] as const)
+  );
 
   return (
     <header
@@ -52,27 +61,18 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
         </Link>
 
         <nav className="hidden items-center gap-7 text-[13px] font-semibold uppercase tracking-[0.06em] text-[#1B1410]/80 lg:flex">
-          {NAV_LINKS.map(([label, href]) => (
-            <a
-              key={href}
+          {resolvedNavLinks.map(([label, href]) => (
+            <Link
+              key={label}
               href={href}
               className="relative py-1 transition hover:text-[#FC6C26] [&:hover::after]:w-full after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 after:bg-[#FC6C26] after:transition-all after:duration-300"
             >
               {label}
-            </a>
+            </Link>
           ))}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          {menuHref && (
-            <Link
-              href={menuHref}
-              className="group inline-flex items-center gap-2 rounded-full border border-[#FC6C26]/40 bg-white/70 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
-            >
-              <UtensilsCrossed size={16} className="text-[#FC6C26]" />
-              Pedir menú
-            </Link>
-          )}
           <a
             href={WHATSAPP_URL}
             target="_blank"
@@ -103,25 +103,16 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
       {open && (
         <div className="border-t border-[#1B1410]/10 bg-[#FFF4D6] px-5 py-4 lg:hidden">
           <div className="grid gap-1 text-sm font-semibold text-[#1B1410]">
-            {NAV_LINKS.map(([label, href]) => (
-              <a
-                key={href}
+            {resolvedNavLinks.map(([label, href]) => (
+              <Link
+                key={label}
                 href={href}
                 onClick={() => setOpen(false)}
                 className="rounded-xl px-4 py-3 uppercase tracking-wide hover:bg-white/60"
               >
                 {label}
-              </a>
-            ))}
-            {menuHref && (
-              <Link
-                href={menuHref}
-                onClick={() => setOpen(false)}
-                className="mt-2 flex items-center justify-center gap-2 rounded-full border border-[#FC6C26]/40 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide"
-              >
-                <UtensilsCrossed size={16} className="text-[#FC6C26]" /> Pedir menú en línea
               </Link>
-            )}
+            ))}
             <a
               href={WHATSAPP_URL}
               target="_blank"
