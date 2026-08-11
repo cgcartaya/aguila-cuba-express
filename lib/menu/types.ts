@@ -37,6 +37,7 @@ export type MenuCategory = {
   id: string;
   store_id: string;
   name: string;
+  venue_type: "bar" | "restaurant" | "general";
   sort_order: number;
   is_active: boolean;
   menu_items: MenuItem[];

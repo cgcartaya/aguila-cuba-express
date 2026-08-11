@@ -23,6 +23,8 @@ type Props = {
 
 const DEFAULT_ACCENT = "#061b3a";
 
+type VenueFilter = "bar" | "restaurant";
+
 export default function MenuPageClient({ store, categories, whatsappNumber }: Props) {
   const accentColor = store.primary_color || DEFAULT_ACCENT;
 
@@ -31,7 +33,22 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
   const [cart, setCart] = useState<MenuCartLine[]>([]);
   const [orderSentMessage, setOrderSentMessage] = useState(false);
 
-  const visibleCategories = categories.filter((cat) => cat.menu_items.length > 0);
+  const categoriesWithItems = categories.filter((cat) => cat.menu_items.length > 0);
+
+  // Solo mostramos las pestañas Bar/Restaurante si el negocio tiene
+  // categorías activas de AMBOS tipos. Si solo tiene uno (o todo es
+  // "general"), se ve todo directo, sin nada de más.
+  const hasBar = categoriesWithItems.some((cat) => cat.venue_type === "bar");
+  const hasRestaurant = categoriesWithItems.some((cat) => cat.venue_type === "restaurant");
+  const showVenueTabs = hasBar && hasRestaurant;
+
+  const [venueFilter, setVenueFilter] = useState<VenueFilter>("restaurant");
+
+  const visibleCategories = showVenueTabs
+    ? categoriesWithItems.filter(
+        (cat) => cat.venue_type === "general" || cat.venue_type === venueFilter
+      )
+    : categoriesWithItems;
 
   const handleAddToCart = (line: MenuCartLine) => {
     setCart((prev) => [...prev, line]);
@@ -64,6 +81,25 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
             <h1 className="text-xl font-black text-slate-900">{store.name}</h1>
           </div>
         </div>
+
+        {showVenueTabs && (
+          <div className="flex gap-2 px-4 pb-3">
+            {(["restaurant", "bar"] as VenueFilter[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setVenueFilter(type)}
+                className="flex-1 rounded-full py-2 text-sm font-black transition"
+                style={
+                  venueFilter === type
+                    ? { backgroundColor: accentColor, color: "white" }
+                    : { backgroundColor: "#f1f5f9", color: "#475569" }
+                }
+              >
+                {type === "restaurant" ? "Restaurante" : "Bar"}
+              </button>
+            ))}
+          </div>
+        )}
 
         {visibleCategories.length > 0 && (
           <nav className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3">

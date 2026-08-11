@@ -16,7 +16,13 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import type { MenuItem } from "@/lib/menu/types";
 
-type Category = { id: string; name: string; sort_order: number; is_active: boolean };
+type Category = {
+  id: string;
+  name: string;
+  venue_type: "bar" | "restaurant" | "general";
+  sort_order: number;
+  is_active: boolean;
+};
 
 export default function AdminMenuPage() {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();

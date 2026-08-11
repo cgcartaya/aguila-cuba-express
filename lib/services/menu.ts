@@ -69,6 +69,7 @@ export async function getPublicMenu(slug: string): Promise<{
       id,
       store_id,
       name,
+      venue_type,
       sort_order,
       is_active,
       menu_items (
@@ -118,20 +119,27 @@ function sortItems(items: MenuItem[]) {
 export async function getMenuCategoriesForAdmin(storeId: string) {
   return supabase
     .from("menu_categories")
-    .select("id, store_id, name, sort_order, is_active")
+    .select("id, store_id, name, venue_type, sort_order, is_active")
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
 }
 
 export async function saveMenuCategory(
   storeId: string,
-  category: { id?: string; name: string; sort_order: number; is_active: boolean }
+  category: {
+    id?: string;
+    name: string;
+    venue_type: "bar" | "restaurant" | "general";
+    sort_order: number;
+    is_active: boolean;
+  }
 ) {
   if (category.id) {
     return supabase
       .from("menu_categories")
       .update({
         name: category.name,
+        venue_type: category.venue_type,
         sort_order: category.sort_order,
         is_active: category.is_active,
       })
@@ -145,6 +153,7 @@ export async function saveMenuCategory(
     .insert({
       store_id: storeId,
       name: category.name,
+      venue_type: category.venue_type,
       sort_order: category.sort_order,
       is_active: category.is_active,
     })
