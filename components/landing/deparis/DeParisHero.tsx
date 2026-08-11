@@ -16,17 +16,11 @@ const fadeUp: Variants = {
   }),
 };
 
-const stats = [
-  ["2", "experiencias en un solo lugar"],
-  ["100%", "sabor y atención de la casa"],
-  ["Cienfuegos", "delivery y retiro en tienda"],
-] as const;
-
 export default function DeParisHero({ menuHref }: { menuHref?: string }) {
   return (
     <section
       id="inicio"
-      className="relative isolate overflow-hidden bg-[#FFF4D6] pb-16 pt-14 sm:pb-24 sm:pt-20"
+      className="relative isolate overflow-hidden bg-[#FFF4D6] pb-10 pt-10 sm:pb-14 sm:pt-14"
     >
       <Image
         src="/deparis/hero-restaurante-deparis.png"
@@ -38,13 +32,13 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
       />
       {/* La foto conserva la identidad del local, mientras las capas crema
           mantienen la lectura y el aspecto editorial de la landing. */}
-      <div className="pointer-events-none absolute inset-0 bg-[#FFF4D6]/60" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#FFF4D6] via-[#FFF4D6]/88 to-[#FFF4D6]/30" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-[#1B1410]/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-[#FFF4D6]/15" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#FFF4D6]/95 via-[#FFF4D6]/58 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#1B1410]/15 to-transparent" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:radial-gradient(#1B1410_1px,transparent_1px)] [background-size:22px_22px]" />
       <div className="dp-hero-glow pointer-events-none absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#FC6C26]/20 blur-[100px]" />
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
         {/* Columna de texto */}
         <div>
           <motion.div
@@ -124,32 +118,6 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
             <MessageCircle size={16} /> ¿Prefieres reservar? Escríbenos por WhatsApp
           </motion.a>
 
-          <motion.div
-            variants={fadeUp}
-            custom={5}
-            initial="hidden"
-            animate="show"
-            className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-[#1B1410]/10 pt-6"
-          >
-            {stats.map(([value, label], i) => (
-              <div key={label} className="flex items-center gap-4">
-                <div>
-                  <p
-                    className="text-2xl text-[#1B1410]"
-                    style={{ fontFamily: "var(--font-dp-display)", fontWeight: 700 }}
-                  >
-                    {value}
-                  </p>
-                  <p className="max-w-[9rem] text-[11px] font-semibold uppercase tracking-wide text-[#1B1410]/55">
-                    {label}
-                  </p>
-                </div>
-                {i < stats.length - 1 && (
-                  <span className="hidden h-9 w-px bg-[#1B1410]/15 sm:block" />
-                )}
-              </div>
-            ))}
-          </motion.div>
         </div>
 
         {/* Medallón con el logo */}
@@ -158,7 +126,7 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ duration: 0.9, delay: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
           style={{ perspective: "1200px" }}
-          className="relative mx-auto flex aspect-square w-full max-w-[440px] items-center justify-center"
+          className="relative mx-auto flex aspect-square w-full max-w-[390px] items-center justify-center"
         >
           <div className="dp-orbit absolute inset-0 rounded-full border border-dashed border-[#C89B3C]/50" />
           <div className="dp-orbit-2 absolute inset-6 rounded-full border border-[#1B1410]/10" />
@@ -187,7 +155,7 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
         </motion.div>
       </div>
 
-      <div className="mt-14 sm:mt-20">
+      <div className="mt-10 sm:mt-12">
         <DeParisMarquee />
       </div>
 
