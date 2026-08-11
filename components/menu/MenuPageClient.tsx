@@ -69,15 +69,45 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
     window.setTimeout(() => setAddedToast((current) => (current === name ? null : current)), 1600);
   };
 
+  // Para platillos sin opciones, agregar de nuevo suma a la misma
+  // línea (en vez de crear una línea repetida), así el "+" se puede
+  // convertir en un contador "- N +" que refleja cuántos ya agregó.
+  const getQuickLine = (itemId: string) =>
+    cart.find((line) => line.menu_item_id === itemId && line.selected_options.length === 0);
+
+  const getQuickQuantity = (itemId: string) => getQuickLine(itemId)?.quantity ?? 0;
+
   const handleQuickAdd = (item: MenuItem) => {
-    handleAddToCart({
-      lineId: crypto.randomUUID(),
-      menu_item_id: item.id,
-      name: item.name,
-      unit_base_price: item.price,
-      quantity: 1,
-      selected_options: [],
-    });
+    const existing = getQuickLine(item.id);
+    if (existing) {
+      setCart((prev) =>
+        prev.map((l) => (l.lineId === existing.lineId ? { ...l, quantity: l.quantity + 1 } : l))
+      );
+      return;
+    }
+    setCart((prev) => [
+      ...prev,
+      {
+        lineId: crypto.randomUUID(),
+        menu_item_id: item.id,
+        name: item.name,
+        unit_base_price: item.price,
+        quantity: 1,
+        selected_options: [],
+      },
+    ]);
+  };
+
+  const handleQuickDecrement = (item: MenuItem) => {
+    const existing = getQuickLine(item.id);
+    if (!existing) return;
+    if (existing.quantity <= 1) {
+      setCart((prev) => prev.filter((l) => l.lineId !== existing.lineId));
+    } else {
+      setCart((prev) =>
+        prev.map((l) => (l.lineId === existing.lineId ? { ...l, quantity: l.quantity - 1 } : l))
+      );
+    }
   };
 
   const categoriesWithItems = categories.filter((cat) => cat.menu_items.length > 0);
@@ -307,14 +337,41 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                       </button>
 
                       {isQuickAddable(item) ? (
-                        <button
-                          onClick={() => handleQuickAdd(item)}
-                          aria-label={`Agregar ${item.name}`}
-                          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg font-bold transition active:scale-90"
-                          style={{ backgroundColor: accent, color: INK }}
-                        >
-                          +
-                        </button>
+                        getQuickQuantity(item.id) > 0 ? (
+                          <div
+                            className="flex shrink-0 items-center gap-2 rounded-full px-1.5 py-1"
+                            style={{ backgroundColor: accent }}
+                          >
+                            <button
+                              onClick={() => handleQuickDecrement(item)}
+                              aria-label={`Quitar uno de ${item.name}`}
+                              className="flex h-6 w-6 items-center justify-center text-sm font-bold transition active:scale-90"
+                              style={{ color: INK }}
+                            >
+                              −
+                            </button>
+                            <span className="w-3 text-center text-sm font-bold" style={{ color: INK }}>
+                              {getQuickQuantity(item.id)}
+                            </span>
+                            <button
+                              onClick={() => handleQuickAdd(item)}
+                              aria-label={`Agregar uno más de ${item.name}`}
+                              className="flex h-6 w-6 items-center justify-center text-sm font-bold transition active:scale-90"
+                              style={{ color: INK }}
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleQuickAdd(item)}
+                            aria-label={`Agregar ${item.name}`}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg font-bold transition active:scale-90"
+                            style={{ backgroundColor: accent, color: INK }}
+                          >
+                            +
+                          </button>
+                        )
                       ) : (
                         <button
                           onClick={() => setActiveItem(item)}

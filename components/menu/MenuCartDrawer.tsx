@@ -30,6 +30,8 @@ export default function MenuCartDrawer({
 }: Props) {
   const [customerName, setCustomerName] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
+  const [orderType, setOrderType] = useState<"dine_in" | "takeaway">("dine_in");
+  const [tableNumber, setTableNumber] = useState("");
 
   const total = getCartTotal(cart);
 
@@ -42,6 +44,8 @@ export default function MenuCartDrawer({
     const message = buildMenuOrderMessage({
       storeName,
       cart,
+      orderType,
+      tableNumber: orderType === "dine_in" ? tableNumber.trim() || undefined : undefined,
       customerName: customerName.trim() || undefined,
       customerNotes: customerNotes.trim() || undefined,
     });
@@ -134,6 +138,47 @@ export default function MenuCartDrawer({
 
         {cart.length > 0 && (
           <div className="space-y-3 border-t border-[#1B1410]/10 p-5">
+            <div>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-[#1B1410]/50">
+                ¿Cómo lo quieres?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOrderType("dine_in")}
+                  className="flex-1 rounded-full border py-2.5 text-xs font-bold uppercase tracking-wide transition"
+                  style={
+                    orderType === "dine_in"
+                      ? { backgroundColor: accentColor, borderColor: accentColor, color: "#1B1410" }
+                      : { borderColor: "rgba(27,20,16,0.15)", color: "rgba(27,20,16,0.6)" }
+                  }
+                >
+                  En el restaurante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType("takeaway")}
+                  className="flex-1 rounded-full border py-2.5 text-xs font-bold uppercase tracking-wide transition"
+                  style={
+                    orderType === "takeaway"
+                      ? { backgroundColor: accentColor, borderColor: accentColor, color: "#1B1410" }
+                      : { borderColor: "rgba(27,20,16,0.15)", color: "rgba(27,20,16,0.6)" }
+                  }
+                >
+                  Para llevar
+                </button>
+              </div>
+            </div>
+
+            {orderType === "dine_in" && (
+              <input
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                placeholder="Número de mesa (si lo sabes)"
+                className="w-full rounded-xl border border-[#1B1410]/15 px-3 py-2 text-sm font-semibold text-[#1B1410] outline-none focus:border-[#1B1410]/40"
+              />
+            )}
+
             <input
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}

@@ -24,17 +24,28 @@ export function getCartTotal(cart: MenuCartLine[]) {
 export function buildMenuOrderMessage({
   storeName,
   cart,
+  orderType,
+  tableNumber,
   customerName,
   customerNotes,
 }: {
   storeName: string;
   cart: MenuCartLine[];
+  orderType: "dine_in" | "takeaway";
+  tableNumber?: string;
   customerName?: string;
   customerNotes?: string;
 }) {
   const lines: string[] = [];
 
   lines.push(`¡Hola ${storeName}! Quisiera hacer este pedido:`);
+  lines.push("");
+
+  if (orderType === "dine_in") {
+    lines.push(`Tipo de pedido: En el restaurante${tableNumber ? ` — Mesa ${tableNumber}` : ""}`);
+  } else {
+    lines.push("Tipo de pedido: Para llevar");
+  }
   lines.push("");
 
   cart.forEach((line) => {
