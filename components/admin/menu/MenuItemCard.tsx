@@ -28,6 +28,11 @@ export default function MenuItemCard({ item, onDelete }: Props) {
               Oculto
             </span>
           )}
+          {item.is_featured && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+              Destacado
+            </span>
+          )}
         </div>
         <p className="truncate text-xs font-semibold text-slate-500">
           {item.description || "Sin descripción"}

@@ -29,6 +29,7 @@ export type MenuItem = {
   price: number;
   image_url: string | null;
   is_active: boolean;
+  is_featured: boolean;
   sort_order: number;
   menu_item_option_groups: MenuOptionGroup[];
 };
@@ -72,6 +73,7 @@ export type MenuItemFormData = {
   price: number;
   image_url: string | null;
   is_active: boolean;
+  is_featured: boolean;
   sort_order: number;
   option_groups: MenuOptionGroupFormData[];
 };

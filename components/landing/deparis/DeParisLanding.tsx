@@ -6,6 +6,7 @@ import DeParisNavbar from "./DeParisNavbar";
 import DeParisHero from "./DeParisHero";
 import DeParisDualWorlds from "./DeParisDualWorlds";
 import DeParisMenuHighlights from "./DeParisMenuHighlights";
+import DeParisFeaturedDishes, { type FeaturedDish } from "./DeParisFeaturedDishes";
 import DeParisFeatures from "./DeParisFeatures";
 import DeParisCTA from "./DeParisCTA";
 import DeParisFooter from "./DeParisFooter";
@@ -32,7 +33,13 @@ const parisienne = Parisienne({
   display: "swap",
 });
 
-export default function DeParisLanding({ menuHref }: { menuHref?: string }) {
+export default function DeParisLanding({
+  menuHref,
+  featuredDishes = [],
+}: {
+  menuHref?: string;
+  featuredDishes?: FeaturedDish[];
+}) {
   return (
     <main
       className={`${bodoni.variable} ${manrope.variable} ${parisienne.variable} min-h-screen bg-[#FFF4D6]`}
@@ -41,6 +48,7 @@ export default function DeParisLanding({ menuHref }: { menuHref?: string }) {
       <DeParisNavbar menuHref={menuHref} />
       <DeParisHero />
       <DeParisDualWorlds />
+      <DeParisFeaturedDishes dishes={featuredDishes} menuHref={menuHref} />
       <DeParisMenuHighlights menuHref={menuHref} />
       <DeParisFeatures />
       <DeParisCTA />

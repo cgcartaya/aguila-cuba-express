@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
-import { isMenuModuleEnabled } from "@/lib/services/menu";
+import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
 
 // Sin esto, Next.js puede cachear la respuesta de Supabase de un
-// build anterior y "congelar" el valor de module_menu_enabled hasta
-// el próximo redeploy. Con esto, se vuelve a consultar en cada visita.
+// build anterior y "congelar" el valor de module_menu_enabled (y los
+// platos destacados) hasta el próximo redeploy. Con esto, se vuelve
+// a consultar en cada visita.
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
@@ -14,11 +15,25 @@ export const metadata: Metadata = {
 };
 
 // Server component: consulta si el módulo de menú está habilitado
-// para "deparis" y solo entonces la landing muestra el link hacia
-// /menu/deparis. Si el Super Admin lo desactiva, el link desaparece
-// solo, sin tocar código.
+// para "deparis" y trae hasta 6 platillos marcados como destacados.
+// Si el Super Admin desactiva el módulo, tanto el link del menú como
+// la sección de "Platos Destacados" desaparecen solos, sin tocar
+// código.
 export default async function DeParisPage() {
-  const menuEnabled = await isMenuModuleEnabled("deparis");
+  const [menuEnabled, featuredItems] = await Promise.all([
+    isMenuModuleEnabled("deparis"),
+    getFeaturedMenuItems("deparis", 6),
+  ]);
 
-  return <DeParisLanding menuHref={menuEnabled ? "/menu/deparis" : undefined} />;
+  const menuHref = menuEnabled ? "/menu/deparis" : undefined;
+
+  const featuredDishes = featuredItems.map((item) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    price: item.price,
+    image_url: item.image_url,
+  }));
+
+  return <DeParisLanding menuHref={menuHref} featuredDishes={featuredDishes} />;
 }

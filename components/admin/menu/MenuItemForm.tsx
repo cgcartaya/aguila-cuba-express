@@ -143,6 +143,17 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
           />
           Visible en el menú público
         </label>
+
+        <label className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-600">
+          <input
+            type="checkbox"
+            checked={formData.is_featured}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, is_featured: e.target.checked }))
+            }
+          />
+          Destacar en la landing (aparece en "Platos destacados")
+        </label>
       </div>
 
       <div className="rounded-3xl bg-white p-5 shadow-sm">

@@ -20,6 +20,7 @@ const MENU_ITEM_SELECT = `
   price,
   image_url,
   is_active,
+  is_featured,
   sort_order,
   menu_item_option_groups (
     id,
@@ -48,6 +49,33 @@ const MENU_ITEM_SELECT = `
 export async function isMenuModuleEnabled(slug: string): Promise<boolean> {
   const store = await getStoreBySlug(slug);
   return store?.module_menu_enabled === true;
+}
+
+/**
+ * Trae hasta `limit` platillos marcados "Destacar en la landing"
+ * (is_featured) de una tienda, para mostrarlos en su landing (ej.
+ * app/deparis). Falla cerrado (array vacío) ante cualquier error,
+ * para que la landing nunca se rompa por esto.
+ */
+export async function getFeaturedMenuItems(slug: string, limit = 6) {
+  const store = await getStoreBySlug(slug);
+  if (!store || !store.module_menu_enabled) return [];
+
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select(MENU_ITEM_SELECT)
+    .eq("store_id", store.id)
+    .eq("is_active", true)
+    .eq("is_featured", true)
+    .order("sort_order", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error("getFeaturedMenuItems error:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as MenuItem[];
 }
 
 /* =========================================================
@@ -197,6 +225,7 @@ export async function saveMenuItem(storeId: string, form: MenuItemFormData) {
     price: form.price,
     image_url: form.image_url,
     is_active: form.is_active,
+    is_featured: form.is_featured,
     sort_order: form.sort_order,
   };
 

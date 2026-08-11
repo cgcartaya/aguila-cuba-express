@@ -47,6 +47,7 @@ export default function EditMenuItemPage() {
         price: item.price,
         image_url: item.image_url,
         is_active: item.is_active,
+        is_featured: item.is_featured,
         sort_order: item.sort_order,
         option_groups: (item.menu_item_option_groups || []).map((g: any) => ({
           id: g.id,
