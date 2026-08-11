@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
  *   quesos.(jpg|jpeg|png|webp)            -> "Quesos & Charcutería"
  *   vinos.(jpg|jpeg|png|webp)              -> "Vinos & Espumantes"
  *   bistro.(jpg|jpeg|png|webp)              -> "Platos del Bistró"
- *   desayuno.(jpg|jpeg|png|webp)          -> "Desayuno Francés"
+ *   desayuno.(jpg|jpeg|png|webp)          -> "Desayunos"
  *   mercado-gourmet.(jpg|jpeg|png|webp) -> "Mercado Gourmet"
  *
  * Importante: el archivo tiene que estar dentro de la carpeta
@@ -53,7 +53,7 @@ const CATEGORIES = [
   {
     n: "01",
     name: "Panadería & Pastelería",
-    desc: "Croissants, baguettes y viennoiserie horneada con técnica francesa.",
+    desc: "Panes, dulces y especialidades horneadas para disfrutar a cualquier hora.",
     tone: "dark",
     image: "/deparis/menu/panaderia",
   },
@@ -67,20 +67,20 @@ const CATEGORIES = [
   {
     n: "03",
     name: "Vinos & Espumantes",
-    desc: "Etiquetas francesas y del mundo para acompañar cada ocasión.",
+    desc: "Etiquetas seleccionadas para acompañar cada ocasión.",
     tone: "cream",
     image: "/deparis/menu/vinos",
   },
   {
     n: "04",
-    name: "Platos del Bistró",
-    desc: "Clásicos franceses con un toque propio, servidos en sala.",
+    name: "Platos de la Casa",
+    desc: "Sabores preparados con un toque propio y servidos en sala.",
     tone: "cream",
     image: "/deparis/menu/bistro",
   },
   {
     n: "05",
-    name: "Desayuno Francés",
+    name: "Desayunos",
     desc: "Café, jugos y bollería recién horneada para empezar el día.",
     tone: "orange",
     image: "/deparis/menu/desayuno",

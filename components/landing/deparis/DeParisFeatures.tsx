@@ -12,12 +12,12 @@ const VALUES = [
   {
     icon: Sparkles,
     title: "Productos importados",
-    desc: "Curaduría directa de Francia y proveedores gourmet selectos.",
+    desc: "Una selección cuidada de proveedores y productos para cada ocasión.",
   },
   {
     icon: Wine,
-    title: "Ambiente de bistró",
-    desc: "Coctelería y cocina francesa pensadas para quedarse un rato.",
+    title: "Ambiente acogedor",
+    desc: "Buena cocina y coctelería pensadas para quedarse un rato.",
   },
   {
     icon: Clock,
@@ -73,7 +73,7 @@ export default function DeParisFeatures() {
             className="text-2xl leading-snug text-[#1B1410] sm:text-3xl"
             style={{ fontFamily: "var(--font-dp-display)", fontStyle: "italic", fontWeight: 500 }}
           >
-            &ldquo;Se siente como una escapada a París sin salir de Cienfuegos.&rdquo;
+            &ldquo;Un lugar con personalidad propia para compartir y disfrutar en Cienfuegos.&rdquo;
           </p>
           <footer className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-[#1B1410]/45">
             Reseña de un cliente — De Paris

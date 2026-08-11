@@ -9,9 +9,9 @@ import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "De Paris | Mercado & Bistró francés en Cienfuegos",
+  title: "De Paris | Restaurante y mercado en Cienfuegos",
   description:
-    "De Paris es un bar restaurante y mercado online de inspiración francesa en Cienfuegos, Cuba: panadería, quesos, vinos y platos de bistró con delivery o retiro en tienda.",
+    "De Paris es un bar restaurante y mercado online en Cienfuegos, Cuba, con una carta variada, productos seleccionados, delivery y retiro en tienda.",
 };
 
 // Server component: consulta si el módulo de menú está habilitado

@@ -37,7 +37,7 @@ export default function DeParisCTA() {
             Te esperamos en la mesa o en tu puerta.
           </h2>
           <p className="mt-5 max-w-md text-sm leading-7 text-[#FFF4D6]/65">
-            Reserva tu lugar en el bistró o arma tu pedido del mercado en
+            Reserva tu lugar en el restaurante o arma tu pedido del mercado en
             minutos. Ambas experiencias, a un mensaje de distancia.
           </p>
 

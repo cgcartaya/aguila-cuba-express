@@ -122,9 +122,9 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
               Bar &amp; Restaurante
             </h3>
             <p className="mt-4 max-w-md text-sm leading-7 text-[#FFF4D6]/70">
-              Una carta de inspiración francesa, coctelería de autor y un
-              ambiente para sobremesas largas. Ideal para cenas, brindis y
-              encuentros entre amigos.
+              Una carta variada, coctelería de la casa y un ambiente para
+              sobremesas largas. Ideal para cenas, brindis y encuentros entre
+              amigos.
             </p>
           </div>
 

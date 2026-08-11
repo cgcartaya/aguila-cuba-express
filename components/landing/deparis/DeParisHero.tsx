@@ -18,7 +18,7 @@ const fadeUp: Variants = {
 
 const stats = [
   ["2", "experiencias en un solo lugar"],
-  ["100%", "curado con acento francés"],
+  ["100%", "sabor y atención de la casa"],
   ["Cienfuegos", "delivery y retiro en tienda"],
 ] as const;
 
@@ -28,10 +28,21 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
       id="inicio"
       className="relative isolate overflow-hidden bg-[#FFF4D6] pb-16 pt-14 sm:pb-24 sm:pt-20"
     >
-      {/* textura + resplandores de fondo, muy livianos (solo CSS) */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:radial-gradient(#1B1410_1px,transparent_1px)] [background-size:22px_22px]" />
-      <div className="dp-hero-glow pointer-events-none absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#FC6C26]/25 blur-[100px]" />
-      <div className="dp-hero-glow-2 pointer-events-none absolute -right-16 bottom-0 h-[360px] w-[360px] rounded-full bg-[#C89B3C]/25 blur-[100px]" />
+      <Image
+        src="/deparis/hero-restaurante-deparis.png"
+        alt="Interior del restaurante De Paris en Cienfuegos"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center"
+      />
+      {/* La foto conserva la identidad del local, mientras las capas crema
+          mantienen la lectura y el aspecto editorial de la landing. */}
+      <div className="pointer-events-none absolute inset-0 bg-[#FFF4D6]/60" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#FFF4D6] via-[#FFF4D6]/88 to-[#FFF4D6]/30" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-52 bg-gradient-to-t from-[#1B1410]/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:radial-gradient(#1B1410_1px,transparent_1px)] [background-size:22px_22px]" />
+      <div className="dp-hero-glow pointer-events-none absolute -left-24 top-0 h-[420px] w-[420px] rounded-full bg-[#FC6C26]/20 blur-[100px]" />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
         {/* Columna de texto */}
@@ -44,7 +55,7 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
             className="inline-flex items-center gap-2 rounded-full border border-[#1B1410]/15 bg-white/50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1B1410]/80 backdrop-blur-sm"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#FC6C26]" />
-            Cienfuegos, Cuba · Mercado &amp; Bistró francés
+            Cienfuegos, Cuba · Restaurante &amp; Mercado
           </motion.div>
 
           <motion.h1
@@ -55,12 +66,12 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
             className="mt-6 text-5xl leading-[1.02] tracking-tight text-[#1B1410] sm:text-6xl lg:text-[4.4rem]"
             style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
           >
-            Un pedazo de París,
+            Sabor que reúne,
             <span
               className="mt-1 block text-[#FC6C26]"
               style={{ fontFamily: "var(--font-dp-script)", fontWeight: 400 }}
             >
-              en cada visita.
+              momentos que quedan.
             </span>
           </motion.h1>
 
@@ -71,9 +82,9 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
             animate="show"
             className="mt-6 max-w-lg text-base leading-7 text-[#1B1410]/75 sm:text-lg"
           >
-            De Paris reúne un bar restaurante de sobremesa larga y un mercado
-            con productos franceses e importados, para que elijas si quieres
-            sentarte a la mesa o llevarte París a tu casa.
+            De Paris reúne buena mesa, bar y mercado en un ambiente familiar.
+            Ven a disfrutar, reserva tu mesa o prepara tu pedido desde donde
+            estés.
           </motion.p>
 
           <motion.div
@@ -231,7 +242,7 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
           55% { background-position: 100% 100%; opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .dp-hero-glow, .dp-hero-glow-2, .dp-orbit, .dp-orbit-2, .dp-float, .dp-dot, .dp-dot-2, .dp-medallion-shine, .dp-coin {
+          .dp-hero-glow, .dp-hero-glow-2, .dp-orbit, .dp-orbit-2, .dp-float, .dp-dot, .dp-dot-2, .dp-medallion-shine {
             animation: none !important;
           }
         }

@@ -55,7 +55,7 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
               De&apos; Paris
             </p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#FC6C26]">
-              Mercado &amp; Bistró
+              Restaurante &amp; Mercado
             </p>
           </div>
         </Link>
