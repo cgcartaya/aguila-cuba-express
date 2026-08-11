@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Bodoni_Moda, Manrope } from "next/font/google";
 import { ShoppingBag } from "lucide-react";
@@ -94,6 +94,33 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
       )
     : categoriesWithItems;
 
+  // Resalta sola la pestaña de categoría de la sección que se está
+  // viendo mientras el cliente hace scroll (como en las apps de
+  // delivery). Usa IntersectionObserver nativo del navegador — sin
+  // librerías, sin costo de rendimiento perceptible.
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  useEffect(() => {
+    const sections = Object.values(sectionRefs.current).filter(Boolean) as HTMLElement[];
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) {
+          setActiveCategoryId(visible[0].target.id.replace("cat-", ""));
+        }
+      },
+      { rootMargin: "-140px 0px -70% 0px", threshold: 0 }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [visibleCategories]);
+
   const handleAddToCart = (line: MenuCartLine) => {
     setCart((prev) => [...prev, line]);
     showAddedToast(line.name);
@@ -163,16 +190,23 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
 
         {visibleCategories.length > 0 && (
           <nav className="scrollbar-none mx-auto flex max-w-2xl gap-2 overflow-x-auto px-4 pb-4">
-            {visibleCategories.map((cat) => (
-              <a
-                key={cat.id}
-                href={`#cat-${cat.id}`}
-                className="shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wide"
-                style={{ borderColor: "rgba(255,255,255,0.2)", color: "#FFF4E6" }}
-              >
-                {cat.name}
-              </a>
-            ))}
+            {visibleCategories.map((cat) => {
+              const isActive = activeCategoryId === cat.id;
+              return (
+                <a
+                  key={cat.id}
+                  href={`#cat-${cat.id}`}
+                  className="shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition"
+                  style={
+                    isActive
+                      ? { backgroundColor: accent, borderColor: accent, color: INK }
+                      : { borderColor: "rgba(255,255,255,0.2)", color: "#FFF4E6" }
+                  }
+                >
+                  {cat.name}
+                </a>
+              );
+            })}
           </nav>
         )}
       </header>
@@ -187,7 +221,13 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
         ) : (
           <div className="space-y-11">
             {visibleCategories.map((category) => (
-              <section key={category.id} id={`cat-${category.id}`}>
+              <section
+                key={category.id}
+                id={`cat-${category.id}`}
+                ref={(el) => {
+                  sectionRefs.current[category.id] = el;
+                }}
+              >
                 <p
                   className="text-[10px] font-bold uppercase tracking-[0.3em]"
                   style={{ color: accent }}
@@ -202,6 +242,22 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                 <div className="mt-5 space-y-5">
                   {category.menu_items.map((item) => (
                     <div key={item.id} className="flex items-start gap-3">
+                      {item.image_url && (
+                        <button
+                          onClick={() => setActiveItem(item)}
+                          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-black/5"
+                        >
+                          <Image
+                            src={item.image_url}
+                            alt=""
+                            fill
+                            loading="lazy"
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        </button>
+                      )}
+
                       <button
                         onClick={() => setActiveItem(item)}
                         className="flex-1 text-left"
@@ -217,6 +273,14 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                           >
                             {item.name}
                           </span>
+                          {item.is_featured && (
+                            <span
+                              className="shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide"
+                              style={{ backgroundColor: `${accent}1a`, color: accent }}
+                            >
+                              Recomendado
+                            </span>
+                          )}
                           <span
                             className="relative top-[-3px] flex-1 border-b border-dotted"
                             style={{ borderColor: "rgba(27,20,16,0.35)" }}
@@ -225,8 +289,8 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                             className="text-base"
                             style={{
                               fontFamily: "var(--menu-font-display)",
-                              fontWeight: 600,
-                              color: INK,
+                              fontWeight: 700,
+                              color: accent,
                             }}
                           >
                             ${item.price.toFixed(2)}
