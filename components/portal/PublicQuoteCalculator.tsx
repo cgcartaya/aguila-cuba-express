@@ -131,7 +131,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
   useEffect(() => {
     void (async () => {
       try {
-        const response = await fetch("/api/public/quote/config", { cache: "no-store" });
+        const response = await fetch("/api/public/quote/config");
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "No se pudo cargar el cotizador.");
         setConfig(json);

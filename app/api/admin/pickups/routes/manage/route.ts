@@ -1,4 +1,5 @@
-"use server";
+// Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";

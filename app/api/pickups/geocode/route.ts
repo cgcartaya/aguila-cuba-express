@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+
+// Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
+export const maxDuration = 60;
 function clean(value: unknown, max = 180) {
   return String(value ?? "").trim().slice(0, max);
 }

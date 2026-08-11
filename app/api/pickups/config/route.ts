@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       coverageMode: settings.coverage_mode,
       maxPreferredDates: settings.max_preferred_dates || 3,
       cities,
-    }, { headers: { "Cache-Control": "public, max-age=300, stale-while-revalidate=1800" } });
+    }, { headers: { "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=1800" } });
   } catch (error) {
     console.error("pickup config error", error);
     return NextResponse.json({ error: "No pudimos cargar la cobertura." }, { status: 500 });

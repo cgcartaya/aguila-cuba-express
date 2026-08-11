@@ -3,6 +3,9 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { validatePickupAddress } from "@/lib/pickups/address-validation";
 import type { CreatePickupRequestInput } from "@/lib/pickups/types";
 
+
+// Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
+export const maxDuration = 60;
 const MAX_TEXT = 500;
 
 function clean(value: unknown, max = MAX_TEXT) {

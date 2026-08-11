@@ -6,7 +6,7 @@ import { ArrowRight, CheckCircle2, MapPin, MessageCircle, Package, Search, Ship,
 type Data = any;
 export default function CommercialPortalRenderer({slug}:{slug?:string}){
  const [data,setData]=useState<Data>(null); const [error,setError]=useState("");
- useEffect(()=>{fetch(`/api/public/commercial-portal/config${slug?`?slug=${encodeURIComponent(slug)}`:""}`,{cache:"no-store"}).then(async r=>{if(!r.ok)throw new Error((await r.json()).error||"No disponible");return r.json()}).then(setData).catch(e=>setError(e.message))},[slug]);
+ useEffect(()=>{fetch(`/api/public/commercial-portal/config${slug?`?slug=${encodeURIComponent(slug)}`:""}`).then(async r=>{if(!r.ok)throw new Error((await r.json()).error||"No disponible");return r.json()}).then(setData).catch(e=>setError(e.message))},[slug]);
  if(error)return <main className="grid min-h-screen place-items-center bg-slate-950 p-6 text-white"><div className="max-w-xl text-center"><h1 className="text-3xl font-black">Portal no configurado</h1><p className="mt-3 text-slate-300">{error}</p></div></main>;
  if(!data)return <main className="grid min-h-screen place-items-center bg-slate-950 text-white"><div className="font-black">Cargando portal...</div></main>;
  const {store,settings:s,services,promotions,faqs,testimonials}=data; const primary=store.primary_color||"#0b1f4d"; const secondary=store.secondary_color||"#0ea5e9";

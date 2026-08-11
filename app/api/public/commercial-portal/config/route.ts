@@ -42,5 +42,12 @@ export async function GET(request: NextRequest) {
     faqs: faqs.data || [],
     testimonials: testimonials.data || [],
     quoteSettings: quoteSettings.data,
+  }, {
+    headers: {
+      // Navegador: 60 s. Vercel CDN: 5 min.
+      // Mientras se renueva, puede servir la última copia hasta 30 min.
+      "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=1800",
+      "Vary": "Host",
+    },
   });
 }

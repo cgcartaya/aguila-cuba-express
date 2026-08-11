@@ -20,5 +20,14 @@ export async function GET(request: NextRequest) {
   // ya tuvieran su secret key guardada.
   const available = Boolean(getStoreStripeContext(store));
 
-  return NextResponse.json({ available });
+  return NextResponse.json(
+    { available },
+    {
+      headers: {
+        // Dato público y pequeño. Cache corto para no consultar Stripe/store
+        // en cada apertura del checkout.
+        "Cache-Control": "public, max-age=15, s-maxage=60, stale-while-revalidate=300",
+      },
+    }
+  );
 }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+
+// Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
+export const maxDuration = 60;
 const WRITE_ROLES = new Set(["OWNER", "ADMIN", "OPERATIONS", "DISPATCHER"]);
 const clean = (value: unknown, max = 160) => String(value ?? "").trim().slice(0, max);
 const fail = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });

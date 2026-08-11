@@ -80,5 +80,12 @@ export async function GET(request: NextRequest) {
     categories: ["service"],
     transportModes,
     readiness,
+  }, {
+    headers: {
+      // Esta configuración cambia poco y es pública.
+      // El CDN evita repetir 7 consultas a Supabase en cada visita.
+      "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=1800",
+      "Vary": "Host",
+    },
   });
 }

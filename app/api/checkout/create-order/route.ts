@@ -47,6 +47,9 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 
+
+// Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
+export const maxDuration = 60;
 const YOYO_SLUG = "yoyo-envios";
 
 const clean = (value: unknown, max = 300) =>
