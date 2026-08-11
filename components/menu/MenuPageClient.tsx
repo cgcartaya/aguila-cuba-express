@@ -2,17 +2,33 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { Bodoni_Moda, Manrope } from "next/font/google";
 import { ShoppingBag } from "lucide-react";
 
 import MenuItemModal from "./MenuItemModal";
 import MenuCartDrawer from "./MenuCartDrawer";
 import type { MenuCartLine, MenuCategory, MenuItem } from "@/lib/menu/types";
 
+const display = Bodoni_Moda({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--menu-font-display",
+  display: "swap",
+});
+
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--menu-font-body",
+  display: "swap",
+});
+
 type StoreForMenu = {
   id: string;
   name: string;
   logo_url: string | null;
   primary_color: string | null;
+  secondary_color: string | null;
 };
 
 type Props = {
@@ -21,12 +37,19 @@ type Props = {
   whatsappNumber: string | null;
 };
 
-const DEFAULT_ACCENT = "#061b3a";
+// Paleta elegante de "carta impresa" por defecto — cualquier tienda
+// se ve bien sin configurar nada. primary_color/secondary_color (ya
+// existentes en cada tienda) permiten afinar el acento y el fondo a
+// la marca real del negocio, sin tocar código.
+const DEFAULT_ACCENT = "#B45309";
+const DEFAULT_BG = "#FAF6EF";
+const INK = "#1B1410";
 
 type VenueFilter = "bar" | "restaurant";
 
 export default function MenuPageClient({ store, categories, whatsappNumber }: Props) {
-  const accentColor = store.primary_color || DEFAULT_ACCENT;
+  const accent = store.primary_color || DEFAULT_ACCENT;
+  const bg = store.secondary_color || DEFAULT_BG;
 
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -35,9 +58,6 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
 
   const categoriesWithItems = categories.filter((cat) => cat.menu_items.length > 0);
 
-  // Solo mostramos las pestañas Bar/Restaurante si el negocio tiene
-  // categorías activas de AMBOS tipos. Si solo tiene uno (o todo es
-  // "general"), se ve todo directo, sin nada de más.
   const hasBar = categoriesWithItems.some((cat) => cat.venue_type === "bar");
   const hasRestaurant = categoriesWithItems.some((cat) => cat.venue_type === "restaurant");
   const showVenueTabs = hasBar && hasRestaurant;
@@ -66,33 +86,49 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
   const totalItems = cart.reduce((sum, line) => sum + line.quantity, 0);
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-28">
-      <header className="border-b border-slate-100 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-5">
-          {store.logo_url && (
-            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-slate-100">
+    <main
+      className={`${display.variable} ${body.variable} min-h-screen pb-28`}
+      style={{ backgroundColor: bg, fontFamily: "var(--menu-font-body)" }}
+    >
+      <header className="pb-2" style={{ backgroundColor: INK }}>
+        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 pb-6 pt-9 text-center">
+          {store.logo_url ? (
+            <div className="relative mb-3 h-12 w-12 overflow-hidden rounded-full border border-white/20">
               <Image src={store.logo_url} alt={store.name} fill className="object-cover" />
             </div>
+          ) : (
+            <div
+              className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-sm"
+              style={{ borderColor: accent, color: accent, fontFamily: "var(--menu-font-display)" }}
+            >
+              {store.name.slice(0, 2).toUpperCase()}
+            </div>
           )}
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide" style={{ color: accentColor }}>
-              Menú digital
-            </p>
-            <h1 className="text-xl font-black text-slate-900">{store.name}</h1>
-          </div>
+          <p
+            className="text-[10px] font-bold uppercase tracking-[0.3em]"
+            style={{ color: accent }}
+          >
+            {store.name}
+          </p>
+          <h1
+            className="mt-1 text-3xl text-white"
+            style={{ fontFamily: "var(--menu-font-display)", fontWeight: 600 }}
+          >
+            La Carta
+          </h1>
         </div>
 
         {showVenueTabs && (
-          <div className="flex gap-2 px-4 pb-3">
+          <div className="mx-auto flex max-w-2xl gap-2 px-4 pb-4">
             {(["restaurant", "bar"] as VenueFilter[]).map((type) => (
               <button
                 key={type}
                 onClick={() => setVenueFilter(type)}
-                className="flex-1 rounded-full py-2 text-sm font-black transition"
+                className="flex-1 rounded-full border py-2.5 text-xs font-bold uppercase tracking-wide transition"
                 style={
                   venueFilter === type
-                    ? { backgroundColor: accentColor, color: "white" }
-                    : { backgroundColor: "#f1f5f9", color: "#475569" }
+                    ? { backgroundColor: accent, borderColor: accent, color: INK }
+                    : { backgroundColor: "transparent", borderColor: "rgba(255,255,255,0.25)", color: "#FFF4E6" }
                 }
               >
                 {type === "restaurant" ? "Restaurante" : "Bar"}
@@ -102,12 +138,13 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
         )}
 
         {visibleCategories.length > 0 && (
-          <nav className="scrollbar-none flex gap-2 overflow-x-auto px-4 pb-3">
+          <nav className="scrollbar-none mx-auto flex max-w-2xl gap-2 overflow-x-auto px-4 pb-4">
             {visibleCategories.map((cat) => (
               <a
                 key={cat.id}
                 href={`#cat-${cat.id}`}
-                className="shrink-0 rounded-full bg-slate-100 px-4 py-1.5 text-xs font-bold text-slate-600"
+                className="shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wide"
+                style={{ borderColor: "rgba(255,255,255,0.2)", color: "#FFF4E6" }}
               >
                 {cat.name}
               </a>
@@ -116,46 +153,69 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
         )}
       </header>
 
-      <div className="mx-auto max-w-4xl px-4 py-6">
+      <div className="mx-auto max-w-2xl px-5 py-8">
         {visibleCategories.length === 0 ? (
-          <div className="rounded-3xl bg-white p-10 text-center shadow-sm">
-            <p className="text-sm font-semibold text-slate-500">
+          <div className="rounded-2xl bg-white/70 p-10 text-center shadow-sm">
+            <p className="text-sm font-semibold" style={{ color: INK, opacity: 0.6 }}>
               Este menú todavía no tiene platillos publicados.
             </p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-11">
             {visibleCategories.map((category) => (
               <section key={category.id} id={`cat-${category.id}`}>
-                <h2 className="mb-3 text-lg font-black text-slate-900">{category.name}</h2>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <p
+                  className="text-[10px] font-bold uppercase tracking-[0.3em]"
+                  style={{ color: accent }}
+                >
+                  {category.name}
+                </p>
+                <div
+                  className="mt-2 h-px w-full"
+                  style={{ backgroundColor: "#C89B3C", opacity: 0.35 }}
+                />
+
+                <div className="mt-5 space-y-6">
                   {category.menu_items.map((item) => (
                     <button
                       key={item.id}
                       onClick={() => setActiveItem(item)}
-                      className="flex items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      className="block w-full text-left"
                     >
-                      {item.image_url && (
-                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                          <Image
-                            src={item.image_url}
-                            alt={item.name}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-black text-slate-900">{item.name}</p>
-                        {item.description && (
-                          <p className="truncate text-xs font-semibold text-slate-500">
-                            {item.description}
-                          </p>
-                        )}
-                        <p className="mt-0.5 text-sm font-black" style={{ color: accentColor }}>
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="text-base"
+                          style={{
+                            fontFamily: "var(--menu-font-display)",
+                            fontWeight: 600,
+                            color: INK,
+                          }}
+                        >
+                          {item.name}
+                        </span>
+                        <span
+                          className="relative top-[-3px] flex-1 border-b border-dotted"
+                          style={{ borderColor: "rgba(27,20,16,0.35)" }}
+                        />
+                        <span
+                          className="text-base"
+                          style={{
+                            fontFamily: "var(--menu-font-display)",
+                            fontWeight: 600,
+                            color: INK,
+                          }}
+                        >
                           ${item.price.toFixed(2)}
-                        </p>
+                        </span>
                       </div>
+                      {item.description && (
+                        <p
+                          className="mt-1 text-[13px] italic"
+                          style={{ color: INK, opacity: 0.55 }}
+                        >
+                          {item.description}
+                        </p>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -168,8 +228,8 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
       {totalItems > 0 && !cartOpen && (
         <button
           onClick={() => setCartOpen(true)}
-          className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-black text-white shadow-lg"
-          style={{ backgroundColor: accentColor }}
+          className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full px-6 py-3.5 text-sm font-bold shadow-lg"
+          style={{ backgroundColor: accent, color: INK }}
         >
           <ShoppingBag size={18} />
           Ver pedido ({totalItems})
@@ -179,7 +239,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
       {activeItem && (
         <MenuItemModal
           item={activeItem}
-          accentColor={accentColor}
+          accentColor={accent}
           onClose={() => setActiveItem(null)}
           onAdd={handleAddToCart}
         />
@@ -190,7 +250,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
           storeName={store.name}
           whatsappNumber={whatsappNumber}
           cart={cart}
-          accentColor={accentColor}
+          accentColor={accent}
           onClose={() => setCartOpen(false)}
           onUpdateQuantity={handleUpdateQuantity}
           onRemove={handleRemove}
@@ -203,7 +263,10 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
       )}
 
       {orderSentMessage && (
-        <div className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-full bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow-lg">
+        <div
+          className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-full px-5 py-2.5 text-xs font-bold text-white shadow-lg"
+          style={{ backgroundColor: INK }}
+        >
           Pedido enviado por WhatsApp. En breve {store.name} te confirma.
           <button className="ml-3 underline" onClick={() => setOrderSentMessage(false)}>
             Cerrar

@@ -90,15 +90,20 @@ export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Pro
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white sm:rounded-3xl">
-        <div className="sticky top-0 flex items-start justify-between border-b border-slate-100 bg-white p-5">
+      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#FFFCF6] sm:rounded-3xl">
+        <div className="sticky top-0 flex items-start justify-between border-b border-[#1B1410]/10 bg-[#FFFCF6] p-5">
           <div>
-            <h2 className="text-lg font-black text-slate-900">{item.name}</h2>
+            <h2
+              className="text-xl text-[#1B1410]"
+              style={{ fontFamily: "var(--menu-font-display)", fontWeight: 600 }}
+            >
+              {item.name}
+            </h2>
             {item.description && (
-              <p className="mt-1 text-sm font-semibold text-slate-500">{item.description}</p>
+              <p className="mt-1 text-sm italic text-[#1B1410]/55">{item.description}</p>
             )}
           </div>
-          <button onClick={onClose} className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100">
+          <button onClick={onClose} className="rounded-full p-1.5 text-[#1B1410]/40 hover:bg-[#1B1410]/5">
             <X size={18} />
           </button>
         </div>
@@ -107,9 +112,9 @@ export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Pro
           {item.menu_item_option_groups.map((group) => (
             <div key={group.id}>
               <div className="mb-2 flex items-center gap-2">
-                <h3 className="text-sm font-black text-slate-800">{group.name}</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-[#1B1410]/70">{group.name}</h3>
                 {group.is_required && (
-                  <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-bold text-white">
+                  <span className="rounded-full bg-[#1B1410] px-2 py-0.5 text-[10px] font-bold text-white">
                     Obligatorio
                   </span>
                 )}
@@ -125,8 +130,8 @@ export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Pro
                       onClick={() => toggleOption(group.id, option.id, group.max_selections)}
                       className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
                         checked
-                          ? "border-transparent text-white"
-                          : "border-slate-200 text-slate-700 hover:border-slate-300"
+                          ? "border-transparent text-[#1B1410]"
+                          : "border-[#1B1410]/15 text-[#1B1410]/80 hover:border-[#1B1410]/30"
                       }`}
                       style={checked ? { backgroundColor: accentColor } : undefined}
                     >
@@ -140,32 +145,32 @@ export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Pro
           ))}
 
           <div>
-            <label className="mb-1.5 block text-sm font-black text-slate-800">
+            <label className="mb-1.5 block text-sm font-bold uppercase tracking-wide text-[#1B1410]/70">
               Alguna nota especial (opcional)
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
+              className="w-full rounded-xl border border-[#1B1410]/15 px-3 py-2 text-sm font-semibold text-[#1B1410] outline-none focus:border-[#1B1410]/40"
             />
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex items-center gap-3 border-t border-slate-100 bg-white p-5">
-          <div className="flex items-center gap-3 rounded-full border border-slate-200 px-3 py-2">
+        <div className="sticky bottom-0 flex items-center gap-3 border-t border-[#1B1410]/10 bg-[#FFFCF6] p-5">
+          <div className="flex items-center gap-3 rounded-full border border-[#1B1410]/15 px-3 py-2">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="text-slate-500"
+              className="text-[#1B1410]/60"
             >
               <Minus size={16} />
             </button>
-            <span className="w-4 text-center text-sm font-black">{quantity}</span>
+            <span className="w-4 text-center text-sm font-bold text-[#1B1410]">{quantity}</span>
             <button
               type="button"
               onClick={() => setQuantity((q) => q + 1)}
-              className="text-slate-500"
+              className="text-[#1B1410]/60"
             >
               <Plus size={16} />
             </button>
@@ -175,7 +180,7 @@ export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Pro
             type="button"
             onClick={handleAdd}
             disabled={missingRequired}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-black text-white shadow-sm transition disabled:opacity-40"
+            className="flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-[#1B1410] shadow-sm transition disabled:opacity-40"
             style={{ backgroundColor: accentColor }}
           >
             Agregar · ${(unitPrice * quantity).toFixed(2)}
