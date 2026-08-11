@@ -6,12 +6,8 @@ export const revalidate = 1800;
 export const dynamicParams = true;
 
 type PageProps = {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{ slug: string }>;
 };
-
-async function resolveParams(params: PageProps["params"]) {
-  return await Promise.resolve(params);
-}
 
 function getBaseUrl(store: {
   domain?: string | null;
@@ -25,7 +21,7 @@ function getBaseUrl(store: {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await resolveParams(params);
+  const { slug } = await params;
   const store = await getStoreBySlug(slug);
 
   if (!store) {

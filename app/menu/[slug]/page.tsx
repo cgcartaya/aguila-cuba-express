@@ -9,15 +9,11 @@ export const revalidate = 300;
 export const dynamicParams = true;
 
 type PageProps = {
-  params: Promise<{ slug: string }> | { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
-async function resolveParams(params: PageProps["params"]) {
-  return await Promise.resolve(params);
-}
-
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await resolveParams(params);
+  const { slug } = await params;
   const menu = await getPublicMenu(slug);
 
   if (!menu?.store) {
@@ -31,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function MenuPage({ params }: PageProps) {
-  const { slug } = await resolveParams(params);
+  const { slug } = await params;
   const menu = await getPublicMenu(slug);
 
   if (!menu?.store) {
