@@ -46,8 +46,8 @@ export default function DeParisLanding({
       style={{ fontFamily: "var(--font-dp-body)" }}
     >
       <DeParisNavbar menuHref={menuHref} />
-      <DeParisHero />
-      <DeParisDualWorlds />
+      <DeParisHero menuHref={menuHref} />
+      <DeParisDualWorlds menuHref={menuHref} />
       <DeParisFeaturedDishes dishes={featuredDishes} menuHref={menuHref} />
       <DeParisMenuHighlights menuHref={menuHref} />
       <DeParisFeatures />

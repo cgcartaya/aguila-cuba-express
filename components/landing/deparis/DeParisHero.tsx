@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight, MessageCircle, ShoppingBag } from "lucide-react";
+import { ArrowRight, BookOpen, MessageCircle, ShoppingBag } from "lucide-react";
 
 import DeParisMarquee from "./DeParisMarquee";
 import { STORE_URL, WHATSAPP_URL } from "./constants";
@@ -22,7 +22,7 @@ const stats = [
   ["Cienfuegos", "delivery y retiro en tienda"],
 ] as const;
 
-export default function DeParisHero() {
+export default function DeParisHero({ menuHref }: { menuHref?: string }) {
   return (
     <section
       id="inicio"
@@ -84,27 +84,38 @@ export default function DeParisHero() {
             className="mt-8 flex flex-col gap-3 sm:flex-row"
           >
             <a
-              href={STORE_URL}
+              href={menuHref || "#menu"}
               className="dp-shine group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full bg-[#1B1410] px-7 py-4 text-sm font-bold text-[#FFF4D6] shadow-[0_18px_38px_rgba(27,20,16,0.25)] transition duration-300 hover:-translate-y-1"
             >
-              <ShoppingBag size={18} />
-              Ver el mercado
+              <BookOpen size={18} />
+              {menuHref ? "Ver la carta y pedir" : "Descubrir la carta"}
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </a>
             <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noreferrer"
+              href={STORE_URL}
               className="group inline-flex items-center justify-center gap-2 rounded-full border border-[#1B1410]/20 bg-white/70 px-7 py-4 text-sm font-bold text-[#1B1410] backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white"
             >
-              <MessageCircle size={18} className="text-[#FC6C26]" />
-              Reservar por WhatsApp
+              <ShoppingBag size={18} className="text-[#FC6C26]" />
+              Explorar el mercado
             </a>
           </motion.div>
 
-          <motion.div
+          <motion.a
             variants={fadeUp}
             custom={4}
+            initial="hidden"
+            animate="show"
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1B1410]/60 transition hover:text-[#FC6C26]"
+          >
+            <MessageCircle size={16} /> ¿Prefieres reservar? Escríbenos por WhatsApp
+          </motion.a>
+
+          <motion.div
+            variants={fadeUp}
+            custom={5}
             initial="hidden"
             animate="show"
             className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-[#1B1410]/10 pt-6"

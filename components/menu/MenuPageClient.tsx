@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Bodoni_Moda, Manrope } from "next/font/google";
-import { ShoppingBag } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft, ChevronRight, Clock3, ShoppingBag, Sparkles } from "lucide-react";
 
 import MenuItemModal from "./MenuItemModal";
 import MenuCartDrawer from "./MenuCartDrawer";
@@ -35,6 +36,7 @@ type Props = {
   store: StoreForMenu;
   categories: MenuCategory[];
   whatsappNumber: string | null;
+  landingHref?: string;
 };
 
 // Paleta elegante de "carta impresa" por defecto — cualquier tienda
@@ -47,7 +49,7 @@ const INK = "#1B1410";
 
 type VenueFilter = "bar" | "restaurant";
 
-export default function MenuPageClient({ store, categories, whatsappNumber }: Props) {
+export default function MenuPageClient({ store, categories, whatsappNumber, landingHref }: Props) {
   const accent = store.primary_color || DEFAULT_ACCENT;
   const bg = store.secondary_color || DEFAULT_BG;
 
@@ -171,36 +173,55 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
       className={`${display.variable} ${body.variable} min-h-screen pb-28`}
       style={{ backgroundColor: bg, fontFamily: "var(--menu-font-body)" }}
     >
-      <header className="pb-2" style={{ backgroundColor: INK }}>
-        <div className="mx-auto flex max-w-2xl flex-col items-center px-4 pb-6 pt-9 text-center">
+      <header className="relative overflow-hidden" style={{ backgroundColor: INK }}>
+        <div className="pointer-events-none absolute inset-0 opacity-[0.06] [background-image:radial-gradient(#FFF4E6_1px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="pointer-events-none absolute -right-24 -top-28 h-80 w-80 rounded-full blur-[110px]" style={{ backgroundColor: accent, opacity: 0.22 }} />
+
+        <div className="relative mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
+          {landingHref ? (
+            <Link href={landingHref} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-white/65 transition hover:text-white">
+              <ArrowLeft size={15} /> Volver a De Paris
+            </Link>
+          ) : <span />}
+          <button
+            type="button"
+            onClick={() => setCartOpen(true)}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
+            aria-label={`Abrir pedido con ${totalItems} productos`}
+          >
+            <ShoppingBag size={17} />
+            {totalItems > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: accent, color: INK }}>{totalItems}</span>}
+          </button>
+        </div>
+
+        <div className="relative mx-auto grid max-w-5xl items-end gap-7 px-5 pb-9 pt-5 md:grid-cols-[1fr_auto] md:pb-12 md:pt-8">
+          <div className="flex items-center gap-5 md:gap-7">
           {store.logo_url ? (
-            <div className="relative mb-3 h-12 w-12 overflow-hidden rounded-full border border-white/20">
+            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-white/20 bg-white/5 shadow-2xl md:h-24 md:w-24">
               <Image src={store.logo_url} alt={store.name} fill className="object-cover" />
             </div>
           ) : (
             <div
-              className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border text-sm"
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border text-lg md:h-24 md:w-24"
               style={{ borderColor: accent, color: accent, fontFamily: "var(--menu-font-display)" }}
             >
               {store.name.slice(0, 2).toUpperCase()}
             </div>
           )}
-          <p
-            className="text-[10px] font-bold uppercase tracking-[0.3em]"
-            style={{ color: accent }}
-          >
-            {store.name}
-          </p>
-          <h1
-            className="mt-1 text-3xl text-white"
-            style={{ fontFamily: "var(--menu-font-display)", fontWeight: 600 }}
-          >
-            La Carta
-          </h1>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: accent }}>{store.name}</p>
+              <h1 className="mt-1 text-4xl leading-none text-white md:text-6xl" style={{ fontFamily: "var(--menu-font-display)", fontWeight: 600 }}>La Carta</h1>
+              <p className="mt-3 max-w-md text-sm leading-6 text-white/55">Elige tus favoritos, personalízalos y envía tu pedido directamente por WhatsApp.</p>
+            </div>
+          </div>
+          <div className="flex gap-4 text-[11px] font-bold uppercase tracking-wide text-white/55 md:pb-1">
+            <span className="inline-flex items-center gap-1.5"><Sparkles size={14} style={{ color: accent }} /> Hecho al momento</span>
+            <span className="inline-flex items-center gap-1.5"><Clock3 size={14} style={{ color: accent }} /> Pedido rápido</span>
+          </div>
         </div>
 
         {showVenueTabs && (
-          <div className="mx-auto flex max-w-2xl gap-2 px-4 pb-4">
+          <div className="relative mx-auto flex max-w-5xl gap-2 px-5 pb-5">
             {(["restaurant", "bar"] as VenueFilter[]).map((type) => (
               <button
                 key={type}
@@ -218,8 +239,10 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
           </div>
         )}
 
-        {visibleCategories.length > 0 && (
-          <nav className="scrollbar-none mx-auto flex max-w-2xl gap-2 overflow-x-auto px-4 pb-4">
+      </header>
+
+      {visibleCategories.length > 0 && (
+          <nav className="scrollbar-none sticky top-0 z-30 mx-auto flex max-w-5xl gap-2 overflow-x-auto border-b border-[#1B1410]/10 bg-[#FAF6EF]/90 px-5 py-3 shadow-[0_8px_24px_rgba(27,20,16,0.06)] backdrop-blur-xl" style={{ backgroundColor: `${bg}F2` }}>
             {visibleCategories.map((cat) => {
               const isActive = activeCategoryId === cat.id;
               return (
@@ -230,7 +253,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                   style={
                     isActive
                       ? { backgroundColor: accent, borderColor: accent, color: INK }
-                      : { borderColor: "rgba(255,255,255,0.2)", color: "#FFF4E6" }
+                      : { borderColor: "rgba(27,20,16,0.12)", color: "rgba(27,20,16,0.62)" }
                   }
                 >
                   {cat.name}
@@ -238,10 +261,9 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
               );
             })}
           </nav>
-        )}
-      </header>
+      )}
 
-      <div className="mx-auto max-w-2xl px-5 py-8">
+      <div className="mx-auto max-w-5xl px-5 py-10 md:py-14">
         {visibleCategories.length === 0 ? (
           <div className="rounded-2xl bg-white/70 p-10 text-center shadow-sm">
             <p className="text-sm font-semibold" style={{ color: INK, opacity: 0.6 }}>
@@ -249,7 +271,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
             </p>
           </div>
         ) : (
-          <div className="space-y-11">
+          <div className="space-y-14">
             {visibleCategories.map((category) => (
               <section
                 key={category.id}
@@ -258,43 +280,38 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                   sectionRefs.current[category.id] = el;
                 }}
               >
-                <p
-                  className="text-[10px] font-bold uppercase tracking-[0.3em]"
-                  style={{ color: accent }}
-                >
-                  {category.name}
-                </p>
-                <div
-                  className="mt-2 h-px w-full"
-                  style={{ backgroundColor: "#C89B3C", opacity: 0.35 }}
-                />
+                <div className="flex items-end justify-between gap-4 border-b border-[#1B1410]/10 pb-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: accent }}>Selección De Paris</p>
+                    <h2 className="mt-1 text-3xl text-[#1B1410]" style={{ fontFamily: "var(--menu-font-display)", fontWeight: 600 }}>{category.name}</h2>
+                  </div>
+                  <span className="text-xs font-semibold text-[#1B1410]/40">{category.menu_items.length} opciones</span>
+                </div>
 
-                <div className="mt-5 space-y-5">
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
                   {category.menu_items.map((item) => (
-                    <div key={item.id} className="flex items-start gap-3">
+                    <article key={item.id} className="group flex min-h-[124px] items-stretch overflow-hidden rounded-2xl border border-[#1B1410]/10 bg-white/55 shadow-[0_12px_30px_rgba(27,20,16,0.04)] transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_16px_34px_rgba(27,20,16,0.08)]">
                       {item.image_url && (
                         <button
                           onClick={() => setActiveItem(item)}
-                          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-black/5"
+                          className="relative w-28 shrink-0 overflow-hidden bg-black/5 sm:w-32"
                         >
                           <Image
                             src={item.image_url}
                             alt=""
                             fill
                             loading="lazy"
-                            sizes="56px"
-                            className="object-cover"
+                            sizes="128px"
+                            className="object-cover transition duration-500 group-hover:scale-105"
                           />
                         </button>
                       )}
 
-                      <button
-                        onClick={() => setActiveItem(item)}
-                        className="flex-1 text-left"
-                      >
-                        <div className="flex items-baseline gap-2">
+                      <div className="flex min-w-0 flex-1 flex-col justify-between gap-4 p-4">
+                        <button onClick={() => setActiveItem(item)} className="text-left">
+                        <div className="flex items-start justify-between gap-3">
                           <span
-                            className="text-base"
+                            className="text-lg leading-tight"
                             style={{
                               fontFamily: "var(--menu-font-display)",
                               fontWeight: 600,
@@ -312,11 +329,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                             </span>
                           )}
                           <span
-                            className="relative top-[-3px] flex-1 border-b border-dotted"
-                            style={{ borderColor: "rgba(27,20,16,0.35)" }}
-                          />
-                          <span
-                            className="text-base"
+                            className="shrink-0 text-lg"
                             style={{
                               fontFamily: "var(--menu-font-display)",
                               fontWeight: 700,
@@ -334,8 +347,9 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                             {item.description}
                           </p>
                         )}
-                      </button>
+                        </button>
 
+                        <div className="flex items-center justify-between gap-3">
                       {isQuickAddable(item) ? (
                         getQuickQuantity(item.id) > 0 ? (
                           <div
@@ -376,13 +390,16 @@ export default function MenuPageClient({ store, categories, whatsappNumber }: Pr
                         <button
                           onClick={() => setActiveItem(item)}
                           aria-label={`Elegir opciones de ${item.name}`}
-                          className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide"
+                          className="shrink-0 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wide"
                           style={{ borderColor: accent, color: accent }}
                         >
                           Elegir
                         </button>
                       )}
-                    </div>
+                          <button onClick={() => setActiveItem(item)} className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-[#1B1410]/45 transition hover:text-[#1B1410]">Detalles <ChevronRight size={13} /></button>
+                        </div>
+                      </div>
+                    </article>
                   ))}
                 </div>
               </section>

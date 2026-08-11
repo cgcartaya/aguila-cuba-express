@@ -49,6 +49,7 @@ export default async function MenuPage({ params }: PageProps) {
       store={menu.store}
       categories={menu.categories}
       whatsappNumber={settings?.whatsapp || null}
+      landingHref={slug === "deparis" ? "/deparis" : undefined}
     />
   );
 }

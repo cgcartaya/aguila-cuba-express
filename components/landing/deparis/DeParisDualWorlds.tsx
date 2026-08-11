@@ -79,7 +79,7 @@ function FloatingStat({
   );
 }
 
-export default function DeParisDualWorlds() {
+export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
   return (
     <section className="relative bg-[#FFF4D6]">
       <div className="mx-auto max-w-7xl px-5 pb-4 pt-16 text-center sm:px-8 sm:pt-24">
@@ -139,10 +139,10 @@ export default function DeParisDualWorlds() {
               Reservar una mesa
             </a>
             <a
-              href="#menu"
+              href={menuHref || "#menu"}
               className="inline-flex items-center gap-1.5 text-sm font-bold text-[#FFF4D6]/80 transition hover:text-[#FFF4D6]"
             >
-              Ver el menú <ArrowUpRight size={15} />
+              {menuHref ? "Ver la carta" : "Conocer el menú"} <ArrowUpRight size={15} />
             </a>
           </div>
         </motion.div>
