@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { stripeV2Fetch } from "@/lib/services/stripe-admin";
 
@@ -60,6 +61,7 @@ export async function GET(request: NextRequest) {
         .update({ stripe_charges_enabled: chargesEnabled, stripe_details_submitted: detailsSubmitted })
         .eq("id", storeId);
 
+      revalidateTag("payment-availability", { expire: 0 });
       return NextResponse.json({ ok: true, connected: true, chargesEnabled, detailsSubmitted });
     } catch (e) {
       // Si Stripe no responde, devolvemos lo último que sabíamos en vez de tronar.
@@ -98,6 +100,7 @@ export async function DELETE(request: NextRequest) {
     .eq("id", storeId);
 
   if (error) return fail("No se pudo desconectar Stripe.", 500);
+  revalidateTag("payment-availability", { expire: 0 });
   return NextResponse.json({ ok: true });
 }
 
@@ -142,6 +145,7 @@ export async function POST(request: NextRequest) {
       });
       accountId = account.id;
       await supabaseAdmin.from("stores").update({ stripe_account_id: accountId, stripe_connected_at: new Date().toISOString() }).eq("id", storeId);
+      revalidateTag("payment-availability", { expire: 0 });
     }
 
     const origin = request.headers.get("origin") || `https://${request.headers.get("host")}`;

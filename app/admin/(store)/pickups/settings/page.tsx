@@ -6,6 +6,7 @@ import { ArrowLeft, Check, CheckCircle2, Globe2, Loader2, MapPin, Save, Search }
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { getPickupServiceSettings, upsertPickupServiceSettings } from "@/lib/services/pickups";
+import { invalidatePublicConfig } from "@/lib/cache/invalidate-public-config";
 import { getCityOptions, getCountryName, getCountryOptions, getStateName, getStateOptions } from "@/lib/geo/location-catalog";
 import type { PickupServiceSettings } from "@/lib/pickups/types";
 
@@ -115,7 +116,10 @@ export default function PickupSettingsPage() {
       address_validation_provider: "manual",
     });
     if (result.error) setError(result.error.message);
-    else setMessage("Cobertura y ciudades guardadas correctamente.");
+    else {
+      await invalidatePublicConfig(store.id, ["pickup-config"]);
+      setMessage("Cobertura y ciudades guardadas correctamente.");
+    }
     setSaving(false);
   }
 

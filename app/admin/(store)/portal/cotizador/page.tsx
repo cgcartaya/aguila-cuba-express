@@ -5,6 +5,7 @@ import { Calculator, CheckCircle2, ExternalLink, Loader2, Save, Settings2, Truck
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import { invalidatePublicConfig } from "@/lib/cache/invalidate-public-config";
 
 export default function PublicQuoteSettingsPage() {
   const access = useAdminAccess();
@@ -58,6 +59,9 @@ export default function PublicQuoteSettingsPage() {
     const { error } = await supabase
       .from("customer_portal_settings")
       .upsert({ ...settings, store_id: store.id, updated_at: new Date().toISOString() }, { onConflict: "store_id" });
+    if (!error) {
+      await invalidatePublicConfig(store.id, ["public-quote-config", "commercial-portal-config"]);
+    }
     setSaving(false);
     setMessage(error ? error.message : "Configuración pública guardada correctamente.");
   }

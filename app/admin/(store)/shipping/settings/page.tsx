@@ -29,6 +29,7 @@ import {
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import { invalidatePublicConfig } from "@/lib/cache/invalidate-public-config";
 import {
   createCountry,
   createExtraFee,
@@ -350,6 +351,9 @@ export default function ShippingSettingsPage() {
         throw new Error(result.error.message || "No se pudo guardar.");
       }
 
+      if (activeStore?.id) {
+        await invalidatePublicConfig(activeStore.id, ["public-quote-config"]);
+      }
       setMessage(successMessage);
       await load();
     } catch (error) {

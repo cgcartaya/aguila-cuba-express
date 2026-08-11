@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 const WRITE_ROLES = new Set(["OWNER", "ADMIN"]);
@@ -102,5 +103,6 @@ export async function POST(request: NextRequest) {
   const { error } = await supabaseAdmin.from("stores").update(update).eq("id", storeId);
   if (error) return fail("No se pudo guardar.", 500);
 
+  revalidateTag("payment-availability", { expire: 0 });
   return NextResponse.json({ ok: true });
 }
