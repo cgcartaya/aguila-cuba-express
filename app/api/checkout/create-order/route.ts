@@ -186,7 +186,7 @@ export async function POST(request: Request) {
     const { data: store, error: storeError } = await supabaseAdmin
       .from("stores")
       .select(
-        "id, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent"
+        "id, name, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent"
       )
       .eq("id", storeId)
       .maybeSingle();
@@ -216,27 +216,91 @@ export async function POST(request: Request) {
     const preparedItems: PreparedItem[] = [];
     const stockNeeds = new Map<string, number>();
     const directProductQuantities = new Map<string, number>();
+    const directProductIds = new Set<string>();
+    const comboIds = new Set<string>();
 
+    // FASE 1 (Vercel/Supabase): primero normalizamos el carrito y luego
+    // cargamos sus datos en bloques. Antes, cada línea hacía varias
+    // consultas individuales dentro del loop; un carrito grande podía
+    // disparar decenas de round-trips antes de crear la orden.
     for (const rawItem of requestedItems) {
-      if (rawItem.item_type !== "product") continue;
-      const productId = clean(rawItem.product_id, 64);
       const quantity = Math.trunc(Number(rawItem.quantity || 0));
-      if (productId && quantity > 0) {
+      if (quantity <= 0) return fail("Cantidad inválida en el carrito.");
+
+      if (rawItem.item_type === "product") {
+        const productId = clean(rawItem.product_id, 64);
+        if (!productId) {
+          return fail("Uno de los productos ya no está disponible.", 409);
+        }
+
+        directProductIds.add(productId);
         directProductQuantities.set(
           productId,
           (directProductQuantities.get(productId) || 0) + quantity
         );
+        continue;
       }
+
+      if (rawItem.item_type === "combo") {
+        const comboId = clean(rawItem.combo_id, 64);
+        if (!comboId) {
+          return fail("Uno de los combos ya no está disponible.", 409);
+        }
+
+        comboIds.add(comboId);
+        continue;
+      }
+
+      return fail("El carrito contiene un tipo de artículo no permitido.");
     }
 
-    const { data: categoryRows, error: categoryRulesError } =
-      await supabaseAdmin
+    const directProductIdList = Array.from(directProductIds);
+    const comboIdList = Array.from(comboIds);
+
+    const [
+      { data: categoryRows, error: categoryRulesError },
+      { data: tierRows, error: tierError },
+      { data: comboRows, error: comboError },
+      { data: comboItemRows, error: comboItemsError },
+    ] = await Promise.all([
+      supabaseAdmin
         .from("categories")
         .select("name, minimum_order_exempt, delivery_included")
-        .eq("store_id", storeId);
+        .eq("store_id", storeId),
+      directProductIdList.length > 0
+        ? supabaseAdmin
+            .from("product_price_tiers")
+            .select("product_id, min_quantity, unit_price")
+            .eq("store_id", storeId)
+            .in("product_id", directProductIdList)
+            .order("min_quantity", { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+      comboIdList.length > 0
+        ? supabaseAdmin
+            .from("combos")
+            .select("id, name, price, store_id")
+            .eq("store_id", storeId)
+            .in("id", comboIdList)
+        : Promise.resolve({ data: [], error: null }),
+      comboIdList.length > 0
+        ? supabaseAdmin
+            .from("combo_items")
+            .select("combo_id, product_id, quantity")
+            .in("combo_id", comboIdList)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
 
     if (categoryRulesError) {
       return fail("No se pudieron validar las reglas de categorías.", 500);
+    }
+    if (tierError) {
+      return fail("No se pudieron validar los precios del carrito.", 500);
+    }
+    if (comboError) {
+      return fail("No se pudieron validar los combos del carrito.", 500);
+    }
+    if (comboItemsError) {
+      return fail("No se pudo validar el contenido de un combo.", 500);
     }
 
     const categoryRuleMap = new Map(
@@ -249,48 +313,77 @@ export async function POST(request: Request) {
       ])
     );
 
+    const comboMap = new Map((comboRows || []).map((row) => [row.id, row]));
+    const comboItemsByCombo = new Map<
+      string,
+      Array<{ product_id: string; quantity: number }>
+    >();
+
+    for (const row of comboItemRows || []) {
+      const current = comboItemsByCombo.get(row.combo_id) || [];
+      current.push({
+        product_id: row.product_id,
+        quantity: Math.trunc(Number(row.quantity || 0)),
+      });
+      comboItemsByCombo.set(row.combo_id, current);
+    }
+
+    // Productos necesarios = productos sueltos + componentes de combos.
+    // Así la validación de disponibilidad, límite y stock usa una sola
+    // consulta para todo el carrito.
+    const allNeededProductIds = new Set(directProductIdList);
+    for (const row of comboItemRows || []) {
+      if (row.product_id) allNeededProductIds.add(row.product_id);
+    }
+
+    const allNeededProductIdList = Array.from(allNeededProductIds);
+    const { data: productRows, error: productsError } =
+      allNeededProductIdList.length > 0
+        ? await supabaseAdmin
+            .from("products")
+            .select(
+              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, is_active, deleted_at"
+            )
+            .eq("store_id", storeId)
+            .eq("is_active", true)
+            .is("deleted_at", null)
+            .in("id", allNeededProductIdList)
+        : { data: [], error: null };
+
+    if (productsError) {
+      return fail("No se pudieron validar los productos del carrito.", 500);
+    }
+
+    const productMap = new Map((productRows || []).map((row) => [row.id, row]));
+    const tiersByProduct = new Map<string, PriceTierRow[]>();
+
+    for (const row of tierRows || []) {
+      const current = tiersByProduct.get(row.product_id) || [];
+      current.push({
+        min_quantity: Number(row.min_quantity || 0),
+        unit_price: Number(row.unit_price || 0),
+      });
+      tiersByProduct.set(row.product_id, current);
+    }
+
     for (const rawItem of requestedItems) {
       const quantity = Math.trunc(Number(rawItem.quantity || 0));
-      if (quantity <= 0) return fail("Cantidad inválida en el carrito.");
 
       if (rawItem.item_type === "product") {
         const productId = clean(rawItem.product_id, 64);
-        const { data: product, error: productError } = await supabaseAdmin
-          .from("products")
-          .select(
-            "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, is_active, deleted_at"
-          )
-          .eq("id", productId)
-          .eq("store_id", storeId)
-          .eq("is_active", true)
-          .is("deleted_at", null)
-          .maybeSingle();
+        const product = productMap.get(productId);
 
-        if (productError || !product) {
+        if (!product) {
           return fail("Uno de los productos ya no está disponible.", 409);
         }
 
         const totalRequestedQuantity =
           directProductQuantities.get(product.id) || quantity;
 
-        const { data: tierRows, error: tierError } = await supabaseAdmin
-          .from("product_price_tiers")
-          .select("min_quantity, unit_price")
-          .eq("store_id", storeId)
-          .eq("product_id", product.id)
-          .order("min_quantity", { ascending: true });
-
-        if (tierError) {
-          return fail(
-            `No se pudo validar el precio de ${clean(product.name, 150)}.`,
-            500
-          );
-        }
-
         const baseUnitPrice = getServerUnitPriceForQuantity(
           money(product.price),
           totalRequestedQuantity,
-          (tierRows || []) as PriceTierRow[]
+          tiersByProduct.get(product.id) || []
         );
 
         // Precio que realmente paga el cliente (base + fee de
@@ -328,29 +421,14 @@ export async function POST(request: Request) {
 
       if (rawItem.item_type === "combo") {
         const comboId = clean(rawItem.combo_id, 64);
-        const { data: combo, error: comboError } = await supabaseAdmin
-          .from("combos")
-          .select("id, name, price, store_id")
-          .eq("id", comboId)
-          .eq("store_id", storeId)
-          .maybeSingle();
+        const combo = comboMap.get(comboId);
 
-        if (comboError || !combo) {
+        if (!combo) {
           return fail("Uno de los combos ya no está disponible.", 409);
         }
 
-        const { data: comboItems, error: comboItemsError } =
-          await supabaseAdmin
-            .from("combo_items")
-            .select("product_id, quantity")
-            .eq("combo_id", combo.id);
-
-        if (comboItemsError) {
-          return fail("No se pudo validar el contenido de un combo.", 500);
-        }
-
-        for (const comboItem of comboItems || []) {
-          const needed = Math.trunc(Number(comboItem.quantity || 0)) * quantity;
+        for (const comboItem of comboItemsByCombo.get(combo.id) || []) {
+          const needed = comboItem.quantity * quantity;
           if (needed > 0) {
             stockNeeds.set(
               comboItem.product_id,
@@ -375,23 +453,15 @@ export async function POST(request: Request) {
           minimum_order_exempt: false,
           delivery_included: false,
         });
-        continue;
       }
-
-      return fail("El carrito contiene un tipo de artículo no permitido.");
     }
 
+    // Validación inicial de máximo por pedido y stock usando el snapshot
+    // ya cargado; no volvemos a consultar un producto por cada línea.
     for (const [productId, needed] of stockNeeds) {
-      const { data: product, error } = await supabaseAdmin
-        .from("products")
-        .select("id, name, stock, store_id, max_quantity_per_order")
-        .eq("id", productId)
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .maybeSingle();
+      const product = productMap.get(productId);
 
-      if (error || !product) {
+      if (!product) {
         return fail("Uno de los productos de la orden ya no está disponible.", 409);
       }
 
@@ -697,24 +767,43 @@ export async function POST(request: Request) {
       }
     }
 
-    const appliedStockChanges: StockChange[] = [];
-    for (const [productId, needed] of stockNeeds) {
-      const { data: product, error: stockReadError } = await supabaseAdmin
-        .from("products")
-        .select("stock")
-        .eq("id", productId)
-        .eq("store_id", storeId)
-        .maybeSingle();
+    // Relectura final del stock justo antes de descontarlo. Conservamos
+    // la protección contra cambios ocurridos durante el checkout, pero
+    // hacemos UNA consulta para todos los productos en vez de una por ID.
+    const stockProductIds = Array.from(stockNeeds.keys());
+    const { data: currentStockRows, error: currentStockError } =
+      stockProductIds.length > 0
+        ? await supabaseAdmin
+            .from("products")
+            .select("id, stock")
+            .eq("store_id", storeId)
+            .in("id", stockProductIds)
+        : { data: [], error: null };
 
-      if (stockReadError || !product || Number(product.stock || 0) < needed) {
-        await restoreStock(appliedStockChanges);
+    if (currentStockError) {
+      await deleteCreatedOrder(order.id);
+      return fail("No se pudo validar el inventario.", 500);
+    }
+
+    const currentStockMap = new Map(
+      (currentStockRows || []).map((row) => [row.id, Number(row.stock || 0)])
+    );
+
+    for (const [productId, needed] of stockNeeds) {
+      const currentStock = currentStockMap.get(productId);
+      if (currentStock == null || currentStock < needed) {
         await deleteCreatedOrder(order.id);
         return fail("El stock cambió mientras se procesaba el pedido.", 409);
       }
+    }
+
+    const appliedStockChanges: StockChange[] = [];
+    for (const [productId, needed] of stockNeeds) {
+      const currentStock = currentStockMap.get(productId)!;
 
       const { error: stockUpdateError } = await supabaseAdmin
         .from("products")
-        .update({ stock: Number(product.stock || 0) - needed })
+        .update({ stock: currentStock - needed })
         .eq("id", productId)
         .eq("store_id", storeId);
 
@@ -747,15 +836,9 @@ export async function POST(request: Request) {
       );
 
       if (recipients.length > 0) {
-        const { data: storeInfo } = await supabaseAdmin
-          .from("stores")
-          .select("name")
-          .eq("id", storeId)
-          .maybeSingle();
-
         await sendNewOrderEmail({
           toEmails: recipients,
-          storeName: storeInfo?.name || "tu tienda",
+          storeName: store.name || "tu tienda",
           orderNumber: publicOrderNumber,
           customerName,
           customerPhone,
