@@ -42,10 +42,10 @@
 //   discount_campaign_customers quede "used" con el order_id).
 // - Un pedido que no alcance el mínimo de la zona — debe rechazarse.
 
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
-import { sendNewOrderEmail } from "@/lib/notifications/order-email";
+import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 
 const YOYO_SLUG = "yoyo-envios";
 
@@ -816,44 +816,24 @@ export async function POST(request: Request) {
       appliedStockChanges.push({ productId, quantity: needed });
     }
 
-    // Aviso por email — nunca debe tumbar el pedido si falla.
-    try {
-      const { data: notificationSettings } = await supabaseAdmin
-        .from("store_settings")
-        .select("order_notification_email")
-        .eq("store_id", storeId)
-        .maybeSingle();
-
-      const notifyEmail = notificationSettings?.order_notification_email;
-      const platformEmail = process.env.PLATFORM_NOTIFICATION_EMAIL;
-
-      const recipients = Array.from(
-        new Set(
-          [notifyEmail, platformEmail]
-            .filter((addr): addr is string => Boolean(addr))
-            .map((addr) => addr.trim().toLowerCase())
-        )
-      );
-
-      if (recipients.length > 0) {
-        await sendNewOrderEmail({
-          toEmails: recipients,
-          storeName: store.name || "tu tienda",
-          orderNumber: publicOrderNumber,
-          customerName,
-          customerPhone,
-          total,
-          itemsCount: preparedItems.length,
-          isLocalDelivery,
-          municipality: city,
-        });
-      }
-    } catch (notificationError) {
-      console.error(
-        "Error enviando notificación de nueva orden (no afecta la orden):",
-        notificationError
-      );
-    }
+    // FASE 2 (Vercel/Next): el aviso de nueva orden ya no forma parte
+    // del tiempo crítico del checkout. `after()` deja que devolvamos la
+    // respuesta al comprador y, después, consulta los destinatarios y
+    // envía el email. Si Resend o store_settings están lentos, el cliente
+    // no tiene que esperar por ellos y la orden ya creada no se afecta.
+    after(async () => {
+      await sendNewOrderNotification({
+        storeId,
+        storeName: store.name || "tu tienda",
+        orderNumber: publicOrderNumber,
+        customerName,
+        customerPhone,
+        total,
+        itemsCount: preparedItems.length,
+        isLocalDelivery,
+        municipality: city,
+      });
+    });
 
     return NextResponse.json({
       success: true,
