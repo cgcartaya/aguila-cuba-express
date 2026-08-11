@@ -32,16 +32,16 @@ const parisienne = Parisienne({
   display: "swap",
 });
 
-export default function DeParisLanding() {
+export default function DeParisLanding({ menuHref }: { menuHref?: string }) {
   return (
     <main
       className={`${bodoni.variable} ${manrope.variable} ${parisienne.variable} min-h-screen bg-[#FFF4D6]`}
       style={{ fontFamily: "var(--font-dp-body)" }}
     >
-      <DeParisNavbar />
+      <DeParisNavbar menuHref={menuHref} />
       <DeParisHero />
       <DeParisDualWorlds />
-      <DeParisMenuHighlights />
+      <DeParisMenuHighlights menuHref={menuHref} />
       <DeParisFeatures />
       <DeParisCTA />
       <DeParisFooter />

@@ -2,12 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, MessageCircle, ShoppingBag, X } from "lucide-react";
+import { Menu, MessageCircle, ShoppingBag, UtensilsCrossed, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
 
-export default function DeParisNavbar() {
+export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -64,6 +64,15 @@ export default function DeParisNavbar() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
+          {menuHref && (
+            <Link
+              href={menuHref}
+              className="group inline-flex items-center gap-2 rounded-full border border-[#FC6C26]/40 bg-white/70 px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410] backdrop-blur transition hover:-translate-y-0.5 hover:bg-white"
+            >
+              <UtensilsCrossed size={16} className="text-[#FC6C26]" />
+              Pedir menú
+            </Link>
+          )}
           <a
             href={WHATSAPP_URL}
             target="_blank"
@@ -104,6 +113,15 @@ export default function DeParisNavbar() {
                 {label}
               </a>
             ))}
+            {menuHref && (
+              <Link
+                href={menuHref}
+                onClick={() => setOpen(false)}
+                className="mt-2 flex items-center justify-center gap-2 rounded-full border border-[#FC6C26]/40 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide"
+              >
+                <UtensilsCrossed size={16} className="text-[#FC6C26]" /> Pedir menú en línea
+              </Link>
+            )}
             <a
               href={WHATSAPP_URL}
               target="_blank"

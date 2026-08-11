@@ -109,7 +109,7 @@ const overlayStyles: Record<string, string> = {
   cream: "bg-gradient-to-t from-white via-white/85 to-white/40",
 };
 
-export default function DeParisMenuHighlights() {
+export default function DeParisMenuHighlights({ menuHref }: { menuHref?: string }) {
   return (
     <section id="menu" className="relative bg-[#FFF4D6] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
@@ -166,6 +166,17 @@ export default function DeParisMenuHighlights() {
             </motion.div>
           ))}
         </div>
+
+        {menuHref && (
+          <div className="mt-10 flex justify-center">
+            <a
+              href={menuHref}
+              className="inline-flex items-center gap-2 rounded-full bg-[#1B1410] px-7 py-3.5 text-sm font-bold uppercase tracking-wide text-[#FFF4D6] shadow-[0_18px_38px_rgba(27,20,16,0.2)] transition hover:-translate-y-1"
+            >
+              Ver menú completo y pedir en línea
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );

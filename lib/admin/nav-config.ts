@@ -18,6 +18,7 @@ import {
   Route,
   TrendingUp,
   Users,
+  Utensils,
   Wallet,
   Wrench,
 } from "lucide-react";
@@ -46,7 +47,7 @@ import type { AccessStore } from "@/lib/admin/access";
  *   4. Márcala en la sección correspondiente con `module: "x"`.
  */
 
-export type AdminModuleKey = "store" | "pickups" | "shipping";
+export type AdminModuleKey = "store" | "pickups" | "shipping" | "menu";
 
 export type AdminLink = {
   href: string;
@@ -110,6 +111,13 @@ export const adminNavSections: AdminSection[] = [
     ],
   },
   {
+    title: "Menú",
+    module: "menu",
+    links: [
+      { href: "/admin/menu", label: "Categorías y platillos", icon: Utensils },
+    ],
+  },
+  {
     title: "Marketing",
     links: [
       { href: "/admin/marketing/promotions", label: "Promociones", icon: Megaphone },
@@ -139,7 +147,13 @@ export const adminNavSections: AdminSection[] = [
  */
 export function isModuleEnabled(
   store:
-    | Pick<AccessStore, "module_store_enabled" | "module_shipping_enabled" | "module_pickups_enabled">
+    | Pick<
+        AccessStore,
+        | "module_store_enabled"
+        | "module_shipping_enabled"
+        | "module_pickups_enabled"
+        | "module_menu_enabled"
+      >
     | null
     | undefined,
   moduleKey: AdminModuleKey | undefined,
@@ -153,6 +167,11 @@ export function isModuleEnabled(
       return store?.module_shipping_enabled === true;
     case "pickups":
       return store?.module_pickups_enabled === true;
+    // "menu" es un flag nuevo, lo trato igual que shipping/pickups
+    // (opt-in, por defecto false) — mismo criterio que quedó
+    // documentado arriba para módulos nuevos.
+    case "menu":
+      return store?.module_menu_enabled === true;
     default:
       return true;
   }
@@ -166,7 +185,13 @@ export function isModuleEnabled(
  */
 export function getVisibleAdminSections(
   store:
-    | Pick<AccessStore, "module_store_enabled" | "module_shipping_enabled" | "module_pickups_enabled">
+    | Pick<
+        AccessStore,
+        | "module_store_enabled"
+        | "module_shipping_enabled"
+        | "module_pickups_enabled"
+        | "module_menu_enabled"
+      >
     | null
     | undefined,
   isSuperAdmin: boolean,
