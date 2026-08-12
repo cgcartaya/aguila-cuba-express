@@ -18,7 +18,7 @@
 
 import { useEffect, useState } from "react";
 
-import { DEFAULT_PHONE_COUNTRY, PHONE_COUNTRIES, findPhoneCountry, type PhoneCountry } from "@/lib/constants/phone-countries";
+import { DEFAULT_PHONE_COUNTRY, PHONE_COUNTRIES, type PhoneCountry } from "@/lib/constants/phone-countries";
 import FlagIcon from "@/components/tienda/FlagIcon";
 
 type PhoneCountryFieldProps = {
@@ -88,7 +88,7 @@ export default function PhoneCountryField({
   return (
     <div className={className ?? "md:col-span-2"}>
       <div
-        className={`flex w-full min-w-0 items-stretch overflow-hidden rounded-xl border bg-white transition focus-within:border-black ${
+        className={`flex w-full min-w-0 items-stretch rounded-xl border bg-white transition focus-within:border-black ${
           looksIncomplete ? "border-amber-400" : "border-gray-300"
         }`}
       >
@@ -98,7 +98,7 @@ export default function PhoneCountryField({
             onClick={() => setOpen((v) => !v)}
             aria-label="Elegir país"
             aria-expanded={open}
-            className="flex h-full items-center gap-1.5 border-r border-gray-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+            className="flex h-full items-center gap-1.5 rounded-l-xl border-r border-gray-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
           >
             <FlagIcon countryCode={country.iso2} size={18} />
             <span>{country.dialCode}</span>
@@ -142,7 +142,7 @@ export default function PhoneCountryField({
           onChange={handleNumberChange}
           onBlur={() => setTouched(true)}
           required={required}
-          className="w-full min-w-0 flex-1 px-4 py-3 outline-none"
+          className="w-full min-w-0 flex-1 rounded-r-xl px-4 py-3 outline-none"
         />
       </div>
 
