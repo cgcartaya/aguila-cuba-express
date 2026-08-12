@@ -34,10 +34,11 @@ type MovementRow = {
   notes: string | null;
   created_by_email: string | null;
   created_at: string;
-  products: { name: string; store_id: string } | null;
+  product_id: string | null;
 };
 
 type StoreOption = { id: string; name: string };
+type ProductOption = { id: string; name: string; store_id: string };
 
 function movementLabel(type: string) {
   if (type === "entry") return "Entrada";
@@ -49,6 +50,7 @@ function movementLabel(type: string) {
 export default function MovimientosInventarioPage() {
   const [movements, setMovements] = useState<MovementRow[]>([]);
   const [stores, setStores] = useState<StoreOption[]>([]);
+  const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -67,10 +69,19 @@ export default function MovimientosInventarioPage() {
         .select("id, name")
         .order("name", { ascending: true });
 
+      // Trae productos por separado (igual que StockHistoryModal, que
+      // ya funciona) en vez de usar la relación embebida
+      // products(name, store_id) — esa forma depende de que PostgREST
+      // tenga bien detectada la foreign key inventory_movements.product_id
+      // -> products.id, y si no la tiene, el select entero falla.
+      const { data: productRows } = await supabase
+        .from("products")
+        .select("id, name, store_id");
+
       const { data, error } = await supabase
         .from("inventory_movements")
         .select(
-          "id, movement_type, quantity, previous_stock, new_stock, supplier, cost, reason, notes, created_by_email, created_at, products(name, store_id)"
+          "id, movement_type, quantity, previous_stock, new_stock, supplier, cost, reason, notes, created_by_email, created_at, product_id"
         )
         .order("created_at", { ascending: false })
         .limit(500);
@@ -85,12 +96,8 @@ export default function MovimientosInventarioPage() {
       }
 
       setStores((storeRows as StoreOption[]) || []);
-      setMovements(
-        (data || []).map((row: any) => ({
-          ...row,
-          products: Array.isArray(row.products) ? row.products[0] : row.products,
-        }))
-      );
+      setProducts((productRows as ProductOption[]) || []);
+      setMovements((data as MovementRow[]) || []);
       setLoading(false);
     }
 
@@ -107,15 +114,22 @@ export default function MovimientosInventarioPage() {
     return map;
   }, [stores]);
 
+  const productById = useMemo(() => {
+    const map = new Map<string, ProductOption>();
+    products.forEach((p) => map.set(p.id, p));
+    return map;
+  }, [products]);
+
   const filteredMovements = useMemo(() => {
     return movements.filter((m) => {
       if (typeFilter !== "all" && m.movement_type !== typeFilter) return false;
-      if (storeFilter !== "all" && m.products?.store_id !== storeFilter) {
-        return false;
+      if (storeFilter !== "all") {
+        const product = m.product_id ? productById.get(m.product_id) : null;
+        if (product?.store_id !== storeFilter) return false;
       }
       return true;
     });
-  }, [movements, typeFilter, storeFilter]);
+  }, [movements, typeFilter, storeFilter, productById]);
 
   return (
     <div>
@@ -175,8 +189,9 @@ export default function MovimientosInventarioPage() {
               const isEntry = movement.movement_type === "entry";
               const isExit = movement.movement_type === "exit";
               const delta = Number(movement.quantity || 0);
-              const storeName = movement.products
-                ? storeNameById.get(movement.products.store_id) || "Tienda"
+              const product = movement.product_id ? productById.get(movement.product_id) : null;
+              const storeName = product
+                ? storeNameById.get(product.store_id) || "Tienda"
                 : "Tienda";
 
               return (
@@ -204,7 +219,7 @@ export default function MovimientosInventarioPage() {
                       </div>
 
                       <p className="mt-1 text-sm font-bold text-slate-700">
-                        {movement.products?.name || "Producto eliminado"}
+                        {product?.name || "Producto eliminado"}
                       </p>
                     </div>
 
