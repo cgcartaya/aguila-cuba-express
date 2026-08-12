@@ -153,7 +153,7 @@ export default function CartPageClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] px-4 pb-28 pt-6 text-[#061b3a] sm:pt-8 lg:pb-8">
+    <main className="min-h-screen bg-[#f5f7fb] px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] pt-6 text-[#061b3a] sm:pt-8 lg:pb-8">
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto mb-8 flex max-w-xl items-center justify-between">
           {[
@@ -445,7 +445,7 @@ export default function CartPageClient() {
               </p>
             </aside>
 
-            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_rgba(6,27,58,0.12)] backdrop-blur lg:hidden">
+            <div className="fixed inset-x-0 bottom-[88px] z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_rgba(6,27,58,0.12)] backdrop-blur lg:hidden">
               <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
