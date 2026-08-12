@@ -66,15 +66,15 @@ export function OrderSummary({
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
 
   return (
-    <aside className="h-fit rounded-3xl bg-white p-5 shadow-sm">
+    <aside className="h-fit min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
       <h2 className="mb-4 text-lg font-bold text-gray-900">
         Resumen de pedido
       </h2>
 
       <div className="space-y-3">
         {cart.map((item) => (
-          <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
-            <div>
+          <div key={item.id} className="flex min-w-0 items-start justify-between gap-3 text-sm">
+            <div className="min-w-0">
               <span
                 className={`mb-1 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-black ${
                   item.type === "combo"
@@ -85,7 +85,7 @@ export function OrderSummary({
                 {item.type === "combo" ? <Package size={11} /> : <ShoppingBag size={11} />}
                 {item.type === "combo" ? "Combo" : "Producto"}
               </span>
-              <p className="font-medium text-gray-900">{item.name}</p>
+              <p className="break-words font-medium text-gray-900">{item.name}</p>
               <p className="text-gray-500">Cantidad: {item.quantity}</p>
 
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
@@ -116,7 +116,7 @@ export function OrderSummary({
                 )}
             </div>
 
-            <div className="text-right">
+            <div className="shrink-0 text-right">
               <p className="font-semibold">
                 ${(Number(item.price) * item.quantity).toFixed(2)}
               </p>
@@ -238,11 +238,11 @@ export function OrderSummary({
       {cardPaymentAvailable && (
         <div className="mb-4">
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">¿Cómo prefieres pagar?</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid min-w-0 gap-2 min-[390px]:grid-cols-2">
             <button
               type="button"
               onClick={() => onChangePayWith?.("card")}
-              className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
+              className={`flex min-w-0 items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
                 payWith === "card" ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 bg-white text-gray-600"
               }`}
             >
@@ -251,7 +251,7 @@ export function OrderSummary({
             <button
               type="button"
               onClick={() => onChangePayWith?.("whatsapp")}
-              className={`flex items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
+              className={`flex min-w-0 items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
                 payWith === "whatsapp" ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 bg-white text-gray-600"
               }`}
             >

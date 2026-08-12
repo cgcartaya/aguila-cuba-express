@@ -15,7 +15,7 @@ export function LocalDeliveryAddressForm({
   onChange,
 }: Props) {
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
       <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-900">
         <MapPin size={20} />
         Dirección de entrega
@@ -30,7 +30,7 @@ export function LocalDeliveryAddressForm({
           placeholder="Ciudad *"
           value={form.city}
           onChange={onChange}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
         <input
@@ -38,7 +38,7 @@ export function LocalDeliveryAddressForm({
           placeholder="Referencia (opcional)"
           value={form.reference}
           onChange={onChange}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
         <textarea
@@ -47,7 +47,7 @@ export function LocalDeliveryAddressForm({
           value={form.exact_address}
           onChange={onChange}
           rows={4}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
         />
 
         {showNotes && (
@@ -57,7 +57,7 @@ export function LocalDeliveryAddressForm({
             value={form.notes}
             onChange={onChange}
             rows={4}
-            className="rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
+            className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
           />
         )}
       </div>

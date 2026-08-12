@@ -586,7 +586,7 @@ ${orderUrl}`);
 
   return (
     <main className="min-h-screen bg-gray-50 pb-[calc(7rem+env(safe-area-inset-bottom))]">
-      <div className="mx-auto max-w-6xl px-4 py-6">
+      <div className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6">
         <Link href={cartUrl} className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600">
           <ArrowLeft size={18} />
           Volver al carrito
@@ -599,8 +599,8 @@ ${orderUrl}`);
             Cargando checkout...
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <section className="space-y-6 lg:col-span-2">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-3">
+            <section className="min-w-0 space-y-6 lg:col-span-2">
               {isYoyo && settings && (
                 <CheckoutMethodSelector
                   value={method}

@@ -10,10 +10,10 @@ type Props = {
 
 export function CustomerInfoForm({ form, onChange }: Props) {
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm">
-      <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
-        <UserRound size={20} />
-        Información del cliente
+    <div className="min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
+      <h2 className="mb-4 flex min-w-0 items-start gap-2 text-lg font-bold leading-tight text-gray-900">
+        <UserRound className="mt-0.5 shrink-0" size={20} />
+        <span className="min-w-0">Información del cliente</span>
       </h2>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -22,7 +22,7 @@ export function CustomerInfoForm({ form, onChange }: Props) {
           placeholder="Nombre completo *"
           value={form.name}
           onChange={onChange}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
         <input
@@ -31,7 +31,7 @@ export function CustomerInfoForm({ form, onChange }: Props) {
           placeholder="Email *"
           value={form.email}
           onChange={onChange}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
         <input
@@ -39,7 +39,7 @@ export function CustomerInfoForm({ form, onChange }: Props) {
           placeholder="Teléfono *"
           value={form.phone}
           onChange={onChange}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
         />
       </div>
     </div>

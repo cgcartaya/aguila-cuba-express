@@ -41,7 +41,7 @@ export function CheckoutMethodSelector({
   if (methods.length <= 1) return null;
 
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
       <h2 className="text-lg font-bold text-gray-900">
         ¿Cómo deseas recibir tu pedido?
       </h2>
@@ -59,7 +59,7 @@ export function CheckoutMethodSelector({
               key={method.id}
               type="button"
               onClick={() => onChange(method.id)}
-              className={`rounded-2xl border p-4 text-left transition ${
+              className={`min-w-0 rounded-2xl border p-4 text-left transition ${
                 active
                   ? "border-blue-600 bg-blue-50 ring-2 ring-blue-100"
                   : "border-gray-200 bg-white hover:border-gray-300"
@@ -73,7 +73,7 @@ export function CheckoutMethodSelector({
                 >
                   <Icon size={20} />
                 </span>
-                <span>
+                <span className="min-w-0">
                   <span className="block font-bold text-gray-900">
                     {method.title}
                   </span>

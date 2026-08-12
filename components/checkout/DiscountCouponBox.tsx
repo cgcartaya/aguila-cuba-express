@@ -115,25 +115,25 @@ export function DiscountCouponBox({
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="mb-3 flex items-center gap-2">
         <Tag size={18} className="text-red-600" />
         <p className="font-black text-slate-900">¿Tienes un bono?</p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
         <input
           value={code}
           onChange={(event) => setCode(event.target.value.toUpperCase())}
           placeholder="Ej: PRIMERA10"
-          className="min-w-0 flex-1 rounded-xl border bg-white px-3 py-3 font-bold uppercase outline-none"
+          className="w-full min-w-0 rounded-xl border bg-white px-3 py-3 font-bold uppercase outline-none"
         />
 
         <button
           type="button"
           onClick={handleApply}
           disabled={loading}
-          className="inline-flex items-center justify-center rounded-xl bg-[#061b3a] px-4 py-3 font-black text-white disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center rounded-xl bg-[#061b3a] px-4 py-3 font-black text-white disabled:opacity-60 sm:w-auto"
         >
           {loading ? <Loader2 className="animate-spin" size={18} /> : "Aplicar"}
         </button>

@@ -11,7 +11,7 @@ export function DeliveryAddressForm({
   onChange,
 }: DeliveryAddressProps) {
   return (
-    <div className="rounded-3xl bg-white p-5 shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
       <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-900">
         <MapPin size={20} />
         ¿Dónde la entregamos?
@@ -39,7 +39,7 @@ export function DeliveryAddressForm({
           value={form.municipality}
           onChange={onChange}
           disabled={loadingZones}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
         >
           <option value="">
             {loadingZones
@@ -59,7 +59,7 @@ export function DeliveryAddressForm({
           value={form.delivery_zone_id}
           onChange={onChange}
           disabled={!form.municipality || municipalityHasNoZones}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
         >
           <option value="">
             {form.municipality
@@ -89,7 +89,7 @@ export function DeliveryAddressForm({
           value={form.exact_address}
           onChange={onChange}
           rows={4}
-          className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
         {showNotes && (
@@ -99,7 +99,7 @@ export function DeliveryAddressForm({
             value={form.notes}
             onChange={onChange}
             rows={4}
-            className="rounded-xl border px-4 py-3 outline-none focus:border-black"
+            className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
           />
         )}
       </div>
