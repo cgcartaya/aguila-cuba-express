@@ -6,9 +6,13 @@
    Selector de país (bandera + código de marcado) pegado a un
    input de teléfono. Al elegir el país se antepone su código
    automáticamente (+34, +52, etc.) y se valida la cantidad de
-   dígitos esperada para ese país — así no se repite lo que
-   pasó con el cliente de España cuyo teléfono no se sabía de
-   dónde era.
+   dígitos esperada para ese país.
+
+   NOTA TÉCNICA: se usa un <select> nativo del navegador (no
+   un desplegable armado a mano con posicionamiento absoluto),
+   a propósito, para que funcione garantizado en cualquier
+   navegador/dispositivo sin depender de z-index ni overflow
+   de contenedores padres.
 
    El valor final que se emite hacia el formulario (onChange,
    name="phone") es un solo string: "+34 612345678". Eso no
@@ -18,7 +22,7 @@
 
 import { useEffect, useState } from "react";
 
-import { DEFAULT_PHONE_COUNTRY, PHONE_COUNTRIES, type PhoneCountry } from "@/lib/constants/phone-countries";
+import { DEFAULT_PHONE_COUNTRY, PHONE_COUNTRIES, findPhoneCountry, type PhoneCountry } from "@/lib/constants/phone-countries";
 import FlagIcon from "@/components/tienda/FlagIcon";
 
 type PhoneCountryFieldProps = {
@@ -51,7 +55,6 @@ export default function PhoneCountryField({
 }: PhoneCountryFieldProps) {
   const [country, setCountry] = useState<PhoneCountry>(DEFAULT_PHONE_COUNTRY);
   const [nationalNumber, setNationalNumber] = useState("");
-  const [open, setOpen] = useState(false);
   const [touched, setTouched] = useState(false);
 
   // Solo se sincroniza desde afuera una vez (ej. si el form ya trae un
@@ -70,9 +73,9 @@ export default function PhoneCountryField({
     onChange({ target: { name, value: combined } } as React.ChangeEvent<HTMLInputElement>);
   }
 
-  function handleCountrySelect(nextCountry: PhoneCountry) {
+  function handleCountryChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const nextCountry = findPhoneCountry(event.target.value);
     setCountry(nextCountry);
-    setOpen(false);
     emit(nextCountry, nationalNumber);
   }
 
@@ -92,46 +95,21 @@ export default function PhoneCountryField({
           looksIncomplete ? "border-amber-400" : "border-gray-300"
         }`}
       >
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="Elegir país"
-            aria-expanded={open}
-            className="flex h-full items-center gap-1.5 rounded-l-xl border-r border-gray-200 bg-slate-50 px-3 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+        <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-l-xl border-r border-gray-200 bg-slate-50 px-2.5 py-3">
+          <FlagIcon countryCode={country.iso2} size={18} />
+          <select
+            value={country.iso2}
+            onChange={handleCountryChange}
+            aria-label="País del teléfono"
+            className="w-auto max-w-[4.5rem] bg-transparent text-sm font-bold text-slate-700 outline-none"
           >
-            <FlagIcon countryCode={country.iso2} size={18} />
-            <span>{country.dialCode}</span>
-          </button>
-
-          {open && (
-            <>
-              <button
-                type="button"
-                aria-label="Cerrar selector de país"
-                onClick={() => setOpen(false)}
-                className="fixed inset-0 z-[80] cursor-default"
-              />
-
-              <div className="absolute left-0 top-full z-[90] mt-2 w-56 overflow-hidden rounded-2xl bg-white py-1 shadow-xl ring-1 ring-black/5">
-                {PHONE_COUNTRIES.map((c) => (
-                  <button
-                    key={c.iso2}
-                    type="button"
-                    onClick={() => handleCountrySelect(c)}
-                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-bold transition hover:bg-slate-50 ${
-                      c.iso2 === country.iso2 ? "bg-slate-50 text-[#061b3a]" : "text-slate-600"
-                    }`}
-                  >
-                    <FlagIcon countryCode={c.iso2} size={18} />
-                    <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                    <span className="shrink-0 text-slate-400">{c.dialCode}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+            {PHONE_COUNTRIES.map((c) => (
+              <option key={c.iso2} value={c.iso2} title={c.name}>
+                {c.dialCode} {c.iso2.toUpperCase()}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <input
           name={name}
