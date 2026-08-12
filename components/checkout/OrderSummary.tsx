@@ -2,10 +2,12 @@ import {
   Check,
   CreditCard,
   Loader2,
+  LockKeyhole,
   MessageCircle,
   Package,
   ShoppingBag,
   Truck,
+  ShieldCheck,
 } from "lucide-react";
 import type { DeliveryZone } from "@/lib/services/settings";
 import type { CheckoutCartItem, CheckoutTotals } from "./types";
@@ -70,10 +72,14 @@ export function OrderSummary({
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
 
   return (
-    <aside className="h-fit min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
-      <h2 className="mb-4 text-lg font-bold text-gray-900">
-        Resumen de pedido
-      </h2>
+    <aside className="h-fit min-w-0 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] lg:sticky lg:top-5">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-blue-600">Tu compra</p>
+          <h2 className="mt-1 text-xl font-extrabold tracking-tight text-slate-950">Resumen del pedido</h2>
+        </div>
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700"><ShoppingBag size={19} /></span>
+      </div>
 
       <div className="space-y-3">
         {cart.map((item) => (
@@ -252,43 +258,45 @@ export function OrderSummary({
       )}
 
       {cardPaymentAvailable && (
-        <div className="mb-4">
-          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">¿Cómo prefieres pagar?</p>
+        <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-slate-500">Forma de pago</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">Elige la opción que prefieras</p>
+            </div>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-extrabold text-emerald-700"><LockKeyhole size={11} /> Seguro</span>
+          </div>
           <div className="grid min-w-0 gap-2.5 min-[390px]:grid-cols-2">
             <button
               type="button"
               onClick={() => onChangePayWith?.("card")}
-              className={`group relative flex min-w-0 flex-col items-center gap-1.5 overflow-hidden rounded-2xl border-2 px-3 py-3.5 text-sm font-black transition ${
+              className={`group relative min-w-0 overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all ${
                 payWith === "card"
-                  ? "border-transparent bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-600/30"
-                  : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50/50"
+                  ? "border-blue-600 bg-blue-600 text-white shadow-lg shadow-blue-600/20 ring-4 ring-blue-600/10"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50/40"
               }`}
             >
-              {payWith === "card" && (
-                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/25">
-                  <Check size={11} strokeWidth={3.5} />
-                </span>
-              )}
-              <CreditCard size={22} className={payWith === "card" ? "text-white" : "text-blue-600"} />
-              Tarjeta
+              <div className="flex items-center gap-2.5">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${payWith === "card" ? "bg-white/15" : "bg-blue-50 text-blue-600"}`}><CreditCard size={19} /></span>
+                <span className="min-w-0"><span className="block text-sm font-extrabold">Tarjeta</span><span className={`block truncate text-[10px] font-semibold ${payWith === "card" ? "text-blue-100" : "text-slate-400"}`}>Visa · Mastercard · Amex</span></span>
+              </div>
+              {payWith === "card" && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-blue-600"><Check size={12} strokeWidth={3.5} /></span>}
             </button>
 
             <button
               type="button"
               onClick={() => onChangePayWith?.("whatsapp")}
-              className={`group relative flex min-w-0 flex-col items-center gap-1.5 overflow-hidden rounded-2xl border-2 px-3 py-3.5 text-sm font-black transition ${
+              className={`group relative min-w-0 overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all ${
                 payWith === "whatsapp"
-                  ? "border-transparent bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-green-600/30"
-                  : "border-gray-200 bg-white text-gray-500 hover:border-green-200 hover:bg-green-50/50"
+                  ? "border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-4 ring-emerald-500/10"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40"
               }`}
             >
-              {payWith === "whatsapp" && (
-                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/25">
-                  <Check size={11} strokeWidth={3.5} />
-                </span>
-              )}
-              <MessageCircle size={22} className={payWith === "whatsapp" ? "text-white" : "text-green-600"} />
-              WhatsApp
+              <div className="flex items-center gap-2.5">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${payWith === "whatsapp" ? "bg-white/15" : "bg-emerald-50 text-emerald-600"}`}><MessageCircle size={19} /></span>
+                <span><span className="block text-sm font-extrabold">WhatsApp</span><span className={`block text-[10px] font-semibold ${payWith === "whatsapp" ? "text-emerald-50" : "text-slate-400"}`}>Coordinar pedido</span></span>
+              </div>
+              {payWith === "whatsapp" && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-emerald-600"><Check size={12} strokeWidth={3.5} /></span>}
             </button>
           </div>
         </div>
@@ -322,6 +330,10 @@ export function OrderSummary({
           </>
         )}
       </button>
+
+      <div className="mt-3 flex items-center justify-center gap-2 text-center text-[11px] font-semibold text-slate-400">
+        <ShieldCheck size={13} className="text-emerald-500" /> Tus datos se usan únicamente para procesar este pedido.
+      </div>
     </aside>
   );
 }

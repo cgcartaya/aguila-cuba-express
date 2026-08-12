@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/contexts/CartContext";
@@ -585,21 +585,33 @@ ${orderUrl}`);
   const showDelivery = !isYoyo || settings?.show_delivery_price === true;
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-[calc(7rem+env(safe-area-inset-bottom))]">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f8fbff_0%,#f8fafc_38%,#f8fafc_100%)] pb-[calc(7rem+env(safe-area-inset-bottom))]">
       <div className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6">
         <Link href={cartUrl} className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-600">
           <ArrowLeft size={18} />
           Volver al carrito
         </Link>
 
-        <h1 className="mb-6 text-2xl font-bold text-gray-900">Checkout</h1>
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs font-extrabold text-blue-700">
+              <Sparkles size={14} /> Finaliza tu compra
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 sm:text-4xl">Checkout seguro</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 sm:text-base">Completa los datos de entrega y elige cómo prefieres pagar. Tu pedido quedará listo en pocos pasos.</p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-bold text-slate-600">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm"><LockKeyhole size={14} className="text-emerald-600" /> Pago protegido</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-sm"><ShieldCheck size={14} className="text-blue-600" /> Compra segura</span>
+          </div>
+        </div>
 
         {loadingCheckout ? (
           <div className="rounded-3xl bg-white p-8 text-center font-semibold text-gray-500 shadow-sm">
             Cargando checkout...
           </div>
         ) : (
-          <div className="grid min-w-0 gap-6 lg:grid-cols-3">
+          <div className="grid min-w-0 items-start gap-7 lg:grid-cols-3">
             <section className="min-w-0 space-y-6 lg:col-span-2">
               {isYoyo && settings && (
                 <CheckoutMethodSelector

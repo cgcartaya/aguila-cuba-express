@@ -11,7 +11,7 @@ export function DeliveryAddressForm({
   onChange,
 }: DeliveryAddressProps) {
   return (
-    <div className="min-w-0 overflow-hidden rounded-3xl bg-white p-5 shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.06)] sm:p-6">
       <h2 className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-900">
         <MapPin size={20} />
         ¿Dónde la entregamos?
@@ -39,7 +39,7 @@ export function DeliveryAddressForm({
           value={form.municipality}
           onChange={onChange}
           disabled={loadingZones}
-          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
+          className="w-full min-w-0 rounded-xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:bg-gray-100"
         >
           <option value="">
             {loadingZones
@@ -59,7 +59,7 @@ export function DeliveryAddressForm({
           value={form.delivery_zone_id}
           onChange={onChange}
           disabled={!form.municipality || municipalityHasNoZones}
-          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black disabled:bg-gray-100"
+          className="w-full min-w-0 rounded-xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 disabled:bg-gray-100"
         >
           <option value="">
             {form.municipality
@@ -89,7 +89,7 @@ export function DeliveryAddressForm({
           value={form.exact_address}
           onChange={onChange}
           rows={4}
-          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
+          className="w-full min-w-0 rounded-xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
         />
 
         {showNotes && (
@@ -99,7 +99,7 @@ export function DeliveryAddressForm({
             value={form.notes}
             onChange={onChange}
             rows={4}
-            className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
+            className="w-full min-w-0 rounded-xl border border-slate-200 px-4 py-3.5 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
         )}
       </div>

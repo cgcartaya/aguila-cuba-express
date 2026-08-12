@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import "./globals.css";
+import { manrope } from "./fonts";
 
 import { CartProvider } from "@/contexts/CartContext";
 import { StoreProvider } from "@/contexts/StoreContext";
@@ -33,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="h-full antialiased">
+    <html lang="es" className={`${manrope.variable} h-full antialiased`}>
       <body>
         <StoreProvider>
           <CurrencyProvider>
