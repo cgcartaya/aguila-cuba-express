@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { CURRENCIES, CURRENCY_LIST, useCurrency, type CurrencyCode } from "@/contexts/CurrencyContext";
+import FlagIcon from "@/components/tienda/FlagIcon";
 
 type CurrencyFlagSelectorProps = {
   className?: string;
@@ -21,10 +22,10 @@ export default function CurrencyFlagSelector({ className }: CurrencyFlagSelector
         aria-expanded={open}
         className={
           className ??
-          "flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-xl shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
+          "flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 shadow-sm backdrop-blur transition active:scale-95 sm:h-[46px] sm:w-[46px]"
         }
       >
-        <span aria-hidden>{CURRENCIES[currency].flag}</span>
+        <FlagIcon countryCode={CURRENCIES[currency].countryCode} size={22} />
       </button>
 
       {open && (
@@ -50,9 +51,7 @@ export default function CurrencyFlagSelector({ className }: CurrencyFlagSelector
                   code === currency ? "bg-slate-50 text-[#061b3a]" : "text-slate-600"
                 }`}
               >
-                <span className="text-lg" aria-hidden>
-                  {CURRENCIES[code].flag}
-                </span>
+                <FlagIcon countryCode={CURRENCIES[code].countryCode} size={20} />
                 {code}
               </button>
             ))}

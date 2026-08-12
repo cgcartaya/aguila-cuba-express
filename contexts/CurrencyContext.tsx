@@ -30,12 +30,15 @@ export type CurrencyCode = "USD" | SupportedCurrency;
 
 export const CURRENCY_LIST: CurrencyCode[] = ["USD", ...SUPPORTED_CURRENCIES];
 
-export const CURRENCIES: Record<CurrencyCode, { locale: string; label: string; symbol: string; flag: string }> = {
-  USD: { locale: "en-US", label: "Dólar estadounidense (USD)", symbol: "$", flag: "🇺🇸" },
-  EUR: { locale: "es-ES", label: "Euro (EUR)", symbol: "€", flag: "🇪🇸" },
-  MXN: { locale: "es-MX", label: "Peso mexicano (MXN)", symbol: "$", flag: "🇲🇽" },
-  GBP: { locale: "en-GB", label: "Libra esterlina (GBP)", symbol: "£", flag: "🇬🇧" },
-  CAD: { locale: "en-CA", label: "Dólar canadiense (CAD)", symbol: "$", flag: "🇨🇦" },
+export const CURRENCIES: Record<
+  CurrencyCode,
+  { locale: string; label: string; symbol: string; countryCode: string }
+> = {
+  USD: { locale: "en-US", label: "Dólar estadounidense (USD)", symbol: "$", countryCode: "us" },
+  EUR: { locale: "es-ES", label: "Euro (EUR)", symbol: "€", countryCode: "es" },
+  MXN: { locale: "es-MX", label: "Peso mexicano (MXN)", symbol: "$", countryCode: "mx" },
+  GBP: { locale: "en-GB", label: "Libra esterlina (GBP)", symbol: "£", countryCode: "gb" },
+  CAD: { locale: "en-CA", label: "Dólar canadiense (CAD)", symbol: "$", countryCode: "ca" },
 };
 
 // Se usan mientras cargan las tasas reales del API, o si el fetch falla.

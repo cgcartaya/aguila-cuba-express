@@ -1,6 +1,7 @@
 "use client";
 
 import { CURRENCIES, CURRENCY_LIST, useCurrency, type CurrencyCode } from "@/contexts/CurrencyContext";
+import FlagIcon from "@/components/tienda/FlagIcon";
 
 type CurrencySelectorProps = {
   className?: string;
@@ -16,9 +17,7 @@ export default function CurrencySelector({ className }: CurrencySelectorProps) {
         "flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700"
       }
     >
-      <span className="shrink-0 text-lg" aria-hidden>
-        {CURRENCIES[currency].flag}
-      </span>
+      <FlagIcon countryCode={CURRENCIES[currency].countryCode} size={20} className="shrink-0 rounded-[2px] object-cover shadow-sm" />
 
       <select
         value={currency}
@@ -28,11 +27,10 @@ export default function CurrencySelector({ className }: CurrencySelectorProps) {
       >
         {CURRENCY_LIST.map((code) => (
           <option key={code} value={code}>
-            {CURRENCIES[code].flag} {CURRENCIES[code].label}
+            {CURRENCIES[code].label}
           </option>
         ))}
       </select>
     </label>
   );
 }
-

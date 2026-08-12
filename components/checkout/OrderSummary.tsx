@@ -1,4 +1,5 @@
 import {
+  Check,
   CreditCard,
   Loader2,
   MessageCircle,
@@ -253,24 +254,41 @@ export function OrderSummary({
       {cardPaymentAvailable && (
         <div className="mb-4">
           <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">¿Cómo prefieres pagar?</p>
-          <div className="grid min-w-0 gap-2 min-[390px]:grid-cols-2">
+          <div className="grid min-w-0 gap-2.5 min-[390px]:grid-cols-2">
             <button
               type="button"
               onClick={() => onChangePayWith?.("card")}
-              className={`flex min-w-0 items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
-                payWith === "card" ? "border-blue-500 bg-blue-50 text-blue-800" : "border-gray-200 bg-white text-gray-600"
+              className={`group relative flex min-w-0 flex-col items-center gap-1.5 overflow-hidden rounded-2xl border-2 px-3 py-3.5 text-sm font-black transition ${
+                payWith === "card"
+                  ? "border-transparent bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-600/30"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-blue-200 hover:bg-blue-50/50"
               }`}
             >
-              <CreditCard size={17} /> Tarjeta
+              {payWith === "card" && (
+                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/25">
+                  <Check size={11} strokeWidth={3.5} />
+                </span>
+              )}
+              <CreditCard size={22} className={payWith === "card" ? "text-white" : "text-blue-600"} />
+              Tarjeta
             </button>
+
             <button
               type="button"
               onClick={() => onChangePayWith?.("whatsapp")}
-              className={`flex min-w-0 items-center justify-center gap-2 rounded-2xl border-2 px-3 py-3 text-sm font-bold transition ${
-                payWith === "whatsapp" ? "border-green-500 bg-green-50 text-green-800" : "border-gray-200 bg-white text-gray-600"
+              className={`group relative flex min-w-0 flex-col items-center gap-1.5 overflow-hidden rounded-2xl border-2 px-3 py-3.5 text-sm font-black transition ${
+                payWith === "whatsapp"
+                  ? "border-transparent bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-green-600/30"
+                  : "border-gray-200 bg-white text-gray-500 hover:border-green-200 hover:bg-green-50/50"
               }`}
             >
-              <MessageCircle size={17} /> WhatsApp
+              {payWith === "whatsapp" && (
+                <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-white/25">
+                  <Check size={11} strokeWidth={3.5} />
+                </span>
+              )}
+              <MessageCircle size={22} className={payWith === "whatsapp" ? "text-white" : "text-green-600"} />
+              WhatsApp
             </button>
           </div>
         </div>
@@ -281,8 +299,10 @@ export function OrderSummary({
         onClick={onSubmit}
         disabled={loading}
         aria-disabled={loading}
-        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
-          payWith === "card" ? "bg-blue-700 hover:bg-blue-800" : "bg-green-600 hover:bg-green-700"
+        className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${
+          payWith === "card"
+            ? "bg-gradient-to-r from-blue-600 to-indigo-700 shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-800"
+            : "bg-gradient-to-r from-emerald-500 to-green-600 shadow-green-600/25 hover:from-emerald-600 hover:to-green-700"
         }`}
       >
         {loading ? (

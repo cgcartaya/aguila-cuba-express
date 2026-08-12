@@ -1,5 +1,6 @@
 import { UserRound } from "lucide-react";
 import type { CheckoutForm } from "./types";
+import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 
 type Props = {
   form: CheckoutForm;
@@ -34,12 +35,12 @@ export function CustomerInfoForm({ form, onChange }: Props) {
           className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black"
         />
 
-        <input
+        <PhoneCountryField
           name="phone"
-          placeholder="Teléfono *"
           value={form.phone}
           onChange={onChange}
-          className="w-full min-w-0 rounded-xl border px-4 py-3 outline-none focus:border-black md:col-span-2"
+          placeholder="Teléfono *"
+          required
         />
       </div>
     </div>
