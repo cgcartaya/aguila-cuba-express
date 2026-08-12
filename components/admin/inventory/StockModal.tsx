@@ -75,6 +75,7 @@ export default function StockModal({
       .from("inventory_movements")
       .insert({
         product_id: product.id,
+        store_id: product.store_id,
         movement_type: isDecrease ? "exit" : "adjustment",
         quantity: stock - previousStock,
         previous_stock: previousStock,

@@ -67,6 +67,7 @@ export default function StockEntryModal({
       .from("inventory_movements")
       .insert({
         product_id: product.id,
+        store_id: product.store_id,
         movement_type: "entry",
         quantity,
         previous_stock: previousStock,
