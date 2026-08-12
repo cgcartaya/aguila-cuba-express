@@ -11,6 +11,7 @@ import {
   normalizeQuantityPriceTiers,
 } from "@/lib/storefront/product-quantity-pricing";
 import { useStore } from "@/hooks/useStore";
+import Price from "@/components/tienda/Price";
 
 type ProductInfoProps = {
   name: string;
@@ -80,12 +81,12 @@ export default function ProductInfo({
       <div className="mt-4">
         <div className="flex flex-wrap items-baseline gap-3">
           <p className="text-3xl font-black text-red-600">
-            ${effectivePrice.toFixed(2)}
+            <Price usd={effectivePrice} />
           </p>
 
           {hasQuantityDiscount && (
             <span className="text-base font-bold text-slate-400 line-through">
-              ${displayBasePrice.toFixed(2)}
+              <Price usd={displayBasePrice} />
             </span>
           )}
         </div>
@@ -101,8 +102,8 @@ export default function ProductInfo({
                     : "bg-slate-100 text-slate-600"
                 }`}
               >
-                {tier.min_quantity}+ por $
-                {applyPlatformFee(tier.unit_price, feePercent).toFixed(2)} c/u
+                {tier.min_quantity}+ por{" "}
+                <Price usd={applyPlatformFee(tier.unit_price, feePercent)} /> c/u
               </span>
             ))}
           </div>

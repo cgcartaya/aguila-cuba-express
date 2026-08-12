@@ -22,6 +22,8 @@ import {
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import Price from "@/components/tienda/Price";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import { getHomeFeaturedProductsByStoreId } from "@/lib/services/products";
 import { getPurchaseQuantityLimit } from "@/lib/storefront/product-quantity-pricing";
@@ -54,6 +56,7 @@ export default function CartPageClient() {
     clearCart,
   } = useCart();
   const { store } = useStore();
+  const { currency } = useCurrency();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const recommendationsRef = useRef<HTMLDivElement>(null);
 
@@ -262,7 +265,7 @@ export default function CartPageClient() {
                           {item.name}
                         </h2>
                         <p className="mt-1 text-sm font-semibold text-slate-500">
-                          Precio unidad: ${Number(item.price).toFixed(2)}
+                          Precio unidad: <Price usd={Number(item.price)} />
                         </p>
                         {item.type === "product" &&
                           Number(item.base_price ?? item.price) > Number(item.price) && (
@@ -314,7 +317,7 @@ export default function CartPageClient() {
                       <div className="border-t border-slate-100 pt-3 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0 sm:text-right">
                         <p className="text-xs font-bold text-slate-400">Subtotal</p>
                         <p className="mt-1 text-xl font-black">
-                          ${(Number(item.price) * item.quantity).toFixed(2)}
+                          <Price usd={Number(item.price) * item.quantity} />
                         </p>
                       </div>
                     </div>
@@ -381,7 +384,7 @@ export default function CartPageClient() {
                           </h3>
                           <div className="mt-3 flex items-center justify-between gap-2">
                             <span className="font-black">
-                              ${Number(product.price).toFixed(2)}
+                              <Price usd={Number(product.price)} />
                             </span>
                             <button
                               type="button"
@@ -412,7 +415,7 @@ export default function CartPageClient() {
               <div className="mt-6 space-y-4 text-sm">
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-white/65">Subtotal</span>
-                  <span className="font-black">${total.toFixed(2)}</span>
+                  <span className="font-black"><Price usd={total} /></span>
                 </div>
                 <div className="flex items-start justify-between gap-5">
                   <span className="text-white/65">Entrega</span>
@@ -425,8 +428,13 @@ export default function CartPageClient() {
               <div className="my-6 h-px bg-white/15" />
               <div className="flex items-end justify-between gap-4">
                 <span className="text-lg font-black">Total</span>
-                <span className="text-3xl font-black">${total.toFixed(2)}</span>
+                <span className="text-3xl font-black"><Price usd={total} /></span>
               </div>
+              {currency !== "USD" && (
+                <p className="mt-2 text-right text-xs font-semibold text-white/50">
+                  ≈ ${total.toFixed(2)} USD — el cobro se hace en dólares
+                </p>
+              )}
 
               <Link
                 href={checkoutUrl}
@@ -451,7 +459,7 @@ export default function CartPageClient() {
                   <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
                     Total estimado
                   </p>
-                  <p className="text-xl font-black">${total.toFixed(2)}</p>
+                  <p className="text-xl font-black"><Price usd={total} /></p>
                 </div>
                 <Link
                   href={checkoutUrl}

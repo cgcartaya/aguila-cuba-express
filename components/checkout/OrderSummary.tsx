@@ -12,6 +12,8 @@ import {
   DiscountCouponBox,
   type AppliedDiscount,
 } from "@/components/checkout/DiscountCouponBox";
+import Price from "@/components/tienda/Price";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 type Props = {
   cart: CheckoutCartItem[];
@@ -62,6 +64,7 @@ export function OrderSummary({
   payWith = "whatsapp",
   onChangePayWith,
 }: Props) {
+  const { currency } = useCurrency();
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
 
@@ -90,7 +93,7 @@ export function OrderSummary({
 
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                 <span className="font-bold text-gray-600">
-                  ${Number(item.price).toFixed(2)} c/u
+                  <Price usd={Number(item.price)} /> c/u
                 </span>
 
                 {item.type === "product" &&
@@ -98,7 +101,7 @@ export function OrderSummary({
                     Number(item.price) && (
                     <>
                       <span className="text-gray-400 line-through">
-                        ${Number(item.base_price ?? item.price).toFixed(2)}
+                        <Price usd={Number(item.base_price ?? item.price)} />
                       </span>
 
                       <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-black text-emerald-700">
@@ -118,19 +121,21 @@ export function OrderSummary({
 
             <div className="shrink-0 text-right">
               <p className="font-semibold">
-                ${(Number(item.price) * item.quantity).toFixed(2)}
+                <Price usd={Number(item.price) * item.quantity} />
               </p>
 
               {item.type === "product" &&
                 Number(item.base_price ?? item.price) >
                   Number(item.price) && (
                   <p className="mt-1 text-[11px] font-bold text-emerald-700">
-                    Ahorras $
-                    {(
-                      (Number(item.base_price ?? item.price) -
-                        Number(item.price)) *
-                      item.quantity
-                    ).toFixed(2)}
+                    Ahorras{" "}
+                    <Price
+                      usd={
+                        (Number(item.base_price ?? item.price) -
+                          Number(item.price)) *
+                        item.quantity
+                      }
+                    />
                   </p>
                 )}
             </div>
@@ -157,7 +162,7 @@ export function OrderSummary({
       <div className="space-y-3 text-sm">
         <div className="flex items-center justify-between">
           <span className="text-gray-500">Subtotal</span>
-          <span className="font-bold">${totals.subtotal.toFixed(2)}</span>
+          <span className="font-bold"><Price usd={totals.subtotal} /></span>
         </div>
 
         {showDelivery && (
@@ -167,11 +172,13 @@ export function OrderSummary({
               {deliveryLabel}
             </span>
             <span className="font-bold">
-              {deliveryRequiresZone && !selectedZone
-                ? "Selecciona zona"
-                : totals.shippingCost === 0
-                  ? "Gratis"
-                  : `$${totals.shippingCost.toFixed(2)}`}
+              {deliveryRequiresZone && !selectedZone ? (
+                "Selecciona zona"
+              ) : totals.shippingCost === 0 ? (
+                "Gratis"
+              ) : (
+                <Price usd={totals.shippingCost} />
+              )}
             </span>
           </div>
         )}
@@ -179,7 +186,7 @@ export function OrderSummary({
         {appliedDiscount && (
           <div className="flex items-center justify-between font-bold text-green-700">
             <span>Descuento ({appliedDiscount.code})</span>
-            <span>-${discountAmount.toFixed(2)}</span>
+            <span>-<Price usd={discountAmount} /></span>
           </div>
         )}
 
@@ -205,18 +212,26 @@ export function OrderSummary({
 
         {selectedZone && totals.subtotal < totals.minimumOrder && (
           <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600">
-            La compra mínima para esta zona es de ${totals.minimumOrder.toFixed(2)}.
-            Te faltan ${totals.missingAmount.toFixed(2)}.
+            La compra mínima para esta zona es de <Price usd={totals.minimumOrder} />.
+            Te faltan <Price usd={totals.missingAmount} />.
           </div>
         )}
       </div>
 
       <div className="my-5 border-t" />
 
-      <div className="mb-5 flex items-center justify-between text-lg font-bold">
+      <div className="flex items-center justify-between text-lg font-bold">
         <span>Total</span>
-        <span>${finalTotal.toFixed(2)}</span>
+        <span><Price usd={finalTotal} /></span>
       </div>
+
+      {currency !== "USD" && (
+        <p className="mt-1 text-right text-[11px] font-semibold text-gray-400">
+          ≈ ${finalTotal.toFixed(2)} USD — el cobro se hace en dólares
+        </p>
+      )}
+
+      <div className="mb-5" />
 
       {error && (
         <div

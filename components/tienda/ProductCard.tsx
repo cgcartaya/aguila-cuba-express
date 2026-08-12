@@ -12,6 +12,7 @@ import { Minus, Plus, Star } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import Price from "@/components/tienda/Price";
 import type { Product } from "@/types/cart";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
@@ -161,20 +162,20 @@ export default function ProductCard({
         <div className="mt-2">
           <div className="flex flex-wrap items-baseline gap-2">
             <p className="text-lg font-black text-[#061b3a]">
-              ${effectivePrice.toFixed(2)}
+              <Price usd={effectivePrice} />
             </p>
 
             {hasQuantityDiscount && (
               <span className="text-xs font-bold text-slate-400 line-through">
-                ${displayBasePrice.toFixed(2)}
+                <Price usd={displayBasePrice} />
               </span>
             )}
           </div>
 
           {nextTier && (
             <p className="mt-1 text-[11px] font-bold text-emerald-700">
-              {nextTier.min_quantity}+ unidades: $
-              {applyPlatformFee(nextTier.unit_price, feePercent).toFixed(2)} c/u
+              {nextTier.min_quantity}+ unidades:{" "}
+              <Price usd={applyPlatformFee(nextTier.unit_price, feePercent)} /> c/u
             </p>
           )}
 

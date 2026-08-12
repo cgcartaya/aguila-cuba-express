@@ -4,6 +4,7 @@ import "./globals.css";
 
 import { CartProvider } from "@/contexts/CartContext";
 import { StoreProvider } from "@/contexts/StoreContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { buildPerlaMetadata } from "@/lib/saas/store-metadata";
 
 /*
@@ -35,7 +36,9 @@ export default function RootLayout({
     <html lang="es" className="h-full antialiased">
       <body>
         <StoreProvider>
-          <CartProvider>{children}</CartProvider>
+          <CurrencyProvider>
+            <CartProvider>{children}</CartProvider>
+          </CurrencyProvider>
         </StoreProvider>
       </body>
     </html>

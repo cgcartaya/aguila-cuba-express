@@ -20,6 +20,7 @@ import {
 
 import { useStore } from "@/hooks/useStore";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
+import CurrencySelector from "@/components/tienda/CurrencySelector";
 
 type HeaderProps = {
   cartCount: number;
@@ -168,6 +169,13 @@ export default function Header({ cartCount }: HeaderProps) {
           >
             <X size={22} />
           </button>
+        </div>
+
+        <div className="px-4 pt-4">
+          <p className="mb-2 text-xs font-black uppercase tracking-wider text-slate-400">
+            Moneda
+          </p>
+          <CurrencySelector />
         </div>
 
         <nav className="space-y-2 px-4 py-5">
