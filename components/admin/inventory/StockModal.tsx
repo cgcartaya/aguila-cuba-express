@@ -71,17 +71,36 @@ export default function StockModal({
       ? EXIT_REASONS.find((r) => r.value === reason)?.label || reason
       : null;
 
-    await supabase.from("inventory_movements").insert({
-      product_id: product.id,
-      movement_type: isDecrease ? "exit" : "adjustment",
-      quantity: stock - previousStock,
-      previous_stock: previousStock,
-      new_stock: stock,
-      reason: reasonLabel,
-      notes,
-      created_by_email: createdByEmail,
-    });
+    const { error: movementError } = await supabase
+      .from("inventory_movements")
+      .insert({
+        product_id: product.id,
+        movement_type: isDecrease ? "exit" : "adjustment",
+        quantity: stock - previousStock,
+        previous_stock: previousStock,
+        new_stock: stock,
+        reason: reasonLabel,
+        notes,
+        created_by_email: createdByEmail,
+      });
 
+    if (movementError) {
+      console.error("Error registrando movimiento de inventario:", movementError);
+      // El stock ya se actualizó arriba, así que no revertimos —
+      // pero antes esto fallaba 100% en silencio (ni siquiera se
+      // capturaba el error), por eso un ajuste real podía no dejar
+      // ningún rastro en el historial sin que nadie se enterara.
+      alert(
+        "El stock se actualizó, pero no se pudo guardar el registro en el historial de inventario: " +
+          (movementError.message || "error desconocido") +
+          ". Avísale a soporte."
+      );
+      setSaving(false);
+      onSaved?.(stock);
+      return;
+    }
+
+    setSaving(false);
     onSaved?.(stock);
   }
 
