@@ -21,6 +21,7 @@ import {
 import { useStore } from "@/hooks/useStore";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import CurrencySelector from "@/components/tienda/CurrencySelector";
+import CurrencyFlagSelector from "@/components/tienda/CurrencyFlagSelector";
 
 type HeaderProps = {
   cartCount: number;
@@ -70,9 +71,9 @@ export default function Header({ cartCount }: HeaderProps) {
       >
         <div
           className="
-            mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[40px_minmax(0,1fr)_40px]
+            mx-auto grid h-[58px] w-full max-w-7xl grid-cols-[40px_minmax(0,1fr)_auto]
             items-center gap-2 px-2
-            sm:grid-cols-[46px_minmax(0,1fr)_46px] sm:gap-3 sm:px-4
+            sm:grid-cols-[46px_minmax(0,1fr)_auto] sm:gap-3 sm:px-4
           "
         >
           <button
@@ -116,19 +117,23 @@ export default function Header({ cartCount }: HeaderProps) {
             )}
           </label>
 
-          <Link
-            href={cartUrl}
-            aria-label="Carrito"
-            className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
-          >
-            <ShoppingCart size={25} />
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <CurrencyFlagSelector />
 
-            {cartCount > 0 && (
-              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white shadow">
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
-            )}
-          </Link>
+            <Link
+              href={cartUrl}
+              aria-label="Carrito"
+              className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#061b3a] shadow-sm transition active:scale-95 sm:h-[46px] sm:w-[46px]"
+            >
+              <ShoppingCart size={25} />
+
+              {cartCount > 0 && (
+                <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black leading-none text-white shadow">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </div>
       </header>
 

@@ -1,7 +1,5 @@
 "use client";
 
-import { Coins } from "lucide-react";
-
 import { CURRENCIES, CURRENCY_LIST, useCurrency, type CurrencyCode } from "@/contexts/CurrencyContext";
 
 type CurrencySelectorProps = {
@@ -18,7 +16,9 @@ export default function CurrencySelector({ className }: CurrencySelectorProps) {
         "flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700"
       }
     >
-      <Coins size={16} className="shrink-0 text-slate-400" />
+      <span className="shrink-0 text-lg" aria-hidden>
+        {CURRENCIES[currency].flag}
+      </span>
 
       <select
         value={currency}
@@ -28,10 +28,11 @@ export default function CurrencySelector({ className }: CurrencySelectorProps) {
       >
         {CURRENCY_LIST.map((code) => (
           <option key={code} value={code}>
-            {CURRENCIES[code].label}
+            {CURRENCIES[code].flag} {CURRENCIES[code].label}
           </option>
         ))}
       </select>
     </label>
   );
 }
+
