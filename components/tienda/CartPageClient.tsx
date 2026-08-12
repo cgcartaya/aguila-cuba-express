@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   Minus,
   Package,
@@ -53,6 +55,7 @@ export default function CartPageClient() {
   } = useCart();
   const { store } = useStore();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const recommendationsRef = useRef<HTMLDivElement>(null);
 
   const isDefaultStore = store?.slug === "aguila";
   const storeBaseUrl =
@@ -142,14 +145,21 @@ export default function CartPageClient() {
     }
   }
 
+  function scrollRecommendations(direction: "left" | "right") {
+    recommendationsRef.current?.scrollBy({
+      left: direction === "left" ? -420 : 420,
+      behavior: "smooth",
+    });
+  }
+
   return (
     <main className="min-h-screen bg-[#f5f7fb] px-4 pb-28 pt-6 text-[#061b3a] sm:pt-8 lg:pb-8">
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto mb-8 flex max-w-xl items-center justify-between">
           {[
             { label: "Carrito", icon: ShoppingBag, active: true },
-            { label: "Entrega", icon: Truck, active: false },
             { label: "Pago", icon: CreditCard, active: false },
+            { label: "Entrega", icon: Truck, active: false },
           ].map((step, index) => {
             const Icon = step.icon;
             return (
@@ -314,19 +324,43 @@ export default function CartPageClient() {
 
               {recommendations.length > 0 && (
                 <section className="mt-8">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
-                      <Sparkles size={17} />
-                    </span>
-                    <div>
-                      <h2 className="text-xl font-black">Completa tu pedido</h2>
-                      <p className="text-xs font-semibold text-slate-500">
-                        Productos destacados de esta tienda
-                      </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                        <Sparkles size={17} />
+                      </span>
+                      <div>
+                        <h2 className="text-xl font-black">Completa tu pedido</h2>
+                        <p className="text-xs font-semibold text-slate-500">
+                          Productos destacados de esta tienda
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => scrollRecommendations("left")}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-[#061b3a] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"
+                        aria-label="Ver productos anteriores"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollRecommendations("right")}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-[#061b3a] shadow-sm transition hover:border-blue-300 hover:bg-blue-50"
+                        aria-label="Ver más productos"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <div
+                    ref={recommendationsRef}
+                    className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 pr-3 [scrollbar-width:none] touch-pan-x [&::-webkit-scrollbar]:hidden"
+                  >
                     {recommendations.map((product) => (
                       <article
                         key={product.id}
@@ -381,9 +415,9 @@ export default function CartPageClient() {
                   <span className="font-black">${total.toFixed(2)}</span>
                 </div>
                 <div className="flex items-start justify-between gap-5">
-                  <span className="text-white/65">Envío</span>
+                  <span className="text-white/65">Entrega</span>
                   <span className="max-w-[190px] text-right text-xs font-semibold text-white/75">
-                    Se calcula en el siguiente paso
+                    Se coordina después del pago
                   </span>
                 </div>
               </div>
@@ -403,7 +437,7 @@ export default function CartPageClient() {
 
               <div className="mt-6 space-y-3 border-t border-white/15 pt-5 text-sm font-semibold text-white/85">
                 <p className="flex items-center gap-3"><ShieldCheck size={18} /> Pago seguro</p>
-                <p className="flex items-center gap-3"><Truck size={18} /> Opciones de entrega en el siguiente paso</p>
+                <p className="flex items-center gap-3"><Truck size={18} /> Entrega coordinada después del pago</p>
                 <p className="flex items-center gap-3"><CheckCircle2 size={18} /> Confirmación antes de finalizar</p>
               </div>
               <p className="mt-5 text-xs leading-5 text-white/50">
