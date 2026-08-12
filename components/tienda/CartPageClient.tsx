@@ -445,7 +445,7 @@ export default function CartPageClient() {
               </p>
             </aside>
 
-            <div className="fixed inset-x-0 bottom-[88px] z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_rgba(6,27,58,0.12)] backdrop-blur lg:hidden">
+            <div className="fixed inset-x-0 bottom-[64px] z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_rgba(6,27,58,0.12)] backdrop-blur lg:hidden">
               <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
