@@ -153,7 +153,7 @@ export default function CartPageClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] pt-6 text-[#061b3a] sm:pt-8 lg:pb-8">
+    <main className="min-h-screen bg-[#f5f7fb] px-4 pb-[calc(9rem+env(safe-area-inset-bottom))] pt-6 text-[#061b3a] sm:pt-8 lg:pb-8">
       <div className="mx-auto max-w-6xl">
         <div className="mx-auto mb-8 flex max-w-xl items-center justify-between">
           {[
@@ -359,7 +359,7 @@ export default function CartPageClient() {
 
                   <div
                     ref={recommendationsRef}
-                    className="mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 pr-3 [scrollbar-width:none] touch-pan-x [&::-webkit-scrollbar]:hidden"
+                    className="mt-4 flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-3 pr-3 [scrollbar-width:none] [touch-action:pan-x_pan-y] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
                   >
                     {recommendations.map((product) => (
                       <article
@@ -445,7 +445,7 @@ export default function CartPageClient() {
               </p>
             </aside>
 
-            <div className="fixed inset-x-0 bottom-[64px] z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-12px_30px_rgba(6,27,58,0.12)] backdrop-blur lg:hidden">
+            <div className="fixed inset-x-0 bottom-[64px] z-40 border-t border-slate-200 bg-white p-3 shadow-[0_-8px_20px_rgba(6,27,58,0.10)] lg:hidden">
               <div className="mx-auto flex max-w-xl items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
@@ -455,7 +455,7 @@ export default function CartPageClient() {
                 </div>
                 <Link
                   href={checkoutUrl}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3.5 text-sm font-black text-white shadow-lg transition active:scale-[0.98]"
+                  className="flex min-h-12 touch-manipulation select-none items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white shadow-lg transition active:scale-[0.98]"
                 >
                   Continuar <ArrowRight size={17} />
                 </Link>
