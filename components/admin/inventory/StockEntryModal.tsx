@@ -79,10 +79,19 @@ export default function StockEntryModal({
 
     if (movementError) {
       console.error("Error registrando movimiento:", movementError);
-      /*
-        No bloqueamos la operación porque el stock ya fue actualizado.
-        Más adelante conviene envolver esto en una RPC/transacción.
-      */
+      // El stock ya se actualizó (arriba), así que no revertimos la
+      // operación — pero si el registro del historial falla, el
+      // usuario debe enterarse en el momento, no descubrirlo meses
+      // después al ver el historial vacío (como pasó con la columna
+      // "supplier" que faltaba en la tabla).
+      alert(
+        "El stock se actualizó, pero no se pudo guardar el registro en el historial de inventario: " +
+          (movementError.message || "error desconocido") +
+          ". Avísale a soporte."
+      );
+      onSaved?.(newStock);
+      setSaving(false);
+      return;
     }
 
     alert("Entrada registrada correctamente");
