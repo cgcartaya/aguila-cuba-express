@@ -253,7 +253,8 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    setActiveOrders((prev) => [...prev, ...(await attachCustomers(data || []))]);
+    const merged = await attachCustomers(data || []);
+    setActiveOrders((prev) => [...prev, ...merged]);
     setLoadingMore(false);
   }, [activeStore?.id, activeOrders.length]);
 
@@ -276,7 +277,8 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    setDeletedOrders((prev) => [...prev, ...(await attachCustomers(data || []))]);
+    const merged = await attachCustomers(data || []);
+    setDeletedOrders((prev) => [...prev, ...merged]);
     setLoadingMore(false);
   }, [activeStore?.id, deletedOrders.length]);
 
