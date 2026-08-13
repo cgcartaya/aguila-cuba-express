@@ -26,6 +26,7 @@ const emptyForm = {
   slogan: "",
   phone: "",
   whatsapp: "",
+  zelle_info: "",
   email: "",
   order_notification_email: "",
   address: "",
@@ -93,6 +94,7 @@ export default function AdminGeneralSettingsPage() {
           slogan: data?.slogan || "",
           phone: data?.phone || "",
           whatsapp: data?.whatsapp || "",
+          zelle_info: data?.zelle_info || "",
           email: data?.email || "",
           order_notification_email: data?.order_notification_email || "",
           address: data?.address || "",
@@ -230,6 +232,13 @@ export default function AdminGeneralSettingsPage() {
               value={form.whatsapp}
               onChange={(value) => handleChange("whatsapp", value)}
               placeholder="+1 305..."
+            />
+
+            <AdminInput
+              label="Zelle (correo o teléfono)"
+              value={form.zelle_info}
+              onChange={(value) => handleChange("zelle_info", value)}
+              placeholder="correo@negocio.com"
             />
 
             <AdminInput

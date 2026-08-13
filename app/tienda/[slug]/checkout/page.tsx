@@ -67,6 +67,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState<CheckoutForm>(initialForm);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [businessWhatsapp, setBusinessWhatsapp] = useState("");
+  const [businessZelle, setBusinessZelle] = useState("");
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings | null>(null);
   const [method, setMethod] = useState<CheckoutMethod>("cuba");
   const [error, setError] = useState("");
@@ -101,6 +102,7 @@ export default function CheckoutPage() {
         setBusinessWhatsapp(
           storeSettingsResponse.data?.whatsapp?.replace(/\D/g, "") || ""
         );
+        setBusinessZelle(storeSettingsResponse.data?.zelle_info || "");
         const cardAvailable = Boolean(paymentAvailabilityResponse?.available) && CARD_PAYMENTS_ENABLED;
         setCardPaymentAvailable(cardAvailable);
         // Tarjeta es el método preferido cuando está disponible; WhatsApp
@@ -675,6 +677,7 @@ ${orderUrl}`);
               cardPaymentAvailable={cardPaymentAvailable}
               payWith={payWith}
               onChangePayWith={setPayWith}
+              zelleInfo={businessZelle}
             />
           </div>
         )}

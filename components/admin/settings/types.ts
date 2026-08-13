@@ -19,6 +19,7 @@ export type StoreSettings = {
   slogan?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
+  zelle_info?: string | null;
   email?: string | null;
   order_notification_email?: string | null;
   address?: string | null;

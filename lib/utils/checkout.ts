@@ -362,7 +362,7 @@ Estado:
 Pendiente
 
 Pago:
-Pendiente de confirmar
+Zelle - Pendiente de confirmar (revisa el comprobante adjunto en el chat)
 
 --------------------
 
