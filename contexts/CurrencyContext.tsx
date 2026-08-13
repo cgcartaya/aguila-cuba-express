@@ -39,14 +39,17 @@ export const CURRENCIES: Record<
   MXN: { locale: "es-MX", label: "Peso mexicano (MXN)", symbol: "$", countryCode: "mx" },
   BRL: { locale: "pt-BR", label: "Real brasileño (BRL)", symbol: "R$", countryCode: "br" },
   CAD: { locale: "en-CA", label: "Dólar canadiense (CAD)", symbol: "$", countryCode: "ca" },
+  GYD: { locale: "en-US", label: "Dólar guyanés (GYD)", symbol: "G$", countryCode: "gy" },
 };
 
 // Se usan mientras cargan las tasas reales del API, o si el fetch falla.
+// (GYD siempre usa un valor fijo — ver lib/services/exchange-rates.ts.)
 const FALLBACK_RATES: Record<SupportedCurrency, number> = {
   EUR: 0.92,
   MXN: 18.5,
   BRL: 5.4,
   CAD: 1.38,
+  GYD: 209,
 };
 
 const STORAGE_KEY = "tienda_currency";
@@ -61,6 +64,7 @@ function detectCurrencyFromBrowser(): CurrencyCode {
     if (lang === "es-mx") return "MXN";
     if (lang === "es-es") return "EUR";
     if (lang.startsWith("pt-br")) return "BRL";
+    if (lang.startsWith("en-gy")) return "GYD";
     if (lang.startsWith("en-ca") || lang.startsWith("fr-ca")) return "CAD";
   }
 
@@ -72,6 +76,8 @@ function detectCurrencyFromBrowser(): CurrencyCode {
     if (tz.startsWith("America/") && /mexico|tijuana|cancun|merida|monterrey/i.test(tz)) {
       return "MXN";
     }
+
+    if (tz === "America/Guyana") return "GYD";
 
     if (
       tz.startsWith("America/") &&

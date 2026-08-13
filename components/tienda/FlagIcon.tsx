@@ -92,12 +92,25 @@ function FlagCA() {
   );
 }
 
+function FlagGY() {
+  return (
+    <FlagSvg countryCode="gy">
+      <rect width="28" height="20" fill="#009E49" />
+      <polygon points="0,0 20,10 0,20" fill="#fff" />
+      <polygon points="0,2.2 17,10 0,17.8" fill="#FCD116" />
+      <polygon points="0,3.3 12,10 0,16.7" fill="#000" />
+      <polygon points="0,5 9,10 0,15" fill="#CE1126" />
+    </FlagSvg>
+  );
+}
+
 const FLAG_COMPONENTS: Record<string, () => React.ReactElement> = {
   us: FlagUS,
   es: FlagES,
   mx: FlagMX,
   br: FlagBR,
   ca: FlagCA,
+  gy: FlagGY,
 };
 
 export default function FlagIcon({ countryCode, className, size = 20 }: FlagIconProps) {
