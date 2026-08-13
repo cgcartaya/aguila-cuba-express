@@ -37,7 +37,7 @@ export const CURRENCIES: Record<
   USD: { locale: "en-US", label: "Dólar estadounidense (USD)", symbol: "$", countryCode: "us" },
   EUR: { locale: "es-ES", label: "Euro (EUR)", symbol: "€", countryCode: "es" },
   MXN: { locale: "es-MX", label: "Peso mexicano (MXN)", symbol: "$", countryCode: "mx" },
-  GBP: { locale: "en-GB", label: "Libra esterlina (GBP)", symbol: "£", countryCode: "gb" },
+  BRL: { locale: "pt-BR", label: "Real brasileño (BRL)", symbol: "R$", countryCode: "br" },
   CAD: { locale: "en-CA", label: "Dólar canadiense (CAD)", symbol: "$", countryCode: "ca" },
 };
 
@@ -45,7 +45,7 @@ export const CURRENCIES: Record<
 const FALLBACK_RATES: Record<SupportedCurrency, number> = {
   EUR: 0.92,
   MXN: 18.5,
-  GBP: 0.79,
+  BRL: 5.4,
   CAD: 1.38,
 };
 
@@ -60,18 +60,24 @@ function detectCurrencyFromBrowser(): CurrencyCode {
     const lang = (raw || "").toLowerCase();
     if (lang === "es-mx") return "MXN";
     if (lang === "es-es") return "EUR";
-    if (lang.startsWith("en-gb")) return "GBP";
+    if (lang.startsWith("pt-br")) return "BRL";
     if (lang.startsWith("en-ca") || lang.startsWith("fr-ca")) return "CAD";
   }
 
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
 
-    if (tz === "Europe/London") return "GBP";
     if (tz.startsWith("Europe/")) return "EUR";
 
     if (tz.startsWith("America/") && /mexico|tijuana|cancun|merida|monterrey/i.test(tz)) {
       return "MXN";
+    }
+
+    if (
+      tz.startsWith("America/") &&
+      ["Sao_Paulo", "Bahia", "Fortaleza", "Manaus", "Recife", "Belem"].some((city) => tz.includes(city))
+    ) {
+      return "BRL";
     }
 
     if (

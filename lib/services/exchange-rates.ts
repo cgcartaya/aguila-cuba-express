@@ -1,5 +1,5 @@
 /* =========================================================
-   TASAS DE CAMBIO (USD -> EUR / MXN / GBP / CAD)
+   TASAS DE CAMBIO (USD -> EUR / MXN / BRL / CAD)
    ---------------------------------------------------------
    Se usa SOLO para mostrar precios convertidos en la tienda.
    El cobro real en Stripe siempre sigue en USD (ver
@@ -11,8 +11,11 @@
    para que la tienda nunca se quede sin mostrar precios.
 ========================================================= */
 
-export const SUPPORTED_CURRENCIES = ["EUR", "MXN", "GBP", "CAD"] as const;
+export const SUPPORTED_CURRENCIES = ["EUR", "MXN", "BRL", "CAD"] as const;
 export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
+
+// Monedas que sí se piden a Frankfurter/BCE (todas las soportadas).
+const LIVE_SOURCE_CURRENCIES = ["EUR", "MXN", "BRL", "CAD"] as const;
 
 // Valores de respaldo aproximados, solo para cuando la API externa
 // no responde. Se deben revisar de vez en cuando para que no queden
@@ -20,7 +23,7 @@ export type SupportedCurrency = (typeof SUPPORTED_CURRENCIES)[number];
 const FALLBACK_RATES: Record<SupportedCurrency, number> = {
   EUR: 0.92,
   MXN: 18.5,
-  GBP: 0.79,
+  BRL: 5.4,
   CAD: 1.38,
 };
 
@@ -42,7 +45,7 @@ export async function getUsdExchangeRates(): Promise<ExchangeRatesResult> {
   }
 
   try {
-    const url = `https://api.frankfurter.dev/v1/latest?base=USD&symbols=${SUPPORTED_CURRENCIES.join(",")}`;
+    const url = `https://api.frankfurter.dev/v1/latest?base=USD&symbols=${LIVE_SOURCE_CURRENCIES.join(",")}`;
     const res = await fetch(url, { next: { revalidate: 21600 } });
 
     if (!res.ok) throw new Error(`Frankfurter respondió ${res.status}`);
