@@ -91,6 +91,26 @@ function forgetDeviceToken(slug: string) {
   }
 }
 
+// RECORDATORIO DE CARRITO ABANDONADO: antes, el device_token solo se
+// creaba DESPUÉS de completar una orden (en create-order/route.ts), así
+// que un visitante que nunca terminaba de comprar no tenía ninguna
+// identidad para poder recordarle su carrito más tarde. Ahora se genera
+// (o se reutiliza) apenas entra al checkout, y ese mismo token es el que
+// ya se le manda a create-order al final — no cambia nada del flujo de
+// compra existente, solo lo adelanta.
+function ensureDeviceToken(slug: string): string {
+  const existing = readDeviceToken(slug);
+  if (existing) return existing;
+
+  const generated =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `dt-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  saveDeviceToken(slug, generated);
+  return generated;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, clearCart, addToCart } = useCart();
@@ -368,6 +388,44 @@ export default function CheckoutPage() {
     });
   }, [store?.id, cart.length, method]);
 
+  // RECORDATORIO DE CARRITO ABANDONADO: guarda un snapshot liviano
+  // (nombre/email/teléfono + items) apenas hay suficiente info de
+  // contacto, con un pequeño debounce para no pegarle a la API en cada
+  // tecla. Nunca bloquea el checkout ni muestra error si falla — ver
+  // app/api/checkout/session-snapshot/route.ts.
+  useEffect(() => {
+    if (!store?.id || cart.length === 0) return;
+    if (!form.email.trim() && form.phone.trim().length < 7) return;
+
+    const token = ensureDeviceToken(store.slug || "");
+
+    const timeoutId = window.setTimeout(() => {
+      fetch("/api/checkout/session-snapshot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeId: store.id,
+          deviceToken: token,
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          method,
+          subtotal: totals.subtotal,
+          items: cart.map((item) => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        }),
+      }).catch(() => {
+        // Silencioso a propósito — esto es solo para el recordatorio,
+        // nunca debe interrumpir la compra.
+      });
+    }, 1200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [store?.id, store?.slug, cart, form.name, form.email, form.phone, method, totals.subtotal]);
+
   const municipalityHasNoZones =
     Boolean(form.municipality) && !loadingCheckout && availableZones.length === 0;
 
@@ -497,7 +555,7 @@ export default function CheckoutPage() {
         discountCode: appliedDiscount?.code || null,
         customerPhone: form.phone,
         intendedPaymentMethod: payWith,
-        deviceToken: readDeviceToken(store?.slug || ""),
+        deviceToken: ensureDeviceToken(store?.slug || ""),
       }),
     });
 

@@ -21,6 +21,7 @@ import {
   Utensils,
   Wallet,
   Wrench,
+  BellRing,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
@@ -121,6 +122,7 @@ export const adminNavSections: AdminSection[] = [
     title: "Marketing",
     links: [
       { href: "/admin/marketing/promotions", label: "Promociones", icon: Megaphone },
+      { href: "/admin/marketing/recordatorios", label: "Recordatorios", icon: BellRing },
     ],
   },
   {

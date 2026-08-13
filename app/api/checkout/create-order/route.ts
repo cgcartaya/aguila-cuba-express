@@ -837,6 +837,32 @@ export async function POST(request: Request) {
       appliedStockChanges.push({ productId, quantity: needed });
     }
 
+    // RECORDATORIO DE CARRITO ABANDONADO: la orden se completó de verdad,
+    // así que si había un snapshot de checkout en progreso para este
+    // device_token, se marca como convertido para que el cron de
+    // recordatorios (app/api/cron/reminders/route.ts) lo ignore. Nunca
+    // debe afectar la orden ya creada si esto falla.
+    try {
+      const { error: abandonmentError } = await supabaseAdmin
+        .from("checkout_abandonment")
+        .update({ converted_at: new Date().toISOString() })
+        .eq("store_id", storeId)
+        .eq("device_token", resolvedDeviceToken)
+        .is("converted_at", null);
+
+      if (abandonmentError) {
+        console.error(
+          "No se pudo marcar el snapshot de checkout como convertido (no afecta la orden):",
+          abandonmentError
+        );
+      }
+    } catch (abandonmentCatchError) {
+      console.error(
+        "Error inesperado marcando snapshot de checkout (no afecta la orden):",
+        abandonmentCatchError
+      );
+    }
+
     // FASE 2 (Vercel/Next): el aviso de nueva orden ya no forma parte
     // del tiempo crítico del checkout. `after()` deja que devolvamos la
     // respuesta al comprador y, después, consulta los destinatarios y
