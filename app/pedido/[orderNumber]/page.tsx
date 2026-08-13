@@ -13,6 +13,7 @@ type OrderRow = {
   order_number: string | null;
   status: string;
   payment_status?: string | null;
+  payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
   total: number | null;

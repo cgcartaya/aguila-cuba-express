@@ -27,6 +27,7 @@ import { DeliveryAddressForm } from "@/components/checkout/DeliveryAddressForm";
 import { LocalDeliveryAddressForm } from "@/components/checkout/LocalDeliveryAddressForm";
 import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSelector";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
+import RememberedCustomerBanner from "@/components/checkout/RememberedCustomerBanner";
 import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
 import type { AppliedDiscount } from "@/components/checkout/DiscountCouponBox";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/config/features";
@@ -55,9 +56,44 @@ const initialForm: CheckoutForm = {
   notes: "",
 };
 
+// PERFIL DEL CLIENTE (sin login): el token vive en localStorage, uno por
+// tienda (mismo criterio que el carrito, ver contexts/CartContext.tsx),
+// para que un mismo navegador pueda "recordar" a distintas personas en
+// distintas tiendas del marketplace sin mezclarlas.
+function deviceTokenKey(slug: string) {
+  return `tienda_device_${slug || "aguila"}`;
+}
+
+function readDeviceToken(slug: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(deviceTokenKey(slug));
+  } catch {
+    return null;
+  }
+}
+
+function saveDeviceToken(slug: string, token: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(deviceTokenKey(slug), token);
+  } catch {
+    // si no se puede guardar, simplemente no se recuerda la próxima vez
+  }
+}
+
+function forgetDeviceToken(slug: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(deviceTokenKey(slug));
+  } catch {
+    // no pasa nada si falla — es solo una conveniencia
+  }
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart } = useCart();
+  const { cart, clearCart, addToCart } = useCart();
   const { store } = useStore();
 
   const isYoyo = store?.slug === YOYO_SLUG;
@@ -82,6 +118,39 @@ export default function CheckoutPage() {
   const [loadingRules, setLoadingRules] = useState(false);
   const [cardPaymentAvailable, setCardPaymentAvailable] = useState(false);
   const [payWith, setPayWith] = useState<"whatsapp" | "card">("whatsapp");
+  // PERFIL DEL CLIENTE (sin login) — reconocimiento por dispositivo.
+  // Ver components/checkout/RememberedCustomerBanner.tsx y
+  // app/api/checkout/remembered-profile/route.ts.
+  const [rememberedProfile, setRememberedProfile] = useState<{
+    customer: { name: string; email: string | null; phone: string };
+    recipient: {
+      recipient_name: string | null;
+      recipient_phone: string | null;
+      recipient_phone_alt: string | null;
+      municipality: string | null;
+      zone_name: string | null;
+      delivery_zone_id: string | null;
+      exact_address: string | null;
+      country: string | null;
+    } | null;
+    recentOrders: Array<{
+      id: string;
+      order_number: string | null;
+      created_at: string;
+      total: number;
+      items: Array<{
+        order_id: string;
+        item_type: "product" | "combo";
+        product_id: string | null;
+        product_name: string;
+        quantity: number;
+        current_price: number | null;
+        current_stock: number | null;
+        image_url: string | null;
+        available: boolean;
+      }>;
+    }>;
+  } | null>(null);
 
   useEffect(() => {
     async function loadCheckoutData() {
@@ -133,6 +202,81 @@ export default function CheckoutPage() {
 
     void loadCheckoutData();
   }, [store?.id]);
+
+  // PERFIL DEL CLIENTE (sin login): si este navegador ya tiene un token
+  // guardado de una compra anterior en esta tienda, se busca su perfil y
+  // se precargan los campos que todavía estén vacíos — nunca se pisa lo
+  // que la persona ya haya escrito.
+  useEffect(() => {
+    if (!store?.id) return;
+
+    const token = readDeviceToken(store.slug || "");
+    if (!token) return;
+
+    let active = true;
+
+    fetch(`/api/checkout/remembered-profile?storeId=${encodeURIComponent(store.id)}&token=${encodeURIComponent(token)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active || !data?.found) return;
+
+        setRememberedProfile(data);
+
+        setForm((prev) => ({
+          ...prev,
+          name: prev.name || data.customer.name || "",
+          email: prev.email || data.customer.email || "",
+          phone: prev.phone || data.customer.phone || "",
+          recipient_name: prev.recipient_name || data.recipient?.recipient_name || "",
+          recipient_phone: prev.recipient_phone || data.recipient?.recipient_phone || "",
+          recipient_phone_alt: prev.recipient_phone_alt || data.recipient?.recipient_phone_alt || "",
+          municipality: prev.municipality || data.recipient?.municipality || "",
+          delivery_zone_id: prev.delivery_zone_id || data.recipient?.delivery_zone_id || "",
+          exact_address: prev.exact_address || data.recipient?.exact_address || "",
+          city:
+            prev.city ||
+            (data.recipient?.country === "Estados Unidos" ? data.recipient?.municipality || "" : ""),
+        }));
+      })
+      .catch(() => {
+        // si falla, no pasa nada — el checkout sigue funcionando vacío
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [store?.id, store?.slug]);
+
+  function handleForgetProfile() {
+    if (store?.slug) forgetDeviceToken(store.slug);
+    setRememberedProfile(null);
+  }
+
+  function handleReorderItems(
+    items: Array<{
+      product_id: string | null;
+      product_name: string;
+      quantity: number;
+      current_price: number | null;
+      current_stock: number | null;
+      image_url: string | null;
+    }>
+  ) {
+    for (const item of items) {
+      if (!item.product_id || item.current_price == null) continue;
+
+      addToCart(
+        {
+          id: item.product_id,
+          name: item.product_name,
+          price: item.current_price,
+          image_url: item.image_url || "/placeholder-product.png",
+          stock: item.current_stock ?? undefined,
+        },
+        item.quantity
+      );
+    }
+  }
 
   useEffect(() => {
     async function loadCheckoutRules() {
@@ -353,6 +497,7 @@ export default function CheckoutPage() {
         discountCode: appliedDiscount?.code || null,
         customerPhone: form.phone,
         intendedPaymentMethod: payWith,
+        deviceToken: readDeviceToken(store?.slug || ""),
       }),
     });
 
@@ -360,6 +505,12 @@ export default function CheckoutPage() {
 
     if (!response.ok || !result?.success || !result?.order) {
       throw new Error(result?.message || "No se pudo crear la orden.");
+    }
+
+    // Recuerda a este cliente en este navegador para la próxima compra —
+    // ver deviceTokenKey() más arriba y RememberedCustomerBanner.
+    if (result.deviceToken && store?.slug) {
+      saveDeviceToken(store.slug, result.deviceToken);
     }
 
     return result.order as {
@@ -621,6 +772,15 @@ ${orderUrl}`);
                   enabledDelivery={settings.enabled_delivery}
                   enabledCuba={settings.enabled_cuba}
                   onChange={changeMethod}
+                />
+              )}
+
+              {rememberedProfile && (
+                <RememberedCustomerBanner
+                  customerName={rememberedProfile.customer.name}
+                  recentOrders={rememberedProfile.recentOrders}
+                  onForget={handleForgetProfile}
+                  onReorder={handleReorderItems}
                 />
               )}
 

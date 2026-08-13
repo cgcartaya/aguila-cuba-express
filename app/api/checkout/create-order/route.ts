@@ -43,6 +43,7 @@
 // - Un pedido que no alcance el mínimo de la zona — debe rechazarse.
 
 import { after, NextResponse } from "next/server";
+import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
@@ -75,6 +76,10 @@ type CreateOrderBody = {
   discountCampaignId?: string | null;
   discountCode?: string | null;
   customerPhone?: string;
+  /** Token del dispositivo (localStorage) para reconocer al cliente que
+   *  regresa sin pedirle que inicie sesión — ver el bloque "PERFIL DEL
+   *  CLIENTE" más abajo y app/api/checkout/remembered-profile/route.ts. */
+  deviceToken?: string | null;
   form?: {
     name?: string;
     email?: string;
@@ -177,6 +182,7 @@ export async function POST(request: Request) {
     const customerName = clean(form.name, 150);
     const email = clean(form.email, 200).toLowerCase();
     const customerPhone = clean(body.customerPhone || form.phone, 40);
+    const incomingDeviceToken = clean(body.deviceToken || "", 100) || null;
 
     if (!storeId) return fail("Falta el id de la tienda.");
     if (!customerName || !customerPhone) {
@@ -623,6 +629,16 @@ export async function POST(request: Request) {
     // Cliente (el comprador, no el destinatario en Cuba): se busca por
     // teléfono dentro de la tienda; si no existe, se crea. (Este es el
     // arreglo de "Cliente sin nombre" — se mantiene igual.)
+    //
+    // PERFIL DEL CLIENTE (sin login): a cada cliente se le asigna un
+    // device_token — si el navegador ya traía uno (localStorage) se le
+    // asigna ese; si no, se genera uno nuevo acá y se devuelve en la
+    // respuesta para que el checkout lo guarde. La próxima vez que ese
+    // mismo navegador entre a pagar, /api/checkout/remembered-profile
+    // usa ese token para reconocerlo y precargar sus datos — sin pedirle
+    // contraseña ni nada. Ver app/tienda/[slug]/checkout/page.tsx.
+    const resolvedDeviceToken = incomingDeviceToken || randomUUID();
+
     let customerId: string | null = null;
     const { data: existingCustomer } = await supabaseAdmin
       .from("customers")
@@ -639,6 +655,7 @@ export async function POST(request: Request) {
           name: customerName || undefined,
           email: email || undefined,
           city: city || undefined,
+          device_token: resolvedDeviceToken,
         })
         .eq("id", existingCustomer.id);
     } else {
@@ -650,6 +667,7 @@ export async function POST(request: Request) {
           email: email || null,
           phone: customerPhone,
           city: city || null,
+          device_token: resolvedDeviceToken,
         })
         .select("id")
         .single();
@@ -849,6 +867,7 @@ export async function POST(request: Request) {
         discount_amount: discountAmount,
         total,
       },
+      deviceToken: resolvedDeviceToken,
     });
   } catch (error) {
     console.error("CREATE ORDER ERROR (catch):", error);

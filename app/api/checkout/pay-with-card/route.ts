@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
 import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
+import { reactivateExpiredOrder } from "@/lib/services/order-stock-admin";
 
 const fail = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
 
@@ -24,6 +25,17 @@ export async function POST(request: NextRequest) {
 
   if (error || !order) return fail("Orden no encontrada.", 404);
   if (order.payment_status === "paid") return fail("Esta orden ya está pagada.");
+
+  // El cliente está retomando el pago de una orden que ya había vencido
+  // (el stock se devolvió automáticamente). Hay que volver a apartarlo
+  // antes de mandarlo a Stripe — si alguien más se llevó lo que quedaba
+  // mientras tanto, no se puede seguir como si nada.
+  if (order.payment_status === "expired") {
+    const reactivation = await reactivateExpiredOrder(orderId);
+    if (!reactivation.ok) {
+      return fail(reactivation.message, 409);
+    }
+  }
 
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")

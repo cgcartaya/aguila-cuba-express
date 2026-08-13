@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   CheckCircle2,
   Clock,
+  CreditCard,
+  Loader2,
   MapPin,
   Package,
   Phone,
+  TriangleAlert,
   UserRound,
 } from "lucide-react";
 
@@ -16,6 +20,7 @@ type Order = {
   order_number: string | null;
   status: string;
   payment_status?: string | null;
+  payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
   total: number | null;
@@ -64,6 +69,55 @@ const statusLabels: Record<string, string> = {
   delivered: "Entregado",
   cancelled: "Cancelado",
 };
+
+function PayNowButton({ orderId, storeId }: { orderId: string; storeId: string }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handlePayNow() {
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/checkout/pay-with-card", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, storeId }),
+      });
+      const result = await res.json().catch(() => null);
+
+      if (!res.ok || !result?.success || !result?.url) {
+        throw new Error(result?.message || "No se pudo iniciar el cobro con tarjeta.");
+      }
+
+      window.location.href = result.url;
+    } catch (err: any) {
+      setError(err?.message || "No se pudo iniciar el cobro con tarjeta.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        onClick={handlePayNow}
+        disabled={loading}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 font-black text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
+      >
+        {loading ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
+        {loading ? "Abriendo el pago..." : "Pagar ahora"}
+      </button>
+
+      {error && (
+        <p className="mt-2 flex items-start gap-2 text-sm font-semibold text-red-300">
+          <TriangleAlert size={16} className="mt-0.5 shrink-0" />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function PublicOrderClient({
   requestedOrderNumber,
@@ -137,9 +191,27 @@ export function PublicOrderClient({
               {statusText}
             </span>
             <span className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">
-              Pago: {order.payment_status === "paid" ? "Pagado" : "Pendiente de confirmar"}
+              Pago:{" "}
+              {order.payment_status === "paid"
+                ? "Pagado"
+                : order.payment_status === "expired"
+                  ? "No completado"
+                  : order.payment_method === "card"
+                    ? "Pendiente"
+                    : "Pendiente de confirmar"}
             </span>
           </div>
+
+          {order.payment_method === "card" && order.payment_status !== "paid" && (
+            <>
+              <p className="mt-4 text-sm text-white/70">
+                {order.payment_status === "expired"
+                  ? "El intento de pago anterior venció sin completarse. Puedes intentarlo de nuevo:"
+                  : "Todavía no se ha completado el pago de este pedido."}
+              </p>
+              <PayNowButton orderId={order.id} storeId={order.store_id || ""} />
+            </>
+          )}
         </section>
 
         <section className="grid gap-5 md:grid-cols-2">
