@@ -32,12 +32,7 @@ const ORDERS_SELECT = `
   recipient_phone,
   recipient_phone_alt,
   store_id,
-  customers (
-    name,
-    email,
-    phone,
-    city
-  ),
+  customer_id,
   order_items (
     id,
     item_type,
@@ -51,6 +46,39 @@ const ORDERS_SELECT = `
     subtotal
   )
 `;
+
+// El nombre/email/teléfono del cliente se traían antes con un select
+// embebido (`customers (...)`) directo en ORDERS_SELECT — igual que pasó
+// con inventory_movements hace unos días, ese embed se resuelve como
+// null en vez de fallar con error cuando Postgrest no detecta la
+// relación limpiamente, así que las órdenes se veían bien pero con
+// "Cliente sin nombre" aunque el cliente sí existiera con su nombre
+// real en la tabla `customers`. Mismo arreglo que allá: dos consultas
+// planas y se juntan acá en vez de un embed.
+async function attachCustomers(orders: any[]) {
+  const customerIds = Array.from(
+    new Set(orders.map((order) => order.customer_id).filter(Boolean))
+  );
+
+  if (customerIds.length === 0) return orders;
+
+  const { data: customers, error } = await supabase
+    .from("customers")
+    .select("id, name, email, phone, city")
+    .in("id", customerIds);
+
+  if (error) {
+    console.error("Error cargando clientes de las órdenes:", error);
+    return orders;
+  }
+
+  const customerById = new Map((customers || []).map((c) => [c.id, c]));
+
+  return orders.map((order) => ({
+    ...order,
+    customers: order.customer_id ? customerById.get(order.customer_id) || null : null,
+  }));
+}
 
 // Cargamos por páginas en vez de traer TODAS las órdenes de la
 // tienda de una sola vez. Con pocas órdenes no se nota, pero una
@@ -187,8 +215,8 @@ export default function AdminOrdersPage() {
         return;
       }
 
-      setActiveOrders(activeResult.data || []);
-      setDeletedOrders(deletedResult.data || []);
+      setActiveOrders(await attachCustomers(activeResult.data || []));
+      setDeletedOrders(await attachCustomers(deletedResult.data || []));
       setTotalActiveCount(activeCountResult.count || 0);
       setTotalTrashCount(trashCountResult.count || 0);
       setPendingCount(pendingCountResult.count || 0);
@@ -225,7 +253,7 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    setActiveOrders((prev) => [...prev, ...(data || [])]);
+    setActiveOrders((prev) => [...prev, ...(await attachCustomers(data || []))]);
     setLoadingMore(false);
   }, [activeStore?.id, activeOrders.length]);
 
@@ -248,7 +276,7 @@ export default function AdminOrdersPage() {
       return;
     }
 
-    setDeletedOrders((prev) => [...prev, ...(data || [])]);
+    setDeletedOrders((prev) => [...prev, ...(await attachCustomers(data || []))]);
     setLoadingMore(false);
   }, [activeStore?.id, deletedOrders.length]);
 
