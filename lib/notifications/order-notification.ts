@@ -7,6 +7,8 @@ type NewOrderNotificationParams = {
   orderNumber: string;
   customerName: string;
   customerPhone: string;
+  subtotal: number;
+  deliveryFee: number;
   total: number;
   itemsCount: number;
   isLocalDelivery: boolean;
@@ -65,6 +67,8 @@ export async function sendNewOrderNotification(
       orderNumber: params.orderNumber,
       customerName: params.customerName,
       customerPhone: params.customerPhone,
+      subtotal: params.subtotal,
+      deliveryFee: params.deliveryFee,
       total: params.total,
       itemsCount: params.itemsCount,
       isLocalDelivery: params.isLocalDelivery,

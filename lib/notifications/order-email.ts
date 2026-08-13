@@ -18,6 +18,8 @@ type NewOrderEmailParams = {
   orderNumber: string;
   customerName: string;
   customerPhone: string;
+  subtotal: number;
+  deliveryFee: number;
   total: number;
   itemsCount: number;
   isLocalDelivery: boolean;
@@ -50,6 +52,8 @@ export async function sendNewOrderEmail(params: NewOrderEmailParams) {
         <tr><td style="padding: 4px 0;">Teléfono</td><td style="text-align: right;">${escapeHtml(params.customerPhone)}</td></tr>
         <tr><td style="padding: 4px 0;">Artículos</td><td style="text-align: right;">${params.itemsCount}</td></tr>
         <tr><td style="padding: 4px 0;">Entrega</td><td style="text-align: right;">${escapeHtml(deliveryLabel)}</td></tr>
+        <tr><td style="padding: 4px 0; border-top: 1px solid #e2e8f0;">Productos</td><td style="text-align: right; padding: 4px 0; border-top: 1px solid #e2e8f0;">$${params.subtotal.toFixed(2)}</td></tr>
+        <tr><td style="padding: 4px 0;">Envío</td><td style="text-align: right;">$${params.deliveryFee.toFixed(2)}</td></tr>
         <tr><td style="padding: 8px 0; font-size: 16px;"><strong>Total</strong></td><td style="text-align: right; padding: 8px 0; font-size: 16px;"><strong>$${params.total.toFixed(2)}</strong></td></tr>
       </table>
       <p style="margin-top: 20px; font-size: 12px; color: #94a3b8;">

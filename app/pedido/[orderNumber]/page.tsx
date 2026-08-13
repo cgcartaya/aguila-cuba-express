@@ -16,6 +16,7 @@ type OrderRow = {
   payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
+  discount_amount?: number | null;
   total: number | null;
   country?: string | null;
   state?: string | null;

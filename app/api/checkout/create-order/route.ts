@@ -849,6 +849,8 @@ export async function POST(request: Request) {
         orderNumber: publicOrderNumber,
         customerName,
         customerPhone,
+        subtotal,
+        deliveryFee,
         total,
         itemsCount: preparedItems.length,
         isLocalDelivery,

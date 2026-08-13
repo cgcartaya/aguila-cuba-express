@@ -934,9 +934,32 @@ export default function OrdersManager({
                       })}
                     </p>
 
-                    <p className="mt-3 text-2xl font-black">
+                    <div className="mt-3 space-y-1 text-sm font-semibold text-slate-500">
+                      <div className="flex items-center justify-between">
+                        <span>Productos</span>
+                        <span>${Number(order.subtotal || 0).toFixed(2)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Envío</span>
+                        <span>${Number(order.delivery_fee || 0).toFixed(2)}</span>
+                      </div>
+                      {Number(order.discount_amount || 0) > 0 && (
+                        <div className="flex items-center justify-between text-emerald-700">
+                          <span>Descuento</span>
+                          <span>-${Number(order.discount_amount).toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="mt-2 text-2xl font-black">
                       ${Number(order.total || 0).toFixed(2)}
                     </p>
+
+                    {Number(order.platform_fee_amount || 0) > 0 && (
+                      <p className="mt-1 text-xs font-semibold text-emerald-700">
+                        Incluye ${Number(order.platform_fee_amount).toFixed(2)} de comisión de plataforma
+                      </p>
+                    )}
 
                     <p className="mt-1 text-xs font-bold text-slate-500">
                       Pago: {
@@ -946,6 +969,9 @@ export default function OrdersManager({
                             ? "No completado (venció sin pagar)"
                             : "Pendiente"
                       }
+                      {order.payment_method && (
+                        <> · {order.payment_method === "card" ? "Tarjeta" : "WhatsApp"}</>
+                      )}
                     </p>
                   </section>
                 </div>
@@ -1008,18 +1034,32 @@ export default function OrdersManager({
                           </div>
                         ))}
 
-                        <div className="border-t pt-4 text-right">
+                        <div className="space-y-1.5 border-t pt-4 text-sm font-semibold text-slate-600">
+                          <div className="flex items-center justify-between">
+                            <span>Productos</span>
+                            <span>${Number(order.subtotal || 0).toFixed(2)}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>Envío</span>
+                            <span>${Number(order.delivery_fee || 0).toFixed(2)}</span>
+                          </div>
+                          {Number(order.discount_amount || 0) > 0 && (
+                            <div className="flex items-center justify-between text-emerald-700">
+                              <span>Descuento</span>
+                              <span>-${Number(order.discount_amount).toFixed(2)}</span>
+                            </div>
+                          )}
                           {Number(order.platform_fee_amount || 0) > 0 && (
-                            <p className="mb-1 text-xs font-semibold text-emerald-700">
-                              Incluye ${Number(order.platform_fee_amount).toFixed(2)} de comisión de plataforma
+                            <p className="pt-1 text-xs font-semibold text-emerald-700">
+                              Incluye ${Number(order.platform_fee_amount).toFixed(2)} de comisión de plataforma (ya está dentro del total)
                             </p>
                           )}
-                          <p className="text-lg font-black">
-                            Total:{" "}
+                          <div className="flex items-center justify-between border-t pt-2 text-lg font-black text-[#061b3a]">
+                            <span>Total</span>
                             <span className="text-green-600">
                               ${Number(order.total || 0).toFixed(2)}
                             </span>
-                          </p>
+                          </div>
                         </div>
                       </div>
                     )}

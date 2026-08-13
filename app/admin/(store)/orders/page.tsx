@@ -15,6 +15,7 @@ const ORDERS_SELECT = `
   subtotal,
   delivery_fee,
   platform_fee_amount,
+  discount_amount,
   status,
   payment_status,
   payment_method,

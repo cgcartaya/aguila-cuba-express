@@ -23,6 +23,7 @@ type Order = {
   payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
+  discount_amount?: number | null;
   total: number | null;
   country?: string | null;
   state?: string | null;
@@ -262,11 +263,14 @@ export function PublicOrderClient({
         </section>
 
         <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-bold">Resumen</h2>
+          <h2 className="mb-4 text-lg font-bold">Resumen del pago</h2>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><strong>${Number(order.subtotal || 0).toFixed(2)}</strong></div>
-            <div className="flex justify-between"><span className="text-gray-500">Entrega</span><strong>${Number(order.delivery_fee || 0).toFixed(2)}</strong></div>
-            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">Total</span><span className="font-black">${Number(order.total || 0).toFixed(2)}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Productos</span><strong>${Number(order.subtotal || 0).toFixed(2)}</strong></div>
+            <div className="flex justify-between"><span className="text-gray-500">Envío</span><strong>${Number(order.delivery_fee || 0).toFixed(2)}</strong></div>
+            {Number(order.discount_amount || 0) > 0 && (
+              <div className="flex justify-between text-green-600"><span>Descuento</span><strong>-${Number(order.discount_amount).toFixed(2)}</strong></div>
+            )}
+            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">Total pagado</span><span className="font-black">${Number(order.total || 0).toFixed(2)}</span></div>
           </div>
         </section>
 
