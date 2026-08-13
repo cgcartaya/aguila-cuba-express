@@ -79,6 +79,13 @@ export async function POST(request: NextRequest) {
         : {}),
       success_url: `${origin}/tienda/pago-exitoso?order=${encodeURIComponent(order.order_number || order.id)}`,
       cancel_url: `${origin}/tienda/pago-cancelado?order=${encodeURIComponent(order.order_number || order.id)}`,
+      // Vencimiento corto (30 min, el mínimo que permite Stripe) para que
+      // un cliente que abre el link y no completa el pago no deje la
+      // orden en un limbo ambiguo por horas — a los 30 min Stripe manda
+      // el evento checkout.session.expired y el webhook marca la orden
+      // como pago no completado y devuelve el stock. Ver
+      // lib/services/stripe-webhook-handler.ts.
+      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
       metadata: {
         order_id: order.id,
         store_id: storeId,

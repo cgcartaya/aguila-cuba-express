@@ -371,14 +371,19 @@ export default function OrdersManager({
       setActionLoadingId(order.id);
       assertOrderBelongsToActiveStore(order);
 
-      const orderItems = normalizeOrderItems(order);
-      await restoreOrderInventory(orderItems, storeId);
+      // Si el pago con tarjeta venció solo (checkout.session.expired), el
+      // webhook ya devolvió el stock automáticamente — no volver a
+      // hacerlo aquí, o se duplicaría.
+      if (!order.stock_restored) {
+        const orderItems = normalizeOrderItems(order);
+        await restoreOrderInventory(orderItems, storeId);
+      }
 
       const deletedAt = new Date().toISOString();
 
       const { data: updated, error } = await supabase
         .from("orders")
-        .update({ deleted_at: deletedAt })
+        .update({ deleted_at: deletedAt, stock_restored: true })
         .eq("id", order.id)
         .eq("store_id", storeId)
         .is("deleted_at", null)
@@ -425,7 +430,7 @@ export default function OrdersManager({
 
       const { data: updated, error } = await supabase
         .from("orders")
-        .update({ deleted_at: null })
+        .update({ deleted_at: null, stock_restored: false })
         .eq("id", order.id)
         .eq("store_id", storeId)
         .not("deleted_at", "is", null)
@@ -759,18 +764,22 @@ export default function OrdersManager({
                       </span>
 
                       {order.payment_method === "card" ? (
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-black ${
-                            order.payment_status === "paid"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-amber-100 text-amber-700"
-                          }`}
-                        >
-                          💳 Tarjeta {order.payment_status === "paid" ? "pagada" : "sin pagar todavía"}
-                        </span>
+                        order.payment_status === "paid" ? (
+                          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
+                            💳 Tarjeta pagada
+                          </span>
+                        ) : order.payment_status === "expired" ? (
+                          <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-700">
+                            💳 Pago no completado
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-700">
+                            💳 Tarjeta — esperando pago
+                          </span>
+                        )
                       ) : (
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-                          🟢 WhatsApp
+                        <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black text-purple-700">
+                          🟣 Zelle
                         </span>
                       )}
 
@@ -930,7 +939,13 @@ export default function OrdersManager({
                     </p>
 
                     <p className="mt-1 text-xs font-bold text-slate-500">
-                      Pago: {order.payment_status || "Pendiente"}
+                      Pago: {
+                        order.payment_status === "paid"
+                          ? "Pagado"
+                          : order.payment_status === "expired"
+                            ? "No completado (venció sin pagar)"
+                            : "Pendiente"
+                      }
                     </p>
                   </section>
                 </div>

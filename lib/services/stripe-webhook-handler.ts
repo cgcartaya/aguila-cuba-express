@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { createPaymentReceipt } from "@/lib/services/receipts";
+import { restoreOrderStockServerSide } from "@/lib/services/order-stock-admin";
 
 /**
  * Lógica compartida para procesar eventos de Stripe, sin importar si
@@ -109,6 +110,42 @@ export async function handleStripeWebhookEvent(
       }
 
       await paymentSessionQuery;
+    }
+  }
+
+  if (event.type === "checkout.session.expired") {
+    // La sesión de pago venció sin completarse (ver expires_at en
+    // app/api/checkout/pay-with-card/route.ts, 30 min). Antes esto no se
+    // escuchaba y la orden se quedaba en "pending" para siempre, sin
+    // forma de saber si el cliente todavía iba a pagar o ya no.
+    const session = event.data.object as { id: string; metadata?: Record<string, string> };
+    const orderId = session.metadata?.order_id;
+    const metadataStoreId = knownStoreId || session.metadata?.store_id;
+
+    if (orderId && metadataStoreId) {
+      // Update condicionado: solo marca como "expired" (y solo devuelve
+      // stock) si la orden seguía genuinamente pendiente. Si ya estaba
+      // pagada (carrera rara: el cliente pagó justo cuando venció) o si
+      // ya se había marcado antes (reintento de Stripe reenviando el
+      // mismo webhook), no hace nada — evita duplicar la devolución de
+      // stock y evita pisar una orden que sí se pagó.
+      const { data: updatedOrders } = await supabaseAdmin
+        .from("orders")
+        .update({ payment_status: "expired" })
+        .eq("id", orderId)
+        .eq("store_id", metadataStoreId)
+        .eq("payment_status", "pending")
+        .eq("stock_restored", false)
+        .is("deleted_at", null)
+        .select("id");
+
+      if (updatedOrders && updatedOrders.length > 0) {
+        await restoreOrderStockServerSide(orderId);
+        await supabaseAdmin
+          .from("orders")
+          .update({ stock_restored: true })
+          .eq("id", orderId);
+      }
     }
   }
 }
