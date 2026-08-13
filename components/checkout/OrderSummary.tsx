@@ -3,11 +3,12 @@ import {
   CreditCard,
   Loader2,
   LockKeyhole,
-  MessageCircle,
   Package,
   ShoppingBag,
   Truck,
   ShieldCheck,
+  Copy,
+  Zap,
 } from "lucide-react";
 import type { DeliveryZone } from "@/lib/services/settings";
 import type { CheckoutCartItem, CheckoutTotals } from "./types";
@@ -17,6 +18,7 @@ import {
 } from "@/components/checkout/DiscountCouponBox";
 import Price from "@/components/tienda/Price";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import ZelleIcon from "@/components/checkout/ZelleIcon";
 
 type Props = {
   cart: CheckoutCartItem[];
@@ -41,6 +43,8 @@ type Props = {
   cardPaymentAvailable?: boolean;
   payWith?: "whatsapp" | "card";
   onChangePayWith?: (value: "whatsapp" | "card") => void;
+  /** Correo o teléfono de Zelle del negocio, para mostrarlo en las instrucciones de pago. */
+  zelleInfo?: string;
 };
 
 export function OrderSummary({
@@ -66,8 +70,9 @@ export function OrderSummary({
   cardPaymentAvailable = false,
   payWith = "whatsapp",
   onChangePayWith,
+  zelleInfo,
 }: Props) {
-  const { currency } = useCurrency();
+  const { currency, format } = useCurrency();
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
 
@@ -266,6 +271,7 @@ export function OrderSummary({
             </div>
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-extrabold text-emerald-700"><LockKeyhole size={11} /> Seguro</span>
           </div>
+
           <div className="grid min-w-0 gap-2.5 min-[390px]:grid-cols-2">
             <button
               type="button"
@@ -288,17 +294,60 @@ export function OrderSummary({
               onClick={() => onChangePayWith?.("whatsapp")}
               className={`group relative min-w-0 overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all ${
                 payWith === "whatsapp"
-                  ? "border-emerald-500 bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-4 ring-emerald-500/10"
-                  : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/40"
+                  ? "border-purple-600 bg-purple-600 text-white shadow-lg shadow-purple-600/20 ring-4 ring-purple-600/10"
+                  : "border-slate-200 bg-white text-slate-700 hover:border-purple-300 hover:bg-purple-50/40"
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${payWith === "whatsapp" ? "bg-white/15" : "bg-emerald-50 text-emerald-600"}`}><MessageCircle size={19} /></span>
-                <span><span className="block text-sm font-extrabold">WhatsApp</span><span className={`block text-[10px] font-semibold ${payWith === "whatsapp" ? "text-emerald-50" : "text-slate-400"}`}>Coordinar pedido</span></span>
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${payWith === "whatsapp" ? "bg-white/15" : "bg-purple-50 text-purple-600"}`}><ZelleIcon size={19} /></span>
+                <span><span className="block text-sm font-extrabold">Zelle</span><span className={`block text-[10px] font-semibold ${payWith === "whatsapp" ? "text-purple-100" : "text-slate-400"}`}>Transferencia</span></span>
               </div>
-              {payWith === "whatsapp" && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-emerald-600"><Check size={12} strokeWidth={3.5} /></span>}
+              {payWith === "whatsapp" && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-purple-600"><Check size={12} strokeWidth={3.5} /></span>}
             </button>
           </div>
+
+          {/* Instrucciones — cambian según el método elegido, para que a nadie
+              se le quede pendiente sin darse cuenta de qué falta por hacer. */}
+          {payWith === "card" ? (
+            <div className="mt-3 flex items-start gap-2.5 rounded-2xl bg-blue-50 px-3.5 py-3">
+              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><Zap size={12} /></span>
+              <p className="text-xs font-semibold leading-relaxed text-blue-900">
+                Pagas ahora mismo con tu tarjeta, de forma segura. En cuanto confirmes verás
+                tu pedido aprobado al instante — no tienes que hacer nada más.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-3 rounded-2xl bg-purple-50 px-3.5 py-3">
+              <p className="mb-2 text-xs font-extrabold text-purple-900">Así se paga con Zelle:</p>
+              <ol className="space-y-2 text-xs font-semibold text-purple-900">
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">1</span>
+                  <span>
+                    Abre tu banco o la app de Zelle y envía <strong><Price usd={finalTotal} /></strong> a:{" "}
+                    {zelleInfo ? (
+                      <span className="mt-1 flex items-center gap-1.5 rounded-lg bg-white px-2 py-1 font-mono text-[11px] text-purple-800 shadow-sm">
+                        <Copy size={11} className="shrink-0 text-purple-400" />
+                        {zelleInfo}
+                      </span>
+                    ) : (
+                      "el Zelle de la tienda (te lo confirmamos por WhatsApp)"
+                    )}
+                  </span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">2</span>
+                  <span>Toca el botón de abajo para enviarnos tu pedido por WhatsApp.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">3</span>
+                  <span>Adjunta ahí mismo la captura del envío — así confirmamos tu pago y procesamos el pedido.</span>
+                </li>
+              </ol>
+              <p className="mt-2.5 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[10.5px] font-bold text-amber-800">
+                Tu pedido queda pendiente hasta que confirmes el pago por WhatsApp.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -310,7 +359,7 @@ export function OrderSummary({
         className={`flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 font-bold text-white shadow-lg transition disabled:cursor-not-allowed disabled:opacity-60 ${
           payWith === "card"
             ? "bg-gradient-to-r from-blue-600 to-indigo-700 shadow-blue-600/25 hover:from-blue-700 hover:to-indigo-800"
-            : "bg-gradient-to-r from-emerald-500 to-green-600 shadow-green-600/25 hover:from-emerald-600 hover:to-green-700"
+            : "bg-gradient-to-r from-purple-600 to-violet-700 shadow-purple-600/25 hover:from-purple-700 hover:to-violet-800"
         }`}
       >
         {loading ? (
@@ -325,8 +374,8 @@ export function OrderSummary({
           </>
         ) : (
           <>
-            <MessageCircle size={20} />
-            Enviar pedido por WhatsApp
+            <ZelleIcon size={20} />
+            Ya pagué por Zelle, enviar pedido
           </>
         )}
       </button>
