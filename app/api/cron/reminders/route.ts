@@ -32,6 +32,12 @@ const CART_MAX_AGE_HOURS = 48;
 const ORDER_MIN_PENDING_MINUTES = 120;
 const ORDER_MAX_AGE_HOURS = 48;
 
+// LÍMITE DE VIDA: pasado este tiempo sin actividad, el carrito abandonado
+// se borra de verdad de la base de datos (no solo deja de mostrarse).
+// Es solo un snapshot de seguimiento, no un pedido real, así que
+// borrarlo no afecta ventas ni contabilidad.
+const CART_DELETE_AFTER_DAYS = 5;
+
 function getBaseUrl(store: { domain?: string | null }) {
   if (store.domain) {
     return `https://${store.domain.replace(/^https?:\/\//, "").replace(/^www\./, "")}`;
@@ -185,10 +191,33 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // ---------------------------------------------------------
+  // 3) Límite de vida: borrar carritos abandonados viejos de verdad
+  // ---------------------------------------------------------
+  let cartsDeleted = 0;
+  const cartDeleteCutoff = new Date(now - CART_DELETE_AFTER_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const { data: deletedCarts, error: deleteError } = await supabaseAdmin
+      .from("checkout_abandonment")
+      .delete()
+      .lte("last_seen_at", cartDeleteCutoff)
+      .select("id");
+
+    if (deleteError) {
+      console.error("Error borrando carritos abandonados vencidos:", deleteError);
+    } else {
+      cartsDeleted = deletedCarts?.length || 0;
+    }
+  } catch (err) {
+    console.error("Error inesperado borrando carritos abandonados vencidos:", err);
+  }
+
   return NextResponse.json({
     ok: true,
     cartsEmailed,
     cartsSkippedNoEmail,
+    cartsDeleted,
     ordersEmailed,
     ordersSkippedNoEmail,
   });

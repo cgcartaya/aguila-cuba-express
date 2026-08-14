@@ -54,7 +54,11 @@ export async function GET(request: NextRequest) {
   if (denied) return denied;
 
   const cutoffCartMinIdle = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const cutoffCartMaxAge = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  // Alineado con el límite de vida real del cron (CART_DELETE_AFTER_DAYS
+  // en app/api/cron/reminders/route.ts): pasado ese tiempo el carrito ya
+  // se borra de la base, así que no tiene sentido mostrarlo más tiempo
+  // que eso acá.
+  const cutoffCartMaxAge = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
   const cutoffOrderMinPending = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const cutoffOrderMaxAge = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
