@@ -28,6 +28,8 @@ import { LocalDeliveryAddressForm } from "@/components/checkout/LocalDeliveryAdd
 import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSelector";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import RememberedCustomerBanner from "@/components/checkout/RememberedCustomerBanner";
+import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
+import { CheckoutContinueBar } from "@/components/checkout/CheckoutContinueBar";
 import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
 import type { AppliedDiscount } from "@/components/checkout/DiscountCouponBox";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/config/features";
@@ -121,6 +123,13 @@ export default function CheckoutPage() {
   const orderUrlBase = "/pedido";
 
   const [form, setForm] = useState<CheckoutForm>(initialForm);
+  // CHECKOUT EN PASOS: antes todos los campos (cliente + destinatario +
+  // dirección) se mostraban en una sola pantalla larga antes de llegar
+  // al resumen/pago — en móvil eso significaba scrollear mucho antes de
+  // poder pagar. Se divide en 3 pasos sin tocar la lógica de validación
+  // ni de envío existente (missingCheckoutFields, canCheckout,
+  // handleSubmit siguen siendo la misma fuente de verdad).
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [businessWhatsapp, setBusinessWhatsapp] = useState("");
   const [businessZelle, setBusinessZelle] = useState("");
@@ -469,6 +478,50 @@ export default function CheckoutPage() {
 
     return missing;
   }, [form, isYoyo, method, selectedZone]);
+
+  // Mismo array de missingCheckoutFields, solo separado por a qué paso
+  // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
+  // (destinatario/dirección) se validan cada uno con sus propios campos,
+  // sin duplicar la lógica de qué es obligatorio.
+  const CUSTOMER_STEP_FIELDS: Array<keyof CheckoutForm> = ["name", "email", "phone"];
+  const step1MissingFields = missingCheckoutFields.filter((field) =>
+    CUSTOMER_STEP_FIELDS.includes(field.name)
+  );
+  const step2MissingFields = missingCheckoutFields.filter(
+    (field) => !CUSTOMER_STEP_FIELDS.includes(field.name)
+  );
+
+  function goToStep(nextStep: 1 | 2 | 3) {
+    // Retroceder nunca necesita validación.
+    if (nextStep < step) {
+      setError("");
+      setStep(nextStep);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (step === 1 && nextStep >= 2 && step1MissingFields.length > 0) {
+      const first = step1MissingFields[0];
+      showCheckoutError(
+        `Falta completar: ${step1MissingFields.map((f) => f.label).join(", ")}.`,
+        first.name
+      );
+      return;
+    }
+
+    if (step === 2 && nextStep === 3 && step2MissingFields.length > 0) {
+      const first = step2MissingFields[0];
+      showCheckoutError(
+        `Falta completar: ${step2MissingFields.map((f) => f.label).join(", ")}.`,
+        first.name
+      );
+      return;
+    }
+
+    setError("");
+    setStep(nextStep);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   function showCheckoutError(message: string, fieldName?: keyof CheckoutForm) {
     setError(message);
@@ -822,82 +875,118 @@ ${orderUrl}`);
             Cargando checkout...
           </div>
         ) : (
-          <div className="grid min-w-0 items-start gap-7 lg:grid-cols-3">
-            <section className="min-w-0 space-y-6 lg:col-span-2">
-              {isYoyo && settings && (
-                <CheckoutMethodSelector
-                  value={method}
-                  enabledDelivery={settings.enabled_delivery}
-                  enabledCuba={settings.enabled_cuba}
-                  onChange={changeMethod}
+          <>
+            <CheckoutSteps step={step} onStepClick={goToStep} />
+
+            {step < 3 ? (
+              <div className="min-w-0 space-y-6 pb-28">
+                {step === 1 && (
+                  <>
+                    {isYoyo && settings && (
+                      <CheckoutMethodSelector
+                        value={method}
+                        enabledDelivery={settings.enabled_delivery}
+                        enabledCuba={settings.enabled_cuba}
+                        onChange={changeMethod}
+                      />
+                    )}
+
+                    {rememberedProfile && (
+                      <RememberedCustomerBanner
+                        customerName={rememberedProfile.customer.name}
+                        recentOrders={rememberedProfile.recentOrders}
+                        onForget={handleForgetProfile}
+                        onReorder={handleReorderItems}
+                      />
+                    )}
+
+                    {(!isYoyo || settings?.blocks.customer !== false) && (
+                      <CustomerInfoForm form={form} onChange={handleChange} />
+                    )}
+                  </>
+                )}
+
+                {step === 2 && (
+                  <>
+                    {showRecipient && <RecipientInfoForm form={form} onChange={handleChange} />}
+
+                    {showAddress && method === "delivery" && isYoyo ? (
+                      <LocalDeliveryAddressForm
+                        form={form}
+                        showNotes={showNotes}
+                        onChange={handleChange}
+                      />
+                    ) : showAddress ? (
+                      <DeliveryAddressForm
+                        form={form}
+                        zones={zones}
+                        selectedZone={selectedZone}
+                        availableZones={availableZones}
+                        loadingZones={loadingCheckout}
+                        municipalityHasNoZones={municipalityHasNoZones}
+                        showNotes={showNotes}
+                        onChange={handleChange}
+                      />
+                    ) : null}
+                  </>
+                )}
+
+                {error && (
+                  <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                    {error}
+                  </div>
+                )}
+
+                <CheckoutContinueBar
+                  total={finalTotalWithDiscount}
+                  step={step === 2 ? 2 : 1}
+                  onBack={step === 2 ? () => goToStep(1) : undefined}
+                  onContinue={() => goToStep(step === 1 ? 2 : 3)}
                 />
-              )}
+              </div>
+            ) : (
+              <div className="min-w-0 space-y-4">
+                <button
+                  type="button"
+                  onClick={() => goToStep(2)}
+                  className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline"
+                >
+                  <ArrowLeft size={16} />
+                  Editar datos de entrega
+                </button>
 
-              {rememberedProfile && (
-                <RememberedCustomerBanner
-                  customerName={rememberedProfile.customer.name}
-                  recentOrders={rememberedProfile.recentOrders}
-                  onForget={handleForgetProfile}
-                  onReorder={handleReorderItems}
-                />
-              )}
-
-              {(!isYoyo || settings?.blocks.customer !== false) && (
-                <CustomerInfoForm form={form} onChange={handleChange} />
-              )}
-
-              {showRecipient && <RecipientInfoForm form={form} onChange={handleChange} />}
-
-              {showAddress && method === "delivery" && isYoyo ? (
-                <LocalDeliveryAddressForm
-                  form={form}
-                  showNotes={showNotes}
-                  onChange={handleChange}
-                />
-              ) : showAddress ? (
-                <DeliveryAddressForm
-                  form={form}
-                  zones={zones}
+                <OrderSummary
+                  cart={cart}
                   selectedZone={selectedZone}
-                  availableZones={availableZones}
-                  loadingZones={loadingCheckout}
-                  municipalityHasNoZones={municipalityHasNoZones}
-                  showNotes={showNotes}
-                  onChange={handleChange}
+                  municipality={method === "delivery" ? form.city : form.municipality}
+                  totals={totals}
+                  error={error}
+                  loading={loading}
+                  canCheckout={canCheckout}
+                  missingFields={missingCheckoutFields.map((field) => field.label)}
+                  onSubmit={handleSubmit}
+                  storeId={store?.id || ""}
+                  customerPhone={form.phone}
+                  appliedDiscount={appliedDiscount}
+                  onApplyDiscount={applyDiscount}
+                  onRemoveDiscount={removeDiscount}
+                  showCoupon={showCoupon}
+                  showDelivery={showDelivery}
+                  deliveryLabel="Delivery"
+                  deliveryRequiresZone={method === "cuba"}
+                  locationLabel={
+                    method === "delivery" && form.city
+                      ? `Entrega en ${form.city}`
+                      : undefined
+                  }
+                  cardPaymentAvailable={cardPaymentAvailable}
+                  payWith={payWith}
+                  onChangePayWith={setPayWith}
+                  zelleInfo={businessZelle}
                 />
-              ) : null}
-            </section>
-
-            <OrderSummary
-              cart={cart}
-              selectedZone={selectedZone}
-              municipality={method === "delivery" ? form.city : form.municipality}
-              totals={totals}
-              error={error}
-              loading={loading}
-              canCheckout={canCheckout}
-              missingFields={missingCheckoutFields.map((field) => field.label)}
-              onSubmit={handleSubmit}
-              storeId={store?.id || ""}
-              customerPhone={form.phone}
-              appliedDiscount={appliedDiscount}
-              onApplyDiscount={applyDiscount}
-              onRemoveDiscount={removeDiscount}
-              showCoupon={showCoupon}
-              showDelivery={showDelivery}
-              deliveryLabel="Delivery"
-              deliveryRequiresZone={method === "cuba"}
-              locationLabel={
-                method === "delivery" && form.city
-                  ? `Entrega en ${form.city}`
-                  : undefined
-              }
-              cardPaymentAvailable={cardPaymentAvailable}
-              payWith={payWith}
-              onChangePayWith={setPayWith}
-              zelleInfo={businessZelle}
-            />
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </main>
