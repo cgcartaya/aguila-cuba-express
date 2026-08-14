@@ -75,6 +75,90 @@ export async function getComboById(id: string, storeId: string) {
     .single();
 }
 
+/* =========================================================
+   COMBOS QUE INCLUYEN UN PRODUCTO ("cómpralo en combo y ahorra")
+
+   Usado en:
+   - Página de producto: sugiere combos que incluyen el producto
+     que se está viendo.
+   - Carrito: sugiere combos que incluyen algún producto que el
+     cliente ya tiene en el carrito.
+
+   No filtra por precio ni por stock del combo en sí (eso ya lo
+   valida el propio addComboToCart / checkout), solo por
+   is_active + no borrado, igual que getActiveCombosByStoreId.
+========================================================= */
+export async function getCombosContainingProduct(
+  productId: string,
+  storeId: string,
+  limit = 4
+) {
+  if (!productId || !storeId) {
+    return { data: [], error: null };
+  }
+
+  // 1) IDs de combos que tienen este producto entre sus combo_items.
+  const { data: comboIdRows, error: comboIdError } = await supabase
+    .from("combo_items")
+    .select("combo_id")
+    .eq("product_id", productId);
+
+  if (comboIdError) return { data: [], error: comboIdError };
+
+  const comboIds = Array.from(
+    new Set((comboIdRows || []).map((row) => row.combo_id))
+  );
+
+  if (comboIds.length === 0) return { data: [], error: null };
+
+  // 2) Traer esos combos completos (con sus items), solo los activos.
+  return supabase
+    .from("combos")
+    .select(COMBO_PUBLIC_SELECT)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .in("id", comboIds)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+}
+
+// Misma idea que getCombosContainingProduct pero para varios productos a
+// la vez (el carrito, donde puede haber varios productos distintos).
+export async function getCombosContainingAnyProduct(
+  productIds: string[],
+  storeId: string,
+  limit = 4
+) {
+  const cleanIds = Array.from(new Set(productIds.filter(Boolean)));
+  if (cleanIds.length === 0 || !storeId) {
+    return { data: [], error: null };
+  }
+
+  const { data: comboIdRows, error: comboIdError } = await supabase
+    .from("combo_items")
+    .select("combo_id")
+    .in("product_id", cleanIds);
+
+  if (comboIdError) return { data: [], error: comboIdError };
+
+  const comboIds = Array.from(
+    new Set((comboIdRows || []).map((row) => row.combo_id))
+  );
+
+  if (comboIds.length === 0) return { data: [], error: null };
+
+  return supabase
+    .from("combos")
+    .select(COMBO_PUBLIC_SELECT)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
+    .is("deleted_at", null)
+    .in("id", comboIds)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+}
+
 export async function createComboForStore(
   storeId: string,
   combo: {

@@ -26,6 +26,8 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import Price from "@/components/tienda/Price";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import { getHomeFeaturedProductsByStoreId } from "@/lib/services/products";
+import { getCombosContainingAnyProduct } from "@/lib/services/combos";
+import StoreComboCard, { type StoreCombo } from "@/components/tienda/combos/StoreComboCard";
 import { getPurchaseQuantityLimit } from "@/lib/storefront/product-quantity-pricing";
 import type { Product } from "@/types/cart";
 
@@ -58,6 +60,8 @@ export default function CartPageClient() {
   const { store } = useStore();
   const { currency } = useCurrency();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  // Combos que incluyen algún producto que ya está en el carrito.
+  const [comboRecommendations, setComboRecommendations] = useState<StoreCombo[]>([]);
   const recommendationsRef = useRef<HTMLDivElement>(null);
 
   const isDefaultStore = store?.slug === "aguila";
@@ -116,6 +120,58 @@ export default function CartPageClient() {
       active = false;
     };
   }, [store?.id]);
+
+  // Combos que incluyen algún producto que el cliente ya tiene en el
+  // carrito — "complementa tu pedido con este combo". Se recalcula solo
+  // cuando cambia el set de productos del carrito, no en cada render.
+  const cartProductIdsKey = useMemo(
+    () =>
+      cart
+        .filter((item) => item.type === "product")
+        .map((item) => String(item.id).replace(/^product-/, ""))
+        .sort()
+        .join(","),
+    [cart]
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadComboRecommendations() {
+      const productIds = cartProductIdsKey ? cartProductIdsKey.split(",") : [];
+
+      if (!store?.id || productIds.length === 0) {
+        setComboRecommendations([]);
+        return;
+      }
+
+      const { data, error } = await getCombosContainingAnyProduct(productIds, store.id, 4);
+      if (!active) return;
+
+      if (error) {
+        console.error("No se pudieron cargar los combos sugeridos:", error);
+        setComboRecommendations([]);
+        return;
+      }
+
+      setComboRecommendations((data as StoreCombo[]) || []);
+    }
+
+    void loadComboRecommendations();
+    return () => {
+      active = false;
+    };
+  }, [store?.id, cartProductIdsKey]);
+
+  const visibleComboRecommendations = useMemo(() => {
+    const cartComboIds = new Set(
+      cart
+        .filter((item) => item.type === "combo")
+        .map((item) => String(item.id).replace(/^combo-/, ""))
+    );
+
+    return comboRecommendations.filter((combo) => !cartComboIds.has(String(combo.id)));
+  }, [cart, comboRecommendations]);
 
   const recommendations = useMemo(() => {
     const cartProductIds = new Set(
@@ -324,6 +380,32 @@ export default function CartPageClient() {
                   </article>
                 ))}
               </section>
+
+              {visibleComboRecommendations.length > 0 && (
+                <section className="mt-8">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-green-600">
+                      <Package size={17} />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-black">Complementa tu pedido con un combo</h2>
+                      <p className="text-xs font-semibold text-slate-500">
+                        Incluyen algo que ya tienes en el carrito
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                    {visibleComboRecommendations.map((combo) => (
+                      <StoreComboCard
+                        key={combo.id}
+                        combo={combo}
+                        storeSlug={isDefaultStore ? undefined : store?.slug}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {recommendations.length > 0 && (
                 <section className="mt-8">

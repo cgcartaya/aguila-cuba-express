@@ -19,11 +19,13 @@ import ProductGallery from "@/components/tienda/product-detail/ProductGallery";
 import ProductInfo from "@/components/tienda/product-detail/ProductInfo";
 import RelatedProducts from "@/components/tienda/product-detail/RelatedProducts";
 import ProductReviews from "@/components/tienda/product-detail/ProductReviews";
+import StoreComboCard, { type StoreCombo } from "@/components/tienda/combos/StoreComboCard";
 
 import {
   getStoreProductById,
   getRelatedProducts,
 } from "@/lib/services/products";
+import { getCombosContainingProduct } from "@/lib/services/combos";
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
@@ -58,6 +60,9 @@ export default function ProductDetailClient({
   const [relatedProducts, setRelatedProducts] =
     useState<Product[]>([]);
 
+  // Combos que incluyen este producto — "cómpralo en combo y ahorra".
+  const [relatedCombos, setRelatedCombos] = useState<StoreCombo[]>([]);
+
   const [selectedImage, setSelectedImage] =
     useState("");
 
@@ -73,6 +78,7 @@ export default function ProductDetailClient({
       if (!store?.id || store.slug !== slug) {
         setProduct(null);
         setRelatedProducts([]);
+        setRelatedCombos([]);
         return;
       }
 
@@ -124,6 +130,13 @@ export default function ProductDetailClient({
           (relatedData as Product[]) || []
         );
       }
+
+      const { data: combosData } = await getCombosContainingProduct(
+        String(productData.id),
+        store.id,
+        4
+      );
+      setRelatedCombos((combosData as StoreCombo[]) || []);
     }
 
     loadProduct();
@@ -220,6 +233,23 @@ export default function ProductDetailClient({
             onAddToCart={handleAddToCart}
           />
         </div>
+
+        {relatedCombos.length > 0 && (
+          <section className="mt-10">
+            <h2 className="mb-1 text-2xl font-black text-[#061b3a]">
+              Cómpralo en combo y ahorra
+            </h2>
+            <p className="mb-4 text-sm text-slate-500">
+              Este producto también viene incluido en estos combos.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {relatedCombos.map((combo) => (
+                <StoreComboCard key={combo.id} combo={combo} storeSlug={slug} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <RelatedProducts
           products={relatedProducts}
