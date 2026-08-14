@@ -120,7 +120,7 @@ export default function RecordatoriosPage() {
     const storeName = activeStore?.name || "la tienda";
     const message =
       `Hola${cart.customer_name ? ` ${cart.customer_name}` : ""}, vimos que dejaste esto en tu carrito de ${storeName}:\n\n` +
-      `${itemsText}\n\nSubtotal: $${Number(cart.subtotal || 0).toFixed(2)}\n\n¿Quieres que te ayudemos a completar tu pedido?`;
+      `${itemsText}\n\nSubtotal: $${Number(cart.subtotal || 0).toFixed(2)}\n\n¿Te ayudamos a completarlo o lo cancelamos?`;
 
     openWhatsAppMessage({
       app: prefersWhatsAppBusiness ? "business" : "personal",
