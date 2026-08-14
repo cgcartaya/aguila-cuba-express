@@ -50,7 +50,10 @@ export default async function MenuPage({ params }: PageProps) {
         store={menu.store}
         categories={menu.categories}
         whatsappNumber={settings?.whatsapp || null}
-        landingHref={slug === "deparis" ? "/deparis" : undefined}
+        // La landing real de De Paris vive en "/" (detección por host
+        // en app/page.tsx), no en "/deparis" — esa ruta es código
+        // muerto y por eso el botón "Volver" daba 404.
+        landingHref={slug === "deparis" ? "/" : undefined}
       />
     </Suspense>
   );

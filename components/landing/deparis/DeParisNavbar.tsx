@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, MessageCircle, ShoppingBag, X } from "lucide-react";
+import { LogIn, Menu, MessageCircle, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
@@ -73,6 +73,12 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 px-2 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410]/50 transition hover:text-[#1B1410]"
+          >
+            <LogIn size={15} /> Iniciar sesión
+          </Link>
           <a
             href={WHATSAPP_URL}
             target="_blank"
@@ -113,6 +119,13 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
                 {label}
               </Link>
             ))}
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="mt-2 flex items-center justify-center gap-2 rounded-full border border-[#1B1410]/10 px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#1B1410]/60"
+            >
+              <LogIn size={16} /> Iniciar sesión
+            </Link>
             <a
               href={WHATSAPP_URL}
               target="_blank"

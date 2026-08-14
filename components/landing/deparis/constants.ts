@@ -14,11 +14,19 @@ export const PHONE_DISPLAY = "+53 5299 4719";
 // Ruta de la tienda dentro de Perla Marketplace (slug real: deparis)
 export const STORE_URL = "/tienda/deparis";
 
-// TODO: reemplazar por la dirección exacta del local en Cienfuegos
-export const ADDRESS_LINE_1 = "Calle por confirmar";
-export const ADDRESS_LINE_2 = "Cienfuegos, Cuba";
-export const MAPS_URL =
-  "https://www.google.com/maps/search/?api=1&query=De+Paris+Mercado+Cienfuegos+Cuba";
+// Bar & Restaurante y Mercado son dos locales físicos distintos en
+// Cienfuegos — cada uno con su propia dirección y enlace de mapa.
+export const RESTAURANT_ADDRESS_LINE_1 = "Calle 31 # 5212, entre 52 y 54";
+export const RESTAURANT_ADDRESS_LINE_2 = "Cienfuegos, Cuba";
+export const RESTAURANT_MAPS_URL =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("Calle 31 # 5212 entre 52 y 54, Cienfuegos, Cuba");
+
+export const MARKET_ADDRESS_LINE_1 = "Calle 29 # 4819, entre 48 y 50";
+export const MARKET_ADDRESS_LINE_2 = "Cienfuegos, Cuba";
+export const MARKET_MAPS_URL =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("Calle 29 # 4819 entre 48 y 50, Cienfuegos, Cuba");
 
 export const HOURS: { day: string; time: string }[] = [
   { day: "Lunes – Jueves", time: "10:00 am – 9:00 pm" },

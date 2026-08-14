@@ -5,11 +5,14 @@ import { motion } from "framer-motion";
 import { Clock, MapPin, MessageCircle, Phone, ShoppingBag } from "lucide-react";
 
 import {
-  ADDRESS_LINE_1,
-  ADDRESS_LINE_2,
   HOURS,
-  MAPS_URL,
+  MARKET_ADDRESS_LINE_1,
+  MARKET_ADDRESS_LINE_2,
+  MARKET_MAPS_URL,
   PHONE_DISPLAY,
+  RESTAURANT_ADDRESS_LINE_1,
+  RESTAURANT_ADDRESS_LINE_2,
+  RESTAURANT_MAPS_URL,
   STORE_URL,
   WHATSAPP_URL,
 } from "./constants";
@@ -70,17 +73,36 @@ export default function DeParisCTA() {
             <MapPin size={20} className="mt-1 shrink-0 text-[#FC6C26]" />
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-[#FFF4D6]/50">
-                Dirección
+                Bar &amp; Restaurante
               </p>
               <a
-                href={MAPS_URL}
+                href={RESTAURANT_MAPS_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-1 block text-base leading-6 text-[#FFF4D6] transition hover:text-[#FC6C26]"
               >
-                {ADDRESS_LINE_1}
+                {RESTAURANT_ADDRESS_LINE_1}
                 <br />
-                {ADDRESS_LINE_2}
+                {RESTAURANT_ADDRESS_LINE_2}
+              </a>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-start gap-4 border-t border-[#FFF4D6]/10 pt-6">
+            <MapPin size={20} className="mt-1 shrink-0 text-[#FC6C26]" />
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-[#FFF4D6]/50">
+                Mercado
+              </p>
+              <a
+                href={MARKET_MAPS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 block text-base leading-6 text-[#FFF4D6] transition hover:text-[#FC6C26]"
+              >
+                {MARKET_ADDRESS_LINE_1}
+                <br />
+                {MARKET_ADDRESS_LINE_2}
               </a>
             </div>
           </div>
