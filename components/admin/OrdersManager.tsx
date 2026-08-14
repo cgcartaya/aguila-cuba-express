@@ -87,9 +87,20 @@ function getOrderNumber(order: any) {
 }
 
 function getCustomer(order: any) {
-  return Array.isArray(order.customers)
-    ? order.customers[0]
-    : order.customers;
+  const linked = Array.isArray(order.customers) ? order.customers[0] : order.customers;
+  if (linked?.name || linked?.phone) return linked;
+
+  // ARREGLO 2026-08-13: si por lo que sea el pedido nunca quedó
+  // enlazado a un cliente (customer_id null) o el cliente vinculado no
+  // tiene datos, usamos el nombre/teléfono que se guardó DIRECTO en el
+  // pedido al crearlo (order.customer_name / order.customer_phone) —
+  // esto ya no depende de que la tabla customers haya funcionado bien
+  // en ese momento. Ver create-order/route.ts.
+  if (order.customer_name || order.customer_phone) {
+    return { name: order.customer_name, phone: order.customer_phone, email: null };
+  }
+
+  return linked;
 }
 
 function statusClass(status: string) {

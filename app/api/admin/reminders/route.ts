@@ -72,7 +72,9 @@ export async function GET(request: NextRequest) {
       .limit(100),
     supabaseAdmin
       .from("orders")
-      .select("id, order_number, customer_id, total, created_at, payment_method, email_reminded_at, whatsapp_reminded_at")
+      .select(
+        "id, order_number, customer_id, customer_name, customer_phone, total, created_at, payment_method, email_reminded_at, whatsapp_reminded_at"
+      )
       .eq("store_id", storeId)
       .eq("payment_status", "pending")
       .is("deleted_at", null)
@@ -92,10 +94,21 @@ export async function GET(request: NextRequest) {
       : { data: [] as any[] };
   const customerById = new Map((customers || []).map((c) => [c.id, c]));
 
-  const ordersWithCustomer = (orders || []).map((order) => ({
-    ...order,
-    customer: order.customer_id ? customerById.get(order.customer_id) || null : null,
-  }));
+  // ARREGLO 2026-08-13 ("Cliente sin nombre"): si el pedido nunca quedó
+  // enlazado a un cliente (o el cliente vinculado no tiene datos), se
+  // usa el nombre/teléfono guardado directo en la orden (order.customer_name
+  // / order.customer_phone) — igual que getCustomer() en OrdersManager.tsx.
+  const ordersWithCustomer = (orders || []).map((order) => {
+    const linked = order.customer_id ? customerById.get(order.customer_id) || null : null;
+    const customer =
+      linked?.name || linked?.phone
+        ? linked
+        : order.customer_name || order.customer_phone
+          ? { name: order.customer_name, phone: order.customer_phone, email: null }
+          : linked;
+
+    return { ...order, customer };
+  });
 
   return NextResponse.json({
     ok: true,

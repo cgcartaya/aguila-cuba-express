@@ -34,6 +34,8 @@ const ORDERS_SELECT = `
   recipient_phone_alt,
   store_id,
   customer_id,
+  customer_name,
+  customer_phone,
   order_items (
     id,
     item_type,

@@ -627,8 +627,17 @@ export async function POST(request: Request) {
       : clean(form.municipality, 120);
 
     // Cliente (el comprador, no el destinatario en Cuba): se busca por
-    // teléfono dentro de la tienda; si no existe, se crea. (Este es el
-    // arreglo de "Cliente sin nombre" — se mantiene igual.)
+    // teléfono dentro de la tienda; si no existe, se crea.
+    //
+    // ARREGLO 2026-08-13: antes esto era "select, y si no existe insert"
+    // — dos pasos separados. Si dos pedidos del mismo teléfono nuevo
+    // llegaban casi al mismo tiempo (por ejemplo, alguien que paga con
+    // tarjeta y reintenta, o dos pestañas abiertas), ambos veían "no
+    // existe" y ambos intentaban crear el cliente; uno de los dos
+    // chocaba con la restricción de teléfono único y se quedaba sin
+    // customer_id, y por eso el pedido salía "Cliente sin nombre". Un
+    // solo upsert atómico (una sola vuelta a la base de datos) elimina
+    // esa carrera de raíz.
     //
     // PERFIL DEL CLIENTE (sin login): a cada cliente se le asigna un
     // device_token — si el navegador ya traía uno (localStorage) se le
@@ -640,47 +649,42 @@ export async function POST(request: Request) {
     const resolvedDeviceToken = incomingDeviceToken || randomUUID();
 
     let customerId: string | null = null;
-    const { data: existingCustomer } = await supabaseAdmin
+    const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
       .from("customers")
-      .select("id")
-      .eq("store_id", storeId)
-      .eq("phone", customerPhone)
-      .maybeSingle();
-
-    if (existingCustomer) {
-      customerId = existingCustomer.id;
-      await supabaseAdmin
-        .from("customers")
-        .update({
-          name: customerName || undefined,
-          email: email || undefined,
-          city: city || undefined,
-          device_token: resolvedDeviceToken,
-        })
-        .eq("id", existingCustomer.id);
-    } else {
-      const { data: newCustomer, error: customerError } = await supabaseAdmin
-        .from("customers")
-        .insert({
+      .upsert(
+        {
           store_id: storeId,
+          phone: customerPhone,
           name: customerName || "Cliente sin nombre",
           email: email || null,
-          phone: customerPhone,
           city: city || null,
           device_token: resolvedDeviceToken,
-        })
-        .select("id")
-        .single();
+        },
+        { onConflict: "store_id,phone" }
+      )
+      .select("id")
+      .single();
 
-      if (customerError) {
-        console.error("CREATE CUSTOMER ERROR:", customerError);
-      } else {
-        customerId = newCustomer.id;
-      }
+    if (customerError) {
+      // No debe pasar casi nunca ahora (era el caso que causaba
+      // "Cliente sin nombre"), pero si pasa igual el pedido no se
+      // pierde: el nombre/teléfono ya quedan guardados directo en la
+      // orden más abajo (customer_name / customer_phone), así que se ve
+      // bien en el admin aunque el enlace a customers haya fallado.
+      console.error("UPSERT CUSTOMER ERROR:", customerError);
+    } else {
+      customerId = upsertedCustomer.id;
     }
 
     const payload = {
       customer_id: customerId,
+      // ARREGLO 2026-08-13 ("Cliente sin nombre"): copia directa del
+      // nombre/teléfono del comprador en la orden misma, sin depender
+      // de que el enlace a customers haya funcionado. Es la fuente que
+      // usa el admin (ver getCustomer() en OrdersManager.tsx) cuando
+      // customer_id es null o el cliente vinculado no tiene nombre.
+      customer_name: customerName || null,
+      customer_phone: customerPhone || null,
       store_id: storeId,
       status: "pending",
       payment_status: "pending",
