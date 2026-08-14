@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { getPublicMenu } from "@/lib/services/menu";
@@ -41,11 +42,16 @@ export default async function MenuPage({ params }: PageProps) {
   const { data: settings } = await getStoreSettings(menu.store.id);
 
   return (
-    <MenuPageClient
-      store={menu.store}
-      categories={menu.categories}
-      whatsappNumber={settings?.whatsapp || null}
-      landingHref={slug === "deparis" ? "/deparis" : undefined}
-    />
+    // MenuPageClient lee ?tipo=bar (para abrir directo en la pestaña
+    // Bar cuando se llega desde la landing) con useSearchParams, que
+    // en el app router requiere estar dentro de un Suspense boundary.
+    <Suspense fallback={null}>
+      <MenuPageClient
+        store={menu.store}
+        categories={menu.categories}
+        whatsappNumber={settings?.whatsapp || null}
+        landingHref={slug === "deparis" ? "/deparis" : undefined}
+      />
+    </Suspense>
   );
 }

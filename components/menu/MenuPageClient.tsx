@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Bodoni_Moda, Manrope } from "next/font/google";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronRight, Clock3, ShoppingBag, Sparkles } from "lucide-react";
 
 import MenuItemModal from "./MenuItemModal";
@@ -118,7 +119,13 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
   const hasRestaurant = categoriesWithItems.some((cat) => cat.venue_type === "restaurant");
   const showVenueTabs = hasBar && hasRestaurant;
 
-  const [venueFilter, setVenueFilter] = useState<VenueFilter>("restaurant");
+  // Permite llegar directo a la pestaña Bar desde otra página (ej. el
+  // botón "Bebidas principales" de la landing) con /menu/slug?tipo=bar.
+  // Si el parámetro no viene o no es válido, se queda en "restaurant"
+  // como hasta ahora.
+  const searchParams = useSearchParams();
+  const initialVenueFilter: VenueFilter = searchParams.get("tipo") === "bar" ? "bar" : "restaurant";
+  const [venueFilter, setVenueFilter] = useState<VenueFilter>(initialVenueFilter);
 
   const visibleCategories = showVenueTabs
     ? categoriesWithItems.filter(

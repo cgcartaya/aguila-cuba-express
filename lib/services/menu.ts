@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { getStoreBySlug } from "@/lib/services/stores";
 
 import type {
+  FeaturedMenuItem,
   MenuCategory,
   MenuItem,
   MenuItemFormData,
@@ -54,19 +55,26 @@ export async function isMenuModuleEnabled(slug: string): Promise<boolean> {
 /**
  * Trae hasta `limit` platillos marcados "Destacar en la landing"
  * (is_featured) de una tienda, para mostrarlos en su landing (ej.
- * app/deparis). Falla cerrado (array vacío) ante cualquier error,
- * para que la landing nunca se rompa por esto.
+ * app/deparis). Trae también el venue_type de la categoría de cada
+ * ítem (bar/restaurant/general) para que la landing pueda separarlos
+ * en "Platos principales" y "Bebidas principales" en vez de mezclar
+ * todo en una sola vitrina. Falla cerrado (array vacío) ante
+ * cualquier error, para que la landing nunca se rompa por esto.
  */
-export async function getFeaturedMenuItems(slug: string, limit = 6) {
+export async function getFeaturedMenuItems(
+  slug: string,
+  limit = 12
+): Promise<FeaturedMenuItem[]> {
   const store = await getStoreBySlug(slug);
   if (!store || !store.module_menu_enabled) return [];
 
   const { data, error } = await supabase
     .from("menu_items")
-    .select(MENU_ITEM_SELECT)
+    .select(`${MENU_ITEM_SELECT}, menu_categories!inner ( venue_type, is_active )`)
     .eq("store_id", store.id)
     .eq("is_active", true)
     .eq("is_featured", true)
+    .eq("menu_categories.is_active", true)
     .order("sort_order", { ascending: true })
     .limit(limit);
 
@@ -75,7 +83,12 @@ export async function getFeaturedMenuItems(slug: string, limit = 6) {
     return [];
   }
 
-  return (data ?? []) as MenuItem[];
+  return (data ?? []).map((row) => {
+    const { menu_categories, ...item } = row as unknown as MenuItem & {
+      menu_categories: { venue_type: "bar" | "restaurant" | "general"; is_active: boolean };
+    };
+    return { ...item, venue_type: menu_categories?.venue_type ?? "general" };
+  }) as FeaturedMenuItem[];
 }
 
 /* =========================================================

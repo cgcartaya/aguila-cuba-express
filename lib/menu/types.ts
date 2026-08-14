@@ -34,6 +34,13 @@ export type MenuItem = {
   menu_item_option_groups: MenuOptionGroup[];
 };
 
+/* Ítem destacado (is_featured) tal como se usa en las landings —
+   trae el venue_type de su categoría (bar/restaurant/general) para
+   poder separarlo en "Platos principales" vs "Bebidas principales". */
+export type FeaturedMenuItem = MenuItem & {
+  venue_type: "bar" | "restaurant" | "general";
+};
+
 export type MenuCategory = {
   id: string;
   store_id: string;

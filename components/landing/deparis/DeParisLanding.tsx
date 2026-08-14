@@ -4,8 +4,8 @@ import { Bodoni_Moda, Manrope, Parisienne } from "next/font/google";
 
 import DeParisNavbar from "./DeParisNavbar";
 import DeParisHero from "./DeParisHero";
+import DeParisQuickNav from "./DeParisQuickNav";
 import DeParisDualWorlds from "./DeParisDualWorlds";
-import DeParisMenuHighlights from "./DeParisMenuHighlights";
 import DeParisFeaturedDishes, { type FeaturedDish } from "./DeParisFeaturedDishes";
 import DeParisFeatures from "./DeParisFeatures";
 import DeParisCTA from "./DeParisCTA";
@@ -47,9 +47,9 @@ export default function DeParisLanding({
     >
       <DeParisNavbar menuHref={menuHref} />
       <DeParisHero menuHref={menuHref} />
+      <DeParisQuickNav />
       <DeParisDualWorlds menuHref={menuHref} />
       <DeParisFeaturedDishes dishes={featuredDishes} menuHref={menuHref} />
-      <DeParisMenuHighlights menuHref={menuHref} />
       <DeParisFeatures />
       <DeParisCTA />
       <DeParisFooter />

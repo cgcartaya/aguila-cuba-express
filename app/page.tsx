@@ -211,7 +211,7 @@ export default async function HomePage() {
   if (landing === "deparis") {
     const [menuEnabled, featuredItems] = await Promise.all([
       isMenuModuleEnabled("deparis"),
-      getFeaturedMenuItems("deparis", 6),
+      getFeaturedMenuItems("deparis", 12),
     ]);
 
     const featuredDishes = featuredItems.map((item) => ({
@@ -220,6 +220,7 @@ export default async function HomePage() {
       description: item.description,
       price: item.price,
       image_url: item.image_url,
+      venue_type: item.venue_type,
     }));
 
     return (

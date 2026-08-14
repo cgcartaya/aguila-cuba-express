@@ -19,8 +19,13 @@ const reveal: Variants = {
  * color sólido — no se rompe nada.
  *
  * Guarda las fotos en:
- *   public/deparis/dual/bar-restaurante.(jpg|jpeg|png|webp)
+ *   public/deparis/dual/restaurante.(jpg|jpeg|png|webp)
+ *   public/deparis/dual/bar.(jpg|jpeg|png|webp)
  *   public/deparis/dual/mercado.(jpg|jpeg|png|webp)
+ *
+ * (Si ya tenías bar-restaurante.* de la versión anterior, cámbiale el
+ * nombre a restaurante.* o bar.* según corresponda — o simplemente
+ * sube ambas fotos nuevas.)
  */
 const EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 
@@ -60,7 +65,7 @@ function FloatingStat({
 }) {
   return (
     <div
-      className={`dp-dw-float absolute right-6 top-6 z-10 rounded-2xl border px-4 py-3 text-center backdrop-blur-md sm:right-10 sm:top-10 ${
+      className={`dp-dw-float absolute right-6 top-6 z-10 rounded-2xl border px-4 py-3 text-center backdrop-blur-md sm:right-8 sm:top-8 ${
         tone === "dark"
           ? "border-white/15 bg-white/10 text-[#FFF4D6]"
           : "border-[#1B1410]/15 bg-[#1B1410]/10 text-[#1B1410]"
@@ -84,7 +89,7 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
     <section className="relative bg-[#FFF4D6]">
       <div className="mx-auto max-w-7xl px-5 pb-4 pt-16 text-center sm:px-8 sm:pt-24">
         <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FC6C26]">
-          Dos negocios, una misma casa
+          Tres mundos, una misma casa
         </p>
         <h2
           className="mx-auto mt-3 max-w-2xl text-3xl leading-tight text-[#1B1410] sm:text-4xl"
@@ -94,41 +99,40 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
         </h2>
       </div>
 
-      <div className="mt-10 grid overflow-hidden sm:mt-14 lg:grid-cols-2">
-        {/* Bar & Restaurante */}
+      <div className="mt-10 grid overflow-hidden sm:mt-14 lg:grid-cols-3">
+        {/* Restaurante */}
         <motion.div
-          id="bar-restaurante"
+          id="restaurante"
           variants={reveal}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.3 }}
-          className="group relative flex min-h-[440px] flex-col justify-between overflow-hidden bg-[#1B1410] px-8 py-12 text-[#FFF4D6] sm:px-12 lg:px-14"
+          className="group relative flex min-h-[440px] scroll-mt-24 flex-col justify-between overflow-hidden bg-[#1B1410] px-8 py-12 text-[#FFF4D6] sm:px-10 lg:px-10"
         >
-          <PanelPhoto base="/deparis/dual/bar-restaurante" />
+          <PanelPhoto base="/deparis/dual/restaurante" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1B1410] via-[#1B1410]/88 to-[#1B1410]/50" />
           <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(rgba(255,244,214,.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,244,214,.6)_1px,transparent_1px)] [background-size:38px_38px]" />
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#FC6C26]/20 blur-[90px] transition-all duration-500 group-hover:scale-125" />
 
-          <FloatingStat value="+30" label="Platos & cocteles" tone="dark" />
+          <FloatingStat value="+20" label="Platos de la carta" tone="dark" />
 
           <div className="relative z-10">
             <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#C89B3C]/50 bg-white/5">
-              <Wine size={22} className="text-[#C89B3C]" />
+              <UtensilsCrossed size={22} className="text-[#C89B3C]" />
             </div>
             <h3
-              className="mt-6 text-3xl sm:text-4xl"
+              className="mt-6 text-3xl"
               style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
             >
-              Bar &amp; Restaurante
+              Restaurante
             </h3>
             <p className="mt-4 max-w-md text-sm leading-7 text-[#FFF4D6]/70">
-              Una carta variada, coctelería de la casa y un ambiente para
-              sobremesas largas. Ideal para cenas, brindis y encuentros entre
-              amigos.
+              Cocina de la casa, servida en sala o para llevar. Ideal para
+              almuerzos, cenas en familia y celebraciones.
             </p>
           </div>
 
-          <div className="relative z-10 mt-10 flex items-center gap-4">
+          <div className="relative z-10 mt-10 flex flex-wrap items-center gap-4">
             <a
               href={WHATSAPP_URL}
               target="_blank"
@@ -139,10 +143,61 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
               Reservar una mesa
             </a>
             <a
-              href={menuHref || "#menu"}
+              href={menuHref || "#platos-destacados"}
               className="inline-flex items-center gap-1.5 text-sm font-bold text-[#FFF4D6]/80 transition hover:text-[#FFF4D6]"
             >
               {menuHref ? "Ver la carta" : "Conocer el menú"} <ArrowUpRight size={15} />
+            </a>
+          </div>
+        </motion.div>
+
+        {/* Bar */}
+        <motion.div
+          id="bar"
+          variants={reveal}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, amount: 0.3 }}
+          className="group relative flex min-h-[440px] scroll-mt-24 flex-col justify-between overflow-hidden bg-[#2A1F17] px-8 py-12 text-[#FFF4D6] sm:px-10 lg:px-10"
+        >
+          <PanelPhoto base="/deparis/dual/bar" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#2A1F17] via-[#2A1F17]/88 to-[#2A1F17]/50" />
+          <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(rgba(255,244,214,.6)_1px,transparent_1px),linear-gradient(90deg,rgba(255,244,214,.6)_1px,transparent_1px)] [background-size:38px_38px]" />
+          <div className="pointer-events-none absolute -left-16 -top-16 h-64 w-64 rounded-full bg-[#C89B3C]/25 blur-[90px] transition-all duration-500 group-hover:scale-125" />
+
+          <FloatingStat value="+15" label="Cocteles de autor" tone="dark" />
+
+          <div className="relative z-10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#C89B3C]/50 bg-white/5">
+              <Wine size={22} className="text-[#C89B3C]" />
+            </div>
+            <h3
+              className="mt-6 text-3xl"
+              style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
+            >
+              Bar
+            </h3>
+            <p className="mt-4 max-w-md text-sm leading-7 text-[#FFF4D6]/70">
+              Coctelería de la casa, cervezas y vinos para sobremesas largas
+              y brindis entre amigos.
+            </p>
+          </div>
+
+          <div className="relative z-10 mt-10 flex flex-wrap items-center gap-4">
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full bg-[#FC6C26] px-6 py-3.5 text-sm font-bold text-[#1B1410] transition hover:-translate-y-0.5 hover:bg-[#ff7d3d]"
+            >
+              <MessageCircle size={17} />
+              Reservar una mesa
+            </a>
+            <a
+              href={menuHref ? `${menuHref}?tipo=bar` : "#bebidas-destacadas"}
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-[#FFF4D6]/80 transition hover:text-[#FFF4D6]"
+            >
+              {menuHref ? "Ver la barra" : "Conocer la barra"} <ArrowUpRight size={15} />
             </a>
           </div>
         </motion.div>
@@ -154,7 +209,7 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.3 }}
-          className="group relative flex min-h-[440px] flex-col justify-between overflow-hidden bg-[#FC6C26] px-8 py-12 text-[#1B1410] sm:px-12 lg:px-14"
+          className="group relative flex min-h-[440px] scroll-mt-24 flex-col justify-between overflow-hidden bg-[#FC6C26] px-8 py-12 text-[#1B1410] sm:px-10 lg:px-10"
         >
           <PanelPhoto base="/deparis/dual/mercado" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#FC6C26] via-[#FC6C26]/85 to-[#FC6C26]/45" />
@@ -168,7 +223,7 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
               <ShoppingBag size={22} className="text-[#1B1410]" />
             </div>
             <h3
-              className="mt-6 text-3xl sm:text-4xl"
+              className="mt-6 text-3xl"
               style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
             >
               Mercado Online
@@ -180,12 +235,12 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
             </p>
           </div>
 
-          <div className="relative z-10 mt-10 flex items-center gap-4">
+          <div className="relative z-10 mt-10 flex flex-wrap items-center gap-4">
             <Link
               href={STORE_URL}
               className="inline-flex items-center gap-2 rounded-full bg-[#1B1410] px-6 py-3.5 text-sm font-bold text-[#FFF4D6] transition hover:-translate-y-0.5 hover:bg-black"
             >
-              <UtensilsCrossed size={17} />
+              <ShoppingBag size={17} />
               Ir a la tienda online
             </Link>
             <Link

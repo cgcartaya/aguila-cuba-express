@@ -32,7 +32,8 @@ export const FACEBOOK_URL = "https://facebook.com/deparis";
 
 export const NAV_LINKS = [
   ["Inicio", "#inicio"],
-  ["Bar & Restaurante", "#bar-restaurante"],
+  ["Restaurante", "#restaurante"],
+  ["Bar", "#bar"],
   ["Mercado", "#mercado"],
   ["Menú", "#menu"],
   ["Contacto", "#contacto"],

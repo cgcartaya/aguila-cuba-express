@@ -10,6 +10,7 @@ export type FeaturedDish = {
   description: string | null;
   price: number;
   image_url: string | null;
+  venue_type: "bar" | "restaurant" | "general";
 };
 
 type Props = {
@@ -19,7 +20,7 @@ type Props = {
 
 /* Mismos 3 tonos que ya usan en DeParisMenuHighlights, para que esta
    sección se sienta parte de la misma familia visual. Se van rotando
-   entre los platillos. */
+   entre los platillos/bebidas. */
 const TONES = ["dark", "orange", "cream"] as const;
 
 const toneStyles: Record<(typeof TONES)[number], string> = {
@@ -34,11 +35,75 @@ const overlayStyles: Record<(typeof TONES)[number], string> = {
   cream: "bg-gradient-to-t from-white via-white/85 to-white/40",
 };
 
+function DishGrid({ items, menuHref }: { items: FeaturedDish[]; menuHref?: string }) {
+  return (
+    <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((dish, i) => {
+        const tone = TONES[i % TONES.length];
+        return (
+          <motion.a
+            key={dish.id}
+            href={menuHref}
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.3 }}
+            transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: [0.2, 0.8, 0.2, 1] }}
+            className={`group relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-2xl p-7 shadow-[0_18px_40px_rgba(27,20,16,0.06)] transition-transform duration-300 hover:-translate-y-1.5 ${toneStyles[tone]}`}
+          >
+            {dish.image_url && (
+              <div className="absolute inset-0">
+                <Image
+                  src={dish.image_url}
+                  alt=""
+                  fill
+                  className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
+            )}
+            <div className={`absolute inset-0 ${overlayStyles[tone]}`} />
+            <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-current opacity-[0.06] transition-transform duration-500 group-hover:scale-125" />
+
+            <span
+              className="relative text-sm font-bold opacity-40"
+              style={{ fontFamily: "var(--font-dp-display)" }}
+            >
+              {String(i + 1).padStart(2, "0")}
+            </span>
+
+            <div className="relative">
+              <h3
+                className="text-xl leading-snug"
+                style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
+              >
+                {dish.name}
+              </h3>
+              {dish.description && (
+                <p className="mt-2 text-sm leading-6 opacity-70">{dish.description}</p>
+              )}
+              <p
+                className="mt-3 text-lg"
+                style={{ fontFamily: "var(--font-dp-display)", fontWeight: 700 }}
+              >
+                ${dish.price.toFixed(2)}
+              </p>
+            </div>
+          </motion.a>
+        );
+      })}
+    </div>
+  );
+}
+
 // Si el negocio no tiene módulo de menú activo, o no marcó ningún
-// platillo como destacado todavía, esta sección no se muestra —
-// nunca deja un hueco vacío en la landing.
+// platillo/bebida como destacado todavía, esta sección no se muestra
+// — nunca deja un hueco vacío en la landing. Si solo tiene destacados
+// de un tipo (solo platos, o solo bebidas), muestra únicamente ese
+// bloque en vez de dejar un título "Bebidas" vacío.
 export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
   if (!menuHref || dishes.length === 0) return null;
+
+  const platos = dishes.filter((d) => d.venue_type !== "bar");
+  const bebidas = dishes.filter((d) => d.venue_type === "bar");
 
   return (
     <section className="relative bg-[#FFF4D6] py-20 sm:py-28">
@@ -52,7 +117,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
               className="mt-3 max-w-xl text-3xl leading-tight text-[#1B1410] sm:text-4xl"
               style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
             >
-              Platos Destacados
+              Lo mejor de la casa
             </h2>
           </div>
           <a
@@ -63,60 +128,29 @@ export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
           </a>
         </div>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {dishes.map((dish, i) => {
-            const tone = TONES[i % TONES.length];
-            return (
-              <motion.a
-                key={dish.id}
-                href={menuHref}
-                initial={{ opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.3 }}
-                transition={{ duration: 0.6, delay: (i % 3) * 0.08, ease: [0.2, 0.8, 0.2, 1] }}
-                className={`group relative flex min-h-[260px] flex-col justify-between overflow-hidden rounded-2xl p-7 shadow-[0_18px_40px_rgba(27,20,16,0.06)] transition-transform duration-300 hover:-translate-y-1.5 ${toneStyles[tone]}`}
-              >
-                {dish.image_url && (
-                  <div className="absolute inset-0">
-                    <Image
-                      src={dish.image_url}
-                      alt=""
-                      fill
-                      className="object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                )}
-                <div className={`absolute inset-0 ${overlayStyles[tone]}`} />
-                <div className="pointer-events-none absolute -right-8 -top-8 h-28 w-28 rounded-full bg-current opacity-[0.06] transition-transform duration-500 group-hover:scale-125" />
+        {platos.length > 0 && (
+          <div id="platos-destacados" className="mt-14 scroll-mt-24">
+            <h3
+              className="text-xl text-[#1B1410] sm:text-2xl"
+              style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
+            >
+              Platos principales
+            </h3>
+            <DishGrid items={platos} menuHref={menuHref} />
+          </div>
+        )}
 
-                <span
-                  className="relative text-sm font-bold opacity-40"
-                  style={{ fontFamily: "var(--font-dp-display)" }}
-                >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-
-                <div className="relative">
-                  <h3
-                    className="text-xl leading-snug"
-                    style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
-                  >
-                    {dish.name}
-                  </h3>
-                  {dish.description && (
-                    <p className="mt-2 text-sm leading-6 opacity-70">{dish.description}</p>
-                  )}
-                  <p
-                    className="mt-3 text-lg"
-                    style={{ fontFamily: "var(--font-dp-display)", fontWeight: 700 }}
-                  >
-                    ${dish.price.toFixed(2)}
-                  </p>
-                </div>
-              </motion.a>
-            );
-          })}
-        </div>
+        {bebidas.length > 0 && (
+          <div id="bebidas-destacadas" className="mt-14 scroll-mt-24">
+            <h3
+              className="text-xl text-[#1B1410] sm:text-2xl"
+              style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
+            >
+              Bebidas principales
+            </h3>
+            <DishGrid items={bebidas} menuHref={`${menuHref}?tipo=bar`} />
+          </div>
+        )}
       </div>
     </section>
   );
