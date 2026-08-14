@@ -145,19 +145,25 @@ export default function ProductCard({
           </h3>
         </Link>
 
-        <div className="mt-1 flex items-center gap-[2px]">
-          {[1, 2, 3, 4, 5].map((item) => (
-            <Star
-              key={item}
-              size={12}
-              className="fill-yellow-400 text-yellow-400"
-            />
-          ))}
+        {Number(product.rating_count) > 0 && (
+          <div className="mt-1 flex items-center gap-[2px]">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <Star
+                key={item}
+                size={12}
+                className={
+                  item <= Math.round(Number(product.rating_avg) || 0)
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "fill-slate-200 text-slate-200"
+                }
+              />
+            ))}
 
-          <span className="ml-1 text-[11px] font-semibold text-slate-400">
-            (24)
-          </span>
-        </div>
+            <span className="ml-1 text-[11px] font-semibold text-slate-400">
+              ({product.rating_count})
+            </span>
+          </div>
+        )}
 
         <div className="mt-2">
           <div className="flex flex-wrap items-baseline gap-2">

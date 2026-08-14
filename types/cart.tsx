@@ -30,6 +30,11 @@ export type Product = {
     min_quantity: number;
     unit_price: number;
   }> | null;
+
+  /* Promedio y cantidad de reseñas aprobadas — denormalizado en
+     `products` vía trigger, ver sql/migration_product_reviews.sql. */
+  rating_avg?: number | null;
+  rating_count?: number | null;
 };
 
 /* =========================================================

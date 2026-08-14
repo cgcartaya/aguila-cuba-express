@@ -18,6 +18,7 @@ import { ArrowLeft, X } from "lucide-react";
 import ProductGallery from "@/components/tienda/product-detail/ProductGallery";
 import ProductInfo from "@/components/tienda/product-detail/ProductInfo";
 import RelatedProducts from "@/components/tienda/product-detail/RelatedProducts";
+import ProductReviews from "@/components/tienda/product-detail/ProductReviews";
 
 import {
   getStoreProductById,
@@ -223,6 +224,16 @@ export default function ProductDetailClient({
         <RelatedProducts
           products={relatedProducts}
         />
+
+        {store?.id && (
+          <ProductReviews
+            productId={String(product.id)}
+            storeId={store.id}
+            storeSlug={slug}
+            ratingAvg={Number(product.rating_avg || 0)}
+            ratingCount={Number(product.rating_count || 0)}
+          />
+        )}
       </div>
 
       {isZoomOpen && (

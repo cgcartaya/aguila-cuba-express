@@ -22,6 +22,7 @@ import {
   Wallet,
   Wrench,
   BellRing,
+  MessageSquareText,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
@@ -70,6 +71,7 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
       { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
       { href: "/admin/products", label: "Productos", icon: Package },
+      { href: "/admin/products/resenas", label: "Reseñas", icon: MessageSquareText },
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
       { href: "/admin/customers", label: "Clientes", icon: Users },

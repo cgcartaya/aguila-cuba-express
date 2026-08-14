@@ -103,19 +103,25 @@ export default function ProductsCarousel({
                 </Link>
 
                 {/* RATING */}
-                <div className="mt-2 flex items-center gap-[2px]">
-                  {[1, 2, 3, 4, 5].map((item) => (
-                    <Star
-                      key={item}
-                      size={12}
-                      className="fill-yellow-400 text-yellow-400"
-                    />
-                  ))}
+                {Number(producto.rating_count) > 0 && (
+                  <div className="mt-2 flex items-center gap-[2px]">
+                    {[1, 2, 3, 4, 5].map((item) => (
+                      <Star
+                        key={item}
+                        size={12}
+                        className={
+                          item <= Math.round(Number(producto.rating_avg) || 0)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-slate-200 text-slate-200"
+                        }
+                      />
+                    ))}
 
-                  <span className="ml-1 text-xs font-semibold text-slate-400">
-                    (24)
-                  </span>
-                </div>
+                    <span className="ml-1 text-xs font-semibold text-slate-400">
+                      ({producto.rating_count})
+                    </span>
+                  </div>
+                )}
 
                 {/* PRECIO + BOTÓN */}
                 <div className="mt-3 flex items-center justify-between gap-2">

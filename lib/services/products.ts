@@ -27,6 +27,8 @@ const PRODUCT_PUBLIC_SELECT = `
   minimum_order_exempt,
   delivery_included,
   max_quantity_per_order,
+  rating_avg,
+  rating_count,
   product_price_tiers (
     min_quantity,
     unit_price
