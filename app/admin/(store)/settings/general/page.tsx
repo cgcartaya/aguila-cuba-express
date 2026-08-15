@@ -12,6 +12,7 @@ import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import AdminBackButton from "@/components/admin/ui/AdminBackButton";
 import AdminButton from "@/components/admin/ui/AdminButton";
 import AdminInput from "@/components/admin/ui/AdminInput";
+import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -220,19 +221,27 @@ export default function AdminGeneralSettingsPage() {
               placeholder="Eslogan de la tienda"
             />
 
-            <AdminInput
-              label="Teléfono"
-              value={form.phone}
-              onChange={(value) => handleChange("phone", value)}
-              placeholder="+1 305..."
-            />
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-bold text-slate-700">Teléfono</span>
+              <PhoneCountryField
+                name="phone"
+                value={form.phone}
+                onChange={(e) => handleChange("phone", e.target.value)}
+                placeholder="Teléfono"
+                className=""
+              />
+            </label>
 
-            <AdminInput
-              label="WhatsApp"
-              value={form.whatsapp}
-              onChange={(value) => handleChange("whatsapp", value)}
-              placeholder="+1 305..."
-            />
+            <label className="block">
+              <span className="mb-1.5 block text-sm font-bold text-slate-700">WhatsApp</span>
+              <PhoneCountryField
+                name="whatsapp"
+                value={form.whatsapp}
+                onChange={(e) => handleChange("whatsapp", e.target.value)}
+                placeholder="WhatsApp"
+                className=""
+              />
+            </label>
 
             <AdminInput
               label="Zelle (correo o teléfono)"

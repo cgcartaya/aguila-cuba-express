@@ -3,10 +3,17 @@ export type WhatsAppApp = "business" | "personal";
 export function cleanWhatsAppPhone(phone?: string | null) {
   if (!phone) return "";
 
+  const hasExplicitCountryCode = phone.trim().startsWith("+");
   let cleaned = phone.replace(/\D/g, "");
 
-  // Para números de Estados Unidos escritos con 10 dígitos.
-  if (cleaned.length === 10) {
+  // Solo asumimos Estados Unidos por defecto cuando el número NO trae
+  // su propio código de país (ej. viene de un campo viejo de puro
+  // texto libre). Si ya viene con "+" (ej. "+53 52994719" desde
+  // PhoneCountryField), son sus propios dígitos — anteponer "1" a
+  // ciegas rompía números de otros países que por coincidencia
+  // también suman 10 dígitos (como Cuba: 2 dígitos de código + 8 del
+  // número nacional).
+  if (!hasExplicitCountryCode && cleaned.length === 10) {
     cleaned = `1${cleaned}`;
   }
 

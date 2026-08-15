@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight, BookOpen, MessageCircle, ShoppingBag } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarCheck2, MessageCircle, ShoppingBag } from "lucide-react";
 
 import DeParisMarquee from "./DeParisMarquee";
 import RevealText from "@/components/ui/RevealText";
@@ -79,7 +79,7 @@ export default function DeParisHero({
             animate="show"
             className="mt-6 max-w-lg text-base leading-7 text-[#1B1410]/75 sm:text-lg"
           >
-            De Paris reúne buena mesa, bar y mercado en un ambiente familiar.
+            De Paris reúne buena mesa, bar y tienda en un ambiente familiar.
             Ven a disfrutar, reserva tu mesa o prepara tu pedido desde donde
             estés.
           </motion.p>
@@ -89,7 +89,7 @@ export default function DeParisHero({
             custom={3}
             initial="hidden"
             animate="show"
-            className="mt-8 flex flex-col gap-3 sm:flex-row"
+            className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap"
           >
             <a
               href={menuHref || "#menu"}
@@ -99,41 +99,35 @@ export default function DeParisHero({
               {menuHref ? "Ver la carta y pedir" : "Descubrir la carta"}
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
             </a>
+
+            {reservasHref ? (
+              <a
+                href={reservasHref}
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-[#FC6C26]/40 bg-[#FC6C26]/10 px-7 py-4 text-sm font-bold text-[#1B1410] backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-[#FC6C26]/20"
+              >
+                <CalendarCheck2 size={18} className="text-[#FC6C26]" />
+                Reservar mesa
+              </a>
+            ) : (
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="group inline-flex items-center justify-center gap-2 rounded-full border border-[#FC6C26]/40 bg-[#FC6C26]/10 px-7 py-4 text-sm font-bold text-[#1B1410] backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-[#FC6C26]/20"
+              >
+                <MessageCircle size={18} className="text-[#FC6C26]" />
+                Reservar por WhatsApp
+              </a>
+            )}
+
             <a
               href={STORE_URL}
               className="group inline-flex items-center justify-center gap-2 rounded-full border border-[#1B1410]/20 bg-white/70 px-7 py-4 text-sm font-bold text-[#1B1410] backdrop-blur transition duration-300 hover:-translate-y-1 hover:bg-white"
             >
               <ShoppingBag size={18} className="text-[#FC6C26]" />
-              Explorar el mercado
+              Explorar la tienda
             </a>
           </motion.div>
-
-          {reservasHref ? (
-            <motion.a
-              variants={fadeUp}
-              custom={4}
-              initial="hidden"
-              animate="show"
-              href={reservasHref}
-              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1B1410]/60 transition hover:text-[#FC6C26]"
-            >
-              <MessageCircle size={16} /> ¿Prefieres reservar mesa? Hazlo aquí en línea
-            </motion.a>
-          ) : (
-            <motion.a
-              variants={fadeUp}
-              custom={4}
-              initial="hidden"
-              animate="show"
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1B1410]/60 transition hover:text-[#FC6C26]"
-            >
-              <MessageCircle size={16} /> ¿Prefieres reservar? Escríbenos por WhatsApp
-            </motion.a>
-          )}
-
         </div>
 
         {/* Medallón con el logo */}

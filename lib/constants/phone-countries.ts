@@ -19,6 +19,7 @@ export type PhoneCountry = {
 
 export const PHONE_COUNTRIES: PhoneCountry[] = [
   { iso2: "us", name: "Estados Unidos", dialCode: "+1", digits: 10 },
+  { iso2: "cu", name: "Cuba", dialCode: "+53", digits: 8 },
   { iso2: "es", name: "España", dialCode: "+34", digits: 9 },
   { iso2: "mx", name: "México", dialCode: "+52", digits: 10 },
   { iso2: "gb", name: "Reino Unido", dialCode: "+44", digits: 10 },

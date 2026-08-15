@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Clock3, Loader2, Minus, Plus, Users } from "lucide-re
 import DateChipPicker from "./DateChipPicker";
 import ReservationSteps from "./ReservationSteps";
 import TableFloorPlan from "./TableFloorPlan";
+import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 import type { ReservationSlot, ReservationTable } from "@/lib/reservas/types";
 
 type BoardStore = {
@@ -414,13 +415,15 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
 
                     <label className="mt-3 block text-xs font-bold opacity-70">
                       Teléfono
-                      <input
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="Para confirmarte la reserva"
-                        className="mt-1 w-full rounded-xl border-2 bg-transparent px-3 py-2 text-sm font-bold"
-                        style={{ borderColor: `${resolvedAccent}33` }}
-                      />
+                      <div className="mt-1">
+                        <PhoneCountryField
+                          name="customerPhone"
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          placeholder="Para confirmarte la reserva"
+                          className=""
+                        />
+                      </div>
                     </label>
 
                     <label className="mt-3 block text-xs font-bold opacity-70">
