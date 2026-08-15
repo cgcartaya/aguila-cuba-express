@@ -9,20 +9,20 @@ type Tab = { id: string; label: string; href: string; anchor: boolean };
 type Props = {
   /** Qué pestañas mostrar. Por defecto muestra las tres — pensado
    *  para poder reusar este mismo componente en otro tenant que solo
-   *  tenga, por ejemplo, bar (sin restaurante) o que no tenga mercado. */
+   *  tenga, por ejemplo, bar (sin restaurante) o que no tenga tienda. */
   showRestaurante?: boolean;
   showBar?: boolean;
-  showMercado?: boolean;
+  showTienda?: boolean;
 };
 
 // Restaurante y Bar saltan dentro de la misma página, a las vitrinas
-// reales de "Platos principales" / "Bebidas principales". Mercado no
+// reales de "Platos principales" / "Bebidas principales". Tienda no
 // tiene una sección propia en la landing (es la tienda online, otra
 // página), así que ese tab es un link directo en vez de un ancla.
-const ALL_TABS: Record<"restaurante" | "bar" | "mercado", Tab> = {
+const ALL_TABS: Record<"restaurante" | "bar" | "tienda", Tab> = {
   restaurante: { id: "restaurante", label: "Restaurante", href: "#restaurante", anchor: true },
   bar: { id: "bar", label: "Bar", href: "#bar", anchor: true },
-  mercado: { id: "mercado", label: "Mercado", href: STORE_URL, anchor: false },
+  tienda: { id: "tienda", label: "Tienda", href: STORE_URL, anchor: false },
 };
 
 // Barra de "categorías" sticky para moverse rápido por la landing —
@@ -35,12 +35,12 @@ const ALL_TABS: Record<"restaurante" | "bar" | "mercado", Tab> = {
 export default function DeParisQuickNav({
   showRestaurante = true,
   showBar = true,
-  showMercado = true,
+  showTienda = true,
 }: Props) {
   const tabs: Tab[] = [
     showRestaurante && ALL_TABS.restaurante,
     showBar && ALL_TABS.bar,
-    showMercado && ALL_TABS.mercado,
+    showTienda && ALL_TABS.tienda,
   ].filter(Boolean) as Tab[];
 
   const anchorTabs = tabs.filter((t) => t.anchor);

@@ -28,6 +28,17 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Scroll suave al saltar entre anclas (#restaurante, #bar, categorías
+   de la carta, etc.) en vez del salto instantáneo por defecto —
+   afecta a toda la plataforma, es puro CSS nativo (sin JS, sin peso),
+   y respeta la preferencia del sistema si el usuario pidió menos
+   animación. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 input,
 textarea,
 select {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Clock, MapPin, MessageCircle, Phone, ShoppingBag } from "lucide-react";
+import { Clock, ExternalLink, MapPin, MessageCircle, Phone, ShoppingBag } from "lucide-react";
 
 import {
   HOURS,
@@ -40,8 +40,8 @@ export default function DeParisCTA() {
             Te esperamos en la mesa o en tu puerta.
           </h2>
           <p className="mt-5 max-w-md text-sm leading-7 text-[#FFF4D6]/65">
-            Reserva tu lugar en el restaurante o arma tu pedido del mercado en
-            minutos. Ambas experiencias, a un mensaje de distancia.
+            Reserva tu lugar en el restaurante o arma tu pedido en la tienda,
+            en minutos. Ambas experiencias, a un mensaje de distancia.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -57,7 +57,7 @@ export default function DeParisCTA() {
               href={STORE_URL}
               className="inline-flex items-center justify-center gap-2 rounded-full border border-[#FFF4D6]/25 bg-white/5 px-7 py-4 text-sm font-bold backdrop-blur transition hover:-translate-y-1 hover:bg-white/10"
             >
-              <ShoppingBag size={18} /> Comprar en el mercado
+              <ShoppingBag size={18} /> Comprar en la tienda
             </Link>
           </div>
         </motion.div>
@@ -79,12 +79,18 @@ export default function DeParisCTA() {
                 href={RESTAURANT_MAPS_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 block text-base leading-6 text-[#FFF4D6] transition hover:text-[#FC6C26]"
+                className="group mt-1 flex items-start gap-1.5 text-base leading-6 text-[#FFF4D6] transition hover:text-[#FC6C26]"
               >
-                {RESTAURANT_ADDRESS_LINE_1}
-                <br />
-                {RESTAURANT_ADDRESS_LINE_2}
+                <span className="underline decoration-[#FFF4D6]/25 decoration-1 underline-offset-4 group-hover:decoration-[#FC6C26]">
+                  {RESTAURANT_ADDRESS_LINE_1}
+                  <br />
+                  {RESTAURANT_ADDRESS_LINE_2}
+                </span>
+                <ExternalLink size={13} className="mt-1 shrink-0 opacity-50 group-hover:opacity-100" />
               </a>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#FFF4D6]/35">
+                Abrir en Google Maps
+              </p>
             </div>
           </div>
 
@@ -92,18 +98,24 @@ export default function DeParisCTA() {
             <MapPin size={20} className="mt-1 shrink-0 text-[#FC6C26]" />
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-[#FFF4D6]/50">
-                Mercado
+                Tienda
               </p>
               <a
                 href={MARKET_MAPS_URL}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-1 block text-base leading-6 text-[#FFF4D6] transition hover:text-[#FC6C26]"
+                className="group mt-1 flex items-start gap-1.5 text-base leading-6 text-[#FFF4D6] transition hover:text-[#FC6C26]"
               >
-                {MARKET_ADDRESS_LINE_1}
-                <br />
-                {MARKET_ADDRESS_LINE_2}
+                <span className="underline decoration-[#FFF4D6]/25 decoration-1 underline-offset-4 group-hover:decoration-[#FC6C26]">
+                  {MARKET_ADDRESS_LINE_1}
+                  <br />
+                  {MARKET_ADDRESS_LINE_2}
+                </span>
+                <ExternalLink size={13} className="mt-1 shrink-0 opacity-50 group-hover:opacity-100" />
               </a>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-[#FFF4D6]/35">
+                Abrir en Google Maps
+              </p>
             </div>
           </div>
 

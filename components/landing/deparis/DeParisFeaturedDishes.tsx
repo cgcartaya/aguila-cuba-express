@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, ShoppingBag, UtensilsCrossed } from "lucide-react";
 
 import { useSharedCart } from "@/lib/menu/useSharedCart";
+import ImageLightbox from "@/components/ui/ImageLightbox";
+import CountUp from "@/components/ui/CountUp";
 
 export type FeaturedDish = {
   id: string;
@@ -40,23 +42,32 @@ function DishTile({
   quantity,
   onAdd,
   onRemove,
+  onOpenPhoto,
 }: {
   dish: FeaturedDish;
   quantity: number;
   onAdd: () => void;
   onRemove: () => void;
+  onOpenPhoto: () => void;
 }) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl border border-[#1B1410]/8 bg-white shadow-[0_6px_18px_rgba(27,20,16,0.05)] transition-shadow hover:shadow-[0_10px_26px_rgba(27,20,16,0.09)]">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1B1410]/5">
         {dish.image_url ? (
-          <Image
-            src={dish.image_url}
-            alt={dish.name}
-            fill
-            sizes="(max-width: 640px) 50vw, 25vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <button
+            type="button"
+            onClick={onOpenPhoto}
+            aria-label={`Ver foto de ${dish.name}`}
+            className="absolute inset-0 h-full w-full"
+          >
+            <Image
+              src={dish.image_url}
+              alt={dish.name}
+              fill
+              sizes="(max-width: 640px) 50vw, 25vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </button>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-[#1B1410]/20">
             <UtensilsCrossed size={28} />
@@ -137,12 +148,14 @@ function DishGrid({
   quantities,
   onAdd,
   onRemove,
+  onOpenPhoto,
 }: {
   items: FeaturedDish[];
   menuHref?: string;
   quantities: Record<string, number>;
   onAdd: (dish: FeaturedDish) => void;
   onRemove: (dish: FeaturedDish) => void;
+  onOpenPhoto: (dish: FeaturedDish) => void;
 }) {
   return (
     <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
@@ -159,6 +172,7 @@ function DishGrid({
             quantity={quantities[dish.id] ?? 0}
             onAdd={() => onAdd(dish)}
             onRemove={() => onRemove(dish)}
+            onOpenPhoto={() => onOpenPhoto(dish)}
           />
         </motion.div>
       ))}
@@ -178,6 +192,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
   // termina de armar y se envía por WhatsApp desde la carta completa
   // — sin tener que volver a elegir todo de nuevo.
   const { cart, setCart } = useSharedCart(storeSlug);
+  const [photoDish, setPhotoDish] = useState<FeaturedDish | null>(null);
 
   const platos = useMemo(
     () => dishes.filter((d) => d.venue_type !== "bar").slice(0, MAX_PER_GRID),
@@ -240,8 +255,18 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
   if (!menuHref || dishes.length === 0) return null;
 
   return (
-    <section className="relative bg-[#FFF4D6] py-20 sm:py-28">
-      <div className="mx-auto max-w-7xl px-5 pb-24 sm:px-8 sm:pb-8">
+    <section className="relative overflow-hidden bg-[#FFF4D6] py-20 sm:py-28">
+      {/* Textura tipo mantel/papel — puro CSS (dos gradientes en
+          diagonal muy sutiles), sin ninguna imagen de fondo, así que
+          no agrega peso ni una sola petición de red. */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(45deg, #1B1410 0, #1B1410 1px, transparent 1px, transparent 14px), repeating-linear-gradient(-45deg, #1B1410 0, #1B1410 1px, transparent 1px, transparent 14px)",
+        }}
+      />
+      <div className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 sm:pb-8">
         <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FC6C26]">
@@ -253,6 +278,24 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
             >
               Lo mejor de la casa
             </h2>
+
+            {/* Números reales (no inventados): cuántos platos y
+                bebidas destacados hay ahora mismo en la carta, con un
+                pequeño conteo animado la primera vez que se ve. */}
+            {(platos.length > 0 || bebidas.length > 0) && (
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-bold text-[#1B1410]/60">
+                {platos.length > 0 && (
+                  <span>
+                    <CountUp end={platos.length} className="text-[#FC6C26]" /> platos destacados
+                  </span>
+                )}
+                {bebidas.length > 0 && (
+                  <span>
+                    <CountUp end={bebidas.length} className="text-[#FC6C26]" /> bebidas destacadas
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <a
             href={menuHref}
@@ -276,6 +319,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
               quantities={quantities}
               onAdd={handleAdd}
               onRemove={handleRemove}
+              onOpenPhoto={setPhotoDish}
             />
           </div>
         )}
@@ -294,6 +338,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
               quantities={quantities}
               onAdd={handleAdd}
               onRemove={handleRemove}
+              onOpenPhoto={setPhotoDish}
             />
           </div>
         )}
@@ -318,6 +363,14 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
             </span>
           </a>
         </div>
+      )}
+
+      {photoDish?.image_url && (
+        <ImageLightbox
+          src={photoDish.image_url}
+          alt={photoDish.name}
+          onClose={() => setPhotoDish(null)}
+        />
       )}
     </section>
   );

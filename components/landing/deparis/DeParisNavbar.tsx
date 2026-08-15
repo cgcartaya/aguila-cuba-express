@@ -55,7 +55,7 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
               De&apos; Paris
             </p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#FC6C26]">
-              Restaurante &amp; Mercado
+              Restaurante &amp; Tienda
             </p>
           </div>
         </Link>
@@ -92,7 +92,7 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
             className="group inline-flex items-center gap-2 rounded-full bg-[#FC6C26] px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[#FFF4D6] shadow-[0_10px_24px_rgba(252,108,38,0.35)] transition hover:-translate-y-0.5 hover:bg-[#e85d1a]"
           >
             <ShoppingBag size={16} />
-            Ver Mercado
+            Ver Tienda
           </Link>
         </div>
 
@@ -140,7 +140,7 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
               onClick={() => setOpen(false)}
               className="flex items-center justify-center gap-2 rounded-full bg-[#FC6C26] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#FFF4D6]"
             >
-              <ShoppingBag size={16} /> Ver Mercado
+              <ShoppingBag size={16} /> Ver Tienda
             </Link>
           </div>
         </div>

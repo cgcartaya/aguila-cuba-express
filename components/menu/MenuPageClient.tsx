@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronRight, Clock3, ShoppingBag, Sparkles } from "lucide-r
 
 import MenuItemModal from "./MenuItemModal";
 import MenuCartDrawer from "./MenuCartDrawer";
+import ImageLightbox from "@/components/ui/ImageLightbox";
 import { useSharedCart } from "@/lib/menu/useSharedCart";
 import type { MenuCartLine, MenuCategory, MenuItem } from "@/lib/menu/types";
 
@@ -60,6 +61,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
   const bg = store.secondary_color || DEFAULT_BG;
 
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
+  const [photoItem, setPhotoItem] = useState<MenuItem | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   // Carrito compartido (localStorage) con la landing: si el cliente ya
   // agregó productos desde la vitrina de la landing, aparecen acá
@@ -325,7 +327,8 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
                     <article key={item.id} className="group flex min-h-[124px] items-stretch overflow-hidden rounded-2xl border border-[#1B1410]/10 bg-white/55 shadow-[0_12px_30px_rgba(27,20,16,0.04)] transition hover:-translate-y-0.5 hover:bg-white hover:shadow-[0_16px_34px_rgba(27,20,16,0.08)]">
                       {item.image_url && (
                         <button
-                          onClick={() => setActiveItem(item)}
+                          onClick={() => setPhotoItem(item)}
+                          aria-label={`Ver foto de ${item.name}`}
                           className="relative w-28 shrink-0 overflow-hidden bg-black/5 sm:w-32"
                         >
                           <Image
@@ -457,6 +460,14 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
           accentColor={accent}
           onClose={() => setActiveItem(null)}
           onAdd={handleAddToCart}
+        />
+      )}
+
+      {photoItem?.image_url && (
+        <ImageLightbox
+          src={photoItem.image_url}
+          alt={photoItem.name}
+          onClose={() => setPhotoItem(null)}
         />
       )}
 

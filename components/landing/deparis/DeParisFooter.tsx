@@ -130,7 +130,7 @@ export default function DeParisFooter() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[#1B1410]/10 pt-6 text-xs text-[#1B1410]/45 sm:flex-row">
           <p>© {year} De Paris. Todos los derechos reservados.</p>
-          <p>Restaurante &amp; Mercado · Cienfuegos, Cuba</p>
+          <p>Restaurante &amp; Tienda · Cienfuegos, Cuba</p>
         </div>
       </div>
     </footer>

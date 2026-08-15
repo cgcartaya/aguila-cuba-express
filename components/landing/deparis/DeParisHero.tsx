@@ -5,6 +5,7 @@ import { motion, type Variants } from "framer-motion";
 import { ArrowRight, BookOpen, MessageCircle, ShoppingBag } from "lucide-react";
 
 import DeParisMarquee from "./DeParisMarquee";
+import RevealText from "@/components/ui/RevealText";
 import { STORE_URL, WHATSAPP_URL } from "./constants";
 
 const fadeUp: Variants = {
@@ -49,25 +50,21 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
             className="inline-flex items-center gap-2 rounded-full border border-[#1B1410]/15 bg-white/50 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1B1410]/80 backdrop-blur-sm"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#FC6C26]" />
-            Cienfuegos, Cuba · Restaurante &amp; Mercado
+            Cienfuegos, Cuba · Restaurante &amp; Tienda
           </motion.div>
 
-          <motion.h1
-            variants={fadeUp}
-            custom={1}
-            initial="hidden"
-            animate="show"
+          <h1
             className="mt-6 text-5xl leading-[1.02] tracking-tight text-[#1B1410] sm:text-6xl lg:text-[4.4rem]"
             style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
           >
-            Sabor que reúne,
-            <span
+            <RevealText text="Sabor que reúne," startDelay={0.15} />
+            <RevealText
+              text="momentos que quedan."
+              startDelay={0.5}
               className="mt-1 block text-[#FC6C26]"
               style={{ fontFamily: "var(--font-dp-script)", fontWeight: 400 }}
-            >
-              momentos que quedan.
-            </span>
-          </motion.h1>
+            />
+          </h1>
 
           <motion.p
             variants={fadeUp}
