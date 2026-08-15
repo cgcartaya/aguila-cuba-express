@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays, Check, Clock3, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Check, Clock3, Loader2, Minus, Plus, Users } from "lucide-react";
 
+import DateChipPicker from "./DateChipPicker";
+import ReservationSteps from "./ReservationSteps";
 import TableFloorPlan from "./TableFloorPlan";
 import type { ReservationSlot, ReservationTable } from "@/lib/reservas/types";
 
@@ -64,6 +66,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [selectedTable, setSelectedTable] = useState<ReservationTable | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const [partySize, setPartySize] = useState(2);
   const [customerName, setCustomerName] = useState("");
@@ -81,6 +84,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
     setBoardError(null);
     setSelectedSlotId(null);
     setSelectedTable(null);
+    setShowForm(false);
     setSuccess(false);
 
     fetch(`/api/public/reservas?slug=${encodeURIComponent(storeSlug)}&date=${date}`)
@@ -96,8 +100,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
         setBoard(data);
         // Autoselecciona la primera franja del día para que el croquis
         // (mesas libres/ocupadas) se vea de inmediato al entrar, sin
-        // que el cliente tenga que tocar nada más — igual pasa con la
-        // fecha, ya viene puesta en hoy por defecto.
+        // que el cliente tenga que tocar nada más.
         if (data.slots.length > 0) setSelectedSlotId(data.slots[0].id);
       })
       .catch((err) => {
@@ -123,9 +126,12 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
 
   const handleSelectTable = (table: ReservationTable) => {
     setSelectedTable(table);
-    setPartySize(Math.min(2, table.capacity));
+    setPartySize((prev) => Math.min(Math.max(prev, 1), table.capacity) || Math.min(2, table.capacity));
     setSubmitError(null);
+    setShowForm(false);
   };
+
+  const step = success ? 4 : showForm ? 4 : selectedTable ? 4 : selectedSlotId ? 3 : 2;
 
   const handleSubmit = async () => {
     if (!selectedTable || !selectedSlotId) return;
@@ -184,6 +190,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
   };
 
   const selectedSlot = board?.slots.find((s) => s.id === selectedSlotId) || null;
+  const showStickyBar = !success && selectedTable && selectedSlotId && !showForm;
 
   return (
     <div
@@ -191,7 +198,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
       style={{ backgroundColor: resolvedBg, color: INK, fontFamily: "system-ui, -apple-system, sans-serif" }}
     >
       <header
-        className="sticky top-0 z-10 flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
+        className="sticky top-0 z-20 flex items-center gap-3 border-b px-4 py-3 backdrop-blur"
         style={{ borderColor: `${resolvedAccent}22`, backgroundColor: `${resolvedBg}dd` }}
       >
         <Link
@@ -201,13 +208,24 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
         >
           <ArrowLeft size={16} />
         </Link>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-black">{storeName}</p>
           <p className="text-[11px] font-bold opacity-60">Reservar mesa</p>
         </div>
+        {!success && (
+          <div className="hidden w-40 shrink-0 sm:block">
+            <ReservationSteps step={step} accent={resolvedAccent} />
+          </div>
+        )}
       </header>
 
-      <main className="mx-auto max-w-lg px-4 pb-16 pt-5">
+      {!success && (
+        <div className="px-4 pt-3 sm:hidden">
+          <ReservationSteps step={step} accent={resolvedAccent} />
+        </div>
+      )}
+
+      <main className={`mx-auto max-w-lg px-4 pt-5 ${showStickyBar ? "pb-28" : "pb-16"}`}>
         {success && selectedTable && selectedSlot ? (
           <div className="rounded-3xl border p-6 text-center" style={{ borderColor: `${resolvedAccent}33` }}>
             <div
@@ -239,6 +257,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
               onClick={() => {
                 setSuccess(false);
                 setSelectedTable(null);
+                setShowForm(false);
               }}
               className="mt-5 rounded-xl px-4 py-2 text-sm font-black"
               style={{ backgroundColor: resolvedAccent, color: "#fff" }}
@@ -249,18 +268,12 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
         ) : (
           <>
             <section>
-              <label className="flex items-center gap-2 text-xs font-black uppercase tracking-wide opacity-60">
-                <CalendarDays size={14} />
+              <p className="flex items-center gap-2 text-xs font-black uppercase tracking-wide opacity-60">
                 Fecha
-              </label>
-              <input
-                type="date"
-                min={todayISO()}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="mt-2 w-full rounded-2xl border-2 bg-transparent px-4 py-3 text-sm font-bold"
-                style={{ borderColor: `${resolvedAccent}33` }}
-              />
+              </p>
+              <div className="mt-2">
+                <DateChipPicker value={date} onChange={setDate} accent={resolvedAccent} />
+              </div>
             </section>
 
             {loadingBoard && (
@@ -299,6 +312,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
                           onClick={() => {
                             setSelectedSlotId(slot.id);
                             setSelectedTable(null);
+                            setShowForm(false);
                           }}
                           className="rounded-full border-2 px-4 py-2 text-sm font-bold"
                           style={{
@@ -330,7 +344,7 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
                   </section>
                 )}
 
-                {selectedTable && selectedSlotId && (
+                {selectedTable && selectedSlotId && !showForm && (
                   <section
                     className="mt-6 rounded-3xl border-2 p-4"
                     style={{ borderColor: `${resolvedAccent}33` }}
@@ -339,22 +353,44 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
                       {selectedTable.name} · hasta {selectedTable.capacity} personas
                     </p>
 
-                    <label className="mt-3 block text-xs font-bold opacity-70">
-                      <span className="flex items-center gap-1.5">
-                        <Users size={13} /> Cantidad de personas
-                      </span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={selectedTable.capacity}
-                        value={partySize}
-                        onChange={(e) => setPartySize(Number(e.target.value) || 1)}
-                        className="mt-1 w-full rounded-xl border-2 bg-transparent px-3 py-2 text-sm font-bold"
-                        style={{ borderColor: `${resolvedAccent}33` }}
-                      />
-                    </label>
+                    <p className="mt-3 flex items-center gap-1.5 text-xs font-bold opacity-70">
+                      <Users size={13} /> Cantidad de personas
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <button
+                        onClick={() => setPartySize((n) => Math.max(1, n - 1))}
+                        disabled={partySize <= 1}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 disabled:opacity-30"
+                        style={{ borderColor: `${resolvedAccent}33`, color: resolvedAccent }}
+                      >
+                        <Minus size={16} />
+                      </button>
+                      <span className="w-8 text-center text-lg font-black">{partySize}</span>
+                      <button
+                        onClick={() => setPartySize((n) => Math.min(selectedTable.capacity, n + 1))}
+                        disabled={partySize >= selectedTable.capacity}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 disabled:opacity-30"
+                        style={{ borderColor: `${resolvedAccent}33`, color: resolvedAccent }}
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  </section>
+                )}
 
-                    <label className="mt-3 block text-xs font-bold opacity-70">
+                {selectedTable && selectedSlotId && showForm && (
+                  <section
+                    className="mt-6 rounded-3xl border-2 p-4"
+                    style={{ borderColor: `${resolvedAccent}33` }}
+                  >
+                    <button
+                      onClick={() => setShowForm(false)}
+                      className="mb-3 text-xs font-bold opacity-60"
+                    >
+                      ← {selectedTable.name} · {partySize} personas · cambiar
+                    </button>
+
+                    <label className="block text-xs font-bold opacity-70">
                       Nombre
                       <input
                         value={customerName}
@@ -432,6 +468,29 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
           </>
         )}
       </main>
+
+      {showStickyBar && selectedTable && (
+        <div
+          className="fixed inset-x-0 bottom-0 z-20 border-t px-4 py-3 backdrop-blur"
+          style={{ borderColor: `${resolvedAccent}22`, backgroundColor: `${resolvedBg}f2` }}
+        >
+          <div className="mx-auto flex max-w-lg items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-black">{selectedTable.name} · {partySize} personas</p>
+              <p className="truncate text-[11px] font-bold opacity-60">
+                {selectedSlot ? formatTime(selectedSlot.start_time) : ""} · {formatDateLabel(date)}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowForm(true)}
+              className="shrink-0 rounded-xl px-5 py-2.5 text-sm font-black"
+              style={{ backgroundColor: resolvedAccent, color: "#fff" }}
+            >
+              Continuar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

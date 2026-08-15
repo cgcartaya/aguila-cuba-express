@@ -18,6 +18,7 @@ import {
 import { deleteReservationTable, saveReservationTable } from "@/lib/services/reservas";
 import { SEAT_TYPE_LABEL } from "@/lib/reservas/types";
 import type { ReservationTable, ReservationTableFormData, SeatType } from "@/lib/reservas/types";
+import MiniFloorPlanPreview from "./MiniFloorPlanPreview";
 
 type Props = {
   storeId: string;
@@ -195,8 +196,9 @@ export default function TableManager({ storeId, tables, onChange }: Props) {
 
           <div className="mt-3">
             <p className="text-xs font-bold text-slate-600">Posición en el croquis</p>
-            <div className="mt-1 flex items-center gap-3">
-              <div className="grid grid-cols-3 gap-1">
+            <div className="mt-1 flex flex-wrap items-start gap-4">
+              <div className="flex items-center gap-3">
+                <div className="grid grid-cols-3 gap-1">
                 <span />
                 <button
                   onClick={() => setEditing({ ...editing, pos_row: Math.max(0, editing.pos_row - 1) })}
@@ -233,6 +235,20 @@ export default function TableManager({ storeId, tables, onChange }: Props) {
                 Mueve la mesa por fila/columna del croquis. Evita que dos
                 mesas queden en la misma casilla exacta.
               </p>
+              </div>
+
+              <div className="w-full sm:w-auto">
+                <MiniFloorPlanPreview
+                  tables={tables}
+                  editing={{
+                    id: editing.id,
+                    name: editing.name || "Nueva",
+                    seat_type: editing.seat_type,
+                    pos_row: editing.pos_row,
+                    pos_col: editing.pos_col,
+                  }}
+                />
+              </div>
             </div>
           </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Armchair, CalendarCheck2, CalendarRange } from "lucide-react";
+import { Armchair, CalendarCheck2, CalendarOff, CalendarRange, Clock3 } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import TableManager from "@/components/admin/reservas/TableManager";
@@ -18,6 +18,14 @@ import { useStore } from "@/hooks/useStore";
 import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
 import type { BlockedDate, ReservationSlot, ReservationTable } from "@/lib/reservas/types";
 
+type TabKey = "mesas" | "franjas" | "bloqueadas";
+
+const TABS: { key: TabKey; label: string; icon: typeof Armchair }[] = [
+  { key: "mesas", label: "Mesas", icon: Armchair },
+  { key: "franjas", label: "Franjas horarias", icon: Clock3 },
+  { key: "bloqueadas", label: "Fechas bloqueadas", icon: CalendarOff },
+];
+
 export default function AdminReservasPage() {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
   const { store: selectedStore, loading: storeLoading } = useStore();
@@ -27,6 +35,7 @@ export default function AdminReservasPage() {
     return accessStore;
   }, [accessStore, isSuperAdmin, selectedStore]);
 
+  const [tab, setTab] = useState<TabKey>("mesas");
   const [tables, setTables] = useState<ReservationTable[]>([]);
   const [slots, setSlots] = useState<ReservationSlot[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
@@ -92,8 +101,8 @@ export default function AdminReservasPage() {
     <main className="mx-auto max-w-4xl px-4 py-6">
       <AdminPageHeader
         eyebrow="Reservas"
-        title="Mesas y franjas horarias"
-        description="Configura el croquis y los horarios que verán tus clientes al reservar."
+        title="Configuración"
+        description="El croquis, los horarios y las fechas que verán tus clientes al reservar."
         storeName={activeStore?.name}
         icon={Armchair}
         actions={
@@ -121,10 +130,36 @@ export default function AdminReservasPage() {
         }
       />
 
-      <div className="mt-6 space-y-5">
-        <TableManager storeId={activeStore.id} tables={tables} onChange={loadData} />
-        <SlotManager storeId={activeStore.id} slots={slots} onChange={loadData} />
-        <BlockedDatesManager storeId={activeStore.id} blockedDates={blockedDates} onChange={loadData} />
+      <div className="mt-6 flex gap-1.5 overflow-x-auto rounded-2xl bg-slate-100 p-1.5">
+        {TABS.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
+              tab === key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <Icon size={15} />
+            {label}
+            {key === "mesas" && tables.length > 0 && (
+              <span className="text-slate-400">({tables.length})</span>
+            )}
+            {key === "franjas" && slots.length > 0 && (
+              <span className="text-slate-400">({slots.length})</span>
+            )}
+            {key === "bloqueadas" && blockedDates.length > 0 && (
+              <span className="text-slate-400">({blockedDates.length})</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5">
+        {tab === "mesas" && <TableManager storeId={activeStore.id} tables={tables} onChange={loadData} />}
+        {tab === "franjas" && <SlotManager storeId={activeStore.id} slots={slots} onChange={loadData} />}
+        {tab === "bloqueadas" && (
+          <BlockedDatesManager storeId={activeStore.id} blockedDates={blockedDates} onChange={loadData} />
+        )}
       </div>
     </main>
   );
