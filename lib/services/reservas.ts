@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { getStoreBySlug } from "@/lib/services/stores";
 
 import type {
+  BlockedDate,
   Reservation,
   ReservationSlot,
   ReservationSlotFormData,
@@ -116,6 +117,8 @@ const RESERVATION_ADMIN_SELECT = `
   reservation_date,
   party_size,
   customer_name,
+  customer_last_name,
+  customer_email,
   customer_phone,
   notes,
   status,
@@ -165,6 +168,80 @@ export async function updateReservationStatus(id: string, status: ReservationSta
     .eq("id", id)
     .select()
     .single();
+}
+
+/* =========================================================
+   ADMIN — CONTEO DE PENDIENTES (badge del menú lateral)
+========================================================= */
+
+export async function getPendingReservationsCount(storeId: string) {
+  return supabase
+    .from("reservations")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .eq("status", "pending");
+}
+
+/* =========================================================
+   ADMIN — FECHAS BLOQUEADAS (feriados, eventos privados...)
+========================================================= */
+
+export async function getBlockedDatesForAdmin(storeId: string) {
+  return supabase
+    .from("reservation_blocked_dates")
+    .select("id, store_id, blocked_date, reason, created_at")
+    .eq("store_id", storeId)
+    .order("blocked_date", { ascending: true }) as unknown as Promise<{
+    data: BlockedDate[] | null;
+    error: { message: string; code?: string } | null;
+  }>;
+}
+
+export async function addBlockedDate(storeId: string, blockedDate: string, reason: string) {
+  return supabase
+    .from("reservation_blocked_dates")
+    .insert({ store_id: storeId, blocked_date: blockedDate, reason: reason.trim() || null })
+    .select()
+    .single();
+}
+
+export async function deleteBlockedDate(id: string) {
+  return supabase.from("reservation_blocked_dates").delete().eq("id", id);
+}
+
+/* =========================================================
+   ADMIN — VISTA SEMANAL (calendario de 7 días)
+   Trae todas las reservas activas (pending/confirmed) de un rango
+   de fechas para armar la cuadrícula día × franja de un vistazo.
+========================================================= */
+
+export async function getReservationsForWeek(storeId: string, startDate: string, endDate: string) {
+  return supabase
+    .from("reservations")
+    .select(
+      `
+      id,
+      reservation_date,
+      status,
+      party_size,
+      slot_id,
+      reservation_tables ( name ),
+      reservation_slots ( label, start_time )
+    `
+    )
+    .eq("store_id", storeId)
+    .gte("reservation_date", startDate)
+    .lte("reservation_date", endDate)
+    .in("status", ["pending", "confirmed"])
+    .order("reservation_date", { ascending: true }) as unknown as Promise<{
+    data:
+      | (Pick<Reservation, "id" | "reservation_date" | "status" | "party_size" | "slot_id"> & {
+          reservation_tables: { name: string } | null;
+          reservation_slots: { label: string; start_time: string } | null;
+        })[]
+      | null;
+    error: { message: string } | null;
+  }>;
 }
 
 export type { ReservationTable, ReservationSlot };

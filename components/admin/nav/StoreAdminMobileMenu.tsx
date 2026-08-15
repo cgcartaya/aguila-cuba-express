@@ -8,6 +8,7 @@ import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useLowStockCount } from "@/hooks/useLowStockCount";
+import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
 import { getVisibleAdminSections, type AdminLink } from "@/lib/admin/nav-config";
 
 type AdminMobileMenuProps = {
@@ -32,12 +33,14 @@ function MenuSection({
   pathname,
   onClose,
   lowStockCount,
+  pendingReservationsCount,
 }: {
   title: string;
   links: AdminLink[];
   pathname: string;
   onClose: () => void;
   lowStockCount: number;
+  pendingReservationsCount: number;
 }) {
   if (links.length === 0) return null;
 
@@ -70,6 +73,12 @@ function MenuSection({
                 {lowStockCount > 99 ? "99+" : lowStockCount}
               </span>
             )}
+
+            {item.href === "/admin/reservas/solicitudes" && pendingReservationsCount > 0 && (
+              <span className="ml-auto flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-black text-white">
+                {pendingReservationsCount > 99 ? "99+" : pendingReservationsCount}
+              </span>
+            )}
           </Link>
         );
       })}
@@ -85,6 +94,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
   const activeStore = isSuperAdmin ? store || accessStore : accessStore;
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
+  const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
 
   if (!open) return null;
 
@@ -130,6 +140,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
               pathname={pathname}
               onClose={onClose}
               lowStockCount={lowStockCount}
+              pendingReservationsCount={pendingReservationsCount}
             />
           )}
 
@@ -141,6 +152,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
               pathname={pathname}
               onClose={onClose}
               lowStockCount={lowStockCount}
+              pendingReservationsCount={pendingReservationsCount}
             />
           ))}
 
@@ -150,6 +162,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
             pathname={pathname}
             onClose={onClose}
             lowStockCount={lowStockCount}
+            pendingReservationsCount={pendingReservationsCount}
           />
         </nav>
       </aside>

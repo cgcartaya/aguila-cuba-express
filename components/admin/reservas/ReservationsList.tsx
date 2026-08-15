@@ -54,11 +54,12 @@ export default function ReservationsList({ reservations, storeName, onChange }: 
   };
 
   const notifyCustomer = (reservation: Reservation, confirmed: boolean) => {
+    const fullName = `${reservation.customer_name} ${reservation.customer_last_name}`.trim();
     const message = confirmed
-      ? `¡Hola ${reservation.customer_name}! Tu reserva en ${storeName} para ${reservation.party_size} personas el ${formatDate(
+      ? `¡Hola ${fullName}! Tu reserva en ${storeName} para ${reservation.party_size} personas el ${formatDate(
           reservation.reservation_date
         )} a las ${formatTime(reservation.reservation_slots?.start_time || "00:00")} quedó CONFIRMADA. ¡Te esperamos!`
-      : `Hola ${reservation.customer_name}, sobre tu solicitud de reserva en ${storeName} para el ${formatDate(
+      : `Hola ${fullName}, sobre tu solicitud de reserva en ${storeName} para el ${formatDate(
           reservation.reservation_date
         )}: en este momento no podemos confirmarla. Disculpa las molestias.`;
 
@@ -80,7 +81,9 @@ export default function ReservationsList({ reservations, storeName, onChange }: 
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-black text-slate-900">{reservation.customer_name}</p>
+                <p className="text-sm font-black text-slate-900">
+                  {reservation.customer_name} {reservation.customer_last_name}
+                </p>
                 <span
                   className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${STATUS_BADGE[reservation.status]}`}
                 >
@@ -94,6 +97,7 @@ export default function ReservationsList({ reservations, storeName, onChange }: 
               </p>
               <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-slate-500">
                 <Users size={12} /> {reservation.party_size} personas · {reservation.customer_phone}
+                {reservation.customer_email ? ` · ${reservation.customer_email}` : ""}
               </p>
               {reservation.notes && (
                 <p className="mt-1 text-xs italic text-slate-400">&quot;{reservation.notes}&quot;</p>

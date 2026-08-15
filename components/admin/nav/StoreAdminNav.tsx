@@ -8,6 +8,7 @@ import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useLowStockCount } from "@/hooks/useLowStockCount";
+import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
 import { getVisibleAdminSections } from "@/lib/admin/nav-config";
 import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
 
@@ -35,6 +36,7 @@ export default function StoreAdminNav() {
 
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
+  const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
 
   return (
     <aside
@@ -135,6 +137,14 @@ export default function StoreAdminNav() {
                         className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
                       >
                         {lowStockCount > 99 ? "99+" : lowStockCount}
+                      </span>
+                    )}
+
+                    {link.href === "/admin/reservas/solicitudes" && pendingReservationsCount > 0 && (
+                      <span
+                        className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
+                      >
+                        {pendingReservationsCount > 99 ? "99+" : pendingReservationsCount}
                       </span>
                     )}
                   </Link>

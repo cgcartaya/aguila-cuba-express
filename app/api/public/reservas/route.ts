@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
     const reservationDate = clean(body.reservation_date, 10);
     const partySize = Number(body.party_size);
     const customerName = clean(body.customer_name, 120);
+    const customerLastName = clean(body.customer_last_name, 120);
+    const customerEmail = clean(body.customer_email, 160);
     const customerPhone = clean(body.customer_phone, 30).replace(/[^0-9+\s()-]/g, "");
     const notes = clean(body.notes, 300);
 
@@ -77,8 +79,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Cantidad de personas inválida." }, { status: 400 });
     }
 
-    if (!customerName || customerPhone.replace(/\D/g, "").length < 7) {
-      return NextResponse.json({ error: "Completa tu nombre y un teléfono válido." }, { status: 400 });
+    if (!customerName || !customerLastName || customerPhone.replace(/\D/g, "").length < 7) {
+      return NextResponse.json({ error: "Completa tu nombre, apellidos y un teléfono válido." }, { status: 400 });
+    }
+
+    if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      return NextResponse.json({ error: "El correo no es válido." }, { status: 400 });
     }
 
     const input: CreateReservationInput = {
@@ -88,6 +94,8 @@ export async function POST(request: NextRequest) {
       reservationDate,
       partySize,
       customerName,
+      customerLastName,
+      customerEmail: customerEmail || undefined,
       customerPhone,
       notes,
     };

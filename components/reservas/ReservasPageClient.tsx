@@ -19,6 +19,7 @@ type Board = {
   tables: ReservationTable[];
   slots: ReservationSlot[];
   occupied: string[];
+  blockedReason: string | null;
 };
 
 type Props = {
@@ -66,6 +67,8 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
 
   const [partySize, setPartySize] = useState(2);
   const [customerName, setCustomerName] = useState("");
+  const [customerLastName, setCustomerLastName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +94,11 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
       .then((data: Board) => {
         if (cancelled) return;
         setBoard(data);
-        if (data.slots.length === 1) setSelectedSlotId(data.slots[0].id);
+        // Autoselecciona la primera franja del día para que el croquis
+        // (mesas libres/ocupadas) se vea de inmediato al entrar, sin
+        // que el cliente tenga que tocar nada más — igual pasa con la
+        // fecha, ya viene puesta en hoy por defecto.
+        if (data.slots.length > 0) setSelectedSlotId(data.slots[0].id);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -122,8 +129,16 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
 
   const handleSubmit = async () => {
     if (!selectedTable || !selectedSlotId) return;
-    if (!customerName.trim() || customerPhone.replace(/\D/g, "").length < 7) {
-      setSubmitError("Completa tu nombre y un teléfono válido.");
+    if (!customerName.trim() || !customerLastName.trim()) {
+      setSubmitError("Completa tu nombre y apellidos.");
+      return;
+    }
+    if (customerPhone.replace(/\D/g, "").length < 7) {
+      setSubmitError("Completa un teléfono válido.");
+      return;
+    }
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      setSubmitError("El correo no es válido.");
       return;
     }
     if (partySize < 1 || partySize > selectedTable.capacity) {
@@ -145,6 +160,8 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
           reservation_date: date,
           party_size: partySize,
           customer_name: customerName.trim(),
+          customer_last_name: customerLastName.trim(),
+          customer_email: customerEmail.trim(),
           customer_phone: customerPhone.trim(),
           notes: notes.trim(),
         }),
@@ -202,7 +219,15 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
             <h1 className="text-lg font-black">¡Solicitud enviada!</h1>
             <p className="mt-2 text-sm font-semibold opacity-70">
               {storeName} confirmará tu reserva pronto. Te avisarán al{" "}
-              <strong>{customerPhone}</strong>.
+              <strong>{customerPhone}</strong>
+              {customerEmail.trim() ? (
+                <>
+                  {" "}
+                  y te enviamos los detalles a <strong>{customerEmail.trim()}</strong>.
+                </>
+              ) : (
+                "."
+              )}
             </p>
             <div className="mt-4 space-y-1 rounded-2xl bg-black/5 p-4 text-left text-sm font-bold">
               <p>{formatDateLabel(date)}</p>
@@ -253,7 +278,11 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
 
             {board && !loadingBoard && !boardError && (
               <>
-                {board.slots.length === 0 ? (
+                {board.blockedReason ? (
+                  <p className="mt-6 rounded-2xl bg-black/5 p-4 text-center text-sm font-semibold opacity-70">
+                    {board.blockedReason}
+                  </p>
+                ) : board.slots.length === 0 ? (
                   <p className="mt-6 rounded-2xl bg-black/5 p-4 text-center text-sm font-semibold opacity-60">
                     No hay horarios de reserva disponibles ese día.
                   </p>
@@ -330,7 +359,18 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
                       <input
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="Tu nombre completo"
+                        placeholder="Tu nombre"
+                        className="mt-1 w-full rounded-xl border-2 bg-transparent px-3 py-2 text-sm font-bold"
+                        style={{ borderColor: `${resolvedAccent}33` }}
+                      />
+                    </label>
+
+                    <label className="mt-3 block text-xs font-bold opacity-70">
+                      Apellidos
+                      <input
+                        value={customerLastName}
+                        onChange={(e) => setCustomerLastName(e.target.value)}
+                        placeholder="Tus apellidos"
                         className="mt-1 w-full rounded-xl border-2 bg-transparent px-3 py-2 text-sm font-bold"
                         style={{ borderColor: `${resolvedAccent}33` }}
                       />
@@ -342,6 +382,18 @@ export default function ReservasPageClient({ storeSlug, storeName, landingHref, 
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
                         placeholder="Para confirmarte la reserva"
+                        className="mt-1 w-full rounded-xl border-2 bg-transparent px-3 py-2 text-sm font-bold"
+                        style={{ borderColor: `${resolvedAccent}33` }}
+                      />
+                    </label>
+
+                    <label className="mt-3 block text-xs font-bold opacity-70">
+                      Correo (opcional)
+                      <input
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        placeholder="Te confirmamos la solicitud por aquí también"
                         className="mt-1 w-full rounded-xl border-2 bg-transparent px-3 py-2 text-sm font-bold"
                         style={{ borderColor: `${resolvedAccent}33` }}
                       />

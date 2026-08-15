@@ -60,13 +60,25 @@ export type Reservation = {
   reservation_date: string; // "YYYY-MM-DD"
   party_size: number;
   customer_name: string;
+  customer_last_name: string;
+  customer_email: string | null;
   customer_phone: string;
   notes: string | null;
   status: ReservationStatus;
   created_at: string;
   confirmed_at: string | null;
+  cancel_token?: string;
+  reminder_sent_at?: string | null;
   reservation_tables?: { name: string; capacity: number } | null;
   reservation_slots?: { label: string; start_time: string } | null;
+};
+
+export type BlockedDate = {
+  id: string;
+  store_id: string;
+  blocked_date: string; // "YYYY-MM-DD"
+  reason: string | null;
+  created_at: string;
 };
 
 /** Estado de disponibilidad de una mesa para una fecha/franja
