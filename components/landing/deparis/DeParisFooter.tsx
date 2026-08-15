@@ -30,7 +30,7 @@ function FacebookIcon({ size = 17 }: { size?: number }) {
   );
 }
 
-export default function DeParisFooter() {
+export default function DeParisFooter({ reservasHref }: { reservasHref?: string }) {
   const year = new Date().getFullYear();
 
   return (
@@ -80,14 +80,20 @@ export default function DeParisFooter() {
                 </Link>
               </li>
               <li>
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="transition hover:text-[#FC6C26]"
-                >
-                  Reservar mesa
-                </a>
+                {reservasHref ? (
+                  <Link href={reservasHref} className="transition hover:text-[#FC6C26]">
+                    Reservar mesa
+                  </Link>
+                ) : (
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="transition hover:text-[#FC6C26]"
+                  >
+                    Reservar mesa
+                  </a>
+                )}
               </li>
             </ul>
           </div>

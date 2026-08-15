@@ -34,21 +34,23 @@ const parisienne = Parisienne({
 export default function DeParisLanding({
   menuHref,
   featuredDishes = [],
+  reservasHref,
 }: {
   menuHref?: string;
   featuredDishes?: FeaturedDish[];
+  reservasHref?: string;
 }) {
   return (
     <main
       className={`${bodoni.variable} ${manrope.variable} ${parisienne.variable} min-h-screen bg-[#FFF4D6]`}
       style={{ fontFamily: "var(--font-dp-body)" }}
     >
-      <DeParisNavbar menuHref={menuHref} />
-      <DeParisHero menuHref={menuHref} />
+      <DeParisNavbar menuHref={menuHref} reservasHref={reservasHref} />
+      <DeParisHero menuHref={menuHref} reservasHref={reservasHref} />
       <DeParisQuickNav />
       <DeParisFeaturedDishes dishes={featuredDishes} menuHref={menuHref} />
       <DeParisCTA />
-      <DeParisFooter />
+      <DeParisFooter reservasHref={reservasHref} />
     </main>
   );
 }

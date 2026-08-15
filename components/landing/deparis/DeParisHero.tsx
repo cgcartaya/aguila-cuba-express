@@ -17,7 +17,13 @@ const fadeUp: Variants = {
   }),
 };
 
-export default function DeParisHero({ menuHref }: { menuHref?: string }) {
+export default function DeParisHero({
+  menuHref,
+  reservasHref,
+}: {
+  menuHref?: string;
+  reservasHref?: string;
+}) {
   return (
     <section
       id="inicio"
@@ -102,18 +108,31 @@ export default function DeParisHero({ menuHref }: { menuHref?: string }) {
             </a>
           </motion.div>
 
-          <motion.a
-            variants={fadeUp}
-            custom={4}
-            initial="hidden"
-            animate="show"
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1B1410]/60 transition hover:text-[#FC6C26]"
-          >
-            <MessageCircle size={16} /> ¿Prefieres reservar? Escríbenos por WhatsApp
-          </motion.a>
+          {reservasHref ? (
+            <motion.a
+              variants={fadeUp}
+              custom={4}
+              initial="hidden"
+              animate="show"
+              href={reservasHref}
+              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1B1410]/60 transition hover:text-[#FC6C26]"
+            >
+              <MessageCircle size={16} /> ¿Prefieres reservar mesa? Hazlo aquí en línea
+            </motion.a>
+          ) : (
+            <motion.a
+              variants={fadeUp}
+              custom={4}
+              initial="hidden"
+              animate="show"
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#1B1410]/60 transition hover:text-[#FC6C26]"
+            >
+              <MessageCircle size={16} /> ¿Prefieres reservar? Escríbenos por WhatsApp
+            </motion.a>
+          )}
 
         </div>
 

@@ -7,7 +7,13 @@ import { useEffect, useState } from "react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
 
-export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
+export default function DeParisNavbar({
+  menuHref,
+  reservasHref,
+}: {
+  menuHref?: string;
+  reservasHref?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -79,14 +85,23 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
           >
             <LogIn size={15} /> Iniciar sesión
           </Link>
-          <a
-            href={WHATSAPP_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-full border border-[#1B1410]/15 bg-white/60 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410] transition hover:-translate-y-0.5 hover:border-[#FC6C26]/40 hover:bg-white"
-          >
-            <MessageCircle size={16} className="text-[#FC6C26]" /> Reservar
-          </a>
+          {reservasHref ? (
+            <Link
+              href={reservasHref}
+              className="inline-flex items-center gap-2 rounded-full border border-[#1B1410]/15 bg-white/60 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410] transition hover:-translate-y-0.5 hover:border-[#FC6C26]/40 hover:bg-white"
+            >
+              <MessageCircle size={16} className="text-[#FC6C26]" /> Reservar
+            </Link>
+          ) : (
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-[#1B1410]/15 bg-white/60 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410] transition hover:-translate-y-0.5 hover:border-[#FC6C26]/40 hover:bg-white"
+            >
+              <MessageCircle size={16} className="text-[#FC6C26]" /> Reservar
+            </a>
+          )}
           <Link
             href={STORE_URL}
             className="group inline-flex items-center gap-2 rounded-full bg-[#FC6C26] px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[#FFF4D6] shadow-[0_10px_24px_rgba(252,108,38,0.35)] transition hover:-translate-y-0.5 hover:bg-[#e85d1a]"
@@ -126,15 +141,25 @@ export default function DeParisNavbar({ menuHref }: { menuHref?: string }) {
             >
               <LogIn size={16} /> Iniciar sesión
             </Link>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => setOpen(false)}
-              className="mt-2 flex items-center justify-center gap-2 rounded-full border border-[#1B1410]/15 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide"
-            >
-              <MessageCircle size={16} className="text-[#FC6C26]" /> Reservar por WhatsApp
-            </a>
+            {reservasHref ? (
+              <Link
+                href={reservasHref}
+                onClick={() => setOpen(false)}
+                className="mt-2 flex items-center justify-center gap-2 rounded-full border border-[#1B1410]/15 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide"
+              >
+                <MessageCircle size={16} className="text-[#FC6C26]" /> Reservar mesa
+              </Link>
+            ) : (
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setOpen(false)}
+                className="mt-2 flex items-center justify-center gap-2 rounded-full border border-[#1B1410]/15 bg-white px-4 py-3 text-xs font-bold uppercase tracking-wide"
+              >
+                <MessageCircle size={16} className="text-[#FC6C26]" /> Reservar por WhatsApp
+              </a>
+            )}
             <Link
               href={STORE_URL}
               onClick={() => setOpen(false)}

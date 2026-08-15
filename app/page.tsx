@@ -6,6 +6,7 @@ import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
 import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
+import { isReservasModuleEnabled } from "@/lib/services/reservas";
 import {
   buildPerlaMetadata,
   buildStoreMetadata,
@@ -209,9 +210,10 @@ export default async function HomePage() {
   }
 
   if (landing === "deparis") {
-    const [menuEnabled, featuredItems] = await Promise.all([
+    const [menuEnabled, featuredItems, reservasEnabled] = await Promise.all([
       isMenuModuleEnabled("deparis"),
       getFeaturedMenuItems("deparis", 12),
+      isReservasModuleEnabled("deparis"),
     ]);
 
     const featuredDishes = featuredItems.map((item) => ({
@@ -227,6 +229,7 @@ export default async function HomePage() {
       <DeParisLanding
         menuHref={menuEnabled ? "/menu/deparis" : undefined}
         featuredDishes={featuredDishes}
+        reservasHref={reservasEnabled ? "/reservas/deparis" : undefined}
       />
     );
   }
