@@ -536,7 +536,7 @@ export default function AdminDeliveryZonesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F8FAFC] p-6">
+    <main className="min-h-screen bg-[#F8FAFC] p-4 pb-24 md:p-6">
       <div className="mx-auto max-w-7xl">
         <AdminBackButton />
 
