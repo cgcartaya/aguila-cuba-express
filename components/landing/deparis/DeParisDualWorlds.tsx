@@ -107,7 +107,7 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.3 }}
-          className="group relative flex min-h-[440px] scroll-mt-24 flex-col justify-between overflow-hidden bg-[#1B1410] px-8 py-12 text-[#FFF4D6] sm:px-10 lg:px-10"
+          className="group relative flex min-h-[440px] scroll-mt-36 flex-col justify-between overflow-hidden bg-[#1B1410] px-8 py-12 text-[#FFF4D6] sm:px-10 lg:px-10"
         >
           <PanelPhoto base="/deparis/dual/restaurante" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#1B1410] via-[#1B1410]/88 to-[#1B1410]/50" />
@@ -158,7 +158,7 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.3 }}
-          className="group relative flex min-h-[440px] scroll-mt-24 flex-col justify-between overflow-hidden bg-[#2A1F17] px-8 py-12 text-[#FFF4D6] sm:px-10 lg:px-10"
+          className="group relative flex min-h-[440px] scroll-mt-36 flex-col justify-between overflow-hidden bg-[#2A1F17] px-8 py-12 text-[#FFF4D6] sm:px-10 lg:px-10"
         >
           <PanelPhoto base="/deparis/dual/bar" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#2A1F17] via-[#2A1F17]/88 to-[#2A1F17]/50" />
@@ -209,7 +209,7 @@ export default function DeParisDualWorlds({ menuHref }: { menuHref?: string }) {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.3 }}
-          className="group relative flex min-h-[440px] scroll-mt-24 flex-col justify-between overflow-hidden bg-[#FC6C26] px-8 py-12 text-[#1B1410] sm:px-10 lg:px-10"
+          className="group relative flex min-h-[440px] scroll-mt-36 flex-col justify-between overflow-hidden bg-[#FC6C26] px-8 py-12 text-[#1B1410] sm:px-10 lg:px-10"
         >
           <PanelPhoto base="/deparis/dual/mercado" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#FC6C26] via-[#FC6C26]/85 to-[#FC6C26]/45" />
