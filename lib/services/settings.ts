@@ -356,6 +356,85 @@ export async function deleteDeliveryZone(
 }
 
 /* =========================================================
+   ZONAS DE ENTREGA - ACCIONES EN LOTE
+========================================================= */
+
+export async function bulkSetDeliveryZonesActive(
+  ids: string[],
+  isActive: boolean,
+  storeId?: string | null
+) {
+  const resolvedStoreId = await resolveStoreId(storeId);
+
+  if (!resolvedStoreId) {
+    return {
+      data: null,
+      error: { message: "No se encontró la tienda activa" },
+    };
+  }
+
+  if (!ids.length) return { data: [], error: null };
+
+  return supabase
+    .from("delivery_zones")
+    .update({ is_active: isActive })
+    .in("id", ids)
+    .eq("store_id", resolvedStoreId)
+    .select();
+}
+
+export async function bulkDeleteDeliveryZones(
+  ids: string[],
+  storeId?: string | null
+) {
+  const resolvedStoreId = await resolveStoreId(storeId);
+
+  if (!resolvedStoreId) {
+    return {
+      data: null,
+      error: { message: "No se encontró la tienda activa" },
+    };
+  }
+
+  if (!ids.length) return { data: [], error: null };
+
+  return supabase
+    .from("delivery_zones")
+    .delete()
+    .in("id", ids)
+    .eq("store_id", resolvedStoreId);
+}
+
+// Actualiza un campo distinto por cada zona (útil para "sumar/restar" o
+// "%", donde el valor final depende del valor actual de cada zona y por
+// eso no se puede resolver con un único UPDATE ... WHERE id IN (...)).
+export async function bulkUpdateDeliveryZoneValues(
+  updates: { id: string; patch: Partial<DeliveryZone> }[],
+  storeId?: string | null
+) {
+  const resolvedStoreId = await resolveStoreId(storeId);
+
+  if (!resolvedStoreId) {
+    return { error: { message: "No se encontró la tienda activa" } };
+  }
+
+  if (!updates.length) return { error: null };
+
+  const results = await Promise.all(
+    updates.map(({ id, patch }) =>
+      supabase
+        .from("delivery_zones")
+        .update(patch)
+        .eq("id", id)
+        .eq("store_id", resolvedStoreId)
+    )
+  );
+
+  const failed = results.find((result) => result.error);
+  return { error: failed?.error || null };
+}
+
+/* =========================================================
    BANNERS
 ========================================================= */
 
