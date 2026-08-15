@@ -62,6 +62,7 @@ export default function EditStorePage() {
     module_shipping_enabled: false,
     module_pickups_enabled: false,
     module_menu_enabled: false,
+    module_reservas_enabled: false,
     last_payment_date: "",
     next_payment_date: "",
     payment_status: "pending",
@@ -103,6 +104,7 @@ export default function EditStorePage() {
         module_shipping_enabled: Boolean(store.module_shipping_enabled),
         module_pickups_enabled: Boolean(store.module_pickups_enabled),
         module_menu_enabled: Boolean(store.module_menu_enabled),
+        module_reservas_enabled: Boolean(store.module_reservas_enabled),
         last_payment_date: store.last_payment_date || "",
         next_payment_date: store.next_payment_date || "",
         payment_status: store.payment_status || "pending",
@@ -241,6 +243,7 @@ export default function EditStorePage() {
         module_shipping_enabled: form.module_shipping_enabled,
         module_pickups_enabled: form.module_pickups_enabled,
         module_menu_enabled: form.module_menu_enabled,
+        module_reservas_enabled: form.module_reservas_enabled,
         last_payment_date: form.last_payment_date || null,
         next_payment_date: form.next_payment_date || null,
         payment_status: form.payment_status,
@@ -542,6 +545,30 @@ export default function EditStorePage() {
                 <span className="mt-1 block text-sm text-slate-500">
                   Menú de platillos con opciones/modificadores y pedido por
                   WhatsApp, pensado para bares y restaurantes.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-3 rounded-2xl border p-4">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={form.module_reservas_enabled}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    module_reservas_enabled: e.target.checked,
+                  })
+                }
+              />
+              <span>
+                <span className="block font-medium text-slate-800">
+                  Reservas de mesas
+                </span>
+                <span className="mt-1 block text-sm text-slate-500">
+                  Croquis del local con mesas, capacidad y franjas horarias
+                  para que el cliente reserve en línea, pensado para bares y
+                  restaurantes.
                 </span>
               </span>
             </label>

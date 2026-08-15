@@ -20,6 +20,7 @@ const STORE_PUBLIC_FIELDS = `
   module_shipping_enabled,
   module_pickups_enabled,
   module_menu_enabled,
+  module_reservas_enabled,
   plan,
   monthly_price,
   platform_fee_enabled,
@@ -164,6 +165,7 @@ export async function updateStore(
     module_shipping_enabled?: boolean
     module_pickups_enabled?: boolean
     module_menu_enabled?: boolean
+    module_reservas_enabled?: boolean
     plan?: string
     monthly_price?: number | null
     platform_fee_enabled?: boolean

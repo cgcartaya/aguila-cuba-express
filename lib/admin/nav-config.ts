@@ -23,6 +23,8 @@ import {
   Wrench,
   BellRing,
   MessageSquareText,
+  CalendarCheck2,
+  Armchair,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
@@ -49,7 +51,7 @@ import type { AccessStore } from "@/lib/admin/access";
  *   4. Márcala en la sección correspondiente con `module: "x"`.
  */
 
-export type AdminModuleKey = "store" | "pickups" | "shipping" | "menu";
+export type AdminModuleKey = "store" | "pickups" | "shipping" | "menu" | "reservas";
 
 export type AdminLink = {
   href: string;
@@ -121,6 +123,14 @@ export const adminNavSections: AdminSection[] = [
     ],
   },
   {
+    title: "Reservas",
+    module: "reservas",
+    links: [
+      { href: "/admin/reservas", label: "Mesas y franjas", icon: Armchair },
+      { href: "/admin/reservas/solicitudes", label: "Solicitudes", icon: CalendarCheck2 },
+    ],
+  },
+  {
     title: "Marketing",
     links: [
       { href: "/admin/marketing/promotions", label: "Promociones", icon: Megaphone },
@@ -157,6 +167,7 @@ export function isModuleEnabled(
         | "module_shipping_enabled"
         | "module_pickups_enabled"
         | "module_menu_enabled"
+        | "module_reservas_enabled"
       >
     | null
     | undefined,
@@ -176,6 +187,9 @@ export function isModuleEnabled(
     // documentado arriba para módulos nuevos.
     case "menu":
       return store?.module_menu_enabled === true;
+    // "reservas" es un flag nuevo, mismo criterio opt-in.
+    case "reservas":
+      return store?.module_reservas_enabled === true;
     default:
       return true;
   }
@@ -195,6 +209,7 @@ export function getVisibleAdminSections(
         | "module_shipping_enabled"
         | "module_pickups_enabled"
         | "module_menu_enabled"
+        | "module_reservas_enabled"
       >
     | null
     | undefined,

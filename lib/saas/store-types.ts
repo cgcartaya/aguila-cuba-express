@@ -23,6 +23,7 @@ export interface Store {
   module_shipping_enabled: boolean
   module_pickups_enabled: boolean
   module_menu_enabled: boolean
+  module_reservas_enabled: boolean
   plan: StorePlan
   monthly_price: number | null
 
