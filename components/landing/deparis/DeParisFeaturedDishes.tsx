@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Minus, Plus, ShoppingBag, UtensilsCrossed } from "lucide-react";
 
-import { buildMenuOrderMessage } from "@/lib/menu/whatsapp-message";
-import type { MenuCartLine } from "@/lib/menu/types";
-import { WHATSAPP_PHONE } from "./constants";
+import { useSharedCart } from "@/lib/menu/useSharedCart";
 
 export type FeaturedDish = {
   id: string;
@@ -21,6 +19,9 @@ export type FeaturedDish = {
 type Props = {
   dishes: FeaturedDish[];
   menuHref?: string;
+  /** Slug de la tienda — misma llave que usa /menu/[slug] para que el
+   *  carrito de la landing y el de la carta completa sean uno solo. */
+  storeSlug?: string;
 };
 
 // Cuántos productos como máximo se muestran por cuadrícula (Platos /
@@ -171,8 +172,12 @@ function DishGrid({
 // — nunca deja un hueco vacío en la landing. Si solo tiene destacados
 // de un tipo (solo platos, o solo bebidas), muestra únicamente ese
 // bloque en vez de dejar un título "Bebidas" vacío.
-export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
+export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "deparis" }: Props) {
+  // Mismo carrito (localStorage) que usa /menu/[slug]: la landing es
+  // la vitrina rápida para "picar" lo que se te antoja, y el pedido se
+  // termina de armar y se envía por WhatsApp desde la carta completa
+  // — sin tener que volver a elegir todo de nuevo.
+  const { cart, setCart } = useSharedCart(storeSlug);
 
   const platos = useMemo(
     () => dishes.filter((d) => d.venue_type !== "bar").slice(0, MAX_PER_GRID),
@@ -183,55 +188,54 @@ export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
     [dishes]
   );
 
-  const byId = useMemo(() => {
-    const map = new Map<string, FeaturedDish>();
-    dishes.forEach((d) => map.set(d.id, d));
+  const quantities = useMemo(() => {
+    const map: Record<string, number> = {};
+    cart.forEach((line) => {
+      if (line.selected_options.length === 0) {
+        map[line.menu_item_id] = (map[line.menu_item_id] ?? 0) + line.quantity;
+      }
+    });
     return map;
-  }, [dishes]);
+  }, [cart]);
 
-  const handleAdd = (dish: FeaturedDish) =>
-    setQuantities((prev) => ({ ...prev, [dish.id]: (prev[dish.id] ?? 0) + 1 }));
+  const getQuickLine = (itemId: string) =>
+    cart.find((line) => line.menu_item_id === itemId && line.selected_options.length === 0);
 
-  const handleRemove = (dish: FeaturedDish) =>
-    setQuantities((prev) => {
-      const next = (prev[dish.id] ?? 0) - 1;
-      const copy = { ...prev };
-      if (next <= 0) delete copy[dish.id];
-      else copy[dish.id] = next;
-      return copy;
-    });
+  const handleAdd = (dish: FeaturedDish) => {
+    const existing = getQuickLine(dish.id);
+    if (existing) {
+      setCart((prev) =>
+        prev.map((l) => (l.lineId === existing.lineId ? { ...l, quantity: l.quantity + 1 } : l))
+      );
+      return;
+    }
+    setCart((prev) => [
+      ...prev,
+      {
+        lineId: crypto.randomUUID(),
+        menu_item_id: dish.id,
+        name: dish.name,
+        unit_base_price: dish.price,
+        quantity: 1,
+        selected_options: [],
+      },
+    ]);
+  };
 
-  const cartLines: MenuCartLine[] = useMemo(
-    () =>
-      Object.entries(quantities)
-        .map(([id, quantity]) => {
-          const dish = byId.get(id);
-          if (!dish || quantity <= 0) return null;
-          return {
-            lineId: id,
-            menu_item_id: id,
-            name: dish.name,
-            unit_base_price: dish.price,
-            quantity,
-            selected_options: [],
-          } as MenuCartLine;
-        })
-        .filter((l): l is MenuCartLine => l !== null),
-    [quantities, byId]
-  );
+  const handleRemove = (dish: FeaturedDish) => {
+    const existing = getQuickLine(dish.id);
+    if (!existing) return;
+    if (existing.quantity <= 1) {
+      setCart((prev) => prev.filter((l) => l.lineId !== existing.lineId));
+    } else {
+      setCart((prev) =>
+        prev.map((l) => (l.lineId === existing.lineId ? { ...l, quantity: l.quantity - 1 } : l))
+      );
+    }
+  };
 
-  const totalItems = cartLines.reduce((sum, l) => sum + l.quantity, 0);
-  const totalPrice = cartLines.reduce((sum, l) => sum + l.unit_base_price * l.quantity, 0);
-
-  const whatsappOrderUrl = useMemo(() => {
-    if (cartLines.length === 0) return null;
-    const message = buildMenuOrderMessage({
-      storeName: "De Paris",
-      cart: cartLines,
-      orderType: "dine_in",
-    });
-    return `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
-  }, [cartLines]);
+  const totalItems = cart.reduce((sum, l) => sum + l.quantity, 0);
+  const totalPrice = cart.reduce((sum, l) => sum + l.unit_base_price * l.quantity, 0);
 
   if (!menuHref || dishes.length === 0) return null;
 
@@ -295,15 +299,14 @@ export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
         )}
       </div>
 
-      {/* Barra flotante: aparece solo cuando hay algo seleccionado y
-          permite mandar el pedido directo por WhatsApp desde la
-          landing, sin tener que entrar primero a la carta completa. */}
-      {totalItems > 0 && whatsappOrderUrl && (
+      {/* Barra flotante: aparece solo cuando hay algo seleccionado.
+          La landing es la vitrina rápida — el pedido se termina de
+          armar y se envía por WhatsApp desde la carta completa, así
+          que este botón lleva para allá con todo ya elegido. */}
+      {totalItems > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
           <a
-            href={whatsappOrderUrl}
-            target="_blank"
-            rel="noreferrer"
+            href={menuHref}
             className="flex w-full max-w-md items-center justify-between gap-3 rounded-2xl bg-[#1B1410] px-5 py-4 text-[#FFF4D6] shadow-[0_16px_40px_rgba(27,20,16,0.35)]"
           >
             <span className="flex items-center gap-2 text-sm font-bold">
@@ -311,7 +314,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref }: Props) {
               {totalItems} {totalItems === 1 ? "producto" : "productos"}
             </span>
             <span className="flex items-center gap-2 text-sm font-bold">
-              ${totalPrice.toFixed(2)} · Pedir por WhatsApp <ArrowRight size={15} />
+              ${totalPrice.toFixed(2)} · Completar pedido <ArrowRight size={15} />
             </span>
           </a>
         </div>

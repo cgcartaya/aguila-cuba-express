@@ -54,6 +54,7 @@ export default async function MenuPage({ params }: PageProps) {
         // en app/page.tsx), no en "/deparis" — esa ruta es código
         // muerto y por eso el botón "Volver" daba 404.
         landingHref={slug === "deparis" ? "/" : undefined}
+        storeSlug={slug}
       />
     </Suspense>
   );

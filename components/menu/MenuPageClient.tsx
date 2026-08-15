@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronRight, Clock3, ShoppingBag, Sparkles } from "lucide-r
 
 import MenuItemModal from "./MenuItemModal";
 import MenuCartDrawer from "./MenuCartDrawer";
+import { useSharedCart } from "@/lib/menu/useSharedCart";
 import type { MenuCartLine, MenuCategory, MenuItem } from "@/lib/menu/types";
 
 const display = Bodoni_Moda({
@@ -38,6 +39,10 @@ type Props = {
   categories: MenuCategory[];
   whatsappNumber: string | null;
   landingHref?: string;
+  // Slug de la tienda — clave del carrito compartido con la landing
+  // (localStorage) y de la marca de agua "Mesa N" cuando se llega
+  // desde un código QR de mesa.
+  storeSlug: string;
 };
 
 // Paleta elegante de "carta impresa" por defecto — cualquier tienda
@@ -50,13 +55,16 @@ const INK = "#1B1410";
 
 type VenueFilter = "bar" | "restaurant";
 
-export default function MenuPageClient({ store, categories, whatsappNumber, landingHref }: Props) {
+export default function MenuPageClient({ store, categories, whatsappNumber, landingHref, storeSlug }: Props) {
   const accent = store.primary_color || DEFAULT_ACCENT;
   const bg = store.secondary_color || DEFAULT_BG;
 
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
-  const [cart, setCart] = useState<MenuCartLine[]>([]);
+  // Carrito compartido (localStorage) con la landing: si el cliente ya
+  // agregó productos desde la vitrina de la landing, aparecen acá
+  // listos para completar el pedido — y viceversa.
+  const { cart, setCart } = useSharedCart(storeSlug);
   const [orderSentMessage, setOrderSentMessage] = useState(false);
   const [addedToast, setAddedToast] = useState<string | null>(null);
 
@@ -123,9 +131,16 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
   // botón "Bebidas principales" de la landing) con /menu/slug?tipo=bar.
   // Si el parámetro no viene o no es válido, se queda en "restaurant"
   // como hasta ahora.
+  //
+  // ?mesa=N es el mismo mecanismo pero para los códigos QR físicos que
+  // se dejan en cada mesa (muy común en bares/restaurantes de Cuba):
+  // al escanear, el cliente llega directo a la carta con el pedido ya
+  // marcado "En el restaurante" y el número de mesa pre-llenado, sin
+  // tener que escribirlo a mano.
   const searchParams = useSearchParams();
   const initialVenueFilter: VenueFilter = searchParams.get("tipo") === "bar" ? "bar" : "restaurant";
   const [venueFilter, setVenueFilter] = useState<VenueFilter>(initialVenueFilter);
+  const tableNumberFromQr = searchParams.get("mesa")?.trim() || null;
 
   const visibleCategories = showVenueTabs
     ? categoriesWithItems.filter(
@@ -190,15 +205,25 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
               <ArrowLeft size={15} /> Volver a De Paris
             </Link>
           ) : <span />}
-          <button
-            type="button"
-            onClick={() => setCartOpen(true)}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
-            aria-label={`Abrir pedido con ${totalItems} productos`}
-          >
-            <ShoppingBag size={17} />
-            {totalItems > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: accent, color: INK }}>{totalItems}</span>}
-          </button>
+          <div className="flex items-center gap-2">
+            {tableNumberFromQr && (
+              <span
+                className="rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide"
+                style={{ borderColor: accent, color: accent }}
+              >
+                Mesa {tableNumberFromQr}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setCartOpen(true)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white transition hover:bg-white/10"
+              aria-label={`Abrir pedido con ${totalItems} productos`}
+            >
+              <ShoppingBag size={17} />
+              {totalItems > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-black" style={{ backgroundColor: accent, color: INK }}>{totalItems}</span>}
+            </button>
+          </div>
         </div>
 
         <div className="relative mx-auto grid max-w-5xl items-end gap-7 px-5 pb-9 pt-5 md:grid-cols-[1fr_auto] md:pb-12 md:pt-8">
@@ -441,6 +466,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
           whatsappNumber={whatsappNumber}
           cart={cart}
           accentColor={accent}
+          initialTableNumber={tableNumberFromQr || undefined}
           onClose={() => setCartOpen(false)}
           onUpdateQuantity={handleUpdateQuantity}
           onRemove={handleRemove}

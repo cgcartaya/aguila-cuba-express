@@ -12,6 +12,10 @@ type Props = {
   whatsappNumber: string | null;
   cart: MenuCartLine[];
   accentColor: string;
+  // Cuando el cliente llega por un QR de mesa (/menu/slug?mesa=N), el
+  // pedido arranca marcado "En el restaurante" con la mesa pre-llena
+  // — el campo sigue siendo editable por si se equivocan de mesa.
+  initialTableNumber?: string;
   onClose: () => void;
   onUpdateQuantity: (lineId: string, quantity: number) => void;
   onRemove: (lineId: string) => void;
@@ -23,6 +27,7 @@ export default function MenuCartDrawer({
   whatsappNumber,
   cart,
   accentColor,
+  initialTableNumber,
   onClose,
   onUpdateQuantity,
   onRemove,
@@ -31,7 +36,7 @@ export default function MenuCartDrawer({
   const [customerName, setCustomerName] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
   const [orderType, setOrderType] = useState<"dine_in" | "takeaway">("dine_in");
-  const [tableNumber, setTableNumber] = useState("");
+  const [tableNumber, setTableNumber] = useState(initialTableNumber ?? "");
 
   const total = getCartTotal(cart);
 

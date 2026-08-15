@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Utensils } from "lucide-react";
+import { Plus, QrCode, Utensils } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import CategoryManager from "@/components/admin/menu/CategoryManager";
@@ -99,13 +99,22 @@ export default function AdminMenuPage() {
             title="Menú"
             description={`Categorías y platillos del menú de ${activeStore?.name || "la tienda activa"}.`}
             actions={
-              <Link
-                href="/admin/menu/items/new"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#061b3a] px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              >
-                <Plus size={18} />
-                Nuevo platillo
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/admin/menu/qr"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <QrCode size={18} />
+                  Códigos QR
+                </Link>
+                <Link
+                  href="/admin/menu/items/new"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#061b3a] px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <Plus size={18} />
+                  Nuevo platillo
+                </Link>
+              </div>
             }
           />
         </div>
