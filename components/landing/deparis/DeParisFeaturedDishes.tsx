@@ -263,7 +263,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
         </div>
 
         {platos.length > 0 && (
-          <div id="platos-destacados" className="mt-10 scroll-mt-32">
+          <div id="restaurante" className="mt-10 scroll-mt-32">
             <h3
               className="text-xl text-[#1B1410] sm:text-2xl"
               style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
@@ -281,7 +281,7 @@ export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "d
         )}
 
         {bebidas.length > 0 && (
-          <div id="bebidas-destacadas" className="mt-12 scroll-mt-32">
+          <div id="bar" className="mt-12 scroll-mt-32">
             <h3
               className="text-xl text-[#1B1410] sm:text-2xl"
               style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}

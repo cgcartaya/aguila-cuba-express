@@ -42,7 +42,7 @@ export const NAV_LINKS = [
   ["Inicio", "#inicio"],
   ["Restaurante", "#restaurante"],
   ["Bar", "#bar"],
-  ["Mercado", "#mercado"],
+  ["Mercado", STORE_URL],
   ["Menú", "#menu"],
   ["Contacto", "#contacto"],
 ] as const;

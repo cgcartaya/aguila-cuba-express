@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Tab = { id: string; label: string };
+import { STORE_URL } from "./constants";
+
+type Tab = { id: string; label: string; href: string; anchor: boolean };
 
 type Props = {
   /** Qué pestañas mostrar. Por defecto muestra las tres — pensado
@@ -13,10 +15,14 @@ type Props = {
   showMercado?: boolean;
 };
 
+// Restaurante y Bar saltan dentro de la misma página, a las vitrinas
+// reales de "Platos principales" / "Bebidas principales". Mercado no
+// tiene una sección propia en la landing (es la tienda online, otra
+// página), así que ese tab es un link directo en vez de un ancla.
 const ALL_TABS: Record<"restaurante" | "bar" | "mercado", Tab> = {
-  restaurante: { id: "restaurante", label: "Restaurante" },
-  bar: { id: "bar", label: "Bar" },
-  mercado: { id: "mercado", label: "Mercado" },
+  restaurante: { id: "restaurante", label: "Restaurante", href: "#restaurante", anchor: true },
+  bar: { id: "bar", label: "Bar", href: "#bar", anchor: true },
+  mercado: { id: "mercado", label: "Mercado", href: STORE_URL, anchor: false },
 };
 
 // Barra de "categorías" sticky para moverse rápido por la landing —
@@ -37,13 +43,15 @@ export default function DeParisQuickNav({
     showMercado && ALL_TABS.mercado,
   ].filter(Boolean) as Tab[];
 
-  const [activeId, setActiveId] = useState<string | null>(tabs[0]?.id ?? null);
+  const anchorTabs = tabs.filter((t) => t.anchor);
+
+  const [activeId, setActiveId] = useState<string | null>(anchorTabs[0]?.id ?? null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
-    if (tabs.length === 0) return;
+    if (anchorTabs.length === 0) return;
 
-    const sections = tabs
+    const sections = anchorTabs
       .map((tab) => document.getElementById(tab.id))
       .filter((el): el is HTMLElement => el !== null);
 
@@ -63,18 +71,18 @@ export default function DeParisQuickNav({
     sections.forEach((section) => observerRef.current?.observe(section));
     return () => observerRef.current?.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabs.length]);
+  }, [anchorTabs.length]);
 
   if (tabs.length < 2) return null;
 
   return (
     <nav className="scrollbar-none sticky top-[74px] z-40 flex gap-2 overflow-x-auto border-b border-[#1B1410]/10 bg-[#FFF4D6]/90 px-5 py-3 shadow-[0_8px_24px_rgba(27,20,16,0.06)] backdrop-blur-xl sm:px-8">
       {tabs.map((tab) => {
-        const active = activeId === tab.id;
+        const active = tab.anchor && activeId === tab.id;
         return (
           <a
             key={tab.id}
-            href={`#${tab.id}`}
+            href={tab.href}
             className={`shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition ${
               active
                 ? "border-[#1B1410] bg-[#1B1410] text-[#FFF4D6]"
