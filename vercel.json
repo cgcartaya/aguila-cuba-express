@@ -6,3 +6,9 @@
     }
   ]
 }
+
+{
+  "crons": [
+    { "path": "/api/cron/reservation-reminders", "schedule": "0 * * * *" }
+  ]
+}
