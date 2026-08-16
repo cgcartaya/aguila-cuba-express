@@ -19,6 +19,7 @@ const EMPTY_ITEM: MenuItemFormData = {
   sort_order: 0,
   track_stock: false,
   stock: 0,
+  daily_stock_enabled: false,
   option_groups: [],
 };
 

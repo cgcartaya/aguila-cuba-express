@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreBySlug } from "@/lib/services/stores";
+import { getMenuAvailabilityMap } from "@/lib/services/menu-availability-public";
 import {
   sendMenuOrderAdminAlertEmail,
   sendMenuOrderReceivedEmail,
@@ -67,9 +68,12 @@ export async function createMenuOrder(input: CreateMenuOrderInput): Promise<Crea
 
   const itemsById = new Map(items.map((i) => [i.id, i]));
 
-  // 2) Validar TODO primero (existe, activo, alcanza inventario) antes
-  //    de descontar nada — mismo criterio que reactivateExpiredOrder
-  //    en order-stock-admin.ts: nunca dejar un descuento a medias.
+  // 2) Validar TODO primero (existe, activo, alcanza cupo/inventario)
+  //    antes de descontar nada — mismo criterio que
+  //    reactivateExpiredOrder en order-stock-admin.ts: nunca dejar un
+  //    descuento a medias. La disponibilidad combina cupo diario e
+  //    inventario permanente en un solo cálculo (ver
+  //    getMenuAvailabilityMap) para que nunca se desincronicen.
   const neededByItem = new Map<string, number>();
   for (const line of input.lines) {
     const item = itemsById.get(line.menu_item_id);
@@ -79,13 +83,18 @@ export async function createMenuOrder(input: CreateMenuOrderInput): Promise<Crea
     neededByItem.set(line.menu_item_id, (neededByItem.get(line.menu_item_id) || 0) + line.quantity);
   }
 
+  const availability = await getMenuAvailabilityMap(store.id);
   for (const [itemId, neededQty] of neededByItem) {
     const item = itemsById.get(itemId)!;
-    if (item.stock !== null && item.stock < neededQty) {
+    const remaining = availability[itemId];
+    if (remaining !== null && remaining !== undefined && remaining < neededQty) {
       return {
         ok: false,
         status: 422,
-        error: `Ya no queda suficiente "${item.name}" (quedan ${item.stock}).`,
+        error:
+          remaining === 0
+            ? `"${item.name}" ya no está disponible.`
+            : `Ya no queda suficiente "${item.name}" (quedan ${remaining}).`,
       };
     }
   }

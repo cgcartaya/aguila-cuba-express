@@ -25,6 +25,7 @@ import {
   MessageSquareText,
   CalendarCheck2,
   Armchair,
+  Boxes,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
@@ -120,6 +121,7 @@ export const adminNavSections: AdminSection[] = [
     module: "menu",
     links: [
       { href: "/admin/menu", label: "Categorías y platillos", icon: Utensils },
+      { href: "/admin/menu/inventario", label: "Inventario", icon: Boxes },
       { href: "/admin/menu/ordenes", label: "Órdenes", icon: CalendarCheck2 },
     ],
   },

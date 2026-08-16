@@ -31,7 +31,8 @@ export type MenuItem = {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
-  stock: number | null; // null = inventario no controlado para este platillo
+  stock: number | null; // null = inventario permanente no controlado
+  daily_stock_enabled: boolean; // true = usa cupo diario (menu_daily_stock)
   menu_item_option_groups: MenuOptionGroup[];
 };
 
@@ -83,8 +84,9 @@ export type MenuItemFormData = {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
-  track_stock: boolean; // false = stock null (inventario no controlado)
+  track_stock: boolean; // false = stock null (inventario permanente no controlado)
   stock: number;
+  daily_stock_enabled: boolean; // cupo diario — la cantidad de HOY se pone desde /admin/menu/inventario, no aquí
   option_groups: MenuOptionGroupFormData[];
 };
 
@@ -160,4 +162,35 @@ export const MENU_ORDER_TYPE_LABEL: Record<MenuOrderType, string> = {
   dine_in: "En el restaurante",
   takeaway: "Para llevar",
   delivery: "Domicilio",
+};
+
+/* =========================================================
+   INVENTARIO — cupo diario + inventario permanente
+========================================================= */
+
+export type MenuDailyStock = {
+  id: string;
+  store_id: string;
+  menu_item_id: string;
+  stock_date: string; // "YYYY-MM-DD"
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+};
+
+/** Fila del dashboard de "Platos del día": el platillo + su cupo de
+ *  hoy (si ya se puso) + cuánto se ha vendido hoy. */
+export type DailyStockRow = {
+  menu_item_id: string;
+  item_name: string;
+  quantity: number | null; // null = todavía no se puso cupo hoy
+  sold: number;
+  remaining: number | null;
+};
+
+/** Fila del dashboard de "Inventario" (bebidas y contables). */
+export type PermanentStockRow = {
+  menu_item_id: string;
+  item_name: string;
+  stock: number;
 };

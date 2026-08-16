@@ -69,6 +69,23 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
   const { cart, setCart } = useSharedCart(storeSlug);
   const [orderSentMessage, setOrderSentMessage] = useState(false);
   const [addedToast, setAddedToast] = useState<string | null>(null);
+  // Disponibilidad en tiempo real (cupo diario + inventario
+  // permanente combinados) — undefined mientras carga, null en el
+  // mapa = ese platillo no tiene restricción y se puede pedir libre.
+  const [availability, setAvailability] = useState<Record<string, number | null>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/public/menu-availability?slug=${encodeURIComponent(storeSlug)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.availability) setAvailability(data.availability);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [storeSlug]);
 
   // Un platillo se puede agregar directo (sin abrir el modal) si no
   // tiene ningún grupo de opciones OBLIGATORIO — así lo simple sigue
@@ -374,6 +391,23 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
                             ${item.price.toFixed(2)}
                           </span>
                         </div>
+                        {(() => {
+                          const remaining = availability[item.id];
+                          if (remaining === undefined || remaining === null) return null;
+                          return (
+                            <span
+                              className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                remaining === 0
+                                  ? "bg-red-100 text-red-600"
+                                  : remaining <= 5
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "text-[#1B1410]/40"
+                              }`}
+                            >
+                              {remaining === 0 ? "Agotado por hoy" : `Quedan ${remaining}`}
+                            </span>
+                          );
+                        })()}
                         {item.description && (
                           <p
                             className="mt-1 text-[13px] italic"
@@ -385,7 +419,17 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
                         </button>
 
                         <div className="flex items-center justify-between gap-3">
-                      {isQuickAddable(item) ? (
+                      {(() => {
+                        const remaining = availability[item.id];
+                        const soldOut = remaining === 0;
+                        if (soldOut) {
+                          return (
+                            <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-[#1B1410]/35">
+                              No disponible
+                            </span>
+                          );
+                        }
+                        return isQuickAddable(item) ? (
                         getQuickQuantity(item.id) > 0 ? (
                           <div
                             className="flex shrink-0 items-center gap-2 rounded-full px-1.5 py-1"
@@ -430,7 +474,8 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
                         >
                           Elegir
                         </button>
-                      )}
+                      );
+                      })()}
                           <button onClick={() => setActiveItem(item)} className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-[#1B1410]/45 transition hover:text-[#1B1410]">Detalles <ChevronRight size={13} /></button>
                         </div>
                       </div>

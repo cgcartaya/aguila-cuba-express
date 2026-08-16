@@ -164,7 +164,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
                 setFormData((prev) => ({ ...prev, track_stock: e.target.checked }))
               }
             />
-            Controlar inventario de este platillo
+            Inventario permanente (bebidas, contables)
           </label>
           {formData.track_stock && (
             <div className="mt-2">
@@ -181,10 +181,30 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
                 className="w-32 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
               />
               <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                Se descuenta solo con cada pedido en línea. Cuando llegue a 0, ya no se
-                podrá pedir hasta que lo actualices.
+                Se descuenta con cada pedido y se repone desde Inventario cuando
+                compres más — no se resetea solo.
               </p>
             </div>
+          )}
+        </div>
+
+        <div className="mt-3 rounded-2xl bg-slate-50 p-3">
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <input
+              type="checkbox"
+              checked={formData.daily_stock_enabled}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, daily_stock_enabled: e.target.checked }))
+              }
+            />
+            Cupo diario (platos cocinados)
+          </label>
+          {formData.daily_stock_enabled && (
+            <p className="mt-1 text-[11px] font-semibold text-slate-400">
+              La cantidad de HOY se pone cada día desde Menú → Inventario → &quot;Platos
+              del día&quot;, no aquí. Se descuenta con cada venta y vuelve a empezar
+              en cero mañana.
+            </p>
           )}
         </div>
       </div>
