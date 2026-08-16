@@ -25,7 +25,6 @@ import {
   MessageSquareText,
   CalendarCheck2,
   Armchair,
-  Boxes,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
