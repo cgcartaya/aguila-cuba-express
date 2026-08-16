@@ -1,8 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { getStoreBySlug } from "@/lib/services/stores";
-import { getRestaurantNow, isMenuScheduleActive, normalizeMenuTimeZone, scheduleLabel } from "@/lib/menu/daytime";
+import {
+  getRestaurantNow,
+  isMenuScheduleActive,
+  normalizeMenuTimeZone,
+  scheduleLabel,
+} from "@/lib/menu/daytime";
 
 import type {
+  DailyMenuSchedule,
   FeaturedMenuItem,
   MenuCategory,
   MenuItem,
@@ -83,50 +89,57 @@ export async function getPublicMenu(slug: string): Promise<{
   const store = await getStoreBySlug(slug);
   if (!store) return null;
 
-  const [
-    { data, error },
-    { data: dailyMenuRows, error: dailyMenuError },
-    { data: settings },
-  ] = await Promise.all([
-    supabase
-      .from("menu_categories")
-      .select(`
-        id,
-        store_id,
-        name,
-        venue_type,
-        sort_order,
-        is_active,
-        menu_items (
-          ${MENU_ITEM_SELECT}
-        )
-      `)
-      .eq("store_id", store.id)
-      .eq("is_active", true)
-      .eq("menu_items.is_active", true)
-      .order("sort_order", { ascending: true }),
+  const [{ data, error }, { data: dailyMenuRows, error: dailyMenuError }, { data: settings }] =
+    await Promise.all([
+      supabase
+        .from("menu_categories")
+        .select(`
+          id,
+          store_id,
+          name,
+          venue_type,
+          sort_order,
+          is_active,
+          menu_items (
+            ${MENU_ITEM_SELECT}
+          )
+        `)
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .eq("menu_items.is_active", true)
+        .order("sort_order", { ascending: true }),
 
-    supabase
-      .from("menu_daily_menus")
-      .select(`
-        id,
-        name,
-        sort_order,
-        weekdays,
-        start_time,
-        end_time,
-        menu_daily_menu_items ( menu_item_id )
-      `)
-      .eq("store_id", store.id)
-      .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
+      supabase
+        .from("menu_daily_menus")
+        .select(`
+          id,
+          name,
+          sort_order,
+          weekdays,
+          start_time,
+          end_time,
+          menu_daily_menu_items ( menu_item_id ),
+          menu_daily_menu_schedules (
+            id,
+            daily_menu_id,
+            weekdays,
+            start_time,
+            end_time,
+            label,
+            sort_order,
+            is_active
+          )
+        `)
+        .eq("store_id", store.id)
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
 
-    supabase
-      .from("store_settings")
-      .select("menu_timezone")
-      .eq("store_id", store.id)
-      .maybeSingle(),
-  ]);
+      supabase
+        .from("store_settings")
+        .select("menu_timezone")
+        .eq("store_id", store.id)
+        .maybeSingle(),
+    ]);
 
   if (error) {
     console.error("getPublicMenu error:", error.message);
@@ -144,23 +157,46 @@ export async function getPublicMenu(slug: string): Promise<{
     start_time: string | null;
     end_time: string | null;
     menu_daily_menu_items: { menu_item_id: string }[];
+    menu_daily_menu_schedules: DailyMenuSchedule[];
   };
 
-  const activeRows = ((dailyMenuRows ?? []) as unknown as DailyRow[]).filter((row) =>
-    isMenuScheduleActive({
-      weekdays: row.weekdays,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      now,
-    })
-  );
+  const rows = (dailyMenuRows ?? []) as unknown as DailyRow[];
 
-  const activeMenuIds = activeRows.map((r) => r.id);
-  let overrides: {
-    daily_menu_id: string;
-    menu_item_id: string;
-    is_included: boolean;
-  }[] = [];
+  const activeRows = rows
+    .map((row) => {
+      const activeRules = (row.menu_daily_menu_schedules || [])
+        .filter((rule) => rule.is_active)
+        .filter((rule) =>
+          isMenuScheduleActive({
+            weekdays: rule.weekdays,
+            startTime: rule.start_time,
+            endTime: rule.end_time,
+            now,
+          })
+        );
+
+      // Compatibilidad: si todavía no tiene reglas nuevas, usa el horario legacy.
+      const legacyActive =
+        (row.menu_daily_menu_schedules || []).length === 0 &&
+        isMenuScheduleActive({
+          weekdays: row.weekdays,
+          startTime: row.start_time,
+          endTime: row.end_time,
+          now,
+        });
+
+      if (!legacyActive && activeRules.length === 0) return null;
+
+      return { row, activeRules, legacyActive };
+    })
+    .filter(Boolean) as {
+      row: DailyRow;
+      activeRules: DailyMenuSchedule[];
+      legacyActive: boolean;
+    }[];
+
+  const activeMenuIds = activeRows.map((r) => r.row.id);
+  let overrides: { daily_menu_id: string; menu_item_id: string; is_included: boolean }[] = [];
 
   if (activeMenuIds.length > 0) {
     const { data: overrideRows, error: overrideError } = await supabase
@@ -179,7 +215,7 @@ export async function getPublicMenu(slug: string): Promise<{
     menu_items: sortItems((cat.menu_items ?? []) as MenuItem[]),
   })) as MenuCategory[];
 
-  const dailyMenus: PublicDailyMenu[] = activeRows.map((row) => {
+  const dailyMenus: PublicDailyMenu[] = activeRows.map(({ row, activeRules }) => {
     const base = new Set((row.menu_daily_menu_items || []).map((i) => i.menu_item_id));
 
     for (const override of overrides.filter((o) => o.daily_menu_id === row.id)) {
@@ -187,11 +223,18 @@ export async function getPublicMenu(slug: string): Promise<{
       else base.delete(override.menu_item_id);
     }
 
+    const label =
+      activeRules.length > 0
+        ? activeRules
+            .map((r) => r.label || scheduleLabel(r.weekdays, r.start_time, r.end_time))
+            .join(" · ")
+        : scheduleLabel(row.weekdays, row.start_time, row.end_time);
+
     return {
       id: row.id,
       name: row.name,
       itemIds: [...base],
-      scheduleLabel: scheduleLabel(row.weekdays, row.start_time, row.end_time),
+      scheduleLabel: label,
     };
   });
 

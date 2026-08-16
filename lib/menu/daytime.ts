@@ -1,9 +1,9 @@
 export const WEEKDAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"] as const;
 
 export type ZonedRestaurantNow = {
-  date: string;      // YYYY-MM-DD
-  weekday: number;   // 0=domingo ... 6=sábado
-  time: string;      // HH:mm
+  date: string;
+  weekday: number;
+  time: string;
 };
 
 export function normalizeMenuTimeZone(value?: string | null) {
@@ -16,10 +16,7 @@ export function normalizeMenuTimeZone(value?: string | null) {
   }
 }
 
-export function getRestaurantNow(
-  timeZone: string,
-  now = new Date()
-): ZonedRestaurantNow {
+export function getRestaurantNow(timeZone: string, now = new Date()): ZonedRestaurantNow {
   const tz = normalizeMenuTimeZone(timeZone);
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
@@ -68,10 +65,7 @@ export function isMenuScheduleActive(args: {
 
   const current = args.now.time;
 
-  // Horario normal: 11:00 -> 15:00
   if (start <= end) return current >= start && current < end;
-
-  // Cruza medianoche: 18:00 -> 02:00
   return current >= start || current < end;
 }
 

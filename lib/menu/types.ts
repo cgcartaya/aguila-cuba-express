@@ -173,8 +173,19 @@ export type PermanentStockRow = {
 };
 
 /* =========================================================
-   MENÚS Y HORARIOS
+   MENÚS, REGLAS HORARIAS Y EXCEPCIONES
 ========================================================= */
+
+export type DailyMenuSchedule = {
+  id: string;
+  daily_menu_id: string;
+  weekdays: number[];
+  start_time: string | null;
+  end_time: string | null;
+  label: string | null;
+  sort_order: number;
+  is_active: boolean;
+};
 
 export type DailyMenu = {
   id: string;
@@ -182,9 +193,11 @@ export type DailyMenu = {
   name: string;
   sort_order: number;
   is_active: boolean;
-  weekdays: number[] | null;
-  start_time: string | null;
-  end_time: string | null;
+  // Campos legacy Fase 1. Se conservan para compatibilidad.
+  weekdays?: number[] | null;
+  start_time?: string | null;
+  end_time?: string | null;
+  menu_daily_menu_schedules?: DailyMenuSchedule[];
 };
 
 export type EligibleDailyMenuItem = {

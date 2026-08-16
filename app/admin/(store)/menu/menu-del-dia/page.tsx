@@ -1,28 +1,61 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Trash2, UtensilsCrossed, X, CalendarClock, EyeOff, Sparkles } from "lucide-react";
+import {
+  CalendarDays,
+  Clock3,
+  Eye,
+  EyeOff,
+  Loader2,
+  Plus,
+  Settings2,
+  Sparkles,
+  Trash2,
+  UtensilsCrossed,
+} from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import WeeklyMenuCalendar from "@/components/admin/menu/WeeklyMenuCalendar";
+import MenuAdminPreview from "@/components/admin/menu/MenuAdminPreview";
 import {
   addItemToDailyMenu,
   clearDailyMenuItemOverride,
   createDailyMenu,
+  createDailyMenuSchedule,
   deleteDailyMenu,
+  deleteDailyMenuScheduleRule,
   getDailyMenuItemIds,
   getDailyMenuOverrides,
   getDailyMenusForAdmin,
   getEligibleItemsForAdmin,
   getMenuToday,
+  removeItemFromDailyMenu,
   setDailyMenuItemOverride,
   setMenuTimeZone,
-  updateDailyMenuSchedule,
+  updateDailyMenuMeta,
+  updateDailyMenuScheduleRule,
 } from "@/lib/services/menu-daily-menus";
 import { setDailyStockQuantity, getDailyStockDashboard } from "@/lib/services/menu-inventory";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import { WEEKDAY_LABELS, scheduleLabel } from "@/lib/menu/daytime";
-import type { DailyMenu, DailyMenuItemOverride, EligibleDailyMenuItem } from "@/lib/menu/types";
+import type {
+  DailyMenu,
+  DailyMenuItemOverride,
+  DailyMenuSchedule,
+  EligibleDailyMenuItem,
+} from "@/lib/menu/types";
+
+type TabKey = "menus" | "platos" | "excepciones" | "preview" | "calendario" | "config";
+
+const TABS: { key: TabKey; label: string; icon: typeof Clock3 }[] = [
+  { key: "menus", label: "Menús", icon: Clock3 },
+  { key: "platos", label: "Platos", icon: UtensilsCrossed },
+  { key: "excepciones", label: "Excepciones de hoy", icon: Sparkles },
+  { key: "preview", label: "Vista previa", icon: Eye },
+  { key: "calendario", label: "Calendario", icon: CalendarDays },
+  { key: "config", label: "Configuración", icon: Settings2 },
+];
 
 export default function AdminMenuDailyMenusPage() {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
@@ -33,44 +66,56 @@ export default function AdminMenuDailyMenusPage() {
     return accessStore;
   }, [accessStore, isSuperAdmin, selectedStore]);
 
+  const [tab, setTab] = useState<TabKey>("menus");
   const [menus, setMenus] = useState<DailyMenu[]>([]);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [eligibleItems, setEligibleItems] = useState<EligibleDailyMenuItem[]>([]);
-  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [items, setItems] = useState<EligibleDailyMenuItem[]>([]);
+  const [memberMap, setMemberMap] = useState<Record<string, string[]>>({});
   const [overrides, setOverrides] = useState<DailyMenuItemOverride[]>([]);
   const [todayQuota, setTodayQuota] = useState<Record<string, number | null>>({});
-  const [loading, setLoading] = useState(true);
-  const [busyItemId, setBusyItemId] = useState<string | null>(null);
   const [draftQty, setDraftQty] = useState<Record<string, string>>({});
   const [today, setToday] = useState("");
   const [timeZone, setTimeZoneState] = useState("America/Havana");
   const [tzDraft, setTzDraft] = useState("America/Havana");
-  const [scheduleBusy, setScheduleBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const loadMenus = async () => {
+  const activeMenu = menus.find((m) => m.id === activeMenuId) || null;
+  const members = activeMenuId ? memberMap[activeMenuId] || [] : [];
+  const overrideMap = new Map(overrides.map((o) => [o.menu_item_id, o.is_included]));
+
+  const loadAll = async () => {
     if (accessLoading || storeLoading || !activeStore?.id) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    const [{ data: menusData }, { data: eligible }, dailyStock, restaurantNow] =
-      await Promise.all([
-        getDailyMenusForAdmin(activeStore.id),
-        getEligibleItemsForAdmin(activeStore.id),
-        getDailyStockDashboard(activeStore.id),
-        getMenuToday(activeStore.id),
-      ]);
+    const [{ data: menuData }, { data: eligible }, stock, restaurantNow] = await Promise.all([
+      getDailyMenusForAdmin(activeStore.id),
+      getEligibleItemsForAdmin(activeStore.id),
+      getDailyStockDashboard(activeStore.id),
+      getMenuToday(activeStore.id),
+    ]);
 
-    const nextMenus = menusData || [];
+    const nextMenus = menuData || [];
     setMenus(nextMenus);
-    setEligibleItems(eligible);
+    setItems(eligible);
     setToday(restaurantNow.date);
     setTimeZoneState(restaurantNow.timeZone);
     setTzDraft(restaurantNow.timeZone);
 
+    const nextMemberMap: Record<string, string[]> = {};
+    await Promise.all(
+      nextMenus.map(async (menu) => {
+        const { data } = await getDailyMenuItemIds(menu.id);
+        nextMemberMap[menu.id] = data;
+      })
+    );
+    setMemberMap(nextMemberMap);
+
     const quotaMap: Record<string, number | null> = {};
-    dailyStock.forEach((row) => {
+    stock.forEach((row) => {
       quotaMap[row.menu_item_id] = row.quantity;
     });
     setTodayQuota(quotaMap);
@@ -80,139 +125,152 @@ export default function AdminMenuDailyMenusPage() {
   };
 
   useEffect(() => {
-    void loadMenus();
+    void loadAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStore?.id, accessLoading, storeLoading]);
 
   useEffect(() => {
     if (!activeMenuId || !activeStore?.id || !today) {
-      setMemberIds([]);
       setOverrides([]);
       return;
     }
-
-    Promise.all([
-      getDailyMenuItemIds(activeMenuId),
-      getDailyMenuOverrides(activeStore.id, activeMenuId, today),
-    ]).then(([members, dailyOverrides]) => {
-      setMemberIds(members.data);
-      setOverrides(dailyOverrides.data);
-    });
+    getDailyMenuOverrides(activeStore.id, activeMenuId, today).then(({ data }) => setOverrides(data));
   }, [activeMenuId, activeStore?.id, today]);
 
-  const activeMenu = menus.find((m) => m.id === activeMenuId) || null;
-  const overrideMap = new Map(overrides.map((o) => [o.menu_item_id, o.is_included]));
-
-  const effectiveMemberIds = new Set(memberIds);
-  for (const o of overrides) {
-    if (o.is_included) effectiveMemberIds.add(o.menu_item_id);
-    else effectiveMemberIds.delete(o.menu_item_id);
-  }
-
-  const catalogItems = eligibleItems.filter((i) => !memberIds.includes(i.id));
-  const menuItems = eligibleItems.filter((i) => effectiveMemberIds.has(i.id));
+  const refreshMenus = async () => {
+    if (!activeStore?.id) return;
+    const { data } = await getDailyMenusForAdmin(activeStore.id);
+    setMenus(data || []);
+  };
 
   const createMenu = async () => {
-    const name = prompt("Nombre del menú (ej: Almuerzo, Cena, Brunch, Happy Hour)");
+    const name = prompt("Nombre del menú (ej: Almuerzo, Cena, Happy Hour)");
     if (!name?.trim() || !activeStore?.id) return;
 
     const { data, error } = await createDailyMenu(activeStore.id, name, menus.length);
     if (error || !data) return alert("No se pudo crear el menú.");
 
-    setMenus((prev) => [...prev, data as DailyMenu]);
+    await createDailyMenuSchedule(data.id, {
+      weekdays: [1, 2, 3, 4, 5],
+      start_time: "11:00",
+      end_time: "15:00",
+      label: "Lunes a viernes",
+      sort_order: 0,
+    });
+
+    await refreshMenus();
     setActiveMenuId(data.id);
   };
 
-  const removeMenu = async () => {
-    if (!activeMenu) return;
-    if (!confirm(`¿Eliminar "${activeMenu.name}"? Los platos no se borran del catálogo.`)) return;
-
-    const { error } = await deleteDailyMenu(activeMenu.id);
+  const removeMenu = async (menu: DailyMenu) => {
+    if (!confirm(`¿Eliminar "${menu.name}"? Los platos no se borran.`)) return;
+    const { error } = await deleteDailyMenu(menu.id);
     if (error) return alert("No se pudo eliminar.");
-
-    const remaining = menus.filter((m) => m.id !== activeMenu.id);
-    setMenus(remaining);
-    setActiveMenuId(remaining[0]?.id || null);
+    await refreshMenus();
+    setActiveMenuId((current) => (current === menu.id ? null : current));
   };
 
-  const saveSchedule = async (patch: Partial<DailyMenu> = {}) => {
-    if (!activeMenu) return;
-    const next = { ...activeMenu, ...patch };
-    if (!next.weekdays?.length) {
-      alert("Selecciona al menos un día.");
-      return;
-    }
-
-    setScheduleBusy(true);
-    const { data, error } = await updateDailyMenuSchedule(activeMenu.id, {
-      weekdays: next.weekdays,
-      start_time: next.start_time,
-      end_time: next.end_time,
-      is_active: next.is_active,
+  const addRule = async (menu: DailyMenu) => {
+    setBusyId(menu.id);
+    const { error } = await createDailyMenuSchedule(menu.id, {
+      weekdays: [6, 0],
+      start_time: "11:30",
+      end_time: "16:00",
+      label: "Fin de semana",
+      sort_order: menu.menu_daily_menu_schedules?.length || 0,
     });
-    setScheduleBusy(false);
-
-    if (error || !data) return alert("No se pudo guardar el horario.");
-    setMenus((prev) => prev.map((m) => (m.id === activeMenu.id ? (data as DailyMenu) : m)));
+    setBusyId(null);
+    if (error) return alert("No se pudo agregar la regla.");
+    await refreshMenus();
   };
 
-  const toggleDay = (day: number) => {
-    if (!activeMenu) return;
-    const days = activeMenu.weekdays?.length ? [...activeMenu.weekdays] : [0, 1, 2, 3, 4, 5, 6];
-    const nextDays = days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort();
+  const updateRuleLocal = (menuId: string, ruleId: string, patch: Partial<DailyMenuSchedule>) => {
     setMenus((prev) =>
-      prev.map((m) => (m.id === activeMenu.id ? { ...m, weekdays: nextDays } : m))
+      prev.map((menu) =>
+        menu.id !== menuId
+          ? menu
+          : {
+              ...menu,
+              menu_daily_menu_schedules: (menu.menu_daily_menu_schedules || []).map((rule) =>
+                rule.id === ruleId ? { ...rule, ...patch } : rule
+              ),
+            }
+      )
     );
   };
 
-  const addPermanent = async (item: EligibleDailyMenuItem) => {
+  const saveRule = async (rule: DailyMenuSchedule) => {
+    setBusyId(rule.id);
+    const { error } = await updateDailyMenuScheduleRule(rule.id, {
+      weekdays: rule.weekdays,
+      start_time: rule.start_time,
+      end_time: rule.end_time,
+      label: rule.label,
+      is_active: rule.is_active,
+      sort_order: rule.sort_order,
+    });
+    setBusyId(null);
+    if (error) alert("No se pudo guardar la regla.");
+  };
+
+  const deleteRule = async (ruleId: string) => {
+    if (!confirm("¿Eliminar esta regla horaria?")) return;
+    const { error } = await deleteDailyMenuScheduleRule(ruleId);
+    if (error) return alert("No se pudo eliminar.");
+    await refreshMenus();
+  };
+
+  const toggleMenu = async (menu: DailyMenu) => {
+    const next = !menu.is_active;
+    setMenus((prev) => prev.map((m) => (m.id === menu.id ? { ...m, is_active: next } : m)));
+    await updateDailyMenuMeta(menu.id, { is_active: next });
+  };
+
+  const addDish = async (item: EligibleDailyMenuItem) => {
     if (!activeMenuId) return;
-    setBusyItemId(item.id);
-    const { error } = await addItemToDailyMenu(activeMenuId, item.id, memberIds.length);
-    setBusyItemId(null);
+    setBusyId(item.id);
+    const { error } = await addItemToDailyMenu(activeMenuId, item.id, members.length);
+    setBusyId(null);
     if (error) return alert("No se pudo agregar.");
-    setMemberIds((prev) => [...prev, item.id]);
-    await clearDailyMenuItemOverride(activeMenuId, item.id, today);
-    setOverrides((prev) => prev.filter((o) => o.menu_item_id !== item.id));
+    setMemberMap((prev) => ({ ...prev, [activeMenuId]: [...members, item.id] }));
   };
 
-  const onlyToday = async (item: EligibleDailyMenuItem) => {
+  const removeDish = async (item: EligibleDailyMenuItem) => {
+    if (!activeMenuId) return;
+    setBusyId(item.id);
+    const { error } = await removeItemFromDailyMenu(activeMenuId, item.id);
+    setBusyId(null);
+    if (error) return alert("No se pudo quitar.");
+    setMemberMap((prev) => ({
+      ...prev,
+      [activeMenuId]: members.filter((id) => id !== item.id),
+    }));
+  };
+
+  const setOverride = async (item: EligibleDailyMenuItem, isIncluded: boolean) => {
     if (!activeMenuId || !activeStore?.id) return;
-    setBusyItemId(item.id);
+    setBusyId(item.id);
     const { error } = await setDailyMenuItemOverride({
       storeId: activeStore.id,
       dailyMenuId: activeMenuId,
       menuItemId: item.id,
       date: today,
-      isIncluded: true,
+      isIncluded,
     });
-    setBusyItemId(null);
-    if (error) return alert("No se pudo marcar solo para hoy.");
+    setBusyId(null);
+    if (error) return alert("No se pudo guardar la excepción.");
     setOverrides((prev) => [
       ...prev.filter((o) => o.menu_item_id !== item.id),
-      { daily_menu_id: activeMenuId, menu_item_id: item.id, override_date: today, is_included: true },
+      {
+        daily_menu_id: activeMenuId,
+        menu_item_id: item.id,
+        override_date: today,
+        is_included: isIncluded,
+      },
     ]);
   };
 
-  const hideToday = async (item: EligibleDailyMenuItem) => {
-    if (!activeMenuId || !activeStore?.id) return;
-    setBusyItemId(item.id);
-    const { error } = await setDailyMenuItemOverride({
-      storeId: activeStore.id,
-      dailyMenuId: activeMenuId,
-      menuItemId: item.id,
-      date: today,
-      isIncluded: false,
-    });
-    setBusyItemId(null);
-    if (error) return alert("No se pudo ocultar hoy.");
-    setOverrides((prev) => [
-      ...prev.filter((o) => o.menu_item_id !== item.id),
-      { daily_menu_id: activeMenuId, menu_item_id: item.id, override_date: today, is_included: false },
-    ]);
-  };
-
-  const clearToday = async (item: EligibleDailyMenuItem) => {
+  const clearOverride = async (item: EligibleDailyMenuItem) => {
     if (!activeMenuId) return;
     await clearDailyMenuItemOverride(activeMenuId, item.id, today);
     setOverrides((prev) => prev.filter((o) => o.menu_item_id !== item.id));
@@ -223,9 +281,9 @@ export default function AdminMenuDailyMenusPage() {
     const quantity = Number(draftQty[item.id] ?? todayQuota[item.id] ?? 0);
     if (!Number.isFinite(quantity) || quantity < 0) return;
 
-    setBusyItemId(item.id);
+    setBusyId(item.id);
     const { error } = await setDailyStockQuantity(activeStore.id, item.id, quantity, today);
-    setBusyItemId(null);
+    setBusyId(null);
     if (error) return alert("No se pudo guardar el cupo.");
     setTodayQuota((prev) => ({ ...prev, [item.id]: quantity }));
   };
@@ -233,9 +291,9 @@ export default function AdminMenuDailyMenusPage() {
   const saveTimeZone = async () => {
     if (!activeStore?.id) return;
     const { data, error } = await setMenuTimeZone(activeStore.id, tzDraft);
-    if (error || !data) return alert("Zona horaria inválida o no se pudo guardar.");
+    if (error || !data) return alert("Zona horaria inválida.");
     setTimeZoneState(data.menu_timezone);
-    await loadMenus();
+    await loadAll();
   };
 
   if (accessLoading || storeLoading || loading) {
@@ -250,237 +308,349 @@ export default function AdminMenuDailyMenusPage() {
     return <main className="p-8 text-center text-slate-400">Selecciona una tienda.</main>;
   }
 
+  const catalogItems = items.filter((item) => !members.includes(item.id));
+  const assignedItems = items.filter((item) => members.includes(item.id));
+
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6">
+    <main className="mx-auto max-w-7xl px-4 py-6">
       <AdminPageHeader
         eyebrow="Menú"
         title="Menús y horarios"
-        description="Configura Almuerzo, Cena, Brunch o Happy Hour; decide cuándo aparecen y qué cambia solo por hoy."
+        description="Organiza qué menú se muestra cada día, a qué hora y qué cambios aplican solo hoy."
         storeName={activeStore.name}
         icon={UtensilsCrossed}
       />
 
-      <section className="mt-5 rounded-2xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-black uppercase tracking-wide text-slate-400">Hora del restaurante</p>
-            <p className="mt-1 text-sm font-bold text-slate-700">
-              Hoy: {today} · Zona: {timeZone}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              value={tzDraft}
-              onChange={(e) => setTzDraft(e.target.value)}
-              placeholder="America/Havana"
-              className="min-w-[220px] rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold"
-            />
-            <button onClick={saveTimeZone} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white">
-              Guardar zona horaria
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <div className="mt-5 flex flex-wrap gap-2">
-        {menus.map((menu) => (
+      <div className="mt-5 flex gap-1.5 overflow-x-auto rounded-2xl bg-slate-100 p-1.5">
+        {TABS.map(({ key, label, icon: Icon }) => (
           <button
-            key={menu.id}
-            onClick={() => setActiveMenuId(menu.id)}
-            className={`rounded-full px-4 py-2 text-sm font-bold ${
-              activeMenuId === menu.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+            key={key}
+            onClick={() => setTab(key)}
+            className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition ${
+              tab === key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
             }`}
           >
-            {menu.name}
+            <Icon size={15} /> {label}
           </button>
         ))}
-        <button onClick={createMenu} className="inline-flex items-center gap-1 rounded-full border-2 border-dashed border-slate-300 px-4 py-2 text-sm font-bold text-slate-500">
-          <Plus size={14} /> Nuevo menú
-        </button>
       </div>
 
-      {!activeMenu ? (
-        <div className="mt-6 rounded-2xl bg-slate-50 p-8 text-center text-sm font-semibold text-slate-400">
-          Crea tu primer menú.
-        </div>
-      ) : (
-        <>
-          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <CalendarClock size={18} className="text-slate-500" />
-                  <h2 className="text-base font-black text-slate-900">Horario de {activeMenu.name}</h2>
-                </div>
-                <p className="mt-1 text-xs font-semibold text-slate-400">
-                  {scheduleLabel(activeMenu.weekdays, activeMenu.start_time, activeMenu.end_time)}
-                </p>
-              </div>
-              <button onClick={removeMenu} className="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
-                <Trash2 size={16} />
-              </button>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              {WEEKDAY_LABELS.map((label, day) => {
-                const selected = activeMenu.weekdays?.includes(day) ?? true;
-                return (
-                  <button
-                    key={label}
-                    onClick={() => toggleDay(day)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-black ${
-                      selected ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 md:max-w-lg">
-              <label className="text-xs font-bold text-slate-500">
-                Desde
-                <input
-                  type="time"
-                  value={activeMenu.start_time?.slice(0, 5) || ""}
-                  onChange={(e) =>
-                    setMenus((prev) =>
-                      prev.map((m) => m.id === activeMenu.id ? { ...m, start_time: e.target.value || null } : m)
-                    )
-                  }
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="text-xs font-bold text-slate-500">
-                Hasta
-                <input
-                  type="time"
-                  value={activeMenu.end_time?.slice(0, 5) || ""}
-                  onChange={(e) =>
-                    setMenus((prev) =>
-                      prev.map((m) => m.id === activeMenu.id ? { ...m, end_time: e.target.value || null } : m)
-                    )
-                  }
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-            </div>
-
-            <button
-              onClick={() => saveSchedule()}
-              disabled={scheduleBusy}
-              className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
-            >
-              {scheduleBusy ? "Guardando..." : "Guardar horario"}
-            </button>
-          </section>
-
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
-            <section className="rounded-3xl bg-white p-4 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">Catálogo</h2>
-              <p className="mb-3 mt-1 text-xs font-semibold text-slate-400">
-                Todos los platos activos pueden agregarse, tengan inventario o no.
+      {tab === "menus" && (
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Mis menús</h2>
+              <p className="text-xs font-semibold text-slate-400">
+                Un mismo menú puede tener varias reglas de horario.
               </p>
+            </div>
+            <button onClick={createMenu} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white">
+              <Plus size={16} /> Nuevo menú
+            </button>
+          </div>
 
-              <div className="space-y-2">
-                {catalogItems.map((item) => {
-                  const todayOnly = overrideMap.get(item.id) === true;
-                  return (
-                    <div key={item.id} className="rounded-2xl bg-slate-50 p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
-                          <p className="text-[11px] font-semibold text-slate-400">${item.price.toFixed(2)}</p>
+          <div className="space-y-4">
+            {menus.map((menu) => (
+              <div key={menu.id} className="rounded-2xl border border-slate-200 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <button onClick={() => setActiveMenuId(menu.id)} className="text-left">
+                    <p className="text-base font-black text-slate-900">{menu.name}</p>
+                    <p className="mt-1 text-xs font-semibold text-slate-400">
+                      {(memberMap[menu.id] || []).length} platos · {(menu.menu_daily_menu_schedules || []).length} reglas
+                    </p>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleMenu(menu)}
+                      className={`rounded-full px-3 py-1.5 text-[10px] font-black ${
+                        menu.is_active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-400"
+                      }`}
+                    >
+                      {menu.is_active ? "Activo" : "Inactivo"}
+                    </button>
+                    <button onClick={() => addRule(menu)} className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600">
+                      + Regla
+                    </button>
+                    <button onClick={() => removeMenu(menu)} className="rounded-xl p-2 text-slate-400 hover:bg-red-50 hover:text-red-600">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {(menu.menu_daily_menu_schedules || []).map((rule) => (
+                    <div key={rule.id} className="grid gap-3 rounded-2xl bg-slate-50 p-3 lg:grid-cols-[1.2fr_1fr_1fr_auto]">
+                      <div>
+                        <input
+                          value={rule.label || ""}
+                          onChange={(e) => updateRuleLocal(menu.id, rule.id, { label: e.target.value })}
+                          placeholder="Ej: Lunes a viernes"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        />
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {WEEKDAY_LABELS.map((label, day) => {
+                            const selected = rule.weekdays.includes(day);
+                            return (
+                              <button
+                                key={label}
+                                onClick={() =>
+                                  updateRuleLocal(menu.id, rule.id, {
+                                    weekdays: selected
+                                      ? rule.weekdays.filter((d) => d !== day)
+                                      : [...rule.weekdays, day].sort(),
+                                  })
+                                }
+                                className={`h-7 w-7 rounded-full text-[9px] font-black ${
+                                  selected ? "bg-slate-900 text-white" : "bg-white text-slate-400"
+                                }`}
+                              >
+                                {label.slice(0, 1)}
+                              </button>
+                            );
+                          })}
                         </div>
-                        <button onClick={() => addPermanent(item)} className="rounded-full bg-slate-900 p-2 text-white" title="Agregar siempre">
-                          <Plus size={14} />
+                      </div>
+
+                      <label className="text-[10px] font-black uppercase text-slate-400">
+                        Desde
+                        <input
+                          type="time"
+                          value={rule.start_time?.slice(0, 5) || ""}
+                          onChange={(e) => updateRuleLocal(menu.id, rule.id, { start_time: e.target.value || null })}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        />
+                      </label>
+
+                      <label className="text-[10px] font-black uppercase text-slate-400">
+                        Hasta
+                        <input
+                          type="time"
+                          value={rule.end_time?.slice(0, 5) || ""}
+                          onChange={(e) => updateRuleLocal(menu.id, rule.id, { end_time: e.target.value || null })}
+                          className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold"
+                        />
+                      </label>
+
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => saveRule(rule)} className="rounded-xl bg-slate-900 px-3 py-2 text-xs font-bold text-white">
+                          Guardar
+                        </button>
+                        <button onClick={() => deleteRule(rule.id)} className="rounded-xl p-2 text-slate-400 hover:text-red-600">
+                          <Trash2 size={14} />
                         </button>
                       </div>
-                      <button
-                        onClick={() => (todayOnly ? clearToday(item) : onlyToday(item))}
-                        className={`mt-2 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-black ${
-                          todayOnly ? "bg-amber-100 text-amber-700" : "bg-white text-slate-500"
-                        }`}
-                      >
-                        <Sparkles size={12} />
-                        {todayOnly ? "Solo hoy ✓ (quitar excepción)" : "Disponible solo hoy"}
+                    </div>
+                  ))}
+
+                  {(menu.menu_daily_menu_schedules || []).length === 0 && (
+                    <button onClick={() => addRule(menu)} className="w-full rounded-2xl border-2 border-dashed border-slate-200 p-4 text-xs font-bold text-slate-400">
+                      + Agregar primera regla horaria
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {tab === "platos" && (
+        <section className="mt-6">
+          <div className="mb-4 flex flex-wrap gap-2">
+            {menus.map((menu) => (
+              <button
+                key={menu.id}
+                onClick={() => setActiveMenuId(menu.id)}
+                className={`rounded-full px-4 py-2 text-xs font-black ${
+                  activeMenuId === menu.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {menu.name}
+              </button>
+            ))}
+          </div>
+
+          {!activeMenu ? (
+            <div className="rounded-2xl bg-slate-50 p-8 text-center text-sm font-semibold text-slate-400">
+              Selecciona un menú.
+            </div>
+          ) : (
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                <h2 className="text-sm font-black uppercase text-slate-500">Catálogo</h2>
+                <div className="mt-3 space-y-2">
+                  {catalogItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
+                        <p className="text-xs font-semibold text-slate-400">${item.price.toFixed(2)}</p>
+                      </div>
+                      <button onClick={() => addDish(item)} className="rounded-full bg-slate-900 p-2 text-white">
+                        <Plus size={14} />
                       </button>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </section>
 
-            <section className="rounded-3xl bg-white p-4 shadow-sm">
-              <h2 className="text-sm font-black uppercase tracking-wide text-slate-500">
-                En “{activeMenu.name}”
-              </h2>
-              <p className="mb-3 mt-1 text-xs font-semibold text-slate-400">
-                Las excepciones se borran solas al cambiar de fecha porque están guardadas por día.
-              </p>
-
-              <div className="space-y-2">
-                {menuItems.map((item) => {
-                  const hiddenToday = overrideMap.get(item.id) === false;
-                  const todayOnly = overrideMap.get(item.id) === true && !memberIds.includes(item.id);
-                  const draft = draftQty[item.id] ?? String(todayQuota[item.id] ?? "");
-
-                  return (
-                    <div key={item.id} className="rounded-2xl border border-slate-200 p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
-                          <p className="text-[11px] font-semibold text-slate-400">
-                            ${item.price.toFixed(2)}
-                            {todayOnly ? " · Solo hoy" : ""}
-                          </p>
-                        </div>
-                        {memberIds.includes(item.id) && (
-                          <button onClick={() => hideToday(item)} className="rounded-full bg-slate-100 p-2 text-slate-500" title="Ocultar hoy">
-                            <EyeOff size={14} />
+              <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                <h2 className="text-sm font-black uppercase text-slate-500">En {activeMenu.name}</h2>
+                <div className="mt-3 space-y-2">
+                  {assignedItems.map((item) => {
+                    const draft = draftQty[item.id] ?? String(todayQuota[item.id] ?? "");
+                    return (
+                      <div key={item.id} className="rounded-2xl border border-slate-200 p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
+                            <p className="text-xs font-semibold text-slate-400">${item.price.toFixed(2)}</p>
+                          </div>
+                          <button onClick={() => removeDish(item)} className="rounded-full bg-slate-100 p-2 text-slate-500">
+                            <Trash2 size={14} />
                           </button>
+                        </div>
+
+                        {item.daily_stock_enabled && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <span className="text-[10px] font-black uppercase text-slate-400">Cupo hoy</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={draft}
+                              onChange={(e) => setDraftQty((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                              className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-xs font-bold"
+                            />
+                            <button onClick={() => saveQuota(item)} className="rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-bold text-white">
+                              Guardar
+                            </button>
+                          </div>
                         )}
                       </div>
-
-                      {hiddenToday && (
-                        <button onClick={() => clearToday(item)} className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[10px] font-black text-red-600">
-                          Oculto hoy · Restaurar
-                        </button>
-                      )}
-
-                      {item.daily_stock_enabled ? (
-                        <div className="mt-3 flex items-center gap-2">
-                          <span className="text-[10px] font-black uppercase text-slate-400">Cupo hoy</span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={draft}
-                            onChange={(e) => setDraftQty((prev) => ({ ...prev, [item.id]: e.target.value }))}
-                            className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-xs font-bold"
-                          />
-                          <button onClick={() => saveQuota(item)} className="rounded-lg bg-slate-900 px-2.5 py-1 text-[10px] font-bold text-white">
-                            Guardar
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-[10px] font-bold uppercase text-slate-400">
-                          {item.stock === null ? "Sin control de inventario" : `Inventario permanente: ${item.stock}`}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {menuItems.length === 0 && (
-                  <div className="rounded-2xl bg-slate-50 p-5 text-center text-xs font-semibold text-slate-400">
-                    Este menú no tiene platos efectivos para hoy.
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
-            </section>
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === "excepciones" && (
+        <section className="mt-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-black text-slate-900">Excepciones de hoy</h2>
+              <p className="text-xs font-semibold text-slate-400">{today} · Solo afectan este día.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {menus.map((menu) => (
+                <button
+                  key={menu.id}
+                  onClick={() => setActiveMenuId(menu.id)}
+                  className={`rounded-full px-4 py-2 text-xs font-black ${
+                    activeMenuId === menu.id ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {menu.name}
+                </button>
+              ))}
+            </div>
           </div>
-        </>
+
+          {!activeMenu ? null : (
+            <div className="grid gap-5 lg:grid-cols-2">
+              <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-black text-red-600">Ocultar hoy</h3>
+                <div className="mt-3 space-y-2">
+                  {assignedItems.map((item) => {
+                    const hidden = overrideMap.get(item.id) === false;
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
+                        </div>
+                        <button
+                          onClick={() => (hidden ? clearOverride(item) : setOverride(item, false))}
+                          className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[10px] font-black ${
+                            hidden ? "bg-red-100 text-red-700" : "bg-white text-slate-500"
+                          }`}
+                        >
+                          <EyeOff size={12} /> {hidden ? "Oculto hoy ✓" : "Ocultar hoy"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-4">
+                <h3 className="text-sm font-black text-emerald-600">Disponible solo hoy</h3>
+                <div className="mt-3 space-y-2">
+                  {catalogItems.map((item) => {
+                    const onlyToday = overrideMap.get(item.id) === true;
+                    return (
+                      <div key={item.id} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-slate-800">{item.name}</p>
+                        </div>
+                        <button
+                          onClick={() => (onlyToday ? clearOverride(item) : setOverride(item, true))}
+                          className={`inline-flex items-center gap-1 rounded-xl px-3 py-2 text-[10px] font-black ${
+                            onlyToday ? "bg-emerald-100 text-emerald-700" : "bg-white text-slate-500"
+                          }`}
+                        >
+                          <Sparkles size={12} /> {onlyToday ? "Solo hoy ✓" : "Solo hoy"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      )}
+
+      {tab === "preview" && (
+        <div className="mt-6">
+          <MenuAdminPreview menus={menus} memberMap={memberMap} items={items} timeZone={timeZone} />
+        </div>
+      )}
+
+      {tab === "calendario" && (
+        <div className="mt-6">
+          <WeeklyMenuCalendar menus={menus} />
+        </div>
+      )}
+
+      {tab === "config" && (
+        <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+          <h2 className="text-lg font-black text-slate-900">Configuración</h2>
+          <p className="mt-1 text-xs font-semibold text-slate-400">
+            La zona horaria define qué significa “hoy” y cuándo se activa cada menú.
+          </p>
+
+          <div className="mt-5 max-w-xl">
+            <label className="text-xs font-black uppercase text-slate-400">
+              Zona horaria del restaurante
+              <input
+                value={tzDraft}
+                onChange={(e) => setTzDraft(e.target.value)}
+                className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold"
+                placeholder="America/Havana"
+              />
+            </label>
+
+            <button onClick={saveTimeZone} className="mt-3 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white">
+              Guardar zona horaria
+            </button>
+
+            <p className="mt-3 text-xs font-semibold text-slate-400">
+              Actual: {timeZone} · Hoy: {today}
+            </p>
+          </div>
+        </section>
       )}
     </main>
   );

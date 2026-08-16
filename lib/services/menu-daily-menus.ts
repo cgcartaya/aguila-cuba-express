@@ -4,19 +4,36 @@ import { getRestaurantNow, normalizeMenuTimeZone } from "@/lib/menu/daytime";
 import type {
   DailyMenu,
   DailyMenuItemOverride,
+  DailyMenuSchedule,
   EligibleDailyMenuItem,
 } from "@/lib/menu/types";
-
-/* =========================================================
-   MENÚS (Almuerzo, Cena, Brunch, Happy Hour...)
-========================================================= */
 
 export async function getDailyMenusForAdmin(storeId: string) {
   return supabase
     .from("menu_daily_menus")
-    .select("id, store_id, name, sort_order, is_active, weekdays, start_time, end_time")
+    .select(`
+      id,
+      store_id,
+      name,
+      sort_order,
+      is_active,
+      weekdays,
+      start_time,
+      end_time,
+      menu_daily_menu_schedules (
+        id,
+        daily_menu_id,
+        weekdays,
+        start_time,
+        end_time,
+        label,
+        sort_order,
+        is_active
+      )
+    `)
     .eq("store_id", storeId)
-    .order("sort_order", { ascending: true }) as unknown as Promise<{
+    .order("sort_order", { ascending: true })
+    .order("sort_order", { foreignTable: "menu_daily_menu_schedules", ascending: true }) as unknown as Promise<{
     data: DailyMenu[] | null;
     error: { message: string } | null;
   }>;
@@ -38,32 +55,20 @@ export async function createDailyMenu(storeId: string, name: string, sortOrder: 
     .single();
 }
 
-export async function updateDailyMenuSchedule(
+export async function updateDailyMenuMeta(
   id: string,
-  payload: {
-    name?: string;
-    weekdays: number[];
-    start_time: string | null;
-    end_time: string | null;
-    is_active?: boolean;
-  }
+  payload: { name?: string; is_active?: boolean; sort_order?: number }
 ) {
   return supabase
     .from("menu_daily_menus")
     .update({
       ...(payload.name !== undefined ? { name: payload.name.trim() } : {}),
-      weekdays: payload.weekdays,
-      start_time: payload.start_time || null,
-      end_time: payload.end_time || null,
       ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {}),
+      ...(payload.sort_order !== undefined ? { sort_order: payload.sort_order } : {}),
     })
     .eq("id", id)
     .select()
     .single();
-}
-
-export async function renameDailyMenu(id: string, name: string) {
-  return supabase.from("menu_daily_menus").update({ name: name.trim() }).eq("id", id);
 }
 
 export async function deleteDailyMenu(id: string) {
@@ -71,9 +76,59 @@ export async function deleteDailyMenu(id: string) {
 }
 
 /* =========================================================
-   CATÁLOGO ELEGIBLE
-   Ahora TODO plato activo puede pertenecer a Almuerzo/Cena.
-   El control de inventario es independiente.
+   REGLAS HORARIAS — un menú puede tener varias
+========================================================= */
+
+export async function createDailyMenuSchedule(
+  dailyMenuId: string,
+  payload: {
+    weekdays: number[];
+    start_time: string | null;
+    end_time: string | null;
+    label?: string | null;
+    sort_order?: number;
+  }
+) {
+  return supabase
+    .from("menu_daily_menu_schedules")
+    .insert({
+      daily_menu_id: dailyMenuId,
+      weekdays: payload.weekdays,
+      start_time: payload.start_time || null,
+      end_time: payload.end_time || null,
+      label: payload.label?.trim() || null,
+      sort_order: payload.sort_order ?? 0,
+      is_active: true,
+    })
+    .select()
+    .single();
+}
+
+export async function updateDailyMenuScheduleRule(
+  id: string,
+  payload: Partial<Omit<DailyMenuSchedule, "id" | "daily_menu_id">>
+) {
+  return supabase
+    .from("menu_daily_menu_schedules")
+    .update({
+      ...(payload.weekdays !== undefined ? { weekdays: payload.weekdays } : {}),
+      ...(payload.start_time !== undefined ? { start_time: payload.start_time || null } : {}),
+      ...(payload.end_time !== undefined ? { end_time: payload.end_time || null } : {}),
+      ...(payload.label !== undefined ? { label: payload.label?.trim() || null } : {}),
+      ...(payload.sort_order !== undefined ? { sort_order: payload.sort_order } : {}),
+      ...(payload.is_active !== undefined ? { is_active: payload.is_active } : {}),
+    })
+    .eq("id", id)
+    .select()
+    .single();
+}
+
+export async function deleteDailyMenuScheduleRule(id: string) {
+  return supabase.from("menu_daily_menu_schedules").delete().eq("id", id);
+}
+
+/* =========================================================
+   PLATOS
 ========================================================= */
 
 export async function getEligibleItemsForAdmin(storeId: string) {
@@ -86,10 +141,6 @@ export async function getEligibleItemsForAdmin(storeId: string) {
 
   return { data: (data as EligibleDailyMenuItem[]) || [], error };
 }
-
-/* =========================================================
-   PERTENENCIA BASE
-========================================================= */
 
 export async function getDailyMenuItemIds(dailyMenuId: string) {
   const { data, error } = await supabase
@@ -116,16 +167,10 @@ export async function removeItemFromDailyMenu(dailyMenuId: string, menuItemId: s
 }
 
 /* =========================================================
-   EXCEPCIONES DE HOY
-   is_included=false => ocultar hoy aunque pertenezca normalmente.
-   is_included=true  => mostrar solo hoy aunque no pertenezca.
+   EXCEPCIONES
 ========================================================= */
 
-export async function getDailyMenuOverrides(
-  storeId: string,
-  dailyMenuId: string,
-  date: string
-) {
+export async function getDailyMenuOverrides(storeId: string, dailyMenuId: string, date: string) {
   const { data, error } = await supabase
     .from("menu_daily_menu_item_overrides")
     .select("daily_menu_id, menu_item_id, override_date, is_included")
@@ -171,7 +216,7 @@ export async function clearDailyMenuItemOverride(
 }
 
 /* =========================================================
-   ZONA HORARIA DEL RESTAURANTE
+   ZONA HORARIA
 ========================================================= */
 
 export async function getMenuTimeZone(storeId: string) {
@@ -181,20 +226,14 @@ export async function getMenuTimeZone(storeId: string) {
     .eq("store_id", storeId)
     .maybeSingle();
 
-  return {
-    timeZone: normalizeMenuTimeZone(data?.menu_timezone),
-    error,
-  };
+  return { timeZone: normalizeMenuTimeZone(data?.menu_timezone), error };
 }
 
 export async function setMenuTimeZone(storeId: string, timeZone: string) {
   const safe = normalizeMenuTimeZone(timeZone);
   return supabase
     .from("store_settings")
-    .upsert(
-      { store_id: storeId, menu_timezone: safe },
-      { onConflict: "store_id" }
-    )
+    .upsert({ store_id: storeId, menu_timezone: safe }, { onConflict: "store_id" })
     .select("menu_timezone")
     .single();
 }
