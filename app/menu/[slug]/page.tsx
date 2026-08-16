@@ -49,6 +49,7 @@ export default async function MenuPage({ params }: PageProps) {
       <MenuPageClient
         store={menu.store}
         categories={menu.categories}
+        dailyMenus={menu.dailyMenus}
         whatsappNumber={settings?.whatsapp || null}
         // La landing real de De Paris vive en "/" (detección por host
         // en app/page.tsx), no en "/deparis" — esa ruta es código

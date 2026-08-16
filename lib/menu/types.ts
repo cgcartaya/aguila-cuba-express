@@ -194,3 +194,36 @@ export type PermanentStockRow = {
   item_name: string;
   stock: number;
 };
+
+/* =========================================================
+   MENÚS DEL DÍA (Almuerzo, Cena...)
+========================================================= */
+
+export type DailyMenu = {
+  id: string;
+  store_id: string;
+  name: string;
+  sort_order: number;
+  is_active: boolean;
+};
+
+/** Platillo elegible para un menú del día (tiene inventario activo,
+ *  de cualquiera de los dos tipos) + si ya está asignado al menú
+ *  que se está editando ahora mismo. */
+export type EligibleDailyMenuItem = {
+  id: string;
+  name: string;
+  price: number;
+  image_url: string | null;
+  daily_stock_enabled: boolean;
+  stock: number | null; // inventario permanente, si aplica
+};
+
+/** Lo que ve el portal público: cada menú del día con los ids de
+ *  los platillos que tiene asignados, para armar las pestañas
+ *  Almuerzo/Cena sin pedir nada aparte del cargue inicial. */
+export type PublicDailyMenu = {
+  id: string;
+  name: string;
+  itemIds: string[];
+};

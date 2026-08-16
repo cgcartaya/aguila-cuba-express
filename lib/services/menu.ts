@@ -6,6 +6,7 @@ import type {
   MenuCategory,
   MenuItem,
   MenuItemFormData,
+  PublicDailyMenu,
 } from "@/lib/menu/types";
 
 /* =========================================================
@@ -101,14 +102,16 @@ export async function getFeaturedMenuItems(
 export async function getPublicMenu(slug: string): Promise<{
   store: Awaited<ReturnType<typeof getStoreBySlug>>;
   categories: MenuCategory[];
+  dailyMenus: PublicDailyMenu[];
 } | null> {
   const store = await getStoreBySlug(slug);
   if (!store) return null;
 
-  const { data, error } = await supabase
-    .from("menu_categories")
-    .select(
-      `
+  const [{ data, error }, { data: dailyMenuRows, error: dailyMenuError }] = await Promise.all([
+    supabase
+      .from("menu_categories")
+      .select(
+        `
       id,
       store_id,
       name,
@@ -119,15 +122,26 @@ export async function getPublicMenu(slug: string): Promise<{
         ${MENU_ITEM_SELECT}
       )
     `
-    )
-    .eq("store_id", store.id)
-    .eq("is_active", true)
-    .eq("menu_items.is_active", true)
-    .order("sort_order", { ascending: true });
+      )
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .eq("menu_items.is_active", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("menu_daily_menus")
+      .select("id, name, sort_order, menu_daily_menu_items ( menu_item_id )")
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+  ]);
 
   if (error) {
     console.error("getPublicMenu error:", error.message);
-    return { store, categories: [] };
+    return { store, categories: [], dailyMenus: [] };
+  }
+
+  if (dailyMenuError) {
+    console.error("getPublicMenu dailyMenus error:", dailyMenuError.message);
   }
 
   const categories = (data ?? []).map((cat) => ({
@@ -135,7 +149,17 @@ export async function getPublicMenu(slug: string): Promise<{
     menu_items: sortItems((cat.menu_items ?? []) as MenuItem[]),
   })) as MenuCategory[];
 
-  return { store, categories };
+  const dailyMenus: PublicDailyMenu[] = ((dailyMenuRows ?? []) as unknown as {
+    id: string;
+    name: string;
+    menu_daily_menu_items: { menu_item_id: string }[];
+  }[]).map((row) => ({
+    id: row.id,
+    name: row.name,
+    itemIds: (row.menu_daily_menu_items || []).map((i) => i.menu_item_id),
+  }));
+
+  return { store, categories, dailyMenus };
 }
 
 function sortItems(items: MenuItem[]) {

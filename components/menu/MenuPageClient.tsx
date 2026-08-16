@@ -11,7 +11,7 @@ import MenuItemModal from "./MenuItemModal";
 import MenuCartDrawer from "./MenuCartDrawer";
 import ImageLightbox from "@/components/ui/ImageLightbox";
 import { useSharedCart } from "@/lib/menu/useSharedCart";
-import type { MenuCartLine, MenuCategory, MenuItem } from "@/lib/menu/types";
+import type { MenuCartLine, MenuCategory, MenuItem, PublicDailyMenu } from "@/lib/menu/types";
 
 const display = Bodoni_Moda({
   subsets: ["latin"],
@@ -38,6 +38,7 @@ type StoreForMenu = {
 type Props = {
   store: StoreForMenu;
   categories: MenuCategory[];
+  dailyMenus: PublicDailyMenu[];
   whatsappNumber: string | null;
   landingHref?: string;
   // Slug de la tienda — clave del carrito compartido con la landing
@@ -56,7 +57,7 @@ const INK = "#1B1410";
 
 type VenueFilter = "bar" | "restaurant";
 
-export default function MenuPageClient({ store, categories, whatsappNumber, landingHref, storeSlug }: Props) {
+export default function MenuPageClient({ store, categories, dailyMenus, whatsappNumber, landingHref, storeSlug }: Props) {
   const accent = store.primary_color || DEFAULT_ACCENT;
   const bg = store.secondary_color || DEFAULT_BG;
 
@@ -167,6 +168,21 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
       )
     : categoriesWithItems;
 
+  // Filtro de Menú del día (Almuerzo/Cena...) — independiente del de
+  // Bar/Restaurante, se pueden combinar. "Todo" no filtra nada.
+  const [dailyMenuFilter, setDailyMenuFilter] = useState<string | null>(null);
+  const activeDailyMenuItemIds =
+    dailyMenuFilter ? dailyMenus.find((m) => m.id === dailyMenuFilter)?.itemIds ?? [] : null;
+
+  const dailyFilteredCategories = activeDailyMenuItemIds
+    ? visibleCategories
+        .map((cat) => ({
+          ...cat,
+          menu_items: cat.menu_items.filter((item) => activeDailyMenuItemIds.includes(item.id)),
+        }))
+        .filter((cat) => cat.menu_items.length > 0)
+    : visibleCategories;
+
   // Resalta sola la pestaña de categoría de la sección que se está
   // viendo mientras el cliente hace scroll (como en las apps de
   // delivery). Usa IntersectionObserver nativo del navegador — sin
@@ -192,7 +208,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, [visibleCategories]);
+  }, [dailyFilteredCategories]);
 
   const handleAddToCart = (line: MenuCartLine) => {
     setCart((prev) => [...prev, line]);
@@ -290,11 +306,41 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
           </div>
         )}
 
+        {dailyMenus.length > 0 && (
+          <div className="scrollbar-none relative mx-auto flex max-w-5xl gap-2 overflow-x-auto px-5 pb-5">
+            <button
+              onClick={() => setDailyMenuFilter(null)}
+              className="shrink-0 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide transition"
+              style={
+                dailyMenuFilter === null
+                  ? { backgroundColor: accent, borderColor: accent, color: INK }
+                  : { backgroundColor: "transparent", borderColor: "rgba(255,255,255,0.25)", color: "#FFF4E6" }
+              }
+            >
+              Todo
+            </button>
+            {dailyMenus.map((menu) => (
+              <button
+                key={menu.id}
+                onClick={() => setDailyMenuFilter(menu.id)}
+                className="shrink-0 rounded-full border px-4 py-2 text-xs font-bold uppercase tracking-wide transition"
+                style={
+                  dailyMenuFilter === menu.id
+                    ? { backgroundColor: accent, borderColor: accent, color: INK }
+                    : { backgroundColor: "transparent", borderColor: "rgba(255,255,255,0.25)", color: "#FFF4E6" }
+                }
+              >
+                {menu.name}
+              </button>
+            ))}
+          </div>
+        )}
+
       </header>
 
-      {visibleCategories.length > 0 && (
+      {dailyFilteredCategories.length > 0 && (
           <nav className="scrollbar-none sticky top-0 z-30 mx-auto flex max-w-5xl gap-2 overflow-x-auto border-b border-[#1B1410]/10 bg-[#FAF6EF]/90 px-5 py-3 shadow-[0_8px_24px_rgba(27,20,16,0.06)] backdrop-blur-xl" style={{ backgroundColor: `${bg}F2` }}>
-            {visibleCategories.map((cat) => {
+            {dailyFilteredCategories.map((cat) => {
               const isActive = activeCategoryId === cat.id;
               return (
                 <a
@@ -315,15 +361,15 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
       )}
 
       <div className="mx-auto max-w-5xl px-5 py-10 md:py-14">
-        {visibleCategories.length === 0 ? (
+        {dailyFilteredCategories.length === 0 ? (
           <div className="rounded-2xl bg-white/70 p-10 text-center shadow-sm">
             <p className="text-sm font-semibold" style={{ color: INK, opacity: 0.6 }}>
-              Este menú todavía no tiene platillos publicados.
+              {dailyMenuFilter ? "Este menú no tiene platillos disponibles ahora mismo." : "Este menú todavía no tiene platillos publicados."}
             </p>
           </div>
         ) : (
           <div className="space-y-14">
-            {visibleCategories.map((category) => (
+            {dailyFilteredCategories.map((category) => (
               <section
                 key={category.id}
                 id={`cat-${category.id}`}
