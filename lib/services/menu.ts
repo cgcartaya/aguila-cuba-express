@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { getStoreBySlug } from "@/lib/services/stores";
+import { getRestaurantNow, isMenuScheduleActive, normalizeMenuTimeZone, scheduleLabel } from "@/lib/menu/daytime";
 
 import type {
   FeaturedMenuItem,
@@ -8,10 +9,6 @@ import type {
   MenuItemFormData,
   PublicDailyMenu,
 } from "@/lib/menu/types";
-
-/* =========================================================
-   SELECTS
-========================================================= */
 
 const MENU_ITEM_SELECT = `
   id,
@@ -43,27 +40,11 @@ const MENU_ITEM_SELECT = `
   )
 `;
 
-/* =========================================================
-   HELPER — usado desde landings (ej. app/deparis/page.tsx) para
-   decidir si mostrar el link "Pedir menú en línea" hacia
-   /menu/[slug]. Falla cerrado (false) ante cualquier error, para
-   nunca mostrar un link roto en una landing pública.
-========================================================= */
-
 export async function isMenuModuleEnabled(slug: string): Promise<boolean> {
   const store = await getStoreBySlug(slug);
   return store?.module_menu_enabled === true;
 }
 
-/**
- * Trae hasta `limit` platillos marcados "Destacar en la landing"
- * (is_featured) de una tienda, para mostrarlos en su landing (ej.
- * app/deparis). Trae también el venue_type de la categoría de cada
- * ítem (bar/restaurant/general) para que la landing pueda separarlos
- * en "Platos principales" y "Bebidas principales" en vez de mezclar
- * todo en una sola vitrina. Falla cerrado (array vacío) ante
- * cualquier error, para que la landing nunca se rompa por esto.
- */
 export async function getFeaturedMenuItems(
   slug: string,
   limit = 12
@@ -94,11 +75,6 @@ export async function getFeaturedMenuItems(
   }) as FeaturedMenuItem[];
 }
 
-/* =========================================================
-   PÚBLICO — /menu/[slug]
-   Solo trae categorías/ítems activos, ya ordenados.
-========================================================= */
-
 export async function getPublicMenu(slug: string): Promise<{
   store: Awaited<ReturnType<typeof getStoreBySlug>>;
   categories: MenuCategory[];
@@ -107,41 +83,95 @@ export async function getPublicMenu(slug: string): Promise<{
   const store = await getStoreBySlug(slug);
   if (!store) return null;
 
-  const [{ data, error }, { data: dailyMenuRows, error: dailyMenuError }] = await Promise.all([
+  const [
+    { data, error },
+    { data: dailyMenuRows, error: dailyMenuError },
+    { data: settings },
+  ] = await Promise.all([
     supabase
       .from("menu_categories")
-      .select(
-        `
-      id,
-      store_id,
-      name,
-      venue_type,
-      sort_order,
-      is_active,
-      menu_items (
-        ${MENU_ITEM_SELECT}
-      )
-    `
-      )
+      .select(`
+        id,
+        store_id,
+        name,
+        venue_type,
+        sort_order,
+        is_active,
+        menu_items (
+          ${MENU_ITEM_SELECT}
+        )
+      `)
       .eq("store_id", store.id)
       .eq("is_active", true)
       .eq("menu_items.is_active", true)
       .order("sort_order", { ascending: true }),
+
     supabase
       .from("menu_daily_menus")
-      .select("id, name, sort_order, menu_daily_menu_items ( menu_item_id )")
+      .select(`
+        id,
+        name,
+        sort_order,
+        weekdays,
+        start_time,
+        end_time,
+        menu_daily_menu_items ( menu_item_id )
+      `)
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
+
+    supabase
+      .from("store_settings")
+      .select("menu_timezone")
+      .eq("store_id", store.id)
+      .maybeSingle(),
   ]);
 
   if (error) {
     console.error("getPublicMenu error:", error.message);
     return { store, categories: [], dailyMenus: [] };
   }
+  if (dailyMenuError) console.error("getPublicMenu dailyMenus error:", dailyMenuError.message);
 
-  if (dailyMenuError) {
-    console.error("getPublicMenu dailyMenus error:", dailyMenuError.message);
+  const timeZone = normalizeMenuTimeZone(settings?.menu_timezone);
+  const now = getRestaurantNow(timeZone);
+
+  type DailyRow = {
+    id: string;
+    name: string;
+    weekdays: number[] | null;
+    start_time: string | null;
+    end_time: string | null;
+    menu_daily_menu_items: { menu_item_id: string }[];
+  };
+
+  const activeRows = ((dailyMenuRows ?? []) as unknown as DailyRow[]).filter((row) =>
+    isMenuScheduleActive({
+      weekdays: row.weekdays,
+      startTime: row.start_time,
+      endTime: row.end_time,
+      now,
+    })
+  );
+
+  const activeMenuIds = activeRows.map((r) => r.id);
+  let overrides: {
+    daily_menu_id: string;
+    menu_item_id: string;
+    is_included: boolean;
+  }[] = [];
+
+  if (activeMenuIds.length > 0) {
+    const { data: overrideRows, error: overrideError } = await supabase
+      .from("menu_daily_menu_item_overrides")
+      .select("daily_menu_id, menu_item_id, is_included")
+      .eq("store_id", store.id)
+      .eq("override_date", now.date)
+      .in("daily_menu_id", activeMenuIds);
+
+    if (overrideError) console.error("getPublicMenu overrides error:", overrideError.message);
+    overrides = overrideRows || [];
   }
 
   const categories = (data ?? []).map((cat) => ({
@@ -149,15 +179,21 @@ export async function getPublicMenu(slug: string): Promise<{
     menu_items: sortItems((cat.menu_items ?? []) as MenuItem[]),
   })) as MenuCategory[];
 
-  const dailyMenus: PublicDailyMenu[] = ((dailyMenuRows ?? []) as unknown as {
-    id: string;
-    name: string;
-    menu_daily_menu_items: { menu_item_id: string }[];
-  }[]).map((row) => ({
-    id: row.id,
-    name: row.name,
-    itemIds: (row.menu_daily_menu_items || []).map((i) => i.menu_item_id),
-  }));
+  const dailyMenus: PublicDailyMenu[] = activeRows.map((row) => {
+    const base = new Set((row.menu_daily_menu_items || []).map((i) => i.menu_item_id));
+
+    for (const override of overrides.filter((o) => o.daily_menu_id === row.id)) {
+      if (override.is_included) base.add(override.menu_item_id);
+      else base.delete(override.menu_item_id);
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      itemIds: [...base],
+      scheduleLabel: scheduleLabel(row.weekdays, row.start_time, row.end_time),
+    };
+  });
 
   return { store, categories, dailyMenus };
 }
@@ -178,10 +214,6 @@ function sortItems(items: MenuItem[]) {
         })),
     }));
 }
-
-/* =========================================================
-   ADMIN — CATEGORÍAS
-========================================================= */
 
 export async function getMenuCategoriesForAdmin(storeId: string) {
   return supabase
@@ -229,13 +261,8 @@ export async function saveMenuCategory(
 }
 
 export async function deleteMenuCategory(id: string) {
-  // Borra en cascada items/grupos/opciones de esa categoría (FK on delete cascade).
   return supabase.from("menu_categories").delete().eq("id", id);
 }
-
-/* =========================================================
-   ADMIN — ÍTEMS (con sus grupos de opciones)
-========================================================= */
 
 export async function getMenuItemsForAdmin(storeId: string) {
   return supabase
@@ -249,12 +276,6 @@ export async function getMenuItemById(id: string) {
   return supabase.from("menu_items").select(MENU_ITEM_SELECT).eq("id", id).single();
 }
 
-/**
- * Guarda un ítem completo: datos base + reemplaza por completo sus
- * grupos de opciones y opciones (borra los existentes y crea los
- * nuevos). Más simple y confiable que hacer un diff fino, y el
- * volumen de opciones por platillo es siempre pequeño.
- */
 export async function saveMenuItem(storeId: string, form: MenuItemFormData) {
   const basePayload = {
     store_id: storeId,
@@ -273,13 +294,9 @@ export async function saveMenuItem(storeId: string, form: MenuItemFormData) {
   let itemId = form.id;
 
   if (itemId) {
-    const { error } = await supabase
-      .from("menu_items")
-      .update(basePayload)
-      .eq("id", itemId);
+    const { error } = await supabase.from("menu_items").update(basePayload).eq("id", itemId);
     if (error) return { data: null, error };
 
-    // Limpia grupos/opciones previos (cascada borra menu_item_options).
     const { error: clearError } = await supabase
       .from("menu_item_option_groups")
       .delete()

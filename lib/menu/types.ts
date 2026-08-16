@@ -31,14 +31,11 @@ export type MenuItem = {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
-  stock: number | null; // null = inventario permanente no controlado
-  daily_stock_enabled: boolean; // true = usa cupo diario (menu_daily_stock)
+  stock: number | null;
+  daily_stock_enabled: boolean;
   menu_item_option_groups: MenuOptionGroup[];
 };
 
-/* Ítem destacado (is_featured) tal como se usa en las landings —
-   trae el venue_type de su categoría (bar/restaurant/general) para
-   poder separarlo en "Platos principales" vs "Bebidas principales". */
 export type FeaturedMenuItem = MenuItem & {
   venue_type: "bar" | "restaurant" | "general";
 };
@@ -52,11 +49,6 @@ export type MenuCategory = {
   is_active: boolean;
   menu_items: MenuItem[];
 };
-
-/* =========================================================
-   FORM DATA (admin) — lo que entra desde el formulario, sin
-   ids todavía resueltos (se generan al guardar).
-========================================================= */
 
 export type MenuOptionFormData = {
   id?: string;
@@ -84,15 +76,11 @@ export type MenuItemFormData = {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
-  track_stock: boolean; // false = stock null (inventario permanente no controlado)
+  track_stock: boolean;
   stock: number;
-  daily_stock_enabled: boolean; // cupo diario — la cantidad de HOY se pone desde /admin/menu/inventario, no aquí
+  daily_stock_enabled: boolean;
   option_groups: MenuOptionGroupFormData[];
 };
-
-/* =========================================================
-   CARRITO PÚBLICO (cliente eligiendo su pedido)
-========================================================= */
 
 export type MenuCartSelectedOption = {
   group_id: string;
@@ -103,7 +91,7 @@ export type MenuCartSelectedOption = {
 };
 
 export type MenuCartLine = {
-  lineId: string; // uuid generado en el cliente, distingue líneas iguales con distintas opciones
+  lineId: string;
   menu_item_id: string;
   name: string;
   unit_base_price: number;
@@ -111,10 +99,6 @@ export type MenuCartLine = {
   selected_options: MenuCartSelectedOption[];
   notes?: string;
 };
-
-/* =========================================================
-   ÓRDENES REALES (persistidas)
-========================================================= */
 
 export type MenuOrderType = "dine_in" | "takeaway" | "delivery";
 export type MenuOrderStatus = "received" | "preparing" | "ready" | "delivered" | "cancelled";
@@ -164,31 +148,24 @@ export const MENU_ORDER_TYPE_LABEL: Record<MenuOrderType, string> = {
   delivery: "Domicilio",
 };
 
-/* =========================================================
-   INVENTARIO — cupo diario + inventario permanente
-========================================================= */
-
 export type MenuDailyStock = {
   id: string;
   store_id: string;
   menu_item_id: string;
-  stock_date: string; // "YYYY-MM-DD"
+  stock_date: string;
   quantity: number;
   created_at: string;
   updated_at: string;
 };
 
-/** Fila del dashboard de "Platos del día": el platillo + su cupo de
- *  hoy (si ya se puso) + cuánto se ha vendido hoy. */
 export type DailyStockRow = {
   menu_item_id: string;
   item_name: string;
-  quantity: number | null; // null = todavía no se puso cupo hoy
+  quantity: number | null;
   sold: number;
   remaining: number | null;
 };
 
-/** Fila del dashboard de "Inventario" (bebidas y contables). */
 export type PermanentStockRow = {
   menu_item_id: string;
   item_name: string;
@@ -196,7 +173,7 @@ export type PermanentStockRow = {
 };
 
 /* =========================================================
-   MENÚS DEL DÍA (Almuerzo, Cena...)
+   MENÚS Y HORARIOS
 ========================================================= */
 
 export type DailyMenu = {
@@ -205,25 +182,30 @@ export type DailyMenu = {
   name: string;
   sort_order: number;
   is_active: boolean;
+  weekdays: number[] | null;
+  start_time: string | null;
+  end_time: string | null;
 };
 
-/** Platillo elegible para un menú del día (tiene inventario activo,
- *  de cualquiera de los dos tipos) + si ya está asignado al menú
- *  que se está editando ahora mismo. */
 export type EligibleDailyMenuItem = {
   id: string;
   name: string;
   price: number;
   image_url: string | null;
   daily_stock_enabled: boolean;
-  stock: number | null; // inventario permanente, si aplica
+  stock: number | null;
 };
 
-/** Lo que ve el portal público: cada menú del día con los ids de
- *  los platillos que tiene asignados, para armar las pestañas
- *  Almuerzo/Cena sin pedir nada aparte del cargue inicial. */
+export type DailyMenuItemOverride = {
+  daily_menu_id: string;
+  menu_item_id: string;
+  override_date: string;
+  is_included: boolean;
+};
+
 export type PublicDailyMenu = {
   id: string;
   name: string;
   itemIds: string[];
+  scheduleLabel?: string;
 };

@@ -1,19 +1,15 @@
 import { supabase } from "@/lib/supabase";
+import { getMenuToday } from "@/lib/services/menu-daily-menus";
 
 import type { DailyStockRow, PermanentStockRow } from "@/lib/menu/types";
-
-function todayISO() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 10);
-}
 
 /* =========================================================
    PLATOS DEL DÍA (cupo diario)
 ========================================================= */
 
-export async function getDailyStockDashboard(storeId: string, date = todayISO()) {
+export async function getDailyStockDashboard(storeId: string, requestedDate?: string) {
+  const date = requestedDate || (await getMenuToday(storeId)).date;
+
   const [{ data: items, error: itemsError }, { data: stockRows, error: stockError }, { data: orderItems, error: soldError }] =
     await Promise.all([
       supabase
@@ -28,10 +24,6 @@ export async function getDailyStockDashboard(storeId: string, date = todayISO())
         .select("menu_item_id, quantity")
         .eq("store_id", storeId)
         .eq("stock_date", date),
-      // Vendido hoy = suma de líneas de órdenes NO canceladas creadas
-      // hoy para cada platillo. Se calcula al vuelo (no se guarda un
-      // contador aparte) para que nunca se desincronice de las
-      // órdenes reales — cancelar una orden libera cupo automático.
       supabase
         .from("menu_order_items")
         .select("menu_item_id, quantity, menu_orders!inner(store_id, status, created_at)")
@@ -53,7 +45,7 @@ export async function getDailyStockDashboard(storeId: string, date = todayISO())
     soldByItem.set(row.menu_item_id, (soldByItem.get(row.menu_item_id) || 0) + row.quantity);
   }
 
-  const rows: DailyStockRow[] = (items || []).map((item) => {
+  return (items || []).map((item) => {
     const quantity = quantityByItem.has(item.id) ? quantityByItem.get(item.id)! : null;
     const sold = soldByItem.get(item.id) || 0;
     return {
@@ -63,12 +55,17 @@ export async function getDailyStockDashboard(storeId: string, date = todayISO())
       sold,
       remaining: quantity === null ? null : Math.max(0, quantity - sold),
     };
-  });
-
-  return rows;
+  }) as DailyStockRow[];
 }
 
-export async function setDailyStockQuantity(storeId: string, menuItemId: string, quantity: number, date = todayISO()) {
+export async function setDailyStockQuantity(
+  storeId: string,
+  menuItemId: string,
+  quantity: number,
+  requestedDate?: string
+) {
+  const date = requestedDate || (await getMenuToday(storeId)).date;
+
   return supabase
     .from("menu_daily_stock")
     .upsert(
@@ -86,7 +83,7 @@ export async function setDailyStockQuantity(storeId: string, menuItemId: string,
 }
 
 /* =========================================================
-   INVENTARIO PERMANENTE (bebidas, contables)
+   INVENTARIO PERMANENTE
 ========================================================= */
 
 export async function getPermanentStockDashboard(storeId: string) {
@@ -109,9 +106,6 @@ export async function getPermanentStockDashboard(storeId: string) {
   })) as PermanentStockRow[];
 }
 
-/** Suma (o resta, con delta negativo) al inventario permanente —
- *  para reponer compras nuevas o corregir un conteo, sin tener que
- *  entrar a editar el platillo. */
 export async function adjustPermanentStock(menuItemId: string, delta: number) {
   const { data: item, error: fetchError } = await supabase
     .from("menu_items")
