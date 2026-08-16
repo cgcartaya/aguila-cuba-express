@@ -31,6 +31,7 @@ export type MenuItem = {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
+  stock: number | null; // null = inventario no controlado para este platillo
   menu_item_option_groups: MenuOptionGroup[];
 };
 
@@ -82,6 +83,8 @@ export type MenuItemFormData = {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
+  track_stock: boolean; // false = stock null (inventario no controlado)
+  stock: number;
   option_groups: MenuOptionGroupFormData[];
 };
 
@@ -105,4 +108,56 @@ export type MenuCartLine = {
   quantity: number;
   selected_options: MenuCartSelectedOption[];
   notes?: string;
+};
+
+/* =========================================================
+   ÓRDENES REALES (persistidas)
+========================================================= */
+
+export type MenuOrderType = "dine_in" | "takeaway" | "delivery";
+export type MenuOrderStatus = "received" | "preparing" | "ready" | "delivered" | "cancelled";
+
+export type MenuOrderItem = {
+  id: string;
+  order_id: string;
+  menu_item_id: string | null;
+  item_name: string;
+  unit_price: number;
+  quantity: number;
+  selected_options: MenuCartSelectedOption[];
+  notes: string | null;
+  line_total: number;
+};
+
+export type MenuOrder = {
+  id: string;
+  store_id: string;
+  order_type: MenuOrderType;
+  table_number: string | null;
+  delivery_address: string | null;
+  delivery_fee: number;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string | null;
+  notes: string | null;
+  subtotal: number;
+  total: number;
+  status: MenuOrderStatus;
+  created_at: string;
+  updated_at: string;
+  menu_order_items?: MenuOrderItem[];
+};
+
+export const MENU_ORDER_STATUS_LABEL: Record<MenuOrderStatus, string> = {
+  received: "Recibido",
+  preparing: "Preparando",
+  ready: "Listo",
+  delivered: "Entregado",
+  cancelled: "Cancelado",
+};
+
+export const MENU_ORDER_TYPE_LABEL: Record<MenuOrderType, string> = {
+  dine_in: "En el restaurante",
+  takeaway: "Para llevar",
+  delivery: "Domicilio",
 };

@@ -9,6 +9,7 @@ import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
+import { usePendingMenuOrdersCount } from "@/hooks/usePendingMenuOrdersCount";
 import { getVisibleAdminSections, type AdminLink } from "@/lib/admin/nav-config";
 
 type AdminMobileMenuProps = {
@@ -34,6 +35,7 @@ function MenuSection({
   onClose,
   lowStockCount,
   pendingReservationsCount,
+  pendingMenuOrdersCount,
 }: {
   title: string;
   links: AdminLink[];
@@ -41,6 +43,7 @@ function MenuSection({
   onClose: () => void;
   lowStockCount: number;
   pendingReservationsCount: number;
+  pendingMenuOrdersCount: number;
 }) {
   if (links.length === 0) return null;
 
@@ -79,6 +82,12 @@ function MenuSection({
                 {pendingReservationsCount > 99 ? "99+" : pendingReservationsCount}
               </span>
             )}
+
+            {item.href === "/admin/menu/ordenes" && pendingMenuOrdersCount > 0 && (
+              <span className="ml-auto flex h-6 min-w-[24px] items-center justify-center rounded-full bg-red-600 px-1.5 text-xs font-black text-white">
+                {pendingMenuOrdersCount > 99 ? "99+" : pendingMenuOrdersCount}
+              </span>
+            )}
           </Link>
         );
       })}
@@ -95,6 +104,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
   const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
+  const pendingMenuOrdersCount = usePendingMenuOrdersCount(activeStore?.id);
 
   if (!open) return null;
 
@@ -141,6 +151,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
               onClose={onClose}
               lowStockCount={lowStockCount}
               pendingReservationsCount={pendingReservationsCount}
+              pendingMenuOrdersCount={pendingMenuOrdersCount}
             />
           )}
 
@@ -153,6 +164,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
               onClose={onClose}
               lowStockCount={lowStockCount}
               pendingReservationsCount={pendingReservationsCount}
+              pendingMenuOrdersCount={pendingMenuOrdersCount}
             />
           ))}
 
@@ -163,6 +175,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
             onClose={onClose}
             lowStockCount={lowStockCount}
             pendingReservationsCount={pendingReservationsCount}
+            pendingMenuOrdersCount={pendingMenuOrdersCount}
           />
         </nav>
       </aside>

@@ -9,6 +9,7 @@ import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
+import { usePendingMenuOrdersCount } from "@/hooks/usePendingMenuOrdersCount";
 import { getVisibleAdminSections } from "@/lib/admin/nav-config";
 import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
 
@@ -37,6 +38,7 @@ export default function StoreAdminNav() {
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
   const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
+  const pendingMenuOrdersCount = usePendingMenuOrdersCount(activeStore?.id);
 
   return (
     <aside
@@ -145,6 +147,14 @@ export default function StoreAdminNav() {
                         className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
                       >
                         {pendingReservationsCount > 99 ? "99+" : pendingReservationsCount}
+                      </span>
+                    )}
+
+                    {link.href === "/admin/menu/ordenes" && pendingMenuOrdersCount > 0 && (
+                      <span
+                        className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
+                      >
+                        {pendingMenuOrdersCount > 99 ? "99+" : pendingMenuOrdersCount}
                       </span>
                     )}
                   </Link>

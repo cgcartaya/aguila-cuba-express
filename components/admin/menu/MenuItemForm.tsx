@@ -154,6 +154,39 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
           />
           Destacar en la landing (aparece en "Platos destacados")
         </label>
+
+        <div className="mt-4 rounded-2xl bg-slate-50 p-3">
+          <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+            <input
+              type="checkbox"
+              checked={formData.track_stock}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, track_stock: e.target.checked }))
+              }
+            />
+            Controlar inventario de este platillo
+          </label>
+          {formData.track_stock && (
+            <div className="mt-2">
+              <label className="mb-1 block text-xs font-black uppercase tracking-wide text-slate-500">
+                Cantidad disponible
+              </label>
+              <input
+                type="number"
+                min={0}
+                value={formData.stock}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, stock: Math.max(0, Number(e.target.value) || 0) }))
+                }
+                className="w-32 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
+              />
+              <p className="mt-1 text-[11px] font-semibold text-slate-400">
+                Se descuenta solo con cada pedido en línea. Cuando llegue a 0, ya no se
+                podrá pedir hasta que lo actualices.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="rounded-3xl bg-white p-5 shadow-sm">

@@ -473,6 +473,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
 
       {cartOpen && (
         <MenuCartDrawer
+          storeSlug={storeSlug}
           storeName={store.name}
           whatsappNumber={whatsappNumber}
           cart={cart}
@@ -503,7 +504,7 @@ export default function MenuPageClient({ store, categories, whatsappNumber, land
           className="fixed bottom-5 left-1/2 z-40 -translate-x-1/2 rounded-full px-5 py-2.5 text-xs font-bold text-white shadow-lg"
           style={{ backgroundColor: INK }}
         >
-          Pedido enviado por WhatsApp. En breve {store.name} te confirma.
+          Pedido registrado. En breve {store.name} te confirma.
           <button className="ml-3 underline" onClick={() => setOrderSentMessage(false)}>
             Cerrar
           </button>

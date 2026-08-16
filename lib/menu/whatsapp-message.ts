@@ -26,15 +26,19 @@ export function buildMenuOrderMessage({
   cart,
   orderType,
   tableNumber,
+  deliveryAddress,
   customerName,
   customerNotes,
+  deliveryFee = 0,
 }: {
   storeName: string;
   cart: MenuCartLine[];
-  orderType: "dine_in" | "takeaway";
+  orderType: "dine_in" | "takeaway" | "delivery";
   tableNumber?: string;
+  deliveryAddress?: string;
   customerName?: string;
   customerNotes?: string;
+  deliveryFee?: number;
 }) {
   const lines: string[] = [];
 
@@ -43,6 +47,8 @@ export function buildMenuOrderMessage({
 
   if (orderType === "dine_in") {
     lines.push(`Tipo de pedido: En el restaurante${tableNumber ? ` — Mesa ${tableNumber}` : ""}`);
+  } else if (orderType === "delivery") {
+    lines.push(`Tipo de pedido: Domicilio${deliveryAddress ? ` — ${deliveryAddress}` : ""}`);
   } else {
     lines.push("Tipo de pedido: Para llevar");
   }
@@ -59,7 +65,13 @@ export function buildMenuOrderMessage({
   });
 
   lines.push("");
-  lines.push(`Total estimado: ${formatMoney(getCartTotal(cart))}`);
+  if (deliveryFee > 0) {
+    lines.push(`Subtotal: ${formatMoney(getCartTotal(cart))}`);
+    lines.push(`Domicilio: ${formatMoney(deliveryFee)}`);
+    lines.push(`Total estimado: ${formatMoney(getCartTotal(cart) + deliveryFee)}`);
+  } else {
+    lines.push(`Total estimado: ${formatMoney(getCartTotal(cart))}`);
+  }
 
   if (customerName) {
     lines.push("");

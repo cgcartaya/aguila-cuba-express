@@ -120,6 +120,7 @@ export const adminNavSections: AdminSection[] = [
     module: "menu",
     links: [
       { href: "/admin/menu", label: "Categorías y platillos", icon: Utensils },
+      { href: "/admin/menu/ordenes", label: "Órdenes", icon: CalendarCheck2 },
     ],
   },
   {

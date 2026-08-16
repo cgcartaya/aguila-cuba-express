@@ -17,6 +17,8 @@ const EMPTY_ITEM: MenuItemFormData = {
   is_active: true,
   is_featured: false,
   sort_order: 0,
+  track_stock: false,
+  stock: 0,
   option_groups: [],
 };
 

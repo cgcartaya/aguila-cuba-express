@@ -23,6 +23,7 @@ const MENU_ITEM_SELECT = `
   is_active,
   is_featured,
   sort_order,
+  stock,
   menu_item_option_groups (
     id,
     menu_item_id,
@@ -240,6 +241,7 @@ export async function saveMenuItem(storeId: string, form: MenuItemFormData) {
     is_active: form.is_active,
     is_featured: form.is_featured,
     sort_order: form.sort_order,
+    stock: form.track_stock ? Math.max(0, form.stock) : null,
   };
 
   let itemId = form.id;

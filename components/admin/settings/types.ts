@@ -28,6 +28,7 @@ export type StoreSettings = {
   instagram?: string | null;
   minimum_order: number;
   delivery_fee: number;
+  menu_delivery_fee?: number;
   free_delivery_from: number;
   delivery_message?: string | null;
   logo_url?: string | null;

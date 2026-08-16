@@ -49,6 +49,8 @@ export default function EditMenuItemPage() {
         is_active: item.is_active,
         is_featured: item.is_featured,
         sort_order: item.sort_order,
+        track_stock: item.stock !== null && item.stock !== undefined,
+        stock: item.stock ?? 0,
         option_groups: (item.menu_item_option_groups || []).map((g: any) => ({
           id: g.id,
           name: g.name,

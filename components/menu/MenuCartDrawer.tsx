@@ -1,20 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Loader2, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 
 import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 import { buildMenuOrderMessage, getCartTotal } from "@/lib/menu/whatsapp-message";
-import type { MenuCartLine } from "@/lib/menu/types";
+import PhoneCountryField from "@/components/checkout/PhoneCountryField";
+import type { MenuCartLine, MenuOrderType } from "@/lib/menu/types";
 
 type Props = {
+  storeSlug: string;
   storeName: string;
   whatsappNumber: string | null;
   cart: MenuCartLine[];
   accentColor: string;
-  // Cuando el cliente llega por un QR de mesa (/menu/slug?mesa=N), el
-  // pedido arranca marcado "En el restaurante" con la mesa pre-llena
-  // — el campo sigue siendo editable por si se equivocan de mesa.
   initialTableNumber?: string;
   onClose: () => void;
   onUpdateQuantity: (lineId: string, quantity: number) => void;
@@ -23,6 +22,7 @@ type Props = {
 };
 
 export default function MenuCartDrawer({
+  storeSlug,
   storeName,
   whatsappNumber,
   cart,
@@ -34,29 +34,88 @@ export default function MenuCartDrawer({
   onOrderSent,
 }: Props) {
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
-  const [orderType, setOrderType] = useState<"dine_in" | "takeaway">("dine_in");
+  const [orderType, setOrderType] = useState<MenuOrderType>("dine_in");
   const [tableNumber, setTableNumber] = useState(initialTableNumber ?? "");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const total = getCartTotal(cart);
 
-  const handleSend = () => {
-    if (!whatsappNumber) {
-      alert("Esta tienda todavía no configuró un número de WhatsApp para pedidos.");
+  const handleSend = async () => {
+    if (!customerName.trim() || customerPhone.replace(/\D/g, "").length < 7) {
+      setSubmitError("Completa tu nombre y un teléfono válido.");
+      return;
+    }
+    if (orderType === "delivery" && !deliveryAddress.trim()) {
+      setSubmitError("Escribe la dirección de entrega.");
+      return;
+    }
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+      setSubmitError("El correo no es válido.");
       return;
     }
 
-    const message = buildMenuOrderMessage({
-      storeName,
-      cart,
-      orderType,
-      tableNumber: orderType === "dine_in" ? tableNumber.trim() || undefined : undefined,
-      customerName: customerName.trim() || undefined,
-      customerNotes: customerNotes.trim() || undefined,
-    });
+    setSubmitting(true);
+    setSubmitError(null);
 
-    openWhatsAppMessage({ app: "personal", phone: whatsappNumber, message });
-    onOrderSent();
+    try {
+      const res = await fetch("/api/public/menu-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store_slug: storeSlug,
+          order_type: orderType,
+          table_number: orderType === "dine_in" ? tableNumber.trim() : undefined,
+          delivery_address: orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          customer_name: customerName.trim(),
+          customer_phone: customerPhone.trim(),
+          customer_email: customerEmail.trim(),
+          notes: customerNotes.trim(),
+          lines: cart.map((line) => ({
+            menu_item_id: line.menu_item_id,
+            quantity: line.quantity,
+            selected_options: line.selected_options,
+            notes: line.notes || "",
+          })),
+        }),
+      });
+
+      const body = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setSubmitError(body.error || "No se pudo enviar el pedido. Intenta de nuevo.");
+        setSubmitting(false);
+        return;
+      }
+
+      // La orden ya quedó guardada de verdad (con su inventario
+      // descontado). WhatsApp es ahora el AVISO, no el único rastro
+      // del pedido — si el negocio no configuró WhatsApp, igual el
+      // pedido existe en su panel de Órdenes.
+      if (whatsappNumber) {
+        const message = buildMenuOrderMessage({
+          storeName,
+          cart,
+          orderType,
+          tableNumber: orderType === "dine_in" ? tableNumber.trim() || undefined : undefined,
+          deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          customerName: customerName.trim() || undefined,
+          customerNotes: customerNotes.trim() || undefined,
+          deliveryFee: Number(body.total || total) - total,
+        });
+        openWhatsAppMessage({ app: "personal", phone: whatsappNumber, message });
+      }
+
+      setSubmitting(false);
+      onOrderSent();
+    } catch {
+      setSubmitError("No se pudo enviar el pedido. Intenta de nuevo.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -158,7 +217,7 @@ export default function MenuCartDrawer({
                       : { borderColor: "rgba(27,20,16,0.15)", color: "rgba(27,20,16,0.6)" }
                   }
                 >
-                  En el restaurante
+                  Restaurante
                 </button>
                 <button
                   type="button"
@@ -172,6 +231,18 @@ export default function MenuCartDrawer({
                 >
                   Para llevar
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType("delivery")}
+                  className="flex-1 rounded-full border py-2.5 text-xs font-bold uppercase tracking-wide transition"
+                  style={
+                    orderType === "delivery"
+                      ? { backgroundColor: accentColor, borderColor: accentColor, color: "#1B1410" }
+                      : { borderColor: "rgba(27,20,16,0.15)", color: "rgba(27,20,16,0.6)" }
+                  }
+                >
+                  Domicilio
+                </button>
               </div>
             </div>
 
@@ -184,12 +255,38 @@ export default function MenuCartDrawer({
               />
             )}
 
+            {orderType === "delivery" && (
+              <input
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                placeholder="Dirección de entrega"
+                className="w-full rounded-xl border border-[#1B1410]/15 px-3 py-2 text-sm font-semibold text-[#1B1410] outline-none focus:border-[#1B1410]/40"
+              />
+            )}
+
             <input
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Tu nombre"
               className="w-full rounded-xl border border-[#1B1410]/15 px-3 py-2 text-sm font-semibold text-[#1B1410] outline-none focus:border-[#1B1410]/40"
             />
+
+            <PhoneCountryField
+              name="customerPhone"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder="Tu teléfono"
+              className=""
+            />
+
+            <input
+              type="email"
+              value={customerEmail}
+              onChange={(e) => setCustomerEmail(e.target.value)}
+              placeholder="Correo (opcional, para confirmarte por ahí también)"
+              className="w-full rounded-xl border border-[#1B1410]/15 px-3 py-2 text-sm font-semibold text-[#1B1410] outline-none focus:border-[#1B1410]/40"
+            />
+
             <input
               value={customerNotes}
               onChange={(e) => setCustomerNotes(e.target.value)}
@@ -202,15 +299,24 @@ export default function MenuCartDrawer({
               <span>${total.toFixed(2)}</span>
             </div>
 
+            {submitError && (
+              <p className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600">
+                {submitError}
+              </p>
+            )}
+
             <button
               onClick={handleSend}
-              className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-[#1B1410] shadow-sm transition"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-bold text-[#1B1410] shadow-sm transition disabled:opacity-60"
               style={{ backgroundColor: accentColor }}
             >
-              Enviar pedido por WhatsApp
+              {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+              Enviar pedido
             </button>
             <p className="text-center text-[11px] font-semibold text-[#1B1410]/45">
-              El pago y la confirmación se acuerdan directamente con {storeName} por WhatsApp.
+              Tu pedido queda registrado con {storeName}
+              {whatsappNumber ? " y también se abre WhatsApp para avisarles." : "."}
             </p>
           </div>
         )}
