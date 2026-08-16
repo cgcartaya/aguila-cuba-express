@@ -13,6 +13,7 @@ import {
   Minus,
   Package,
   Plus,
+  Share2,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
@@ -27,6 +28,7 @@ import Price from "@/components/tienda/Price";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import { getHomeFeaturedProductsByStoreId } from "@/lib/services/products";
 import { getCombosContainingAnyProduct } from "@/lib/services/combos";
+import { createSharedCart } from "@/lib/services/shared-carts";
 import StoreComboCard, { type StoreCombo } from "@/components/tienda/combos/StoreComboCard";
 import { getPurchaseQuantityLimit } from "@/lib/storefront/product-quantity-pricing";
 import type { Product } from "@/types/cart";
@@ -63,6 +65,7 @@ export default function CartPageClient() {
   // Combos que incluyen algún producto que ya está en el carrito.
   const [comboRecommendations, setComboRecommendations] = useState<StoreCombo[]>([]);
   const recommendationsRef = useRef<HTMLDivElement>(null);
+  const [sharing, setSharing] = useState(false);
 
   const isDefaultStore = store?.slug === "aguila";
   const storeBaseUrl =
@@ -77,6 +80,42 @@ export default function CartPageClient() {
     0
   );
   const totalUnits = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  async function shareCart() {
+    if (!store?.id || cart.length === 0 || sharing) return;
+
+    try {
+      setSharing(true);
+
+      const { data, error } = await createSharedCart(store.id, cart);
+      if (error || !data) throw error || new Error("No se pudo crear el enlace.");
+
+      const shareUrl = `${window.location.origin}${storeBaseUrl}/carrito/${data.id}`;
+
+      const shareData = {
+        title: "Mi carrito",
+        text: "Mira lo que tengo en el carrito:",
+        url: shareUrl,
+      };
+
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (shareError) {
+          if ((shareError as DOMException)?.name === "AbortError") return;
+        }
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      window.alert("Enlace del carrito copiado.");
+    } catch (err) {
+      console.error("ERROR COMPARTIENDO CARRITO:", err);
+      window.alert("No se pudo generar el enlace para compartir.");
+    } finally {
+      setSharing(false);
+    }
+  }
 
   useEffect(() => {
     if (!store?.id || cart.length === 0) return;
@@ -280,13 +319,24 @@ export default function CartPageClient() {
                     {totalUnits} {totalUnits === 1 ? "producto" : "productos"}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={clearCart}
-                  className="inline-flex items-center gap-1.5 text-xs font-black text-red-600 transition hover:text-red-800"
-                >
-                  <Trash2 size={14} /> Vaciar carrito
-                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={shareCart}
+                    disabled={sharing}
+                    className="inline-flex items-center gap-1.5 text-xs font-black text-blue-700 transition hover:text-blue-900 disabled:opacity-50"
+                  >
+                    <Share2 size={14} /> {sharing ? "Generando..." : "Compartir carrito"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    className="inline-flex items-center gap-1.5 text-xs font-black text-red-600 transition hover:text-red-800"
+                  >
+                    <Trash2 size={14} /> Vaciar carrito
+                  </button>
+                </div>
               </div>
 
               <section className="mt-5 space-y-3">
