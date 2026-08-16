@@ -114,6 +114,42 @@ export async function getProductById(id: string, storeId: string) {
     .single();
 }
 
+// Igual que getProductById, pero resuelve la imagen principal real
+// (desde product_images, igual que hace la tienda pública al listar
+// productos) en vez de depender solo de la columna image_url — útil
+// para cualquier flujo que vuelva a agregar un producto al carrito
+// fuera del listado normal (ej. carritos compartidos).
+export async function getProductByIdWithImage(id: string, storeId: string) {
+  const { data, error } = await supabase
+    .from("products")
+    .select(PRODUCT_PUBLIC_SELECT)
+    .eq("id", id)
+    .eq("store_id", storeId)
+    .single();
+
+  if (error || !data) {
+    return { data: null, error };
+  }
+
+  const images = (data as any).product_images as
+    | Array<{ image_url: string; is_main: boolean; position: number | null }>
+    | null
+    | undefined;
+
+  const main = images?.find((image) => image.is_main);
+  const first = images
+    ?.slice()
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
+
+  const resolvedImageUrl =
+    main?.image_url || first?.image_url || (data as any).image_url || null;
+
+  return {
+    data: { ...(data as any), image_url: resolvedImageUrl },
+    error: null,
+  };
+}
+
 // Compatibilidad temporal: ya no resuelve ninguna tienda por defecto.
 export async function getActiveProducts(storeId?: string) {
   if (!storeId) {

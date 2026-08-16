@@ -17,7 +17,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import Price from "@/components/tienda/Price";
 import { getSharedCart, type SharedCart } from "@/lib/services/shared-carts";
-import { getProductById } from "@/lib/services/products";
+import { getProductByIdWithImage } from "@/lib/services/products";
 import { getComboById } from "@/lib/services/combos";
 import type { Combo, Product } from "@/types/cart";
 
@@ -108,7 +108,7 @@ export default function SharedCartPageClient() {
 
       try {
         if (item.type === "product") {
-          const { data: product, error } = await getProductById(
+          const { data: product, error } = await getProductByIdWithImage(
             rawId,
             sharedCart.store_id
           );
