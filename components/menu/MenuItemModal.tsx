@@ -2,9 +2,21 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Check, Minus, Plus, ShoppingBag, Sparkles, X } from "lucide-react";
+import {
+  Ban,
+  Check,
+  Minus,
+  Plus,
+  ShoppingBag,
+  Sparkles,
+  X,
+} from "lucide-react";
 
-import type { MenuCartLine, MenuCartSelectedOption, MenuItem } from "@/lib/menu/types";
+import type {
+  MenuCartLine,
+  MenuCartSelectedOption,
+  MenuItem,
+} from "@/lib/menu/types";
 
 type Props = {
   item: MenuItem;
@@ -41,50 +53,93 @@ export default function MenuItemModal({
     setNotes(initialLine.notes || "");
   }, [initialLine, item.id]);
 
-  const toggleOption = (groupId: string, optionId: string, maxSelections: number) => {
-    setSelections((prev) => {
-      const current = prev[groupId] || [];
-      if (current.includes(optionId)) {
-        return { ...prev, [groupId]: current.filter((id) => id !== optionId) };
-      }
-      if (maxSelections === 1) return { ...prev, [groupId]: [optionId] };
-      if (current.length >= maxSelections) return prev;
-      return { ...prev, [groupId]: [...current, optionId] };
-    });
-  };
+  const availableGroups = useMemo(
+    () =>
+      item.menu_item_option_groups.map((group) => ({
+        ...group,
+        menu_item_options: group.menu_item_options,
+      })),
+    [item.menu_item_option_groups]
+  );
 
   const missingRequired = useMemo(
     () =>
-      item.menu_item_option_groups.filter(
-        (group) => group.is_required && (selections[group.id] || []).length === 0
-      ),
-    [item.menu_item_option_groups, selections]
+      availableGroups.filter((group) => {
+        if (!group.is_required) return false;
+        const selected = selections[group.id] || [];
+        return selected.length === 0;
+      }),
+    [availableGroups, selections]
   );
+
+  const toggleOption = (
+    groupId: string,
+    optionId: string,
+    maxSelections: number,
+    available: boolean
+  ) => {
+    if (!available) return;
+
+    setSelections((prev) => {
+      const current = prev[groupId] || [];
+
+      if (current.includes(optionId)) {
+        return {
+          ...prev,
+          [groupId]: current.filter((id) => id !== optionId),
+        };
+      }
+
+      if (maxSelections === 1) {
+        return { ...prev, [groupId]: [optionId] };
+      }
+
+      if (current.length >= maxSelections) return prev;
+
+      return {
+        ...prev,
+        [groupId]: [...current, optionId],
+      };
+    });
+  };
 
   const unitPrice = useMemo(() => {
     let total = item.price;
-    for (const group of item.menu_item_option_groups) {
+
+    for (const group of availableGroups) {
       for (const optionId of selections[group.id] || []) {
-        const option = group.menu_item_options.find((o) => o.id === optionId);
-        if (option) total += Number(option.price_delta) || 0;
+        const option = group.menu_item_options.find(
+          (candidate) => candidate.id === optionId
+        );
+        if (option && option.is_available !== false) {
+          total += Number(option.price_delta) || 0;
+        }
       }
     }
+
     return total;
-  }, [item, selections]);
+  }, [item.price, availableGroups, selections]);
 
   const handleAdd = () => {
     if (missingRequired.length) {
       document
         .getElementById(`modifier-${missingRequired[0].id}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       return;
     }
 
     const selectedOptions: MenuCartSelectedOption[] = [];
-    for (const group of item.menu_item_option_groups) {
+
+    for (const group of availableGroups) {
       for (const optionId of selections[group.id] || []) {
-        const option = group.menu_item_options.find((o) => o.id === optionId);
-        if (!option) continue;
+        const option = group.menu_item_options.find(
+          (candidate) => candidate.id === optionId
+        );
+
+        if (!option || option.is_available === false) continue;
 
         selectedOptions.push({
           group_id: group.id,
@@ -115,7 +170,13 @@ export default function MenuItemModal({
         <div className="relative shrink-0">
           {item.image_url ? (
             <div className="relative h-48 w-full sm:h-56">
-              <Image src={item.image_url} alt={item.name} fill sizes="576px" className="object-cover" />
+              <Image
+                src={item.image_url}
+                alt={item.name}
+                fill
+                sizes="576px"
+                className="object-cover"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10" />
             </div>
           ) : (
@@ -129,7 +190,13 @@ export default function MenuItemModal({
             <X size={18} />
           </button>
 
-          <div className={item.image_url ? "absolute bottom-0 left-0 right-0 p-5 text-white" : "p-5"}>
+          <div
+            className={
+              item.image_url
+                ? "absolute bottom-0 left-0 right-0 p-5 text-white"
+                : "p-5"
+            }
+          >
             {item.is_featured && (
               <span
                 className="mb-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black uppercase text-[#1B1410]"
@@ -138,6 +205,7 @@ export default function MenuItemModal({
                 <Sparkles size={10} /> Recomendado
               </span>
             )}
+
             <div className="flex items-end justify-between gap-3">
               <div>
                 <h2 className="text-2xl font-black">{item.name}</h2>
@@ -147,7 +215,9 @@ export default function MenuItemModal({
                   </p>
                 )}
               </div>
-              <strong className="text-lg">${item.price.toFixed(2)}</strong>
+              <strong className="text-lg">
+                ${item.price.toFixed(2)}
+              </strong>
             </div>
           </div>
         </div>
@@ -155,81 +225,148 @@ export default function MenuItemModal({
         <div className="flex-1 overflow-y-auto">
           {item.description && (
             <div className="border-b border-black/[0.07] px-5 py-4">
-              <p className="text-sm font-medium leading-6 text-black/55">{item.description}</p>
+              <p className="text-sm font-medium leading-6 text-black/55">
+                {item.description}
+              </p>
             </div>
           )}
 
           <div className="space-y-5 p-5">
-            {item.menu_item_option_groups.map((group) => {
+            {availableGroups.map((group) => {
               const selected = selections[group.id] || [];
-              const missing = group.is_required && selected.length === 0;
+              const missing =
+                group.is_required && selected.length === 0;
+              const availableCount = group.menu_item_options.filter(
+                (option) => option.is_available !== false
+              ).length;
 
               return (
                 <section
                   key={group.id}
                   id={`modifier-${group.id}`}
                   className={`rounded-2xl border p-4 ${
-                    missing ? "border-amber-200 bg-amber-50/50" : "border-black/[0.07] bg-white"
+                    missing
+                      ? "border-amber-200 bg-amber-50/50"
+                      : "border-black/[0.07] bg-white"
                   }`}
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-black text-[#1B1410]">{group.name}</h3>
+                      <h3 className="text-sm font-black text-[#1B1410]">
+                        {group.name}
+                      </h3>
                       <p className="mt-1 text-[10px] font-bold text-black/40">
-                        {group.is_required ? "Obligatorio" : "Opcional"} ·{" "}
-                        {group.max_selections === 1 ? "Elige 1" : `Hasta ${group.max_selections}`}
+                        {group.is_required
+                          ? "Obligatorio"
+                          : "Opcional"}{" "}
+                        ·{" "}
+                        {group.max_selections === 1
+                          ? "Elige 1"
+                          : `Hasta ${group.max_selections}`}
                       </p>
                     </div>
+
                     <span
                       className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${
-                        group.is_required ? "bg-[#1B1410] text-white" : "bg-slate-100 text-slate-500"
+                        group.is_required
+                          ? "bg-[#1B1410] text-white"
+                          : "bg-slate-100 text-slate-500"
                       }`}
                     >
                       {group.is_required ? "Requerido" : "Opcional"}
                     </span>
                   </div>
 
+                  {group.is_required && availableCount === 0 && (
+                    <div className="mb-3 flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-black text-red-600">
+                      <Ban size={13} />
+                      Este grupo no tiene opciones disponibles.
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     {group.menu_item_options.map((option) => {
-                      const checked = selected.includes(option.id);
+                      const available =
+                        option.is_available !== false;
+                      const checked =
+                        available &&
+                        selected.includes(option.id);
+
                       return (
                         <button
                           key={option.id}
                           type="button"
+                          disabled={!available}
                           onClick={() =>
-                            toggleOption(group.id, option.id, Math.max(1, group.max_selections))
+                            toggleOption(
+                              group.id,
+                              option.id,
+                              Math.max(1, group.max_selections),
+                              available
+                            )
                           }
-                          className="flex w-full items-center gap-3 rounded-xl border border-black/[0.08] p-3 text-left"
+                          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left ${
+                            available
+                              ? "border-black/[0.08]"
+                              : "cursor-not-allowed border-slate-100 bg-slate-50 opacity-55"
+                          }`}
                           style={
                             checked
-                              ? { backgroundColor: `${accentColor}22`, borderColor: accentColor }
+                              ? {
+                                  backgroundColor: `${accentColor}22`,
+                                  borderColor: accentColor,
+                                }
                               : undefined
                           }
                         >
                           <span
                             className={`flex h-5 w-5 shrink-0 items-center justify-center border ${
-                              group.max_selections === 1 ? "rounded-full" : "rounded-md"
+                              group.max_selections === 1
+                                ? "rounded-full"
+                                : "rounded-md"
                             }`}
                             style={
                               checked
-                                ? { backgroundColor: accentColor, borderColor: accentColor }
-                                : { borderColor: "rgba(27,20,16,.2)" }
+                                ? {
+                                    backgroundColor: accentColor,
+                                    borderColor: accentColor,
+                                  }
+                                : {
+                                    borderColor:
+                                      "rgba(27,20,16,.2)",
+                                  }
                             }
                           >
-                            {checked && <Check size={12} strokeWidth={3} />}
+                            {checked && (
+                              <Check size={12} strokeWidth={3} />
+                            )}
                           </span>
 
-                          <span className="min-w-0 flex-1 text-sm font-bold text-[#1B1410]">
+                          <span
+                            className={`min-w-0 flex-1 text-sm font-bold ${
+                              available
+                                ? "text-[#1B1410]"
+                                : "text-slate-400 line-through"
+                            }`}
+                          >
                             {option.label}
                           </span>
 
-                          <span className="shrink-0 text-xs font-black text-black/50">
-                            {option.price_delta > 0
-                              ? `+$${option.price_delta.toFixed(2)}`
-                              : option.price_delta < 0
-                              ? `−$${Math.abs(option.price_delta).toFixed(2)}`
-                              : "Incluido"}
-                          </span>
+                          {!available ? (
+                            <span className="rounded-full bg-red-100 px-2 py-1 text-[9px] font-black uppercase text-red-600">
+                              Agotada
+                            </span>
+                          ) : (
+                            <span className="shrink-0 text-xs font-black text-black/50">
+                              {option.price_delta > 0
+                                ? `+$${option.price_delta.toFixed(2)}`
+                                : option.price_delta < 0
+                                ? `−$${Math.abs(
+                                    option.price_delta
+                                  ).toFixed(2)}`
+                                : "Incluido"}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -239,10 +376,9 @@ export default function MenuItemModal({
             })}
 
             <section className="rounded-2xl border border-black/[0.07] bg-white p-4">
-              <h3 className="text-sm font-black text-[#1B1410]">Instrucciones para cocina</h3>
-              <p className="mt-1 text-[10px] font-bold text-black/40">
-                Opcional · añade una indicación especial.
-              </p>
+              <h3 className="text-sm font-black text-[#1B1410]">
+                Instrucciones para cocina
+              </h3>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -265,14 +401,22 @@ export default function MenuItemModal({
           <div className="flex items-center gap-3">
             <div className="flex items-center rounded-full border border-black/10 bg-white p-1">
               <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                onClick={() =>
+                  setQuantity((quantity) =>
+                    Math.max(1, quantity - 1)
+                  )
+                }
                 className="flex h-8 w-8 items-center justify-center"
               >
                 <Minus size={15} />
               </button>
-              <span className="w-7 text-center text-sm font-black">{quantity}</span>
+              <span className="w-7 text-center text-sm font-black">
+                {quantity}
+              </span>
               <button
-                onClick={() => setQuantity((q) => q + 1)}
+                onClick={() =>
+                  setQuantity((quantity) => quantity + 1)
+                }
                 className="flex h-8 w-8 items-center justify-center"
               >
                 <Plus size={15} />
@@ -282,10 +426,14 @@ export default function MenuItemModal({
             <button
               onClick={handleAdd}
               className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-black"
-              style={{ backgroundColor: accentColor, color: "#1B1410" }}
+              style={{
+                backgroundColor: accentColor,
+                color: "#1B1410",
+              }}
             >
               <ShoppingBag size={16} />
-              {initialLine ? "Guardar cambios" : "Agregar"} · ${(unitPrice * quantity).toFixed(2)}
+              {initialLine ? "Guardar cambios" : "Agregar"} · $
+              {(unitPrice * quantity).toFixed(2)}
             </button>
           </div>
         </div>

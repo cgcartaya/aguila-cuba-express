@@ -20,6 +20,7 @@ import {
 import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 import { buildMenuOrderMessage, getCartTotal } from "@/lib/menu/whatsapp-message";
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
+import MenuUpsellSuggestions from "@/components/menu/MenuUpsellSuggestions";
 import type { MenuCartLine, MenuOrderType } from "@/lib/menu/types";
 
 type Props = {
@@ -33,6 +34,7 @@ type Props = {
   onUpdateQuantity: (lineId: string, quantity: number) => void;
   onRemove: (lineId: string) => void;
   onEdit: (line: MenuCartLine) => void;
+  onSuggestion: (itemId: string) => void;
   onOrderSent: () => void;
 };
 
@@ -75,6 +77,7 @@ export default function MenuCartDrawer({
   onUpdateQuantity,
   onRemove,
   onEdit,
+  onSuggestion,
   onOrderSent,
 }: Props) {
   const [step, setStep] = useState<Step>("cart");
@@ -92,7 +95,6 @@ export default function MenuCartDrawer({
 
   const total = getCartTotal(cart);
   const totalUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
-
   const selectedOrderType = ORDER_TYPES.find((item) => item.value === orderType)!;
 
   const canContinueFulfillment = useMemo(() => {
@@ -100,27 +102,15 @@ export default function MenuCartDrawer({
     return true;
   }, [orderType, deliveryAddress]);
 
-  const goNextFromCart = () => {
-    if (!cart.length) return;
-    setSubmitError(null);
-    setStep("fulfillment");
-  };
-
-  const goNextFromFulfillment = () => {
-    if (!canContinueFulfillment) {
-      setSubmitError("Escribe una dirección de entrega válida.");
-      return;
-    }
-    setSubmitError(null);
-    setStep("customer");
-  };
-
   const handleSend = async () => {
     if (!customerName.trim() || customerPhone.replace(/\D/g, "").length < 7) {
       setSubmitError("Completa tu nombre y un teléfono válido.");
       return;
     }
-    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
+    if (
+      customerEmail.trim() &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
+    ) {
       setSubmitError("El correo no es válido.");
       return;
     }
@@ -135,8 +125,10 @@ export default function MenuCartDrawer({
         body: JSON.stringify({
           store_slug: storeSlug,
           order_type: orderType,
-          table_number: orderType === "dine_in" ? tableNumber.trim() : undefined,
-          delivery_address: orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          table_number:
+            orderType === "dine_in" ? tableNumber.trim() : undefined,
+          delivery_address:
+            orderType === "delivery" ? deliveryAddress.trim() : undefined,
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
           customer_email: customerEmail.trim(),
@@ -153,7 +145,9 @@ export default function MenuCartDrawer({
       const body = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setSubmitError(body.error || "No se pudo enviar el pedido. Intenta de nuevo.");
+        setSubmitError(
+          body.error || "No se pudo enviar el pedido. Intenta de nuevo."
+        );
         setSubmitting(false);
         return;
       }
@@ -163,13 +157,23 @@ export default function MenuCartDrawer({
           storeName,
           cart,
           orderType,
-          tableNumber: orderType === "dine_in" ? tableNumber.trim() || undefined : undefined,
-          deliveryAddress: orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          tableNumber:
+            orderType === "dine_in"
+              ? tableNumber.trim() || undefined
+              : undefined,
+          deliveryAddress:
+            orderType === "delivery"
+              ? deliveryAddress.trim()
+              : undefined,
           customerName: customerName.trim() || undefined,
           customerNotes: customerNotes.trim() || undefined,
           deliveryFee: Number(body.total || total) - total,
         });
-        openWhatsAppMessage({ app: "personal", phone: whatsappNumber, message });
+        openWhatsAppMessage({
+          app: "personal",
+          phone: whatsappNumber,
+          message,
+        });
       }
 
       setSubmitting(false);
@@ -209,12 +213,19 @@ export default function MenuCartDrawer({
                 <div
                   className="h-1.5 rounded-full"
                   style={{
-                    backgroundColor: index <= stepIndex ? accentColor : "rgba(27,20,16,.08)",
+                    backgroundColor:
+                      index <= stepIndex
+                        ? accentColor
+                        : "rgba(27,20,16,.08)",
                   }}
                 />
-                <p className={`mt-1 text-center text-[9px] font-black uppercase ${
-                  index === stepIndex ? "text-[#1B1410]" : "text-black/30"
-                }`}>
+                <p
+                  className={`mt-1 text-center text-[9px] font-black uppercase ${
+                    index === stepIndex
+                      ? "text-[#1B1410]"
+                      : "text-black/30"
+                  }`}
+                >
                   {label}
                 </p>
               </div>
@@ -233,101 +244,130 @@ export default function MenuCartDrawer({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {cart.map((line) => {
-                    const optionsTotal = line.selected_options.reduce(
-                      (sum, opt) => sum + opt.price_delta,
-                      0
-                    );
-                    const unitTotal = line.unit_base_price + optionsTotal;
-                    const lineTotal = unitTotal * line.quantity;
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {cart.map((line) => {
+                      const optionsTotal = line.selected_options.reduce(
+                        (sum, opt) => sum + opt.price_delta,
+                        0
+                      );
+                      const unitTotal =
+                        line.unit_base_price + optionsTotal;
+                      const lineTotal = unitTotal * line.quantity;
 
-                    return (
-                      <article
-                        key={line.lineId}
-                        className="rounded-2xl border border-black/[0.07] bg-white p-4"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <h3 className="text-sm font-black text-[#1B1410]">{line.name}</h3>
-                                <p className="mt-0.5 text-xs font-bold text-black/40">
-                                  ${unitTotal.toFixed(2)} c/u
-                                </p>
+                      return (
+                        <article
+                          key={line.lineId}
+                          className="rounded-2xl border border-black/[0.07] bg-white p-4"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <h3 className="text-sm font-black text-[#1B1410]">
+                                    {line.name}
+                                  </h3>
+                                  <p className="mt-0.5 text-xs font-bold text-black/40">
+                                    ${unitTotal.toFixed(2)} c/u
+                                  </p>
+                                </div>
+                                <strong className="shrink-0 text-sm text-[#1B1410]">
+                                  ${lineTotal.toFixed(2)}
+                                </strong>
                               </div>
-                              <strong className="shrink-0 text-sm text-[#1B1410]">
-                                ${lineTotal.toFixed(2)}
-                              </strong>
+
+                              {line.selected_options.length > 0 && (
+                                <div className="mt-3 space-y-1">
+                                  {line.selected_options.map((opt) => (
+                                    <div
+                                      key={`${opt.group_id}-${opt.option_id}`}
+                                      className="flex items-center justify-between gap-3 text-xs"
+                                    >
+                                      <span className="font-semibold text-black/50">
+                                        {opt.group_name}:{" "}
+                                        <strong className="text-black/70">
+                                          {opt.option_label}
+                                        </strong>
+                                      </span>
+                                      {opt.price_delta !== 0 && (
+                                        <span className="shrink-0 font-black text-black/40">
+                                          {opt.price_delta > 0 ? "+" : "−"}$
+                                          {Math.abs(
+                                            opt.price_delta
+                                          ).toFixed(2)}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {line.notes && (
+                                <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+                                  Cocina: {line.notes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex items-center justify-between">
+                            <div className="flex items-center rounded-full border border-black/10 bg-[#FFFCF6] p-1">
+                              <button
+                                onClick={() => {
+                                  if (line.quantity <= 1)
+                                    onRemove(line.lineId);
+                                  else
+                                    onUpdateQuantity(
+                                      line.lineId,
+                                      line.quantity - 1
+                                    );
+                                }}
+                                className="flex h-7 w-7 items-center justify-center text-black/55"
+                              >
+                                <Minus size={13} />
+                              </button>
+                              <span className="w-7 text-center text-xs font-black">
+                                {line.quantity}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  onUpdateQuantity(
+                                    line.lineId,
+                                    line.quantity + 1
+                                  )
+                                }
+                                className="flex h-7 w-7 items-center justify-center text-black/55"
+                              >
+                                <Plus size={13} />
+                              </button>
                             </div>
 
-                            {line.selected_options.length > 0 && (
-                              <div className="mt-3 space-y-1">
-                                {line.selected_options.map((opt) => (
-                                  <div
-                                    key={`${opt.group_id}-${opt.option_id}`}
-                                    className="flex items-center justify-between gap-3 text-xs"
-                                  >
-                                    <span className="font-semibold text-black/50">
-                                      {opt.group_name}: <strong className="text-black/70">{opt.option_label}</strong>
-                                    </span>
-                                    {opt.price_delta !== 0 && (
-                                      <span className="shrink-0 font-black text-black/40">
-                                        {opt.price_delta > 0 ? "+" : "−"}$
-                                        {Math.abs(opt.price_delta).toFixed(2)}
-                                      </span>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            {line.notes && (
-                              <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
-                                Cocina: {line.notes}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => onEdit(line)}
+                                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-600"
+                              >
+                                <Edit3 size={12} /> Editar
+                              </button>
+                              <button
+                                onClick={() => onRemove(line.lineId)}
+                                className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-500"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
                           </div>
-                        </div>
+                        </article>
+                      );
+                    })}
+                  </div>
 
-                        <div className="mt-4 flex items-center justify-between">
-                          <div className="flex items-center rounded-full border border-black/10 bg-[#FFFCF6] p-1">
-                            <button
-                              onClick={() => {
-                                if (line.quantity <= 1) onRemove(line.lineId);
-                                else onUpdateQuantity(line.lineId, line.quantity - 1);
-                              }}
-                              className="flex h-7 w-7 items-center justify-center text-black/55"
-                            >
-                              <Minus size={13} />
-                            </button>
-                            <span className="w-7 text-center text-xs font-black">{line.quantity}</span>
-                            <button
-                              onClick={() => onUpdateQuantity(line.lineId, line.quantity + 1)}
-                              className="flex h-7 w-7 items-center justify-center text-black/55"
-                            >
-                              <Plus size={13} />
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => onEdit(line)}
-                              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-2 text-[10px] font-black text-slate-600"
-                            >
-                              <Edit3 size={12} /> Editar
-                            </button>
-                            <button
-                              onClick={() => onRemove(line.lineId)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-500"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
+                  <MenuUpsellSuggestions
+                    storeSlug={storeSlug}
+                    cartItemIds={cart.map((line) => line.menu_item_id)}
+                    accentColor={accentColor}
+                    onSelect={onSuggestion}
+                  />
                 </div>
               )}
             </div>
@@ -336,16 +376,25 @@ export default function MenuCartDrawer({
               <div className="border-t border-black/[0.07] bg-[#FFFDF8] p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold text-black/40">{totalUnits} artículos</p>
-                    <p className="text-sm font-black text-[#1B1410]">Subtotal</p>
+                    <p className="text-xs font-bold text-black/40">
+                      {totalUnits} artículos
+                    </p>
+                    <p className="text-sm font-black text-[#1B1410]">
+                      Subtotal
+                    </p>
                   </div>
-                  <strong className="text-xl text-[#1B1410]">${total.toFixed(2)}</strong>
+                  <strong className="text-xl text-[#1B1410]">
+                    ${total.toFixed(2)}
+                  </strong>
                 </div>
 
                 <button
-                  onClick={goNextFromCart}
+                  onClick={() => setStep("fulfillment")}
                   className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
-                  style={{ backgroundColor: accentColor, color: "#1B1410" }}
+                  style={{
+                    backgroundColor: accentColor,
+                    color: "#1B1410",
+                  }}
                 >
                   Continuar <ChevronRight size={16} />
                 </button>
@@ -364,89 +413,92 @@ export default function MenuCartDrawer({
                 <ChevronLeft size={14} /> Volver al pedido
               </button>
 
-              <h3 className="text-xl font-black text-[#1B1410]">¿Cómo quieres recibirlo?</h3>
-              <p className="mt-1 text-sm font-semibold text-black/40">
-                Puedes cambiar esta opción antes de enviar.
-              </p>
+              <h3 className="text-xl font-black text-[#1B1410]">
+                ¿Cómo quieres recibirlo?
+              </h3>
 
               <div className="mt-5 space-y-3">
-                {ORDER_TYPES.map(({ value, title, description, icon: Icon }) => {
-                  const selected = value === orderType;
-                  return (
-                    <button
-                      key={value}
-                      onClick={() => {
-                        setOrderType(value);
-                        setSubmitError(null);
-                      }}
-                      className="flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition"
-                      style={
-                        selected
-                          ? { borderColor: accentColor, backgroundColor: `${accentColor}14` }
-                          : { borderColor: "rgba(27,20,16,.08)", backgroundColor: "white" }
-                      }
-                    >
-                      <span
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                {ORDER_TYPES.map(
+                  ({ value, title, description, icon: Icon }) => {
+                    const selected = value === orderType;
+                    return (
+                      <button
+                        key={value}
+                        onClick={() => {
+                          setOrderType(value);
+                          setSubmitError(null);
+                        }}
+                        className="flex w-full items-center gap-4 rounded-2xl border p-4 text-left"
                         style={
                           selected
-                            ? { backgroundColor: accentColor, color: "#1B1410" }
-                            : { backgroundColor: "rgba(27,20,16,.05)", color: "rgba(27,20,16,.5)" }
+                            ? {
+                                borderColor: accentColor,
+                                backgroundColor: `${accentColor}14`,
+                              }
+                            : {
+                                borderColor: "rgba(27,20,16,.08)",
+                                backgroundColor: "white",
+                              }
                         }
                       >
-                        <Icon size={18} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <strong className="block text-sm text-[#1B1410]">{title}</strong>
-                        <span className="mt-0.5 block text-xs font-semibold text-black/40">
-                          {description}
-                        </span>
-                      </span>
-                      {selected && (
                         <span
-                          className="flex h-6 w-6 items-center justify-center rounded-full"
-                          style={{ backgroundColor: accentColor }}
+                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+                          style={
+                            selected
+                              ? {
+                                  backgroundColor: accentColor,
+                                  color: "#1B1410",
+                                }
+                              : {
+                                  backgroundColor:
+                                    "rgba(27,20,16,.05)",
+                                  color: "rgba(27,20,16,.5)",
+                                }
+                          }
                         >
-                          <Check size={13} strokeWidth={3} />
+                          <Icon size={18} />
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
+                        <span className="min-w-0 flex-1">
+                          <strong className="block text-sm text-[#1B1410]">
+                            {title}
+                          </strong>
+                          <span className="mt-0.5 block text-xs font-semibold text-black/40">
+                            {description}
+                          </span>
+                        </span>
+                        {selected && (
+                          <span
+                            className="flex h-6 w-6 items-center justify-center rounded-full"
+                            style={{ backgroundColor: accentColor }}
+                          >
+                            <Check size={13} strokeWidth={3} />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  }
+                )}
               </div>
 
               {orderType === "dine_in" && (
-                <div className="mt-5">
-                  <label className="text-xs font-black uppercase tracking-wide text-black/40">
-                    Número de mesa
-                  </label>
-                  <input
-                    value={tableNumber}
-                    onChange={(e) => setTableNumber(e.target.value)}
-                    placeholder="Ej: 7"
-                    readOnly={Boolean(initialTableNumber)}
-                    className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
-                  />
-                  {initialTableNumber && (
-                    <p className="mt-2 text-[10px] font-bold text-emerald-600">
-                      Mesa detectada automáticamente desde el QR.
-                    </p>
-                  )}
-                </div>
+                <input
+                  value={tableNumber}
+                  onChange={(e) => setTableNumber(e.target.value)}
+                  placeholder="Número de mesa"
+                  readOnly={Boolean(initialTableNumber)}
+                  className="mt-5 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
+                />
               )}
 
               {orderType === "delivery" && (
-                <div className="mt-5">
-                  <label className="text-xs font-black uppercase tracking-wide text-black/40">
-                    Dirección de entrega
-                  </label>
-                  <input
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    placeholder="Calle, número, reparto..."
-                    className="mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
-                  />
-                </div>
+                <input
+                  value={deliveryAddress}
+                  onChange={(e) =>
+                    setDeliveryAddress(e.target.value)
+                  }
+                  placeholder="Dirección de entrega"
+                  className="mt-5 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
+                />
               )}
 
               {submitError && (
@@ -458,9 +510,24 @@ export default function MenuCartDrawer({
 
             <div className="border-t border-black/[0.07] p-5">
               <button
-                onClick={goNextFromFulfillment}
+                onClick={() => {
+                  if (
+                    orderType === "delivery" &&
+                    deliveryAddress.trim().length < 5
+                  ) {
+                    setSubmitError(
+                      "Escribe una dirección de entrega válida."
+                    );
+                    return;
+                  }
+                  setSubmitError(null);
+                  setStep("customer");
+                }}
                 className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
-                style={{ backgroundColor: accentColor, color: "#1B1410" }}
+                style={{
+                  backgroundColor: accentColor,
+                  color: "#1B1410",
+                }}
               >
                 Continuar <ChevronRight size={16} />
               </button>
@@ -478,18 +545,23 @@ export default function MenuCartDrawer({
                 <ChevronLeft size={14} /> Cambiar entrega
               </button>
 
-              <h3 className="text-xl font-black text-[#1B1410]">Tus datos</h3>
-              <p className="mt-1 text-sm font-semibold text-black/40">
-                Solo necesitamos lo necesario para confirmar el pedido.
-              </p>
+              <h3 className="text-xl font-black text-[#1B1410]">
+                Tus datos
+              </h3>
 
               <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                <p className="text-[10px] font-black uppercase text-black/35">Método seleccionado</p>
+                <p className="text-[10px] font-black uppercase text-black/35">
+                  Método seleccionado
+                </p>
                 <div className="mt-2 flex items-center gap-2">
                   <selectedOrderType.icon size={15} />
-                  <strong className="text-sm">{selectedOrderType.title}</strong>
+                  <strong className="text-sm">
+                    {selectedOrderType.title}
+                  </strong>
                   {orderType === "dine_in" && tableNumber && (
-                    <span className="text-xs font-bold text-black/40">· Mesa {tableNumber}</span>
+                    <span className="text-xs font-bold text-black/40">
+                      · Mesa {tableNumber}
+                    </span>
                   )}
                 </div>
               </div>
@@ -505,7 +577,9 @@ export default function MenuCartDrawer({
                 <PhoneCountryField
                   name="customerPhone"
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) =>
+                    setCustomerPhone(e.target.value)
+                  }
                   placeholder="Tu teléfono"
                   className=""
                 />
@@ -520,7 +594,9 @@ export default function MenuCartDrawer({
 
                 <textarea
                   value={customerNotes}
-                  onChange={(e) => setCustomerNotes(e.target.value)}
+                  onChange={(e) =>
+                    setCustomerNotes(e.target.value)
+                  }
                   placeholder="Nota general para el pedido (opcional)"
                   rows={3}
                   className="w-full resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold outline-none"
@@ -536,24 +612,28 @@ export default function MenuCartDrawer({
 
             <div className="border-t border-black/[0.07] bg-[#FFFDF8] p-5">
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-black text-[#1B1410]">Total estimado</span>
-                <strong className="text-xl text-[#1B1410]">${total.toFixed(2)}</strong>
+                <span className="text-sm font-black text-[#1B1410]">
+                  Total estimado
+                </span>
+                <strong className="text-xl text-[#1B1410]">
+                  ${total.toFixed(2)}
+                </strong>
               </div>
 
               <button
                 onClick={handleSend}
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black disabled:opacity-60"
-                style={{ backgroundColor: accentColor, color: "#1B1410" }}
+                style={{
+                  backgroundColor: accentColor,
+                  color: "#1B1410",
+                }}
               >
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                {submitting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : null}
                 Confirmar pedido
               </button>
-
-              <p className="mt-2 text-center text-[10px] font-semibold text-black/35">
-                El pedido queda registrado en {storeName}
-                {whatsappNumber ? " y se abrirá WhatsApp como aviso adicional." : "."}
-              </p>
             </div>
           </>
         )}
