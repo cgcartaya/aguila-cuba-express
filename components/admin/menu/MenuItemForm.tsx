@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 
 import MenuItemImageUploader from "./MenuItemImageUploader";
+import ModifierTemplatePicker from "./ModifierTemplatePicker";
 import OptionGroupsEditor from "./OptionGroupsEditor";
 import { saveMenuItem } from "@/lib/services/menu";
 import type { MenuItemFormData } from "@/lib/menu/types";
@@ -27,14 +28,8 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      setError("El nombre es obligatorio.");
-      return;
-    }
-    if (!formData.category_id) {
-      setError("Elige una categoría.");
-      return;
-    }
+    if (!formData.name.trim()) return setError("El nombre es obligatorio.");
+    if (!formData.category_id) return setError("Elige una categoría.");
 
     setSaving(true);
     setError(null);
@@ -58,8 +53,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
         href="/admin/menu"
         className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-700"
       >
-        <ArrowLeft size={14} />
-        Volver al menú
+        <ArrowLeft size={14} /> Volver al menú
       </Link>
 
       <div className="rounded-3xl bg-white p-5 shadow-sm">
@@ -74,7 +68,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
               <input
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                placeholder="Ej: 6 Alitas Clásicas"
+                placeholder="Ej: Bistec de Res"
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
               />
             </div>
@@ -89,7 +83,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, category_id: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none"
                 >
                   <option value="">Elige...</option>
                   {categories.map((cat) => (
@@ -111,7 +105,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, price: Number(e.target.value) || 0 }))
                   }
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none"
                 />
               </div>
             </div>
@@ -127,9 +121,8 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
             onChange={(e) =>
               setFormData((prev) => ({ ...prev, description: e.target.value }))
             }
-            placeholder="Ej: Hasta 2 sabores · papas regulares · vegetales · ketchup y ranch"
             rows={2}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none"
           />
         </div>
 
@@ -152,7 +145,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
               setFormData((prev) => ({ ...prev, is_featured: e.target.checked }))
             }
           />
-          Destacar en la landing (aparece en "Platos destacados")
+          Destacar en la landing
         </label>
 
         <div className="mt-4 rounded-2xl bg-slate-50 p-3">
@@ -164,27 +157,22 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
                 setFormData((prev) => ({ ...prev, track_stock: e.target.checked }))
               }
             />
-            Inventario permanente (bebidas, contables)
+            Inventario permanente
           </label>
+
           {formData.track_stock && (
-            <div className="mt-2">
-              <label className="mb-1 block text-xs font-black uppercase tracking-wide text-slate-500">
-                Cantidad disponible
-              </label>
-              <input
-                type="number"
-                min={0}
-                value={formData.stock}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, stock: Math.max(0, Number(e.target.value) || 0) }))
-                }
-                className="w-32 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold outline-none focus:border-slate-400"
-              />
-              <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                Se descuenta con cada pedido y se repone desde Inventario cuando
-                compres más — no se resetea solo.
-              </p>
-            </div>
+            <input
+              type="number"
+              min={0}
+              value={formData.stock}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  stock: Math.max(0, Number(e.target.value) || 0),
+                }))
+              }
+              className="mt-2 w-32 rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold"
+            />
           )}
         </div>
 
@@ -197,33 +185,40 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
                 setFormData((prev) => ({ ...prev, daily_stock_enabled: e.target.checked }))
               }
             />
-            Cupo diario (platos cocinados)
+            Cupo diario
           </label>
-          {formData.daily_stock_enabled && (
-            <p className="mt-1 text-[11px] font-semibold text-slate-400">
-              La cantidad de HOY se pone cada día desde Menú → Inventario → &quot;Platos
-              del día&quot;, no aquí. Se descuenta con cada venta y vuelve a empezar
-              en cero mañana.
-            </p>
-          )}
         </div>
       </div>
 
       <div className="rounded-3xl bg-white p-5 shadow-sm">
-        <OptionGroupsEditor
+        <ModifierTemplatePicker
+          storeId={storeId}
           groups={formData.option_groups}
-          onChange={(option_groups) => setFormData((prev) => ({ ...prev, option_groups }))}
+          onChange={(option_groups) =>
+            setFormData((prev) => ({ ...prev, option_groups }))
+          }
         />
+
+        <div className="mt-5 border-t border-slate-100 pt-5">
+          <OptionGroupsEditor
+            groups={formData.option_groups}
+            onChange={(option_groups) =>
+              setFormData((prev) => ({ ...prev, option_groups }))
+            }
+          />
+        </div>
       </div>
 
       {error && (
-        <p className="rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600">{error}</p>
+        <p className="rounded-xl bg-red-50 px-4 py-2 text-sm font-bold text-red-600">
+          {error}
+        </p>
       )}
 
       <button
         type="submit"
         disabled={saving}
-        className="inline-flex items-center gap-2 rounded-xl bg-[#061b3a] px-6 py-3 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60"
+        className="inline-flex items-center gap-2 rounded-xl bg-[#061b3a] px-6 py-3 text-sm font-black text-white shadow-sm disabled:opacity-60"
       >
         {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
         Guardar platillo

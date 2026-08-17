@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Minus, Plus, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { Check, Minus, Plus, ShoppingBag, Sparkles, X } from "lucide-react";
 
 import type { MenuCartLine, MenuCartSelectedOption, MenuItem } from "@/lib/menu/types";
 
@@ -10,73 +11,93 @@ type Props = {
   accentColor: string;
   onClose: () => void;
   onAdd: (line: MenuCartLine) => void;
+  initialLine?: MenuCartLine | null;
 };
 
-export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Props) {
-  const [quantity, setQuantity] = useState(1);
-  const [notes, setNotes] = useState("");
-  // selections[groupId] = array of optionId
+export default function MenuItemModal({
+  item,
+  accentColor,
+  onClose,
+  onAdd,
+  initialLine = null,
+}: Props) {
+  const [quantity, setQuantity] = useState(initialLine?.quantity || 1);
+  const [notes, setNotes] = useState(initialLine?.notes || "");
   const [selections, setSelections] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    if (!initialLine) {
+      setSelections({});
+      return;
+    }
+
+    const next: Record<string, string[]> = {};
+    for (const option of initialLine.selected_options) {
+      if (!next[option.group_id]) next[option.group_id] = [];
+      next[option.group_id].push(option.option_id);
+    }
+    setSelections(next);
+    setQuantity(initialLine.quantity);
+    setNotes(initialLine.notes || "");
+  }, [initialLine, item.id]);
 
   const toggleOption = (groupId: string, optionId: string, maxSelections: number) => {
     setSelections((prev) => {
       const current = prev[groupId] || [];
-      const isSelected = current.includes(optionId);
-
-      if (isSelected) {
+      if (current.includes(optionId)) {
         return { ...prev, [groupId]: current.filter((id) => id !== optionId) };
       }
-
-      if (maxSelections === 1) {
-        return { ...prev, [groupId]: [optionId] };
-      }
-
-      if (current.length >= maxSelections) {
-        return prev; // ya llegó al máximo permitido
-      }
-
+      if (maxSelections === 1) return { ...prev, [groupId]: [optionId] };
+      if (current.length >= maxSelections) return prev;
       return { ...prev, [groupId]: [...current, optionId] };
     });
   };
 
-  const missingRequired = useMemo(() => {
-    return item.menu_item_option_groups.some(
-      (group) => group.is_required && (selections[group.id] || []).length === 0
-    );
-  }, [item.menu_item_option_groups, selections]);
+  const missingRequired = useMemo(
+    () =>
+      item.menu_item_option_groups.filter(
+        (group) => group.is_required && (selections[group.id] || []).length === 0
+      ),
+    [item.menu_item_option_groups, selections]
+  );
 
   const unitPrice = useMemo(() => {
     let total = item.price;
     for (const group of item.menu_item_option_groups) {
       for (const optionId of selections[group.id] || []) {
         const option = group.menu_item_options.find((o) => o.id === optionId);
-        if (option) total += option.price_delta;
+        if (option) total += Number(option.price_delta) || 0;
       }
     }
     return total;
   }, [item, selections]);
 
   const handleAdd = () => {
-    if (missingRequired) return;
+    if (missingRequired.length) {
+      document
+        .getElementById(`modifier-${missingRequired[0].id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
 
     const selectedOptions: MenuCartSelectedOption[] = [];
     for (const group of item.menu_item_option_groups) {
       for (const optionId of selections[group.id] || []) {
         const option = group.menu_item_options.find((o) => o.id === optionId);
-        if (option) {
-          selectedOptions.push({
-            group_id: group.id,
-            group_name: group.name,
-            option_id: option.id,
-            option_label: option.label,
-            price_delta: option.price_delta,
-          });
-        }
+        if (!option) continue;
+
+        selectedOptions.push({
+          group_id: group.id,
+          group_name: group.name,
+          option_id: option.id,
+          option_label: option.label,
+          price_delta: option.price_delta,
+        });
       }
     }
 
     onAdd({
-      lineId: crypto.randomUUID(),
+      lineId: initialLine?.lineId || crypto.randomUUID(),
       menu_item_id: item.id,
       name: item.name,
       unit_base_price: item.price,
@@ -89,102 +110,184 @@ export default function MenuItemModal({ item, accentColor, onClose, onAdd }: Pro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
-      <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#FFFCF6] sm:rounded-3xl">
-        <div className="sticky top-0 flex items-start justify-between border-b border-[#1B1410]/10 bg-[#FFFCF6] p-5">
-          <div>
-            <h2
-              className="text-xl text-[#1B1410]"
-              style={{ fontFamily: "var(--menu-font-display)", fontWeight: 600 }}
-            >
-              {item.name}
-            </h2>
-            {item.description && (
-              <p className="mt-1 text-sm italic text-[#1B1410]/55">{item.description}</p>
-            )}
-          </div>
-          <button onClick={onClose} className="rounded-full p-1.5 text-[#1B1410]/40 hover:bg-[#1B1410]/5">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-5 p-5">
-          {item.menu_item_option_groups.map((group) => (
-            <div key={group.id}>
-              <div className="mb-2 flex items-center gap-2">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-[#1B1410]/70">{group.name}</h3>
-                {group.is_required && (
-                  <span className="rounded-full bg-[#1B1410] px-2 py-0.5 text-[10px] font-bold text-white">
-                    Obligatorio
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                {group.menu_item_options.map((option) => {
-                  const checked = (selections[group.id] || []).includes(option.id);
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => toggleOption(group.id, option.id, group.max_selections)}
-                      className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-                        checked
-                          ? "border-transparent text-[#1B1410]"
-                          : "border-[#1B1410]/15 text-[#1B1410]/80 hover:border-[#1B1410]/30"
-                      }`}
-                      style={checked ? { backgroundColor: accentColor } : undefined}
-                    >
-                      <span>{option.label}</span>
-                      {option.price_delta > 0 && <span>+${option.price_delta.toFixed(2)}</span>}
-                    </button>
-                  );
-                })}
-              </div>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+      <div className="flex max-h-[94vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[30px] bg-[#FFFDF8] shadow-2xl sm:rounded-[30px]">
+        <div className="relative shrink-0">
+          {item.image_url ? (
+            <div className="relative h-48 w-full sm:h-56">
+              <Image src={item.image_url} alt={item.name} fill sizes="576px" className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/10" />
             </div>
-          ))}
-
-          <div>
-            <label className="mb-1.5 block text-sm font-bold uppercase tracking-wide text-[#1B1410]/70">
-              Alguna nota especial (opcional)
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="w-full rounded-xl border border-[#1B1410]/15 px-3 py-2 text-sm font-semibold text-[#1B1410] outline-none focus:border-[#1B1410]/40"
-            />
-          </div>
-        </div>
-
-        <div className="sticky bottom-0 flex items-center gap-3 border-t border-[#1B1410]/10 bg-[#FFFCF6] p-5">
-          <div className="flex items-center gap-3 rounded-full border border-[#1B1410]/15 px-3 py-2">
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-              className="text-[#1B1410]/60"
-            >
-              <Minus size={16} />
-            </button>
-            <span className="w-4 text-center text-sm font-bold text-[#1B1410]">{quantity}</span>
-            <button
-              type="button"
-              onClick={() => setQuantity((q) => q + 1)}
-              className="text-[#1B1410]/60"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
+          ) : (
+            <div className="h-20 bg-[#1B1410]" />
+          )}
 
           <button
-            type="button"
-            onClick={handleAdd}
-            disabled={missingRequired}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-[#1B1410] shadow-sm transition disabled:opacity-40"
-            style={{ backgroundColor: accentColor }}
+            onClick={onClose}
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white"
           >
-            Agregar · ${(unitPrice * quantity).toFixed(2)}
+            <X size={18} />
           </button>
+
+          <div className={item.image_url ? "absolute bottom-0 left-0 right-0 p-5 text-white" : "p-5"}>
+            {item.is_featured && (
+              <span
+                className="mb-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[9px] font-black uppercase text-[#1B1410]"
+                style={{ backgroundColor: accentColor }}
+              >
+                <Sparkles size={10} /> Recomendado
+              </span>
+            )}
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-black">{item.name}</h2>
+                {initialLine && (
+                  <p className="mt-1 text-[10px] font-black uppercase tracking-wide opacity-80">
+                    Editando tu selección
+                  </p>
+                )}
+              </div>
+              <strong className="text-lg">${item.price.toFixed(2)}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {item.description && (
+            <div className="border-b border-black/[0.07] px-5 py-4">
+              <p className="text-sm font-medium leading-6 text-black/55">{item.description}</p>
+            </div>
+          )}
+
+          <div className="space-y-5 p-5">
+            {item.menu_item_option_groups.map((group) => {
+              const selected = selections[group.id] || [];
+              const missing = group.is_required && selected.length === 0;
+
+              return (
+                <section
+                  key={group.id}
+                  id={`modifier-${group.id}`}
+                  className={`rounded-2xl border p-4 ${
+                    missing ? "border-amber-200 bg-amber-50/50" : "border-black/[0.07] bg-white"
+                  }`}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-black text-[#1B1410]">{group.name}</h3>
+                      <p className="mt-1 text-[10px] font-bold text-black/40">
+                        {group.is_required ? "Obligatorio" : "Opcional"} ·{" "}
+                        {group.max_selections === 1 ? "Elige 1" : `Hasta ${group.max_selections}`}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[9px] font-black uppercase ${
+                        group.is_required ? "bg-[#1B1410] text-white" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {group.is_required ? "Requerido" : "Opcional"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {group.menu_item_options.map((option) => {
+                      const checked = selected.includes(option.id);
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() =>
+                            toggleOption(group.id, option.id, Math.max(1, group.max_selections))
+                          }
+                          className="flex w-full items-center gap-3 rounded-xl border border-black/[0.08] p-3 text-left"
+                          style={
+                            checked
+                              ? { backgroundColor: `${accentColor}22`, borderColor: accentColor }
+                              : undefined
+                          }
+                        >
+                          <span
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center border ${
+                              group.max_selections === 1 ? "rounded-full" : "rounded-md"
+                            }`}
+                            style={
+                              checked
+                                ? { backgroundColor: accentColor, borderColor: accentColor }
+                                : { borderColor: "rgba(27,20,16,.2)" }
+                            }
+                          >
+                            {checked && <Check size={12} strokeWidth={3} />}
+                          </span>
+
+                          <span className="min-w-0 flex-1 text-sm font-bold text-[#1B1410]">
+                            {option.label}
+                          </span>
+
+                          <span className="shrink-0 text-xs font-black text-black/50">
+                            {option.price_delta > 0
+                              ? `+$${option.price_delta.toFixed(2)}`
+                              : option.price_delta < 0
+                              ? `−$${Math.abs(option.price_delta).toFixed(2)}`
+                              : "Incluido"}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+
+            <section className="rounded-2xl border border-black/[0.07] bg-white p-4">
+              <h3 className="text-sm font-black text-[#1B1410]">Instrucciones para cocina</h3>
+              <p className="mt-1 text-[10px] font-bold text-black/40">
+                Opcional · añade una indicación especial.
+              </p>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                maxLength={300}
+                rows={3}
+                placeholder="Ej: salsa aparte, sin mucha sal..."
+                className="mt-3 w-full resize-none rounded-xl border border-black/10 bg-[#FFFCF6] p-3 text-sm font-semibold outline-none"
+              />
+            </section>
+          </div>
+        </div>
+
+        <div className="shrink-0 border-t border-black/[0.08] bg-[#FFFDF8] p-4">
+          {missingRequired.length > 0 && (
+            <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-[11px] font-black text-amber-700">
+              Completa las opciones obligatorias antes de continuar.
+            </p>
+          )}
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center rounded-full border border-black/10 bg-white p-1">
+              <button
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="flex h-8 w-8 items-center justify-center"
+              >
+                <Minus size={15} />
+              </button>
+              <span className="w-7 text-center text-sm font-black">{quantity}</span>
+              <button
+                onClick={() => setQuantity((q) => q + 1)}
+                className="flex h-8 w-8 items-center justify-center"
+              >
+                <Plus size={15} />
+              </button>
+            </div>
+
+            <button
+              onClick={handleAdd}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-black"
+              style={{ backgroundColor: accentColor, color: "#1B1410" }}
+            >
+              <ShoppingBag size={16} />
+              {initialLine ? "Guardar cambios" : "Agregar"} · ${(unitPrice * quantity).toFixed(2)}
+            </button>
+          </div>
         </div>
       </div>
     </div>
