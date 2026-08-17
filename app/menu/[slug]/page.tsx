@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicMenu } from "@/lib/services/menu";
 import { getStoreSettings } from "@/lib/services/settings";
-import MenuPageClient from "@/components/menu/MenuPageClient";
+import MenuPageClientHybrid from "@/components/menu/MenuPageClientHybrid";
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -42,18 +42,12 @@ export default async function MenuPage({ params }: PageProps) {
   const { data: settings } = await getStoreSettings(menu.store.id);
 
   return (
-    // MenuPageClient lee ?tipo=bar (para abrir directo en la pestaña
-    // Bar cuando se llega desde la landing) con useSearchParams, que
-    // en el app router requiere estar dentro de un Suspense boundary.
     <Suspense fallback={null}>
-      <MenuPageClient
+      <MenuPageClientHybrid
         store={menu.store}
         categories={menu.categories}
         dailyMenus={menu.dailyMenus}
         whatsappNumber={settings?.whatsapp || null}
-        // La landing real de De Paris vive en "/" (detección por host
-        // en app/page.tsx), no en "/deparis" — esa ruta es código
-        // muerto y por eso el botón "Volver" daba 404.
         landingHref={slug === "deparis" ? "/" : undefined}
         storeSlug={slug}
       />
