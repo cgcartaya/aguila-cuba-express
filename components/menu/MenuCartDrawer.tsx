@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   ChevronLeft,
@@ -13,7 +13,6 @@ import {
   ShoppingBag,
   Store,
   Trash2,
-  UtensilsCrossed,
   X,
 } from "lucide-react";
 
@@ -47,12 +46,6 @@ const ORDER_TYPES: {
   icon: typeof Store;
 }[] = [
   {
-    value: "dine_in",
-    title: "En mesa",
-    description: "Estoy en el restaurante",
-    icon: UtensilsCrossed,
-  },
-  {
     value: "takeaway",
     title: "Recoger",
     description: "Paso a buscar mi pedido",
@@ -85,22 +78,28 @@ export default function MenuCartDrawer({
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
-  const [orderType, setOrderType] = useState<MenuOrderType>(
-    initialTableNumber ? "dine_in" : "takeaway"
-  );
-  const [tableNumber, setTableNumber] = useState(initialTableNumber ?? "");
+  const [orderType, setOrderType] = useState<MenuOrderType>("takeaway");
+  const [tableNumber] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [deliveryZoneId, setDeliveryZoneId] = useState("");
+  const [deliveryZones, setDeliveryZones] = useState<Array<{id:string;name:string;fee:number;minimum_order:number;estimated_minutes_min:number|null;estimated_minutes_max:number|null}>>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  useEffect(() => {
+    fetch(`/api/public/menu-delivery-zones?slug=${encodeURIComponent(storeSlug)}`)
+      .then(r => r.ok ? r.json() : null).then(data => setDeliveryZones(data?.zones || []))
+      .catch(() => setDeliveryZones([]));
+  }, [storeSlug]);
+  const selectedZone = deliveryZones.find(z => z.id === deliveryZoneId) || null;
   const total = getCartTotal(cart);
   const totalUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
   const selectedOrderType = ORDER_TYPES.find((item) => item.value === orderType)!;
 
   const canContinueFulfillment = useMemo(() => {
-    if (orderType === "delivery") return deliveryAddress.trim().length >= 5;
+    if (orderType === "delivery") return Boolean(deliveryZoneId) && deliveryAddress.trim().length >= 5;
     return true;
-  }, [orderType, deliveryAddress]);
+  }, [orderType, deliveryAddress, deliveryZoneId]);
 
   const handleSend = async () => {
     if (!customerName.trim() || customerPhone.replace(/\D/g, "").length < 7) {
@@ -129,6 +128,7 @@ export default function MenuCartDrawer({
             orderType === "dine_in" ? tableNumber.trim() : undefined,
           delivery_address:
             orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          delivery_zone_id: orderType === "delivery" ? deliveryZoneId : undefined,
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
           customer_email: customerEmail.trim(),
@@ -388,6 +388,7 @@ export default function MenuCartDrawer({
                   </strong>
                 </div>
 
+                <button onClick={onClose} className="mb-2 flex w-full items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 text-xs font-black text-[#1B1410]"><Plus size={14}/> Seguir agregando</button>
                 <button
                   onClick={() => setStep("fulfillment")}
                   className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
@@ -480,25 +481,15 @@ export default function MenuCartDrawer({
                 )}
               </div>
 
-              {orderType === "dine_in" && (
-                <input
-                  value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
-                  placeholder="Número de mesa"
-                  readOnly={Boolean(initialTableNumber)}
-                  className="mt-5 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
-                />
-              )}
-
               {orderType === "delivery" && (
-                <input
-                  value={deliveryAddress}
-                  onChange={(e) =>
-                    setDeliveryAddress(e.target.value)
-                  }
-                  placeholder="Dirección de entrega"
-                  className="mt-5 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
-                />
+                <div className="mt-5 space-y-3">
+                  <select value={deliveryZoneId} onChange={e=>setDeliveryZoneId(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none">
+                    <option value="">Selecciona tu zona de entrega</option>
+                    {deliveryZones.map(z=><option key={z.id} value={z.id}>{z.name} · ${Number(z.fee).toFixed(2)}</option>)}
+                  </select>
+                  {selectedZone && <div className="rounded-2xl bg-orange-50 px-4 py-3 text-xs font-semibold text-orange-900">Delivery ${Number(selectedZone.fee).toFixed(2)} · mínimo ${Number(selectedZone.minimum_order).toFixed(2)}</div>}
+                  <input value={deliveryAddress} onChange={e=>setDeliveryAddress(e.target.value)} placeholder="Dirección exacta y referencia" className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"/>
+                </div>
               )}
 
               {submitError && (
@@ -511,6 +502,11 @@ export default function MenuCartDrawer({
             <div className="border-t border-black/[0.07] p-5">
               <button
                 onClick={() => {
+                  if (orderType === "delivery" && !deliveryZoneId) {
+                    setSubmitError("Selecciona tu zona de entrega.");
+                    return;
+                  }
+
                   if (
                     orderType === "delivery" &&
                     deliveryAddress.trim().length < 5

@@ -261,18 +261,6 @@ export default function MenuPageClient({
           )}
 
           <div className="flex items-center gap-2">
-            {tableFromQr && (
-              <span
-                className="rounded-full border px-3 py-1 text-[10px] font-black"
-                style={{
-                  borderColor: accent,
-                  color: accent,
-                }}
-              >
-                Mesa {tableFromQr}
-              </span>
-            )}
-
             <button
               onClick={() => setCartOpen(true)}
               className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/20"
@@ -611,7 +599,7 @@ export default function MenuPageClient({
           onAdd={(line) => {
             addFromModal(line);
             setActiveItem(null);
-            setCartOpen(true);
+            setCartOpen(false);
           }}
         />
       )}

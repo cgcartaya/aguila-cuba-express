@@ -23,6 +23,7 @@ export type CreateMenuOrderInput = {
   orderType: MenuOrderType;
   tableNumber?: string;
   deliveryAddress?: string;
+  deliveryZoneId?: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -261,10 +262,50 @@ export async function createMenuOrder(
     0
   );
 
-  const deliveryFee =
-    input.orderType === "delivery"
-      ? Number(operationSettings?.menu_delivery_fee || 0)
-      : 0;
+  let deliveryFee = 0;
+  let deliveryZoneName: string | null = null;
+
+  if (input.orderType === "delivery") {
+    if (!input.deliveryZoneId) {
+      return {
+        ok: false,
+        status: 400,
+        error: "Selecciona una zona de entrega.",
+      };
+    }
+
+    const { data: zone, error: zoneError } = await supabaseAdmin
+      .from("menu_delivery_zones")
+      .select("id, name, fee, minimum_order")
+      .eq("id", input.deliveryZoneId)
+      .eq("store_id", store.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (zoneError || !zone) {
+      return {
+        ok: false,
+        status: 422,
+        error: "La zona de entrega seleccionada no está disponible.",
+      };
+    }
+
+    if (subtotal < Number(zone.minimum_order || 0)) {
+      return {
+        ok: false,
+        status: 422,
+        error:
+          "El pedido mínimo para " +
+          zone.name +
+          " es $" +
+          Number(zone.minimum_order).toFixed(2) +
+          ".",
+      };
+    }
+
+    deliveryFee = Number(zone.fee || 0);
+    deliveryZoneName = zone.name;
+  }
 
   const total = subtotal + deliveryFee;
 
@@ -282,6 +323,11 @@ export async function createMenuOrder(
           ? input.deliveryAddress?.slice(0, 300) || null
           : null,
       delivery_fee: deliveryFee,
+      delivery_zone_id:
+        input.orderType === "delivery"
+          ? input.deliveryZoneId || null
+          : null,
+      delivery_zone_name: deliveryZoneName,
       customer_name: input.customerName.slice(0, 120),
       customer_phone: input.customerPhone.slice(0, 60),
       customer_email: input.customerEmail?.slice(0, 160) || null,
