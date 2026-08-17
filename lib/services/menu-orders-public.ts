@@ -275,8 +275,8 @@ export async function createMenuOrder(
     }
 
     const { data: zone, error: zoneError } = await supabaseAdmin
-      .from("menu_delivery_zones")
-      .select("id, name, fee, minimum_order")
+      .from("delivery_zones")
+      .select("id, municipality, zone_name, delivery_fee, minimum_order, free_delivery_from")
       .eq("id", input.deliveryZoneId)
       .eq("store_id", store.id)
       .eq("is_active", true)
@@ -296,15 +296,20 @@ export async function createMenuOrder(
         status: 422,
         error:
           "El pedido mínimo para " +
-          zone.name +
+          zone.zone_name +
           " es $" +
           Number(zone.minimum_order).toFixed(2) +
           ".",
       };
     }
 
-    deliveryFee = Number(zone.fee || 0);
-    deliveryZoneName = zone.name;
+    const freeDeliveryFrom = Number(zone.free_delivery_from || 0);
+
+    deliveryFee =
+      freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom
+        ? 0
+        : Number(zone.delivery_fee || 0);
+    deliveryZoneName = `${zone.municipality} · ${zone.zone_name}`;
   }
 
   const total = subtotal + deliveryFee;
