@@ -19,6 +19,17 @@ const nextConfig: NextConfig = {
 
     formats: ["image/avif", "image/webp"],
   },
+
+  async rewrites() {
+    return [
+      {
+        // Alias con extensión .csv: es la URL exacta que se le mostró
+        // al dueño de la tienda al configurar el catálogo en Meta.
+        source: "/api/meta-catalog.csv",
+        destination: "/api/meta-catalog",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
