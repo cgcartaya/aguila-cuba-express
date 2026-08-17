@@ -1,37 +1,45 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
-/*
- * SOLO SERVIDOR. Combina las dos formas de inventario en un solo
- * mapa de "cuánto queda" por platillo, para que tanto el portal
- * público (mostrar "Quedan 12" / "Agotado") como la validación al
- * crear una orden usen exactamente el mismo cálculo — nunca deben
- * poder desincronizarse.
- *
- * null en el mapa = ese platillo no tiene ninguna restricción
- * (ni cupo diario ni inventario permanente) — se puede pedir sin
- * límite. Un número = eso es lo que queda ahora mismo (0 = agotado).
- */
+async function restaurantDateISO(storeId: string) {
+  const { data } = await supabaseAdmin
+    .from("store_settings")
+    .select("menu_timezone")
+    .eq("store_id", storeId)
+    .maybeSingle();
 
-function todayISO() {
-  const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60000);
-  return local.toISOString().slice(0, 10);
+  const timeZone = data?.menu_timezone || "America/Havana";
+
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(new Date());
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value || "";
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  } catch {
+    return new Date().toISOString().slice(0, 10);
+  }
 }
 
 export async function getMenuAvailabilityMap(
   storeId: string,
-  date = todayISO()
+  requestedDate?: string
 ): Promise<Record<string, number | null>> {
+  const date = requestedDate || (await restaurantDateISO(storeId));
   const map: Record<string, number | null> = {};
 
   const { data: items } = await supabaseAdmin
     .from("menu_items")
-    .select("id, stock, daily_stock_enabled")
+    .select("id, stock, daily_stock_enabled, manual_unavailable")
     .eq("store_id", storeId)
     .eq("is_active", true);
 
-  const dailyItemIds = (items || []).filter((i) => i.daily_stock_enabled).map((i) => i.id);
+  const dailyItemIds = (items || [])
+    .filter((i) => i.daily_stock_enabled)
+    .map((i) => i.id);
 
   let dailyStockByItem = new Map<string, number>();
   let soldTodayByItem = new Map<string, number>();
@@ -54,20 +62,32 @@ export async function getMenuAvailabilityMap(
         .in("menu_item_id", dailyItemIds),
     ]);
 
-    dailyStockByItem = new Map((quotas || []).map((q) => [q.menu_item_id, q.quantity]));
+    dailyStockByItem = new Map(
+      (quotas || []).map((q) => [q.menu_item_id, q.quantity])
+    );
 
-    for (const row of (orderItems || []) as { menu_item_id: string | null; quantity: number }[]) {
+    for (const row of (orderItems || []) as {
+      menu_item_id: string | null;
+      quantity: number;
+    }[]) {
       if (!row.menu_item_id) continue;
-      soldTodayByItem.set(row.menu_item_id, (soldTodayByItem.get(row.menu_item_id) || 0) + row.quantity);
+      soldTodayByItem.set(
+        row.menu_item_id,
+        (soldTodayByItem.get(row.menu_item_id) || 0) + row.quantity
+      );
     }
   }
 
   for (const item of items || []) {
+    if (item.manual_unavailable) {
+      map[item.id] = 0;
+      continue;
+    }
+
     if (item.daily_stock_enabled) {
-      // Sin cupo puesto hoy = no disponible para pedir en línea ese
-      // día (no "ilimitado") — el negocio tiene que decir cuántos
-      // tiene cada día para que esto tenga sentido.
-      const quota = dailyStockByItem.has(item.id) ? dailyStockByItem.get(item.id)! : 0;
+      const quota = dailyStockByItem.has(item.id)
+        ? dailyStockByItem.get(item.id)!
+        : 0;
       const sold = soldTodayByItem.get(item.id) || 0;
       map[item.id] = Math.max(0, quota - sold);
       continue;

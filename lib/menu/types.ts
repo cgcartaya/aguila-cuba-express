@@ -1,13 +1,10 @@
-/* =========================================================
-   MÓDULO DE MENÚ — TIPOS
-========================================================= */
-
 export type MenuOption = {
   id: string;
   group_id: string;
   label: string;
   price_delta: number;
   sort_order: number;
+  is_available?: boolean;
 };
 
 export type MenuOptionGroup = {
@@ -101,7 +98,12 @@ export type MenuCartLine = {
 };
 
 export type MenuOrderType = "dine_in" | "takeaway" | "delivery";
-export type MenuOrderStatus = "received" | "preparing" | "ready" | "delivered" | "cancelled";
+export type MenuOrderStatus =
+  | "received"
+  | "preparing"
+  | "ready"
+  | "delivered"
+  | "cancelled";
 
 export type MenuOrderItem = {
   id: string;
@@ -172,10 +174,6 @@ export type PermanentStockRow = {
   stock: number;
 };
 
-/* =========================================================
-   MENÚS, REGLAS HORARIAS Y EXCEPCIONES
-========================================================= */
-
 export type DailyMenuSchedule = {
   id: string;
   daily_menu_id: string;
@@ -193,7 +191,6 @@ export type DailyMenu = {
   name: string;
   sort_order: number;
   is_active: boolean;
-  // Campos legacy Fase 1. Se conservan para compatibilidad.
   weekdays?: number[] | null;
   start_time?: string | null;
   end_time?: string | null;
