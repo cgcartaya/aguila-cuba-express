@@ -75,14 +75,22 @@ export default function MenuCartDrawer({
 }: Props) {
   const [step, setStep] = useState<Step>("cart");
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("+53 ");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
   const [orderType, setOrderType] = useState<MenuOrderType>("takeaway");
   const [tableNumber] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryZoneId, setDeliveryZoneId] = useState("");
-  const [deliveryZones, setDeliveryZones] = useState<Array<{id:string;name:string;fee:number;minimum_order:number;estimated_minutes_min:number|null;estimated_minutes_max:number|null}>>([]);
+  const [deliveryZones, setDeliveryZones] = useState<Array<{
+    id: string;
+    name: string;
+    fee: number;
+    minimum_order: number;
+    free_delivery_from?: number;
+    estimated_minutes_min: number | null;
+    estimated_minutes_max: number | null;
+  }>>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -93,6 +101,22 @@ export default function MenuCartDrawer({
   }, [storeSlug]);
   const selectedZone = deliveryZones.find(z => z.id === deliveryZoneId) || null;
   const total = getCartTotal(cart);
+
+  const selectedZoneRegularFee = Number(selectedZone?.fee || 0);
+  const selectedZoneFreeFrom = Number(selectedZone?.free_delivery_from || 0);
+  const qualifiesForFreeDelivery =
+    orderType === "delivery" &&
+    selectedZoneFreeFrom > 0 &&
+    total >= selectedZoneFreeFrom;
+
+  const deliveryFeePreview =
+    orderType === "delivery" && selectedZone
+      ? qualifiesForFreeDelivery
+        ? 0
+        : selectedZoneRegularFee
+      : 0;
+
+  const grandTotal = total + deliveryFeePreview;
   const totalUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
   const selectedOrderType = ORDER_TYPES.find((item) => item.value === orderType)!;
 
@@ -554,9 +578,9 @@ export default function MenuCartDrawer({
                   <strong className="text-sm">
                     {selectedOrderType.title}
                   </strong>
-                  {orderType === "dine_in" && tableNumber && (
+                  {orderType === "delivery" && selectedZone && (
                     <span className="text-xs font-bold text-black/40">
-                      · Mesa {tableNumber}
+                      · {selectedZone.name}
                     </span>
                   )}
                 </div>
@@ -607,13 +631,61 @@ export default function MenuCartDrawer({
             </div>
 
             <div className="border-t border-black/[0.07] bg-[#FFFDF8] p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-sm font-black text-[#1B1410]">
-                  Total estimado
-                </span>
-                <strong className="text-xl text-[#1B1410]">
-                  ${total.toFixed(2)}
-                </strong>
+              <div className="mb-4 rounded-2xl border border-black/[0.07] bg-white p-4">
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.12em] text-black/35">
+                  Resumen de pago
+                </p>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold text-black/55">Comida</span>
+                    <strong className="text-[#1B1410]">${total.toFixed(2)}</strong>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="font-semibold text-black/55">Delivery</span>
+                      {orderType === "delivery" && selectedZone && (
+                        <span className="ml-1 text-[10px] font-bold text-black/35">
+                          · {selectedZone.name}
+                        </span>
+                      )}
+                    </div>
+
+                    {orderType === "delivery" ? (
+                      qualifiesForFreeDelivery ? (
+                        <div className="text-right">
+                          {selectedZoneRegularFee > 0 && (
+                            <span className="mr-2 text-xs font-semibold text-black/30 line-through">
+                              ${selectedZoneRegularFee.toFixed(2)}
+                            </span>
+                          )}
+                          <strong className="text-emerald-600">GRATIS</strong>
+                        </div>
+                      ) : (
+                        <strong className="text-[#1B1410]">
+                          ${deliveryFeePreview.toFixed(2)}
+                        </strong>
+                      )
+                    ) : (
+                      <strong className="text-emerald-600">No aplica</strong>
+                    )}
+                  </div>
+
+                  <div className="my-2 border-t border-dashed border-black/10" />
+
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-[#1B1410]">Total</p>
+                      <p className="text-[10px] font-semibold text-black/35">
+                        {totalUnits} {totalUnits === 1 ? "artículo" : "artículos"}
+                      </p>
+                    </div>
+                    <strong className="text-2xl text-[#1B1410]">
+                      ${grandTotal.toFixed(2)}
+                    </strong>
+                  </div>
+                </div>
               </div>
 
               <button
