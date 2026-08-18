@@ -63,7 +63,6 @@ type TabKey =
 const TABS: { key: TabKey; label: string; icon: typeof Clock3 }[] = [
   { key: "menus", label: "Menús", icon: Clock3 },
   { key: "platos", label: "Platos", icon: UtensilsCrossed },
-  { key: "excepciones", label: "Excepciones de hoy", icon: Sparkles },
   { key: "preview", label: "Vista previa", icon: Eye },
   { key: "calendario", label: "Calendario", icon: CalendarDays },
   { key: "config", label: "Configuración", icon: Settings2 },
@@ -414,7 +413,7 @@ export default function AdminMenuDailyMenusPage() {
         <AdminPageHeader
           eyebrow="Menú"
           title="Menús y horarios"
-          description="Organiza qué menú se muestra cada día, a qué hora y qué cambios aplican solo hoy."
+          description="Organiza tus menús recurrentes y planifica cambios especiales desde el calendario."
           storeName={activeStore.name}
           icon={UtensilsCrossed}
         />
@@ -1104,7 +1103,13 @@ export default function AdminMenuDailyMenusPage() {
 
         {tab === "calendario" && (
           <div className="mt-6">
-            <WeeklyMenuCalendar menus={menus} />
+            <WeeklyMenuCalendar
+              storeId={activeStore.id}
+              menus={menus}
+              items={items}
+              memberMap={memberMap}
+              today={today}
+            />
           </div>
         )}
 
