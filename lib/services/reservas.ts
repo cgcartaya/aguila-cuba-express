@@ -7,6 +7,8 @@ import type {
   ReservationSlot,
   ReservationSpace,
   ReservationSpaceFormData,
+  ReservationSpaceElement,
+  ReservationSpaceElementFormData,
   ReservationSlotFormData,
   ReservationStatus,
   ReservationTable,
@@ -81,7 +83,7 @@ export async function deleteReservationSpace(id: string) {
 export async function getReservationTablesForAdmin(storeId: string) {
   return supabase
     .from("reservation_tables")
-    .select("id, store_id, name, capacity, seat_type, zone, space_id, pos_row, pos_col, is_active, sort_order")
+    .select("id, store_id, name, capacity, seat_type, zone, space_id, pos_row, pos_col, pos_x, pos_y, rotation, table_shape, is_active, sort_order")
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
 }
@@ -96,6 +98,10 @@ export async function saveReservationTable(storeId: string, form: ReservationTab
     space_id: form.space_id || null,
     pos_row: form.pos_row,
     pos_col: form.pos_col,
+    pos_x: form.pos_x,
+    pos_y: form.pos_y,
+    rotation: form.rotation,
+    table_shape: form.table_shape,
     is_active: form.is_active,
     sort_order: form.sort_order,
   };
@@ -115,6 +121,77 @@ export async function saveReservationTable(storeId: string, form: ReservationTab
 export async function deleteReservationTable(id: string) {
   // Borra en cascada las reservas de esa mesa (FK on delete cascade).
   return supabase.from("reservation_tables").delete().eq("id", id);
+}
+
+/* =========================================================
+   ADMIN — ELEMENTOS DEL PLANO
+========================================================= */
+
+export async function getReservationSpaceElementsForAdmin(
+  storeId: string,
+  spaceId?: string
+) {
+  let query = supabase
+    .from("reservation_space_elements")
+    .select("id, store_id, space_id, element_type, label, pos_x, pos_y, width, height, rotation, sort_order")
+    .eq("store_id", storeId);
+
+  if (spaceId) query = query.eq("space_id", spaceId);
+
+  return query.order("sort_order", { ascending: true }) as unknown as Promise<{
+    data: ReservationSpaceElement[] | null;
+    error: { message: string } | null;
+  }>;
+}
+
+export async function saveReservationSpaceElement(
+  storeId: string,
+  form: ReservationSpaceElementFormData
+) {
+  const payload = {
+    store_id: storeId,
+    space_id: form.space_id,
+    element_type: form.element_type,
+    label: form.label.trim() || null,
+    pos_x: form.pos_x,
+    pos_y: form.pos_y,
+    width: form.width,
+    height: form.height,
+    rotation: form.rotation,
+    sort_order: form.sort_order,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (form.id) {
+    return supabase
+      .from("reservation_space_elements")
+      .update(payload)
+      .eq("id", form.id)
+      .select()
+      .single();
+  }
+
+  return supabase
+    .from("reservation_space_elements")
+    .insert(payload)
+    .select()
+    .single();
+}
+
+export async function deleteReservationSpaceElement(id: string) {
+  return supabase.from("reservation_space_elements").delete().eq("id", id);
+}
+
+export async function updateReservationTableVisualPosition(
+  tableId: string,
+  posX: number,
+  posY: number,
+  rotation = 0
+) {
+  return supabase
+    .from("reservation_tables")
+    .update({ pos_x: posX, pos_y: posY, rotation })
+    .eq("id", tableId);
 }
 
 /* =========================================================

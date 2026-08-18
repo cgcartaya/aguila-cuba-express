@@ -5,7 +5,7 @@ import {
   sendReservationReceivedEmail,
 } from "@/lib/notifications/reservation-email";
 
-import type { ReservationSlot, ReservationTable, ReservationStatus, ReservationSpace } from "@/lib/reservas/types";
+import type { ReservationSlot, ReservationTable, ReservationStatus, ReservationSpace, ReservationSpaceElement } from "@/lib/reservas/types";
 
 /*
  * Todo este archivo es SOLO SERVIDOR (server components / route
@@ -52,6 +52,7 @@ export type PublicReservationBoard = {
     secondary_color: string | null;
   };
   spaces: ReservationSpace[];
+  elements: ReservationSpaceElement[];
   tables: ReservationTable[];
   slots: ReservationSlot[];
   /** Claves "tableId:slotId" ya ocupadas (pending o confirmed) para esa fecha. */
@@ -84,6 +85,7 @@ export async function getPublicReservationBoard(
         secondary_color: store.secondary_color ?? null,
       },
       spaces: [],
+      elements: [],
       tables: [],
       slots: [],
       occupied: [],
@@ -93,6 +95,7 @@ export async function getPublicReservationBoard(
 
   const [
     { data: spaces, error: spacesError },
+    { data: elements, error: elementsError },
     { data: tables, error: tablesError },
     { data: slots, error: slotsError },
   ] = await Promise.all([
@@ -103,8 +106,13 @@ export async function getPublicReservationBoard(
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
     supabaseAdmin
+      .from("reservation_space_elements")
+      .select("id, store_id, space_id, element_type, label, pos_x, pos_y, width, height, rotation, sort_order")
+      .eq("store_id", store.id)
+      .order("sort_order", { ascending: true }),
+    supabaseAdmin
       .from("reservation_tables")
-      .select("id, store_id, name, capacity, seat_type, zone, space_id, pos_row, pos_col, is_active, sort_order")
+      .select("id, store_id, name, capacity, seat_type, zone, space_id, pos_row, pos_col, pos_x, pos_y, rotation, table_shape, is_active, sort_order")
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
@@ -117,6 +125,7 @@ export async function getPublicReservationBoard(
   ]);
 
   if (spacesError) console.error("getPublicReservationBoard spaces error:", spacesError.message);
+  if (elementsError) console.error("getPublicReservationBoard elements error:", elementsError.message);
   if (tablesError) console.error("getPublicReservationBoard tables error:", tablesError.message);
   if (slotsError) console.error("getPublicReservationBoard slots error:", slotsError.message);
 
@@ -146,6 +155,7 @@ export async function getPublicReservationBoard(
       secondary_color: store.secondary_color ?? null,
     },
     spaces: (spaces ?? []) as ReservationSpace[],
+    elements: (elements ?? []) as ReservationSpaceElement[],
     tables: (tables ?? []) as ReservationTable[],
     slots: slotsForDay,
     occupied,

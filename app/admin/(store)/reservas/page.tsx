@@ -20,6 +20,7 @@ import BlockedDatesManager from "@/components/admin/reservas/BlockedDatesManager
 import {
   getBlockedDatesForAdmin,
   getReservationSlotsForAdmin,
+  getReservationSpaceElementsForAdmin,
   getReservationSpacesForAdmin,
   getReservationTablesForAdmin,
 } from "@/lib/services/reservas";
@@ -30,6 +31,7 @@ import type {
   BlockedDate,
   ReservationSlot,
   ReservationSpace,
+  ReservationSpaceElement,
   ReservationTable,
 } from "@/lib/reservas/types";
 
@@ -55,6 +57,7 @@ export default function AdminReservasPage() {
   const [tab, setTab] = useState<TabKey>("espacios");
   const [spaces, setSpaces] = useState<ReservationSpace[]>([]);
   const [tables, setTables] = useState<ReservationTable[]>([]);
+  const [elements, setElements] = useState<ReservationSpaceElement[]>([]);
   const [slots, setSlots] = useState<ReservationSlot[]>([]);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +66,7 @@ export default function AdminReservasPage() {
   const loadData = async () => {
     if (accessLoading || storeLoading) return;
     if (!activeStore?.id) {
-      setSpaces([]); setTables([]); setSlots([]); setBlockedDates([]); setLoading(false);
+      setSpaces([]); setTables([]); setElements([]); setSlots([]); setBlockedDates([]); setLoading(false);
       return;
     }
 
@@ -71,17 +74,20 @@ export default function AdminReservasPage() {
     const [
       { data: spacesData },
       { data: tablesData },
+      { data: elementsData },
       { data: slotsData },
       { data: blockedData },
     ] = await Promise.all([
       getReservationSpacesForAdmin(activeStore.id),
       getReservationTablesForAdmin(activeStore.id),
+      getReservationSpaceElementsForAdmin(activeStore.id),
       getReservationSlotsForAdmin(activeStore.id),
       getBlockedDatesForAdmin(activeStore.id),
     ]);
 
     setSpaces((spacesData as ReservationSpace[]) || []);
     setTables((tablesData as ReservationTable[]) || []);
+    setElements((elementsData as ReservationSpaceElement[]) || []);
     setSlots((slotsData as ReservationSlot[]) || []);
     setBlockedDates(blockedData || []);
     setLoading(false);
@@ -149,7 +155,7 @@ export default function AdminReservasPage() {
         </div>
 
         <div className="mt-5">
-          {tab==="espacios" && <SpaceManager storeId={activeStore.id} spaces={spaces} tables={tables} onChange={loadData}/>}
+          {tab==="espacios" && <SpaceManager storeId={activeStore.id} spaces={spaces} tables={tables} elements={elements} onChange={loadData}/>}
           {tab==="mesas" && <TableManager storeId={activeStore.id} spaces={spaces} tables={tables} onChange={loadData}/>}
           {tab==="franjas" && <SlotManager storeId={activeStore.id} slots={slots} onChange={loadData}/>}
           {tab==="bloqueadas" && <BlockedDatesManager storeId={activeStore.id} blockedDates={blockedDates} onChange={loadData}/>}

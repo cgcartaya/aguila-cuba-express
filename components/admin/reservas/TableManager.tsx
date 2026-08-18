@@ -51,6 +51,10 @@ const EMPTY_FORM: ReservationTableFormData = {
   space_id: null,
   pos_row: 0,
   pos_col: 0,
+  pos_x: 50,
+  pos_y: 50,
+  rotation: 0,
+  table_shape: "round",
   is_active: true,
   sort_order: 0,
 };
@@ -90,6 +94,10 @@ export default function TableManager({
       space_id: table.space_id || null,
       pos_row: table.pos_row,
       pos_col: table.pos_col,
+      pos_x: table.pos_x ?? 50,
+      pos_y: table.pos_y ?? 50,
+      rotation: table.rotation || 0,
+      table_shape: table.table_shape || "round",
       is_active: table.is_active,
       sort_order: table.sort_order,
     });
@@ -138,6 +146,10 @@ export default function TableManager({
       space_id: table.space_id || null,
       pos_row: table.pos_row,
       pos_col: table.pos_col,
+      pos_x: table.pos_x ?? 50,
+      pos_y: table.pos_y ?? 50,
+      rotation: table.rotation || 0,
+      table_shape: table.table_shape || "round",
       is_active: !table.is_active,
       sort_order: table.sort_order,
     });
@@ -225,6 +237,24 @@ export default function TableManager({
                         {SEAT_TYPE_LABEL[type]}
                       </option>
                     ))}
+                  </select>
+                </label>
+
+                <label className="text-xs font-black text-slate-600">
+                  Forma de mesa
+                  <select
+                    value={editing.table_shape}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        table_shape: e.target.value as "round" | "square" | "rect",
+                      })
+                    }
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
+                  >
+                    <option value="round">Redonda</option>
+                    <option value="square">Cuadrada</option>
+                    <option value="rect">Rectangular</option>
                   </select>
                 </label>
 

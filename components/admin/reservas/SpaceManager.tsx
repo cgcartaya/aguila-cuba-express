@@ -14,6 +14,8 @@ import {
   X,
 } from "lucide-react";
 
+import SpaceFloorPlanEditor from "./SpaceFloorPlanEditor";
+
 import {
   deleteReservationSpace,
   saveReservationSpace,
@@ -24,12 +26,14 @@ import {
   type ReservationSpaceFormData,
   type ReservationSpaceType,
   type ReservationTable,
+  type ReservationSpaceElement,
 } from "@/lib/reservas/types";
 
 type Props = {
   storeId: string;
   spaces: ReservationSpace[];
   tables: ReservationTable[];
+  elements: ReservationSpaceElement[];
   onChange: () => void;
 };
 
@@ -52,11 +56,13 @@ export default function SpaceManager({
   storeId,
   spaces,
   tables,
+  elements,
   onChange,
 }: Props) {
   const [editing, setEditing] =
     useState<ReservationSpaceFormData | null>(null);
   const [saving, setSaving] = useState(false);
+  const [planSpaceId, setPlanSpaceId] = useState<string | null>(null);
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -331,7 +337,18 @@ export default function SpaceManager({
                 </p>
               )}
 
-              <div className="mt-4 flex items-center justify-end gap-1 border-t border-slate-100 pt-3">
+              <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
+                <button
+                  onClick={() =>
+                    setPlanSpaceId((current) =>
+                      current === space.id ? null : space.id
+                    )
+                  }
+                  className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-[10px] font-black text-violet-600"
+                >
+                  {planSpaceId === space.id ? "Cerrar plano" : "Editar plano"}
+                </button>
+                <div className="flex items-center gap-1">
                 <button
                   onClick={() => toggle(space)}
                   className="rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-500 hover:bg-slate-50"
@@ -350,8 +367,21 @@ export default function SpaceManager({
                 >
                   <Trash2 size={14} />
                 </button>
+                </div>
               </div>
             </div>
+
+            {planSpaceId === space.id && (
+              <div className="border-t border-slate-100 p-3">
+                <SpaceFloorPlanEditor
+                  storeId={storeId}
+                  space={space}
+                  tables={tables}
+                  elements={elements}
+                  onChange={onChange}
+                />
+              </div>
+            )}
           </article>
         ))}
 

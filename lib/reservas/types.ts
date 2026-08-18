@@ -47,6 +47,10 @@ export type ReservationTable = {
   space_id: string | null;
   pos_row: number;
   pos_col: number;
+  pos_x: number;
+  pos_y: number;
+  rotation: number;
+  table_shape: "round" | "square" | "rect";
   is_active: boolean;
   sort_order: number;
 };
@@ -60,6 +64,10 @@ export type ReservationTableFormData = {
   space_id: string | null;
   pos_row: number;
   pos_col: number;
+  pos_x: number;
+  pos_y: number;
+  rotation: number;
+  table_shape: "round" | "square" | "rect";
   is_active: boolean;
   sort_order: number;
 };
@@ -147,4 +155,51 @@ export const DAY_LABEL: Record<number, string> = {
   4: "Jue",
   5: "Vie",
   6: "Sáb",
+};
+
+
+export type ReservationSpaceElementType =
+  | "wall"
+  | "door"
+  | "window"
+  | "bar"
+  | "entrance"
+  | "plant"
+  | "label";
+
+export type ReservationSpaceElement = {
+  id: string;
+  store_id: string;
+  space_id: string;
+  element_type: ReservationSpaceElementType;
+  label: string | null;
+  pos_x: number;
+  pos_y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  sort_order: number;
+};
+
+export type ReservationSpaceElementFormData = {
+  id?: string;
+  space_id: string;
+  element_type: ReservationSpaceElementType;
+  label: string;
+  pos_x: number;
+  pos_y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  sort_order: number;
+};
+
+export const SPACE_ELEMENT_LABEL: Record<ReservationSpaceElementType, string> = {
+  wall: "Pared",
+  door: "Puerta",
+  window: "Ventana",
+  bar: "Barra",
+  entrance: "Entrada",
+  plant: "Planta",
+  label: "Texto",
 };
