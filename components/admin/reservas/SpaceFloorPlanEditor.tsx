@@ -327,7 +327,7 @@ export default function SpaceFloorPlanEditor({
         </div>
       </div>
 
-      <div className="grid xl:grid-cols-[minmax(0,1fr)_290px]">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="p-4">
           <div
             ref={canvasRef}
@@ -335,7 +335,7 @@ export default function SpaceFloorPlanEditor({
             onPointerLeave={(e) => {
               if (dragging) finishDrag(e.clientX, e.clientY);
             }}
-            className="relative aspect-[16/9] min-h-[420px] touch-none overflow-hidden rounded-2xl border-2 border-slate-200 bg-[#F8F3EC]"
+            className="relative aspect-[16/9] min-h-[560px] touch-none overflow-hidden rounded-2xl border-2 border-slate-200 bg-[#F8F3EC]"
             style={{
               backgroundImage:
                 "linear-gradient(rgba(7,27,53,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(7,27,53,.045) 1px,transparent 1px)",
@@ -471,7 +471,7 @@ export default function SpaceFloorPlanEditor({
           </div>
         </div>
 
-        <aside className="border-t border-slate-100 bg-slate-50/60 p-4 xl:border-l xl:border-t-0">
+        <aside className="border-t border-slate-100 bg-slate-50/60 p-4 xl:sticky xl:top-4 xl:h-fit xl:border-l xl:border-t-0">
           {!selectedElement && !selectedTable && (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5 text-center">
               <Square size={28} className="mx-auto text-slate-300" />
