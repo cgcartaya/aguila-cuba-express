@@ -63,14 +63,14 @@ export default function AdminReservasPage() {
   const [loading, setLoading] = useState(true);
   const pendingCount = usePendingReservationsCount(activeStore?.id);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     if (accessLoading || storeLoading) return;
     if (!activeStore?.id) {
       setSpaces([]); setTables([]); setElements([]); setSlots([]); setBlockedDates([]); setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     const [
       { data: spacesData },
       { data: tablesData },
@@ -90,7 +90,7 @@ export default function AdminReservasPage() {
     setElements((elementsData as ReservationSpaceElement[]) || []);
     setSlots((slotsData as ReservationSlot[]) || []);
     setBlockedDates(blockedData || []);
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   useEffect(() => {
@@ -155,10 +155,10 @@ export default function AdminReservasPage() {
         </div>
 
         <div className="mt-5">
-          {tab==="espacios" && <SpaceManager storeId={activeStore.id} spaces={spaces} tables={tables} elements={elements} onChange={loadData}/>}
-          {tab==="mesas" && <TableManager storeId={activeStore.id} spaces={spaces} tables={tables} onChange={loadData}/>}
-          {tab==="franjas" && <SlotManager storeId={activeStore.id} slots={slots} onChange={loadData}/>}
-          {tab==="bloqueadas" && <BlockedDatesManager storeId={activeStore.id} blockedDates={blockedDates} onChange={loadData}/>}
+          {tab==="espacios" && <SpaceManager storeId={activeStore.id} spaces={spaces} tables={tables} elements={elements} onChange={() => void loadData(true)}/>}
+          {tab==="mesas" && <TableManager storeId={activeStore.id} spaces={spaces} tables={tables} onChange={() => void loadData(true)}/>}
+          {tab==="franjas" && <SlotManager storeId={activeStore.id} slots={slots} onChange={() => void loadData(true)}/>}
+          {tab==="bloqueadas" && <BlockedDatesManager storeId={activeStore.id} blockedDates={blockedDates} onChange={() => void loadData(true)}/>}
         </div>
 
         <section className="mt-5 rounded-3xl border border-violet-100 bg-gradient-to-r from-violet-50 to-white p-5">
