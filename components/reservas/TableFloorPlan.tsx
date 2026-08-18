@@ -36,6 +36,41 @@ const ICONS = {
   label: Type,
 };
 
+function SeatDots({
+  capacity,
+  occupied,
+  accent,
+}: {
+  capacity: number;
+  occupied: boolean;
+  accent: string;
+}) {
+  const shown = Math.min(Math.max(capacity, 1), 8);
+
+  return (
+    <>
+      {Array.from({ length: shown }).map((_, index) => {
+        const angle = (Math.PI * 2 * index) / shown - Math.PI / 2;
+        const x = 50 + Math.cos(angle) * 48;
+        const y = 50 + Math.sin(angle) * 48;
+
+        return (
+          <span
+            key={index}
+            className="absolute h-2.5 w-2.5 rounded-full border bg-white shadow-sm"
+            style={{
+              left: `${x}%`,
+              top: `${y}%`,
+              transform: "translate(-50%,-50%)",
+              borderColor: occupied ? "#94a3b8" : accent,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 export default function TableFloorPlan({
   spaces = [],
   elements = [],
@@ -60,8 +95,12 @@ export default function TableFloorPlan({
   return (
     <div className="space-y-5">
       {activeSpaces.map((space) => {
-        const spaceTables = tables.filter((table) => table.space_id === space.id);
-        const spaceElements = elements.filter((element) => element.space_id === space.id);
+        const spaceTables = tables.filter(
+          (table) => table.space_id === space.id
+        );
+        const spaceElements = elements.filter(
+          (element) => element.space_id === space.id
+        );
 
         return (
           <section
@@ -69,12 +108,17 @@ export default function TableFloorPlan({
             className="overflow-hidden rounded-2xl border border-[#E7DED2] bg-white"
           >
             <div className="border-b border-[#EEE5DA] p-4">
-              <p className="text-[10px] font-black uppercase tracking-[.14em]" style={{ color: accent }}>
+              <p
+                className="text-[10px] font-black uppercase tracking-[.14em]"
+                style={{ color: accent }}
+              >
                 {space.floor_label || "Espacio"}
               </p>
+
               <h3 className="mt-1 text-base font-black text-[#1B1410]">
                 {space.name}
               </h3>
+
               {space.description && (
                 <p className="mt-1 text-xs font-semibold leading-5 text-black/45">
                   {space.description}
@@ -101,6 +145,7 @@ export default function TableFloorPlan({
 
                 {spaceElements.map((element) => {
                   const Icon = ICONS[element.element_type];
+
                   return (
                     <div
                       key={element.id}
@@ -114,8 +159,11 @@ export default function TableFloorPlan({
                       }}
                     >
                       <Icon size={11} className="text-black/35" />
-                      {element.element_type === "label" && (
-                        <span className="ml-1 text-[8px] font-black text-black/40">
+
+                      {(element.element_type === "label" ||
+                        element.element_type === "bar" ||
+                        element.element_type === "entrance") && (
+                        <span className="ml-1 truncate text-[8px] font-black text-black/40">
                           {element.label}
                         </span>
                       )}
@@ -133,7 +181,7 @@ export default function TableFloorPlan({
                       type="button"
                       disabled={occupied}
                       onClick={() => onSelect(table)}
-                      className={`absolute flex flex-col items-center justify-center border-2 bg-white text-center shadow-sm transition disabled:cursor-not-allowed disabled:opacity-35 ${
+                      className={`absolute flex items-center justify-center bg-white text-center shadow-sm transition disabled:cursor-not-allowed disabled:opacity-35 ${
                         table.table_shape === "round"
                           ? "h-14 w-14 rounded-full sm:h-16 sm:w-16"
                           : table.table_shape === "rect"
@@ -144,27 +192,71 @@ export default function TableFloorPlan({
                         left: `${table.pos_x ?? 50}%`,
                         top: `${table.pos_y ?? 50}%`,
                         transform: `translate(-50%,-50%) rotate(${table.rotation || 0}deg)`,
-                        borderColor: selected
-                          ? accent
-                          : occupied
-                          ? "#94a3b8"
-                          : "#E1D6C8",
+                        border: `2px solid ${
+                          selected
+                            ? accent
+                            : occupied
+                            ? "#94a3b8"
+                            : "#E1D6C8"
+                        }`,
                         backgroundColor: selected ? `${accent}12` : "#fff",
                       }}
                     >
-                      <Armchair
-                        size={14}
-                        style={{ color: occupied ? "#94a3b8" : accent }}
+                      <SeatDots
+                        capacity={table.capacity}
+                        occupied={occupied}
+                        accent={accent}
                       />
-                      <span className="mt-0.5 max-w-[70px] truncate text-[8px] font-black text-[#1B1410] sm:text-[9px]">
-                        {table.name}
-                      </span>
-                      <span className="text-[7px] font-bold text-black/35">
-                        {table.capacity} pers.
-                      </span>
+
+                      <div className="relative z-10 rounded-lg bg-white/90 px-1.5 py-1">
+                        <Armchair
+                          size={13}
+                          className="mx-auto"
+                          style={{
+                            color: occupied ? "#94a3b8" : accent,
+                          }}
+                        />
+
+                        <span className="mt-0.5 block max-w-[70px] truncate text-[8px] font-black text-[#1B1410] sm:text-[9px]">
+                          {table.name}
+                        </span>
+
+                        <span
+                          className="block text-[7px] font-black sm:text-[8px]"
+                          style={{
+                            color: occupied ? "#94a3b8" : accent,
+                          }}
+                        >
+                          {table.capacity} personas
+                        </span>
+                      </div>
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-3 text-[9px] font-black text-black/40">
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2.5 w-2.5 rounded-full border border-emerald-500 bg-white" />
+                  Disponible
+                </span>
+
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: accent }}
+                  />
+                  Seleccionada
+                </span>
+
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                  Ocupada
+                </span>
+
+                <span className="ml-auto">
+                  Los puntos alrededor representan la cantidad de asientos.
+                </span>
               </div>
             </div>
           </section>
