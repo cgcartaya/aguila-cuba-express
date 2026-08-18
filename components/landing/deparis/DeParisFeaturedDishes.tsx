@@ -28,6 +28,7 @@ export type FeaturedDish = {
   daily_stock_enabled?: boolean;
   menu_item_option_groups?: MenuOptionGroup[];
   remaining?: number | null;
+  available_by_menu_now?: boolean;
 };
 
 type Props = {
@@ -84,8 +85,16 @@ function DishTile({
   onOpenPhoto: () => void;
 }) {
   const soldOut = liveReady && dish.remaining === 0;
+  const unavailableBySchedule =
+    liveReady &&
+    dish.venue_type !== "bar" &&
+    dish.available_by_menu_now === false;
+
   const groups = dish.menu_item_option_groups || [];
-  const customizable = liveReady && groups.length > 0;
+  const customizable =
+    liveReady &&
+    !unavailableBySchedule &&
+    groups.length > 0;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#1B1410]/8 bg-white shadow-[0_6px_18px_rgba(27,20,16,.05)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(27,20,16,.09)]">
@@ -99,6 +108,13 @@ function DishTile({
         )}
 
         {soldOut && <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2.5 py-1 text-[8px] font-black uppercase text-white shadow-sm">Agotado</span>}
+
+        {!soldOut && unavailableBySchedule && (
+          <span className="absolute right-2 top-2 rounded-full bg-[#1B1410]/90 px-2.5 py-1 text-[8px] font-black uppercase text-white shadow-sm">
+            Según horario
+          </span>
+        )}
+
         {customizable && !soldOut && (
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[8px] font-black uppercase text-[#1B1410] shadow-sm">
             <Settings2 size={9} /> Personalizable
@@ -120,7 +136,16 @@ function DishTile({
           {!liveReady ? (
             <a href="/menu/deparis" className="flex w-full items-center justify-center rounded-full bg-[#1B1410] px-3 py-2.5 text-[10px] font-black uppercase text-white">Ver en la carta</a>
           ) : soldOut ? (
-            <div className="rounded-full bg-red-50 px-3 py-2.5 text-center text-[9px] font-black uppercase text-red-600">No disponible ahora</div>
+            <div className="rounded-full bg-red-50 px-3 py-2.5 text-center text-[9px] font-black uppercase text-red-600">
+              No disponible ahora
+            </div>
+          ) : unavailableBySchedule ? (
+            <a
+              href="/menu/deparis"
+              className="flex w-full items-center justify-center rounded-full border border-[#1B1410]/15 bg-[#1B1410]/[.04] px-3 py-2.5 text-[9px] font-black uppercase text-[#1B1410]/60"
+            >
+              Ver disponibilidad en la carta
+            </a>
           ) : customizable ? (
             <button type="button" onClick={onPersonalize} className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#FC6C26] px-3 py-2.5 text-[10px] font-black uppercase text-white">
               <Settings2 size={12} /> Personalizar
@@ -212,6 +237,12 @@ export default function DeParisFeaturedDishes({ dishes: initialDishes, menuHref,
 
   const quickAdd = (dish: FeaturedDish) => {
     if (dish.remaining === 0) return;
+    if (
+      dish.venue_type !== "bar" &&
+      dish.available_by_menu_now === false
+    ) {
+      return;
+    }
     const existing = getQuickLine(dish.id);
     if (existing) {
       setCart((prev) => prev.map((line) => line.lineId === existing.lineId ? { ...line, quantity: line.quantity + 1 } : line));
