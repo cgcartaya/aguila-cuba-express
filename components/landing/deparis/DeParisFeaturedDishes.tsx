@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowRight, Minus, Plus, ShoppingBag, UtensilsCrossed } from "lucide-react";
+import { ArrowRight, Minus, Plus, Settings2, ShoppingBag, UtensilsCrossed } from "lucide-react";
 
-import { useSharedCart } from "@/lib/menu/useSharedCart";
+import MenuItemModal from "@/components/menu/MenuItemModal";
 import ImageLightbox from "@/components/ui/ImageLightbox";
 import CountUp from "@/components/ui/CountUp";
+import { getCartTotal } from "@/lib/menu/whatsapp-message";
+import { useSharedCart } from "@/lib/menu/useSharedCart";
+import type { MenuCartLine, MenuItem, MenuOptionGroup } from "@/lib/menu/types";
 
 export type FeaturedDish = {
   id: string;
@@ -16,361 +19,280 @@ export type FeaturedDish = {
   price: number;
   image_url: string | null;
   venue_type: "bar" | "restaurant" | "general";
+  store_id?: string;
+  category_id?: string;
+  is_active?: boolean;
+  is_featured?: boolean;
+  sort_order?: number;
+  stock?: number | null;
+  daily_stock_enabled?: boolean;
+  menu_item_option_groups?: MenuOptionGroup[];
+  remaining?: number | null;
 };
 
 type Props = {
   dishes: FeaturedDish[];
   menuHref?: string;
-  /** Slug de la tienda — misma llave que usa /menu/[slug] para que el
-   *  carrito de la landing y el de la carta completa sean uno solo. */
   storeSlug?: string;
 };
 
-// Cuántos productos como máximo se muestran por cuadrícula (Platos /
-// Bebidas) — el resto está en la carta completa, a la que siempre se
-// referencia con el link/tarjeta "Ver menú completo".
-const MAX_PER_GRID = 8;
+const MAX_DISHES = 6;
+const MAX_DRINKS = 4;
+const ACCENT = "#FC6C26";
 
-/**
- * Tarjeta compacta de producto: miniatura + nombre + precio + contador
- * de cantidad "− N +", el mismo patrón visual que ya usan los ítems
- * de agregado rápido en /menu/[slug]. Pensada para verse bien en 2
- * columnas en móvil.
- */
-function DishTile({
-  dish,
-  quantity,
-  onAdd,
-  onRemove,
-  onOpenPhoto,
-}: {
-  dish: FeaturedDish;
-  quantity: number;
-  onAdd: () => void;
-  onRemove: () => void;
-  onOpenPhoto: () => void;
-}) {
-  return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border border-[#1B1410]/8 bg-white shadow-[0_6px_18px_rgba(27,20,16,0.05)] transition-shadow hover:shadow-[0_10px_26px_rgba(27,20,16,0.09)]">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1B1410]/5">
-        {dish.image_url ? (
-          <button
-            type="button"
-            onClick={onOpenPhoto}
-            aria-label={`Ver foto de ${dish.name}`}
-            className="absolute inset-0 h-full w-full"
-          >
-            <Image
-              src={dish.image_url}
-              alt={dish.name}
-              fill
-              sizes="(max-width: 640px) 50vw, 25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </button>
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-[#1B1410]/20">
-            <UtensilsCrossed size={28} />
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-1 flex-col p-3">
-        <h4
-          className="line-clamp-2 text-sm leading-snug text-[#1B1410]"
-          style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
-        >
-          {dish.name}
-        </h4>
-        {dish.description && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-[#1B1410]/50">{dish.description}</p>
-        )}
-
-        <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="text-sm font-bold text-[#1B1410]">${dish.price.toFixed(2)}</span>
-
-          {quantity === 0 ? (
-            <button
-              type="button"
-              onClick={onAdd}
-              aria-label={`Agregar ${dish.name}`}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#FC6C26] text-white transition hover:-translate-y-0.5 hover:bg-[#e85d1a]"
-            >
-              <Plus size={16} />
-            </button>
-          ) : (
-            <div className="flex shrink-0 items-center gap-1 rounded-full bg-[#1B1410] px-1 py-1 text-white">
-              <button
-                type="button"
-                onClick={onRemove}
-                aria-label={`Quitar ${dish.name}`}
-                className="flex h-6 w-6 items-center justify-center rounded-full transition hover:bg-white/15"
-              >
-                <Minus size={13} />
-              </button>
-              <span className="w-4 text-center text-xs font-bold">{quantity}</span>
-              <button
-                type="button"
-                onClick={onAdd}
-                aria-label={`Sumar ${dish.name}`}
-                className="flex h-6 w-6 items-center justify-center rounded-full transition hover:bg-white/15"
-              >
-                <Plus size={13} />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+function asMenuItem(dish: FeaturedDish): MenuItem {
+  return {
+    id: dish.id,
+    store_id: dish.store_id || "",
+    category_id: dish.category_id || "",
+    name: dish.name,
+    description: dish.description,
+    price: Number(dish.price) || 0,
+    image_url: dish.image_url,
+    is_active: dish.is_active !== false,
+    is_featured: dish.is_featured !== false,
+    sort_order: dish.sort_order || 0,
+    stock: dish.stock ?? null,
+    daily_stock_enabled: dish.daily_stock_enabled === true,
+    menu_item_option_groups: dish.menu_item_option_groups || [],
+  };
 }
 
-/** Última tarjeta de la cuadrícula: siempre invita a ver la carta completa. */
 function SeeFullMenuTile({ menuHref }: { menuHref: string }) {
   return (
-    <a
-      href={menuHref}
-      className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#1B1410]/15 bg-[#1B1410]/[0.02] p-4 text-center transition hover:border-[#FC6C26]/50 hover:bg-[#FC6C26]/5"
-    >
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1B1410] text-[#FFF4D6]">
-        <ArrowRight size={17} />
+    <a href={menuHref} className="flex min-h-[210px] flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-[#1B1410]/15 bg-white/35 p-5 text-center transition hover:border-[#FC6C26]/50 hover:bg-[#FC6C26]/5">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1B1410] text-[#FFF4D6]">
+        <ArrowRight size={18} />
       </span>
-      <span className="text-xs font-bold uppercase tracking-wide text-[#1B1410]/70">
-        Ver menú completo
+      <span className="text-xs font-black uppercase tracking-[.08em] text-[#1B1410]/70">Ver carta completa</span>
+      <span className="max-w-[150px] text-[10px] font-semibold leading-4 text-[#1B1410]/40">
+        Explora categorías, extras y todas las opciones disponibles.
       </span>
     </a>
   );
 }
 
-function DishGrid({
-  items,
-  menuHref,
-  quantities,
-  onAdd,
-  onRemove,
-  onOpenPhoto,
+function DishTile({
+  dish, quantity, liveReady, onQuickAdd, onQuickRemove, onPersonalize, onOpenPhoto,
 }: {
+  dish: FeaturedDish;
+  quantity: number;
+  liveReady: boolean;
+  onQuickAdd: () => void;
+  onQuickRemove: () => void;
+  onPersonalize: () => void;
+  onOpenPhoto: () => void;
+}) {
+  const soldOut = liveReady && dish.remaining === 0;
+  const groups = dish.menu_item_option_groups || [];
+  const customizable = liveReady && groups.length > 0;
+
+  return (
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[#1B1410]/8 bg-white shadow-[0_6px_18px_rgba(27,20,16,.05)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(27,20,16,.09)]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#1B1410]/5">
+        {dish.image_url ? (
+          <button type="button" onClick={onOpenPhoto} className="absolute inset-0" aria-label={`Ver foto de ${dish.name}`}>
+            <Image src={dish.image_url} alt={dish.name} fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover transition duration-500 group-hover:scale-[1.035]" />
+          </button>
+        ) : (
+          <div className="flex h-full items-center justify-center text-[#1B1410]/20"><UtensilsCrossed size={28} /></div>
+        )}
+
+        {soldOut && <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2.5 py-1 text-[8px] font-black uppercase text-white shadow-sm">Agotado</span>}
+        {customizable && !soldOut && (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-white/95 px-2 py-1 text-[8px] font-black uppercase text-[#1B1410] shadow-sm">
+            <Settings2 size={9} /> Personalizable
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-3">
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="line-clamp-2 text-sm leading-snug text-[#1B1410]" style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}>{dish.name}</h4>
+          <strong className="shrink-0 text-sm text-[#1B1410]">${Number(dish.price).toFixed(2)}</strong>
+        </div>
+        {dish.description && <p className="mt-1 line-clamp-1 text-[11px] text-[#1B1410]/45">{dish.description}</p>}
+        {liveReady && dish.remaining !== null && dish.remaining !== undefined && dish.remaining > 0 && dish.remaining <= 5 && (
+          <p className="mt-1 text-[9px] font-black uppercase text-amber-700">Quedan {dish.remaining}</p>
+        )}
+
+        <div className="mt-auto pt-3">
+          {!liveReady ? (
+            <a href="/menu/deparis" className="flex w-full items-center justify-center rounded-full bg-[#1B1410] px-3 py-2.5 text-[10px] font-black uppercase text-white">Ver en la carta</a>
+          ) : soldOut ? (
+            <div className="rounded-full bg-red-50 px-3 py-2.5 text-center text-[9px] font-black uppercase text-red-600">No disponible ahora</div>
+          ) : customizable ? (
+            <button type="button" onClick={onPersonalize} className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#FC6C26] px-3 py-2.5 text-[10px] font-black uppercase text-white">
+              <Settings2 size={12} /> Personalizar
+            </button>
+          ) : quantity === 0 ? (
+            <button type="button" onClick={onQuickAdd} className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#FC6C26] px-3 py-2.5 text-[10px] font-black uppercase text-white">
+              <Plus size={13} /> Agregar
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center rounded-full bg-[#1B1410] p-1 text-white">
+                <button type="button" onClick={onQuickRemove} className="flex h-6 w-6 items-center justify-center rounded-full"><Minus size={12} /></button>
+                <span className="w-6 text-center text-xs font-black">{quantity}</span>
+                <button type="button" onClick={onQuickAdd} className="flex h-6 w-6 items-center justify-center rounded-full"><Plus size={12} /></button>
+              </div>
+              <span className="text-[9px] font-black uppercase text-emerald-600">En pedido</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function DishGrid(props: {
   items: FeaturedDish[];
-  menuHref?: string;
+  menuHref: string;
   quantities: Record<string, number>;
-  onAdd: (dish: FeaturedDish) => void;
-  onRemove: (dish: FeaturedDish) => void;
-  onOpenPhoto: (dish: FeaturedDish) => void;
+  liveReady: boolean;
+  onAdd: (d: FeaturedDish) => void;
+  onRemove: (d: FeaturedDish) => void;
+  onPersonalize: (d: FeaturedDish) => void;
+  onPhoto: (d: FeaturedDish) => void;
 }) {
   return (
-    <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-      {items.map((dish, i) => (
-        <motion.div
-          key={dish.id}
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.5, delay: (i % 4) * 0.06 }}
-        >
+    <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+      {props.items.map((dish, index) => (
+        <motion.div key={dish.id} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .2 }} transition={{ duration: .4, delay: (index % 4) * .05 }} className="h-full">
           <DishTile
             dish={dish}
-            quantity={quantities[dish.id] ?? 0}
-            onAdd={() => onAdd(dish)}
-            onRemove={() => onRemove(dish)}
-            onOpenPhoto={() => onOpenPhoto(dish)}
+            quantity={props.quantities[dish.id] || 0}
+            liveReady={props.liveReady}
+            onQuickAdd={() => props.onAdd(dish)}
+            onQuickRemove={() => props.onRemove(dish)}
+            onPersonalize={() => props.onPersonalize(dish)}
+            onOpenPhoto={() => props.onPhoto(dish)}
           />
         </motion.div>
       ))}
-      {menuHref && <SeeFullMenuTile menuHref={menuHref} />}
+      <SeeFullMenuTile menuHref={props.menuHref} />
     </div>
   );
 }
 
-// Si el negocio no tiene módulo de menú activo, o no marcó ningún
-// platillo/bebida como destacado todavía, esta sección no se muestra
-// — nunca deja un hueco vacío en la landing. Si solo tiene destacados
-// de un tipo (solo platos, o solo bebidas), muestra únicamente ese
-// bloque en vez de dejar un título "Bebidas" vacío.
-export default function DeParisFeaturedDishes({ dishes, menuHref, storeSlug = "deparis" }: Props) {
-  // Mismo carrito (localStorage) que usa /menu/[slug]: la landing es
-  // la vitrina rápida para "picar" lo que se te antoja, y el pedido se
-  // termina de armar y se envía por WhatsApp desde la carta completa
-  // — sin tener que volver a elegir todo de nuevo.
+export default function DeParisFeaturedDishes({ dishes: initialDishes, menuHref, storeSlug = "deparis" }: Props) {
   const { cart, setCart } = useSharedCart(storeSlug);
+  const [liveDishes, setLiveDishes] = useState<FeaturedDish[]>(initialDishes);
+  const [liveReady, setLiveReady] = useState(false);
   const [photoDish, setPhotoDish] = useState<FeaturedDish | null>(null);
+  const [activeDish, setActiveDish] = useState<FeaturedDish | null>(null);
+  const [activeMenuNames, setActiveMenuNames] = useState<string[]>([]);
 
-  const platos = useMemo(
-    () => dishes.filter((d) => d.venue_type !== "bar").slice(0, MAX_PER_GRID),
-    [dishes]
-  );
-  const bebidas = useMemo(
-    () => dishes.filter((d) => d.venue_type === "bar").slice(0, MAX_PER_GRID),
-    [dishes]
-  );
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/public/landing-featured?slug=${encodeURIComponent(storeSlug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setLiveDishes(data?.dishes || []);
+        setActiveMenuNames((data?.activeMenus || []).map((m: { name: string }) => m.name));
+        setLiveReady(true);
+      })
+      .catch(() => { if (!cancelled) setLiveReady(false); });
+    return () => { cancelled = true; };
+  }, [storeSlug]);
+
+  const platos = useMemo(() => liveDishes.filter((d) => d.venue_type !== "bar").slice(0, MAX_DISHES), [liveDishes]);
+  const bebidas = useMemo(() => liveDishes.filter((d) => d.venue_type === "bar").slice(0, MAX_DRINKS), [liveDishes]);
 
   const quantities = useMemo(() => {
     const map: Record<string, number> = {};
-    cart.forEach((line) => {
-      if (line.selected_options.length === 0) {
-        map[line.menu_item_id] = (map[line.menu_item_id] ?? 0) + line.quantity;
-      }
-    });
+    for (const line of cart) {
+      if (line.selected_options.length === 0) map[line.menu_item_id] = (map[line.menu_item_id] || 0) + line.quantity;
+    }
     return map;
   }, [cart]);
 
-  const getQuickLine = (itemId: string) =>
-    cart.find((line) => line.menu_item_id === itemId && line.selected_options.length === 0);
+  const getQuickLine = (id: string) => cart.find((line) => line.menu_item_id === id && line.selected_options.length === 0);
 
-  const handleAdd = (dish: FeaturedDish) => {
+  const quickAdd = (dish: FeaturedDish) => {
+    if (dish.remaining === 0) return;
     const existing = getQuickLine(dish.id);
     if (existing) {
-      setCart((prev) =>
-        prev.map((l) => (l.lineId === existing.lineId ? { ...l, quantity: l.quantity + 1 } : l))
-      );
-      return;
-    }
-    setCart((prev) => [
-      ...prev,
-      {
+      setCart((prev) => prev.map((line) => line.lineId === existing.lineId ? { ...line, quantity: line.quantity + 1 } : line));
+    } else {
+      setCart((prev) => [...prev, {
         lineId: crypto.randomUUID(),
         menu_item_id: dish.id,
         name: dish.name,
         unit_base_price: dish.price,
         quantity: 1,
         selected_options: [],
-      },
-    ]);
-  };
-
-  const handleRemove = (dish: FeaturedDish) => {
-    const existing = getQuickLine(dish.id);
-    if (!existing) return;
-    if (existing.quantity <= 1) {
-      setCart((prev) => prev.filter((l) => l.lineId !== existing.lineId));
-    } else {
-      setCart((prev) =>
-        prev.map((l) => (l.lineId === existing.lineId ? { ...l, quantity: l.quantity - 1 } : l))
-      );
+      }]);
     }
   };
 
-  const totalItems = cart.reduce((sum, l) => sum + l.quantity, 0);
-  const totalPrice = cart.reduce((sum, l) => sum + l.unit_base_price * l.quantity, 0);
+  const quickRemove = (dish: FeaturedDish) => {
+    const existing = getQuickLine(dish.id);
+    if (!existing) return;
+    if (existing.quantity <= 1) setCart((prev) => prev.filter((line) => line.lineId !== existing.lineId));
+    else setCart((prev) => prev.map((line) => line.lineId === existing.lineId ? { ...line, quantity: line.quantity - 1 } : line));
+  };
 
-  if (!menuHref || dishes.length === 0) return null;
+  const addCustomized = (line: MenuCartLine) => {
+    setCart((prev) => [...prev, line]);
+    setActiveDish(null);
+  };
+
+  const totalItems = cart.reduce((sum, line) => sum + line.quantity, 0);
+  const totalPrice = getCartTotal(cart);
+
+  if (!menuHref || liveDishes.length === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-[#FFF4D6] py-20 sm:py-28">
-      {/* Textura tipo mantel/papel — puro CSS (dos gradientes en
-          diagonal muy sutiles), sin ninguna imagen de fondo, así que
-          no agrega peso ni una sola petición de red. */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.035]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(45deg, #1B1410 0, #1B1410 1px, transparent 1px, transparent 14px), repeating-linear-gradient(-45deg, #1B1410 0, #1B1410 1px, transparent 1px, transparent 14px)",
-        }}
-      />
-      <div className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 sm:pb-8">
-        <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#FC6C26]">
-              Directo de nuestra cocina y barra
-            </p>
-            <h2
-              className="mt-3 max-w-xl text-3xl leading-tight text-[#1B1410] sm:text-4xl"
-              style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
-            >
-              Lo mejor de la casa
-            </h2>
+    <section className="relative overflow-hidden bg-[#FFF4D6] py-16 sm:py-24">
+      <div className="pointer-events-none absolute inset-0 opacity-[.035]" style={{ backgroundImage: "repeating-linear-gradient(45deg,#1B1410 0,#1B1410 1px,transparent 1px,transparent 14px),repeating-linear-gradient(-45deg,#1B1410 0,#1B1410 1px,transparent 1px,transparent 14px)" }} />
 
-            {/* Números reales (no inventados): cuántos platos y
-                bebidas destacados hay ahora mismo en la carta, con un
-                pequeño conteo animado la primera vez que se ve. */}
-            {(platos.length > 0 || bebidas.length > 0) && (
-              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm font-bold text-[#1B1410]/60">
-                {platos.length > 0 && (
-                  <span>
-                    <CountUp end={platos.length} className="text-[#FC6C26]" /> platos destacados
-                  </span>
-                )}
-                {bebidas.length > 0 && (
-                  <span>
-                    <CountUp end={bebidas.length} className="text-[#FC6C26]" /> bebidas destacadas
-                  </span>
-                )}
-              </div>
-            )}
+      <div className="relative mx-auto max-w-7xl px-5 pb-24 sm:px-8 sm:pb-8">
+        <div className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.3em] text-[#FC6C26]">Selección destacada disponible ahora</p>
+            <h2 className="mt-3 text-3xl leading-tight text-[#1B1410] sm:text-4xl" style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}>Lo mejor de la casa</h2>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-bold text-[#1B1410]/55">
+              {platos.length > 0 && <span><CountUp end={platos.length} className="text-[#FC6C26]" /> platos</span>}
+              {bebidas.length > 0 && <span><CountUp end={bebidas.length} className="text-[#FC6C26]" /> bebidas</span>}
+              {activeMenuNames.length > 0 && <span className="text-emerald-700">• {activeMenuNames.join(" · ")} activo ahora</span>}
+            </div>
           </div>
-          <a
-            href={menuHref}
-            className="inline-flex items-center gap-1.5 text-sm font-bold text-[#1B1410]/80 transition hover:text-[#FC6C26]"
-          >
-            Ver menú completo <ArrowRight size={15} />
-          </a>
+          <a href={menuHref} className="inline-flex items-center gap-1.5 text-sm font-black text-[#1B1410]/75 hover:text-[#FC6C26]">Ver carta completa <ArrowRight size={15} /></a>
         </div>
 
         {platos.length > 0 && (
-          <div id="restaurante" className="mt-10 scroll-mt-32">
-            <h3
-              className="text-xl text-[#1B1410] sm:text-2xl"
-              style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
-            >
-              Platos principales
-            </h3>
-            <DishGrid
-              items={platos}
-              menuHref={menuHref}
-              quantities={quantities}
-              onAdd={handleAdd}
-              onRemove={handleRemove}
-              onOpenPhoto={setPhotoDish}
-            />
+          <div id="restaurante" className="mt-9 scroll-mt-32">
+            <h3 className="text-xl text-[#1B1410] sm:text-2xl" style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}>Para comer</h3>
+            <p className="mt-1 text-xs font-semibold text-[#1B1410]/40">Una selección corta para pedir rápido. La carta contiene todas las opciones.</p>
+            <DishGrid items={platos} menuHref={menuHref} quantities={quantities} liveReady={liveReady} onAdd={quickAdd} onRemove={quickRemove} onPersonalize={setActiveDish} onPhoto={setPhotoDish} />
           </div>
         )}
 
         {bebidas.length > 0 && (
           <div id="bar" className="mt-12 scroll-mt-32">
-            <h3
-              className="text-xl text-[#1B1410] sm:text-2xl"
-              style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
-            >
-              Bebidas principales
-            </h3>
-            <DishGrid
-              items={bebidas}
-              menuHref={`${menuHref}?tipo=bar`}
-              quantities={quantities}
-              onAdd={handleAdd}
-              onRemove={handleRemove}
-              onOpenPhoto={setPhotoDish}
-            />
+            <h3 className="text-xl text-[#1B1410] sm:text-2xl" style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}>De la barra</h3>
+            <DishGrid items={bebidas} menuHref={`${menuHref}?tipo=bar`} quantities={quantities} liveReady={liveReady} onAdd={quickAdd} onRemove={quickRemove} onPersonalize={setActiveDish} onPhoto={setPhotoDish} />
           </div>
         )}
       </div>
 
-      {/* Barra flotante: aparece solo cuando hay algo seleccionado.
-          La landing es la vitrina rápida — el pedido se termina de
-          armar y se envía por WhatsApp desde la carta completa, así
-          que este botón lleva para allá con todo ya elegido. */}
       {totalItems > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-          <a
-            href={menuHref}
-            className="flex w-full max-w-md items-center justify-between gap-3 rounded-2xl bg-[#1B1410] px-5 py-4 text-[#FFF4D6] shadow-[0_16px_40px_rgba(27,20,16,0.35)]"
-          >
-            <span className="flex items-center gap-2 text-sm font-bold">
-              <ShoppingBag size={18} className="text-[#FC6C26]" />
-              {totalItems} {totalItems === 1 ? "producto" : "productos"}
-            </span>
-            <span className="flex items-center gap-2 text-sm font-bold">
-              ${totalPrice.toFixed(2)} · Completar pedido <ArrowRight size={15} />
-            </span>
+          <a href={menuHref} className="flex w-full max-w-md items-center justify-between gap-3 rounded-2xl bg-[#1B1410] px-5 py-4 text-[#FFF4D6] shadow-[0_16px_40px_rgba(27,20,16,.35)]">
+            <span className="flex items-center gap-2 text-sm font-black"><ShoppingBag size={18} className="text-[#FC6C26]" />{totalItems} {totalItems === 1 ? "producto" : "productos"}</span>
+            <span className="flex items-center gap-2 text-sm font-black">${totalPrice.toFixed(2)} · Completar pedido <ArrowRight size={15} /></span>
           </a>
         </div>
       )}
 
+      {activeDish && liveReady && (
+        <MenuItemModal item={asMenuItem(activeDish)} accentColor={ACCENT} onClose={() => setActiveDish(null)} onAdd={addCustomized} />
+      )}
+
       {photoDish?.image_url && (
-        <ImageLightbox
-          src={photoDish.image_url}
-          alt={photoDish.name}
-          onClose={() => setPhotoDish(null)}
-        />
+        <ImageLightbox src={photoDish.image_url} alt={photoDish.name} onClose={() => setPhotoDish(null)} />
       )}
     </section>
   );
