@@ -20,22 +20,23 @@ import {
   deleteReservationTable,
   saveReservationTable,
 } from "@/lib/services/reservas";
-import { SEAT_TYPE_LABEL } from "@/lib/reservas/types";
-import type {
-  ReservationTable,
-  ReservationTableFormData,
-  SeatType,
+import {
+  SEAT_TYPE_LABEL,
+  type ReservationSpace,
+  type ReservationTable,
+  type ReservationTableFormData,
+  type SeatType,
 } from "@/lib/reservas/types";
 import MiniFloorPlanPreview from "./MiniFloorPlanPreview";
 
 type Props = {
   storeId: string;
   tables: ReservationTable[];
+  spaces: ReservationSpace[];
   onChange: () => void;
 };
 
 const SEAT_TYPE_OPTIONS: SeatType[] = ["chairs", "sofa", "stools"];
-
 const SEAT_TYPE_ICON: Record<SeatType, typeof Armchair> = {
   chairs: Armchair,
   sofa: Sofa,
@@ -47,6 +48,7 @@ const EMPTY_FORM: ReservationTableFormData = {
   capacity: 4,
   seat_type: "chairs",
   zone: "",
+  space_id: null,
   pos_row: 0,
   pos_col: 0,
   is_active: true,
@@ -56,105 +58,91 @@ const EMPTY_FORM: ReservationTableFormData = {
 export default function TableManager({
   storeId,
   tables,
+  spaces,
   onChange,
 }: Props) {
   const [editing, setEditing] =
     useState<ReservationTableFormData | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const knownZones = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          tables
-            .map((table) => (table.zone || "").trim())
-            .filter(Boolean)
-        )
-      ),
-    [tables]
+  const spaceMap = useMemo(
+    () => new Map(spaces.map((space) => [space.id, space])),
+    [spaces]
   );
 
   const startCreate = () => {
-    const maxRow = tables.reduce(
-      (max, table) => Math.max(max, table.pos_row),
-      -1
-    );
-
+    const firstSpace = spaces.find((space) => space.is_active) || spaces[0];
     setEditing({
       ...EMPTY_FORM,
-      zone: knownZones[0] || "",
-      pos_row: maxRow + 1,
+      space_id: firstSpace?.id || null,
+      zone: firstSpace?.name || "",
       sort_order: tables.length,
     });
   };
 
-  const startEdit = (table: ReservationTable) => {
+  const startEdit = (table: ReservationTable) =>
     setEditing({
       id: table.id,
       name: table.name,
       capacity: table.capacity,
       seat_type: table.seat_type,
       zone: table.zone || "",
+      space_id: table.space_id || null,
       pos_row: table.pos_row,
       pos_col: table.pos_col,
       is_active: table.is_active,
       sort_order: table.sort_order,
     });
+
+  const selectSpace = (spaceId: string) => {
+    if (!editing) return;
+    const space = spaces.find((item) => item.id === spaceId);
+    setEditing({
+      ...editing,
+      space_id: space?.id || null,
+      zone: space?.name || "",
+    });
   };
 
-  const handleSave = async () => {
+  const save = async () => {
     if (!editing || !editing.name.trim() || editing.capacity < 1) return;
+    if (!editing.space_id) {
+      alert("Selecciona un espacio para esta mesa.");
+      return;
+    }
 
     setSaving(true);
     const { error } = await saveReservationTable(storeId, editing);
     setSaving(false);
 
-    if (error) {
-      alert("No se pudo guardar la mesa.");
-      return;
-    }
-
+    if (error) return alert("No se pudo guardar la mesa.");
     setEditing(null);
     onChange();
   };
 
-  const handleDelete = async (table: ReservationTable) => {
-    if (
-      !confirm(
-        `¿Eliminar "${table.name}"? Esto también elimina sus reservas asociadas.`
-      )
-    ) {
-      return;
-    }
-
+  const remove = async (table: ReservationTable) => {
+    if (!confirm(`¿Eliminar "${table.name}"?`)) return;
     const { error } = await deleteReservationTable(table.id);
-
-    if (error) {
-      alert("No se pudo eliminar la mesa.");
-      return;
-    }
-
+    if (error) return alert("No se pudo eliminar la mesa.");
     onChange();
   };
 
-  const handleToggleActive = async (table: ReservationTable) => {
+  const toggle = async (table: ReservationTable) => {
+    const space = table.space_id ? spaceMap.get(table.space_id) : null;
     const { error } = await saveReservationTable(storeId, {
       id: table.id,
       name: table.name,
       capacity: table.capacity,
       seat_type: table.seat_type,
-      zone: table.zone || "",
+      zone: space?.name || table.zone || "",
+      space_id: table.space_id || null,
       pos_row: table.pos_row,
       pos_col: table.pos_col,
       is_active: !table.is_active,
       sort_order: table.sort_order,
     });
 
-    if (error) {
-      alert("No se pudo actualizar la mesa.");
-      return;
-    }
-
+    if (error) return alert("No se pudo actualizar la mesa.");
     onChange();
   };
 
@@ -162,59 +150,34 @@ export default function TableManager({
     <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,.04)]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-5">
         <div>
-          <h2 className="text-lg font-black text-[#071B35]">
-            Espacios y mesas
-          </h2>
+          <h2 className="text-lg font-black text-[#071B35]">Mesas</h2>
           <p className="mt-1 text-xs font-semibold text-slate-400">
-            Configura capacidad, tipo de asiento y ubicación actual.
+            Asigna cada mesa a un espacio real del restaurante.
           </p>
         </div>
 
         {!editing && (
           <button
             onClick={startCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#071B35] px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+            disabled={spaces.length === 0}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#071B35] px-4 py-2.5 text-sm font-black text-white shadow-sm disabled:opacity-40"
           >
-            <Plus size={16} />
-            Nueva mesa
+            <Plus size={16} /> Nueva mesa
           </button>
         )}
       </div>
 
-      {knownZones.length > 0 && (
-        <div className="border-b border-slate-100 bg-slate-50/60 px-5 py-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wide text-slate-400">
-              <MapPinned size={12} />
-              Zonas detectadas
-            </span>
-
-            {knownZones.map((zone) => (
-              <span
-                key={zone}
-                className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black text-slate-600"
-              >
-                {zone}
-              </span>
-            ))}
-          </div>
+      {spaces.length === 0 && (
+        <div className="border-b border-orange-100 bg-orange-50 p-4 text-xs font-semibold text-orange-800">
+          Primero crea al menos un espacio en la pestaña <strong>Espacios</strong>.
         </div>
       )}
 
       {editing && (
         <div className="border-b border-slate-100 bg-[#FBFCFE] p-5">
-          <div className="mb-4">
-            <p className="text-xs font-black uppercase tracking-[.12em] text-orange-600">
-              {editing.id ? "Editar mesa" : "Nueva mesa"}
-            </p>
-            <h3 className="mt-1 text-xl font-black text-[#071B35]">
-              Define cómo verá el cliente esta mesa
-            </h3>
-          </div>
-
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="text-xs font-black text-slate-600">
                   Nombre
                   <input
@@ -223,8 +186,8 @@ export default function TableManager({
                     onChange={(e) =>
                       setEditing({ ...editing, name: e.target.value })
                     }
-                    placeholder="Ej: Mesa 4, Sofá A"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-orange-300"
+                    placeholder="Ej: Mesa 4"
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
                   />
                 </label>
 
@@ -241,7 +204,7 @@ export default function TableManager({
                         capacity: Number(e.target.value) || 1,
                       })
                     }
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-orange-300"
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
                   />
                 </label>
 
@@ -255,7 +218,7 @@ export default function TableManager({
                         seat_type: e.target.value as SeatType,
                       })
                     }
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-orange-300"
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
                   >
                     {SEAT_TYPE_OPTIONS.map((type) => (
                       <option key={type} value={type}>
@@ -266,98 +229,47 @@ export default function TableManager({
                 </label>
 
                 <label className="text-xs font-black text-slate-600">
-                  Espacio / zona
-                  <input
-                    value={editing.zone}
-                    onChange={(e) =>
-                      setEditing({ ...editing, zone: e.target.value })
-                    }
-                    placeholder="Ej: Salón principal, Terraza"
-                    list="reservation-zones"
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-orange-300"
-                  />
-                  <datalist id="reservation-zones">
-                    {knownZones.map((zone) => (
-                      <option key={zone} value={zone} />
+                  Espacio
+                  <select
+                    value={editing.space_id || ""}
+                    onChange={(e) => selectSpace(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
+                  >
+                    <option value="">Selecciona un espacio</option>
+                    {spaces.map((space) => (
+                      <option key={space.id} value={space.id}>
+                        {space.name}
+                      </option>
                     ))}
-                  </datalist>
+                  </select>
                 </label>
               </div>
 
               <div className="mt-5 rounded-2xl bg-slate-50 p-4">
                 <p className="text-xs font-black text-slate-600">
-                  Posición actual en el croquis
+                  Posición dentro del espacio
                 </p>
                 <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                  Esta cuadrícula es temporal. En la próxima fase se
-                  sustituirá por un editor visual arrastrable.
+                  Conservamos la cuadrícula actual para no perder posiciones. La Fase 3 la reemplazará por arrastrar y soltar.
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-center gap-4">
-                  <div className="grid grid-cols-3 gap-1">
-                    <span />
-                    <button
-                      onClick={() =>
-                        setEditing({
-                          ...editing,
-                          pos_row: Math.max(0, editing.pos_row - 1),
-                        })
-                      }
-                      className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm"
-                    >
-                      <ArrowUp size={14} />
-                    </button>
-                    <span />
-
-                    <button
-                      onClick={() =>
-                        setEditing({
-                          ...editing,
-                          pos_col: Math.max(0, editing.pos_col - 1),
-                        })
-                      }
-                      className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm"
-                    >
-                      <ArrowLeft size={14} />
-                    </button>
-
-                    <span className="flex items-center justify-center text-[10px] font-black text-slate-400">
-                      {editing.pos_row},{editing.pos_col}
-                    </span>
-
-                    <button
-                      onClick={() =>
-                        setEditing({
-                          ...editing,
-                          pos_col: editing.pos_col + 1,
-                        })
-                      }
-                      className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm"
-                    >
-                      <ArrowRight size={14} />
-                    </button>
-
-                    <span />
-                    <button
-                      onClick={() =>
-                        setEditing({
-                          ...editing,
-                          pos_row: editing.pos_row + 1,
-                        })
-                      }
-                      className="rounded-lg border border-slate-200 bg-white p-2 text-slate-500 shadow-sm"
-                    >
-                      <ArrowDown size={14} />
-                    </button>
-                    <span />
-                  </div>
+                <div className="mt-3 grid w-fit grid-cols-3 gap-1">
+                  <span />
+                  <button onClick={() => setEditing({...editing,pos_row:Math.max(0,editing.pos_row-1)})} className="rounded-lg border bg-white p-2"><ArrowUp size={14}/></button>
+                  <span />
+                  <button onClick={() => setEditing({...editing,pos_col:Math.max(0,editing.pos_col-1)})} className="rounded-lg border bg-white p-2"><ArrowLeft size={14}/></button>
+                  <span className="flex items-center justify-center text-[10px] font-black text-slate-400">{editing.pos_row},{editing.pos_col}</span>
+                  <button onClick={() => setEditing({...editing,pos_col:editing.pos_col+1})} className="rounded-lg border bg-white p-2"><ArrowRight size={14}/></button>
+                  <span />
+                  <button onClick={() => setEditing({...editing,pos_row:editing.pos_row+1})} className="rounded-lg border bg-white p-2"><ArrowDown size={14}/></button>
+                  <span />
                 </div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                Vista previa
+                Vista previa temporal
               </p>
               <div className="mt-3">
                 <MiniFloorPlanPreview
@@ -372,27 +284,21 @@ export default function TableManager({
                 />
               </div>
 
-              <div className="mt-4 rounded-xl bg-orange-50 px-3 py-2.5 text-[10px] font-semibold leading-4 text-orange-800">
-                Después podrás diseñar cada espacio con paredes,
-                puertas, ventanas, barra y mesas arrastrables.
-              </div>
+              {editing.space_id && (
+                <div className="mt-4 rounded-xl bg-violet-50 px-3 py-2.5 text-xs font-semibold text-violet-700">
+                  <MapPinned size={13} className="mr-1 inline" />
+                  {spaceMap.get(editing.space_id)?.name}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <button
-              onClick={() => setEditing(null)}
-              className="rounded-xl px-4 py-2.5 text-xs font-black text-slate-500 hover:bg-slate-100"
-            >
+          <div className="mt-4 flex justify-end gap-2">
+            <button onClick={() => setEditing(null)} className="rounded-xl px-4 py-2.5 text-xs font-black text-slate-500">
               Cancelar
             </button>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#FF641F] px-5 py-2.5 text-xs font-black text-white shadow-sm disabled:opacity-60"
-            >
-              {saving && <Loader2 size={14} className="animate-spin" />}
+            <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#FF641F] px-5 py-2.5 text-xs font-black text-white disabled:opacity-60">
+              {saving && <Loader2 size={14} className="animate-spin"/>}
               Guardar mesa
             </button>
           </div>
@@ -400,87 +306,54 @@ export default function TableManager({
       )}
 
       <div className="p-4 sm:p-5">
-        {tables.length === 0 && !editing ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center">
-            <Armchair size={30} className="mx-auto text-slate-300" />
-            <h3 className="mt-3 font-black text-slate-700">
-              Aún no hay mesas
-            </h3>
-            <p className="mt-1 text-xs font-semibold text-slate-400">
-              Crea la primera mesa para empezar a construir el espacio.
-            </p>
-          </div>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {tables.map((table) => {
-              const Icon = SEAT_TYPE_ICON[table.seat_type];
-
-              return (
-                <div
-                  key={table.id}
-                  className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-orange-600">
-                      <Icon size={19} />
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-black text-[#071B35]">
-                          {table.name}
-                        </p>
-
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[9px] font-black ${
-                            table.is_active
-                              ? "bg-emerald-50 text-emerald-600"
-                              : "bg-slate-100 text-slate-400"
-                          }`}
-                        >
-                          {table.is_active ? "Visible" : "Oculta"}
-                        </span>
-                      </div>
-
-                      <p className="mt-1 text-xs font-semibold text-slate-400">
-                        {table.capacity} personas ·{" "}
-                        {SEAT_TYPE_LABEL[table.seat_type]}
-                      </p>
-
-                      <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-slate-50 px-2.5 py-1 text-[10px] font-black text-slate-500">
-                        <MapPinned size={11} />
-                        {table.zone || "Sin zona"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-end gap-1 border-t border-slate-100 pt-3">
-                    <button
-                      onClick={() => handleToggleActive(table)}
-                      className="rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-500 hover:bg-slate-50"
-                    >
-                      {table.is_active ? "Ocultar" : "Mostrar"}
-                    </button>
-
-                    <button
-                      onClick={() => startEdit(table)}
-                      className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-orange-50 hover:text-orange-600"
-                    >
-                      <Pencil size={14} />
-                    </button>
-
-                    <button
-                      onClick={() => handleDelete(table)}
-                      className="rounded-lg border border-slate-200 p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+        <div className="space-y-6">
+          {spaces.map((space) => {
+            const list = tables.filter((table) => table.space_id === space.id);
+            return (
+              <section key={space.id}>
+                <div className="mb-2 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-black text-[#071B35]">{space.name}</p>
+                    <p className="text-[10px] font-semibold text-slate-400">{list.length} mesas</p>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {list.map((table) => {
+                    const Icon = SEAT_TYPE_ICON[table.seat_type];
+                    return (
+                      <article key={table.id} className="rounded-2xl border border-slate-200 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-50 text-orange-600"><Icon size={19}/></div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-black text-[#071B35]">{table.name}</p>
+                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${table.is_active?"bg-emerald-50 text-emerald-600":"bg-slate-100 text-slate-400"}`}>{table.is_active?"Visible":"Oculta"}</span>
+                            </div>
+                            <p className="mt-1 text-xs font-semibold text-slate-400">
+                              {table.capacity} personas · {SEAT_TYPE_LABEL[table.seat_type]}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex justify-end gap-1 border-t border-slate-100 pt-3">
+                          <button onClick={() => toggle(table)} className="rounded-lg px-2.5 py-1.5 text-[10px] font-black text-slate-500">{table.is_active?"Ocultar":"Mostrar"}</button>
+                          <button onClick={() => startEdit(table)} className="rounded-lg border p-2 text-slate-500"><Pencil size={14}/></button>
+                          <button onClick={() => remove(table)} className="rounded-lg border p-2 text-slate-400 hover:text-red-600"><Trash2 size={14}/></button>
+                        </div>
+                      </article>
+                    );
+                  })}
+
+                  {list.length === 0 && (
+                    <div className="rounded-2xl border-2 border-dashed border-slate-200 p-5 text-center text-xs font-semibold text-slate-400">
+                      Todavía no hay mesas en este espacio.
+                    </div>
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

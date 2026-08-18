@@ -20,6 +20,7 @@ import TableFloorPlan from "./TableFloorPlan";
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 import type {
   ReservationSlot,
+  ReservationSpace,
   ReservationTable,
 } from "@/lib/reservas/types";
 
@@ -32,6 +33,7 @@ type BoardStore = {
 
 type Board = {
   store: BoardStore;
+  spaces: ReservationSpace[];
   tables: ReservationTable[];
   slots: ReservationSlot[];
   occupied: string[];
@@ -171,13 +173,9 @@ export default function ReservasPageClient({
 
   const zones = useMemo(
     () =>
-      Array.from(
-        new Set(
-          (board?.tables || [])
-            .map((table) => (table.zone || "").trim())
-            .filter(Boolean)
-        )
-      ),
+      (board?.spaces || [])
+        .filter((space) => space.is_active)
+        .map((space) => space.name),
     [board]
   );
 
@@ -530,6 +528,7 @@ export default function ReservasPageClient({
 
                       <div className="mt-4 rounded-2xl border border-[#EAE1D6] bg-[#FCF9F4] p-3">
                         <TableFloorPlan
+                          spaces={board.spaces || []}
                           tables={board.tables}
                           occupiedTableIds={occupiedForSlot}
                           selectedTableId={

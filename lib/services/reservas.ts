@@ -5,6 +5,8 @@ import type {
   BlockedDate,
   Reservation,
   ReservationSlot,
+  ReservationSpace,
+  ReservationSpaceFormData,
   ReservationSlotFormData,
   ReservationStatus,
   ReservationTable,
@@ -22,13 +24,64 @@ export async function isReservasModuleEnabled(slug: string): Promise<boolean> {
 }
 
 /* =========================================================
+   ADMIN — ESPACIOS
+========================================================= */
+
+export async function getReservationSpacesForAdmin(storeId: string) {
+  return supabase
+    .from("reservation_spaces")
+    .select("id, store_id, name, description, space_type, floor_label, image_url, is_active, sort_order, created_at, updated_at")
+    .eq("store_id", storeId)
+    .order("sort_order", { ascending: true }) as unknown as Promise<{
+      data: ReservationSpace[] | null;
+      error: { message: string } | null;
+    }>;
+}
+
+export async function saveReservationSpace(
+  storeId: string,
+  form: ReservationSpaceFormData
+) {
+  const payload = {
+    store_id: storeId,
+    name: form.name.trim(),
+    description: form.description.trim() || null,
+    space_type: form.space_type,
+    floor_label: form.floor_label.trim() || null,
+    image_url: form.image_url.trim() || null,
+    is_active: form.is_active,
+    sort_order: form.sort_order,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (form.id) {
+    return supabase
+      .from("reservation_spaces")
+      .update(payload)
+      .eq("id", form.id)
+      .select()
+      .single();
+  }
+
+  return supabase
+    .from("reservation_spaces")
+    .insert(payload)
+    .select()
+    .single();
+}
+
+export async function deleteReservationSpace(id: string) {
+  return supabase.from("reservation_spaces").delete().eq("id", id);
+}
+
+/* =========================================================
    ADMIN — MESAS
 ========================================================= */
 
 export async function getReservationTablesForAdmin(storeId: string) {
   return supabase
     .from("reservation_tables")
-    .select("id, store_id, name, capacity, seat_type, zone, pos_row, pos_col, is_active, sort_order")
+    .select("id, store_id, name, capacity, seat_type, zone, space_id, pos_row, pos_col, is_active, sort_order")
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true });
 }
@@ -40,6 +93,7 @@ export async function saveReservationTable(storeId: string, form: ReservationTab
     capacity: form.capacity,
     seat_type: form.seat_type,
     zone: form.zone.trim() || null,
+    space_id: form.space_id || null,
     pos_row: form.pos_row,
     pos_col: form.pos_col,
     is_active: form.is_active,

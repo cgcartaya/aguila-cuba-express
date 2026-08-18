@@ -4,6 +4,39 @@
 
 export type SeatType = "chairs" | "sofa" | "stools";
 
+export type ReservationSpaceType =
+  | "indoor"
+  | "terrace"
+  | "bar"
+  | "outdoor"
+  | "private"
+  | "floor";
+
+export type ReservationSpace = {
+  id: string;
+  store_id: string;
+  name: string;
+  description: string | null;
+  space_type: ReservationSpaceType;
+  floor_label: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type ReservationSpaceFormData = {
+  id?: string;
+  name: string;
+  description: string;
+  space_type: ReservationSpaceType;
+  floor_label: string;
+  image_url: string;
+  is_active: boolean;
+  sort_order: number;
+};
+
 export type ReservationTable = {
   id: string;
   store_id: string;
@@ -11,6 +44,7 @@ export type ReservationTable = {
   capacity: number;
   seat_type: SeatType;
   zone: string | null;
+  space_id: string | null;
   pos_row: number;
   pos_col: number;
   is_active: boolean;
@@ -23,6 +57,7 @@ export type ReservationTableFormData = {
   capacity: number;
   seat_type: SeatType;
   zone: string;
+  space_id: string | null;
   pos_row: number;
   pos_col: number;
   is_active: boolean;
@@ -33,9 +68,9 @@ export type ReservationSlot = {
   id: string;
   store_id: string;
   label: string;
-  start_time: string; // "HH:MM:SS"
+  start_time: string;
   duration_minutes: number;
-  days_of_week: number[]; // 0=domingo … 6=sábado
+  days_of_week: number[];
   is_active: boolean;
   sort_order: number;
 };
@@ -43,21 +78,25 @@ export type ReservationSlot = {
 export type ReservationSlotFormData = {
   id?: string;
   label: string;
-  start_time: string; // "HH:MM"
+  start_time: string;
   duration_minutes: number;
   days_of_week: number[];
   is_active: boolean;
   sort_order: number;
 };
 
-export type ReservationStatus = "pending" | "confirmed" | "rejected" | "cancelled";
+export type ReservationStatus =
+  | "pending"
+  | "confirmed"
+  | "rejected"
+  | "cancelled";
 
 export type Reservation = {
   id: string;
   store_id: string;
   table_id: string;
   slot_id: string;
-  reservation_date: string; // "YYYY-MM-DD"
+  reservation_date: string;
   party_size: number;
   customer_name: string;
   customer_last_name: string;
@@ -76,15 +115,11 @@ export type Reservation = {
 export type BlockedDate = {
   id: string;
   store_id: string;
-  blocked_date: string; // "YYYY-MM-DD"
+  blocked_date: string;
   reason: string | null;
   created_at: string;
 };
 
-/** Estado de disponibilidad de una mesa para una fecha/franja
- *  específica, tal como lo ve el portal público — solo lo mínimo
- *  necesario para pintar el croquis, nunca datos del cliente que
- *  ocupa la mesa. */
 export type TableAvailability = ReservationTable & {
   is_available: boolean;
 };
@@ -93,6 +128,15 @@ export const SEAT_TYPE_LABEL: Record<SeatType, string> = {
   chairs: "Sillas",
   sofa: "Sofá",
   stools: "Banquetas",
+};
+
+export const SPACE_TYPE_LABEL: Record<ReservationSpaceType, string> = {
+  indoor: "Salón interior",
+  terrace: "Terraza",
+  bar: "Bar",
+  outdoor: "Exterior / Patio",
+  private: "Salón privado",
+  floor: "Piso / Nivel",
 };
 
 export const DAY_LABEL: Record<number, string> = {
