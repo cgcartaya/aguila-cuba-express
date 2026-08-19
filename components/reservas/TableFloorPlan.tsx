@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Armchair,
+  Camera,
   DoorOpen,
   Footprints,
   LayoutPanelTop,
@@ -18,6 +19,7 @@ import {
   Wind,
 } from "lucide-react";
 
+import ImageLightbox from "@/components/ui/ImageLightbox";
 import {
   SEAT_TYPE_LABEL,
   type ReservationSpace,
@@ -385,6 +387,10 @@ export default function TableFloorPlan({
   onSelect,
   accent,
 }: Props) {
+  const [lightboxSpace, setLightboxSpace] = useState<ReservationSpace | null>(
+    null
+  );
+
   const activeSpaces = useMemo(
     () =>
       spaces.filter((space) =>
@@ -428,6 +434,15 @@ export default function TableFloorPlan({
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-black/0" />
+
+                <button
+                  type="button"
+                  onClick={() => setLightboxSpace(space)}
+                  className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-black text-[#071B35] shadow-sm backdrop-blur transition active:scale-95"
+                >
+                  <Camera size={13} />
+                  Ver foto del ambiente
+                </button>
               </div>
             )}
 
@@ -548,6 +563,14 @@ export default function TableFloorPlan({
           </section>
         );
       })}
+
+      {lightboxSpace?.image_url && (
+        <ImageLightbox
+          src={lightboxSpace.image_url}
+          alt={lightboxSpace.name}
+          onClose={() => setLightboxSpace(null)}
+        />
+      )}
     </div>
   );
 }
