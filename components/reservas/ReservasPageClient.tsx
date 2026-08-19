@@ -295,8 +295,8 @@ export default function ReservasPageClient({
         </div>
 
         {!success && (
-          <div className="mt-5 grid gap-4 sm:mt-8 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-4 sm:space-y-5">
+          <div className="mt-5 grid min-w-0 gap-4 sm:mt-8 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0 space-y-4 sm:space-y-5">
               <section className="rounded-[22px] border border-[#E4D7C8] bg-white p-4 shadow-[0_10px_28px_rgba(27,20,16,.05)] sm:rounded-[26px] sm:p-5">
                 <p className="text-[10px] font-black uppercase tracking-[.16em]" style={{ color: resolvedAccent }}>
                   Paso 1
