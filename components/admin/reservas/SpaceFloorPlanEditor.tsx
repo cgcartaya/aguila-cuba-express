@@ -260,8 +260,8 @@ export default function SpaceFloorPlanEditor({
     if (!rect) return { x: 50, y: 50 };
 
     return {
-      x: clamp(((clientX - rect.left) / rect.width) * 100),
-      y: clamp(((clientY - rect.top) / rect.height) * 100),
+      x: clamp(((clientX - rect.left) / rect.width) * 100, 0, 100),
+      y: clamp(((clientY - rect.top) / rect.height) * 100, 0, 100),
     };
   };
 
@@ -288,14 +288,44 @@ export default function SpaceFloorPlanEditor({
   const clampElementPosition = (
     element: ReservationSpaceElement,
     x: number,
-    y: number
+    y: number,
+    geometry?: {
+      width?: number;
+      height?: number;
+      rotation?: number;
+    }
   ) => {
-    const halfW = Math.max(1, Number(element.width) / 2);
-    const halfH = Math.max(1, Number(element.height) / 2);
+    const width = Math.max(
+      0.5,
+      Number(geometry?.width ?? element.width)
+    );
+    const height = Math.max(
+      0.5,
+      Number(geometry?.height ?? element.height)
+    );
+    const rotation = Number(
+      geometry?.rotation ?? element.rotation ?? 0
+    );
+
+    const radians = (rotation * Math.PI) / 180;
+    const cos = Math.abs(Math.cos(radians));
+    const sin = Math.abs(Math.sin(radians));
+
+    // Bounding box real después de aplicar la rotación.
+    const halfBoundingWidth =
+      (width * cos + height * sin) / 2;
+    const halfBoundingHeight =
+      (width * sin + height * cos) / 2;
 
     return {
-      x: Math.max(halfW, Math.min(100 - halfW, x)),
-      y: Math.max(halfH, Math.min(100 - halfH, y)),
+      x: Math.max(
+        halfBoundingWidth,
+        Math.min(100 - halfBoundingWidth, x)
+      ),
+      y: Math.max(
+        halfBoundingHeight,
+        Math.min(100 - halfBoundingHeight, y)
+      ),
     };
   };
 
@@ -550,7 +580,12 @@ export default function SpaceFloorPlanEditor({
     const clamped = clampElementPosition(
       selectedElement,
       elementDraft.pos_x,
-      elementDraft.pos_y
+      elementDraft.pos_y,
+      {
+        width: elementDraft.width,
+        height: elementDraft.height,
+        rotation: elementDraft.rotation,
+      }
     );
     setLivePosition("element", selectedElement.id, clamped.x, clamped.y);
 
