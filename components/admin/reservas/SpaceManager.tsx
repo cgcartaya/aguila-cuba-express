@@ -29,6 +29,10 @@ import {
   type ReservationTable,
   type ReservationSpaceElement,
 } from "@/lib/reservas/types";
+import {
+  CANVAS_SHAPE_LABEL,
+  CANVAS_SHAPE_OPTIONS,
+} from "@/lib/reservas/canvas-shapes";
 
 type Props = {
   storeId: string;
@@ -44,6 +48,7 @@ const EMPTY: ReservationSpaceFormData = {
   space_type: "indoor",
   floor_label: "",
   image_url: "",
+  canvas_shape: "panoramic",
   is_active: true,
   sort_order: 0,
 };
@@ -84,6 +89,7 @@ export default function SpaceManager({
       space_type: space.space_type,
       floor_label: space.floor_label || "",
       image_url: space.image_url || "",
+      canvas_shape: space.canvas_shape || "panoramic",
       is_active: space.is_active,
       sort_order: space.sort_order,
     });
@@ -121,6 +127,7 @@ export default function SpaceManager({
       space_type: space.space_type,
       floor_label: space.floor_label || "",
       image_url: space.image_url || "",
+      canvas_shape: space.canvas_shape || "panoramic",
       is_active: !space.is_active,
       sort_order: space.sort_order,
     });
@@ -202,6 +209,29 @@ export default function SpaceManager({
                     placeholder="Ej: Planta baja, 2do piso"
                     className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
                   />
+                </label>
+
+                <label className="text-xs font-black text-slate-600 sm:col-span-2">
+                  Forma del lienzo
+                  <select
+                    value={editing.canvas_shape}
+                    onChange={(e) =>
+                      setEditing({
+                        ...editing,
+                        canvas_shape: e.target.value as ReservationSpaceFormData["canvas_shape"],
+                      })
+                    }
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
+                  >
+                    {CANVAS_SHAPE_OPTIONS.map((shape) => (
+                      <option key={shape} value={shape}>
+                        {CANVAS_SHAPE_LABEL[shape]}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-[10px] font-semibold text-slate-400">
+                    Elige la proporción que más se parezca a este salón real. Si la cambias después de colocar mesas, es normal que necesites reacomodarlas — el lienzo cambia de forma.
+                  </span>
                 </label>
               </div>
 

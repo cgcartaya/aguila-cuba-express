@@ -46,6 +46,11 @@ import {
   type ReservationTable,
   type SeatType,
 } from "@/lib/reservas/types";
+import {
+  CANVAS_SHAPE_LABEL,
+  canvasAspectRatioCss,
+  canvasBaseDimensions,
+} from "@/lib/reservas/canvas-shapes";
 
 type Props = {
   storeId: string;
@@ -156,25 +161,30 @@ function clamp(value: number, min = 3, max = 97) {
   return Math.max(min, Math.min(max, value));
 }
 
-// Tamaño real de cada mesa en el lienzo base (860×650 px, antes del
+// Tamaño real de cada mesa (en px, sobre el lienzo base antes del
 // zoom) convertido a % de ancho/alto — para poder calcular
-// solapamientos sin depender del zoom actual.
-const CANVAS_BASE_WIDTH = 860;
-const CANVAS_BASE_HEIGHT = 650;
-
-function tableFootprintPct(table: ReservationTable) {
+// solapamientos sin depender del zoom actual. baseWidth/baseHeight
+// vienen de canvasBaseDimensions() según la forma elegida para el
+// espacio (panorámico, cuadrado, alargado...).
+function tableFootprintPct(
+  table: ReservationTable,
+  baseWidth: number,
+  baseHeight: number
+) {
   const isRect = table.table_shape === "rect";
   const widthPx = isRect ? 132 : 92;
   const heightPx = isRect ? 78 : 92;
 
   return {
-    widthPct: (widthPx / CANVAS_BASE_WIDTH) * 100,
-    heightPct: (heightPx / CANVAS_BASE_HEIGHT) * 100,
+    widthPct: (widthPx / baseWidth) * 100,
+    heightPct: (heightPx / baseHeight) * 100,
   };
 }
 
 function findOverlappingTableIds(
-  tablesWithPosition: { table: ReservationTable; x: number; y: number }[]
+  tablesWithPosition: { table: ReservationTable; x: number; y: number }[],
+  baseWidth: number,
+  baseHeight: number
 ) {
   const overlapping = new Set<string>();
 
@@ -183,8 +193,8 @@ function findOverlappingTableIds(
       const a = tablesWithPosition[i];
       const b = tablesWithPosition[j];
 
-      const aBox = tableFootprintPct(a.table);
-      const bBox = tableFootprintPct(b.table);
+      const aBox = tableFootprintPct(a.table, baseWidth, baseHeight);
+      const bBox = tableFootprintPct(b.table, baseWidth, baseHeight);
 
       // Margen chico para no marcar mesas apenas rozándose por
       // redondeos de posición.
@@ -443,6 +453,11 @@ export default function SpaceFloorPlanEditor({
       y: Number(element.pos_y),
     };
 
+  const canvasBase = useMemo(
+    () => canvasBaseDimensions(space.canvas_shape),
+    [space.canvas_shape]
+  );
+
   const overlappingTableIds = useMemo(() => {
     const withPosition = spaceTables.map((table) => {
       const pos =
@@ -453,9 +468,13 @@ export default function SpaceFloorPlanEditor({
       return { table, x: pos.x, y: pos.y };
     });
 
-    return findOverlappingTableIds(withPosition);
+    return findOverlappingTableIds(
+      withPosition,
+      canvasBase.width,
+      canvasBase.height
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spaceTables, positionOverrides]);
+  }, [spaceTables, positionOverrides, canvasBase]);
 
   const clampElementPosition = (
     element: ReservationSpaceElement,
@@ -1343,9 +1362,14 @@ export default function SpaceFloorPlanEditor({
                 Editando...
               </p>
             </div>
-            <p className="text-[10px] font-semibold text-slate-400">
-              Arrastre estable: toma el elemento desde cualquier punto y muévelo con precisión.
-            </p>
+            <div className="text-right">
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black text-slate-500">
+                {CANVAS_SHAPE_LABEL[space.canvas_shape || "panoramic"]}
+              </span>
+              <p className="mt-1 text-[10px] font-semibold text-slate-400">
+                Arrastre estable: toma el elemento desde cualquier punto y muévelo con precisión.
+              </p>
+            </div>
           </div>
 
           <div className="overflow-auto rounded-[24px] border border-slate-200 bg-[#F7F3ED] p-3">
@@ -1355,11 +1379,12 @@ export default function SpaceFloorPlanEditor({
               onPointerMove={handlePointerMove}
               onPointerUp={(e) => void finishCurrentDrag(e)}
               onPointerCancel={cancelCurrentDrag}
-              className="relative mx-auto aspect-[16/10] min-h-[650px] min-w-[860px] touch-none overflow-hidden rounded-[20px] border-2 border-[#CDBEAD] bg-[#F3E8DA] shadow-inner"
+              className="relative mx-auto touch-none overflow-hidden rounded-[20px] border-2 border-[#CDBEAD] bg-[#F3E8DA] shadow-inner"
               style={{
                 width: `${zoom}%`,
-                minWidth: `${Math.round(860 * (zoom / 100))}px`,
-                minHeight: `${Math.round(650 * (zoom / 100))}px`,
+                aspectRatio: canvasAspectRatioCss(space.canvas_shape),
+                minWidth: `${Math.round(canvasBase.width * (zoom / 100))}px`,
+                minHeight: `${Math.round(canvasBase.height * (zoom / 100))}px`,
                 backgroundImage: showGrid
                   ? "linear-gradient(rgba(99,77,54,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.055) 1px,transparent 1px)"
                   : "none",

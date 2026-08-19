@@ -101,7 +101,7 @@ export async function getPublicReservationBoard(
   ] = await Promise.all([
     supabaseAdmin
       .from("reservation_spaces")
-      .select("id, store_id, name, description, space_type, floor_label, image_url, is_active, sort_order")
+      .select("id, store_id, name, description, space_type, floor_label, image_url, canvas_shape, is_active, sort_order")
       .eq("store_id", store.id)
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),

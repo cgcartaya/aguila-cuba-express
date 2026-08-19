@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import ImageLightbox from "@/components/ui/ImageLightbox";
+import { canvasAspectRatioCss } from "@/lib/reservas/canvas-shapes";
 import {
   SEAT_TYPE_LABEL,
   type ReservationSpace,
@@ -320,7 +321,7 @@ function NormalizedPlan({
               : "relative w-full"
           }
           style={{
-            aspectRatio: "16 / 10",
+            aspectRatio: canvasAspectRatioCss(space.canvas_shape),
             backgroundImage:
               "linear-gradient(rgba(99,77,54,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.045) 1px,transparent 1px)",
             backgroundSize: "3.2% 5.12%",

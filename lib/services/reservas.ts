@@ -32,7 +32,7 @@ export async function isReservasModuleEnabled(slug: string): Promise<boolean> {
 export async function getReservationSpacesForAdmin(storeId: string) {
   return supabase
     .from("reservation_spaces")
-    .select("id, store_id, name, description, space_type, floor_label, image_url, is_active, sort_order, created_at, updated_at")
+    .select("id, store_id, name, description, space_type, floor_label, image_url, canvas_shape, is_active, sort_order, created_at, updated_at")
     .eq("store_id", storeId)
     .order("sort_order", { ascending: true }) as unknown as Promise<{
       data: ReservationSpace[] | null;
@@ -51,6 +51,7 @@ export async function saveReservationSpace(
     space_type: form.space_type,
     floor_label: form.floor_label.trim() || null,
     image_url: form.image_url.trim() || null,
+    canvas_shape: form.canvas_shape,
     is_active: form.is_active,
     sort_order: form.sort_order,
     updated_at: new Date().toISOString(),

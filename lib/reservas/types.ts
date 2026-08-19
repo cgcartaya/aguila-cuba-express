@@ -2,6 +2,8 @@
    MÓDULO DE RESERVAS — TIPOS
 ========================================================= */
 
+import type { CanvasShape } from "./canvas-shapes";
+
 export type SeatType = "chairs" | "sofa" | "stools";
 
 export type ReservationSpaceType =
@@ -20,6 +22,7 @@ export type ReservationSpace = {
   space_type: ReservationSpaceType;
   floor_label: string | null;
   image_url: string | null;
+  canvas_shape: CanvasShape;
   is_active: boolean;
   sort_order: number;
   created_at?: string;
@@ -33,6 +36,7 @@ export type ReservationSpaceFormData = {
   space_type: ReservationSpaceType;
   floor_label: string;
   image_url: string;
+  canvas_shape: CanvasShape;
   is_active: boolean;
   sort_order: number;
 };
