@@ -237,6 +237,132 @@ function getSeatPositions(capacity: number) {
   });
 }
 
+// Dibujo simplificado de cada elemento (sin imágenes, todo con capas
+// de CSS) para que se parezca a lo que realmente es en vez de ser
+// solo un ícono genérico dentro de una caja de color.
+function ElementArt({ type }: { type: ReservationSpaceElementType }) {
+  switch (type) {
+    case "plant":
+      return (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="absolute h-[78%] w-[78%] rounded-full bg-emerald-200/80" />
+          <span className="absolute left-[4%] top-[35%] h-[34%] w-[34%] rounded-full bg-emerald-500/80" />
+          <span className="absolute right-[4%] top-[18%] h-[36%] w-[36%] rounded-full bg-emerald-400/90" />
+          <span className="absolute bottom-[3%] right-[24%] h-[34%] w-[34%] rounded-full bg-emerald-600/70" />
+          <TreePine size={20} className="relative z-10 text-emerald-800" />
+        </div>
+      );
+
+    case "stool":
+      return (
+        <div className="absolute inset-0 flex items-center justify-center rounded-full border-2 border-amber-800 bg-amber-200 shadow-sm">
+          <span className="h-[48%] w-[48%] rounded-full bg-amber-700/75" />
+        </div>
+      );
+
+    case "stairs":
+      return (
+        <div className="absolute inset-0 flex flex-col justify-center gap-[2px] px-1">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i} className="h-[2px] w-full bg-slate-500/70" />
+          ))}
+        </div>
+      );
+
+    case "door":
+    case "entrance":
+      return (
+        <div className="absolute inset-0">
+          {/* hoja de la puerta, entreabierta */}
+          <span className="absolute bottom-0 left-0 h-[88%] w-[9%] rounded-sm bg-[#8B6F52]" />
+          {/* arco de barrido, truco de border-radius en una sola esquina */}
+          <span
+            className="absolute bottom-0 left-0"
+            style={{
+              width: "88%",
+              height: "88%",
+              borderTop: "1.5px dashed rgba(139,111,82,.55)",
+              borderRight: "1.5px dashed rgba(139,111,82,.55)",
+              borderRadius: "0 100% 0 0",
+            }}
+          />
+          {/* marco del vano */}
+          <span className="absolute bottom-0 left-0 h-[6%] w-full bg-[#C8BAAA]/70" />
+        </div>
+      );
+
+    case "window":
+      return (
+        <div className="absolute inset-0 flex items-stretch justify-evenly px-[10%] py-[16%]">
+          <span className="w-[10%] rounded-full bg-sky-500/60" />
+          <span className="w-[10%] rounded-full bg-sky-500/60" />
+        </div>
+      );
+
+    case "bar":
+      return (
+        <div className="absolute inset-0 overflow-hidden rounded-md">
+          <div
+            className="h-full w-full"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(90deg, rgba(120,72,24,.22) 0px, rgba(120,72,24,.22) 3px, rgba(120,72,24,.06) 3px, rgba(120,72,24,.06) 11px)",
+            }}
+          />
+          <div className="absolute bottom-[-16%] left-0 flex w-full justify-around">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <span
+                key={i}
+                className="h-[30%] w-[7%] rounded-full bg-amber-800/70"
+              />
+            ))}
+          </div>
+        </div>
+      );
+
+    case "restroom":
+      return (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-[4%]">
+          <span className="h-[22%] w-[46%] rounded-t-sm border border-sky-400 bg-sky-200" />
+          <span className="h-[46%] w-[68%] rounded-b-full rounded-t-md border border-sky-400 bg-sky-100" />
+        </div>
+      );
+
+    case "wall_fan":
+    case "floor_fan":
+      return (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="absolute h-[88%] w-[88%] rounded-full border-2 border-cyan-400/70" />
+          {[0, 90, 180, 270].map((deg) => (
+            <span
+              key={deg}
+              className="absolute h-[36%] w-[15%] rounded-full bg-cyan-500/70"
+              style={{
+                transform: `rotate(${deg}deg) translateY(-34%)`,
+              }}
+            />
+          ))}
+          <span className="absolute h-[18%] w-[18%] rounded-full bg-cyan-700" />
+          {type === "floor_fan" && (
+            <span className="absolute bottom-[-10%] h-[16%] w-[7%] rounded-full bg-cyan-700/70" />
+          )}
+        </div>
+      );
+
+    case "split_ac":
+      return (
+        <div className="absolute inset-0 flex flex-col justify-center gap-[12%] rounded-md bg-white px-[8%] shadow-inner">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <span key={i} className="h-[10%] w-full rounded-full bg-cyan-400/50" />
+          ))}
+        </div>
+      );
+
+    default:
+      return null;
+  }
+}
+
 function TableVisual({
   table,
   selected,
@@ -1408,7 +1534,6 @@ export default function SpaceFloorPlanEditor({
               )}
 
               {spaceElements.map((element) => {
-                const Icon = ELEMENT_ICONS[element.element_type];
                 const selected = element.id === selectedElementId;
                 const livePosition = getElementPosition(element);
 
@@ -1451,7 +1576,7 @@ export default function SpaceFloorPlanEditor({
                         livePosition.y
                       );
                     }}
-                    className={`absolute flex cursor-grab items-center justify-center rounded-md shadow-sm active:cursor-grabbing ${appearance} ${
+                    className={`absolute cursor-grab rounded-md shadow-sm active:cursor-grabbing ${appearance} ${
                       selected ? "ring-2 ring-orange-400 ring-offset-2" : ""
                     }`}
                     style={{
@@ -1462,45 +1587,19 @@ export default function SpaceFloorPlanEditor({
                       transform: `translate(-50%,-50%) rotate(${element.rotation}deg)`,
                     }}
                   >
-                    {element.element_type === "plant" ? (
-                      <div className="relative flex h-full w-full items-center justify-center">
-                        <span className="absolute h-[78%] w-[78%] rounded-full bg-emerald-200/80" />
-                        <span className="absolute left-[4%] top-[35%] h-[34%] w-[34%] rounded-full bg-emerald-500/80" />
-                        <span className="absolute right-[4%] top-[18%] h-[36%] w-[36%] rounded-full bg-emerald-400/90" />
-                        <span className="absolute bottom-[3%] right-[24%] h-[34%] w-[34%] rounded-full bg-emerald-600/70" />
-                        <TreePine size={20} className="relative z-10 text-emerald-800" />
-                      </div>
-                    ) : element.element_type === "stool" ? (
-                      <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-amber-800 bg-amber-200 shadow-sm">
-                        <span className="h-[48%] w-[48%] rounded-full bg-amber-700/75" />
-                      </div>
-                    ) : element.element_type === "stairs" ? (
-                      <div className="flex h-full w-full flex-col justify-center gap-[2px] px-1">
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <span key={i} className="h-[2px] w-full bg-slate-500/70" />
-                        ))}
-                      </div>
-                    ) : element.element_type !== "wall" ? (
-                      <Icon
-                        size={element.element_type === "restroom" ? 18 : 14}
-                        className={
-                          element.element_type === "restroom"
-                            ? "text-sky-600"
-                            : element.element_type === "wall_fan" ||
-                              element.element_type === "floor_fan" ||
-                              element.element_type === "split_ac"
-                            ? "text-cyan-600"
-                            : "text-slate-500"
-                        }
-                      />
-                    ) : null}
+                    <ElementArt type={element.element_type} />
 
-                    {(element.element_type === "label" ||
-                      element.element_type === "bar" ||
+                    {element.element_type === "label" && (
+                      <span className="absolute inset-0 flex items-center justify-center truncate px-1 text-[9px] font-black uppercase tracking-wide text-slate-600">
+                        {element.label}
+                      </span>
+                    )}
+
+                    {(element.element_type === "bar" ||
                       element.element_type === "entrance" ||
                       element.element_type === "restroom" ||
                       element.element_type === "stairs") && (
-                      <span className="ml-1 truncate text-[9px] font-black uppercase tracking-wide text-slate-600">
+                      <span className="absolute inset-x-[4%] bottom-[4%] truncate rounded bg-white/75 px-1 text-center text-[8px] font-black uppercase tracking-wide text-slate-600">
                         {element.label}
                       </span>
                     )}
