@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Armchair,
   ArrowLeft,
   ArrowRight,
   CalendarDays,
@@ -260,24 +259,24 @@ export default function ReservasPageClient({
   return (
     <div className="min-h-screen text-[#071B35]" style={{ backgroundColor: PAGE_BG }}>
       <header className="border-b border-white/10 text-white" style={{ backgroundColor: HEADER_BG }}>
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between px-5 py-5 sm:px-8">
+        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-5">
           <div>
-            <p className="text-2xl font-black tracking-tight">{storeName}</p>
+            <p className="text-xl font-black tracking-tight sm:text-2xl">{storeName}</p>
             <p className="text-[9px] font-black uppercase tracking-[.2em]" style={{ color: resolvedAccent }}>
               Restaurante
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             <Link
               href={landingHref || "/"}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-white/80 hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-black text-white/80 hover:bg-white/5 sm:gap-2 sm:px-3 sm:text-xs"
             >
               <Home size={15} /> Inicio
             </Link>
             <Link
               href={`/menu/${storeSlug}`}
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black text-white/80 hover:bg-white/5"
+              className="inline-flex items-center gap-1.5 rounded-xl px-2 py-2 text-[10px] font-black text-white/80 hover:bg-white/5 sm:gap-2 sm:px-3 sm:text-xs"
             >
               <ShoppingBag size={15} /> Ver carta
             </Link>
@@ -285,19 +284,19 @@ export default function ReservasPageClient({
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-8 sm:py-8">
+      <main className="mx-auto max-w-[1440px] px-3 py-4 pb-28 sm:px-8 sm:py-8 sm:pb-8">
         <div className="mx-auto max-w-4xl">
           <ReservationSteps step={step} accent={resolvedAccent} />
         </div>
 
         {!success && (
-          <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <div className="space-y-5">
-              <section className="rounded-[26px] border border-[#E4D7C8] bg-white p-5 shadow-[0_10px_28px_rgba(27,20,16,.05)]">
+          <div className="mt-5 grid gap-4 sm:mt-8 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="space-y-4 sm:space-y-5">
+              <section className="rounded-[22px] border border-[#E4D7C8] bg-white p-4 shadow-[0_10px_28px_rgba(27,20,16,.05)] sm:rounded-[26px] sm:p-5">
                 <p className="text-[10px] font-black uppercase tracking-[.16em]" style={{ color: resolvedAccent }}>
                   Paso 1
                 </p>
-                <h1 className="mt-1 text-3xl font-black tracking-tight">
+                <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
                   Elige tu fecha
                 </h1>
                 <p className="mt-1 text-sm font-semibold text-black/45">
@@ -330,11 +329,11 @@ export default function ReservasPageClient({
 
               {board && !loadingBoard && !boardError && (
                 <>
-                  <section className="rounded-[26px] border border-[#E4D7C8] bg-white p-5 shadow-[0_10px_28px_rgba(27,20,16,.05)]">
+                  <section className="rounded-[22px] border border-[#E4D7C8] bg-white p-4 shadow-[0_10px_28px_rgba(27,20,16,.05)] sm:rounded-[26px] sm:p-5">
                     <p className="text-[10px] font-black uppercase tracking-[.16em]" style={{ color: resolvedAccent }}>
                       Paso 2
                     </p>
-                    <h2 className="mt-1 text-2xl font-black">
+                    <h2 className="mt-1 text-xl font-black sm:text-2xl">
                       Elige el horario
                     </h2>
 
@@ -382,7 +381,7 @@ export default function ReservasPageClient({
                           <p className="text-[10px] font-black uppercase tracking-[.16em]" style={{ color: resolvedAccent }}>
                             Paso 3
                           </p>
-                          <h2 className="mt-1 text-3xl font-black">
+                          <h2 className="mt-1 text-2xl font-black sm:text-3xl">
                             Elige tu mesa
                           </h2>
                           <p className="mt-1 text-sm font-semibold text-black/45">
@@ -400,19 +399,116 @@ export default function ReservasPageClient({
                         onSelect={handleSelectTable}
                         accent={resolvedAccent}
                       />
+
+                      {showForm && selectedTable && (
+                        <div className="mt-4 rounded-[22px] border border-[#E4D7C8] bg-white p-4 shadow-sm xl:hidden">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[.14em]" style={{ color: resolvedAccent }}>
+                                Paso 4
+                              </p>
+                              <h3 className="mt-1 text-xl font-black text-[#071B35]">
+                                Completa tus datos
+                              </h3>
+                              <p className="mt-1 text-xs font-semibold text-black/45">
+                                {selectedTable.name} · {selectedTable.capacity} personas
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowForm(false)}
+                              className="rounded-lg border border-[#E4D7C8] px-3 py-2 text-[10px] font-black text-black/50"
+                            >
+                              Cambiar
+                            </button>
+                          </div>
+
+                          <div className="mt-4">
+                            <p className="text-xs font-black text-black/55">Personas</p>
+                            <div className="mt-2 flex items-center gap-3">
+                              <button
+                                onClick={() => setPartySize((n) => Math.max(1, n - 1))}
+                                disabled={partySize <= 1}
+                                className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E1D6C8] disabled:opacity-30"
+                              >
+                                <Minus size={15} />
+                              </button>
+                              <span className="w-8 text-center text-lg font-black">{partySize}</span>
+                              <button
+                                onClick={() => setPartySize((n) => Math.min(selectedTable.capacity, n + 1))}
+                                disabled={partySize >= selectedTable.capacity}
+                                className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#E1D6C8] disabled:opacity-30"
+                              >
+                                <Plus size={15} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 space-y-3">
+                            <input
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              placeholder="Nombre"
+                              className="w-full rounded-xl border border-[#E1D6C8] px-3 py-3 text-sm font-semibold outline-none focus:border-orange-300"
+                            />
+                            <input
+                              value={customerLastName}
+                              onChange={(e) => setCustomerLastName(e.target.value)}
+                              placeholder="Apellidos"
+                              className="w-full rounded-xl border border-[#E1D6C8] px-3 py-3 text-sm font-semibold outline-none focus:border-orange-300"
+                            />
+                            <PhoneCountryField
+                              name="customerPhoneMobile"
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              placeholder="Teléfono"
+                              className=""
+                            />
+                            <input
+                              type="email"
+                              value={customerEmail}
+                              onChange={(e) => setCustomerEmail(e.target.value)}
+                              placeholder="Correo (opcional)"
+                              className="w-full rounded-xl border border-[#E1D6C8] px-3 py-3 text-sm font-semibold outline-none"
+                            />
+                            <textarea
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                              placeholder="Nota opcional"
+                              className="min-h-[92px] w-full resize-none rounded-xl border border-[#E1D6C8] px-3 py-3 text-sm font-semibold outline-none"
+                            />
+                          </div>
+
+                          {submitError && (
+                            <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600">
+                              {submitError}
+                            </p>
+                          )}
+
+                          <button
+                            onClick={handleSubmit}
+                            disabled={submitting}
+                            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-black text-white disabled:opacity-60"
+                            style={{ backgroundColor: resolvedAccent }}
+                          >
+                            {submitting && <Loader2 size={16} className="animate-spin" />}
+                            Solicitar reserva
+                          </button>
+                        </div>
+                      )}
                     </section>
                   )}
                 </>
               )}
             </div>
 
-            <aside className="xl:sticky xl:top-5 xl:self-start">
+            <aside className="hidden xl:sticky xl:top-5 xl:block xl:self-start">
               <div className="overflow-hidden rounded-[26px] border border-[#E4D7C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)]">
                 <div className="p-5">
                   <p className="text-[10px] font-black uppercase tracking-[.16em]" style={{ color: resolvedAccent }}>
                     Tu reserva
                   </p>
-                  <h2 className="mt-1 text-2xl font-black">Resumen</h2>
+                  <h2 className="mt-1 text-xl font-black sm:text-2xl">Resumen</h2>
 
                   <div className="mt-5 space-y-3">
                     <SummaryRow
@@ -570,6 +666,37 @@ export default function ReservasPageClient({
                 </div>
               </div>
             </aside>
+          </div>
+        )}
+
+        {!success && selectedTable && !showForm && (
+          <div className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4D7C8] bg-white/95 px-3 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 shadow-[0_-10px_30px_rgba(27,20,16,.12)] backdrop-blur-xl xl:hidden">
+            <div className="mx-auto flex max-w-xl items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedTable(null)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <p className="text-[9px] font-black uppercase tracking-[.13em] text-black/35">
+                  Tu selección
+                </p>
+                <p className="truncate text-sm font-black text-[#071B35]">
+                  {selectedTable.name} · {selectedTable.capacity} personas
+                </p>
+                <p className="truncate text-[10px] font-semibold text-black/45">
+                  {selectedSpace?.name || "Espacio"} · {selectedSlot ? formatTime(selectedSlot.start_time) : ""}
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="shrink-0 rounded-xl px-5 py-3 text-xs font-black text-white shadow-sm"
+                style={{ backgroundColor: resolvedAccent }}
+              >
+                Continuar
+              </button>
+            </div>
           </div>
         )}
 

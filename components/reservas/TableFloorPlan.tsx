@@ -9,8 +9,9 @@ import {
   TreePine,
   Toilet,
   Footprints,
+  Armchair,
   Type,
-  Wind
+  Wind,
 } from "lucide-react";
 
 import type {
@@ -83,7 +84,7 @@ function SeatDots({
       {positions.map((position, index) => (
         <span
           key={index}
-          className="absolute h-3 w-3 rounded-[4px] border shadow-sm sm:h-3.5 sm:w-3.5"
+          className="absolute h-2.5 w-2.5 rounded-[3px] border shadow-sm sm:h-3.5 sm:w-3.5 sm:rounded-[4px]"
           style={{
             left: `${position.x}%`,
             top: `${position.y}%`,
@@ -134,10 +135,10 @@ function TableButton({
       title={`${table.name} · ${table.capacity} personas`}
       className={`absolute z-10 flex items-center justify-center text-center shadow-[0_8px_18px_rgba(27,20,16,.16)] transition hover:scale-[1.04] disabled:cursor-not-allowed ${
         table.table_shape === "round"
-          ? "h-[74px] w-[74px] rounded-full sm:h-[88px] sm:w-[88px]"
+          ? "h-[54px] w-[54px] rounded-full sm:h-[88px] sm:w-[88px]"
           : table.table_shape === "rect"
-          ? "h-[66px] w-[110px] rounded-2xl sm:h-[76px] sm:w-[132px]"
-          : "h-[74px] w-[74px] rounded-2xl sm:h-[88px] sm:w-[88px]"
+          ? "h-[48px] w-[78px] rounded-xl sm:h-[76px] sm:w-[132px] sm:rounded-2xl"
+          : "h-[54px] w-[54px] rounded-xl sm:h-[88px] sm:w-[88px] sm:rounded-2xl"
       }`}
       style={{
         left: `${table.pos_x ?? 50}%`,
@@ -153,16 +154,16 @@ function TableButton({
         accent={accent}
       />
 
-      <div className="relative z-10 rounded-xl bg-white/85 px-2 py-1.5 shadow-sm backdrop-blur-sm">
+      <div className="relative z-10 rounded-lg bg-white/90 px-1 py-1 shadow-sm backdrop-blur-sm sm:rounded-xl sm:px-2 sm:py-1.5">
         <Armchair
-          size={14}
+          size={12}
           className="mx-auto"
           style={{ color: border }}
         />
-        <span className="mt-0.5 block max-w-[92px] truncate text-[10px] font-black text-[#1B1410] sm:text-[11px]">
+        <span className="mt-0.5 block max-w-[62px] truncate text-[8px] font-black text-[#1B1410] sm:max-w-[92px] sm:text-[11px]">
           {table.name}
         </span>
-        <span className="block text-[8px] font-black text-black/55 sm:text-[9px]">
+        <span className="block text-[7px] font-black text-black/55 sm:text-[9px]">
           {table.capacity} personas
         </span>
       </div>
@@ -290,7 +291,7 @@ export default function TableFloorPlan({
             className="overflow-hidden rounded-[26px] border border-[#E3D6C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)]"
           >
             <div className="grid gap-0 border-b border-[#EEE5DA] sm:grid-cols-[170px_minmax(0,1fr)]">
-              <div className="relative min-h-[128px] overflow-hidden bg-[#EFE7DE]">
+              <div className="relative min-h-[86px] overflow-hidden bg-[#EFE7DE] sm:min-h-[128px]">
                 {space.image_url ? (
                   <img
                     src={space.image_url}
@@ -304,14 +305,14 @@ export default function TableFloorPlan({
                 )}
               </div>
 
-              <div className="p-5">
+              <div className="p-4 sm:p-5">
                 <p
                   className="text-[10px] font-black uppercase tracking-[.18em]"
                   style={{ color: accent }}
                 >
                   Espacio
                 </p>
-                <h3 className="mt-1 text-2xl font-black text-[#071B35]">
+                <h3 className="mt-1 text-xl font-black text-[#071B35] sm:text-2xl">
                   {space.name}
                 </h3>
 
@@ -337,10 +338,10 @@ export default function TableFloorPlan({
             </div>
 
             <div className="grid lg:grid-cols-[170px_minmax(0,1fr)]">
-              <aside className="border-b border-[#EEE5DA] bg-[#FCF9F4] p-4 lg:border-b-0 lg:border-r">
+              <aside className="border-b border-[#EEE5DA] bg-[#FCF9F4] p-3 lg:border-b-0 lg:border-r lg:p-4">
                 <p className="text-xs font-black text-[#071B35]">Leyenda</p>
 
-                <div className="mt-4 space-y-3 text-[11px] font-bold text-black/55">
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-bold text-black/55 lg:mt-4 lg:block lg:space-y-3 lg:text-[11px]">
                   <div className="flex items-center gap-2">
                     <span className="h-3.5 w-3.5 rounded-full bg-lime-500" />
                     Disponible
@@ -357,7 +358,7 @@ export default function TableFloorPlan({
                     Ocupada
                   </div>
 
-                  <div className="my-3 border-t border-[#E7DDD2]" />
+                  <div className="hidden lg:my-3 lg:block lg:border-t lg:border-[#E7DDD2]" />
 
                   <div className="flex items-center gap-2">
                     <span className="h-1 w-5 rounded bg-[#2F2A26]" />
@@ -384,7 +385,7 @@ export default function TableFloorPlan({
 
               <div className="p-3 sm:p-5">
                 <div
-                  className="relative aspect-[16/10] min-h-[500px] overflow-hidden rounded-[22px] border border-[#D9C9B8] bg-[#F2E6D7] shadow-inner"
+                  className="relative aspect-[4/5] min-h-[360px] w-full overflow-hidden rounded-[18px] border border-[#D9C9B8] bg-[#F2E6D7] shadow-inner sm:aspect-[16/10] sm:min-h-[500px] sm:rounded-[22px]"
                   style={{
                     backgroundImage:
                       "linear-gradient(rgba(99,77,54,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.045) 1px,transparent 1px)",
@@ -415,7 +416,7 @@ export default function TableFloorPlan({
                   ))}
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50/70 px-4 py-3 text-[11px] font-semibold text-amber-800">
+                <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2 text-[10px] font-semibold text-amber-800 sm:mt-4 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-[11px]">
                   Los asientos alrededor de cada mesa representan su capacidad real.
                   Una mesa de 4 muestra 4 asientos; una de 6 muestra 6.
                 </div>
