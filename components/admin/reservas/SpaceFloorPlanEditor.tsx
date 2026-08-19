@@ -747,22 +747,37 @@ export default function SpaceFloorPlanEditor({
 
         if (error) {
           alert("No se pudo guardar la nueva posición de la mesa.");
-        } else if (
-          dragInfo.before.x !== current.x ||
-          dragInfo.before.y !== current.y
-        ) {
-          pushHistory({
-            kind: "table",
-            id: table.id,
-            before: tableSnapshotFrom(table, {
-              pos_x: dragInfo.before.x,
-              pos_y: dragInfo.before.y,
-            }),
-            after: tableSnapshotFrom(table, {
+        } else {
+          if (
+            dragInfo.before.x !== current.x ||
+            dragInfo.before.y !== current.y
+          ) {
+            pushHistory({
+              kind: "table",
+              id: table.id,
+              before: tableSnapshotFrom(table, {
+                pos_x: dragInfo.before.x,
+                pos_y: dragInfo.before.y,
+              }),
+              after: tableSnapshotFrom(table, {
+                pos_x: current.x,
+                pos_y: current.y,
+              }),
+            });
+          }
+
+          // El panel de propiedades pudo haber quedado abierto con
+          // la posición de ANTES del arrastre — si es la mesa que
+          // acabamos de mover, lo sincronizamos, si no, al tocar
+          // "Guardar cambios" mandaría esa posición vieja y pisaría
+          // el movimiento que el usuario acaba de hacer.
+          if (selectedTableId === table.id && tableDraft) {
+            setTableDraft({
+              ...tableDraft,
               pos_x: current.x,
               pos_y: current.y,
-            }),
-          });
+            });
+          }
         }
       }
     } else {
@@ -783,22 +798,35 @@ export default function SpaceFloorPlanEditor({
 
         if (error) {
           alert("No se pudo guardar la nueva posición del elemento.");
-        } else if (
-          dragInfo.before.x !== current.x ||
-          dragInfo.before.y !== current.y
-        ) {
-          pushHistory({
-            kind: "element",
-            id: element.id,
-            before: elementSnapshotFrom(element, {
-              pos_x: dragInfo.before.x,
-              pos_y: dragInfo.before.y,
-            }),
-            after: elementSnapshotFrom(element, {
+        } else {
+          if (
+            dragInfo.before.x !== current.x ||
+            dragInfo.before.y !== current.y
+          ) {
+            pushHistory({
+              kind: "element",
+              id: element.id,
+              before: elementSnapshotFrom(element, {
+                pos_x: dragInfo.before.x,
+                pos_y: dragInfo.before.y,
+              }),
+              after: elementSnapshotFrom(element, {
+                pos_x: current.x,
+                pos_y: current.y,
+              }),
+            });
+          }
+
+          // Mismo caso que con las mesas: si el panel de
+          // propiedades de este elemento está abierto, hay que
+          // refrescar su posición o "Guardar cambios" la pisaría.
+          if (selectedElementId === element.id && elementDraft) {
+            setElementDraft({
+              ...elementDraft,
               pos_x: current.x,
               pos_y: current.y,
-            }),
-          });
+            });
+          }
         }
       }
     }
