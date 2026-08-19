@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState
+} from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
+  Armchair,
   CalendarDays,
   Check,
   Clock3,
@@ -15,7 +20,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingBag,
-  Users,
+  Users
 } from "lucide-react";
 
 import DateChipPicker from "./DateChipPicker";

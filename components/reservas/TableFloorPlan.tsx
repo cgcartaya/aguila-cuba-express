@@ -9,9 +9,8 @@ import {
   TreePine,
   Toilet,
   Footprints,
-  Armchair,
   Type,
-  Wind,
+  Wind
 } from "lucide-react";
 
 import type {
