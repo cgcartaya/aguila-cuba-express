@@ -7,6 +7,9 @@ import {
   MapPin,
   Square,
   TreePine,
+  Toilet,
+  Footprints,
+  Armchair,
   Type,
   Wind,
 } from "lucide-react";
@@ -34,6 +37,9 @@ const ICONS = {
   bar: LayoutPanelTop,
   entrance: DoorOpen,
   plant: TreePine,
+  restroom: Toilet,
+  stool: Armchair,
+  stairs: Footprints,
   label: Type,
 };
 
@@ -183,7 +189,13 @@ function PlanElement({
         element.element_type === "entrance"
       ? "border border-[#6B5846] bg-[#F6E7D6]"
       : element.element_type === "plant"
-      ? "border-none bg-emerald-100"
+      ? "border-none bg-transparent"
+      : element.element_type === "restroom"
+      ? "border border-sky-300 bg-sky-50/90"
+      : element.element_type === "stool"
+      ? "border border-amber-800 bg-amber-100 rounded-full"
+      : element.element_type === "stairs"
+      ? "border border-slate-400 bg-slate-100"
       : "border border-black/10 bg-white/80";
 
   return (
@@ -197,20 +209,40 @@ function PlanElement({
         transform: `translate(-50%,-50%) rotate(${element.rotation}deg)`,
       }}
     >
-      {element.element_type !== "wall" && (
+      {element.element_type === "plant" ? (
+        <div className="relative flex h-full w-full items-center justify-center">
+          <span className="absolute h-[78%] w-[78%] rounded-full bg-emerald-200/80" />
+          <span className="absolute left-[4%] top-[35%] h-[34%] w-[34%] rounded-full bg-emerald-500/80" />
+          <span className="absolute right-[4%] top-[18%] h-[36%] w-[36%] rounded-full bg-emerald-400/90" />
+          <span className="absolute bottom-[3%] right-[24%] h-[34%] w-[34%] rounded-full bg-emerald-600/70" />
+          <TreePine size={18} className="relative z-10 text-emerald-800" />
+        </div>
+      ) : element.element_type === "stool" ? (
+        <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-amber-800 bg-amber-200 shadow-sm">
+          <span className="h-[48%] w-[48%] rounded-full bg-amber-700/75" />
+        </div>
+      ) : element.element_type === "stairs" ? (
+        <div className="flex h-full w-full flex-col justify-center gap-[2px] px-1">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <span key={i} className="h-[2px] w-full bg-slate-500/70" />
+          ))}
+        </div>
+      ) : element.element_type !== "wall" ? (
         <Icon
-          size={12}
+          size={element.element_type === "restroom" ? 16 : 12}
           className={
-            element.element_type === "plant"
-              ? "text-emerald-600"
+            element.element_type === "restroom"
+              ? "text-sky-600"
               : "text-black/45"
           }
         />
-      )}
+      ) : null}
 
       {(element.element_type === "label" ||
         element.element_type === "bar" ||
-        element.element_type === "entrance") && (
+        element.element_type === "entrance" ||
+        element.element_type === "restroom" ||
+        element.element_type === "stairs") && (
         <span className="ml-1 truncate text-[9px] font-black uppercase tracking-wide text-black/55">
           {element.label}
         </span>

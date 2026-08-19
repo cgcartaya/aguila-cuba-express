@@ -165,6 +165,9 @@ export type ReservationSpaceElementType =
   | "bar"
   | "entrance"
   | "plant"
+  | "restroom"
+  | "stool"
+  | "stairs"
   | "label";
 
 export type ReservationSpaceElement = {
@@ -201,5 +204,8 @@ export const SPACE_ELEMENT_LABEL: Record<ReservationSpaceElementType, string> = 
   bar: "Barra",
   entrance: "Entrada",
   plant: "Planta",
+  restroom: "Baño",
+  stool: "Banqueta",
+  stairs: "Escalera",
   label: "Texto",
 };
