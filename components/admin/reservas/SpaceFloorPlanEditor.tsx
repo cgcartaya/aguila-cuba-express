@@ -3,23 +3,33 @@
 import { useMemo, useRef, useState } from "react";
 import {
   Armchair,
+  Circle,
+  Copy,
   DoorOpen,
-  Grip,
+  Grid3X3,
   LayoutPanelTop,
   Loader2,
+  Maximize2,
+  Minus,
+  Plus,
+  RectangleHorizontal,
   RotateCw,
   Save,
   Square,
   Trash2,
   TreePine,
   Type,
+  Undo2,
+  Redo2,
   Wind,
   X,
 } from "lucide-react";
 
 import {
   deleteReservationSpaceElement,
+  deleteReservationTable,
   saveReservationSpaceElement,
+  saveReservationTable,
   updateReservationTableVisualPosition,
 } from "@/lib/services/reservas";
 import {
@@ -39,6 +49,9 @@ type Props = {
   onClose?: () => void;
 };
 
+type TableShape = "round" | "square" | "rect";
+type PropertiesTab = "general" | "position";
+
 const ELEMENT_ICONS: Record<ReservationSpaceElementType, typeof Square> = {
   wall: Square,
   door: DoorOpen,
@@ -53,42 +66,88 @@ const ELEMENT_DEFAULTS: Record<
   ReservationSpaceElementType,
   { width: number; height: number; label: string }
 > = {
-  wall: { width: 28, height: 4, label: "Pared" },
+  wall: { width: 28, height: 3.6, label: "Pared" },
   door: { width: 10, height: 5, label: "Puerta" },
-  window: { width: 16, height: 3, label: "Ventana" },
-  bar: { width: 24, height: 9, label: "Barra" },
-  entrance: { width: 14, height: 6, label: "Entrada" },
+  window: { width: 14, height: 3, label: "Ventana" },
+  bar: { width: 20, height: 8, label: "Barra" },
+  entrance: { width: 16, height: 5, label: "Entrada principal" },
   plant: { width: 6, height: 6, label: "Planta" },
-  label: { width: 18, height: 6, label: "Texto" },
+  label: { width: 20, height: 5, label: "Texto" },
 };
 
 function clamp(value: number, min = 3, max = 97) {
   return Math.max(min, Math.min(max, value));
 }
 
-function SeatDots({ capacity }: { capacity: number }) {
-  const shown = Math.min(Math.max(capacity, 1), 8);
+function getSeatPositions(capacity: number) {
+  const shown = Math.min(Math.max(capacity, 1), 10);
+
+  return Array.from({ length: shown }, (_, index) => {
+    const angle = (Math.PI * 2 * index) / shown - Math.PI / 2;
+    return {
+      x: 50 + Math.cos(angle) * 54,
+      y: 50 + Math.sin(angle) * 54,
+    };
+  });
+}
+
+function TableVisual({
+  table,
+  selected,
+  busy,
+}: {
+  table: ReservationTable;
+  selected: boolean;
+  busy: boolean;
+}) {
+  const isRound = table.table_shape === "round";
+  const isRect = table.table_shape === "rect";
 
   return (
-    <>
-      {Array.from({ length: shown }).map((_, index) => {
-        const angle = (Math.PI * 2 * index) / shown - Math.PI / 2;
-        const x = 50 + Math.cos(angle) * 48;
-        const y = 50 + Math.sin(angle) * 48;
+    <div
+      className={`relative flex items-center justify-center text-center shadow-[0_9px_22px_rgba(15,23,42,.18)] transition ${
+        isRound
+          ? "h-[92px] w-[92px] rounded-full"
+          : isRect
+          ? "h-[78px] w-[132px] rounded-2xl"
+          : "h-[92px] w-[92px] rounded-2xl"
+      } ${
+        selected
+          ? "border-2 border-orange-500 bg-orange-100 ring-2 ring-orange-200 ring-offset-2"
+          : "border-2 border-lime-600 bg-lime-200"
+      }`}
+    >
+      {getSeatPositions(table.capacity).map((seat, index) => (
+        <span
+          key={index}
+          className={`absolute h-4 w-4 rounded-[5px] border shadow-sm ${
+            selected
+              ? "border-orange-500 bg-orange-200"
+              : "border-lime-700 bg-lime-300"
+          }`}
+          style={{
+            left: `${seat.x}%`,
+            top: `${seat.y}%`,
+            transform: "translate(-50%,-50%)",
+          }}
+        />
+      ))}
 
-        return (
-          <span
-            key={index}
-            className="absolute h-2.5 w-2.5 rounded-full border border-orange-300 bg-orange-100 shadow-sm"
-            style={{
-              left: `${x}%`,
-              top: `${y}%`,
-              transform: "translate(-50%,-50%)",
-            }}
-          />
-        );
-      })}
-    </>
+      <div className="relative z-10 rounded-xl bg-white/90 px-2.5 py-2 shadow-sm backdrop-blur">
+        {busy ? (
+          <Loader2 size={16} className="mx-auto animate-spin text-orange-500" />
+        ) : (
+          <>
+            <span className="block max-w-[96px] truncate text-[12px] font-black text-[#071B35]">
+              {table.name}
+            </span>
+            <span className="mt-0.5 block text-[10px] font-black text-slate-500">
+              {table.capacity} personas
+            </span>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -101,15 +160,38 @@ export default function SpaceFloorPlanEditor({
   onClose,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
+
   const [busy, setBusy] = useState<string | null>(null);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [propertiesTab, setPropertiesTab] = useState<PropertiesTab>("general");
+  const [showGrid, setShowGrid] = useState(true);
+  const [zoom, setZoom] = useState(100);
+  const [savedPulse, setSavedPulse] = useState(false);
 
   const [dragging, setDragging] = useState<
     | { type: "table"; id: string }
     | { type: "element"; id: string }
     | null
   >(null);
+
+  const [elementDraft, setElementDraft] = useState<{
+    label: string;
+    width: number;
+    height: number;
+    rotation: number;
+    pos_x: number;
+    pos_y: number;
+  } | null>(null);
+
+  const [tableDraft, setTableDraft] = useState<{
+    name: string;
+    capacity: number;
+    table_shape: TableShape;
+    rotation: number;
+    pos_x: number;
+    pos_y: number;
+  } | null>(null);
 
   const spaceTables = useMemo(
     () => tables.filter((table) => table.space_id === space.id),
@@ -122,27 +204,46 @@ export default function SpaceFloorPlanEditor({
   );
 
   const selectedElement =
-    spaceElements.find((element) => element.id === selectedElementId) || null;
+    spaceElements.find((item) => item.id === selectedElementId) || null;
 
   const selectedTable =
-    spaceTables.find((table) => table.id === selectedTableId) || null;
-
-  const [draft, setDraft] = useState<{
-    label: string;
-    width: number;
-    height: number;
-    rotation: number;
-  } | null>(null);
+    spaceTables.find((item) => item.id === selectedTableId) || null;
 
   const selectElement = (element: ReservationSpaceElement) => {
     setSelectedTableId(null);
+    setTableDraft(null);
     setSelectedElementId(element.id);
-    setDraft({
+    setPropertiesTab("general");
+    setElementDraft({
       label: element.label || "",
       width: Number(element.width),
       height: Number(element.height),
       rotation: Number(element.rotation),
+      pos_x: Number(element.pos_x),
+      pos_y: Number(element.pos_y),
     });
+  };
+
+  const selectTable = (table: ReservationTable) => {
+    setSelectedElementId(null);
+    setElementDraft(null);
+    setSelectedTableId(table.id);
+    setPropertiesTab("general");
+    setTableDraft({
+      name: table.name,
+      capacity: table.capacity,
+      table_shape: table.table_shape,
+      rotation: table.rotation || 0,
+      pos_x: Number(table.pos_x ?? 50),
+      pos_y: Number(table.pos_y ?? 50),
+    });
+  };
+
+  const deselect = () => {
+    setSelectedElementId(null);
+    setSelectedTableId(null);
+    setElementDraft(null);
+    setTableDraft(null);
   };
 
   const pointFromEvent = (clientX: number, clientY: number) => {
@@ -155,6 +256,11 @@ export default function SpaceFloorPlanEditor({
     };
   };
 
+  const pulseSaved = () => {
+    setSavedPulse(true);
+    window.setTimeout(() => setSavedPulse(false), 1200);
+  };
+
   const finishDrag = async (clientX: number, clientY: number) => {
     if (!dragging) return;
 
@@ -162,17 +268,22 @@ export default function SpaceFloorPlanEditor({
     setBusy(dragging.id);
 
     if (dragging.type === "table") {
-      const table = spaceTables.find((t) => t.id === dragging.id);
-      await updateReservationTableVisualPosition(
-        dragging.id,
-        point.x,
-        point.y,
-        table?.rotation || 0
-      );
-      setSelectedTableId(dragging.id);
-      setSelectedElementId(null);
+      const table = spaceTables.find((item) => item.id === dragging.id);
+      if (table) {
+        await updateReservationTableVisualPosition(
+          table.id,
+          point.x,
+          point.y,
+          table.rotation || 0
+        );
+        selectTable({
+          ...table,
+          pos_x: point.x,
+          pos_y: point.y,
+        });
+      }
     } else {
-      const element = spaceElements.find((e) => e.id === dragging.id);
+      const element = spaceElements.find((item) => item.id === dragging.id);
       if (element) {
         await saveReservationSpaceElement(storeId, {
           id: element.id,
@@ -186,27 +297,32 @@ export default function SpaceFloorPlanEditor({
           rotation: element.rotation,
           sort_order: element.sort_order,
         });
-        selectElement(element);
+        selectElement({
+          ...element,
+          pos_x: point.x,
+          pos_y: point.y,
+        });
       }
     }
 
     setBusy(null);
     setDragging(null);
     onChange();
+    pulseSaved();
   };
 
   const addElement = async (type: ReservationSpaceElementType) => {
-    const d = ELEMENT_DEFAULTS[type];
-    setBusy("new-" + type);
+    const defaults = ELEMENT_DEFAULTS[type];
+    setBusy(`new-${type}`);
 
     const { data, error } = await saveReservationSpaceElement(storeId, {
       space_id: space.id,
       element_type: type,
-      label: d.label,
+      label: defaults.label,
       pos_x: 50,
       pos_y: 50,
-      width: d.width,
-      height: d.height,
+      width: defaults.width,
+      height: defaults.height,
       rotation: 0,
       sort_order: spaceElements.length,
     });
@@ -221,19 +337,75 @@ export default function SpaceFloorPlanEditor({
     if (data?.id) {
       setSelectedElementId(data.id);
       setSelectedTableId(null);
-      setDraft({
-        label: d.label,
-        width: d.width,
-        height: d.height,
+      setElementDraft({
+        label: defaults.label,
+        width: defaults.width,
+        height: defaults.height,
         rotation: 0,
+        pos_x: 50,
+        pos_y: 50,
       });
     }
 
     onChange();
+    pulseSaved();
+  };
+
+  const addTable = async (shape: TableShape) => {
+    const nextNumber =
+      spaceTables.reduce((max, table) => {
+        const match = table.name.match(/(\d+)/);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0) + 1;
+
+    const capacity = shape === "rect" ? 6 : 4;
+    const name = `Mesa ${nextNumber}`;
+
+    setBusy(`new-table-${shape}`);
+
+    const { data, error } = await saveReservationTable(storeId, {
+      name,
+      capacity,
+      seat_type: "chairs",
+      zone: space.name,
+      space_id: space.id,
+      pos_row: 0,
+      pos_col: 0,
+      pos_x: 50,
+      pos_y: 50,
+      rotation: 0,
+      table_shape: shape,
+      is_active: true,
+      sort_order: spaceTables.length,
+    });
+
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo crear la mesa.");
+      return;
+    }
+
+    if (data?.id) {
+      const table = data as ReservationTable;
+      setSelectedTableId(table.id);
+      setSelectedElementId(null);
+      setTableDraft({
+        name: table.name,
+        capacity: table.capacity,
+        table_shape: table.table_shape,
+        rotation: table.rotation || 0,
+        pos_x: Number(table.pos_x ?? 50),
+        pos_y: Number(table.pos_y ?? 50),
+      });
+    }
+
+    onChange();
+    pulseSaved();
   };
 
   const saveSelectedElement = async () => {
-    if (!selectedElement || !draft) return;
+    if (!selectedElement || !elementDraft) return;
 
     setBusy(selectedElement.id);
 
@@ -241,12 +413,12 @@ export default function SpaceFloorPlanEditor({
       id: selectedElement.id,
       space_id: selectedElement.space_id,
       element_type: selectedElement.element_type,
-      label: draft.label,
-      pos_x: selectedElement.pos_x,
-      pos_y: selectedElement.pos_y,
-      width: Math.max(2, Math.min(80, Number(draft.width) || 2)),
-      height: Math.max(2, Math.min(80, Number(draft.height) || 2)),
-      rotation: Number(draft.rotation) || 0,
+      label: elementDraft.label,
+      pos_x: clamp(elementDraft.pos_x),
+      pos_y: clamp(elementDraft.pos_y),
+      width: Math.max(2, Math.min(80, elementDraft.width || 2)),
+      height: Math.max(2, Math.min(80, elementDraft.height || 2)),
+      rotation: elementDraft.rotation || 0,
       sort_order: selectedElement.sort_order,
     });
 
@@ -258,12 +430,46 @@ export default function SpaceFloorPlanEditor({
     }
 
     onChange();
+    pulseSaved();
+  };
+
+  const saveSelectedTable = async () => {
+    if (!selectedTable || !tableDraft) return;
+
+    setBusy(selectedTable.id);
+
+    const { error } = await saveReservationTable(storeId, {
+      id: selectedTable.id,
+      name: tableDraft.name.trim() || selectedTable.name,
+      capacity: Math.max(1, Math.min(20, tableDraft.capacity || 1)),
+      seat_type: selectedTable.seat_type,
+      zone: space.name,
+      space_id: space.id,
+      pos_row: selectedTable.pos_row,
+      pos_col: selectedTable.pos_col,
+      pos_x: clamp(tableDraft.pos_x),
+      pos_y: clamp(tableDraft.pos_y),
+      rotation: tableDraft.rotation || 0,
+      table_shape: tableDraft.table_shape,
+      is_active: selectedTable.is_active,
+      sort_order: selectedTable.sort_order,
+    });
+
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo guardar la mesa.");
+      return;
+    }
+
+    onChange();
+    pulseSaved();
   };
 
   const removeSelectedElement = async () => {
     if (!selectedElement) return;
 
-    if (!confirm(`¿Eliminar "${selectedElement.label || SPACE_ELEMENT_LABEL[selectedElement.element_type]}"?`)) {
+    if (!confirm(`¿Eliminar "${selectedElement.label || SPACE_ELEMENT_LABEL[selectedElement.element_type]}" del plano?`)) {
       return;
     }
 
@@ -276,16 +482,64 @@ export default function SpaceFloorPlanEditor({
       return;
     }
 
-    setSelectedElementId(null);
-    setDraft(null);
+    deselect();
     onChange();
+    pulseSaved();
+  };
+
+  const removeSelectedTable = async () => {
+    if (!selectedTable) return;
+
+    if (!confirm(`¿Eliminar "${selectedTable.name}"? Esto también puede eliminar reservas asociadas a esa mesa.`)) {
+      return;
+    }
+
+    setBusy(selectedTable.id);
+    const { error } = await deleteReservationTable(selectedTable.id);
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo eliminar la mesa.");
+      return;
+    }
+
+    deselect();
+    onChange();
+    pulseSaved();
+  };
+
+  const duplicateElement = async (element: ReservationSpaceElement) => {
+    setBusy(`duplicate-${element.id}`);
+
+    const { error } = await saveReservationSpaceElement(storeId, {
+      space_id: element.space_id,
+      element_type: element.element_type,
+      label: element.label || "",
+      pos_x: clamp(Number(element.pos_x) + 4),
+      pos_y: clamp(Number(element.pos_y) + 4),
+      width: element.width,
+      height: element.height,
+      rotation: element.rotation,
+      sort_order: spaceElements.length,
+    });
+
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo duplicar.");
+      return;
+    }
+
+    onChange();
+    pulseSaved();
   };
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
+    <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_46px_rgba(15,23,42,.07)]">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-6">
         <div>
-          <p className="text-[11px] font-black text-slate-400">
+          <p className="text-[11px] font-bold text-slate-400">
             Espacios <span className="px-1">›</span> {space.name}
             <span className="px-1">›</span>
             <span className="text-orange-600">Editor del plano</span>
@@ -298,374 +552,673 @@ export default function SpaceFloorPlanEditor({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {onClose && (
             <button
               onClick={onClose}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50"
             >
               Salir del editor
             </button>
           )}
-          <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-[11px] font-black text-emerald-600">
+
+          <button
+            onClick={() => {
+              onChange();
+              pulseSaved();
+            }}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#FF641F] px-4 py-2.5 text-xs font-black text-white shadow-sm"
+          >
+            <Save size={14} />
+            Guardar plano
+          </button>
+
+          <span
+            className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black ${
+              savedPulse
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-emerald-50 text-emerald-600"
+            }`}
+          >
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            Guardado automático
+            {savedPulse ? "Guardado" : "Guardado automático"}
           </span>
         </div>
       </div>
 
-      <div className="border-b border-slate-100 bg-[#FBFCFE] p-4 sm:p-5">
+      {/* Toolbars */}
+      <div className="grid gap-4 border-b border-slate-100 bg-[#FBFCFE] p-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-black text-[#071B35]">Agregar elemento</p>
           <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
-            Haz clic para añadirlo al centro del plano y luego arrástralo.
+            Añádelo al centro del plano y luego arrástralo.
           </p>
-          <div className="mt-3 flex flex-wrap gap-1.5">
-          {(
-            [
-              "wall",
-              "door",
-              "window",
-              "bar",
-              "entrance",
-              "plant",
-              "label",
-            ] as ReservationSpaceElementType[]
-          ).map((type) => {
-            const Icon = ELEMENT_ICONS[type];
 
-            return (
-              <button
-                key={type}
-                onClick={() => addElement(type)}
-                disabled={busy === "new-" + type}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-black text-slate-600 hover:bg-slate-50"
-              >
-                {busy === "new-" + type ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Icon size={12} />
-                )}
-                {SPACE_ELEMENT_LABEL[type]}
-              </button>
-            );
-          })}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              onClick={() => addTable("round")}
+              disabled={busy === "new-table-round"}
+              className="inline-flex min-w-[100px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-[10px] font-black text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+            >
+              <Circle size={13} /> Mesa redonda
+            </button>
+
+            <button
+              onClick={() => addTable("square")}
+              disabled={busy === "new-table-square"}
+              className="inline-flex min-w-[100px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-[10px] font-black text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+            >
+              <Square size={13} /> Mesa cuadrada
+            </button>
+
+            <button
+              onClick={() => addTable("rect")}
+              disabled={busy === "new-table-rect"}
+              className="inline-flex min-w-[110px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-[10px] font-black text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+            >
+              <RectangleHorizontal size={13} /> Mesa rectangular
+            </button>
+
+            {(
+              ["wall", "door", "window", "bar", "entrance", "plant", "label"] as ReservationSpaceElementType[]
+            ).map((type) => {
+              const Icon = ELEMENT_ICONS[type];
+
+              return (
+                <button
+                  key={type}
+                  onClick={() => addElement(type)}
+                  disabled={busy === `new-${type}`}
+                  className="inline-flex min-w-[86px] items-center justify-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2.5 text-[10px] font-black text-slate-600 hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50"
+                >
+                  <Icon size={13} />
+                  {SPACE_ELEMENT_LABEL[type]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-black text-[#071B35]">Acciones del plano</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              disabled
+              title="Disponible en una próxima mejora"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-300"
+            >
+              <Undo2 size={13} /> Deshacer
+            </button>
+            <button
+              disabled
+              title="Disponible en una próxima mejora"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-300"
+            >
+              <Redo2 size={13} /> Rehacer
+            </button>
+            <button
+              onClick={() => setShowGrid((value) => !value)}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[10px] font-black ${
+                showGrid
+                  ? "border-orange-200 bg-orange-50 text-orange-600"
+                  : "border-slate-200 text-slate-500"
+              }`}
+            >
+              <Grid3X3 size={13} /> Cuadrícula
+            </button>
+
+            <button
+              onClick={() => setZoom((value) => Math.max(75, value - 10))}
+              className="rounded-xl border border-slate-200 p-2 text-slate-500"
+            >
+              <Minus size={13} />
+            </button>
+
+            <span className="flex items-center rounded-xl border border-slate-200 px-3 text-[10px] font-black text-slate-500">
+              {zoom}%
+            </span>
+
+            <button
+              onClick={() => setZoom((value) => Math.min(125, value + 10))}
+              className="rounded-xl border border-slate-200 p-2 text-slate-500"
+            >
+              <Plus size={13} />
+            </button>
+
+            <button
+              onClick={() => setZoom(100)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-500"
+            >
+              <Maximize2 size={13} /> Ajustar
+            </button>
           </div>
         </div>
       </div>
 
+      {/* Canvas + properties */}
       <div className="grid xl:grid-cols-[minmax(0,1fr)_330px]">
-        <div className="min-w-0 p-4 sm:p-5">
-          <div className="overflow-auto rounded-[22px] border border-slate-200 bg-[#F7F3ED] p-3">
-          <div
-            ref={canvasRef}
-            onPointerUp={(e) => finishDrag(e.clientX, e.clientY)}
-            onPointerLeave={(e) => {
-              if (dragging) finishDrag(e.clientX, e.clientY);
-            }}
-            className="relative aspect-[16/10] min-h-[620px] min-w-[820px] touch-none overflow-hidden rounded-2xl border-2 border-slate-200 bg-[#F8F3EC]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(7,27,53,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(7,27,53,.045) 1px,transparent 1px)",
-              backgroundSize: "32px 32px",
-            }}
-          >
-            {space.image_url && (
-              <img
-                src={space.image_url}
-                alt=""
-                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.08]"
-              />
-            )}
+        <div className="min-w-0 p-5">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-black text-[#071B35]">Plano del espacio</p>
+              <p className="mt-0.5 inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-600">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Editando...
+              </p>
+            </div>
+            <p className="text-[10px] font-semibold text-slate-400">
+              Haz clic para seleccionar · arrastra para mover.
+            </p>
+          </div>
 
-            {spaceElements.map((element) => {
-              const Icon = ELEMENT_ICONS[element.element_type];
-              const selected = selectedElementId === element.id;
+          <div className="overflow-auto rounded-[24px] border border-slate-200 bg-[#F7F3ED] p-3">
+            <div
+              ref={canvasRef}
+              onClick={deselect}
+              onPointerUp={(e) => finishDrag(e.clientX, e.clientY)}
+              onPointerLeave={(e) => {
+                if (dragging) finishDrag(e.clientX, e.clientY);
+              }}
+              className="relative mx-auto aspect-[16/10] min-h-[650px] min-w-[860px] touch-none overflow-hidden rounded-[20px] border-2 border-[#CDBEAD] bg-[#F3E8DA] shadow-inner"
+              style={{
+                transform: `scale(${zoom / 100})`,
+                transformOrigin: "top left",
+                backgroundImage: showGrid
+                  ? "linear-gradient(rgba(99,77,54,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.055) 1px,transparent 1px)"
+                  : "none",
+                backgroundSize: "32px 32px",
+              }}
+            >
+              {space.image_url && (
+                <img
+                  src={space.image_url}
+                  alt=""
+                  className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.035]"
+                />
+              )}
 
-              return (
-                <div
-                  key={element.id}
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    setDragging({ type: "element", id: element.id });
-                    selectElement(element);
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    selectElement(element);
-                  }}
-                  className={`group absolute flex cursor-grab items-center justify-center rounded-md border bg-white/90 shadow-sm active:cursor-grabbing ${
-                    selected
-                      ? "border-orange-400 ring-2 ring-orange-200"
-                      : "border-slate-300"
-                  }`}
-                  style={{
-                    left: `${element.pos_x}%`,
-                    top: `${element.pos_y}%`,
-                    width: `${element.width}%`,
-                    height: `${element.height}%`,
-                    transform: `translate(-50%,-50%) rotate(${element.rotation}deg)`,
-                  }}
-                >
-                  <Icon size={14} className="text-slate-500" />
+              {spaceElements.map((element) => {
+                const Icon = ELEMENT_ICONS[element.element_type];
+                const selected = element.id === selectedElementId;
 
-                  {(element.element_type === "label" ||
-                    element.element_type === "bar" ||
-                    element.element_type === "entrance") && (
-                    <span className="ml-1 truncate text-[9px] font-black text-slate-600">
-                      {element.label || SPACE_ELEMENT_LABEL[element.element_type]}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+                const appearance =
+                  element.element_type === "wall"
+                    ? "border-none bg-[#302A26]"
+                    : element.element_type === "window"
+                    ? "border-2 border-sky-400 bg-sky-100"
+                    : element.element_type === "bar"
+                    ? "border border-amber-800 bg-amber-200"
+                    : element.element_type === "plant"
+                    ? "border-none bg-emerald-100"
+                    : "border border-[#C8BAAA] bg-white/90";
 
-            {spaceTables.map((table) => {
-              const selected = selectedTableId === table.id;
+                return (
+                  <div
+                    key={element.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectElement(element);
+                    }}
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      setDragging({ type: "element", id: element.id });
+                      selectElement(element);
+                    }}
+                    className={`absolute flex cursor-grab items-center justify-center rounded-md shadow-sm active:cursor-grabbing ${appearance} ${
+                      selected ? "ring-2 ring-orange-400 ring-offset-2" : ""
+                    }`}
+                    style={{
+                      left: `${element.pos_x}%`,
+                      top: `${element.pos_y}%`,
+                      width: `${element.width}%`,
+                      height: `${element.height}%`,
+                      transform: `translate(-50%,-50%) rotate(${element.rotation}deg)`,
+                    }}
+                  >
+                    {element.element_type !== "wall" && (
+                      <Icon
+                        size={14}
+                        className={
+                          element.element_type === "plant"
+                            ? "text-emerald-600"
+                            : "text-slate-500"
+                        }
+                      />
+                    )}
 
-              return (
+                    {(element.element_type === "label" ||
+                      element.element_type === "bar" ||
+                      element.element_type === "entrance") && (
+                      <span className="ml-1 truncate text-[9px] font-black uppercase tracking-wide text-slate-600">
+                        {element.label}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+
+              {spaceTables.map((table) => (
                 <div
                   key={table.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    selectTable(table);
+                  }}
                   onPointerDown={(e) => {
                     e.stopPropagation();
                     setDragging({ type: "table", id: table.id });
-                    setSelectedTableId(table.id);
-                    setSelectedElementId(null);
-                    setDraft(null);
+                    selectTable(table);
                   }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedTableId(table.id);
-                    setSelectedElementId(null);
-                    setDraft(null);
-                  }}
-                  className={`absolute flex cursor-grab select-none items-center justify-center bg-white text-center shadow-[0_6px_16px_rgba(27,20,16,.12)] active:cursor-grabbing ${
-                    table.table_shape === "round"
-                      ? "h-16 w-16 rounded-full"
-                      : table.table_shape === "rect"
-                      ? "h-14 w-24 rounded-xl"
-                      : "h-16 w-16 rounded-xl"
-                  } ${
-                    selected
-                      ? "border-2 border-orange-500 ring-2 ring-orange-200"
-                      : "border-2 border-orange-300"
-                  }`}
+                  className="absolute cursor-grab select-none active:cursor-grabbing"
                   style={{
                     left: `${table.pos_x ?? 50}%`,
                     top: `${table.pos_y ?? 50}%`,
                     transform: `translate(-50%,-50%) rotate(${table.rotation || 0}deg)`,
                   }}
                 >
-                  <SeatDots capacity={table.capacity} />
-
-                  {busy === table.id ? (
-                    <Loader2 size={14} className="animate-spin text-orange-500" />
-                  ) : (
-                    <div className="relative z-10 rounded-lg bg-white/90 px-1.5 py-1">
-                      <Armchair size={13} className="mx-auto text-orange-500" />
-                      <span className="mt-0.5 block max-w-[70px] truncate text-[9px] font-black text-[#071B35]">
-                        {table.name}
-                      </span>
-                      <span className="block text-[8px] font-black text-orange-600">
-                        {table.capacity} personas
-                      </span>
-                    </div>
-                  )}
+                  <TableVisual
+                    table={table}
+                    selected={selectedTableId === table.id}
+                    busy={busy === table.id}
+                  />
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </div>
 
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-orange-50/60 px-4 py-3">
+            <p className="text-[10px] font-semibold text-orange-800">
+              Consejo: usa la cuadrícula como guía para alinear paredes, mesas y puertas.
+            </p>
             <button
-              type="button"
-              onClick={() => {
-                setSelectedElementId(null);
-                setSelectedTableId(null);
-                setDraft(null);
-              }}
-              className="absolute inset-0 -z-10"
-              aria-label="Deseleccionar"
-            />
-          </div>
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
-              <Grip size={12} />
-              Arrastra para mover. Haz clic para editar o eliminar.
-            </p>
-
-            <p className="text-[10px] font-semibold text-slate-400">
-              Los puntos alrededor de cada mesa representan sus asientos.
-            </p>
+              onClick={() => setShowGrid((value) => !value)}
+              className="text-[10px] font-black text-orange-600"
+            >
+              {showGrid ? "Ocultar cuadrícula" : "Ver cuadrícula"}
+            </button>
           </div>
         </div>
 
-        <aside className="border-t border-slate-100 bg-slate-50/60 p-4 xl:sticky xl:top-4 xl:h-fit xl:border-l xl:border-t-0">
-          <p className="text-sm font-black text-[#071B35]">Propiedades</p>
+        {/* Properties panel */}
+        <aside className="border-t border-slate-100 bg-[#FBFCFE] p-4 xl:sticky xl:top-4 xl:h-fit xl:border-l xl:border-t-0">
+          <p className="text-sm font-black text-[#071B35]">Propiedades del elemento</p>
+
           {!selectedElement && !selectedTable && (
-            <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5 text-center">
-              <Square size={28} className="mx-auto text-slate-300" />
-              <p className="mt-3 text-sm font-black text-slate-600">
+            <div className="mt-4 rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5">
+              <p className="text-sm font-black text-slate-600">
                 Selecciona un elemento
               </p>
               <p className="mt-1 text-xs font-semibold leading-5 text-slate-400">
-                Podrás editar texto, tamaño, rotación o eliminar elementos.
+                Haz clic sobre una mesa, pared, puerta, ventana, barra o texto. Este mensaje nunca tapa el plano.
               </p>
             </div>
           )}
 
-          {selectedTable && (
-            <div className="rounded-2xl border border-orange-100 bg-white p-4">
-              <p className="text-[10px] font-black uppercase tracking-wide text-orange-600">
-                Mesa seleccionada
-              </p>
-
-              <h4 className="mt-1 text-lg font-black text-[#071B35]">
-                {selectedTable.name}
-              </h4>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded-xl bg-slate-50 p-3">
-                  <p className="text-[9px] font-black uppercase text-slate-400">
-                    Capacidad
-                  </p>
-                  <p className="mt-1 text-sm font-black text-slate-700">
-                    {selectedTable.capacity} personas
-                  </p>
+          {selectedTable && tableDraft && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xl font-black text-[#071B35]">
+                    {tableDraft.name}
+                  </h3>
+                  <span className="mt-1 inline-flex rounded-full bg-orange-50 px-2.5 py-1 text-[9px] font-black text-orange-600">
+                    {tableDraft.table_shape === "round"
+                      ? "Mesa redonda"
+                      : tableDraft.table_shape === "square"
+                      ? "Mesa cuadrada"
+                      : "Mesa rectangular"}
+                  </span>
                 </div>
 
-                <div className="rounded-xl bg-slate-50 p-3">
-                  <p className="text-[9px] font-black uppercase text-slate-400">
-                    Forma
-                  </p>
-                  <p className="mt-1 text-sm font-black capitalize text-slate-700">
-                    {selectedTable.table_shape}
-                  </p>
-                </div>
+                <button
+                  onClick={removeSelectedTable}
+                  className="rounded-xl border border-red-100 bg-red-50 p-2 text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
 
-              <p className="mt-3 text-[10px] font-semibold leading-4 text-slate-400">
-                La capacidad y forma se editan desde la pestaña Mesas. Aquí solo estás ubicándola en el plano.
-              </p>
+              <div className="mt-4 flex border-b border-slate-100">
+                <button
+                  onClick={() => setPropertiesTab("general")}
+                  className={`flex-1 border-b-2 px-2 py-2 text-[10px] font-black ${
+                    propertiesTab === "general"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-slate-400"
+                  }`}
+                >
+                  General
+                </button>
+                <button
+                  onClick={() => setPropertiesTab("position")}
+                  className={`flex-1 border-b-2 px-2 py-2 text-[10px] font-black ${
+                    propertiesTab === "position"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-slate-400"
+                  }`}
+                >
+                  Posición
+                </button>
+              </div>
+
+              {propertiesTab === "general" ? (
+                <div className="mt-4 space-y-3">
+                  <label className="block text-[10px] font-black uppercase text-slate-400">
+                    Nombre de la mesa
+                    <input
+                      value={tableDraft.name}
+                      onChange={(e) =>
+                        setTableDraft({ ...tableDraft, name: e.target.value })
+                      }
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-orange-300"
+                    />
+                  </label>
+
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-slate-400">
+                      Capacidad
+                    </p>
+                    <div className="mt-1 flex items-center gap-3">
+                      <button
+                        onClick={() =>
+                          setTableDraft({
+                            ...tableDraft,
+                            capacity: Math.max(1, tableDraft.capacity - 1),
+                          })
+                        }
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200"
+                      >
+                        <Minus size={13} />
+                      </button>
+                      <span className="w-6 text-center text-sm font-black">
+                        {tableDraft.capacity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setTableDraft({
+                            ...tableDraft,
+                            capacity: Math.min(20, tableDraft.capacity + 1),
+                          })
+                        }
+                        className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200"
+                      >
+                        <Plus size={13} />
+                      </button>
+                      <span className="text-xs font-semibold text-slate-400">
+                        personas
+                      </span>
+                    </div>
+                  </div>
+
+                  <label className="block text-[10px] font-black uppercase text-slate-400">
+                    Forma
+                    <select
+                      value={tableDraft.table_shape}
+                      onChange={(e) =>
+                        setTableDraft({
+                          ...tableDraft,
+                          table_shape: e.target.value as TableShape,
+                        })
+                      }
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold"
+                    >
+                      <option value="round">Redonda</option>
+                      <option value="square">Cuadrada</option>
+                      <option value="rect">Rectangular</option>
+                    </select>
+                  </label>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400">
+                      X %
+                      <input
+                        type="number"
+                        min={3}
+                        max={97}
+                        value={tableDraft.pos_x}
+                        onChange={(e) =>
+                          setTableDraft({
+                            ...tableDraft,
+                            pos_x: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                    </label>
+                    <label className="text-[10px] font-black uppercase text-slate-400">
+                      Y %
+                      <input
+                        type="number"
+                        min={3}
+                        max={97}
+                        value={tableDraft.pos_y}
+                        onChange={(e) =>
+                          setTableDraft({
+                            ...tableDraft,
+                            pos_y: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="block text-[10px] font-black uppercase text-slate-400">
+                    Rotación
+                    <div className="mt-1 flex gap-2">
+                      <input
+                        type="number"
+                        value={tableDraft.rotation}
+                        onChange={(e) =>
+                          setTableDraft({
+                            ...tableDraft,
+                            rotation: Number(e.target.value),
+                          })
+                        }
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                      <button
+                        onClick={() =>
+                          setTableDraft({
+                            ...tableDraft,
+                            rotation: (tableDraft.rotation + 90) % 360,
+                          })
+                        }
+                        className="rounded-xl border border-slate-200 px-3 text-slate-500"
+                      >
+                        <RotateCw size={14} />
+                      </button>
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              <button
+                onClick={saveSelectedTable}
+                disabled={busy === selectedTable.id}
+                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#071B35] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50"
+              >
+                <Save size={14} />
+                Guardar mesa
+              </button>
             </div>
           )}
 
-          {selectedElement && draft && (
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          {selectedElement && elementDraft && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-wide text-orange-600">
                     Elemento seleccionado
                   </p>
-                  <h4 className="mt-1 text-base font-black text-[#071B35]">
+                  <h3 className="mt-1 text-lg font-black text-[#071B35]">
                     {SPACE_ELEMENT_LABEL[selectedElement.element_type]}
-                  </h4>
+                  </h3>
                 </div>
 
                 <button
-                  onClick={() => {
-                    setSelectedElementId(null);
-                    setDraft(null);
-                  }}
+                  onClick={deselect}
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"
                 >
                   <X size={14} />
                 </button>
               </div>
 
-              <label className="mt-4 block text-[10px] font-black uppercase text-slate-400">
-                Texto / nombre
-                <input
-                  value={draft.label}
-                  onChange={(e) =>
-                    setDraft({ ...draft, label: e.target.value })
-                  }
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-orange-300"
-                />
-              </label>
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="text-[10px] font-black uppercase text-slate-400">
-                  Ancho %
-                  <input
-                    type="number"
-                    min={2}
-                    max={80}
-                    value={draft.width}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        width: Number(e.target.value),
-                      })
-                    }
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
-                  />
-                </label>
-
-                <label className="text-[10px] font-black uppercase text-slate-400">
-                  Alto %
-                  <input
-                    type="number"
-                    min={2}
-                    max={80}
-                    value={draft.height}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        height: Number(e.target.value),
-                      })
-                    }
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
-                  />
-                </label>
+              <div className="mt-4 flex border-b border-slate-100">
+                <button
+                  onClick={() => setPropertiesTab("general")}
+                  className={`flex-1 border-b-2 px-2 py-2 text-[10px] font-black ${
+                    propertiesTab === "general"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-slate-400"
+                  }`}
+                >
+                  General
+                </button>
+                <button
+                  onClick={() => setPropertiesTab("position")}
+                  className={`flex-1 border-b-2 px-2 py-2 text-[10px] font-black ${
+                    propertiesTab === "position"
+                      ? "border-orange-500 text-orange-600"
+                      : "border-transparent text-slate-400"
+                  }`}
+                >
+                  Posición
+                </button>
               </div>
 
-              <label className="mt-3 block text-[10px] font-black uppercase text-slate-400">
-                Rotación
-                <div className="mt-1 flex gap-2">
-                  <input
-                    type="number"
-                    value={draft.rotation}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        rotation: Number(e.target.value),
-                      })
-                    }
-                    className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
-                  />
+              {propertiesTab === "general" ? (
+                <div className="mt-4 space-y-3">
+                  <label className="block text-[10px] font-black uppercase text-slate-400">
+                    Texto / nombre
+                    <input
+                      value={elementDraft.label}
+                      onChange={(e) =>
+                        setElementDraft({
+                          ...elementDraft,
+                          label: e.target.value,
+                        })
+                      }
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold outline-none focus:border-orange-300"
+                    />
+                  </label>
 
-                  <button
-                    onClick={() =>
-                      setDraft({
-                        ...draft,
-                        rotation: (draft.rotation + 90) % 360,
-                      })
-                    }
-                    className="rounded-xl border border-slate-200 px-3 text-slate-500"
-                  >
-                    <RotateCw size={14} />
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400">
+                      Ancho %
+                      <input
+                        type="number"
+                        value={elementDraft.width}
+                        onChange={(e) =>
+                          setElementDraft({
+                            ...elementDraft,
+                            width: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                    </label>
+
+                    <label className="text-[10px] font-black uppercase text-slate-400">
+                      Alto %
+                      <input
+                        type="number"
+                        value={elementDraft.height}
+                        onChange={(e) =>
+                          setElementDraft({
+                            ...elementDraft,
+                            height: Number(e.target.value),
+                          })
+                        }
+                        className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="block text-[10px] font-black uppercase text-slate-400">
+                    Rotación
+                    <div className="mt-1 flex gap-2">
+                      <input
+                        type="number"
+                        value={elementDraft.rotation}
+                        onChange={(e) =>
+                          setElementDraft({
+                            ...elementDraft,
+                            rotation: Number(e.target.value),
+                          })
+                        }
+                        className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                      />
+                      <button
+                        onClick={() =>
+                          setElementDraft({
+                            ...elementDraft,
+                            rotation: (elementDraft.rotation + 90) % 360,
+                          })
+                        }
+                        className="rounded-xl border border-slate-200 px-3 text-slate-500"
+                      >
+                        <RotateCw size={14} />
+                      </button>
+                    </div>
+                  </label>
                 </div>
-              </label>
+              ) : (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">
+                    X %
+                    <input
+                      type="number"
+                      value={elementDraft.pos_x}
+                      onChange={(e) =>
+                        setElementDraft({
+                          ...elementDraft,
+                          pos_x: Number(e.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                    />
+                  </label>
+
+                  <label className="text-[10px] font-black uppercase text-slate-400">
+                    Y %
+                    <input
+                      type="number"
+                      value={elementDraft.pos_y}
+                      onChange={(e) =>
+                        setElementDraft({
+                          ...elementDraft,
+                          pos_y: Number(e.target.value),
+                        })
+                      }
+                      className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold"
+                    />
+                  </label>
+                </div>
+              )}
 
               <button
                 onClick={saveSelectedElement}
                 disabled={busy === selectedElement.id}
                 className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#071B35] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50"
               >
-                {busy === selectedElement.id ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Save size={14} />
-                )}
+                <Save size={14} />
                 Guardar cambios
               </button>
 
               <button
+                onClick={() => duplicateElement(selectedElement)}
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600"
+              >
+                <Copy size={14} />
+                Duplicar
+              </button>
+
+              <button
                 onClick={removeSelectedElement}
-                disabled={busy === selectedElement.id}
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-black text-red-600 disabled:opacity-50"
+                className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-xs font-black text-red-600"
               >
                 <Trash2 size={14} />
                 Eliminar del plano
@@ -674,13 +1227,15 @@ export default function SpaceFloorPlanEditor({
           )}
         </aside>
       </div>
-      <div className="border-t border-slate-100 p-4 sm:p-5">
+
+      {/* Elements list */}
+      <div className="border-t border-slate-100 p-5">
         <div className="mb-3">
           <h3 className="text-base font-black text-[#071B35]">
             Elementos del plano ({spaceTables.length + spaceElements.length})
           </h3>
           <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
-            Selecciona cualquiera para localizarlo y editarlo.
+            Lista de todo lo que existe en el plano. Selecciona uno para editarlo.
           </p>
         </div>
 
@@ -692,35 +1247,51 @@ export default function SpaceFloorPlanEditor({
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Capacidad / Texto</th>
                 <th className="px-4 py-3">Posición</th>
+                <th className="px-4 py-3">Tamaño</th>
                 <th className="px-4 py-3">Acción</th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-slate-100 bg-white">
               {spaceTables.map((table) => (
-                <tr key={table.id} className={selectedTableId === table.id ? "bg-orange-50/60" : ""}>
-                  <td className="px-4 py-3 font-bold text-slate-500">Mesa</td>
-                  <td className="px-4 py-3 font-black text-slate-700">{table.name}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-500">{table.capacity} personas</td>
-                  <td className="px-4 py-3 font-semibold text-slate-400">
-                    {Math.round(table.pos_x ?? 50)}%, {Math.round(table.pos_y ?? 50)}%
+                <tr
+                  key={table.id}
+                  className={selectedTableId === table.id ? "bg-orange-50/60" : ""}
+                >
+                  <td className="px-4 py-3 font-bold text-slate-500">
+                    {table.table_shape === "round"
+                      ? "Mesa redonda"
+                      : table.table_shape === "square"
+                      ? "Mesa cuadrada"
+                      : "Mesa rectangular"}
                   </td>
+                  <td className="px-4 py-3 font-black text-slate-700">
+                    {table.name}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-500">
+                    {table.capacity} personas
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-400">
+                    {Math.round(table.pos_x ?? 50)}%,{" "}
+                    {Math.round(table.pos_y ?? 50)}%
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-400">—</td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={() => {
-                        setSelectedTableId(table.id);
-                        setSelectedElementId(null);
-                        setDraft(null);
-                      }}
+                      onClick={() => selectTable(table)}
                       className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-black text-slate-500"
                     >
-                      Seleccionar
+                      Editar
                     </button>
                   </td>
                 </tr>
               ))}
 
               {spaceElements.map((element) => (
-                <tr key={element.id} className={selectedElementId === element.id ? "bg-orange-50/60" : ""}>
+                <tr
+                  key={element.id}
+                  className={selectedElementId === element.id ? "bg-orange-50/60" : ""}
+                >
                   <td className="px-4 py-3 font-bold text-slate-500">
                     {SPACE_ELEMENT_LABEL[element.element_type]}
                   </td>
@@ -728,12 +1299,13 @@ export default function SpaceFloorPlanEditor({
                     {element.label || "—"}
                   </td>
                   <td className="px-4 py-3 font-semibold text-slate-500">
-                    {element.element_type === "label"
-                      ? element.label
-                      : `${Math.round(element.width)}% × ${Math.round(element.height)}%`}
+                    {element.element_type === "label" ? element.label : "—"}
                   </td>
                   <td className="px-4 py-3 font-semibold text-slate-400">
                     {Math.round(element.pos_x)}%, {Math.round(element.pos_y)}%
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-400">
+                    {Math.round(element.width)}% × {Math.round(element.height)}%
                   </td>
                   <td className="px-4 py-3">
                     <button
@@ -745,11 +1317,21 @@ export default function SpaceFloorPlanEditor({
                   </td>
                 </tr>
               ))}
+
+              {spaceTables.length === 0 && spaceElements.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-xs font-semibold text-slate-400"
+                  >
+                    El plano todavía está vacío.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
-
-    </div>
+    </section>
   );
 }
