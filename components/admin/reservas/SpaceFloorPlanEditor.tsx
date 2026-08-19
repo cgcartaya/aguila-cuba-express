@@ -77,6 +77,9 @@ const ELEMENT_DEFAULTS: Record<
   bar: { width: 20, height: 8, label: "Barra" },
   entrance: { width: 16, height: 5, label: "Entrada principal" },
   plant: { width: 6, height: 6, label: "Planta" },
+  restroom: { width: 10, height: 8, label: "Baño" },
+  stool: { width: 4.5, height: 4.5, label: "Banqueta" },
+  stairs: { width: 14, height: 8, label: "Escalera" },
   label: { width: 20, height: 5, label: "Texto" },
 };
 
