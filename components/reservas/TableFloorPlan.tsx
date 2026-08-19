@@ -420,6 +420,17 @@ export default function TableFloorPlan({
             key={space.id}
             className="min-w-0 overflow-hidden rounded-[22px] border border-[#E3D6C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)] sm:rounded-[26px]"
           >
+            {space.image_url && (
+              <div className="relative h-36 w-full sm:h-44">
+                <img
+                  src={space.image_url}
+                  alt={space.name}
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-black/0" />
+              </div>
+            )}
+
             <div className="border-b border-[#EEE5DA] p-4 sm:p-5">
               <p
                 className="text-[10px] font-black uppercase tracking-[.18em]"

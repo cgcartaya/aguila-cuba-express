@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import SpaceFloorPlanEditor from "./SpaceFloorPlanEditor";
+import SpaceImageUploader from "./SpaceImageUploader";
 
 import {
   deleteReservationSpace,
@@ -188,7 +189,7 @@ export default function SpaceManager({
                   </select>
                 </label>
 
-                <label className="text-xs font-black text-slate-600">
+                <label className="text-xs font-black text-slate-600 sm:col-span-2">
                   Nivel / referencia
                   <input
                     value={editing.floor_label}
@@ -202,21 +203,15 @@ export default function SpaceManager({
                     className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
                   />
                 </label>
+              </div>
 
-                <label className="text-xs font-black text-slate-600">
-                  Foto del ambiente (URL)
-                  <input
-                    value={editing.image_url}
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        image_url: e.target.value,
-                      })
-                    }
-                    placeholder="https://..."
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
-                  />
-                </label>
+              <div className="mt-3">
+                <SpaceImageUploader
+                  value={editing.image_url}
+                  onChange={(url) =>
+                    setEditing({ ...editing, image_url: url })
+                  }
+                />
               </div>
 
               <label className="mt-3 block text-xs font-black text-slate-600">
