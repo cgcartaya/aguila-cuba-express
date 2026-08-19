@@ -168,10 +168,19 @@ export default function SpaceFloorPlanEditor({
   const [showGrid, setShowGrid] = useState(true);
   const [zoom, setZoom] = useState(100);
   const [savedPulse, setSavedPulse] = useState(false);
+  const [snapToGrid, setSnapToGrid] = useState(false);
+  const [positionOverrides, setPositionOverrides] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
 
   const [dragging, setDragging] = useState<
-    | { type: "table"; id: string }
-    | { type: "element"; id: string }
+    | {
+        type: "table" | "element";
+        id: string;
+        pointerId: number;
+        offsetX: number;
+        offsetY: number;
+      }
     | null
   >(null);
 
@@ -256,60 +265,169 @@ export default function SpaceFloorPlanEditor({
     };
   };
 
-  const pulseSaved = () => {
-    setSavedPulse(true);
-    window.setTimeout(() => setSavedPulse(false), 1200);
+  const applySnap = (value: number) => {
+    if (!snapToGrid) return Math.round(value * 10) / 10;
+    return Math.round(value);
   };
 
-  const finishDrag = async (clientX: number, clientY: number) => {
-    if (!dragging) return;
+  const getPositionKey = (type: "table" | "element", id: string) =>
+    `${type}:${id}`;
 
-    const point = pointFromEvent(clientX, clientY);
+  const getTablePosition = (table: ReservationTable) =>
+    positionOverrides[getPositionKey("table", table.id)] || {
+      x: Number(table.pos_x ?? 50),
+      y: Number(table.pos_y ?? 50),
+    };
+
+  const getElementPosition = (element: ReservationSpaceElement) =>
+    positionOverrides[getPositionKey("element", element.id)] || {
+      x: Number(element.pos_x),
+      y: Number(element.pos_y),
+    };
+
+  const clampElementPosition = (
+    element: ReservationSpaceElement,
+    x: number,
+    y: number
+  ) => {
+    const halfW = Math.max(1, Number(element.width) / 2);
+    const halfH = Math.max(1, Number(element.height) / 2);
+
+    return {
+      x: Math.max(halfW, Math.min(100 - halfW, x)),
+      y: Math.max(halfH, Math.min(100 - halfH, y)),
+    };
+  };
+
+  const setLivePosition = (
+    type: "table" | "element",
+    id: string,
+    x: number,
+    y: number
+  ) => {
+    setPositionOverrides((prev) => ({
+      ...prev,
+      [getPositionKey(type, id)]: { x, y },
+    }));
+  };
+
+  const beginDrag = (
+    e: React.PointerEvent<HTMLElement>,
+    type: "table" | "element",
+    id: string,
+    currentX: number,
+    currentY: number
+  ) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const pointer = pointFromEvent(e.clientX, e.clientY);
+
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+
+    setDragging({
+      type,
+      id,
+      pointerId: e.pointerId,
+      offsetX: pointer.x - currentX,
+      offsetY: pointer.y - currentY,
+    });
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging || e.pointerId !== dragging.pointerId) return;
+
+    const pointer = pointFromEvent(e.clientX, e.clientY);
+    let x = applySnap(pointer.x - dragging.offsetX);
+    let y = applySnap(pointer.y - dragging.offsetY);
+
+    if (dragging.type === "element") {
+      const element = spaceElements.find((item) => item.id === dragging.id);
+      if (element) {
+        const clamped = clampElementPosition(element, x, y);
+        x = clamped.x;
+        y = clamped.y;
+      }
+    } else {
+      x = clamp(x, 4, 96);
+      y = clamp(y, 4, 96);
+    }
+
+    setLivePosition(dragging.type, dragging.id, x, y);
+
+    if (dragging.type === "table" && selectedTableId === dragging.id) {
+      setTableDraft((draft) => (draft ? { ...draft, pos_x: x, pos_y: y } : draft));
+    }
+
+    if (dragging.type === "element" && selectedElementId === dragging.id) {
+      setElementDraft((draft) =>
+        draft ? { ...draft, pos_x: x, pos_y: y } : draft
+      );
+    }
+  };
+
+  const finishCurrentDrag = async (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging || e.pointerId !== dragging.pointerId) return;
+
+    const key = getPositionKey(dragging.type, dragging.id);
+    const current = positionOverrides[key];
+
+    setDragging(null);
+
+    if (!current) return;
+
     setBusy(dragging.id);
 
     if (dragging.type === "table") {
       const table = spaceTables.find((item) => item.id === dragging.id);
       if (table) {
-        await updateReservationTableVisualPosition(
+        const { error } = await updateReservationTableVisualPosition(
           table.id,
-          point.x,
-          point.y,
+          current.x,
+          current.y,
           table.rotation || 0
         );
-        selectTable({
-          ...table,
-          pos_x: point.x,
-          pos_y: point.y,
-        });
+
+        if (error) {
+          alert("No se pudo guardar la nueva posición de la mesa.");
+        }
       }
     } else {
       const element = spaceElements.find((item) => item.id === dragging.id);
       if (element) {
-        await saveReservationSpaceElement(storeId, {
+        const { error } = await saveReservationSpaceElement(storeId, {
           id: element.id,
           space_id: element.space_id,
           element_type: element.element_type,
           label: element.label || "",
-          pos_x: point.x,
-          pos_y: point.y,
+          pos_x: current.x,
+          pos_y: current.y,
           width: element.width,
           height: element.height,
           rotation: element.rotation,
           sort_order: element.sort_order,
         });
-        selectElement({
-          ...element,
-          pos_x: point.x,
-          pos_y: point.y,
-        });
+
+        if (error) {
+          alert("No se pudo guardar la nueva posición del elemento.");
+        }
       }
     }
 
     setBusy(null);
-    setDragging(null);
     onChange();
     pulseSaved();
   };
+
+  const cancelCurrentDrag = () => {
+    setDragging(null);
+  };
+
+  const pulseSaved = () => {
+    setSavedPulse(true);
+    window.setTimeout(() => setSavedPulse(false), 1200);
+  };
+
 
   const addElement = async (type: ReservationSpaceElementType) => {
     const defaults = ELEMENT_DEFAULTS[type];
@@ -429,6 +547,13 @@ export default function SpaceFloorPlanEditor({
       return;
     }
 
+    const clamped = clampElementPosition(
+      selectedElement,
+      elementDraft.pos_x,
+      elementDraft.pos_y
+    );
+    setLivePosition("element", selectedElement.id, clamped.x, clamped.y);
+
     onChange();
     pulseSaved();
   };
@@ -461,6 +586,13 @@ export default function SpaceFloorPlanEditor({
       alert("No se pudo guardar la mesa.");
       return;
     }
+
+    setLivePosition(
+      "table",
+      selectedTable.id,
+      clamp(tableDraft.pos_x, 4, 96),
+      clamp(tableDraft.pos_y, 4, 96)
+    );
 
     onChange();
     pulseSaved();
@@ -564,13 +696,18 @@ export default function SpaceFloorPlanEditor({
 
           <button
             onClick={() => {
-              onChange();
-              pulseSaved();
+              if (selectedTable && tableDraft) {
+                void saveSelectedTable();
+              } else if (selectedElement && elementDraft) {
+                void saveSelectedElement();
+              } else {
+                pulseSaved();
+              }
             }}
             className="inline-flex items-center gap-2 rounded-xl bg-[#FF641F] px-4 py-2.5 text-xs font-black text-white shadow-sm"
           >
             <Save size={14} />
-            Guardar plano
+            Guardar cambios
           </button>
 
           <span
@@ -666,6 +803,17 @@ export default function SpaceFloorPlanEditor({
             >
               <Grid3X3 size={13} /> Cuadrícula
             </button>
+            <button
+              onClick={() => setSnapToGrid((value) => !value)}
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-[10px] font-black ${
+                snapToGrid
+                  ? "border-violet-200 bg-violet-50 text-violet-600"
+                  : "border-slate-200 text-slate-500"
+              }`}
+              title="Cuando está activo, las posiciones se redondean al 1%"
+            >
+              <Grid3X3 size={13} /> Imán 1%
+            </button>
 
             <button
               onClick={() => setZoom((value) => Math.max(75, value - 10))}
@@ -707,7 +855,7 @@ export default function SpaceFloorPlanEditor({
               </p>
             </div>
             <p className="text-[10px] font-semibold text-slate-400">
-              Haz clic para seleccionar · arrastra para mover.
+              Arrastre estable: toma el elemento desde cualquier punto y muévelo con precisión.
             </p>
           </div>
 
@@ -715,14 +863,14 @@ export default function SpaceFloorPlanEditor({
             <div
               ref={canvasRef}
               onClick={deselect}
-              onPointerUp={(e) => finishDrag(e.clientX, e.clientY)}
-              onPointerLeave={(e) => {
-                if (dragging) finishDrag(e.clientX, e.clientY);
-              }}
+              onPointerMove={handlePointerMove}
+              onPointerUp={(e) => void finishCurrentDrag(e)}
+              onPointerCancel={cancelCurrentDrag}
               className="relative mx-auto aspect-[16/10] min-h-[650px] min-w-[860px] touch-none overflow-hidden rounded-[20px] border-2 border-[#CDBEAD] bg-[#F3E8DA] shadow-inner"
               style={{
-                transform: `scale(${zoom / 100})`,
-                transformOrigin: "top left",
+                width: `${zoom}%`,
+                minWidth: `${Math.round(860 * (zoom / 100))}px`,
+                minHeight: `${Math.round(650 * (zoom / 100))}px`,
                 backgroundImage: showGrid
                   ? "linear-gradient(rgba(99,77,54,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.055) 1px,transparent 1px)"
                   : "none",
@@ -740,6 +888,7 @@ export default function SpaceFloorPlanEditor({
               {spaceElements.map((element) => {
                 const Icon = ELEMENT_ICONS[element.element_type];
                 const selected = element.id === selectedElementId;
+                const livePosition = getElementPosition(element);
 
                 const appearance =
                   element.element_type === "wall"
@@ -760,16 +909,21 @@ export default function SpaceFloorPlanEditor({
                       selectElement(element);
                     }}
                     onPointerDown={(e) => {
-                      e.stopPropagation();
-                      setDragging({ type: "element", id: element.id });
                       selectElement(element);
+                      beginDrag(
+                        e,
+                        "element",
+                        element.id,
+                        livePosition.x,
+                        livePosition.y
+                      );
                     }}
                     className={`absolute flex cursor-grab items-center justify-center rounded-md shadow-sm active:cursor-grabbing ${appearance} ${
                       selected ? "ring-2 ring-orange-400 ring-offset-2" : ""
                     }`}
                     style={{
-                      left: `${element.pos_x}%`,
-                      top: `${element.pos_y}%`,
+                      left: `${livePosition.x}%`,
+                      top: `${livePosition.y}%`,
                       width: `${element.width}%`,
                       height: `${element.height}%`,
                       transform: `translate(-50%,-50%) rotate(${element.rotation}deg)`,
@@ -797,7 +951,10 @@ export default function SpaceFloorPlanEditor({
                 );
               })}
 
-              {spaceTables.map((table) => (
+              {spaceTables.map((table) => {
+                const livePosition = getTablePosition(table);
+
+                return (
                 <div
                   key={table.id}
                   onClick={(e) => {
@@ -805,14 +962,19 @@ export default function SpaceFloorPlanEditor({
                     selectTable(table);
                   }}
                   onPointerDown={(e) => {
-                    e.stopPropagation();
-                    setDragging({ type: "table", id: table.id });
                     selectTable(table);
+                    beginDrag(
+                      e,
+                      "table",
+                      table.id,
+                      livePosition.x,
+                      livePosition.y
+                    );
                   }}
                   className="absolute cursor-grab select-none active:cursor-grabbing"
                   style={{
-                    left: `${table.pos_x ?? 50}%`,
-                    top: `${table.pos_y ?? 50}%`,
+                    left: `${livePosition.x}%`,
+                    top: `${livePosition.y}%`,
                     transform: `translate(-50%,-50%) rotate(${table.rotation || 0}deg)`,
                   }}
                 >
@@ -822,13 +984,14 @@ export default function SpaceFloorPlanEditor({
                     busy={busy === table.id}
                   />
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-orange-50/60 px-4 py-3">
             <p className="text-[10px] font-semibold text-orange-800">
-              Consejo: usa la cuadrícula como guía para alinear paredes, mesas y puertas.
+              Consejo: deja “Imán 1%” apagado para movimiento libre; actívalo solo cuando quieras alinear elementos.
             </p>
             <button
               onClick={() => setShowGrid((value) => !value)}
