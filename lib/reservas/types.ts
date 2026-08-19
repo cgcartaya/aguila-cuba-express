@@ -172,7 +172,10 @@ export type ReservationSpaceElementType =
   | "restroom"
   | "stool"
   | "stairs"
-  | "label";
+  | "label"
+  | "wall_fan"
+  | "floor_fan"
+  | "split_ac";
 
 export type ReservationSpaceElement = {
   id: string;
@@ -212,4 +215,7 @@ export const SPACE_ELEMENT_LABEL: Record<ReservationSpaceElementType, string> = 
   stool: "Banqueta",
   stairs: "Escalera",
   label: "Texto",
+  wall_fan: "Ventilador de pared",
+  floor_fan: "Ventilador de pie",
+  split_ac: "Split (A/A)",
 };

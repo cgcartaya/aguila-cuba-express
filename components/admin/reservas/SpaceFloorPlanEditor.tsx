@@ -2,11 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AirVent,
   AlertTriangle,
   Armchair,
   Circle,
   Copy,
   DoorOpen,
+  Fan,
   Grid3X3,
   LayoutPanelTop,
   Loader2,
@@ -139,6 +141,9 @@ const ELEMENT_ICONS: Record<ReservationSpaceElementType, typeof Square> = {
   stool: Armchair,
   stairs: Footprints,
   label: Type,
+  wall_fan: Fan,
+  floor_fan: Fan,
+  split_ac: AirVent,
 };
 
 const ELEMENT_DEFAULTS: Record<
@@ -155,6 +160,9 @@ const ELEMENT_DEFAULTS: Record<
   stool: { width: 4.5, height: 4.5, label: "Banqueta" },
   stairs: { width: 14, height: 8, label: "Escalera" },
   label: { width: 20, height: 5, label: "Texto" },
+  wall_fan: { width: 4, height: 4, label: "Ventilador de pared" },
+  floor_fan: { width: 3.5, height: 3.5, label: "Ventilador de pie" },
+  split_ac: { width: 10, height: 3, label: "Split" },
 };
 
 function clamp(value: number, min = 3, max = 97) {
@@ -1255,7 +1263,7 @@ export default function SpaceFloorPlanEditor({
             </button>
 
             {(
-              ["wall", "door", "window", "bar", "entrance", "plant", "restroom", "stool", "stairs", "label"] as ReservationSpaceElementType[]
+              ["wall", "door", "window", "bar", "entrance", "plant", "restroom", "stool", "stairs", "label", "wall_fan", "floor_fan", "split_ac"] as ReservationSpaceElementType[]
             ).map((type) => {
               const Icon = ELEMENT_ICONS[type];
 
@@ -1419,6 +1427,11 @@ export default function SpaceFloorPlanEditor({
                     ? "border border-amber-800 bg-amber-100 rounded-full"
                     : element.element_type === "stairs"
                     ? "border border-slate-400 bg-slate-100"
+                    : element.element_type === "wall_fan" ||
+                      element.element_type === "floor_fan"
+                    ? "border border-cyan-300 bg-cyan-50 rounded-full"
+                    : element.element_type === "split_ac"
+                    ? "border border-cyan-300 bg-cyan-50"
                     : "border border-[#C8BAAA] bg-white/90";
 
                 return (
@@ -1473,6 +1486,10 @@ export default function SpaceFloorPlanEditor({
                         className={
                           element.element_type === "restroom"
                             ? "text-sky-600"
+                            : element.element_type === "wall_fan" ||
+                              element.element_type === "floor_fan" ||
+                              element.element_type === "split_ac"
+                            ? "text-cyan-600"
                             : "text-slate-500"
                         }
                       />

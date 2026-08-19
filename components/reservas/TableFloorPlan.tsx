@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
+  AirVent,
   Armchair,
   Camera,
   DoorOpen,
+  Fan,
   Footprints,
   LayoutPanelTop,
   MapPin,
@@ -56,6 +58,9 @@ const ICONS = {
   stool: Armchair,
   stairs: Footprints,
   label: Type,
+  wall_fan: Fan,
+  floor_fan: Fan,
+  split_ac: AirVent,
 };
 
 function seatPositions(capacity: number) {
@@ -215,6 +220,11 @@ function PlanElement({ element }: { element: ReservationSpaceElement }) {
       ? "border border-amber-800 bg-amber-100 rounded-full"
       : element.element_type === "stairs"
       ? "border border-slate-400 bg-slate-100"
+      : element.element_type === "wall_fan" ||
+        element.element_type === "floor_fan"
+      ? "border border-cyan-300 bg-cyan-50/90 rounded-full"
+      : element.element_type === "split_ac"
+      ? "border border-cyan-300 bg-cyan-50/90"
       : "border border-black/10 bg-white/80";
 
   return (
@@ -251,6 +261,10 @@ function PlanElement({ element }: { element: ReservationSpaceElement }) {
           className={
             element.element_type === "restroom"
               ? "h-[40%] w-[40%] text-sky-600"
+              : element.element_type === "wall_fan" ||
+                element.element_type === "floor_fan" ||
+                element.element_type === "split_ac"
+              ? "h-[40%] w-[40%] text-cyan-600"
               : "h-[35%] w-[35%] text-black/45"
           }
         />
