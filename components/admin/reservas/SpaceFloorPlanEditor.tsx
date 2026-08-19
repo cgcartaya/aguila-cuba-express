@@ -36,6 +36,7 @@ type Props = {
   tables: ReservationTable[];
   elements: ReservationSpaceElement[];
   onChange: () => void;
+  onClose?: () => void;
 };
 
 const ELEMENT_ICONS: Record<ReservationSpaceElementType, typeof Square> = {
@@ -97,6 +98,7 @@ export default function SpaceFloorPlanEditor({
   tables,
   elements,
   onChange,
+  onClose,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -281,20 +283,44 @@ export default function SpaceFloorPlanEditor({
 
   return (
     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
         <div>
-          <p className="text-xs font-black uppercase tracking-[.13em] text-orange-600">
-            Editor del plano
+          <p className="text-[11px] font-black text-slate-400">
+            Espacios <span className="px-1">›</span> {space.name}
+            <span className="px-1">›</span>
+            <span className="text-orange-600">Editor del plano</span>
           </p>
-          <h3 className="mt-1 text-lg font-black text-[#071B35]">
-            {space.name}
-          </h3>
-          <p className="mt-1 text-xs font-semibold text-slate-400">
-            Agrega, mueve, selecciona y edita cualquier elemento del espacio.
+          <h2 className="mt-2 text-3xl font-black tracking-tight text-[#071B35]">
+            Editor del plano
+          </h2>
+          <p className="mt-1 text-sm font-semibold text-slate-400">
+            Diseña y organiza este espacio arrastrando mesas y elementos.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-600"
+            >
+              Salir del editor
+            </button>
+          )}
+          <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2.5 text-[11px] font-black text-emerald-600">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            Guardado automático
+          </span>
+        </div>
+      </div>
+
+      <div className="border-b border-slate-100 bg-[#FBFCFE] p-4 sm:p-5">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-black text-[#071B35]">Agregar elemento</p>
+          <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+            Haz clic para añadirlo al centro del plano y luego arrástralo.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
           {(
             [
               "wall",
@@ -324,18 +350,20 @@ export default function SpaceFloorPlanEditor({
               </button>
             );
           })}
+          </div>
         </div>
       </div>
 
-      <div className="grid xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="p-4">
+      <div className="grid xl:grid-cols-[minmax(0,1fr)_330px]">
+        <div className="min-w-0 p-4 sm:p-5">
+          <div className="overflow-auto rounded-[22px] border border-slate-200 bg-[#F7F3ED] p-3">
           <div
             ref={canvasRef}
             onPointerUp={(e) => finishDrag(e.clientX, e.clientY)}
             onPointerLeave={(e) => {
               if (dragging) finishDrag(e.clientX, e.clientY);
             }}
-            className="relative aspect-[16/9] min-h-[560px] touch-none overflow-hidden rounded-2xl border-2 border-slate-200 bg-[#F8F3EC]"
+            className="relative aspect-[16/10] min-h-[620px] min-w-[820px] touch-none overflow-hidden rounded-2xl border-2 border-slate-200 bg-[#F8F3EC]"
             style={{
               backgroundImage:
                 "linear-gradient(rgba(7,27,53,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(7,27,53,.045) 1px,transparent 1px)",
@@ -458,6 +486,7 @@ export default function SpaceFloorPlanEditor({
               aria-label="Deseleccionar"
             />
           </div>
+          </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
@@ -472,11 +501,12 @@ export default function SpaceFloorPlanEditor({
         </div>
 
         <aside className="border-t border-slate-100 bg-slate-50/60 p-4 xl:sticky xl:top-4 xl:h-fit xl:border-l xl:border-t-0">
+          <p className="text-sm font-black text-[#071B35]">Propiedades</p>
           {!selectedElement && !selectedTable && (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5 text-center">
               <Square size={28} className="mx-auto text-slate-300" />
               <p className="mt-3 text-sm font-black text-slate-600">
-                Selecciona algo del plano
+                Selecciona un elemento
               </p>
               <p className="mt-1 text-xs font-semibold leading-5 text-slate-400">
                 Podrás editar texto, tamaño, rotación o eliminar elementos.
@@ -644,6 +674,82 @@ export default function SpaceFloorPlanEditor({
           )}
         </aside>
       </div>
+      <div className="border-t border-slate-100 p-4 sm:p-5">
+        <div className="mb-3">
+          <h3 className="text-base font-black text-[#071B35]">
+            Elementos del plano ({spaceTables.length + spaceElements.length})
+          </h3>
+          <p className="mt-0.5 text-[10px] font-semibold text-slate-400">
+            Selecciona cualquiera para localizarlo y editarlo.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto rounded-2xl border border-slate-200">
+          <table className="min-w-full text-left text-xs">
+            <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400">
+              <tr>
+                <th className="px-4 py-3">Tipo</th>
+                <th className="px-4 py-3">Nombre</th>
+                <th className="px-4 py-3">Capacidad / Texto</th>
+                <th className="px-4 py-3">Posición</th>
+                <th className="px-4 py-3">Acción</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {spaceTables.map((table) => (
+                <tr key={table.id} className={selectedTableId === table.id ? "bg-orange-50/60" : ""}>
+                  <td className="px-4 py-3 font-bold text-slate-500">Mesa</td>
+                  <td className="px-4 py-3 font-black text-slate-700">{table.name}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-500">{table.capacity} personas</td>
+                  <td className="px-4 py-3 font-semibold text-slate-400">
+                    {Math.round(table.pos_x ?? 50)}%, {Math.round(table.pos_y ?? 50)}%
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => {
+                        setSelectedTableId(table.id);
+                        setSelectedElementId(null);
+                        setDraft(null);
+                      }}
+                      className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-black text-slate-500"
+                    >
+                      Seleccionar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+
+              {spaceElements.map((element) => (
+                <tr key={element.id} className={selectedElementId === element.id ? "bg-orange-50/60" : ""}>
+                  <td className="px-4 py-3 font-bold text-slate-500">
+                    {SPACE_ELEMENT_LABEL[element.element_type]}
+                  </td>
+                  <td className="px-4 py-3 font-black text-slate-700">
+                    {element.label || "—"}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-500">
+                    {element.element_type === "label"
+                      ? element.label
+                      : `${Math.round(element.width)}% × ${Math.round(element.height)}%`}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-400">
+                    {Math.round(element.pos_x)}%, {Math.round(element.pos_y)}%
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => selectElement(element)}
+                      className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-black text-slate-500"
+                    >
+                      Editar
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 }

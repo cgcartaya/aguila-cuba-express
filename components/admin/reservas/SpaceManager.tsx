@@ -339,14 +339,10 @@ export default function SpaceManager({
 
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3">
                 <button
-                  onClick={() =>
-                    setPlanSpaceId((current) =>
-                      current === space.id ? null : space.id
-                    )
-                  }
+                  onClick={() => setPlanSpaceId(space.id)}
                   className="rounded-lg bg-violet-50 px-2.5 py-1.5 text-[10px] font-black text-violet-600"
                 >
-                  {planSpaceId === space.id ? "Cerrar plano" : "Editar plano"}
+                  Editar plano
                 </button>
                 <div className="flex items-center gap-1">
                 <button
@@ -370,18 +366,6 @@ export default function SpaceManager({
                 </div>
               </div>
             </div>
-
-            {planSpaceId === space.id && (
-              <div className="border-t border-slate-100 p-3">
-                <SpaceFloorPlanEditor
-                  storeId={storeId}
-                  space={space}
-                  tables={tables}
-                  elements={elements}
-                  onChange={onChange}
-                />
-              </div>
-            )}
           </article>
         ))}
 
@@ -402,6 +386,26 @@ export default function SpaceManager({
           </button>
         )}
       </div>
+
+      {planSpaceId && (
+        <div className="border-t border-slate-100 bg-[#F7F9FC] p-4 sm:p-5">
+          {(() => {
+            const currentSpace = spaces.find((space) => space.id === planSpaceId);
+            if (!currentSpace) return null;
+
+            return (
+              <SpaceFloorPlanEditor
+                storeId={storeId}
+                space={currentSpace}
+                tables={tables}
+                elements={elements}
+                onChange={onChange}
+                onClose={() => setPlanSpaceId(null)}
+              />
+            );
+          })()}
+        </div>
+      )}
 
       <div className="border-t border-slate-100 bg-gradient-to-r from-violet-50 to-white p-4">
         <div className="flex gap-3">
