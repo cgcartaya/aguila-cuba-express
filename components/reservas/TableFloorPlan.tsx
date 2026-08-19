@@ -1,16 +1,19 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Armchair,
   DoorOpen,
+  Footprints,
   LayoutPanelTop,
   MapPin,
+  Maximize2,
+  Minimize2,
   Square,
-  TreePine,
   Toilet,
-  Footprints,
+  TreePine,
   Type,
-  Wind
+  Wind,
 } from "lucide-react";
 
 import type {
@@ -29,6 +32,9 @@ type Props = {
   accent: string;
 };
 
+const STAGE_W = 1000;
+const STAGE_H = 625;
+
 const ICONS = {
   wall: Square,
   door: DoorOpen,
@@ -44,8 +50,7 @@ const ICONS = {
 
 function seatPositions(capacity: number) {
   const shown = Math.min(Math.max(capacity, 1), 10);
-
-  return Array.from({ length: shown }).map((_, index) => {
+  return Array.from({ length: shown }, (_, index) => {
     const angle = (Math.PI * 2 * index) / shown - Math.PI / 2;
     return {
       x: 50 + Math.cos(angle) * 54,
@@ -63,7 +68,6 @@ function SeatDots({
   state: "available" | "selected" | "occupied";
   accent: string;
 }) {
-  const positions = seatPositions(capacity);
   const border =
     state === "selected"
       ? accent
@@ -80,10 +84,10 @@ function SeatDots({
 
   return (
     <>
-      {positions.map((position, index) => (
+      {seatPositions(capacity).map((position, index) => (
         <span
           key={index}
-          className="absolute h-2.5 w-2.5 rounded-[3px] border shadow-sm sm:h-3.5 sm:w-3.5 sm:rounded-[4px]"
+          className="absolute h-[14px] w-[14px] rounded-[4px] border shadow-sm"
           style={{
             left: `${position.x}%`,
             top: `${position.y}%`,
@@ -126,19 +130,23 @@ function TableButton({
       ? "#fecaca"
       : "#d9f99d";
 
+  const sizeClass =
+    table.table_shape === "round"
+      ? "h-[88px] w-[88px] rounded-full"
+      : table.table_shape === "rect"
+      ? "h-[76px] w-[132px] rounded-2xl"
+      : "h-[88px] w-[88px] rounded-2xl";
+
   return (
     <button
       type="button"
       disabled={occupied}
-      onClick={onSelect}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
       title={`${table.name} · ${table.capacity} personas`}
-      className={`absolute z-10 flex items-center justify-center text-center shadow-[0_8px_18px_rgba(27,20,16,.16)] transition hover:scale-[1.04] disabled:cursor-not-allowed ${
-        table.table_shape === "round"
-          ? "h-[54px] w-[54px] rounded-full sm:h-[88px] sm:w-[88px]"
-          : table.table_shape === "rect"
-          ? "h-[48px] w-[78px] rounded-xl sm:h-[76px] sm:w-[132px] sm:rounded-2xl"
-          : "h-[54px] w-[54px] rounded-xl sm:h-[88px] sm:w-[88px] sm:rounded-2xl"
-      }`}
+      className={`absolute z-20 flex items-center justify-center text-center shadow-[0_8px_18px_rgba(27,20,16,.16)] transition hover:scale-[1.03] disabled:cursor-not-allowed ${sizeClass}`}
       style={{
         left: `${table.pos_x ?? 50}%`,
         top: `${table.pos_y ?? 50}%`,
@@ -147,22 +155,14 @@ function TableButton({
         background: `linear-gradient(145deg, ${fill}, #fff)`,
       }}
     >
-      <SeatDots
-        capacity={table.capacity}
-        state={state}
-        accent={accent}
-      />
+      <SeatDots capacity={table.capacity} state={state} accent={accent} />
 
-      <div className="relative z-10 rounded-lg bg-white/90 px-1 py-1 shadow-sm backdrop-blur-sm sm:rounded-xl sm:px-2 sm:py-1.5">
-        <Armchair
-          size={12}
-          className="mx-auto"
-          style={{ color: border }}
-        />
-        <span className="mt-0.5 block max-w-[62px] truncate text-[8px] font-black text-[#1B1410] sm:max-w-[92px] sm:text-[11px]">
+      <div className="relative z-10 rounded-xl bg-white/90 px-2 py-1.5 shadow-sm backdrop-blur-sm">
+        <Armchair size={14} className="mx-auto" style={{ color: border }} />
+        <span className="mt-0.5 block max-w-[90px] truncate text-[11px] font-black text-[#1B1410]">
           {table.name}
         </span>
-        <span className="block text-[7px] font-black text-black/55 sm:text-[9px]">
+        <span className="block text-[9px] font-black text-black/55">
           {table.capacity} personas
         </span>
       </div>
@@ -170,11 +170,7 @@ function TableButton({
   );
 }
 
-function PlanElement({
-  element,
-}: {
-  element: ReservationSpaceElement;
-}) {
+function PlanElement({ element }: { element: ReservationSpaceElement }) {
   const Icon = ICONS[element.element_type];
 
   const visual =
@@ -250,6 +246,106 @@ function PlanElement({
   );
 }
 
+function ResponsivePlanStage({
+  space,
+  spaceTables,
+  spaceElements,
+  occupiedTableIds,
+  selectedTableId,
+  onSelect,
+  accent,
+}: {
+  space: ReservationSpace;
+  spaceTables: ReservationTable[];
+  spaceElements: ReservationSpaceElement[];
+  occupiedTableIds: Set<string>;
+  selectedTableId: string | null;
+  onSelect: (table: ReservationTable) => void;
+  accent: string;
+}) {
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [fitScale, setFitScale] = useState(1);
+  const [zoomed, setZoomed] = useState(false);
+
+  useEffect(() => {
+    const node = wrapperRef.current;
+    if (!node) return;
+
+    const update = () => {
+      const width = node.clientWidth;
+      setFitScale(Math.min(1, width / STAGE_W));
+    };
+
+    update();
+
+    const observer = new ResizeObserver(update);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  const scale = fitScale * (zoomed ? 1.45 : 1);
+  const displayHeight = STAGE_H * scale;
+  const displayWidth = STAGE_W * scale;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-end lg:hidden">
+        <button
+          type="button"
+          onClick={() => setZoomed((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#E3D6C8] bg-white px-3 py-2 text-[10px] font-black text-[#071B35]"
+        >
+          {zoomed ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          {zoomed ? "Ajustar plano" : "Ampliar"}
+        </button>
+      </div>
+
+      <div
+        ref={wrapperRef}
+        className={`relative w-full rounded-[18px] border border-[#D9C9B8] bg-[#F2E6D7] shadow-inner ${
+          zoomed ? "overflow-auto" : "overflow-hidden"
+        }`}
+        style={{ height: displayHeight }}
+      >
+        <div
+          className="relative origin-top-left"
+          style={{
+            width: STAGE_W,
+            height: STAGE_H,
+            transform: `scale(${scale})`,
+            backgroundImage:
+              "linear-gradient(rgba(99,77,54,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.045) 1px,transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        >
+          {space.image_url && (
+            <img
+              src={space.image_url}
+              alt=""
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.045]"
+            />
+          )}
+
+          {spaceElements.map((element) => (
+            <PlanElement key={element.id} element={element} />
+          ))}
+
+          {spaceTables.map((table) => (
+            <TableButton
+              key={table.id}
+              table={table}
+              occupied={occupiedTableIds.has(table.id)}
+              selected={selectedTableId === table.id}
+              accent={accent}
+              onSelect={() => onSelect(table)}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TableFloorPlan({
   spaces = [],
   elements = [],
@@ -259,14 +355,18 @@ export default function TableFloorPlan({
   onSelect,
   accent,
 }: Props) {
-  const activeSpaces = spaces.filter((space) =>
-    tables.some((table) => table.space_id === space.id)
+  const activeSpaces = useMemo(
+    () =>
+      spaces.filter((space) =>
+        tables.some((table) => table.space_id === space.id)
+      ),
+    [spaces, tables]
   );
 
   if (tables.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-[#D7C9B9] bg-white p-10 text-center">
-        <Armchair size={32} className="mx-auto text-black/20" />
+      <div className="rounded-3xl border border-dashed border-[#D7C9B9] bg-white p-8 text-center">
+        <Armchair size={30} className="mx-auto text-black/20" />
         <p className="mt-3 text-sm font-black text-black/55">
           No hay mesas configuradas.
         </p>
@@ -275,7 +375,7 @@ export default function TableFloorPlan({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {activeSpaces.map((space) => {
         const spaceTables = tables.filter(
           (table) => table.space_id === space.id
@@ -287,60 +387,69 @@ export default function TableFloorPlan({
         return (
           <section
             key={space.id}
-            className="overflow-hidden rounded-[26px] border border-[#E3D6C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)]"
+            className="overflow-hidden rounded-[22px] border border-[#E3D6C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)] sm:rounded-[26px]"
           >
-            <div className="grid gap-0 border-b border-[#EEE5DA] sm:grid-cols-[170px_minmax(0,1fr)]">
-              <div className="relative min-h-[86px] overflow-hidden bg-[#EFE7DE] sm:min-h-[128px]">
-                {space.image_url ? (
-                  <img
-                    src={space.image_url}
-                    alt={space.name}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full min-h-[128px] items-center justify-center text-black/15">
-                    <Armchair size={34} />
+            <div className="border-b border-[#EEE5DA] p-4 sm:p-5">
+              <p
+                className="text-[10px] font-black uppercase tracking-[.18em]"
+                style={{ color: accent }}
+              >
+                Espacio
+              </p>
+
+              <div className="mt-1 flex items-end justify-between gap-3">
+                <div>
+                  <h3 className="text-2xl font-black text-[#071B35]">
+                    {space.name}
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-black/45">
+                    {space.floor_label && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin size={11} />
+                        {space.floor_label}
+                      </span>
+                    )}
+                    <span>
+                      {spaceTables.length}{" "}
+                      {spaceTables.length === 1 ? "mesa" : "mesas"}
+                    </span>
                   </div>
-                )}
+                </div>
               </div>
 
-              <div className="p-4 sm:p-5">
-                <p
-                  className="text-[10px] font-black uppercase tracking-[.18em]"
-                  style={{ color: accent }}
-                >
-                  Espacio
+              {space.description && (
+                <p className="mt-3 text-sm font-semibold leading-6 text-black/45">
+                  {space.description}
                 </p>
-                <h3 className="mt-1 text-xl font-black text-[#071B35] sm:text-2xl">
-                  {space.name}
-                </h3>
+              )}
+            </div>
 
-                <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-black/45">
-                  {space.floor_label && (
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin size={11} />
-                      {space.floor_label}
-                    </span>
-                  )}
-                  <span>
-                    {spaceTables.length}{" "}
-                    {spaceTables.length === 1 ? "mesa" : "mesas"}
-                  </span>
-                </div>
-
-                {space.description && (
-                  <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-black/45">
-                    {space.description}
-                  </p>
-                )}
+            {/* Mobile legend: only reservation states */}
+            <div className="border-b border-[#EEE5DA] bg-[#FCF9F4] px-4 py-3 lg:hidden">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-black text-black/55">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-lime-500" />
+                  Disponible
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: accent }}
+                  />
+                  Tu selección
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-red-500" />
+                  No disponible
+                </span>
               </div>
             </div>
 
             <div className="grid lg:grid-cols-[170px_minmax(0,1fr)]">
-              <aside className="border-b border-[#EEE5DA] bg-[#FCF9F4] p-3 lg:border-b-0 lg:border-r lg:p-4">
+              {/* Desktop-only complete legend */}
+              <aside className="hidden border-r border-[#EEE5DA] bg-[#FCF9F4] p-4 lg:block">
                 <p className="text-xs font-black text-[#071B35]">Leyenda</p>
-
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-[10px] font-bold text-black/55 lg:mt-4 lg:block lg:space-y-3 lg:text-[11px]">
+                <div className="mt-4 space-y-3 text-[11px] font-bold text-black/55">
                   <div className="flex items-center gap-2">
                     <span className="h-3.5 w-3.5 rounded-full bg-lime-500" />
                     Disponible
@@ -357,7 +466,7 @@ export default function TableFloorPlan({
                     Ocupada
                   </div>
 
-                  <div className="hidden lg:my-3 lg:block lg:border-t lg:border-[#E7DDD2]" />
+                  <div className="my-3 border-t border-[#E7DDD2]" />
 
                   <div className="flex items-center gap-2">
                     <span className="h-1 w-5 rounded bg-[#2F2A26]" />
@@ -375,50 +484,23 @@ export default function TableFloorPlan({
                     <LayoutPanelTop size={13} />
                     Barra
                   </div>
-                  <div className="flex items-center gap-2">
-                    <TreePine size={13} />
-                    Planta
-                  </div>
                 </div>
               </aside>
 
               <div className="p-3 sm:p-5">
-                <div
-                  className="relative aspect-[4/5] min-h-[360px] w-full overflow-hidden rounded-[18px] border border-[#D9C9B8] bg-[#F2E6D7] shadow-inner sm:aspect-[16/10] sm:min-h-[500px] sm:rounded-[22px]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(rgba(99,77,54,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.045) 1px,transparent 1px)",
-                    backgroundSize: "32px 32px",
-                  }}
-                >
-                  {space.image_url && (
-                    <img
-                      src={space.image_url}
-                      alt=""
-                      className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[.045]"
-                    />
-                  )}
+                <ResponsivePlanStage
+                  space={space}
+                  spaceTables={spaceTables}
+                  spaceElements={spaceElements}
+                  occupiedTableIds={occupiedTableIds}
+                  selectedTableId={selectedTableId}
+                  onSelect={onSelect}
+                  accent={accent}
+                />
 
-                  {spaceElements.map((element) => (
-                    <PlanElement key={element.id} element={element} />
-                  ))}
-
-                  {spaceTables.map((table) => (
-                    <TableButton
-                      key={table.id}
-                      table={table}
-                      occupied={occupiedTableIds.has(table.id)}
-                      selected={selectedTableId === table.id}
-                      accent={accent}
-                      onSelect={() => onSelect(table)}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2 text-[10px] font-semibold text-amber-800 sm:mt-4 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-[11px]">
-                  Los asientos alrededor de cada mesa representan su capacidad real.
-                  Una mesa de 4 muestra 4 asientos; una de 6 muestra 6.
-                </div>
+                <p className="mt-3 text-center text-[10px] font-semibold text-black/40 lg:hidden">
+                  El plano se ajusta completo a tu pantalla. Usa “Ampliar” si quieres verlo con más detalle.
+                </p>
               </div>
             </div>
           </section>
