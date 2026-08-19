@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Armchair,
   DoorOpen,
@@ -32,9 +32,6 @@ type Props = {
   accent: string;
 };
 
-const STAGE_W = 1000;
-const STAGE_H = 625;
-
 const ICONS = {
   wall: Square,
   door: DoorOpen,
@@ -50,8 +47,10 @@ const ICONS = {
 
 function seatPositions(capacity: number) {
   const shown = Math.min(Math.max(capacity, 1), 10);
+
   return Array.from({ length: shown }, (_, index) => {
     const angle = (Math.PI * 2 * index) / shown - Math.PI / 2;
+
     return {
       x: 50 + Math.cos(angle) * 54,
       y: 50 + Math.sin(angle) * 54,
@@ -59,46 +58,22 @@ function seatPositions(capacity: number) {
   });
 }
 
-function SeatDots({
-  capacity,
-  state,
-  accent,
-}: {
-  capacity: number;
-  state: "available" | "selected" | "occupied";
-  accent: string;
-}) {
-  const border =
-    state === "selected"
-      ? accent
-      : state === "occupied"
-      ? "#ef4444"
-      : "#65a30d";
+function tableMetrics(table: ReservationTable) {
+  // Basado en el canvas administrativo 1000x625.
+  // Importante: porcentajes, nunca px. Así escalan exactamente igual.
+  if (table.table_shape === "rect") {
+    return {
+      width: 13.2,
+      aspectRatio: "132 / 76",
+      radius: "16%",
+    };
+  }
 
-  const bg =
-    state === "selected"
-      ? "#fff7ed"
-      : state === "occupied"
-      ? "#fee2e2"
-      : "#ecfccb";
-
-  return (
-    <>
-      {seatPositions(capacity).map((position, index) => (
-        <span
-          key={index}
-          className="absolute h-[14px] w-[14px] rounded-[4px] border shadow-sm"
-          style={{
-            left: `${position.x}%`,
-            top: `${position.y}%`,
-            transform: "translate(-50%,-50%)",
-            borderColor: border,
-            backgroundColor: bg,
-          }}
-        />
-      ))}
-    </>
-  );
+  return {
+    width: 8.8,
+    aspectRatio: "1 / 1",
+    radius: table.table_shape === "round" ? "9999px" : "16%",
+  };
 }
 
 function TableButton({
@@ -130,12 +105,7 @@ function TableButton({
       ? "#fecaca"
       : "#d9f99d";
 
-  const sizeClass =
-    table.table_shape === "round"
-      ? "h-[88px] w-[88px] rounded-full"
-      : table.table_shape === "rect"
-      ? "h-[76px] w-[132px] rounded-2xl"
-      : "h-[88px] w-[88px] rounded-2xl";
+  const metrics = tableMetrics(table);
 
   return (
     <button
@@ -146,26 +116,62 @@ function TableButton({
         onSelect();
       }}
       title={`${table.name} · ${table.capacity} personas`}
-      className={`absolute z-20 flex items-center justify-center text-center shadow-[0_8px_18px_rgba(27,20,16,.16)] transition hover:scale-[1.03] disabled:cursor-not-allowed ${sizeClass}`}
+      className="absolute z-20 flex items-center justify-center text-center shadow-[0_4px_12px_rgba(27,20,16,.16)] transition active:scale-95 disabled:cursor-not-allowed"
       style={{
         left: `${table.pos_x ?? 50}%`,
         top: `${table.pos_y ?? 50}%`,
+        width: `${metrics.width}%`,
+        aspectRatio: metrics.aspectRatio,
+        borderRadius: metrics.radius,
         transform: `translate(-50%,-50%) rotate(${table.rotation || 0}deg)`,
         border: `2px solid ${border}`,
         background: `linear-gradient(145deg, ${fill}, #fff)`,
       }}
     >
-      <SeatDots capacity={table.capacity} state={state} accent={accent} />
+      {seatPositions(table.capacity).map((seat, index) => (
+        <span
+          key={index}
+          className="absolute rounded-[3px] border shadow-sm"
+          style={{
+            left: `${seat.x}%`,
+            top: `${seat.y}%`,
+            width: "16%",
+            aspectRatio: "1 / 1",
+            transform: "translate(-50%,-50%)",
+            borderColor: border,
+            backgroundColor:
+              state === "selected"
+                ? "#fff7ed"
+                : state === "occupied"
+                ? "#fee2e2"
+                : "#ecfccb",
+          }}
+        />
+      ))}
 
-      <div className="relative z-10 rounded-xl bg-white/90 px-2 py-1.5 shadow-sm backdrop-blur-sm">
-        <Armchair size={14} className="mx-auto" style={{ color: border }} />
-        <span className="mt-0.5 block max-w-[90px] truncate text-[11px] font-black text-[#1B1410]">
+      <div className="relative z-10 flex max-w-[82%] flex-col items-center rounded-[10px] bg-white/90 px-[6%] py-[5%] shadow-sm">
+        <Armchair
+          className="h-auto w-[18%] min-w-[7px]"
+          style={{ color: border }}
+        />
+
+        <span
+          className="mt-[2%] block w-full truncate font-black text-[#1B1410]"
+          style={{ fontSize: "clamp(5px, 1.05vw, 11px)" }}
+        >
           {table.name}
         </span>
-        <span className="block text-[9px] font-black text-black/55">
+
+        <span
+          className="block whitespace-nowrap font-black text-black/55"
+          style={{ fontSize: "clamp(4.5px, .85vw, 9px)" }}
+        >
           {table.capacity} personas
         </span>
       </div>
+
+      {/* Amplía el área táctil sin cambiar el tamaño visual de la mesa */}
+      <span className="absolute left-1/2 top-1/2 h-11 w-11 -translate-x-1/2 -translate-y-1/2 opacity-0" />
     </button>
   );
 }
@@ -210,25 +216,24 @@ function PlanElement({ element }: { element: ReservationSpaceElement }) {
           <span className="absolute left-[4%] top-[35%] h-[34%] w-[34%] rounded-full bg-emerald-500/80" />
           <span className="absolute right-[4%] top-[18%] h-[36%] w-[36%] rounded-full bg-emerald-400/90" />
           <span className="absolute bottom-[3%] right-[24%] h-[34%] w-[34%] rounded-full bg-emerald-600/70" />
-          <TreePine size={18} className="relative z-10 text-emerald-800" />
+          <TreePine className="relative z-10 h-[50%] w-[50%] text-emerald-800" />
         </div>
       ) : element.element_type === "stool" ? (
         <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-amber-800 bg-amber-200 shadow-sm">
           <span className="h-[48%] w-[48%] rounded-full bg-amber-700/75" />
         </div>
       ) : element.element_type === "stairs" ? (
-        <div className="flex h-full w-full flex-col justify-center gap-[2px] px-1">
+        <div className="flex h-full w-full flex-col justify-center gap-[7%] px-[8%]">
           {Array.from({ length: 6 }).map((_, i) => (
-            <span key={i} className="h-[2px] w-full bg-slate-500/70" />
+            <span key={i} className="h-[3%] w-full bg-slate-500/70" />
           ))}
         </div>
       ) : element.element_type !== "wall" ? (
         <Icon
-          size={element.element_type === "restroom" ? 16 : 12}
           className={
             element.element_type === "restroom"
-              ? "text-sky-600"
-              : "text-black/45"
+              ? "h-[40%] w-[40%] text-sky-600"
+              : "h-[35%] w-[35%] text-black/45"
           }
         />
       ) : null}
@@ -238,7 +243,10 @@ function PlanElement({ element }: { element: ReservationSpaceElement }) {
         element.element_type === "entrance" ||
         element.element_type === "restroom" ||
         element.element_type === "stairs") && (
-        <span className="ml-1 truncate text-[9px] font-black uppercase tracking-wide text-black/55">
+        <span
+          className="ml-[3%] max-w-[78%] truncate font-black uppercase tracking-wide text-black/55"
+          style={{ fontSize: "clamp(4px, .75vw, 9px)" }}
+        >
           {element.label}
         </span>
       )}
@@ -246,7 +254,7 @@ function PlanElement({ element }: { element: ReservationSpaceElement }) {
   );
 }
 
-function ResponsivePlanStage({
+function NormalizedPlan({
   space,
   spaceTables,
   spaceElements,
@@ -263,59 +271,42 @@ function ResponsivePlanStage({
   onSelect: (table: ReservationTable) => void;
   accent: string;
 }) {
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const [fitScale, setFitScale] = useState(1);
-  const [zoomed, setZoomed] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    const node = wrapperRef.current;
-    if (!node) return;
-
-    const update = () => {
-      const width = node.clientWidth;
-      setFitScale(Math.min(1, width / STAGE_W));
-    };
-
-    update();
-
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  const scale = fitScale * (zoomed ? 1.45 : 1);
-  const displayHeight = STAGE_H * scale;
-  const displayWidth = STAGE_W * scale;
+  const selectedTable =
+    spaceTables.find((table) => table.id === selectedTableId) || null;
 
   return (
-    <div>
+    <>
       <div className="mb-2 flex items-center justify-end lg:hidden">
         <button
           type="button"
-          onClick={() => setZoomed((v) => !v)}
+          onClick={() => setExpanded((value) => !value)}
           className="inline-flex items-center gap-1.5 rounded-xl border border-[#E3D6C8] bg-white px-3 py-2 text-[10px] font-black text-[#071B35]"
         >
-          {zoomed ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
-          {zoomed ? "Ajustar plano" : "Ampliar"}
+          {expanded ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+          {expanded ? "Ajustar plano" : "Ampliar"}
         </button>
       </div>
 
       <div
-        ref={wrapperRef}
-        className={`relative w-full rounded-[18px] border border-[#D9C9B8] bg-[#F2E6D7] shadow-inner ${
-          zoomed ? "overflow-auto" : "overflow-hidden"
-        }`}
-        style={{ height: displayHeight }}
+        className={
+          expanded
+            ? "overflow-auto rounded-[18px] border border-[#D9C9B8] bg-[#F2E6D7]"
+            : "overflow-hidden rounded-[18px] border border-[#D9C9B8] bg-[#F2E6D7]"
+        }
       >
         <div
-          className="relative origin-top-left"
+          className={
+            expanded
+              ? "relative w-[150%] min-w-[560px]"
+              : "relative w-full"
+          }
           style={{
-            width: STAGE_W,
-            height: STAGE_H,
-            transform: `scale(${scale})`,
+            aspectRatio: "16 / 10",
             backgroundImage:
               "linear-gradient(rgba(99,77,54,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(99,77,54,.045) 1px,transparent 1px)",
-            backgroundSize: "32px 32px",
+            backgroundSize: "3.2% 5.12%",
           }}
         >
           {space.image_url && (
@@ -342,7 +333,30 @@ function ResponsivePlanStage({
           ))}
         </div>
       </div>
-    </div>
+
+      {selectedTable && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-orange-50/70 p-3 lg:hidden">
+          <div className="min-w-0">
+            <p className="text-[9px] font-black uppercase tracking-[.12em] text-orange-600">
+              Mesa seleccionada
+            </p>
+            <p className="truncate text-sm font-black text-[#071B35]">
+              {selectedTable.name}
+            </p>
+            <p className="text-[10px] font-semibold text-black/45">
+              {selectedTable.capacity} personas
+            </p>
+          </div>
+
+          <span
+            className="shrink-0 rounded-full px-3 py-1.5 text-[9px] font-black text-white"
+            style={{ backgroundColor: accent }}
+          >
+            Seleccionada
+          </span>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -380,6 +394,7 @@ export default function TableFloorPlan({
         const spaceTables = tables.filter(
           (table) => table.space_id === space.id
         );
+
         const spaceElements = elements.filter(
           (element) => element.space_id === space.id
         );
@@ -387,7 +402,7 @@ export default function TableFloorPlan({
         return (
           <section
             key={space.id}
-            className="overflow-hidden rounded-[22px] border border-[#E3D6C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)] sm:rounded-[26px]"
+            className="min-w-0 overflow-hidden rounded-[22px] border border-[#E3D6C8] bg-white shadow-[0_12px_34px_rgba(27,20,16,.06)] sm:rounded-[26px]"
           >
             <div className="border-b border-[#EEE5DA] p-4 sm:p-5">
               <p
@@ -397,24 +412,22 @@ export default function TableFloorPlan({
                 Espacio
               </p>
 
-              <div className="mt-1 flex items-end justify-between gap-3">
-                <div>
-                  <h3 className="text-2xl font-black text-[#071B35]">
-                    {space.name}
-                  </h3>
-                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-black/45">
-                    {space.floor_label && (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin size={11} />
-                        {space.floor_label}
-                      </span>
-                    )}
-                    <span>
-                      {spaceTables.length}{" "}
-                      {spaceTables.length === 1 ? "mesa" : "mesas"}
-                    </span>
-                  </div>
-                </div>
+              <h3 className="mt-1 text-2xl font-black text-[#071B35]">
+                {space.name}
+              </h3>
+
+              <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-bold text-black/45">
+                {space.floor_label && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={11} />
+                    {space.floor_label}
+                  </span>
+                )}
+
+                <span>
+                  {spaceTables.length}{" "}
+                  {spaceTables.length === 1 ? "mesa" : "mesas"}
+                </span>
               </div>
 
               {space.description && (
@@ -424,13 +437,14 @@ export default function TableFloorPlan({
               )}
             </div>
 
-            {/* Mobile legend: only reservation states */}
+            {/* En móvil solo mostramos los estados relevantes */}
             <div className="border-b border-[#EEE5DA] bg-[#FCF9F4] px-4 py-3 lg:hidden">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-black text-black/55">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-lime-500" />
                   Disponible
                 </span>
+
                 <span className="inline-flex items-center gap-1.5">
                   <span
                     className="h-3 w-3 rounded-full"
@@ -438,6 +452,7 @@ export default function TableFloorPlan({
                   />
                   Tu selección
                 </span>
+
                 <span className="inline-flex items-center gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-red-500" />
                   No disponible
@@ -445,10 +460,10 @@ export default function TableFloorPlan({
               </div>
             </div>
 
-            <div className="grid lg:grid-cols-[170px_minmax(0,1fr)]">
-              {/* Desktop-only complete legend */}
+            <div className="grid min-w-0 lg:grid-cols-[170px_minmax(0,1fr)]">
               <aside className="hidden border-r border-[#EEE5DA] bg-[#FCF9F4] p-4 lg:block">
                 <p className="text-xs font-black text-[#071B35]">Leyenda</p>
+
                 <div className="mt-4 space-y-3 text-[11px] font-bold text-black/55">
                   <div className="flex items-center gap-2">
                     <span className="h-3.5 w-3.5 rounded-full bg-lime-500" />
@@ -487,8 +502,8 @@ export default function TableFloorPlan({
                 </div>
               </aside>
 
-              <div className="p-3 sm:p-5">
-                <ResponsivePlanStage
+              <div className="min-w-0 p-3 sm:p-5">
+                <NormalizedPlan
                   space={space}
                   spaceTables={spaceTables}
                   spaceElements={spaceElements}
@@ -499,7 +514,7 @@ export default function TableFloorPlan({
                 />
 
                 <p className="mt-3 text-center text-[10px] font-semibold text-black/40 lg:hidden">
-                  El plano se ajusta completo a tu pantalla. Usa “Ampliar” si quieres verlo con más detalle.
+                  Vista completa del salón. Pulsa “Ampliar” para inspeccionar detalles.
                 </p>
               </div>
             </div>
