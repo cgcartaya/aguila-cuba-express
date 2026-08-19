@@ -413,7 +413,7 @@ export default function SpaceManager({
             <Sparkles size={16} />
           </div>
           <p className="text-xs font-semibold leading-5 text-slate-500">
-            <strong className="text-slate-700">Fase 2:</strong> estos espacios ya son entidades reales. En la siguiente fase cada uno podrá tener un plano visual arrastrable con puertas, ventanas, barra y mesas.
+            <strong className="text-slate-700">Tip:</strong> usa "Editar plano" en cada espacio para colocar mesas, paredes, puertas, ventanas y barra arrastrándolas directamente sobre el croquis.
           </p>
         </div>
       </div>

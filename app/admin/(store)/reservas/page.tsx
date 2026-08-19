@@ -156,7 +156,7 @@ export default function AdminReservasPage() {
 
         <div className="mt-5">
           {tab==="espacios" && <SpaceManager storeId={activeStore.id} spaces={spaces} tables={tables} elements={elements} onChange={() => void loadData(true)}/>}
-          {tab==="mesas" && <TableManager storeId={activeStore.id} spaces={spaces} tables={tables} onChange={() => void loadData(true)}/>}
+          {tab==="mesas" && <TableManager storeId={activeStore.id} spaces={spaces} tables={tables} onChange={() => void loadData(true)} onOpenSpaces={() => setTab("espacios")}/>}
           {tab==="franjas" && <SlotManager storeId={activeStore.id} slots={slots} onChange={() => void loadData(true)}/>}
           {tab==="bloqueadas" && <BlockedDatesManager storeId={activeStore.id} blockedDates={blockedDates} onChange={() => void loadData(true)}/>}
         </div>
@@ -167,7 +167,7 @@ export default function AdminReservasPage() {
             <div>
               <h3 className="font-black text-[#071B35]">La ubicación ya tiene sentido real</h3>
               <p className="mt-1 text-xs font-semibold leading-5 text-slate-500">
-                Cada mesa pertenece ahora a un espacio concreto. La próxima fase será el editor de plano visual dentro de cada espacio.
+                Cada mesa pertenece a un espacio concreto y puede colocarse visualmente dentro de él desde "Espacios → Editar plano".
               </p>
             </div>
           </div>

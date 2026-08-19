@@ -3,10 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   Armchair,
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
+  ArrowUpRight,
   Loader2,
   MapPinned,
   Pencil,
@@ -27,13 +24,13 @@ import {
   type ReservationTableFormData,
   type SeatType,
 } from "@/lib/reservas/types";
-import MiniFloorPlanPreview from "./MiniFloorPlanPreview";
 
 type Props = {
   storeId: string;
   tables: ReservationTable[];
   spaces: ReservationSpace[];
   onChange: () => void;
+  onOpenSpaces?: () => void;
 };
 
 const SEAT_TYPE_OPTIONS: SeatType[] = ["chairs", "sofa", "stools"];
@@ -64,6 +61,7 @@ export default function TableManager({
   tables,
   spaces,
   onChange,
+  onOpenSpaces,
 }: Props) {
   const [editing, setEditing] =
     useState<ReservationTableFormData | null>(null);
@@ -164,7 +162,7 @@ export default function TableManager({
         <div>
           <h2 className="text-lg font-black text-[#071B35]">Mesas</h2>
           <p className="mt-1 text-xs font-semibold text-slate-400">
-            Asigna cada mesa a un espacio real del restaurante.
+            Asigna cada mesa a un espacio real del restaurante. Para colocarla en el plano, usa "Espacios → Editar plano".
           </p>
         </div>
 
@@ -187,143 +185,114 @@ export default function TableManager({
 
       {editing && (
         <div className="border-b border-slate-100 bg-[#FBFCFE] p-5">
-          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs font-black text-slate-600">
-                  Nombre
-                  <input
-                    autoFocus
-                    value={editing.name}
-                    onChange={(e) =>
-                      setEditing({ ...editing, name: e.target.value })
-                    }
-                    placeholder="Ej: Mesa 4"
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
-                  />
-                </label>
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-black text-slate-600">
+                Nombre
+                <input
+                  autoFocus
+                  value={editing.name}
+                  onChange={(e) =>
+                    setEditing({ ...editing, name: e.target.value })
+                  }
+                  placeholder="Ej: Mesa 4"
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
+                />
+              </label>
 
-                <label className="text-xs font-black text-slate-600">
-                  Capacidad
-                  <input
-                    type="number"
-                    min={1}
-                    max={40}
-                    value={editing.capacity}
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        capacity: Number(e.target.value) || 1,
-                      })
-                    }
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
-                  />
-                </label>
+              <label className="text-xs font-black text-slate-600">
+                Capacidad
+                <input
+                  type="number"
+                  min={1}
+                  max={40}
+                  value={editing.capacity}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      capacity: Number(e.target.value) || 1,
+                    })
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold outline-none"
+                />
+              </label>
 
-                <label className="text-xs font-black text-slate-600">
-                  Tipo de asiento
-                  <select
-                    value={editing.seat_type}
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        seat_type: e.target.value as SeatType,
-                      })
-                    }
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
-                  >
-                    {SEAT_TYPE_OPTIONS.map((type) => (
-                      <option key={type} value={type}>
-                        {SEAT_TYPE_LABEL[type]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <label className="text-xs font-black text-slate-600">
+                Tipo de asiento
+                <select
+                  value={editing.seat_type}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      seat_type: e.target.value as SeatType,
+                    })
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
+                >
+                  {SEAT_TYPE_OPTIONS.map((type) => (
+                    <option key={type} value={type}>
+                      {SEAT_TYPE_LABEL[type]}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-                <label className="text-xs font-black text-slate-600">
-                  Forma de mesa
-                  <select
-                    value={editing.table_shape}
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        table_shape: e.target.value as "round" | "square" | "rect",
-                      })
-                    }
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
-                  >
-                    <option value="round">Redonda</option>
-                    <option value="square">Cuadrada</option>
-                    <option value="rect">Rectangular</option>
-                  </select>
-                </label>
+              <label className="text-xs font-black text-slate-600">
+                Forma de mesa
+                <select
+                  value={editing.table_shape}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      table_shape: e.target.value as "round" | "square" | "rect",
+                    })
+                  }
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
+                >
+                  <option value="round">Redonda</option>
+                  <option value="square">Cuadrada</option>
+                  <option value="rect">Rectangular</option>
+                </select>
+              </label>
 
-                <label className="text-xs font-black text-slate-600">
-                  Espacio
-                  <select
-                    value={editing.space_id || ""}
-                    onChange={(e) => selectSpace(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
-                  >
-                    <option value="">Selecciona un espacio</option>
-                    {spaces.map((space) => (
-                      <option key={space.id} value={space.id}>
-                        {space.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                <p className="text-xs font-black text-slate-600">
-                  Posición dentro del espacio
-                </p>
-                <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                  Conservamos la cuadrícula actual para no perder posiciones. La Fase 3 la reemplazará por arrastrar y soltar.
-                </p>
-
-                <div className="mt-3 grid w-fit grid-cols-3 gap-1">
-                  <span />
-                  <button onClick={() => setEditing({...editing,pos_row:Math.max(0,editing.pos_row-1)})} className="rounded-lg border bg-white p-2"><ArrowUp size={14}/></button>
-                  <span />
-                  <button onClick={() => setEditing({...editing,pos_col:Math.max(0,editing.pos_col-1)})} className="rounded-lg border bg-white p-2"><ArrowLeft size={14}/></button>
-                  <span className="flex items-center justify-center text-[10px] font-black text-slate-400">{editing.pos_row},{editing.pos_col}</span>
-                  <button onClick={() => setEditing({...editing,pos_col:editing.pos_col+1})} className="rounded-lg border bg-white p-2"><ArrowRight size={14}/></button>
-                  <span />
-                  <button onClick={() => setEditing({...editing,pos_row:editing.pos_row+1})} className="rounded-lg border bg-white p-2"><ArrowDown size={14}/></button>
-                  <span />
-                </div>
-              </div>
+              <label className="text-xs font-black text-slate-600 sm:col-span-2">
+                Espacio
+                <select
+                  value={editing.space_id || ""}
+                  onChange={(e) => selectSpace(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold"
+                >
+                  <option value="">Selecciona un espacio</option>
+                  {spaces.map((space) => (
+                    <option key={space.id} value={space.id}>
+                      {space.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
-                Vista previa temporal
-              </p>
-              <div className="mt-3">
-                <MiniFloorPlanPreview
-                  tables={tables}
-                  editing={{
-                    id: editing.id,
-                    name: editing.name || "Nueva",
-                    seat_type: editing.seat_type,
-                    pos_row: editing.pos_row,
-                    pos_col: editing.pos_col,
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-violet-50 px-3 py-2.5 text-xs font-semibold text-violet-700">
+              <span>
+                <MapPinned size={13} className="mr-1 inline" />
+                La posición de la mesa dentro del plano se ajusta desde{" "}
+                <strong>Espacios → Editar plano</strong>, no aquí.
+              </span>
+              {onOpenSpaces && (
+                <button
+                  onClick={() => {
+                    setEditing(null);
+                    onOpenSpaces();
                   }}
-                />
-              </div>
-
-              {editing.space_id && (
-                <div className="mt-4 rounded-xl bg-violet-50 px-3 py-2.5 text-xs font-semibold text-violet-700">
-                  <MapPinned size={13} className="mr-1 inline" />
-                  {spaceMap.get(editing.space_id)?.name}
-                </div>
+                  className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1.5 text-[10px] font-black text-violet-700 shadow-sm"
+                >
+                  Ir a Espacios <ArrowUpRight size={12} />
+                </button>
               )}
             </div>
           </div>
 
-          <div className="mt-4 flex justify-end gap-2">
+          <div className="mx-auto mt-4 flex max-w-2xl justify-end gap-2">
             <button onClick={() => setEditing(null)} className="rounded-xl px-4 py-2.5 text-xs font-black text-slate-500">
               Cancelar
             </button>

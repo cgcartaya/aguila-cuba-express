@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   Armchair,
   Circle,
   Copy,
@@ -15,6 +16,7 @@ import {
   RectangleHorizontal,
   RotateCw,
   Save,
+  Sofa,
   Square,
   Trash2,
   TreePine,
@@ -23,6 +25,7 @@ import {
   Type,
   Undo2,
   Redo2,
+  Users,
   Wind,
   X,
 } from "lucide-react";
@@ -35,11 +38,13 @@ import {
   updateReservationTableVisualPosition,
 } from "@/lib/services/reservas";
 import {
+  SEAT_TYPE_LABEL,
   SPACE_ELEMENT_LABEL,
   type ReservationSpace,
   type ReservationSpaceElement,
   type ReservationSpaceElementType,
   type ReservationTable,
+  type SeatType,
 } from "@/lib/reservas/types";
 
 type Props = {
@@ -53,6 +58,70 @@ type Props = {
 
 type TableShape = "round" | "square" | "rect";
 type PropertiesTab = "general" | "position";
+
+const SEAT_TYPE_OPTIONS: SeatType[] = ["chairs", "sofa", "stools"];
+const SEAT_TYPE_ICON: Record<SeatType, typeof Armchair> = {
+  chairs: Armchair,
+  sofa: Sofa,
+  stools: Users,
+};
+
+// Deshacer/Rehacer: por ahora cubre posición, tamaño, rotación y
+// propiedades de mesas/elementos (lo que se puede revertir con
+// seguridad). Crear/eliminar no entra todavía — revertir un borrado
+// implicaría recrear filas con nuevos IDs, lo cual puede desalinear
+// reservas ya hechas contra esa mesa.
+type TableSnapshot = {
+  pos_x: number;
+  pos_y: number;
+  rotation: number;
+  name: string;
+  capacity: number;
+  seat_type: SeatType;
+  table_shape: TableShape;
+};
+
+type ElementSnapshot = {
+  pos_x: number;
+  pos_y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  label: string;
+};
+
+type HistoryEntry =
+  | { kind: "table"; id: string; before: TableSnapshot; after: TableSnapshot }
+  | { kind: "element"; id: string; before: ElementSnapshot; after: ElementSnapshot };
+
+function tableSnapshotFrom(
+  table: ReservationTable,
+  overrides?: Partial<TableSnapshot>
+): TableSnapshot {
+  return {
+    pos_x: overrides?.pos_x ?? Number(table.pos_x ?? 50),
+    pos_y: overrides?.pos_y ?? Number(table.pos_y ?? 50),
+    rotation: overrides?.rotation ?? (table.rotation || 0),
+    name: overrides?.name ?? table.name,
+    capacity: overrides?.capacity ?? table.capacity,
+    seat_type: overrides?.seat_type ?? table.seat_type,
+    table_shape: overrides?.table_shape ?? table.table_shape,
+  };
+}
+
+function elementSnapshotFrom(
+  element: ReservationSpaceElement,
+  overrides?: Partial<ElementSnapshot>
+): ElementSnapshot {
+  return {
+    pos_x: overrides?.pos_x ?? Number(element.pos_x),
+    pos_y: overrides?.pos_y ?? Number(element.pos_y),
+    width: overrides?.width ?? Number(element.width),
+    height: overrides?.height ?? Number(element.height),
+    rotation: overrides?.rotation ?? Number(element.rotation || 0),
+    label: overrides?.label ?? (element.label || ""),
+  };
+}
 
 const ELEMENT_ICONS: Record<ReservationSpaceElementType, typeof Square> = {
   wall: Square,
@@ -87,6 +156,57 @@ function clamp(value: number, min = 3, max = 97) {
   return Math.max(min, Math.min(max, value));
 }
 
+// Tamaño real de cada mesa en el lienzo base (860×650 px, antes del
+// zoom) convertido a % de ancho/alto — para poder calcular
+// solapamientos sin depender del zoom actual.
+const CANVAS_BASE_WIDTH = 860;
+const CANVAS_BASE_HEIGHT = 650;
+
+function tableFootprintPct(table: ReservationTable) {
+  const isRect = table.table_shape === "rect";
+  const widthPx = isRect ? 132 : 92;
+  const heightPx = isRect ? 78 : 92;
+
+  return {
+    widthPct: (widthPx / CANVAS_BASE_WIDTH) * 100,
+    heightPct: (heightPx / CANVAS_BASE_HEIGHT) * 100,
+  };
+}
+
+function findOverlappingTableIds(
+  tablesWithPosition: { table: ReservationTable; x: number; y: number }[]
+) {
+  const overlapping = new Set<string>();
+
+  for (let i = 0; i < tablesWithPosition.length; i++) {
+    for (let j = i + 1; j < tablesWithPosition.length; j++) {
+      const a = tablesWithPosition[i];
+      const b = tablesWithPosition[j];
+
+      const aBox = tableFootprintPct(a.table);
+      const bBox = tableFootprintPct(b.table);
+
+      // Margen chico para no marcar mesas apenas rozándose por
+      // redondeos de posición.
+      const margin = 0.6;
+
+      const overlapX =
+        Math.abs(a.x - b.x) <
+        aBox.widthPct / 2 + bBox.widthPct / 2 - margin;
+      const overlapY =
+        Math.abs(a.y - b.y) <
+        aBox.heightPct / 2 + bBox.heightPct / 2 - margin;
+
+      if (overlapX && overlapY) {
+        overlapping.add(a.table.id);
+        overlapping.add(b.table.id);
+      }
+    }
+  }
+
+  return overlapping;
+}
+
 function getSeatPositions(capacity: number) {
   const shown = Math.min(Math.max(capacity, 1), 10);
 
@@ -103,13 +223,16 @@ function TableVisual({
   table,
   selected,
   busy,
+  overlapping,
 }: {
   table: ReservationTable;
   selected: boolean;
   busy: boolean;
+  overlapping: boolean;
 }) {
   const isRound = table.table_shape === "round";
   const isRect = table.table_shape === "rect";
+  const SeatIcon = SEAT_TYPE_ICON[table.seat_type];
 
   return (
     <div
@@ -123,8 +246,18 @@ function TableVisual({
         selected
           ? "border-2 border-orange-500 bg-orange-100 ring-2 ring-orange-200 ring-offset-2"
           : "border-2 border-lime-600 bg-lime-200"
+      } ${
+        overlapping
+          ? "outline outline-2 outline-offset-2 outline-red-500"
+          : ""
       }`}
     >
+      {overlapping && (
+        <span className="absolute -right-2 -top-2 z-20 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-500 text-white shadow-sm">
+          <AlertTriangle size={12} />
+        </span>
+      )}
+
       {getSeatPositions(table.capacity).map((seat, index) => (
         <span
           key={index}
@@ -146,7 +279,13 @@ function TableVisual({
           <Loader2 size={16} className="mx-auto animate-spin text-orange-500" />
         ) : (
           <>
-            <span className="block max-w-[96px] truncate text-[12px] font-black text-[#071B35]">
+            <SeatIcon
+              size={13}
+              className={`mx-auto ${
+                selected ? "text-orange-500" : "text-lime-700"
+              }`}
+            />
+            <span className="mt-0.5 block max-w-[96px] truncate text-[12px] font-black text-[#071B35]">
               {table.name}
             </span>
             <span className="mt-0.5 block text-[10px] font-black text-slate-500">
@@ -188,9 +327,18 @@ export default function SpaceFloorPlanEditor({
         pointerId: number;
         offsetX: number;
         offsetY: number;
+        before: { x: number; y: number };
       }
     | null
   >(null);
+
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [future, setFuture] = useState<HistoryEntry[]>([]);
+
+  const pushHistory = (entry: HistoryEntry) => {
+    setHistory((prev) => [...prev.slice(-49), entry]);
+    setFuture([]);
+  };
 
   const [elementDraft, setElementDraft] = useState<{
     label: string;
@@ -205,6 +353,7 @@ export default function SpaceFloorPlanEditor({
     name: string;
     capacity: number;
     table_shape: TableShape;
+    seat_type: SeatType;
     rotation: number;
     pos_x: number;
     pos_y: number;
@@ -250,6 +399,7 @@ export default function SpaceFloorPlanEditor({
       name: table.name,
       capacity: table.capacity,
       table_shape: table.table_shape,
+      seat_type: table.seat_type,
       rotation: table.rotation || 0,
       pos_x: Number(table.pos_x ?? 50),
       pos_y: Number(table.pos_y ?? 50),
@@ -292,6 +442,20 @@ export default function SpaceFloorPlanEditor({
       x: Number(element.pos_x),
       y: Number(element.pos_y),
     };
+
+  const overlappingTableIds = useMemo(() => {
+    const withPosition = spaceTables.map((table) => {
+      const pos =
+        positionOverrides[getPositionKey("table", table.id)] || {
+          x: Number(table.pos_x ?? 50),
+          y: Number(table.pos_y ?? 50),
+        };
+      return { table, x: pos.x, y: pos.y };
+    });
+
+    return findOverlappingTableIds(withPosition);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spaceTables, positionOverrides]);
 
   const clampElementPosition = (
     element: ReservationSpaceElement,
@@ -369,6 +533,7 @@ export default function SpaceFloorPlanEditor({
       pointerId: e.pointerId,
       offsetX: pointer.x - currentX,
       offsetY: pointer.y - currentY,
+      before: { x: currentX, y: currentY },
     });
   };
 
@@ -407,17 +572,18 @@ export default function SpaceFloorPlanEditor({
   const finishCurrentDrag = async (e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragging || e.pointerId !== dragging.pointerId) return;
 
-    const key = getPositionKey(dragging.type, dragging.id);
+    const dragInfo = dragging;
+    const key = getPositionKey(dragInfo.type, dragInfo.id);
     const current = positionOverrides[key];
 
     setDragging(null);
 
     if (!current) return;
 
-    setBusy(dragging.id);
+    setBusy(dragInfo.id);
 
-    if (dragging.type === "table") {
-      const table = spaceTables.find((item) => item.id === dragging.id);
+    if (dragInfo.type === "table") {
+      const table = spaceTables.find((item) => item.id === dragInfo.id);
       if (table) {
         const { error } = await updateReservationTableVisualPosition(
           table.id,
@@ -428,10 +594,26 @@ export default function SpaceFloorPlanEditor({
 
         if (error) {
           alert("No se pudo guardar la nueva posición de la mesa.");
+        } else if (
+          dragInfo.before.x !== current.x ||
+          dragInfo.before.y !== current.y
+        ) {
+          pushHistory({
+            kind: "table",
+            id: table.id,
+            before: tableSnapshotFrom(table, {
+              pos_x: dragInfo.before.x,
+              pos_y: dragInfo.before.y,
+            }),
+            after: tableSnapshotFrom(table, {
+              pos_x: current.x,
+              pos_y: current.y,
+            }),
+          });
         }
       }
     } else {
-      const element = spaceElements.find((item) => item.id === dragging.id);
+      const element = spaceElements.find((item) => item.id === dragInfo.id);
       if (element) {
         const { error } = await saveReservationSpaceElement(storeId, {
           id: element.id,
@@ -448,6 +630,22 @@ export default function SpaceFloorPlanEditor({
 
         if (error) {
           alert("No se pudo guardar la nueva posición del elemento.");
+        } else if (
+          dragInfo.before.x !== current.x ||
+          dragInfo.before.y !== current.y
+        ) {
+          pushHistory({
+            kind: "element",
+            id: element.id,
+            before: elementSnapshotFrom(element, {
+              pos_x: dragInfo.before.x,
+              pos_y: dragInfo.before.y,
+            }),
+            after: elementSnapshotFrom(element, {
+              pos_x: current.x,
+              pos_y: current.y,
+            }),
+          });
         }
       }
     }
@@ -550,6 +748,7 @@ export default function SpaceFloorPlanEditor({
         name: table.name,
         capacity: table.capacity,
         table_shape: table.table_shape,
+        seat_type: table.seat_type,
         rotation: table.rotation || 0,
         pos_x: Number(table.pos_x ?? 50),
         pos_y: Number(table.pos_y ?? 50),
@@ -563,6 +762,14 @@ export default function SpaceFloorPlanEditor({
   const saveSelectedElement = async () => {
     if (!selectedElement || !elementDraft) return;
 
+    const width = Math.max(2, Math.min(80, elementDraft.width || 2));
+    const height = Math.max(2, Math.min(80, elementDraft.height || 2));
+    const posX = clamp(elementDraft.pos_x);
+    const posY = clamp(elementDraft.pos_y);
+    const rotation = elementDraft.rotation || 0;
+
+    const before = elementSnapshotFrom(selectedElement);
+
     setBusy(selectedElement.id);
 
     const { error } = await saveReservationSpaceElement(storeId, {
@@ -570,11 +777,11 @@ export default function SpaceFloorPlanEditor({
       space_id: selectedElement.space_id,
       element_type: selectedElement.element_type,
       label: elementDraft.label,
-      pos_x: clamp(elementDraft.pos_x),
-      pos_y: clamp(elementDraft.pos_y),
-      width: Math.max(2, Math.min(80, elementDraft.width || 2)),
-      height: Math.max(2, Math.min(80, elementDraft.height || 2)),
-      rotation: elementDraft.rotation || 0,
+      pos_x: posX,
+      pos_y: posY,
+      width,
+      height,
+      rotation,
       sort_order: selectedElement.sort_order,
     });
 
@@ -584,6 +791,20 @@ export default function SpaceFloorPlanEditor({
       alert("No se pudo guardar el elemento.");
       return;
     }
+
+    pushHistory({
+      kind: "element",
+      id: selectedElement.id,
+      before,
+      after: {
+        pos_x: posX,
+        pos_y: posY,
+        width,
+        height,
+        rotation,
+        label: elementDraft.label,
+      },
+    });
 
     const clamped = clampElementPosition(
       selectedElement,
@@ -604,20 +825,28 @@ export default function SpaceFloorPlanEditor({
   const saveSelectedTable = async () => {
     if (!selectedTable || !tableDraft) return;
 
+    const name = tableDraft.name.trim() || selectedTable.name;
+    const capacity = Math.max(1, Math.min(20, tableDraft.capacity || 1));
+    const posX = clamp(tableDraft.pos_x);
+    const posY = clamp(tableDraft.pos_y);
+    const rotation = tableDraft.rotation || 0;
+
+    const before = tableSnapshotFrom(selectedTable);
+
     setBusy(selectedTable.id);
 
     const { error } = await saveReservationTable(storeId, {
       id: selectedTable.id,
-      name: tableDraft.name.trim() || selectedTable.name,
-      capacity: Math.max(1, Math.min(20, tableDraft.capacity || 1)),
-      seat_type: selectedTable.seat_type,
+      name,
+      capacity,
+      seat_type: tableDraft.seat_type,
       zone: space.name,
       space_id: space.id,
       pos_row: selectedTable.pos_row,
       pos_col: selectedTable.pos_col,
-      pos_x: clamp(tableDraft.pos_x),
-      pos_y: clamp(tableDraft.pos_y),
-      rotation: tableDraft.rotation || 0,
+      pos_x: posX,
+      pos_y: posY,
+      rotation,
       table_shape: tableDraft.table_shape,
       is_active: selectedTable.is_active,
       sort_order: selectedTable.sort_order,
@@ -630,16 +859,27 @@ export default function SpaceFloorPlanEditor({
       return;
     }
 
-    setLivePosition(
-      "table",
-      selectedTable.id,
-      clamp(tableDraft.pos_x, 4, 96),
-      clamp(tableDraft.pos_y, 4, 96)
-    );
+    pushHistory({
+      kind: "table",
+      id: selectedTable.id,
+      before,
+      after: {
+        pos_x: posX,
+        pos_y: posY,
+        rotation,
+        name,
+        capacity,
+        seat_type: tableDraft.seat_type,
+        table_shape: tableDraft.table_shape,
+      },
+    });
+
+    setLivePosition("table", selectedTable.id, clamp(posX, 4, 96), clamp(posY, 4, 96));
 
     onChange();
     pulseSaved();
   };
+
 
   const removeSelectedElement = async () => {
     if (!selectedElement) return;
@@ -708,6 +948,202 @@ export default function SpaceFloorPlanEditor({
     onChange();
     pulseSaved();
   };
+
+  const duplicateTable = async (table: ReservationTable) => {
+    setBusy(`duplicate-${table.id}`);
+
+    const nextNumber =
+      spaceTables.reduce((max, item) => {
+        const match = item.name.match(/(\d+)/);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0) + 1;
+
+    const baseName = table.name.match(/^(.*?)\s*\d+\s*$/)?.[1]?.trim();
+    const name = baseName ? `${baseName} ${nextNumber}` : `${table.name} (copia)`;
+
+    const { data, error } = await saveReservationTable(storeId, {
+      name,
+      capacity: table.capacity,
+      seat_type: table.seat_type,
+      zone: space.name,
+      space_id: space.id,
+      pos_row: table.pos_row,
+      pos_col: table.pos_col,
+      pos_x: clamp(Number(table.pos_x ?? 50) + 4),
+      pos_y: clamp(Number(table.pos_y ?? 50) + 4),
+      rotation: table.rotation || 0,
+      table_shape: table.table_shape,
+      is_active: table.is_active,
+      sort_order: spaceTables.length,
+    });
+
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo duplicar la mesa.");
+      return;
+    }
+
+    if (data?.id) {
+      const created = data as ReservationTable;
+      setSelectedTableId(created.id);
+      setSelectedElementId(null);
+      setPropertiesTab("general");
+      setTableDraft({
+        name: created.name,
+        capacity: created.capacity,
+        table_shape: created.table_shape,
+        seat_type: created.seat_type,
+        rotation: created.rotation || 0,
+        pos_x: Number(created.pos_x ?? 50),
+        pos_y: Number(created.pos_y ?? 50),
+      });
+    }
+
+    onChange();
+    pulseSaved();
+  };
+
+  const applyTableSnapshot = async (id: string, snap: TableSnapshot) => {
+    const table = spaceTables.find((item) => item.id === id);
+    if (!table) return false;
+
+    setBusy(id);
+
+    const { error } = await saveReservationTable(storeId, {
+      id,
+      name: snap.name,
+      capacity: snap.capacity,
+      seat_type: snap.seat_type,
+      zone: space.name,
+      space_id: table.space_id,
+      pos_row: table.pos_row,
+      pos_col: table.pos_col,
+      pos_x: snap.pos_x,
+      pos_y: snap.pos_y,
+      rotation: snap.rotation,
+      table_shape: snap.table_shape,
+      is_active: table.is_active,
+      sort_order: table.sort_order,
+    });
+
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo deshacer/rehacer el cambio en la mesa.");
+      return false;
+    }
+
+    setLivePosition("table", id, snap.pos_x, snap.pos_y);
+
+    if (selectedTableId === id) {
+      setTableDraft({
+        name: snap.name,
+        capacity: snap.capacity,
+        table_shape: snap.table_shape,
+        seat_type: snap.seat_type,
+        rotation: snap.rotation,
+        pos_x: snap.pos_x,
+        pos_y: snap.pos_y,
+      });
+    }
+
+    onChange();
+    return true;
+  };
+
+  const applyElementSnapshot = async (id: string, snap: ElementSnapshot) => {
+    const element = spaceElements.find((item) => item.id === id);
+    if (!element) return false;
+
+    setBusy(id);
+
+    const { error } = await saveReservationSpaceElement(storeId, {
+      id,
+      space_id: element.space_id,
+      element_type: element.element_type,
+      label: snap.label,
+      pos_x: snap.pos_x,
+      pos_y: snap.pos_y,
+      width: snap.width,
+      height: snap.height,
+      rotation: snap.rotation,
+      sort_order: element.sort_order,
+    });
+
+    setBusy(null);
+
+    if (error) {
+      alert("No se pudo deshacer/rehacer el cambio en el elemento.");
+      return false;
+    }
+
+    setLivePosition("element", id, snap.pos_x, snap.pos_y);
+
+    if (selectedElementId === id) {
+      setElementDraft({
+        label: snap.label,
+        width: snap.width,
+        height: snap.height,
+        rotation: snap.rotation,
+        pos_x: snap.pos_x,
+        pos_y: snap.pos_y,
+      });
+    }
+
+    onChange();
+    return true;
+  };
+
+  const undo = async () => {
+    if (history.length === 0) return;
+    const entry = history[history.length - 1];
+
+    const ok =
+      entry.kind === "table"
+        ? await applyTableSnapshot(entry.id, entry.before)
+        : await applyElementSnapshot(entry.id, entry.before);
+
+    if (ok) {
+      setHistory((prev) => prev.slice(0, -1));
+      setFuture((prev) => [...prev, entry]);
+      pulseSaved();
+    }
+  };
+
+  const redo = async () => {
+    if (future.length === 0) return;
+    const entry = future[future.length - 1];
+
+    const ok =
+      entry.kind === "table"
+        ? await applyTableSnapshot(entry.id, entry.after)
+        : await applyElementSnapshot(entry.id, entry.after);
+
+    if (ok) {
+      setFuture((prev) => prev.slice(0, -1));
+      setHistory((prev) => [...prev, entry]);
+      pulseSaved();
+    }
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (e.key.toLowerCase() !== "z") return;
+
+      e.preventDefault();
+      if (e.shiftKey) {
+        void redo();
+      } else {
+        void undo();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, future, spaceTables, spaceElements]);
 
   return (
     <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_46px_rgba(15,23,42,.07)]">
@@ -823,16 +1259,26 @@ export default function SpaceFloorPlanEditor({
           <p className="text-xs font-black text-[#071B35]">Acciones del plano</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              disabled
-              title="Disponible en una próxima mejora"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-300"
+              onClick={() => void undo()}
+              disabled={history.length === 0}
+              title={
+                history.length === 0
+                  ? "No hay cambios para deshacer"
+                  : "Deshacer (Ctrl+Z)"
+              }
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 disabled:text-slate-300"
             >
               <Undo2 size={13} /> Deshacer
             </button>
             <button
-              disabled
-              title="Disponible en una próxima mejora"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-300"
+              onClick={() => void redo()}
+              disabled={future.length === 0}
+              title={
+                future.length === 0
+                  ? "No hay cambios para rehacer"
+                  : "Rehacer (Ctrl+Shift+Z)"
+              }
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-[10px] font-black text-slate-600 disabled:text-slate-300"
             >
               <Redo2 size={13} /> Rehacer
             </button>
@@ -1051,12 +1497,25 @@ export default function SpaceFloorPlanEditor({
                     table={table}
                     selected={selectedTableId === table.id}
                     busy={busy === table.id}
+                    overlapping={overlappingTableIds.has(table.id)}
                   />
                 </div>
                 );
               })}
             </div>
           </div>
+
+          {overlappingTableIds.size > 0 && (
+            <div className="mt-3 flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3">
+              <AlertTriangle size={15} className="shrink-0 text-red-500" />
+              <p className="text-[10px] font-semibold text-red-700">
+                {overlappingTableIds.size === 1
+                  ? "1 mesa se solapa con otra."
+                  : `${overlappingTableIds.size} mesas se solapan entre sí.`}{" "}
+                Sepáralas un poco para que el cliente las distinga en el plano.
+              </p>
+            </div>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-orange-100 bg-orange-50/60 px-4 py-3">
             <p className="text-[10px] font-semibold text-orange-800">
@@ -1093,21 +1552,36 @@ export default function SpaceFloorPlanEditor({
                   <h3 className="text-xl font-black text-[#071B35]">
                     {tableDraft.name}
                   </h3>
-                  <span className="mt-1 inline-flex rounded-full bg-orange-50 px-2.5 py-1 text-[9px] font-black text-orange-600">
-                    {tableDraft.table_shape === "round"
-                      ? "Mesa redonda"
-                      : tableDraft.table_shape === "square"
-                      ? "Mesa cuadrada"
-                      : "Mesa rectangular"}
-                  </span>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    <span className="inline-flex rounded-full bg-orange-50 px-2.5 py-1 text-[9px] font-black text-orange-600">
+                      {tableDraft.table_shape === "round"
+                        ? "Mesa redonda"
+                        : tableDraft.table_shape === "square"
+                        ? "Mesa cuadrada"
+                        : "Mesa rectangular"}
+                    </span>
+                    <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[9px] font-black text-slate-500">
+                      {SEAT_TYPE_LABEL[tableDraft.seat_type]}
+                    </span>
+                  </div>
                 </div>
 
-                <button
-                  onClick={removeSelectedTable}
-                  className="rounded-xl border border-red-100 bg-red-50 p-2 text-red-500"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex shrink-0 gap-1.5">
+                  <button
+                    onClick={() => void duplicateTable(selectedTable)}
+                    disabled={busy === `duplicate-${selectedTable.id}`}
+                    title="Duplicar mesa"
+                    className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 disabled:opacity-50"
+                  >
+                    <Copy size={14} />
+                  </button>
+                  <button
+                    onClick={removeSelectedTable}
+                    className="rounded-xl border border-red-100 bg-red-50 p-2 text-red-500"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 flex border-b border-slate-100">
@@ -1199,6 +1673,39 @@ export default function SpaceFloorPlanEditor({
                       <option value="rect">Rectangular</option>
                     </select>
                   </label>
+
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-slate-400">
+                      Tipo de asiento
+                    </p>
+                    <div className="mt-1 grid grid-cols-3 gap-2">
+                      {SEAT_TYPE_OPTIONS.map((option) => {
+                        const Icon = SEAT_TYPE_ICON[option];
+                        const active = tableDraft.seat_type === option;
+
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() =>
+                              setTableDraft({
+                                ...tableDraft,
+                                seat_type: option,
+                              })
+                            }
+                            className={`flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-[10px] font-black transition ${
+                              active
+                                ? "border-orange-300 bg-orange-50 text-orange-600"
+                                : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                            }`}
+                          >
+                            <Icon size={16} />
+                            {SEAT_TYPE_LABEL[option]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-4 space-y-3">
@@ -1498,10 +2005,17 @@ export default function SpaceFloorPlanEditor({
                       : "Mesa rectangular"}
                   </td>
                   <td className="px-4 py-3 font-black text-slate-700">
-                    {table.name}
+                    <span className="inline-flex items-center gap-1.5">
+                      {(() => {
+                        const SeatIcon = SEAT_TYPE_ICON[table.seat_type];
+                        return <SeatIcon size={12} className="text-slate-400" />;
+                      })()}
+                      {table.name}
+                    </span>
                   </td>
                   <td className="px-4 py-3 font-semibold text-slate-500">
-                    {table.capacity} personas
+                    {table.capacity} personas ·{" "}
+                    {SEAT_TYPE_LABEL[table.seat_type]}
                   </td>
                   <td className="px-4 py-3 font-semibold text-slate-400">
                     {Math.round(table.pos_x ?? 50)}%,{" "}

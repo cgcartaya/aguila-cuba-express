@@ -9,18 +9,28 @@ import {
   MapPin,
   Maximize2,
   Minimize2,
+  Sofa,
   Square,
   Toilet,
   TreePine,
   Type,
+  Users,
   Wind,
 } from "lucide-react";
 
-import type {
-  ReservationSpace,
-  ReservationSpaceElement,
-  ReservationTable,
+import {
+  SEAT_TYPE_LABEL,
+  type ReservationSpace,
+  type ReservationSpaceElement,
+  type ReservationTable,
+  type SeatType,
 } from "@/lib/reservas/types";
+
+const SEAT_TYPE_ICON: Record<SeatType, typeof Armchair> = {
+  chairs: Armchair,
+  sofa: Sofa,
+  stools: Users,
+};
 
 type Props = {
   spaces?: ReservationSpace[];
@@ -150,10 +160,15 @@ function TableButton({
       ))}
 
       <div className="relative z-10 flex max-w-[82%] flex-col items-center rounded-[10px] bg-white/90 px-[6%] py-[5%] shadow-sm">
-        <Armchair
-          className="h-auto w-[18%] min-w-[7px]"
-          style={{ color: border }}
-        />
+        {(() => {
+          const SeatIcon = SEAT_TYPE_ICON[table.seat_type];
+          return (
+            <SeatIcon
+              className="h-auto w-[18%] min-w-[7px]"
+              style={{ color: border }}
+            />
+          );
+        })()}
 
         <span
           className="mt-[2%] block w-full truncate font-black text-[#1B1410]"
@@ -344,7 +359,8 @@ function NormalizedPlan({
               {selectedTable.name}
             </p>
             <p className="text-[10px] font-semibold text-black/45">
-              {selectedTable.capacity} personas
+              {selectedTable.capacity} personas ·{" "}
+              {SEAT_TYPE_LABEL[selectedTable.seat_type]}
             </p>
           </div>
 
