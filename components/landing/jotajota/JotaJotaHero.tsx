@@ -57,15 +57,15 @@ export default function JotaJotaHero({
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80 backdrop-blur-sm"
           >
             <Flame size={13} className="text-[#FEBB1B]" />
-            Cuba · Horno de leña &amp; cocina napolitana
+            Cuba · Snack Bar &amp; cocina napolitana
           </motion.div>
 
           <h1
-            className="mt-6 text-[15vw] leading-[0.92] tracking-tight text-white sm:text-6xl lg:text-[4.6rem]"
+            className="mt-6 text-[11vw] leading-[0.96] tracking-tight text-white sm:text-5xl lg:text-[3.6rem]"
             style={{ fontFamily: "var(--font-jj-display)" }}
           >
-            <RevealText text="LA PIZZA QUE SE PIDE" startDelay={0.15} />
-            <RevealText text="DOS VECES." startDelay={0.55} className="mt-1 block text-[#FEBB1B]" />
+            <RevealText text="CUANDO PARECE QUE NO PUEDES MÁS" startDelay={0.15} />
+            <RevealText text="LLEGA EL POSTRE Y TE LO COMES." startDelay={0.55} className="mt-1 block text-[#FEBB1B]" />
           </h1>
 
           <motion.p
@@ -75,9 +75,10 @@ export default function JotaJotaHero({
             animate="show"
             className="mt-6 max-w-lg text-base leading-7 text-white/60 sm:text-lg"
           >
-            Masa de fermentación lenta, horno de leña a más de 400°C y
-            sazón napolitana de verdad. Por algo se llama Jota Jota:
-            aquí nadie se conforma con pedir una vez.
+            Nuestro snack bar napolitano vive del horno de leña a más
+            de 400°C, la masa de fermentación lenta y una carta de
+            postres que siempre gana la última ronda. Pizza, algo
+            rápido de picar o el dulce que cierra la noche — todo al paso.
           </motion.p>
 
           <motion.div
@@ -124,7 +125,7 @@ export default function JotaJotaHero({
           <div className="jj-float relative flex h-[84%] w-[84%] items-center justify-center overflow-hidden rounded-full bg-[#141210] shadow-[0_40px_90px_rgba(0,0,0,0.55)] ring-2 ring-[#FEBB1B]/40">
             <Image
               src="/jotajota/logo.webp"
-              alt="Jota Jota — cocina napolitana"
+              alt="Jota Jota — snack bar napolitano"
               fill
               priority
               sizes="420px"

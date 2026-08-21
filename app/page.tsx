@@ -222,8 +222,8 @@ export async function generateMetadata(): Promise<Metadata> {
     }
 
     return buildLandingFallbackMetadata(
-      "Jota Jota | Pizza napolitana al horno de leña",
-      "Pizza napolitana al horno de leña, masa madre y sazón de verdad — pide en línea o reserva tu mesa.",
+      "Jota Jota | Snack Bar Napolitano",
+      "Snack bar napolitano: pizza al horno de leña, masa madre y postres — pide en línea o reserva tu mesa.",
       canonicalUrl,
       "Jota Jota"
     );

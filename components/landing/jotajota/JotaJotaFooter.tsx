@@ -34,7 +34,7 @@ export default function JotaJotaFooter({ reservasHref = RESERVAS_URL }: { reserv
               <Image src="/jotajota/logo.webp" alt="Jota Jota" fill className="object-cover" />
             </div>
             <p className="mt-4 max-w-[220px] text-sm leading-6 text-white/45">
-              Pizza al horno de leña y cocina napolitana, hecha para pedirse dos veces.
+              Snack bar napolitano: pizza al horno de leña, algo rápido de picar y postres, hechos para pedirse dos veces.
             </p>
           </div>
 
@@ -103,7 +103,7 @@ export default function JotaJotaFooter({ reservasHref = RESERVAS_URL }: { reserv
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/35 sm:flex-row">
           <p>© {year} Jota Jota. Todos los derechos reservados.</p>
-          <p>Cocina Napolitana · Cuba</p>
+          <p>Snack Bar Napolitano · Cuba</p>
         </div>
       </div>
     </footer>

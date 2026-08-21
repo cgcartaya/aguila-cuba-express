@@ -50,7 +50,7 @@ export default function JotaJotaNavbar({
               JOTA JOTA
             </p>
             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.28em] text-[#FEBB1B]">
-              Cocina Napolitana
+              Snack Bar Napolitano
             </p>
           </div>
         </Link>
