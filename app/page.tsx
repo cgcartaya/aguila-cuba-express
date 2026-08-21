@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 
 import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
+import JotaJotaLanding from "@/components/landing/jotajota/JotaJotaLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
 import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
@@ -17,7 +18,7 @@ import {
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
-type LandingType = "aguila" | "yoyo" | "deparis" | "perla";
+type LandingType = "aguila" | "yoyo" | "deparis" | "jotajota" | "perla";
 
 function normalizeHost(value: string | null) {
   return normalizeStoreHost(value || "");
@@ -57,6 +58,17 @@ function resolveLanding(host: string): LandingType {
     normalizedHost.startsWith("depariscuba.")
   ) {
     return "deparis";
+  }
+
+  // Subdominio y dominios personalizados de Jota Jota.
+  if (
+    normalizedHost === `jotajota.${PLATFORM_DOMAIN}` ||
+    normalizedHost.startsWith("jotajota.")
+    // TODO: cuando tengan dominio propio (ej. jotajotapizza.com), agréguenlo aquí:
+    // || normalizedHost === "jotajotapizza.com"
+    // || normalizedHost.startsWith("jotajotapizza.")
+  ) {
+    return "jotajota";
   }
 
   return "perla";
@@ -194,6 +206,29 @@ export async function generateMetadata(): Promise<Metadata> {
     );
   }
 
+  if (landing === "jotajota") {
+    const canonicalUrl = host
+      ? `https://${host}`
+      : `https://jotajota.${PLATFORM_DOMAIN}`;
+
+    /*
+     * Igual que Águila: recuperamos la tienda por su slug para heredar
+     * favicon, OG image y logo reales en vez de valores genéricos.
+     */
+    const store = await resolveStoreBySlug("jotajota");
+
+    if (store) {
+      return buildStoreMetadata(store, canonicalUrl);
+    }
+
+    return buildLandingFallbackMetadata(
+      "Jota Jota | Pizza napolitana al horno de leña",
+      "Pizza napolitana al horno de leña, masa madre y sazón de verdad — pide en línea o reserva tu mesa.",
+      canonicalUrl,
+      "Jota Jota"
+    );
+  }
+
   return buildPerlaMetadata();
 }
 
@@ -230,6 +265,31 @@ export default async function HomePage() {
         menuHref={menuEnabled ? "/menu/deparis" : undefined}
         featuredDishes={featuredDishes}
         reservasHref={reservasEnabled ? "/reservas/deparis" : undefined}
+      />
+    );
+  }
+
+  if (landing === "jotajota") {
+    const [menuEnabled, featuredItems, reservasEnabled] = await Promise.all([
+      isMenuModuleEnabled("jotajota"),
+      getFeaturedMenuItems("jotajota", 12),
+      isReservasModuleEnabled("jotajota"),
+    ]);
+
+    const featuredDishes = featuredItems.map((item) => ({
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image_url: item.image_url,
+      venue_type: item.venue_type,
+    }));
+
+    return (
+      <JotaJotaLanding
+        menuHref={menuEnabled ? "/menu/jotajota" : undefined}
+        featuredDishes={featuredDishes}
+        reservasHref={reservasEnabled ? "/reservas/jotajota" : undefined}
       />
     );
   }
