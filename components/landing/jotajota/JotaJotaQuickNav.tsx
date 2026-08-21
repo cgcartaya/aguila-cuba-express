@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { STORE_URL } from "./constants";
-
 type Tab = { id: string; label: string; href: string; anchor: boolean };
 
 type Props = {
@@ -12,26 +10,18 @@ type Props = {
   showTienda?: boolean;
 };
 
-const ALL_TABS: Record<"pizzas" | "cocina" | "tienda", Tab> = {
+const ALL_TABS: Record<"pizzas" | "cocina", Tab> = {
   pizzas: { id: "pizzas", label: "Pizzas", href: "#pizzas", anchor: true },
   cocina: { id: "cocina", label: "Cocina & bebidas", href: "#cocina", anchor: true },
-  tienda: { id: "tienda", label: "Tienda", href: STORE_URL, anchor: false },
 };
 
-/**
- * Mismo patrón de scrollspy que /menu/[slug] y el resto de las
- * landings de la plataforma: pills pegadas debajo del navbar,
- * resaltando sola la sección visible.
- */
 export default function JotaJotaQuickNav({
   showPizzas = true,
   showCocina = true,
-  showTienda = true,
 }: Props) {
   const tabs: Tab[] = [
     showPizzas && ALL_TABS.pizzas,
     showCocina && ALL_TABS.cocina,
-    showTienda && ALL_TABS.tienda,
   ].filter(Boolean) as Tab[];
 
   const anchorTabs = tabs.filter((t) => t.anchor);

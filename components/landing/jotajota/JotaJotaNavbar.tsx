@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { CalendarCheck2, LogIn, Menu, ShoppingBag, X } from "lucide-react";
+import { CalendarCheck2, LogIn, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { NAV_LINKS, RESERVAS_URL, STORE_URL } from "./constants";
+import { NAV_LINKS, RESERVAS_URL } from "./constants";
 
 export default function JotaJotaNavbar({
   menuHref,
@@ -31,10 +31,11 @@ export default function JotaJotaNavbar({
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-[#0B0A08]/95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl" : "bg-[#0B0A08]/70 backdrop-blur-md"
+        scrolled
+          ? "bg-[#0B0A08]/95 shadow-[0_10px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+          : "bg-[#0B0A08]/70 backdrop-blur-md"
       }`}
     >
-      {/* Filete diagonal — mismo corte que separa el "JOTA" blanco del dorado en el logo */}
       <div className="h-[3px] w-full bg-[repeating-linear-gradient(115deg,#FEBB1B_0px,#FEBB1B_18px,transparent_18px,transparent_30px)]" />
 
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
@@ -76,16 +77,9 @@ export default function JotaJotaNavbar({
           </Link>
           <Link
             href={reservasHref}
-            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white transition hover:-translate-y-0.5 hover:border-[#FEBB1B]/50 hover:bg-white/[0.08]"
+            className="inline-flex items-center gap-2 rounded-full bg-[#FEBB1B] px-5 py-2.5 text-xs font-black uppercase tracking-wide text-[#0B0A08] shadow-[0_10px_24px_rgba(254,187,27,0.3)] transition hover:-translate-y-0.5 hover:bg-[#ffc843]"
           >
-            <CalendarCheck2 size={16} className="text-[#FEBB1B]" /> Reservar mesa
-          </Link>
-          <Link
-            href={STORE_URL}
-            className="group inline-flex items-center gap-2 rounded-full bg-[#FEBB1B] px-5 py-2.5 text-xs font-black uppercase tracking-wide text-[#0B0A08] shadow-[0_10px_24px_rgba(254,187,27,0.3)] transition hover:-translate-y-0.5 hover:bg-[#ffc843]"
-          >
-            <ShoppingBag size={16} />
-            Pedir online
+            <CalendarCheck2 size={16} /> Reservar mesa
           </Link>
         </div>
 
@@ -122,16 +116,9 @@ export default function JotaJotaNavbar({
             <Link
               href={reservasHref}
               onClick={() => setOpen(false)}
-              className="mt-2 flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-3 text-xs font-bold uppercase tracking-wide text-white"
+              className="mt-2 flex items-center justify-center gap-2 rounded-full bg-[#FEBB1B] px-4 py-3 text-xs font-black uppercase tracking-wide text-[#0B0A08]"
             >
-              <CalendarCheck2 size={16} className="text-[#FEBB1B]" /> Reservar mesa
-            </Link>
-            <Link
-              href={STORE_URL}
-              onClick={() => setOpen(false)}
-              className="flex items-center justify-center gap-2 rounded-full bg-[#FEBB1B] px-4 py-3 text-xs font-black uppercase tracking-wide text-[#0B0A08]"
-            >
-              <ShoppingBag size={16} /> Pedir online
+              <CalendarCheck2 size={16} /> Reservar mesa
             </Link>
           </div>
         </div>

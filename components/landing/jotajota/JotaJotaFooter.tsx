@@ -2,11 +2,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
 
-import { FACEBOOK_URL, INSTAGRAM_URL, NAV_LINKS, RESERVAS_URL, STORE_URL, WHATSAPP_URL } from "./constants";
+import {
+  FACEBOOK_URL,
+  INSTAGRAM_URL,
+  NAV_LINKS,
+  RESERVAS_URL,
+  WHATSAPP_URL,
+} from "./constants";
 
 function InstagramIcon({ size = 17 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <rect x="3" y="3" width="18" height="18" rx="5" />
       <circle cx="12" cy="12" r="4" />
       <circle cx="17.2" cy="6.8" r="1.1" fill="currentColor" stroke="none" />
@@ -16,13 +31,26 @@ function InstagramIcon({ size = 17 }: { size?: number }) {
 
 function FacebookIcon({ size = 17 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M15 4h-2.5A3.5 3.5 0 0 0 9 7.5V10H7v3h2v7h3v-7h2.5l.5-3H12V7.5c0-.4.3-.5.6-.5H15V4Z" />
     </svg>
   );
 }
 
-export default function JotaJotaFooter({ reservasHref = RESERVAS_URL }: { reservasHref?: string }) {
+export default function JotaJotaFooter({
+  reservasHref = RESERVAS_URL,
+}: {
+  reservasHref?: string;
+}) {
   const year = new Date().getFullYear();
 
   return (
@@ -34,16 +62,22 @@ export default function JotaJotaFooter({ reservasHref = RESERVAS_URL }: { reserv
               <Image src="/jotajota/logo.webp" alt="Jota Jota" fill className="object-cover" />
             </div>
             <p className="mt-4 max-w-[220px] text-sm leading-6 text-white/45">
-              Snack bar napolitano: pizza al horno de leña, algo rápido de picar y postres, hechos para pedirse dos veces.
+              Snack bar en Cienfuegos con pizzas, pastas, aperitivos,
+              bebidas, cocteles y postres.
             </p>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Navegación</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+              Navegación
+            </p>
             <ul className="mt-4 space-y-2.5">
               {NAV_LINKS.map(([label, href]) => (
                 <li key={href}>
-                  <a href={href} className="text-sm text-white/70 transition hover:text-[#FEBB1B]">
+                  <a
+                    href={href}
+                    className="text-sm text-white/70 transition hover:text-[#FEBB1B]"
+                  >
                     {label}
                   </a>
                 </li>
@@ -52,23 +86,33 @@ export default function JotaJotaFooter({ reservasHref = RESERVAS_URL }: { reserv
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Visítanos</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+              Visítanos
+            </p>
             <ul className="mt-4 space-y-2.5 text-sm text-white/70">
               <li>
-                <Link href={STORE_URL} className="transition hover:text-[#FEBB1B]">
-                  Pedir online
+                <Link
+                  href={reservasHref}
+                  className="transition hover:text-[#FEBB1B]"
+                >
+                  Reservar mesa
                 </Link>
               </li>
               <li>
-                <Link href={reservasHref} className="transition hover:text-[#FEBB1B]">
-                  Reservar mesa
-                </Link>
+                <a
+                  href="#contacto"
+                  className="transition hover:text-[#FEBB1B]"
+                >
+                  Contacto y ubicación
+                </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Síguenos</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">
+              Síguenos
+            </p>
             <div className="mt-4 flex items-center gap-3">
               <a
                 href={INSTAGRAM_URL}
@@ -103,7 +147,7 @@ export default function JotaJotaFooter({ reservasHref = RESERVAS_URL }: { reserv
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/35 sm:flex-row">
           <p>© {year} Jota Jota. Todos los derechos reservados.</p>
-          <p>Snack Bar Napolitano · Cuba</p>
+          <p>Cienfuegos · Cuba</p>
         </div>
       </div>
     </footer>

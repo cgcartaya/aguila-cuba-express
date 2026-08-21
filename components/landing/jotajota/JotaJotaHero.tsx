@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import { motion, type Variants } from "framer-motion";
-import { ArrowRight, CalendarCheck2, Flame, ShoppingBag } from "lucide-react";
+import { ArrowRight, CalendarCheck2, UtensilsCrossed } from "lucide-react";
 
 import JotaJotaMarquee from "./JotaJotaMarquee";
 import RevealText from "@/components/ui/RevealText";
-import { MENU_URL, RESERVAS_URL, STORE_URL } from "./constants";
+import { MENU_URL, RESERVAS_URL } from "./constants";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 22 },
@@ -25,10 +25,10 @@ export default function JotaJotaHero({
   reservasHref?: string;
 }) {
   return (
-    <section id="inicio" className="relative isolate overflow-hidden bg-[#0B0A08] pb-8 pt-14 sm:pb-12 sm:pt-16">
-      {/* Eco tipográfico del logo: "JOTA / JOTA" gigante, apilado y
-          cortado en diagonal — el mismo gesto del isotipo, llevado
-          a fondo de página en vez de repetirlo literalmente. */}
+    <section
+      id="inicio"
+      className="relative isolate overflow-hidden bg-[#0B0A08] pb-8 pt-14 sm:pb-12 sm:pt-16"
+    >
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 flex select-none flex-col justify-center overflow-hidden opacity-[0.07]"
@@ -42,12 +42,10 @@ export default function JotaJotaHero({
         </span>
       </div>
 
-      {/* Brasa: resplandor cálido, guiño al horno de leña */}
       <div className="jj-ember pointer-events-none absolute -right-32 top-10 h-[420px] w-[420px] rounded-full bg-[#FEBB1B]/25 blur-[110px]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0B0A08] to-transparent" />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
-        {/* Columna de texto */}
         <div>
           <motion.div
             variants={fadeUp}
@@ -56,8 +54,8 @@ export default function JotaJotaHero({
             animate="show"
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.05] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-white/80 backdrop-blur-sm"
           >
-            <Flame size={13} className="text-[#FEBB1B]" />
-            Cuba · Snack Bar &amp; cocina napolitana
+            <UtensilsCrossed size={13} className="text-[#FEBB1B]" />
+            Cienfuegos · Snack Bar &amp; cocina
           </motion.div>
 
           <h1
@@ -65,7 +63,11 @@ export default function JotaJotaHero({
             style={{ fontFamily: "var(--font-jj-display)" }}
           >
             <RevealText text="CUANDO PARECE QUE NO PUEDES MÁS" startDelay={0.15} />
-            <RevealText text="LLEGA EL POSTRE Y TE LO COMES." startDelay={0.55} className="mt-1 block text-[#FEBB1B]" />
+            <RevealText
+              text="LLEGA EL POSTRE Y TE LO COMES."
+              startDelay={0.55}
+              className="mt-1 block text-[#FEBB1B]"
+            />
           </h1>
 
           <motion.p
@@ -75,10 +77,8 @@ export default function JotaJotaHero({
             animate="show"
             className="mt-6 max-w-lg text-base leading-7 text-white/60 sm:text-lg"
           >
-            Nuestro snack bar napolitano vive del horno de leña a más
-            de 400°C, la masa de fermentación lenta y una carta de
-            postres que siempre gana la última ronda. Pizza, algo
-            rápido de picar o el dulce que cierra la noche — todo al paso.
+            Una carta para compartir, picar, cenar o cerrar la noche con algo dulce.
+            Pizzas, pastas, aperitivos, bebidas, cocteles y postres en un solo lugar.
           </motion.p>
 
           <motion.div
@@ -103,18 +103,9 @@ export default function JotaJotaHero({
               <CalendarCheck2 size={18} className="text-[#FEBB1B]" />
               Reservar mesa
             </a>
-
-            <a
-              href={STORE_URL}
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-transparent px-7 py-4 text-sm font-bold text-white/70 backdrop-blur transition duration-300 hover:-translate-y-1 hover:text-white"
-            >
-              <ShoppingBag size={18} className="text-[#FEBB1B]" />
-              Pedir online
-            </a>
           </motion.div>
         </div>
 
-        {/* Medallón con el logo, montado sobre el corte diagonal */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, rotate: 4 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -125,7 +116,7 @@ export default function JotaJotaHero({
           <div className="jj-float relative flex h-[84%] w-[84%] items-center justify-center overflow-hidden rounded-full bg-[#141210] shadow-[0_40px_90px_rgba(0,0,0,0.55)] ring-2 ring-[#FEBB1B]/40">
             <Image
               src="/jotajota/logo.webp"
-              alt="Jota Jota — snack bar napolitano"
+              alt="Jota Jota"
               fill
               priority
               sizes="420px"
