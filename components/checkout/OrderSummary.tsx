@@ -4,6 +4,7 @@ import {
   Loader2,
   LockKeyhole,
   Package,
+  Plus,
   ShoppingBag,
   Truck,
   ShieldCheck,
@@ -45,6 +46,7 @@ type Props = {
   onChangePayWith?: (value: "whatsapp" | "card") => void;
   /** Correo o teléfono de Zelle del negocio, para mostrarlo en las instrucciones de pago. */
   zelleInfo?: string;
+  onAddProducts?: () => void;
 };
 
 export function OrderSummary({
@@ -71,6 +73,7 @@ export function OrderSummary({
   payWith = "whatsapp",
   onChangePayWith,
   zelleInfo,
+  onAddProducts,
 }: Props) {
   const { currency, format } = useCurrency();
   const discountAmount = appliedDiscount?.discountAmount || 0;
@@ -223,9 +226,14 @@ export function OrderSummary({
         )}
 
         {selectedZone && totals.subtotal < totals.minimumOrder && (
-          <div className="rounded-xl bg-red-50 p-3 text-xs font-bold text-red-600">
-            La compra mínima para esta zona es de <Price usd={totals.minimumOrder} />.
-            Te faltan <Price usd={totals.missingAmount} />.
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">
+            <p>La compra mínima para esta zona es de <Price usd={totals.minimumOrder} />.</p>
+            <p className="mt-1">Te faltan <Price usd={totals.missingAmount} />.</p>
+            {onAddProducts && (
+              <button type="button" onClick={onAddProducts} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 font-black text-white shadow-sm hover:bg-blue-700">
+                <Plus size={17} /> Agregar productos
+              </button>
+            )}
           </div>
         )}
       </div>

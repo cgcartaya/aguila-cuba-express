@@ -28,6 +28,7 @@ import { LocalDeliveryAddressForm } from "@/components/checkout/LocalDeliveryAdd
 import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSelector";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import RememberedCustomerBanner from "@/components/checkout/RememberedCustomerBanner";
+import CheckoutMinimumUpsell from "@/components/checkout/CheckoutMinimumUpsell";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CheckoutContinueBar } from "@/components/checkout/CheckoutContinueBar";
 import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
@@ -93,6 +94,18 @@ function forgetDeviceToken(slug: string) {
   }
 }
 
+function checkoutDraftKey(slug: string) {
+  return `checkout-draft-${slug || "aguila"}`;
+}
+
+function clearCheckoutDraft(slug: string) {
+  try {
+    window.sessionStorage.removeItem(checkoutDraftKey(slug));
+  } catch {
+    // El borrador es una ayuda; nunca debe bloquear el checkout.
+  }
+}
+
 // RECORDATORIO DE CARRITO ABANDONADO: antes, el device_token solo se
 // creaba DESPUÉS de completar una orden (en create-order/route.ts), así
 // que un visitante que nunca terminaba de comprar no tenía ninguna
@@ -147,6 +160,8 @@ export default function CheckoutPage() {
   const [loadingRules, setLoadingRules] = useState(false);
   const [cardPaymentAvailable, setCardPaymentAvailable] = useState(false);
   const [payWith, setPayWith] = useState<"whatsapp" | "card">("whatsapp");
+  const [draftReady, setDraftReady] = useState(false);
+  const [showMinimumUpsell, setShowMinimumUpsell] = useState(false);
   // PERFIL DEL CLIENTE (sin login) — reconocimiento por dispositivo.
   // Ver components/checkout/RememberedCustomerBanner.tsx y
   // app/api/checkout/remembered-profile/route.ts.
@@ -231,6 +246,57 @@ export default function CheckoutPage() {
 
     void loadCheckoutData();
   }, [store?.id]);
+
+  // Recupera el formulario si el cliente volvió a la tienda para agregar
+  // productos. Caduca en 24 horas y está separado por tienda.
+  useEffect(() => {
+    if (!store?.slug || loadingCheckout || draftReady) return;
+    try {
+      const raw = window.sessionStorage.getItem(checkoutDraftKey(store.slug));
+      if (raw) {
+        const draft = JSON.parse(raw) as {
+          form?: Partial<CheckoutForm>;
+          step?: number;
+          method?: CheckoutMethod;
+          payWith?: "whatsapp" | "card";
+          savedAt?: number;
+        };
+        const fresh = Number(draft.savedAt || 0) > Date.now() - 24 * 60 * 60 * 1000;
+        if (fresh) {
+          if (draft.form) setForm((current) => ({ ...current, ...draft.form }));
+          if (draft.step === 1 || draft.step === 2 || draft.step === 3) setStep(draft.step);
+          if (draft.method === "cuba" || draft.method === "delivery") setMethod(draft.method);
+          if (draft.payWith === "whatsapp" || (draft.payWith === "card" && cardPaymentAvailable)) setPayWith(draft.payWith);
+        } else {
+          clearCheckoutDraft(store.slug);
+        }
+      }
+    } catch {
+      clearCheckoutDraft(store.slug);
+    } finally {
+      setDraftReady(true);
+    }
+  }, [cardPaymentAvailable, draftReady, loadingCheckout, store?.slug]);
+
+  // Guarda los datos después de cada cambio. sessionStorage permite ir y
+  // volver dentro de la misma pestaña sin dejar datos personales permanentes.
+  useEffect(() => {
+    if (!store?.slug || !draftReady) return;
+    const timeoutId = window.setTimeout(() => {
+      try {
+        window.sessionStorage.setItem(checkoutDraftKey(store.slug), JSON.stringify({
+          form,
+          step,
+          method,
+          payWith,
+          savedAt: Date.now(),
+        }));
+      } catch {
+        // Silencioso: el checkout sigue funcionando aunque el navegador bloquee storage.
+      }
+    }, 250);
+    return () => window.clearTimeout(timeoutId);
+  }, [draftReady, form, method, payWith, step, store?.slug]);
 
   // PERFIL DEL CLIENTE (sin login): si este navegador ya tiene un token
   // guardado de una compra anterior en esta tienda, se busca su perfil y
@@ -690,6 +756,7 @@ ${orderUrl}`);
     orderUrl: string;
     whatsappMessage: string;
   }) {
+    if (store?.slug) clearCheckoutDraft(store.slug);
     const host = window.location.hostname
       .replace(/^www\./, "")
       .toLowerCase();
@@ -748,9 +815,11 @@ ${orderUrl}`);
     }
 
     if (totals.subtotal < totals.minimumOrder) {
-      return showCheckoutError(
+      showCheckoutError(
         `La compra mínima para esta zona es de $${totals.minimumOrder.toFixed(2)}. Te faltan $${totals.missingAmount.toFixed(2)}.`
       );
+      setShowMinimumUpsell(true);
+      return;
     }
 
     if (!canCheckout) {
@@ -794,6 +863,7 @@ ${orderUrl}`);
           },
         });
 
+        if (store?.slug) clearCheckoutDraft(store.slug);
         window.location.href = payResult.url;
         return;
       }
@@ -983,12 +1053,24 @@ ${orderUrl}`);
                   payWith={payWith}
                   onChangePayWith={setPayWith}
                   zelleInfo={businessZelle}
+                  onAddProducts={
+                    selectedZone && totals.subtotal < totals.minimumOrder
+                      ? () => setShowMinimumUpsell(true)
+                      : undefined
+                  }
                 />
               </div>
             )}
           </>
         )}
       </div>
+      <CheckoutMinimumUpsell
+        open={showMinimumUpsell}
+        missingAmount={totals.missingAmount}
+        minimumOrder={totals.minimumOrder}
+        subtotal={totals.subtotal}
+        onClose={() => setShowMinimumUpsell(false)}
+      />
     </main>
   );
 }
