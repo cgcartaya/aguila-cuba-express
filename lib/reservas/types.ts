@@ -56,6 +56,7 @@ export type ReservationTable = {
   rotation: number;
   table_shape: "round" | "square" | "rect";
   is_active: boolean;
+  is_locked: boolean;
   sort_order: number;
 };
 
@@ -73,6 +74,7 @@ export type ReservationTableFormData = {
   rotation: number;
   table_shape: "round" | "square" | "rect";
   is_active: boolean;
+  is_locked?: boolean;
   sort_order: number;
 };
 
@@ -161,7 +163,6 @@ export const DAY_LABEL: Record<number, string> = {
   6: "Sáb",
 };
 
-
 export type ReservationSpaceElementType =
   | "wall"
   | "door"
@@ -175,7 +176,9 @@ export type ReservationSpaceElementType =
   | "label"
   | "wall_fan"
   | "floor_fan"
-  | "split_ac";
+  | "split_ac"
+  | "waiter"
+  | "waitress";
 
 export type ReservationSpaceElement = {
   id: string;
@@ -188,6 +191,7 @@ export type ReservationSpaceElement = {
   width: number;
   height: number;
   rotation: number;
+  is_locked: boolean;
   sort_order: number;
 };
 
@@ -201,6 +205,7 @@ export type ReservationSpaceElementFormData = {
   width: number;
   height: number;
   rotation: number;
+  is_locked?: boolean;
   sort_order: number;
 };
 
@@ -218,4 +223,6 @@ export const SPACE_ELEMENT_LABEL: Record<ReservationSpaceElementType, string> = 
   wall_fan: "Ventilador de pared",
   floor_fan: "Ventilador de pie",
   split_ac: "Split (A/A)",
+  waiter: "Mesero",
+  waitress: "Mesera",
 };
