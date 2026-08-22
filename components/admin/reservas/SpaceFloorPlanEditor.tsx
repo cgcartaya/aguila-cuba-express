@@ -273,16 +273,49 @@ export default function SpaceFloorPlanEditor({
     let dy = now.y - drag.startPointer.y;
     if (snap) { dx = Math.round(dx); dy = Math.round(dy); }
 
+    let anchorPosition: Position | null = null;
+
     setPositions(prev => {
       const next = { ...prev };
+
       (Object.keys(drag.starts) as ItemKey[]).forEach(key => {
         const start = drag.starts[key];
         let p = { x: start.x + dx, y: start.y + dy };
-        if (snap) p = { x: Math.round(p.x), y: Math.round(p.y) };
-        next[key] = clampItem(key, p);
+
+        if (snap) {
+          p = { x: Math.round(p.x), y: Math.round(p.y) };
+        }
+
+        const clamped = clampItem(key, p);
+        next[key] = clamped;
+
+        if (key === drag.anchor) {
+          anchorPosition = clamped;
+        }
       });
+
       return next;
     });
+
+    // Si solo estamos editando un elemento, mantenemos sincronizados
+    // los campos X/Y del panel de propiedades con lo que se ve en el plano.
+    if (selected.size === 1 && selected.has(drag.anchor) && anchorPosition) {
+      const { type } = parseKey(drag.anchor);
+
+      if (type === "table") {
+        setTableDraft(draft =>
+          draft
+            ? { ...draft, pos_x: anchorPosition!.x, pos_y: anchorPosition!.y }
+            : draft
+        );
+      } else {
+        setElementDraft(draft =>
+          draft
+            ? { ...draft, pos_x: anchorPosition!.x, pos_y: anchorPosition!.y }
+            : draft
+        );
+      }
+    }
   };
 
   const persistKeys = async (keys: ItemKey[]) => {
@@ -301,10 +334,43 @@ export default function SpaceFloorPlanEditor({
 
   const endDrag = async (ev: React.PointerEvent<HTMLDivElement>) => {
     if (!drag || ev.pointerId !== drag.pointerId) return;
+
     const keys = Object.keys(drag.starts) as ItemKey[];
+    const anchorKey = drag.anchor;
+    const finalAnchorPosition = getPos(anchorKey);
+
     setDrag(null);
     setBusy(true);
+
     await persistKeys(keys);
+
+    // Última sincronización defensiva entre canvas y formulario.
+    if (selected.size === 1 && selected.has(anchorKey)) {
+      const { type } = parseKey(anchorKey);
+
+      if (type === "table") {
+        setTableDraft(draft =>
+          draft
+            ? {
+                ...draft,
+                pos_x: finalAnchorPosition.x,
+                pos_y: finalAnchorPosition.y,
+              }
+            : draft
+        );
+      } else {
+        setElementDraft(draft =>
+          draft
+            ? {
+                ...draft,
+                pos_x: finalAnchorPosition.x,
+                pos_y: finalAnchorPosition.y,
+              }
+            : draft
+        );
+      }
+    }
+
     setBusy(false);
     onChange();
     pulse();
@@ -413,19 +479,112 @@ export default function SpaceFloorPlanEditor({
   };
 
   const saveSingle = async () => {
-    if(selected.size!==1) return;
+    if (selected.size !== 1) return;
+
+    const selectedKey = [...selected][0];
+    const livePosition = getPos(selectedKey);
+
     setBusy(true);
-    if(tableDraft){
-      const p={x:clamp(Number(tableDraft.pos_x),4,96),y:clamp(Number(tableDraft.pos_y),4,96)};
-      await saveReservationTable(storeId,{...tableDraft,zone:space.name,space_id:space.id,pos_x:p.x,pos_y:p.y,is_locked:tableDraft.is_locked??false});
-      setPositions(prev=>({...prev,[keyOf("table",tableDraft.id)]:p}));
+
+    if (tableDraft && selectedKey === keyOf("table", tableDraft.id)) {
+      // IMPORTANTE: la posición guardada sale del plano (posición viva),
+      // no del draft antiguo del panel.
+      const p = {
+        x: clamp(Number(livePosition.x), 4, 96),
+        y: clamp(Number(livePosition.y), 4, 96),
+      };
+
+      const { error } = await saveReservationTable(storeId, {
+        ...tableDraft,
+        zone: space.name,
+        space_id: space.id,
+        pos_x: p.x,
+        pos_y: p.y,
+        is_locked: tableDraft.is_locked ?? false,
+      });
+
+      if (error) {
+        setBusy(false);
+        alert("No se pudo guardar la mesa.");
+        return;
+      }
+
+      setPositions(prev => ({
+        ...prev,
+        [selectedKey]: p,
+      }));
+
+      setTableDraft(draft =>
+        draft ? { ...draft, pos_x: p.x, pos_y: p.y } : draft
+      );
     }
-    if(elementDraft){
-      const p=clampElement(elementDraft,Number(elementDraft.pos_x),Number(elementDraft.pos_y));
-      await saveReservationSpaceElement(storeId,{...elementDraft,label:elementDraft.label||"",pos_x:p.x,pos_y:p.y,is_locked:elementDraft.is_locked??false});
-      setPositions(prev=>({...prev,[keyOf("element",elementDraft.id)]:p}));
+
+    if (elementDraft && selectedKey === keyOf("element", elementDraft.id)) {
+      // Calculamos el límite usando el tamaño/rotación ACTUAL del formulario,
+      // pero partiendo siempre de la posición que realmente se ve en pantalla.
+      const rotation = Number(elementDraft.rotation || 0);
+      const width = Math.max(0.5, Number(elementDraft.width || 0.5));
+      const height = Math.max(0.5, Number(elementDraft.height || 0.5));
+
+      const radians = (rotation * Math.PI) / 180;
+      const cos = Math.abs(Math.cos(radians));
+      const sin = Math.abs(Math.sin(radians));
+
+      const halfBoundingWidth = (width * cos + height * sin) / 2;
+      const halfBoundingHeight = (width * sin + height * cos) / 2;
+
+      const p = {
+        x: clamp(
+          Number(livePosition.x),
+          halfBoundingWidth,
+          100 - halfBoundingWidth
+        ),
+        y: clamp(
+          Number(livePosition.y),
+          halfBoundingHeight,
+          100 - halfBoundingHeight
+        ),
+      };
+
+      const { error } = await saveReservationSpaceElement(storeId, {
+        ...elementDraft,
+        label: elementDraft.label || "",
+        pos_x: p.x,
+        pos_y: p.y,
+        width,
+        height,
+        rotation,
+        is_locked: elementDraft.is_locked ?? false,
+      });
+
+      if (error) {
+        setBusy(false);
+        alert("No se pudo guardar el elemento.");
+        return;
+      }
+
+      setPositions(prev => ({
+        ...prev,
+        [selectedKey]: p,
+      }));
+
+      setElementDraft(draft =>
+        draft
+          ? {
+              ...draft,
+              pos_x: p.x,
+              pos_y: p.y,
+              width,
+              height,
+              rotation,
+            }
+          : draft
+      );
     }
-    setBusy(false); onChange(); pulse();
+
+    setBusy(false);
+    onChange();
+    pulse();
   };
 
   useEffect(() => {
