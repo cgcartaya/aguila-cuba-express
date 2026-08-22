@@ -149,7 +149,7 @@ export default function CheckoutMinimumUpsell({
 
           <label className="mt-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 focus-within:border-blue-400 focus-within:bg-white">
             <Search size={19} className="text-slate-400" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar productos" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" autoFocus />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar productos" className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none" />
           </label>
         </header>
 
