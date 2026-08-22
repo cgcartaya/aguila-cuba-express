@@ -638,11 +638,11 @@ export default function CheckoutPage() {
     const products = cart
       .map(
         (item) =>
-          `${item.quantity}x ${item.name}: $${(
+          `*${item.quantity}x* ${item.name}: $${(
             Number(item.price) * item.quantity
           ).toFixed(2)}`
       )
-      .join("\n");
+      .join("\n\n");
 
     const deliverySection =
       method === "delivery"

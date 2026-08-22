@@ -138,9 +138,9 @@ export function buildWhatsappOrderMessageFromDbOrder({
       const label = item.item_type === "combo" ? "Combo" : "Producto";
       const lineTotal = Number(item.subtotal || 0);
 
-      return `${item.quantity || 0}x ${item.product_name || ""} (${label}): $${lineTotal.toFixed(2)}`;
+      return `*${item.quantity || 0}x* ${item.product_name || ""} (${label}): $${lineTotal.toFixed(2)}`;
     })
-    .join("\n");
+    .join("\n\n");
 
   const date = new Date(order.created_at).toLocaleString("es-US", {
     dateStyle: "short",
@@ -274,11 +274,11 @@ export function buildWhatsappOrderMessage({
       const label = item.type === "combo" ? "Combo" : "Producto";
       const lineTotal = Number(item.price) * item.quantity;
 
-      return `${item.quantity}x ${item.name} (${label}): $${lineTotal.toFixed(
+      return `*${item.quantity}x* ${item.name} (${label}): $${lineTotal.toFixed(
         2
       )}`;
     })
-    .join("\n");
+    .join("\n\n");
 
   const date = new Date().toLocaleString("es-US", {
     dateStyle: "short",
