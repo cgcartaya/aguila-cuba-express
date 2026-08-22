@@ -29,6 +29,7 @@ import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSele
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import RememberedCustomerBanner from "@/components/checkout/RememberedCustomerBanner";
 import CheckoutMinimumUpsell from "@/components/checkout/CheckoutMinimumUpsell";
+import CheckoutMinimumAlert from "@/components/checkout/CheckoutMinimumAlert";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CheckoutContinueBar } from "@/components/checkout/CheckoutContinueBar";
 import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
@@ -162,6 +163,7 @@ export default function CheckoutPage() {
   const [payWith, setPayWith] = useState<"whatsapp" | "card">("whatsapp");
   const [draftReady, setDraftReady] = useState(false);
   const [showMinimumUpsell, setShowMinimumUpsell] = useState(false);
+  const [showMinimumAlert, setShowMinimumAlert] = useState(false);
   // PERFIL DEL CLIENTE (sin login) — reconocimiento por dispositivo.
   // Ver components/checkout/RememberedCustomerBanner.tsx y
   // app/api/checkout/remembered-profile/route.ts.
@@ -584,6 +586,10 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (nextStep === 3 && selectedZone && totals.subtotal < totals.minimumOrder) {
+      setShowMinimumAlert(true);
+    }
+
     setError("");
     setStep(nextStep);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -818,7 +824,7 @@ ${orderUrl}`);
       showCheckoutError(
         `La compra mínima para esta zona es de $${totals.minimumOrder.toFixed(2)}. Te faltan $${totals.missingAmount.toFixed(2)}.`
       );
-      setShowMinimumUpsell(true);
+      setShowMinimumAlert(true);
       return;
     }
 
@@ -949,7 +955,7 @@ ${orderUrl}`);
             <CheckoutSteps step={step} onStepClick={goToStep} />
 
             {step < 3 ? (
-              <div className="min-w-0 space-y-6 pb-28">
+              <div className="min-w-0 space-y-6 pb-2">
                 {step === 1 && (
                   <>
                     {isYoyo && settings && (
@@ -1070,6 +1076,16 @@ ${orderUrl}`);
         minimumOrder={totals.minimumOrder}
         subtotal={totals.subtotal}
         onClose={() => setShowMinimumUpsell(false)}
+      />
+      <CheckoutMinimumAlert
+        open={showMinimumAlert}
+        minimumOrder={totals.minimumOrder}
+        missingAmount={totals.missingAmount}
+        onClose={() => setShowMinimumAlert(false)}
+        onAddProducts={() => {
+          setShowMinimumAlert(false);
+          setShowMinimumUpsell(true);
+        }}
       />
     </main>
   );
