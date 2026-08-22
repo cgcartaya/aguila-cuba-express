@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -10,7 +10,6 @@ import {
   Layers3,
   Loader2,
   Plus,
-  Search,
   Settings2,
   Sparkles,
   Trash2,
@@ -20,6 +19,7 @@ import {
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import WeeklyMenuCalendar from "@/components/admin/menu/WeeklyMenuCalendar";
 import MenuAdminPreview from "@/components/admin/menu/MenuAdminPreview";
+import DailyMenuDishBuilder from "@/components/admin/menu/DailyMenuDishBuilder";
 import {
   addItemToDailyMenu,
   clearDailyMenuItemOverride,
@@ -107,8 +107,6 @@ export default function AdminMenuDailyMenusPage() {
   const [tzDraft, setTzDraft] = useState("America/Havana");
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const [assignedSearch, setAssignedSearch] = useState("");
 
   const activeMenu = menus.find((m) => m.id === activeMenuId) || null;
   const members = activeMenuId ? memberMap[activeMenuId] || [] : [];
@@ -390,12 +388,6 @@ export default function AdminMenuDailyMenusPage() {
   const catalogItems = items.filter((item) => !members.includes(item.id));
   const assignedItems = items.filter((item) => members.includes(item.id));
 
-  const filteredCatalog = catalogItems.filter((item) =>
-    `${item.name}`.toLowerCase().includes(catalogSearch.trim().toLowerCase())
-  );
-  const filteredAssigned = assignedItems.filter((item) =>
-    `${item.name}`.toLowerCase().includes(assignedSearch.trim().toLowerCase())
-  );
 
   const activeMenus = menus.filter((menu) => menu.is_active).length;
   const scheduleCount = menus.reduce(
@@ -767,207 +759,17 @@ export default function AdminMenuDailyMenusPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,.04)]">
-                    <div className="border-b border-slate-100 p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h3 className="font-black text-[#071B35]">
-                            Catálogo de platillos
-                          </h3>
-                          <p className="text-[11px] font-semibold text-slate-400">
-                            {catalogItems.length} disponibles para agregar
-                          </p>
-                        </div>
-                      </div>
-
-                      <label className="relative mt-3 block">
-                        <Search
-                          size={14}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                          value={catalogSearch}
-                          onChange={(e) =>
-                            setCatalogSearch(e.target.value)
-                          }
-                          placeholder="Buscar platillo..."
-                          className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-xs font-semibold outline-none focus:border-orange-300"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="max-h-[620px] divide-y divide-slate-100 overflow-y-auto p-2">
-                      {filteredCatalog.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-slate-50"
-                        >
-                          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                            {item.image_url ? (
-                              <img
-                                src={item.image_url}
-                                alt={item.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : null}
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-black text-slate-800">
-                              {item.name}
-                            </p>
-                            <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                              ${item.price.toFixed(2)}
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => addDish(item)}
-                            disabled={busyId === item.id}
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#071B35] text-white disabled:opacity-40"
-                            title="Agregar al menú"
-                          >
-                            {busyId === item.id ? (
-                              <Loader2
-                                size={13}
-                                className="animate-spin"
-                              />
-                            ) : (
-                              <Plus size={14} />
-                            )}
-                          </button>
-                        </div>
-                      ))}
-
-                      {filteredCatalog.length === 0 && (
-                        <div className="p-8 text-center text-xs font-semibold text-slate-400">
-                          No hay platillos para mostrar.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,.04)]">
-                    <div className="border-b border-slate-100 p-4">
-                      <div>
-                        <h3 className="font-black text-[#071B35]">
-                          En este menú{" "}
-                          <span className="text-slate-400">
-                            ({assignedItems.length})
-                          </span>
-                        </h3>
-                        <p className="text-[11px] font-semibold text-slate-400">
-                          Platillos visibles cuando este menú esté activo.
-                        </p>
-                      </div>
-
-                      <label className="relative mt-3 block">
-                        <Search
-                          size={14}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-                        <input
-                          value={assignedSearch}
-                          onChange={(e) =>
-                            setAssignedSearch(e.target.value)
-                          }
-                          placeholder="Buscar en este menú..."
-                          className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-xs font-semibold outline-none focus:border-orange-300"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="max-h-[620px] divide-y divide-slate-100 overflow-y-auto p-2">
-                      {filteredAssigned.map((item) => {
-                        const draft =
-                          draftQty[item.id] ??
-                          String(todayQuota[item.id] ?? "");
-
-                        return (
-                          <div
-                            key={item.id}
-                            className="rounded-xl px-2 py-2.5 hover:bg-slate-50"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
-                                {item.image_url ? (
-                                  <img
-                                    src={item.image_url}
-                                    alt={item.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : null}
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-black text-slate-800">
-                                  {item.name}
-                                </p>
-                                <p className="mt-0.5 text-xs font-semibold text-slate-400">
-                                  ${item.price.toFixed(2)}
-                                </p>
-                              </div>
-
-                              <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-600 sm:inline-flex">
-                                En menú
-                              </span>
-
-                              <button
-                                onClick={() => removeDish(item)}
-                                disabled={busyId === item.id}
-                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
-                                title="Quitar del menú"
-                              >
-                                {busyId === item.id ? (
-                                  <Loader2
-                                    size={13}
-                                    className="animate-spin"
-                                  />
-                                ) : (
-                                  <Trash2 size={13} />
-                                )}
-                              </button>
-                            </div>
-
-                            {item.daily_stock_enabled && (
-                              <div className="ml-14 mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-orange-50/60 px-3 py-2">
-                                <span className="text-[10px] font-black uppercase text-orange-600">
-                                  Cupo hoy
-                                </span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={draft}
-                                  onChange={(e) =>
-                                    setDraftQty((prev) => ({
-                                      ...prev,
-                                      [item.id]: e.target.value,
-                                    }))
-                                  }
-                                  className="w-20 rounded-lg border border-orange-100 bg-white px-2 py-1 text-xs font-bold outline-none"
-                                />
-                                <button
-                                  onClick={() => saveQuota(item)}
-                                  className="rounded-lg bg-[#071B35] px-2.5 py-1 text-[10px] font-black text-white"
-                                >
-                                  Guardar
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {filteredAssigned.length === 0 && (
-                        <div className="p-8 text-center text-xs font-semibold text-slate-400">
-                          Este menú todavía no tiene platillos.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
+                <DailyMenuDishBuilder
+                  items={items}
+                  members={members}
+                  busyId={busyId}
+                  todayQuota={todayQuota}
+                  draftQty={draftQty}
+                  setDraftQty={setDraftQty}
+                  onAdd={addDish}
+                  onRemove={removeDish}
+                  onSaveQuota={saveQuota}
+                />
                 <div className="mt-4 rounded-2xl border border-orange-100 bg-orange-50/70 px-4 py-3 text-xs font-semibold text-orange-800">
                   <strong>Consejo:</strong> usa el catálogo de la izquierda
                   para agregar rápidamente los platillos que formarán parte
@@ -1151,3 +953,4 @@ export default function AdminMenuDailyMenusPage() {
     </main>
   );
 }
+

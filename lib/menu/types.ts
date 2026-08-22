@@ -1,4 +1,4 @@
-export type MenuOption = {
+﻿export type MenuOption = {
   id: string;
   group_id: string;
   label: string;
@@ -199,11 +199,18 @@ export type DailyMenu = {
 
 export type EligibleDailyMenuItem = {
   id: string;
+  category_id: string;
   name: string;
   price: number;
   image_url: string | null;
   daily_stock_enabled: boolean;
   stock: number | null;
+  category: {
+    id: string;
+    name: string;
+    venue_type: "bar" | "restaurant" | "general";
+    sort_order: number;
+  } | null;
 };
 
 export type DailyMenuItemOverride = {
@@ -219,3 +226,4 @@ export type PublicDailyMenu = {
   itemIds: string[];
   scheduleLabel?: string;
 };
+

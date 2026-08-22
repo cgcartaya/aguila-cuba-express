@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+﻿import { supabase } from "@/lib/supabase";
 import { getRestaurantNow, normalizeMenuTimeZone } from "@/lib/menu/daytime";
 
 import type {
@@ -134,12 +134,43 @@ export async function deleteDailyMenuScheduleRule(id: string) {
 export async function getEligibleItemsForAdmin(storeId: string) {
   const { data, error } = await supabase
     .from("menu_items")
-    .select("id, name, price, image_url, daily_stock_enabled, stock")
+    .select(`
+      id,
+      category_id,
+      name,
+      price,
+      image_url,
+      daily_stock_enabled,
+      stock,
+      category:menu_categories!menu_items_category_id_fkey (
+        id,
+        name,
+        venue_type,
+        sort_order
+      )
+    `)
     .eq("store_id", storeId)
     .eq("is_active", true)
     .order("name", { ascending: true });
 
-  return { data: (data as EligibleDailyMenuItem[]) || [], error };
+const normalizedItems: EligibleDailyMenuItem[] = (data || []).map((item) => {
+  const category = Array.isArray(item.category)
+    ? item.category[0] ?? null
+    : item.category ?? null;
+
+  return {
+    id: item.id,
+    category_id: item.category_id,
+    name: item.name,
+    price: Number(item.price),
+    image_url: item.image_url,
+    daily_stock_enabled: item.daily_stock_enabled,
+    stock: item.stock,
+    category,
+  };
+});
+
+return { data: normalizedItems, error };
 }
 
 export async function getDailyMenuItemIds(dailyMenuId: string) {
@@ -242,3 +273,4 @@ export async function getMenuToday(storeId: string) {
   const { timeZone } = await getMenuTimeZone(storeId);
   return { ...getRestaurantNow(timeZone), timeZone };
 }
+
