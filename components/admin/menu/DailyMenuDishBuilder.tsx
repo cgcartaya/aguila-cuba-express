@@ -72,7 +72,7 @@ function VenueButtons({
   ];
 
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1">
+    <div className="flex flex-wrap gap-1.5">
       {options.map(({ value: option, label, icon: Icon }) => (
         <button
           key={option}
@@ -102,11 +102,11 @@ function CategoryPills({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="scrollbar-none flex gap-1.5 overflow-x-auto pb-1">
+    <div className="-mx-1 flex touch-pan-x snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain px-1 pb-2 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
       <button
         type="button"
         onClick={() => onChange("all")}
-        className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black transition ${
+        className={`shrink-0 snap-start rounded-full px-3 py-1.5 text-[10px] font-black transition ${
           activeId === "all"
             ? "bg-orange-50 text-orange-600 ring-1 ring-orange-100"
             : "bg-slate-50 text-slate-500 hover:bg-slate-100"
@@ -120,7 +120,7 @@ function CategoryPills({
           key={group.id}
           type="button"
           onClick={() => onChange(group.id)}
-          className={`shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black transition ${
+          className={`shrink-0 snap-start rounded-full px-3 py-1.5 text-[10px] font-black transition ${
             activeId === group.id
               ? "bg-orange-50 text-orange-600 ring-1 ring-orange-100"
               : "bg-slate-50 text-slate-500 hover:bg-slate-100"
@@ -196,9 +196,9 @@ export default function DailyMenuDishBuilder({
   }, [assignedBaseGroups, assignedCategory, assignedSearch]);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 xl:grid-cols-2">
       <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,.04)]">
-        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 p-4 backdrop-blur">
+        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 p-3 backdrop-blur sm:p-4">
           <div>
             <h3 className="font-black text-[#071B35]">Catálogo de platillos</h3>
             <p className="text-[11px] font-semibold text-slate-400">
@@ -212,7 +212,7 @@ export default function DailyMenuDishBuilder({
               value={catalogSearch}
               onChange={(e) => setCatalogSearch(e.target.value)}
               placeholder="Buscar platillo o categoría..."
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-xs font-semibold outline-none focus:border-orange-300"
+              className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-300 sm:py-2.5 sm:text-xs"
             />
           </label>
 
@@ -235,7 +235,7 @@ export default function DailyMenuDishBuilder({
           </div>
         </div>
 
-        <div className="max-h-[620px] overflow-y-auto p-2">
+        <div className="max-h-[55vh] overflow-y-auto overscroll-contain p-2 sm:max-h-[620px]">
           {visibleCatalogGroups.map((group) => (
             <div key={group.id} className="mb-3 last:mb-0">
               <div className="sticky top-0 z-[1] flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
@@ -258,8 +258,8 @@ export default function DailyMenuDishBuilder({
 
               <div className="divide-y divide-slate-100">
                 {group.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 rounded-xl px-2 py-2.5 hover:bg-slate-50">
-                    <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                  <div key={item.id} className="flex items-center gap-2 rounded-xl px-1.5 py-2.5 hover:bg-slate-50 sm:gap-3 sm:px-2">
+                    <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-11 sm:w-11">
                       {item.image_url ? (
                         <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
                       ) : null}
@@ -294,7 +294,7 @@ export default function DailyMenuDishBuilder({
       </section>
 
       <section className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,.04)]">
-        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 p-4 backdrop-blur">
+        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white/95 p-3 backdrop-blur sm:p-4">
           <div>
             <h3 className="font-black text-[#071B35]">
               En este menú <span className="text-slate-400">({assignedItems.length})</span>
@@ -310,7 +310,7 @@ export default function DailyMenuDishBuilder({
               value={assignedSearch}
               onChange={(e) => setAssignedSearch(e.target.value)}
               placeholder="Buscar en este menú..."
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-xs font-semibold outline-none focus:border-orange-300"
+              className="w-full rounded-xl border border-slate-200 py-3 pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-300 sm:py-2.5 sm:text-xs"
             />
           </label>
 
@@ -333,7 +333,7 @@ export default function DailyMenuDishBuilder({
           </div>
         </div>
 
-        <div className="max-h-[620px] overflow-y-auto p-2">
+        <div className="max-h-[55vh] overflow-y-auto overscroll-contain p-2 sm:max-h-[620px]">
           {visibleAssignedGroups.map((group) => (
             <div key={group.id} className="mb-3 last:mb-0">
               <div className="sticky top-0 z-[1] flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
@@ -359,8 +359,8 @@ export default function DailyMenuDishBuilder({
                   const draft = draftQty[item.id] ?? String(todayQuota[item.id] ?? "");
                   return (
                     <div key={item.id} className="rounded-xl px-2 py-2.5 hover:bg-slate-50">
-                      <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-11 sm:w-11">
                           {item.image_url ? (
                             <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
                           ) : null}
@@ -371,7 +371,7 @@ export default function DailyMenuDishBuilder({
                             ${item.price.toFixed(2)}
                           </p>
                         </div>
-                        <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-600 sm:inline-flex">
+                        <span className="hidden rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase text-emerald-600 md:inline-flex">
                           En menú
                         </span>
                         <button
