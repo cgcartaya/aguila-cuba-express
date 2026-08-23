@@ -17,9 +17,9 @@ import {
   Lock,
   Maximize2,
   Minus,
+  MousePointer2,
   Plus,
   RectangleHorizontal,
-  Save,
   Square,
   Trash2,
   TreePine,
@@ -391,6 +391,8 @@ export default function SpaceFloorPlanEditor({
   const [snap, setSnap] = useState(false);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [multiSelectMode, setMultiSelectMode] = useState(false);
+  const [lockedHint, setLockedHint] = useState<ItemKey | null>(null);
 
   const spaceTables = useMemo(() => tables.filter(t => t.space_id === space.id), [tables, space.id]);
   const spaceElements = useMemo(() => elements.filter(e => e.space_id === space.id), [elements, space.id]);
@@ -523,12 +525,18 @@ export default function SpaceFloorPlanEditor({
 
   const beginDrag = (ev: React.PointerEvent, key: ItemKey) => {
     ev.stopPropagation();
-    if (isLocked(key)) return;
-    const additive = ev.ctrlKey || ev.metaKey || ev.shiftKey;
+    if (isLocked(key)) {
+      choose(key, false);
+      setLockedHint(key);
+      return;
+    }
+    setLockedHint(null);
+    const additive = multiSelectMode || ev.ctrlKey || ev.metaKey || ev.shiftKey;
 
     let moving = new Set(selected);
     if (additive) {
-      choose(key, true);
+      // La selección se alterna en onClick. Hacerlo también aquí provocaba
+      // una doble alternancia y el elemento quedaba deseleccionado.
       return;
     }
     if (!moving.has(key)) {
@@ -695,7 +703,7 @@ export default function SpaceFloorPlanEditor({
       const {type,id}=parseKey(k);
       return type==="table" ? updateReservationTableLocked(id,locked) : updateReservationSpaceElementLocked(id,locked);
     }));
-    setBusy(false); onChange(); pulse();
+    setBusy(false); setLockedHint(null); onChange(); pulse();
   };
 
   const removeSelection = async () => {
@@ -882,6 +890,7 @@ export default function SpaceFloorPlanEditor({
 
   const base=canvasBaseDimensions(space.canvas_shape);
   const selectedCount=selected.size;
+  const selectedLockedCount=[...selected].filter(key=>isLocked(key)).length;
 
   return (
     <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_46px_rgba(15,23,42,.07)]">
@@ -893,8 +902,7 @@ export default function SpaceFloorPlanEditor({
         </div>
         <div className="flex flex-wrap gap-2">
           {onClose&&<button onClick={onClose} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600">Salir</button>}
-          <button onClick={()=>void saveSingle()} disabled={selectedCount!==1||busy} className="inline-flex items-center gap-2 rounded-xl bg-[#FF641F] px-4 py-2 text-xs font-black text-white disabled:opacity-40"><Save size={14}/> Guardar</button>
-          <span className={`rounded-xl px-3 py-2 text-[10px] font-black ${saved?"bg-emerald-100 text-emerald-700":"bg-emerald-50 text-emerald-600"}`}>{saved?"Guardado":"Guardado automático"}</span>
+          <span className={`rounded-xl px-3 py-2 text-[10px] font-black ${saved?"bg-emerald-100 text-emerald-700":"bg-emerald-50 text-emerald-600"}`}>{saved?"Posición guardada":"Movimientos: guardado automático"}</span>
         </div>
       </header>
 
@@ -915,6 +923,12 @@ export default function SpaceFloorPlanEditor({
             <span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-500">{selectedCount} seleccionados</span>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              className={`tool ${multiSelectMode?"!border-violet-300 !bg-violet-50 !text-violet-700":""}`}
+              onClick={()=>setMultiSelectMode(value=>!value)}
+            >
+              <MousePointer2 size={13}/>{multiSelectMode?"Listo: mover grupo":"Seleccionar varios"}
+            </button>
             <button className="tool" disabled={!selectedCount} onClick={()=>duplicateSelection()}><Copy size={13}/>Duplicar</button>
             <button className="tool" disabled={!selectedCount} onClick={()=>toggleLock(true)}><Lock size={13}/>Bloquear</button>
             <button className="tool" disabled={!selectedCount} onClick={()=>toggleLock(false)}><Unlock size={13}/>Desbloquear</button>
@@ -926,6 +940,8 @@ export default function SpaceFloorPlanEditor({
             <button className="iconTool" title="Centrar vertical" disabled={selectedCount<2} onClick={()=>align("vcenter")}><AlignCenterHorizontal size={14}/></button>
             <button className="iconTool" title="Alinear abajo" disabled={selectedCount<2} onClick={()=>align("bottom")}><AlignEndHorizontal size={14}/></button>
           </div>
+          {multiSelectMode&&<p className="mt-2 text-[10px] font-bold text-violet-600">Toca o haz clic en cada objeto. Cuando termines, pulsa “Listo: mover grupo” y arrastra uno de los seleccionados.</p>}
+          {(lockedHint||selectedLockedCount>0)&&<div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-800"><span>{selectedLockedCount>1?`${selectedLockedCount} objetos están bloqueados.`:"Este objeto está bloqueado y no se puede mover."}</span><button className="shrink-0 rounded-lg bg-amber-600 px-2 py-1 text-white" onClick={()=>void toggleLock(false)}>Desbloquear</button></div>}
         </div>
       </div>
 
@@ -968,7 +984,8 @@ export default function SpaceFloorPlanEditor({
                 const key=keyOf("element",element.id), p=getPos(key), sel=selected.has(key), locked=!!element.is_locked;
                 const visualElement = selectedCount === 1 && elementDraft?.id === element.id ? elementDraft : element;
                 return <div key={element.id}
-                  onClick={e=>{e.stopPropagation();choose(key,e.ctrlKey||e.metaKey||e.shiftKey)}}
+                  title={locked?"Objeto bloqueado: selecciónalo y pulsa Desbloquear":"Arrastrar para mover"}
+                  onClick={e=>{e.stopPropagation();choose(key,locked?false:multiSelectMode||e.ctrlKey||e.metaKey||e.shiftKey)}}
                   onPointerDown={e=>beginDrag(e,key)}
                   className={`absolute rounded-md shadow-sm ${locked?"cursor-not-allowed opacity-80":"cursor-grab active:cursor-grabbing"} ${
                     sel?"ring-2 ring-orange-400 ring-offset-2":""
@@ -996,7 +1013,8 @@ export default function SpaceFloorPlanEditor({
                 const key=keyOf("table",table.id), p=getPos(key);
                 const visualTable = selectedCount === 1 && tableDraft?.id === table.id ? tableDraft : table;
                 return <div key={table.id}
-                  onClick={e=>{e.stopPropagation();choose(key,e.ctrlKey||e.metaKey||e.shiftKey)}}
+                  title={table.is_locked?"Mesa bloqueada: selecciónala y pulsa Desbloquear":"Arrastrar para mover"}
+                  onClick={e=>{e.stopPropagation();choose(key,table.is_locked?false:multiSelectMode||e.ctrlKey||e.metaKey||e.shiftKey)}}
                   onPointerDown={e=>beginDrag(e,key)}
                   className={`absolute select-none ${table.is_locked?"cursor-not-allowed":"cursor-grab active:cursor-grabbing"}`}
                   style={{left:`${p.x}%`,top:`${p.y}%`,transform:`translate(-50%,-50%) rotate(${visualTable.rotation||0}deg)`}}>
@@ -1021,14 +1039,14 @@ export default function SpaceFloorPlanEditor({
             <label className="block text-[10px] font-black uppercase text-slate-400">Asiento<select className="field" value={tableDraft.seat_type} onChange={e=>updateTableDraft({seat_type:e.target.value as SeatType})}>{(["chairs","sofa","stools"] as SeatType[]).map(x=><option key={x} value={x}>{SEAT_TYPE_LABEL[x]}</option>)}</select></label>
             <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">X<input className="field" type="number" min={0} max={100} value={tableDraft.pos_x} onChange={e=>updateTableDraft({pos_x:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Y<input className="field" type="number" min={0} max={100} value={tableDraft.pos_y} onChange={e=>updateTableDraft({pos_y:Number(e.target.value)})}/></label></div>
             <RotationControl value={tableDraft.rotation} onChange={rotation=>updateTableDraft({rotation})}/>
-            <button onClick={()=>void saveSingle()} className="w-full rounded-xl bg-[#071B35] px-4 py-3 text-xs font-black text-white">Guardar cambios</button>
+            <button onClick={()=>void saveSingle()} className="w-full rounded-xl bg-[#071B35] px-4 py-3 text-xs font-black text-white">Aplicar propiedades</button>
           </div>}
           {selectedCount===1&&elementDraft&&<div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
             <label className="block text-[10px] font-black uppercase text-slate-400">Etiqueta<input className="field" value={elementDraft.label||""} onChange={e=>updateElementDraft({label:e.target.value})}/></label>
             <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">Ancho<input className="field" type="number" min={2} max={100} value={elementDraft.width} onChange={e=>updateElementDraft({width:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Alto<input className="field" type="number" min={2} max={100} value={elementDraft.height} onChange={e=>updateElementDraft({height:Number(e.target.value)})}/></label></div>
             <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">X<input className="field" type="number" min={0} max={100} value={elementDraft.pos_x} onChange={e=>updateElementDraft({pos_x:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Y<input className="field" type="number" min={0} max={100} value={elementDraft.pos_y} onChange={e=>updateElementDraft({pos_y:Number(e.target.value)})}/></label></div>
             <RotationControl value={elementDraft.rotation} onChange={rotation=>updateElementDraft({rotation})}/>
-            <button onClick={()=>void saveSingle()} className="w-full rounded-xl bg-[#071B35] px-4 py-3 text-xs font-black text-white">Guardar cambios</button>
+            <button onClick={()=>void saveSingle()} className="w-full rounded-xl bg-[#071B35] px-4 py-3 text-xs font-black text-white">Aplicar propiedades</button>
           </div>}
         </aside>
       </div>
