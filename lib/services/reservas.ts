@@ -188,13 +188,24 @@ const RESERVATION_ADMIN_SELECT = `
 
 export async function getReservationsForAdmin(
   storeId: string,
-  opts?: { date?: string; status?: ReservationStatus }
+  opts?: { date?: string; status?: ReservationStatus; range?: "upcoming" | "past" | "all" }
 ) {
   let query = supabase.from("reservations").select(RESERVATION_ADMIN_SELECT).eq("store_id", storeId);
   if (opts?.date) query = query.eq("reservation_date", opts.date);
-  else query = query.gte("reservation_date", new Date().toISOString().slice(0, 10));
+  else if (opts?.range !== "all") {
+    const now = new Date();
+    const localDate = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+    ].join("-");
+    query = opts?.range === "past"
+      ? query.lt("reservation_date", localDate)
+      : query.gte("reservation_date", localDate);
+  }
   if (opts?.status) query = query.eq("status", opts.status);
-  return query.order("reservation_date", { ascending: true }).order("created_at", { ascending: true }) as unknown as Promise<{
+  const ascending = opts?.range !== "past";
+  return query.order("reservation_date", { ascending }).order("created_at", { ascending }) as unknown as Promise<{
     data: Reservation[] | null;
     error: { message: string } | null;
   }>;

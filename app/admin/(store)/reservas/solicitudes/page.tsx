@@ -17,6 +17,13 @@ const STATUS_FILTERS: { value: ReservationStatus | "all"; label: string }[] = [
   { value: "rejected", label: "Rechazadas" },
 ];
 
+const DATE_RANGES = [
+  { value: "upcoming", label: "Próximas" },
+  { value: "past", label: "Pasadas" },
+  { value: "all", label: "Todas las fechas" },
+] as const;
+type DateRange = (typeof DATE_RANGES)[number]["value"];
+
 export default function AdminReservationsPage() {
   const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
   const { store: selectedStore, loading: storeLoading } = useStore();
@@ -27,9 +34,11 @@ export default function AdminReservationsPage() {
   }, [accessStore, isSuperAdmin, selectedStore]);
 
   const [dateFilter, setDateFilter] = useState(""); // vacío = hoy en adelante
+  const [dateRange, setDateRange] = useState<DateRange>("upcoming");
   const [statusFilter, setStatusFilter] = useState<ReservationStatus | "all">("all");
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   const loadData = async () => {
     if (accessLoading || storeLoading) return;
@@ -40,12 +49,17 @@ export default function AdminReservationsPage() {
     }
 
     setLoading(true);
+    setLoadError("");
     const { data, error } = await getReservationsForAdmin(activeStore.id, {
       date: dateFilter || undefined,
+      range: dateRange,
       status: statusFilter === "all" ? undefined : statusFilter,
     });
 
-    if (error) console.error("Error cargando reservas:", error);
+    if (error) {
+      console.error("Error cargando reservas:", error);
+      setLoadError("No se pudieron cargar las reservas. Intenta nuevamente.");
+    }
     setReservations(data || []);
     setLoading(false);
   };
@@ -53,7 +67,7 @@ export default function AdminReservationsPage() {
   useEffect(() => {
     void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStore?.id, accessLoading, storeLoading, dateFilter, statusFilter]);
+  }, [activeStore?.id, accessLoading, storeLoading, dateFilter, dateRange, statusFilter]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
@@ -81,6 +95,22 @@ export default function AdminReservationsPage() {
           </button>
         )}
 
+        <div className="flex gap-1.5 rounded-xl bg-slate-100 p-1">
+          {DATE_RANGES.map((range) => (
+            <button
+              key={range.value}
+              onClick={() => { setDateRange(range.value); setDateFilter(""); }}
+              className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                !dateFilter && dateRange === range.value
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500"
+              }`}
+            >
+              {range.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex gap-1.5">
           {STATUS_FILTERS.map((f) => (
             <button
@@ -99,7 +129,9 @@ export default function AdminReservationsPage() {
       </div>
 
       <div className="mt-5">
-        {loading ? (
+        {loadError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{loadError}</div>
+        ) : loading ? (
           <p className="text-sm font-bold text-slate-400">Cargando solicitudes...</p>
         ) : (
           <ReservationsList

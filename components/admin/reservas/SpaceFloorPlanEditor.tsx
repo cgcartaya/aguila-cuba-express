@@ -69,6 +69,11 @@ type Props = {
 type ItemKey = `table:${string}` | `element:${string}`;
 type TableShape = "round" | "square" | "rect";
 type Position = { x: number; y: number };
+const ROTATIONS = [0, 90, 180, 270] as const;
+
+function normalizeRotation(value: number) {
+  return ((Math.round(Number(value || 0) / 90) * 90) % 360 + 360) % 360;
+}
 
 const ELEMENTS: ReservationSpaceElementType[] = [
   "wall", "door", "window", "bar", "entrance", "plant", "restroom",
@@ -347,6 +352,31 @@ function TableVisual({ table, selected, locked }: { table: ReservationTable; sel
   );
 }
 
+function RotationControl({ value, onChange }: { value: number; onChange: (value: number) => void }) {
+  const normalized = normalizeRotation(value);
+  return (
+    <div>
+      <p className="text-[10px] font-black uppercase text-slate-400">Rotación</p>
+      <div className="mt-1 grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1">
+        {ROTATIONS.map(rotation => (
+          <button
+            key={rotation}
+            type="button"
+            onClick={() => onChange(rotation)}
+            className={`rounded-lg px-2 py-2 text-xs font-black transition ${
+              normalized === rotation
+                ? "bg-white text-orange-600 shadow-sm"
+                : "text-slate-500 hover:bg-white/70"
+            }`}
+          >
+            {rotation}°
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function SpaceFloorPlanEditor({
   storeId, space, tables, elements, onChange, onClose,
 }: Props) {
@@ -371,6 +401,42 @@ export default function SpaceFloorPlanEditor({
 
   const [tableDraft, setTableDraft] = useState<ReservationTable | null>(null);
   const [elementDraft, setElementDraft] = useState<ReservationSpaceElement | null>(null);
+
+  const updateTableDraft = (patch: Partial<ReservationTable>) => {
+    setTableDraft(current => current ? { ...current, ...patch } : current);
+    if (tableDraft && (patch.pos_x !== undefined || patch.pos_y !== undefined)) {
+      const key = keyOf("table", tableDraft.id);
+      setPositions(current => ({
+        ...current,
+        [key]: {
+          x: Number(patch.pos_x ?? tableDraft.pos_x),
+          y: Number(patch.pos_y ?? tableDraft.pos_y),
+        },
+      }));
+    }
+  };
+
+  const updateElementDraft = (patch: Partial<ReservationSpaceElement>) => {
+    setElementDraft(current => current ? { ...current, ...patch } : current);
+    if (elementDraft && (patch.pos_x !== undefined || patch.pos_y !== undefined)) {
+      const key = keyOf("element", elementDraft.id);
+      setPositions(current => ({
+        ...current,
+        [key]: {
+          x: Number(patch.pos_x ?? elementDraft.pos_x),
+          y: Number(patch.pos_y ?? elementDraft.pos_y),
+        },
+      }));
+    }
+  };
+
+  useEffect(() => {
+    if (drag) return;
+    const next = {} as Record<ItemKey, Position>;
+    spaceTables.forEach(t => { next[keyOf("table", t.id)] = { x: Number(t.pos_x), y: Number(t.pos_y) }; });
+    spaceElements.forEach(e => { next[keyOf("element", e.id)] = { x: Number(e.pos_x), y: Number(e.pos_y) }; });
+    setPositions(next);
+  }, [drag, spaceTables, spaceElements]);
 
   const pulse = () => {
     setSaved(true);
@@ -434,10 +500,10 @@ export default function SpaceFloorPlanEditor({
     const { type, id } = parseKey(key);
     if (type === "table") {
       const t = spaceTables.find(x => x.id === id);
-      setTableDraft(t ? { ...t } : null); setElementDraft(null);
+      setTableDraft(t ? { ...t, rotation: normalizeRotation(t.rotation) } : null); setElementDraft(null);
     } else {
       const e = spaceElements.find(x => x.id === id);
-      setElementDraft(e ? { ...e } : null); setTableDraft(null);
+      setElementDraft(e ? { ...e, rotation: normalizeRotation(e.rotation) } : null); setTableDraft(null);
     }
   };
 
@@ -679,7 +745,6 @@ export default function SpaceFloorPlanEditor({
     if (selected.size !== 1) return;
 
     const selectedKey = [...selected][0];
-    const livePosition = getPos(selectedKey);
 
     setBusy(true);
 
@@ -687,8 +752,8 @@ export default function SpaceFloorPlanEditor({
       // IMPORTANTE: la posición guardada sale del plano (posición viva),
       // no del draft antiguo del panel.
       const p = {
-        x: clamp(Number(livePosition.x), 4, 96),
-        y: clamp(Number(livePosition.y), 4, 96),
+        x: clamp(Number(tableDraft.pos_x), 4, 96),
+        y: clamp(Number(tableDraft.pos_y), 4, 96),
       };
 
       const { error } = await saveReservationTable(storeId, {
@@ -732,12 +797,12 @@ export default function SpaceFloorPlanEditor({
 
       const p = {
         x: clamp(
-          Number(livePosition.x),
+          Number(elementDraft.pos_x),
           halfBoundingWidth,
           100 - halfBoundingWidth
         ),
         y: clamp(
-          Number(livePosition.y),
+          Number(elementDraft.pos_y),
           halfBoundingHeight,
           100 - halfBoundingHeight
         ),
@@ -884,39 +949,41 @@ export default function SpaceFloorPlanEditor({
             >
               {spaceElements.map(element=>{
                 const key=keyOf("element",element.id), p=getPos(key), sel=selected.has(key), locked=!!element.is_locked;
+                const visualElement = selectedCount === 1 && elementDraft?.id === element.id ? elementDraft : element;
                 return <div key={element.id}
                   onClick={e=>{e.stopPropagation();choose(key,e.ctrlKey||e.metaKey||e.shiftKey)}}
                   onPointerDown={e=>beginDrag(e,key)}
                   className={`absolute rounded-md shadow-sm ${locked?"cursor-not-allowed opacity-80":"cursor-grab active:cursor-grabbing"} ${
                     sel?"ring-2 ring-orange-400 ring-offset-2":""
                   } ${
-                    element.element_type === "wall"
+                    visualElement.element_type === "wall"
                       ? "bg-[#302A26]"
-                      : element.element_type === "bar"
+                      : visualElement.element_type === "bar"
                       ? "bg-amber-200 border border-amber-700"
-                      : element.element_type === "plant"
+                      : visualElement.element_type === "plant"
                       ? "bg-transparent"
-                      : element.element_type === "stool"
+                      : visualElement.element_type === "stool"
                       ? "border-none bg-transparent"
-                      : element.element_type === "waiter" || element.element_type === "waitress"
+                      : visualElement.element_type === "waiter" || visualElement.element_type === "waitress"
                       ? "border border-slate-200 bg-white/95"
                       : "border border-[#C8BAAA] bg-white/90"
                   }`}
-                  style={{left:`${p.x}%`,top:`${p.y}%`,width:`${element.width}%`,height:`${element.height}%`,transform:`translate(-50%,-50%) rotate(${element.rotation||0}deg)`}}>
+                  style={{left:`${p.x}%`,top:`${p.y}%`,width:`${visualElement.width}%`,height:`${visualElement.height}%`,transform:`translate(-50%,-50%) rotate(${visualElement.rotation||0}deg)`}}>
                     {locked&&<Lock size={10} className="absolute right-1 top-1 z-10 text-slate-500"/>}
-                    <ElementArt type={element.element_type}/>
-                    {["label","bar","entrance","restroom","waiter","waitress"].includes(element.element_type)&&
-                      <span className="absolute inset-x-0 bottom-0 truncate bg-white/75 px-1 text-center text-[7px] font-black uppercase text-slate-600">{element.label}</span>}
+                    <ElementArt type={visualElement.element_type}/>
+                    {["label","bar","entrance","restroom","waiter","waitress"].includes(visualElement.element_type)&&
+                      <span className="absolute inset-x-0 bottom-0 truncate bg-white/75 px-1 text-center text-[7px] font-black uppercase text-slate-600">{visualElement.label}</span>}
                   </div>
               })}
               {spaceTables.map(table=>{
                 const key=keyOf("table",table.id), p=getPos(key);
+                const visualTable = selectedCount === 1 && tableDraft?.id === table.id ? tableDraft : table;
                 return <div key={table.id}
                   onClick={e=>{e.stopPropagation();choose(key,e.ctrlKey||e.metaKey||e.shiftKey)}}
                   onPointerDown={e=>beginDrag(e,key)}
                   className={`absolute select-none ${table.is_locked?"cursor-not-allowed":"cursor-grab active:cursor-grabbing"}`}
-                  style={{left:`${p.x}%`,top:`${p.y}%`,transform:`translate(-50%,-50%) rotate(${table.rotation||0}deg)`}}>
-                    <TableVisual table={table} selected={selected.has(key)} locked={!!table.is_locked}/>
+                  style={{left:`${p.x}%`,top:`${p.y}%`,transform:`translate(-50%,-50%) rotate(${visualTable.rotation||0}deg)`}}>
+                    <TableVisual table={visualTable} selected={selected.has(key)} locked={!!table.is_locked}/>
                   </div>
               })}
             </div>
@@ -931,19 +998,19 @@ export default function SpaceFloorPlanEditor({
           {selectedCount===0&&<div className="mt-4 rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5"><p className="text-sm font-black text-slate-600">Selecciona un elemento</p><p className="mt-1 text-xs font-semibold text-slate-400">Puedes seleccionar uno o varios.</p></div>}
           {selectedCount>1&&<div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-4"><p className="font-black text-violet-800">{selectedCount} elementos seleccionados</p><p className="mt-1 text-xs font-semibold text-violet-600">Muévelos juntos o usa las acciones de alinear, duplicar, bloquear y eliminar.</p></div>}
           {selectedCount===1&&tableDraft&&<div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-            <label className="block text-[10px] font-black uppercase text-slate-400">Nombre<input className="field" value={tableDraft.name} onChange={e=>setTableDraft({...tableDraft,name:e.target.value})}/></label>
-            <label className="block text-[10px] font-black uppercase text-slate-400">Capacidad<input className="field" type="number" min={1} max={20} value={tableDraft.capacity} onChange={e=>setTableDraft({...tableDraft,capacity:Number(e.target.value)})}/></label>
-            <label className="block text-[10px] font-black uppercase text-slate-400">Forma<select className="field" value={tableDraft.table_shape} onChange={e=>setTableDraft({...tableDraft,table_shape:e.target.value as TableShape})}><option value="round">Redonda</option><option value="square">Cuadrada</option><option value="rect">Rectangular</option></select></label>
-            <label className="block text-[10px] font-black uppercase text-slate-400">Asiento<select className="field" value={tableDraft.seat_type} onChange={e=>setTableDraft({...tableDraft,seat_type:e.target.value as SeatType})}>{(["chairs","sofa","stools"] as SeatType[]).map(x=><option key={x} value={x}>{SEAT_TYPE_LABEL[x]}</option>)}</select></label>
-            <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">X<input className="field" type="number" value={tableDraft.pos_x} onChange={e=>setTableDraft({...tableDraft,pos_x:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Y<input className="field" type="number" value={tableDraft.pos_y} onChange={e=>setTableDraft({...tableDraft,pos_y:Number(e.target.value)})}/></label></div>
-            <label className="block text-[10px] font-black uppercase text-slate-400">Rotación<input className="field" type="number" value={tableDraft.rotation} onChange={e=>setTableDraft({...tableDraft,rotation:Number(e.target.value)})}/></label>
+            <label className="block text-[10px] font-black uppercase text-slate-400">Nombre<input className="field" value={tableDraft.name} onChange={e=>updateTableDraft({name:e.target.value})}/></label>
+            <label className="block text-[10px] font-black uppercase text-slate-400">Capacidad<input className="field" type="number" min={1} max={20} value={tableDraft.capacity} onChange={e=>updateTableDraft({capacity:Number(e.target.value)})}/></label>
+            <label className="block text-[10px] font-black uppercase text-slate-400">Forma<select className="field" value={tableDraft.table_shape} onChange={e=>updateTableDraft({table_shape:e.target.value as TableShape})}><option value="round">Redonda</option><option value="square">Cuadrada</option><option value="rect">Rectangular</option></select></label>
+            <label className="block text-[10px] font-black uppercase text-slate-400">Asiento<select className="field" value={tableDraft.seat_type} onChange={e=>updateTableDraft({seat_type:e.target.value as SeatType})}>{(["chairs","sofa","stools"] as SeatType[]).map(x=><option key={x} value={x}>{SEAT_TYPE_LABEL[x]}</option>)}</select></label>
+            <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">X<input className="field" type="number" min={0} max={100} value={tableDraft.pos_x} onChange={e=>updateTableDraft({pos_x:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Y<input className="field" type="number" min={0} max={100} value={tableDraft.pos_y} onChange={e=>updateTableDraft({pos_y:Number(e.target.value)})}/></label></div>
+            <RotationControl value={tableDraft.rotation} onChange={rotation=>updateTableDraft({rotation})}/>
             <button onClick={()=>void saveSingle()} className="w-full rounded-xl bg-[#071B35] px-4 py-3 text-xs font-black text-white">Guardar cambios</button>
           </div>}
           {selectedCount===1&&elementDraft&&<div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
-            <label className="block text-[10px] font-black uppercase text-slate-400">Etiqueta<input className="field" value={elementDraft.label||""} onChange={e=>setElementDraft({...elementDraft,label:e.target.value})}/></label>
-            <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">Ancho<input className="field" type="number" min={2} value={elementDraft.width} onChange={e=>setElementDraft({...elementDraft,width:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Alto<input className="field" type="number" min={2} value={elementDraft.height} onChange={e=>setElementDraft({...elementDraft,height:Number(e.target.value)})}/></label></div>
-            <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">X<input className="field" type="number" value={elementDraft.pos_x} onChange={e=>setElementDraft({...elementDraft,pos_x:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Y<input className="field" type="number" value={elementDraft.pos_y} onChange={e=>setElementDraft({...elementDraft,pos_y:Number(e.target.value)})}/></label></div>
-            <label className="block text-[10px] font-black uppercase text-slate-400">Rotación<input className="field" type="number" value={elementDraft.rotation} onChange={e=>setElementDraft({...elementDraft,rotation:Number(e.target.value)})}/></label>
+            <label className="block text-[10px] font-black uppercase text-slate-400">Etiqueta<input className="field" value={elementDraft.label||""} onChange={e=>updateElementDraft({label:e.target.value})}/></label>
+            <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">Ancho<input className="field" type="number" min={2} max={100} value={elementDraft.width} onChange={e=>updateElementDraft({width:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Alto<input className="field" type="number" min={2} max={100} value={elementDraft.height} onChange={e=>updateElementDraft({height:Number(e.target.value)})}/></label></div>
+            <div className="grid grid-cols-2 gap-2"><label className="text-[10px] font-black uppercase text-slate-400">X<input className="field" type="number" min={0} max={100} value={elementDraft.pos_x} onChange={e=>updateElementDraft({pos_x:Number(e.target.value)})}/></label><label className="text-[10px] font-black uppercase text-slate-400">Y<input className="field" type="number" min={0} max={100} value={elementDraft.pos_y} onChange={e=>updateElementDraft({pos_y:Number(e.target.value)})}/></label></div>
+            <RotationControl value={elementDraft.rotation} onChange={rotation=>updateElementDraft({rotation})}/>
             <button onClick={()=>void saveSingle()} className="w-full rounded-xl bg-[#071B35] px-4 py-3 text-xs font-black text-white">Guardar cambios</button>
           </div>}
         </aside>
