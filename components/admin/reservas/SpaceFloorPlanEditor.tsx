@@ -381,6 +381,9 @@ export default function SpaceFloorPlanEditor({
   storeId, space, tables, elements, onChange, onClose,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  // Conserva las posiciones recién guardadas hasta que la recarga del padre
+  // confirme esos mismos valores. Evita el salto visual a datos anteriores.
+  const pendingPositionsRef = useRef<Partial<Record<ItemKey, Position>>>({});
   const [selected, setSelected] = useState<Set<ItemKey>>(new Set());
   const [positions, setPositions] = useState<Record<ItemKey, Position>>({} as Record<ItemKey, Position>);
   const [zoom, setZoom] = useState(100);
@@ -433,8 +436,19 @@ export default function SpaceFloorPlanEditor({
   useEffect(() => {
     if (drag) return;
     const next = {} as Record<ItemKey, Position>;
-    spaceTables.forEach(t => { next[keyOf("table", t.id)] = { x: Number(t.pos_x), y: Number(t.pos_y) }; });
-    spaceElements.forEach(e => { next[keyOf("element", e.id)] = { x: Number(e.pos_x), y: Number(e.pos_y) }; });
+    const reconcile = (key: ItemKey, serverPosition: Position) => {
+      const pending = pendingPositionsRef.current[key];
+      if (
+        pending &&
+        Math.abs(pending.x - serverPosition.x) < 0.01 &&
+        Math.abs(pending.y - serverPosition.y) < 0.01
+      ) {
+        delete pendingPositionsRef.current[key];
+      }
+      next[key] = pendingPositionsRef.current[key] ?? serverPosition;
+    };
+    spaceTables.forEach(t => reconcile(keyOf("table", t.id), { x: Number(t.pos_x), y: Number(t.pos_y) }));
+    spaceElements.forEach(e => reconcile(keyOf("element", e.id), { x: Number(e.pos_x), y: Number(e.pos_y) }));
     setPositions(next);
   }, [drag, spaceTables, spaceElements]);
 
@@ -602,10 +616,13 @@ export default function SpaceFloorPlanEditor({
     const anchorKey = drag.anchor;
     const finalAnchorPosition = getPos(anchorKey);
 
-    setDrag(null);
+    keys.forEach(key => {
+      pendingPositionsRef.current[key] = clampItem(key, getPos(key));
+    });
     setBusy(true);
 
     await persistKeys(keys);
+    setDrag(null);
 
     // Última sincronización defensiva entre canvas y formulario.
     if (selected.size === 1 && selected.has(anchorKey)) {
