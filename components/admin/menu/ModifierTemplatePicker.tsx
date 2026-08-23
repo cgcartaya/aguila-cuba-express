@@ -63,7 +63,7 @@ export default function ModifierTemplatePicker({ storeId, groups, onChange }: Pr
   };
 
   return (
-    <section className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4">
+    <section className="rounded-2xl border border-violet-100 bg-violet-50/40 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -78,7 +78,7 @@ export default function ModifierTemplatePicker({ storeId, groups, onChange }: Pr
 
         <a
           href="/admin/menu/modificadores"
-          className="rounded-xl bg-white px-3 py-2 text-xs font-black text-violet-700 shadow-sm ring-1 ring-violet-100"
+          className="rounded-xl bg-white px-3 py-2 text-xs font-black text-violet-700 shadow-sm ring-1 ring-violet-200 transition hover:bg-violet-50"
         >
           Administrar plantillas
         </a>

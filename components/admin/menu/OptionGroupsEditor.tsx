@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Layers3, Plus, Trash2 } from "lucide-react";
 
 import type { MenuOptionGroupFormData } from "@/lib/menu/types";
 
@@ -69,24 +69,28 @@ export default function OptionGroupsEditor({ groups, onChange }: Props) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">
-          Opciones / modificadores
-        </h3>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-base font-black text-slate-900">Opciones y modificadores</h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">Agrega salsas, acompañamientos, términos de cocción o extras.</p>
+        </div>
         <button
           type="button"
           onClick={addGroup}
-          className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#061b3a] px-3.5 py-2.5 text-xs font-black text-white shadow-sm transition hover:bg-[#0b2b58]"
         >
           <Plus size={14} />
-          Grupo de opciones
+          Crear grupo
         </button>
       </div>
 
       {groups.length === 0 && (
-        <p className="text-xs font-semibold text-slate-400">
-          Sin opciones. Úsalo para cosas como salsa, término/picor, o extras.
-        </p>
+        <button type="button" onClick={addGroup} className="flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-violet-200 bg-violet-50/30 px-5 py-8 text-center transition hover:border-violet-300 hover:bg-violet-50/60">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-violet-100 text-violet-700"><Layers3 size={20} /></span>
+          <strong className="mt-3 text-sm font-black text-slate-900">Este platillo todavía no tiene opciones</strong>
+          <span className="mt-1 text-xs font-medium text-slate-500">Crea el primer grupo para que tus clientes puedan personalizarlo.</span>
+          <span className="mt-4 inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-white px-3.5 py-2 text-xs font-black text-violet-700"><Plus size={14} /> Crear grupo de opciones</span>
+        </button>
       )}
 
       {groups.map((group, gi) => (

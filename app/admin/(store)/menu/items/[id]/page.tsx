@@ -88,8 +88,7 @@ export default function EditMenuItemPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-6 text-[#061b3a] xl:pb-6">
-      <h1 className="mx-auto mb-4 max-w-3xl text-xl font-black">Editar platillo</h1>
+    <main className="min-h-screen bg-slate-50 px-4 py-6 text-[#061b3a] sm:px-6 lg:px-8">
       <MenuItemForm storeId={activeStore.id} categories={categories} initialData={initialData} />
     </main>
   );
