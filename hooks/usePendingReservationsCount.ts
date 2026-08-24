@@ -9,11 +9,13 @@
    nuevo sin tener que entrar primero.
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export function usePendingReservationsCount(storeId?: string | null) {
   const [count, setCount] = useState(0);
+  const instanceId = useId().replace(/:/g, "");
+  const channelSequence = useRef(0);
 
   useEffect(() => {
     let mounted = true;
@@ -49,22 +51,30 @@ export function usePendingReservationsCount(storeId?: string | null) {
 
     window.addEventListener("focus", handleFocus);
     let realtimeTimer: number | undefined;
-    const channel = supabase
-      .channel(`store:${storeId}:pending-reservations-count`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "reservations",
-          filter: `store_id=eq.${storeId}`,
-        },
-        () => {
-          if (realtimeTimer) window.clearTimeout(realtimeTimer);
-          realtimeTimer = window.setTimeout(load, 200);
-        }
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    channelSequence.current += 1;
+
+    try {
+      channel = supabase
+        .channel(`store:${storeId}:pending-reservations-count:${instanceId}:${channelSequence.current}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "reservations",
+            filter: `store_id=eq.${storeId}`,
+          },
+          () => {
+            if (realtimeTimer) window.clearTimeout(realtimeTimer);
+            realtimeTimer = window.setTimeout(load, 200);
+          }
+        )
+        .subscribe();
+    } catch (error) {
+      // El conteo por foco y cada 60 s continúa funcionando como respaldo.
+      console.warn("No se pudo iniciar Realtime para el contador de reservas:", error);
+    }
 
     // Refresca cada 60s mientras la pestaña está abierta, ya que las
     // solicitudes pueden llegar en cualquier momento. El intervalo queda
@@ -74,11 +84,11 @@ export function usePendingReservationsCount(storeId?: string | null) {
     return () => {
       mounted = false;
       if (realtimeTimer) window.clearTimeout(realtimeTimer);
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
       window.removeEventListener("focus", handleFocus);
       window.clearInterval(interval);
     };
-  }, [storeId]);
+  }, [instanceId, storeId]);
 
   return count;
 }

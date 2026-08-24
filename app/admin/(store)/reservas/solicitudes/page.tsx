@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { CalendarCheck2, Radio, WifiOff } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
@@ -26,6 +26,8 @@ const DATE_RANGES = [
 type DateRange = (typeof DATE_RANGES)[number]["value"];
 
 export default function AdminReservationsPage() {
+  const realtimeInstanceId = useId().replace(/:/g, "");
+  const realtimeSequence = useRef(0);
   const { loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
   const { store: selectedStore, loading: storeLoading } = useStore();
 
@@ -76,9 +78,13 @@ export default function AdminReservationsPage() {
 
     let refreshTimer: number | undefined;
     let noticeTimer: number | undefined;
-    const channel = supabase
-      .channel(`store:${activeStore.id}:reservations`)
-      .on(
+    realtimeSequence.current += 1;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    try {
+      channel = supabase
+        .channel(`store:${activeStore.id}:reservations:${realtimeInstanceId}:${realtimeSequence.current}`)
+        .on(
         "postgres_changes",
         {
           event: "*",
@@ -95,18 +101,22 @@ export default function AdminReservationsPage() {
           if (refreshTimer) window.clearTimeout(refreshTimer);
           refreshTimer = window.setTimeout(() => void loadData(false), 250);
         }
-      )
-      .subscribe((status) => {
-        setRealtimeConnected(status === "SUBSCRIBED");
-      });
+        )
+        .subscribe((status) => {
+          setRealtimeConnected(status === "SUBSCRIBED");
+        });
+    } catch (error) {
+      console.warn("No se pudo iniciar la actualización automática de reservas:", error);
+      setRealtimeConnected(false);
+    }
 
     return () => {
       if (refreshTimer) window.clearTimeout(refreshTimer);
       if (noticeTimer) window.clearTimeout(noticeTimer);
       setRealtimeConnected(false);
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
-  }, [activeStore?.id, loadData]);
+  }, [activeStore?.id, loadData, realtimeInstanceId]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
