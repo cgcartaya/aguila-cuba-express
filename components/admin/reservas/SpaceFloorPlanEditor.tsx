@@ -9,12 +9,15 @@ import {
   AlignStartHorizontal,
   AlignStartVertical,
   Armchair,
+  AlertTriangle,
+  CheckCircle2,
   Circle,
   Copy,
   DoorOpen,
   Grid3X3,
   LayoutPanelTop,
   Lock,
+  Loader2,
   Maximize2,
   Minus,
   MousePointer2,
@@ -26,6 +29,8 @@ import {
   Toilet,
   Type,
   Unlock,
+  Undo2,
+  Redo2,
   UserRound,
   Users,
   Wind,
@@ -69,6 +74,9 @@ type Props = {
 type ItemKey = `table:${string}` | `element:${string}`;
 type TableShape = "round" | "square" | "rect";
 type Position = { x: number; y: number };
+type PositionMap = Partial<Record<ItemKey, Position>>;
+type HistoryEntry = { before: PositionMap; after: PositionMap };
+type SaveState = "idle" | "saving" | "saved" | "error";
 const ROTATIONS = [0, 90, 180, 270] as const;
 
 function normalizeRotation(value: number) {
@@ -390,7 +398,11 @@ export default function SpaceFloorPlanEditor({
   const [showGrid, setShowGrid] = useState(true);
   const [snap, setSnap] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [saveError, setSaveError] = useState("");
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [future, setFuture] = useState<HistoryEntry[]>([]);
+  const [propertiesDirty, setPropertiesDirty] = useState(false);
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [lockedHint, setLockedHint] = useState<ItemKey | null>(null);
 
@@ -408,6 +420,7 @@ export default function SpaceFloorPlanEditor({
   const [elementDraft, setElementDraft] = useState<ReservationSpaceElement | null>(null);
 
   const updateTableDraft = (patch: Partial<ReservationTable>) => {
+    setPropertiesDirty(true);
     setTableDraft(current => current ? { ...current, ...patch } : current);
     if (tableDraft && (patch.pos_x !== undefined || patch.pos_y !== undefined)) {
       const key = keyOf("table", tableDraft.id);
@@ -422,6 +435,7 @@ export default function SpaceFloorPlanEditor({
   };
 
   const updateElementDraft = (patch: Partial<ReservationSpaceElement>) => {
+    setPropertiesDirty(true);
     setElementDraft(current => current ? { ...current, ...patch } : current);
     if (elementDraft && (patch.pos_x !== undefined || patch.pos_y !== undefined)) {
       const key = keyOf("element", elementDraft.id);
@@ -454,9 +468,15 @@ export default function SpaceFloorPlanEditor({
     setPositions(next);
   }, [drag, spaceTables, spaceElements]);
 
-  const pulse = () => {
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 1000);
+  const markSaved = () => {
+    setSaveState("saved");
+    setSaveError("");
+    window.setTimeout(() => setSaveState(current => current === "saved" ? "idle" : current), 1600);
+  };
+
+  const markError = (message: string) => {
+    setSaveState("error");
+    setSaveError(message);
   };
 
   const getPos = (key: ItemKey): Position => {
@@ -503,6 +523,11 @@ export default function SpaceFloorPlanEditor({
   };
 
   const choose = (key: ItemKey, additive: boolean) => {
+    if (
+      propertiesDirty &&
+      (additive || !selected.has(key)) &&
+      !window.confirm("Hay cambios de propiedades sin aplicar. ¿Quieres descartarlos?")
+    ) return false;
     if (additive) {
       setSelected(prev => {
         const next = new Set(prev);
@@ -510,7 +535,8 @@ export default function SpaceFloorPlanEditor({
         return next;
       });
       setTableDraft(null); setElementDraft(null);
-      return;
+      setPropertiesDirty(false);
+      return true;
     }
     setSelected(new Set([key]));
     const { type, id } = parseKey(key);
@@ -521,12 +547,14 @@ export default function SpaceFloorPlanEditor({
       const e = spaceElements.find(x => x.id === id);
       setElementDraft(e ? { ...e, rotation: normalizeRotation(e.rotation) } : null); setTableDraft(null);
     }
+    setPropertiesDirty(false);
+    return true;
   };
 
   const beginDrag = (ev: React.PointerEvent, key: ItemKey) => {
     ev.stopPropagation();
     if (isLocked(key)) {
-      choose(key, false);
+      if (!choose(key, false)) return;
       setLockedHint(key);
       return;
     }
@@ -541,7 +569,7 @@ export default function SpaceFloorPlanEditor({
     }
     if (!moving.has(key)) {
       moving = new Set([key]);
-      choose(key, false);
+      if (!choose(key, false)) return;
     }
     const starts = {} as Record<ItemKey, Position>;
     moving.forEach(k => { if (!isLocked(k)) starts[k] = getPos(k); });
@@ -603,18 +631,23 @@ export default function SpaceFloorPlanEditor({
     }
   };
 
-  const persistKeys = async (keys: ItemKey[]) => {
-    await Promise.all(keys.map(async key => {
+  const persistPositionMap = async (positionMap: PositionMap) => {
+    const results = await Promise.all((Object.keys(positionMap) as ItemKey[]).map(async key => {
       const { type, id } = parseKey(key);
-      const p = clampItem(key, getPos(key));
+      const requested = positionMap[key];
+      if (!requested) return null;
+      const p = clampItem(key, requested);
       if (type === "table") {
         const t = spaceTables.find(x => x.id === id);
-        if (t) await updateReservationTableVisualPosition(id, p.x, p.y, t.rotation || 0);
+        if (t) return updateReservationTableVisualPosition(id, p.x, p.y, t.rotation || 0);
       } else {
         const e = spaceElements.find(x => x.id === id);
-        if (e) await updateReservationSpaceElementVisualPosition(id, p.x, p.y, e.rotation || 0);
+        if (e) return updateReservationSpaceElementVisualPosition(id, p.x, p.y, e.rotation || 0);
       }
+      return null;
     }));
+    const failed = results.find(result => result?.error);
+    if (failed?.error) throw new Error(failed.error.message || "No se pudo guardar la posición.");
   };
 
   const endDrag = async (ev: React.PointerEvent<HTMLDivElement>) => {
@@ -623,17 +656,35 @@ export default function SpaceFloorPlanEditor({
     const keys = Object.keys(drag.starts) as ItemKey[];
     const anchorKey = drag.anchor;
     const finalAnchorPosition = getPos(anchorKey);
+    const finalPositions = {} as PositionMap;
+    let movementSaved = false;
 
     keys.forEach(key => {
-      pendingPositionsRef.current[key] = clampItem(key, getPos(key));
+      const finalPosition = clampItem(key, getPos(key));
+      finalPositions[key] = finalPosition;
+      pendingPositionsRef.current[key] = finalPosition;
     });
     setBusy(true);
+    setSaveState("saving");
+    setSaveError("");
 
-    await persistKeys(keys);
-    setDrag(null);
+    try {
+      await persistPositionMap(finalPositions);
+      movementSaved = true;
+      setHistory(current => [...current.slice(-29), { before: drag.starts, after: finalPositions }]);
+      setFuture([]);
+      markSaved();
+    } catch (error) {
+      keys.forEach(key => { delete pendingPositionsRef.current[key]; });
+      setPositions(current => ({ ...current, ...drag.starts }));
+      markError(error instanceof Error ? error.message : "No se pudo guardar el movimiento.");
+    } finally {
+      setDrag(null);
+      setBusy(false);
+    }
 
     // Última sincronización defensiva entre canvas y formulario.
-    if (selected.size === 1 && selected.has(anchorKey)) {
+    if (movementSaved && selected.size === 1 && selected.has(anchorKey)) {
       const { type } = parseKey(anchorKey);
 
       if (type === "table") {
@@ -659,9 +710,51 @@ export default function SpaceFloorPlanEditor({
       }
     }
 
-    setBusy(false);
-    onChange();
-    pulse();
+    if (movementSaved) onChange();
+  };
+
+  const applyHistoryPositions = async (positionMap: PositionMap) => {
+    const previous = {} as PositionMap;
+    (Object.keys(positionMap) as ItemKey[]).forEach(key => {
+      previous[key] = getPos(key);
+      const position = positionMap[key];
+      if (position) pendingPositionsRef.current[key] = position;
+    });
+    setPositions(current => ({ ...current, ...positionMap }));
+    setBusy(true);
+    setSaveState("saving");
+    setSaveError("");
+    try {
+      await persistPositionMap(positionMap);
+      markSaved();
+      onChange();
+      return true;
+    } catch (error) {
+      (Object.keys(positionMap) as ItemKey[]).forEach(key => { delete pendingPositionsRef.current[key]; });
+      setPositions(current => ({ ...current, ...previous }));
+      markError(error instanceof Error ? error.message : "No se pudo guardar el cambio.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const undo = async () => {
+    const entry = history[history.length - 1];
+    if (!entry || busy) return;
+    if (await applyHistoryPositions(entry.before)) {
+      setHistory(current => current.slice(0, -1));
+      setFuture(current => [...current, entry]);
+    }
+  };
+
+  const redo = async () => {
+    const entry = future[future.length - 1];
+    if (!entry || busy) return;
+    if (await applyHistoryPositions(entry.after)) {
+      setFuture(current => current.slice(0, -1));
+      setHistory(current => [...current, entry]);
+    }
   };
 
   const align = async (mode: "left"|"hcenter"|"right"|"top"|"vcenter"|"bottom") => {
@@ -671,29 +764,20 @@ export default function SpaceFloorPlanEditor({
     const xs = ps.map(p => p.x), ys = ps.map(p => p.y);
     const targetX = mode === "left" ? Math.min(...xs) : mode === "right" ? Math.max(...xs) : (Math.min(...xs)+Math.max(...xs))/2;
     const targetY = mode === "top" ? Math.min(...ys) : mode === "bottom" ? Math.max(...ys) : (Math.min(...ys)+Math.max(...ys))/2;
-    setPositions(prev => {
-      const next = {...prev};
-      keys.forEach(k => {
-        const p = getPos(k);
-        next[k] = clampItem(k, {
-          x: ["left","hcenter","right"].includes(mode) ? targetX : p.x,
-          y: ["top","vcenter","bottom"].includes(mode) ? targetY : p.y,
-        });
+    const before = {} as PositionMap;
+    const after = {} as PositionMap;
+    keys.forEach(key => {
+      const current = getPos(key);
+      before[key] = current;
+      after[key] = clampItem(key, {
+        x: ["left","hcenter","right"].includes(mode) ? targetX : current.x,
+        y: ["top","vcenter","bottom"].includes(mode) ? targetY : current.y,
       });
-      return next;
     });
-    await new Promise(r => setTimeout(r, 0));
-    setBusy(true);
-    await Promise.all(keys.map(async k => {
-      const p = clampItem(k, {
-        x: ["left","hcenter","right"].includes(mode) ? targetX : getPos(k).x,
-        y: ["top","vcenter","bottom"].includes(mode) ? targetY : getPos(k).y,
-      });
-      const {type,id}=parseKey(k);
-      if(type==="table"){ const t=spaceTables.find(x=>x.id===id); if(t) await updateReservationTableVisualPosition(id,p.x,p.y,t.rotation||0);}
-      else { const e=spaceElements.find(x=>x.id===id); if(e) await updateReservationSpaceElementVisualPosition(id,p.x,p.y,e.rotation||0);}
-    }));
-    setBusy(false); onChange(); pulse();
+    if (await applyHistoryPositions(after)) {
+      setHistory(current => [...current.slice(-29), { before, after }]);
+      setFuture([]);
+    }
   };
 
   const toggleLock = async (locked: boolean) => {
@@ -703,7 +787,7 @@ export default function SpaceFloorPlanEditor({
       const {type,id}=parseKey(k);
       return type==="table" ? updateReservationTableLocked(id,locked) : updateReservationSpaceElementLocked(id,locked);
     }));
-    setBusy(false); setLockedHint(null); onChange(); pulse();
+    setBusy(false); setLockedHint(null); onChange(); markSaved();
   };
 
   const removeSelection = async () => {
@@ -714,7 +798,7 @@ export default function SpaceFloorPlanEditor({
       const {type,id}=parseKey(k);
       return type==="table" ? deleteReservationTable(id) : deleteReservationSpaceElement(id);
     }));
-    setBusy(false); setSelected(new Set()); setTableDraft(null); setElementDraft(null); onChange(); pulse();
+    setBusy(false); setSelected(new Set()); setTableDraft(null); setElementDraft(null); onChange(); markSaved();
   };
 
   const duplicateSelection = async () => {
@@ -740,7 +824,7 @@ export default function SpaceFloorPlanEditor({
         });
       }
     }
-    setBusy(false); onChange(); pulse();
+    setBusy(false); onChange(); markSaved();
   };
 
   const addElement = async (type: ReservationSpaceElementType) => {
@@ -751,7 +835,7 @@ export default function SpaceFloorPlanEditor({
     });
     setBusy(false);
     if(data?.id) setSelected(new Set([keyOf("element",data.id)]));
-    onChange(); pulse();
+    onChange(); markSaved();
   };
 
   const addTable = async (shape: TableShape) => {
@@ -763,7 +847,7 @@ export default function SpaceFloorPlanEditor({
     });
     setBusy(false);
     if(data?.id) setSelected(new Set([keyOf("table",data.id)]));
-    onChange(); pulse();
+    onChange(); markSaved();
   };
 
   const saveSingle = async () => {
@@ -772,6 +856,8 @@ export default function SpaceFloorPlanEditor({
     const selectedKey = [...selected][0];
 
     setBusy(true);
+    setSaveState("saving");
+    setSaveError("");
 
     if (tableDraft && selectedKey === keyOf("table", tableDraft.id)) {
       // IMPORTANTE: la posición guardada sale del plano (posición viva),
@@ -792,7 +878,7 @@ export default function SpaceFloorPlanEditor({
 
       if (error) {
         setBusy(false);
-        alert("No se pudo guardar la mesa.");
+        markError(error.message || "No se pudo guardar la mesa.");
         return;
       }
 
@@ -846,7 +932,7 @@ export default function SpaceFloorPlanEditor({
 
       if (error) {
         setBusy(false);
-        alert("No se pudo guardar el elemento.");
+        markError(error.message || "No se pudo guardar el elemento.");
         return;
       }
 
@@ -870,9 +956,37 @@ export default function SpaceFloorPlanEditor({
     }
 
     setBusy(false);
+    setPropertiesDirty(false);
     onChange();
-    pulse();
+    markSaved();
   };
+
+  const clearSelection = () => {
+    if (propertiesDirty && !window.confirm("Hay cambios de propiedades sin aplicar. ¿Quieres descartarlos?")) return;
+    setSelected(new Set());
+    setTableDraft(null);
+    setElementDraft(null);
+    setPropertiesDirty(false);
+    setLockedHint(null);
+  };
+
+  const handleClose = () => {
+    if (busy) {
+      window.alert("Espera a que termine el guardado antes de salir.");
+      return;
+    }
+    if (propertiesDirty && !window.confirm("Hay cambios de propiedades sin aplicar. ¿Quieres salir sin guardarlos?")) return;
+    onClose?.();
+  };
+
+  useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!propertiesDirty) return;
+      event.preventDefault();
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, [propertiesDirty]);
 
   useEffect(() => {
     const onKey=(e:KeyboardEvent)=>{
@@ -881,9 +995,11 @@ export default function SpaceFloorPlanEditor({
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="a"){e.preventDefault();setSelected(new Set([
         ...spaceTables.map(t=>keyOf("table",t.id)),...spaceElements.map(x=>keyOf("element",x.id))
       ]));}
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!e.shiftKey){e.preventDefault();void undo();}
+      if(((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="y")||((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==="z")){e.preventDefault();void redo();}
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="d"){e.preventDefault();void duplicateSelection();}
       if(e.key==="Delete"||e.key==="Backspace"){e.preventDefault();void removeSelection();}
-      if(e.key==="Escape"){setSelected(new Set());setTableDraft(null);setElementDraft(null);}
+      if(e.key==="Escape"){clearSelection();}
     };
     window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
   });
@@ -901,8 +1017,11 @@ export default function SpaceFloorPlanEditor({
           <p className="mt-1 text-xs font-semibold text-slate-400">Ctrl/⌘ o Shift + clic para seleccionar varios. Arrastra cualquiera para mover el grupo.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {onClose&&<button onClick={onClose} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600">Salir</button>}
-          <span className={`rounded-xl px-3 py-2 text-[10px] font-black ${saved?"bg-emerald-100 text-emerald-700":"bg-emerald-50 text-emerald-600"}`}>{saved?"Posición guardada":"Movimientos: guardado automático"}</span>
+          {onClose&&<button onClick={handleClose} className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600">Salir</button>}
+          <span className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[10px] font-black ${saveState==="error"?"bg-red-50 text-red-700":saveState==="saving"?"bg-amber-50 text-amber-700":saveState==="saved"?"bg-emerald-100 text-emerald-700":"bg-emerald-50 text-emerald-600"}`}>
+            {saveState==="saving"?<Loader2 size={12} className="animate-spin"/>:saveState==="error"?<AlertTriangle size={12}/>:<CheckCircle2 size={12}/>}
+            {saveState==="saving"?"Guardando…":saveState==="error"?"Error al guardar":saveState==="saved"?"Guardado":"Movimientos automáticos"}
+          </span>
         </div>
       </header>
 
@@ -942,6 +1061,7 @@ export default function SpaceFloorPlanEditor({
           </div>
           {multiSelectMode&&<p className="mt-2 text-[10px] font-bold text-violet-600">Toca o haz clic en cada objeto. Cuando termines, pulsa “Listo: mover grupo” y arrastra uno de los seleccionados.</p>}
           {(lockedHint||selectedLockedCount>0)&&<div className="mt-2 flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold text-amber-800"><span>{selectedLockedCount>1?`${selectedLockedCount} objetos están bloqueados.`:"Este objeto está bloqueado y no se puede mover."}</span><button className="shrink-0 rounded-lg bg-amber-600 px-2 py-1 text-white" onClick={()=>void toggleLock(false)}>Desbloquear</button></div>}
+          {saveError&&<p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[10px] font-bold text-red-700">{saveError}</p>}
         </div>
       </div>
 
@@ -954,6 +1074,8 @@ export default function SpaceFloorPlanEditor({
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-black text-slate-500">{CANVAS_SHAPE_LABEL[space.canvas_shape||"panoramic"]}</span>
+              <button className="iconTool" title="Deshacer movimiento" disabled={!history.length||busy} onClick={()=>void undo()}><Undo2 size={13}/></button>
+              <button className="iconTool" title="Rehacer movimiento" disabled={!future.length||busy} onClick={()=>void redo()}><Redo2 size={13}/></button>
               <button className={`tool ${showGrid?"bg-orange-50 text-orange-600":""}`} onClick={()=>setShowGrid(v=>!v)}><Grid3X3 size={13}/>Cuadrícula</button>
               <button className={`tool ${snap?"bg-violet-50 text-violet-600":""}`} onClick={()=>setSnap(v=>!v)}><Grid3X3 size={13}/>Imán 1%</button>
               <button className="iconTool" onClick={()=>setZoom(z=>Math.max(70,z-10))}><Minus size={13}/></button>
@@ -966,7 +1088,7 @@ export default function SpaceFloorPlanEditor({
           <div className="overflow-auto rounded-[24px] border border-slate-200 bg-[#F7F3ED] p-2 sm:p-3">
             <div
               ref={canvasRef}
-              onClick={()=>{setSelected(new Set());setTableDraft(null);setElementDraft(null);}}
+              onClick={clearSelection}
               onPointerMove={moveDrag}
               onPointerUp={(e)=>void endDrag(e)}
               onPointerCancel={()=>setDrag(null)}
@@ -1029,7 +1151,7 @@ export default function SpaceFloorPlanEditor({
         </div>
 
         <aside className="border-t border-slate-100 bg-[#FBFCFE] p-4 xl:border-l xl:border-t-0">
-          <div className="flex items-center justify-between"><p className="text-sm font-black text-[#071B35]">Propiedades</p>{selectedCount>0&&<button onClick={()=>{setSelected(new Set());setTableDraft(null);setElementDraft(null)}}><X size={15}/></button>}</div>
+          <div className="flex items-center justify-between"><p className="text-sm font-black text-[#071B35]">Propiedades</p>{selectedCount>0&&<button onClick={clearSelection}><X size={15}/></button>}</div>
           {selectedCount===0&&<div className="mt-4 rounded-2xl border-2 border-dashed border-slate-200 bg-white p-5"><p className="text-sm font-black text-slate-600">Selecciona un elemento</p><p className="mt-1 text-xs font-semibold text-slate-400">Puedes seleccionar uno o varios.</p></div>}
           {selectedCount>1&&<div className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 p-4"><p className="font-black text-violet-800">{selectedCount} elementos seleccionados</p><p className="mt-1 text-xs font-semibold text-violet-600">Muévelos juntos o usa las acciones de alinear, duplicar, bloquear y eliminar.</p></div>}
           {selectedCount===1&&tableDraft&&<div className="mt-4 space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
