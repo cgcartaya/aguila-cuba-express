@@ -228,6 +228,24 @@ export default function ReservasPageClient({
     setSubmitError(null);
 
     try {
+      // Refresca la disponibilidad inmediatamente antes de enviar. Esto da
+      // una respuesta rápida si otro cliente tomó la mesa mientras se llenaba
+      // el formulario; el índice único de la BD sigue cubriendo la carrera final.
+      const availabilityRes = await fetch(
+        `/api/public/reservas?slug=${encodeURIComponent(storeSlug)}&date=${date}`,
+        { cache: "no-store" }
+      );
+      if (!availabilityRes.ok) {
+        throw new Error("No se pudo verificar la disponibilidad.");
+      }
+      const latestBoard = (await availabilityRes.json()) as Board;
+      setBoard(latestBoard);
+      if (latestBoard.occupied.includes(`${selectedTable.id}:${selectedSlotId}`)) {
+        setSubmitError("Esa mesa acaba de reservarse. Regresa y elige otra disponible.");
+        setSubmitting(false);
+        return;
+      }
+
       const res = await fetch("/api/public/reservas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -248,6 +266,13 @@ export default function ReservasPageClient({
       const body = await res.json().catch(() => ({}));
 
       if (!res.ok) {
+        if (res.status === 409) {
+          const refreshed = await fetch(
+            `/api/public/reservas?slug=${encodeURIComponent(storeSlug)}&date=${date}`,
+            { cache: "no-store" }
+          );
+          if (refreshed.ok) setBoard((await refreshed.json()) as Board);
+        }
         setSubmitError(body.error || "No se pudo crear la reserva.");
         setSubmitting(false);
         return;

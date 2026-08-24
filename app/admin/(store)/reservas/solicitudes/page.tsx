@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { CalendarCheck2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CalendarCheck2, Radio, WifiOff } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import ReservationsList from "@/components/admin/reservas/ReservationsList";
@@ -9,6 +9,7 @@ import { getReservationsForAdmin } from "@/lib/services/reservas";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import type { Reservation, ReservationStatus } from "@/lib/reservas/types";
+import { supabase } from "@/lib/supabase";
 
 const STATUS_FILTERS: { value: ReservationStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -39,8 +40,10 @@ export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [liveNotice, setLiveNotice] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async (showLoader = true) => {
     if (accessLoading || storeLoading) return;
     if (!activeStore?.id) {
       setReservations([]);
@@ -48,7 +51,7 @@ export default function AdminReservationsPage() {
       return;
     }
 
-    setLoading(true);
+    if (showLoader) setLoading(true);
     setLoadError("");
     const { data, error } = await getReservationsForAdmin(activeStore.id, {
       date: dateFilter || undefined,
@@ -62,12 +65,48 @@ export default function AdminReservationsPage() {
     }
     setReservations(data || []);
     setLoading(false);
-  };
+  }, [accessLoading, activeStore?.id, dateFilter, dateRange, statusFilter, storeLoading]);
 
   useEffect(() => {
     void loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStore?.id, accessLoading, storeLoading, dateFilter, dateRange, statusFilter]);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (!activeStore?.id) return;
+
+    let refreshTimer: number | undefined;
+    let noticeTimer: number | undefined;
+    const channel = supabase
+      .channel(`store:${activeStore.id}:reservations`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reservations",
+          filter: `store_id=eq.${activeStore.id}`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setLiveNotice("Nueva solicitud de reserva recibida.");
+            if (noticeTimer) window.clearTimeout(noticeTimer);
+            noticeTimer = window.setTimeout(() => setLiveNotice(""), 5000);
+          }
+          if (refreshTimer) window.clearTimeout(refreshTimer);
+          refreshTimer = window.setTimeout(() => void loadData(false), 250);
+        }
+      )
+      .subscribe((status) => {
+        setRealtimeConnected(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      if (refreshTimer) window.clearTimeout(refreshTimer);
+      if (noticeTimer) window.clearTimeout(noticeTimer);
+      setRealtimeConnected(false);
+      void supabase.removeChannel(channel);
+    };
+  }, [activeStore?.id, loadData]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6">
@@ -78,6 +117,14 @@ export default function AdminReservationsPage() {
         storeName={activeStore?.name}
         icon={CalendarCheck2}
       />
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-black ${realtimeConnected ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+          {realtimeConnected ? <Radio size={12} /> : <WifiOff size={12} />}
+          {realtimeConnected ? "Actualización automática activa" : "Conectando actualización automática…"}
+        </span>
+        {liveNotice && <span className="rounded-full bg-blue-600 px-3 py-1.5 text-[10px] font-black text-white shadow-sm">{liveNotice}</span>}
+      </div>
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <input

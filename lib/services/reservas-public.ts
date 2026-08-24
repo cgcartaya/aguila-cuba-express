@@ -239,6 +239,27 @@ export async function createPublicReservation(
     };
   }
 
+  // Comprobación rápida para responder con un mensaje claro. El índice único
+  // parcial sigue siendo la garantía atómica frente a dos solicitudes simultáneas.
+  const { data: occupied, error: occupiedError } = await supabaseAdmin
+    .from("reservations")
+    .select("id")
+    .eq("table_id", input.tableId)
+    .eq("slot_id", input.slotId)
+    .eq("reservation_date", input.reservationDate)
+    .in("status", ["pending", "confirmed"])
+    .limit(1)
+    .maybeSingle();
+
+  if (occupiedError) {
+    console.error("createPublicReservation availability error:", occupiedError.message);
+    return { ok: false, status: 500, error: "No se pudo verificar la disponibilidad." };
+  }
+
+  if (occupied) {
+    return { ok: false, status: 409, error: "Esa mesa ya fue reservada. Elige otra disponible." };
+  }
+
   const { data: inserted, error: insertError } = await supabaseAdmin
     .from("reservations")
     .insert({

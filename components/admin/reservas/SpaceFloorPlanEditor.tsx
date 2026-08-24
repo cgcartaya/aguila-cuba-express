@@ -79,6 +79,18 @@ type HistoryEntry = { before: PositionMap; after: PositionMap };
 type SaveState = "idle" | "saving" | "saved" | "error";
 const ROTATIONS = [0, 90, 180, 270] as const;
 
+function mergeDefinedPositions(
+  current: Record<ItemKey, Position>,
+  updates: PositionMap
+): Record<ItemKey, Position> {
+  const next = { ...current };
+  (Object.keys(updates) as ItemKey[]).forEach(key => {
+    const position = updates[key];
+    if (position) next[key] = position;
+  });
+  return next;
+}
+
 function normalizeRotation(value: number) {
   return ((Math.round(Number(value || 0) / 90) * 90) % 360 + 360) % 360;
 }
@@ -720,7 +732,7 @@ export default function SpaceFloorPlanEditor({
       const position = positionMap[key];
       if (position) pendingPositionsRef.current[key] = position;
     });
-    setPositions(current => ({ ...current, ...positionMap }));
+    setPositions(current => mergeDefinedPositions(current, positionMap));
     setBusy(true);
     setSaveState("saving");
     setSaveError("");
@@ -731,7 +743,7 @@ export default function SpaceFloorPlanEditor({
       return true;
     } catch (error) {
       (Object.keys(positionMap) as ItemKey[]).forEach(key => { delete pendingPositionsRef.current[key]; });
-      setPositions(current => ({ ...current, ...previous }));
+      setPositions(current => mergeDefinedPositions(current, previous));
       markError(error instanceof Error ? error.message : "No se pudo guardar el cambio.");
       return false;
     } finally {

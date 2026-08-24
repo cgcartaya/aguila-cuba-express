@@ -48,13 +48,33 @@ export function usePendingReservationsCount(storeId?: string | null) {
     }
 
     window.addEventListener("focus", handleFocus);
+    let realtimeTimer: number | undefined;
+    const channel = supabase
+      .channel(`store:${storeId}:pending-reservations-count`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "reservations",
+          filter: `store_id=eq.${storeId}`,
+        },
+        () => {
+          if (realtimeTimer) window.clearTimeout(realtimeTimer);
+          realtimeTimer = window.setTimeout(load, 200);
+        }
+      )
+      .subscribe();
+
     // Refresca cada 60s mientras la pestaña está abierta, ya que las
-    // solicitudes pueden llegar en cualquier momento sin que el admin
-    // cambie de pestaña.
+    // solicitudes pueden llegar en cualquier momento. El intervalo queda
+    // como respaldo si la conexión Realtime se interrumpe.
     const interval = window.setInterval(load, 60000);
 
     return () => {
       mounted = false;
+      if (realtimeTimer) window.clearTimeout(realtimeTimer);
+      void supabase.removeChannel(channel);
       window.removeEventListener("focus", handleFocus);
       window.clearInterval(interval);
     };
