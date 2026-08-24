@@ -6,6 +6,7 @@ import { LogIn, Menu, MessageCircle, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
+import LanguageSelector from "@/components/deparis-i18n/LanguageSelector";
 
 export default function DeParisNavbar({
   menuHref,
@@ -79,6 +80,7 @@ export default function DeParisNavbar({
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
+          <LanguageSelector compact />
           <Link
             href="/login"
             className="inline-flex items-center gap-1.5 px-2 py-2.5 text-xs font-bold uppercase tracking-wide text-[#1B1410]/50 transition hover:text-[#1B1410]"
@@ -124,6 +126,7 @@ export default function DeParisNavbar({
       {open && (
         <div className="border-t border-[#1B1410]/10 bg-[#FFF4D6] px-5 py-4 lg:hidden">
           <div className="grid gap-1 text-sm font-semibold text-[#1B1410]">
+            <div className="mb-2 flex justify-center"><LanguageSelector /></div>
             {resolvedNavLinks.map(([label, href]) => (
               <Link
                 key={label}

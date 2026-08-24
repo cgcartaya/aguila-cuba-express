@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getStoreBySlug } from "@/lib/services/stores";
 import ReservasPageClient from "@/components/reservas/ReservasPageClient";
+import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export default async function ReservasPage({ params }: PageProps) {
     notFound();
   }
 
-  return (
+  const content = (
     <ReservasPageClient
       storeSlug={slug}
       storeName={store.name}
@@ -49,4 +50,5 @@ export default async function ReservasPage({ params }: PageProps) {
       bg={store.secondary_color || ""}
     />
   );
+  return slug === "deparis" ? <DeParisLanguageProvider floatingSelector>{content}</DeParisLanguageProvider> : content;
 }

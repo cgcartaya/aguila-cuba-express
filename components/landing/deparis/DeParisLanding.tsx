@@ -8,6 +8,7 @@ import DeParisQuickNav from "./DeParisQuickNav";
 import DeParisFeaturedDishes, { type FeaturedDish } from "./DeParisFeaturedDishes";
 import DeParisCTA from "./DeParisCTA";
 import DeParisFooter from "./DeParisFooter";
+import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 const bodoni = Bodoni_Moda({
   subsets: ["latin"],
@@ -41,6 +42,7 @@ export default function DeParisLanding({
   reservasHref?: string;
 }) {
   return (
+    <DeParisLanguageProvider>
     <main
       className={`${bodoni.variable} ${manrope.variable} ${parisienne.variable} min-h-screen bg-[#FFF4D6]`}
       style={{ fontFamily: "var(--font-dp-body)" }}
@@ -52,5 +54,6 @@ export default function DeParisLanding({
       <DeParisCTA />
       <DeParisFooter reservasHref={reservasHref} />
     </main>
+    </DeParisLanguageProvider>
   );
 }

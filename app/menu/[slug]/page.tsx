@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getPublicMenu } from "@/lib/services/menu";
 import { getStoreSettings } from "@/lib/services/settings";
 import MenuPageClientHybrid from "@/components/menu/MenuPageClientHybrid";
+import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -41,7 +42,7 @@ export default async function MenuPage({ params }: PageProps) {
 
   const { data: settings } = await getStoreSettings(menu.store.id);
 
-  return (
+  const content = (
     <Suspense fallback={null}>
       <MenuPageClientHybrid
         store={menu.store}
@@ -53,4 +54,5 @@ export default async function MenuPage({ params }: PageProps) {
       />
     </Suspense>
   );
+  return slug === "deparis" ? <DeParisLanguageProvider floatingSelector>{content}</DeParisLanguageProvider> : content;
 }

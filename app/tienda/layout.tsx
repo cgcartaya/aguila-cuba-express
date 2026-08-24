@@ -25,6 +25,7 @@ import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
 import { getStoreBySlug } from "@/lib/services/stores";
 
 import type { Category } from "@/components/admin/settings/types";
+import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 type StoreLayoutProps = {
   children: React.ReactNode;
@@ -165,7 +166,7 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
       ? "pt-[106px]"
       : "pt-[58px]";
 
-  return (
+  const content = (
     <TiendaSearchProvider>
       <main className="min-h-screen w-full max-w-full overflow-x-clip bg-white pb-24 text-[#061b3a]">
         <Header cartCount={cartCount} />
@@ -185,4 +186,6 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
       </main>
     </TiendaSearchProvider>
   );
+  const isDeParis = pathnameStoreSlug === "deparis" || store?.slug === "deparis";
+  return isDeParis ? <DeParisLanguageProvider floatingSelector>{content}</DeParisLanguageProvider> : content;
 }
