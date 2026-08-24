@@ -185,7 +185,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function PublicOrderPage({ params }: PageProps) {
   const { orderNumber } = await params;
-  const data = await loadPublicOrder(orderNumber);
+  const [data, origin] = await Promise.all([
+    loadPublicOrder(orderNumber),
+    getRequestOrigin(),
+  ]);
 
-  return <PublicOrderClient requestedOrderNumber={orderNumber} initialData={data} />;
+  return (
+    <PublicOrderClient
+      requestedOrderNumber={orderNumber}
+      initialData={data}
+      pageUrl={`${origin}/pedido/${encodeURIComponent(
+        data?.order.order_number || data?.order.id || orderNumber
+      )}`}
+    />
+  );
 }

@@ -47,6 +47,7 @@ import { randomUUID } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
+import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
 
 
 // Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
@@ -162,6 +163,16 @@ async function restoreStock(changes: StockChange[]) {
 async function deleteCreatedOrder(orderId: string) {
   await supabaseAdmin.from("order_items").delete().eq("order_id", orderId);
   await supabaseAdmin.from("orders").delete().eq("id", orderId);
+}
+
+function getRequestOrigin(request: Request) {
+  const host =
+    request.headers.get("x-forwarded-host") || request.headers.get("host");
+  const protocol =
+    request.headers.get("x-forwarded-proto") ||
+    (host?.includes("localhost") ? "http" : "https");
+
+  return host ? `${protocol}://${host}` : "https://perlamarketplace.com";
 }
 
 export async function POST(request: Request) {
@@ -872,6 +883,9 @@ export async function POST(request: Request) {
     // respuesta al comprador y, después, consulta los destinatarios y
     // envía el email. Si Resend o store_settings están lentos, el cliente
     // no tiene que esperar por ellos y la orden ya creada no se afecta.
+    const requestOrigin = getRequestOrigin(request);
+    const orderUrl = `${requestOrigin}/pedido/${encodeURIComponent(publicOrderNumber)}`;
+
     after(async () => {
       await sendNewOrderNotification({
         storeId,
@@ -886,6 +900,26 @@ export async function POST(request: Request) {
         isLocalDelivery,
         municipality: city,
       });
+
+      // Confirmación al comprador (solo si dejó email en el checkout).
+      if (email) {
+        await sendCustomerOrderConfirmationEmail({
+          toEmail: email,
+          storeName: store.name || "tu tienda",
+          orderNumber: publicOrderNumber,
+          orderUrl,
+          customerName: customerName || "cliente",
+          items: preparedItems.map((item) => ({
+            product_name: item.product_name,
+            quantity: item.quantity,
+            subtotal: item.subtotal,
+          })),
+          subtotal,
+          deliveryFee,
+          discountAmount,
+          total,
+        });
+      }
     });
 
     return NextResponse.json({

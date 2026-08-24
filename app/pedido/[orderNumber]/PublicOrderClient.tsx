@@ -4,16 +4,22 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Building2,
   CheckCircle2,
   Clock,
   CreditCard,
   Loader2,
   MapPin,
+  MessageCircle,
   Package,
   Phone,
+  Share2,
   TriangleAlert,
   UserRound,
+  X,
 } from "lucide-react";
+
+import { openWhatsAppShare } from "@/lib/utils/whatsapp";
 
 type Order = {
   id: string;
@@ -120,12 +126,144 @@ function PayNowButton({ orderId, storeId }: { orderId: string; storeId: string }
   );
 }
 
+function buildShareMessage({
+  order,
+  items,
+  storeName,
+  pageUrl,
+}: {
+  order: Order;
+  items: OrderItem[];
+  storeName: string;
+  pageUrl: string;
+}) {
+  const publicNumber = order.order_number || order.id;
+  const itemLines = items.map(
+    (item) => `• ${item.product_name} ×${item.quantity}`
+  );
+
+  return [
+    `🛍️ Mi pedido en *${storeName}*`,
+    "",
+    `Número de orden: *${publicNumber}*`,
+    ...(itemLines.length ? ["", ...itemLines] : []),
+    "",
+    `Total: *$${Number(order.total || 0).toFixed(2)}*`,
+    "",
+    "Ver el pedido:",
+    pageUrl,
+  ].join("\n");
+}
+
+function ShareOrderButton({
+  order,
+  items,
+  storeName,
+  pageUrl,
+}: {
+  order: Order;
+  items: OrderItem[];
+  storeName: string;
+  pageUrl: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  function share(app: "personal" | "business") {
+    openWhatsAppShare({
+      app,
+      message: buildShareMessage({ order, items, storeName, pageUrl }),
+    });
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700"
+      >
+        <Share2 size={20} />
+        Compartir mi pedido por WhatsApp
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-emerald-700">
+                  Compartir pedido
+                </p>
+                <h2 className="mt-1 text-2xl font-extrabold text-slate-950">
+                  Elige WhatsApp
+                </h2>
+                <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
+                  Podrás elegir a quién enviárselo desde WhatsApp.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50"
+                aria-label="Cerrar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                onClick={() => share("personal")}
+                className="flex items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-left transition hover:bg-emerald-100"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                  <MessageCircle size={22} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-extrabold text-emerald-950">
+                    WhatsApp
+                  </span>
+                  <span className="text-sm font-medium text-emerald-800/70">
+                    Cuenta personal o WhatsApp Web
+                  </span>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => share("business")}
+                className="flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-left transition hover:bg-blue-100"
+              >
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-700 text-white">
+                  <Building2 size={22} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-extrabold text-blue-950">
+                    WhatsApp Business
+                  </span>
+                  <span className="text-sm font-medium text-blue-800/70">
+                    En Android intenta abrir Business directamente
+                  </span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export function PublicOrderClient({
   requestedOrderNumber,
   initialData,
+  pageUrl,
 }: {
   requestedOrderNumber: string;
   initialData: PublicOrderData | null;
+  pageUrl: string;
 }) {
   if (!initialData) {
     return (
@@ -285,6 +423,15 @@ export function PublicOrderClient({
           <div className="flex items-center gap-2 font-black"><CheckCircle2 size={20} /> Tu pedido fue recibido correctamente.</div>
           <p className="mt-2 text-sm">El equipo de {storeName} confirmará el pago y actualizará el estado del pedido.</p>
         </section>
+
+        <div className="mt-5">
+          <ShareOrderButton
+            order={order}
+            items={items}
+            storeName={storeName}
+            pageUrl={pageUrl}
+          />
+        </div>
       </div>
     </main>
   );
