@@ -615,10 +615,12 @@ export default function MenuCartDrawer({
                   setSubmitError(null);
                   setStep("customer");
                 }}
+                disabled={!canContinueFulfillment}
                 className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
                 style={{
                   backgroundColor: accentColor,
                   color: "#1B1410",
+                  opacity: canContinueFulfillment ? 1 : 0.5,
                 }}
               >
                 Continuar <ChevronRight size={16} />

@@ -134,20 +134,20 @@ export default function LocationPickerMap({ latitude, longitude, onChange, onCle
           <p className="mt-2 text-sm font-bold text-slate-600">¿El marcador está en la entrada correcta? Si está bien, continúa. Solo muévelo si hace falta.</p>
         </div>
       ) : (
-        <p className="flex items-start gap-2 text-sm font-bold text-slate-600"><Crosshair className="mt-0.5 shrink-0 text-blue-600" size={17} /> Todavía no encontramos un punto para esta dirección.</p>
+        <p className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-black text-blue-900"><Crosshair className="mt-0.5 shrink-0 text-blue-600" size={17} /> Toca en el mapa el lugar exacto donde quieres recibir el pedido.</p>
       )}
       <div className="relative overflow-hidden rounded-2xl border bg-slate-100">
-        <div ref={containerRef} className="h-[310px] w-full" />
+        <div ref={containerRef} className="h-[250px] w-full sm:h-[310px]" />
         {loading && <div className="absolute inset-0 z-[500] flex items-center justify-center bg-white/80"><Loader2 className="animate-spin" /></div>}
         {!editing && hasPoint && <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[450] mx-auto w-fit rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-black text-white">Mapa bloqueado para evitar movimientos accidentales</div>}
       </div>
       {geoError && <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-bold text-amber-800">{geoError}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs font-bold text-slate-500">{hasPoint ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}` : "Ubicación todavía no seleccionada"}</span>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
           {hasPoint && !editing && <button type="button" onClick={() => setEditing(true)} className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-black text-blue-800"><Move size={15} className="mr-1 inline" />Mover marcador</button>}
           {hasPoint && editing && <button type="button" onClick={() => setEditing(false)} className="rounded-xl bg-emerald-600 px-3 py-2 text-sm font-black text-white"><CheckCircle2 size={15} className="mr-1 inline" />Listo</button>}
-          {enableGeolocation && <button type="button" onClick={useCurrentLocation} disabled={locating} className="rounded-xl bg-[#082b5c] px-3 py-2 text-sm font-black text-white disabled:opacity-60">{locating ? <Loader2 size={15} className="mr-1 inline animate-spin" /> : <LocateFixed size={15} className="mr-1 inline" />}Usar mi ubicación</button>}
+          {enableGeolocation && <button type="button" onClick={useCurrentLocation} disabled={locating} className="rounded-xl bg-[#082b5c] px-3 py-2 text-sm font-black text-white disabled:opacity-60">{locating ? <Loader2 size={15} className="mr-1 inline animate-spin" /> : <LocateFixed size={15} className="mr-1 inline" />}Mi ubicación</button>}
           <button type="button" onClick={recenter} className="rounded-xl border px-3 py-2 text-sm font-black"><Crosshair size={15} className="mr-1 inline" />Centrar</button>
           {hasPoint && <button type="button" onClick={onClear} className="rounded-xl border px-3 py-2 text-sm font-black text-red-600"><RotateCcw size={15} className="mr-1 inline" />Quitar punto</button>}
         </div>
