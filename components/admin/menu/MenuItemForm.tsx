@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, Box, Eye, Info, Loader2, Save, Sparkles } from "lucide-react";
+import { AlertCircle, Box, Eye, Info, Languages, Loader2, Save, Sparkles } from "lucide-react";
 
 import MenuItemImageUploader from "./MenuItemImageUploader";
 import ModifierTemplatePicker from "./ModifierTemplatePicker";
@@ -111,6 +111,15 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between gap-3"><label className="text-xs font-extrabold text-slate-600">Descripción</label><span className="text-[11px] font-bold text-slate-400">{formData.description.length} / 500</span></div>
             <textarea value={formData.description} maxLength={500} onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))} rows={3} className="w-full resize-y rounded-xl border border-slate-200 px-3.5 py-3 text-sm font-semibold leading-6 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-50" />
+          </div>
+          <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/60 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><h3 className="flex items-center gap-2 text-sm font-black text-blue-950"><Languages size={17} /> Contenido en inglés</h3><p className="mt-1 text-xs font-semibold text-blue-700/70">Completa estos campos para mostrarlos cuando el cliente seleccione EN.</p></div>
+            </div>
+            <div className="mt-4 grid gap-4">
+              <div><label className="mb-1.5 block text-xs font-extrabold text-blue-900">Nombre en inglés</label><input value={formData.name_en} onChange={(e) => setFormData((prev) => ({ ...prev, name_en: e.target.value }))} placeholder="English dish name" className="w-full rounded-xl border border-blue-100 bg-white px-3.5 py-3 text-sm font-semibold text-slate-900 outline-none focus:border-blue-500" /></div>
+              <div><div className="mb-1.5 flex items-center justify-between"><label className="text-xs font-extrabold text-blue-900">Descripción en inglés</label><span className="text-[11px] font-bold text-blue-500/70">{formData.description_en.length} / 1000</span></div><textarea value={formData.description_en} maxLength={1000} onChange={(e) => setFormData((prev) => ({ ...prev, description_en: e.target.value }))} rows={3} placeholder="English description" className="w-full resize-y rounded-xl border border-blue-100 bg-white px-3.5 py-3 text-sm font-semibold leading-6 text-slate-900 outline-none focus:border-blue-500" /></div>
+            </div>
           </div>
         </section>
       </div>

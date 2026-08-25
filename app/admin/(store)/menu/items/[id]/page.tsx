@@ -44,6 +44,8 @@ export default function EditMenuItemPage() {
         category_id: item.category_id,
         name: item.name,
         description: item.description || "",
+        name_en: item.name_en || "",
+        description_en: item.description_en || "",
         price: item.price,
         image_url: item.image_url,
         is_active: item.is_active,

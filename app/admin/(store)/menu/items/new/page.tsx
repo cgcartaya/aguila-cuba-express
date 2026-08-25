@@ -12,6 +12,8 @@ const EMPTY_ITEM: MenuItemFormData = {
   category_id: "",
   name: "",
   description: "",
+  name_en: "",
+  description_en: "",
   price: 0,
   image_url: null,
   is_active: true,

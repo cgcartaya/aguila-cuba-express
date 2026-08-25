@@ -11,11 +11,14 @@ import CountUp from "@/components/ui/CountUp";
 import { getCartTotal } from "@/lib/menu/whatsapp-message";
 import { useSharedCart } from "@/lib/menu/useSharedCart";
 import type { MenuCartLine, MenuItem, MenuOptionGroup } from "@/lib/menu/types";
+import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 export type FeaturedDish = {
   id: string;
   name: string;
   description: string | null;
+  name_en?: string | null;
+  description_en?: string | null;
   price: number;
   image_url: string | null;
   venue_type: "bar" | "restaurant" | "general";
@@ -201,6 +204,7 @@ function DishGrid(props: {
 }
 
 export default function DeParisFeaturedDishes({ dishes: initialDishes, menuHref, storeSlug = "deparis" }: Props) {
+  const { locale } = useDeParisLanguage();
   const { cart, setCart } = useSharedCart(storeSlug);
   const [liveDishes, setLiveDishes] = useState<FeaturedDish[]>(initialDishes);
   const [liveReady, setLiveReady] = useState(false);
@@ -222,8 +226,13 @@ export default function DeParisFeaturedDishes({ dishes: initialDishes, menuHref,
     return () => { cancelled = true; };
   }, [storeSlug]);
 
-  const platos = useMemo(() => liveDishes.filter((d) => d.venue_type !== "bar").slice(0, MAX_DISHES), [liveDishes]);
-  const bebidas = useMemo(() => liveDishes.filter((d) => d.venue_type === "bar").slice(0, MAX_DRINKS), [liveDishes]);
+  const localizedDishes = useMemo(() => liveDishes.map((dish) => ({
+    ...dish,
+    name: locale === "en" && dish.name_en?.trim() ? dish.name_en : dish.name,
+    description: locale === "en" && dish.description_en?.trim() ? dish.description_en : dish.description,
+  })), [liveDishes, locale]);
+  const platos = useMemo(() => localizedDishes.filter((d) => d.venue_type !== "bar").slice(0, MAX_DISHES), [localizedDishes]);
+  const bebidas = useMemo(() => localizedDishes.filter((d) => d.venue_type === "bar").slice(0, MAX_DRINKS), [localizedDishes]);
 
   const quantities = useMemo(() => {
     const map: Record<string, number> = {};

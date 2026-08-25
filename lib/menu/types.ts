@@ -23,6 +23,8 @@ export type MenuItem = {
   category_id: string;
   name: string;
   description: string | null;
+  name_en?: string | null;
+  description_en?: string | null;
   price: number;
   image_url: string | null;
   is_active: boolean;
@@ -68,6 +70,8 @@ export type MenuItemFormData = {
   category_id: string;
   name: string;
   description: string;
+  name_en: string;
+  description_en: string;
   price: number;
   image_url: string | null;
   is_active: boolean;
@@ -226,4 +230,3 @@ export type PublicDailyMenu = {
   itemIds: string[];
   scheduleLabel?: string;
 };
-

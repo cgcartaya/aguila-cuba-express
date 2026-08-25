@@ -29,6 +29,7 @@ import type {
   MenuItem,
   PublicDailyMenu,
 } from "@/lib/menu/types";
+import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 type StoreForMenu = {
   id: string;
@@ -386,14 +387,27 @@ function QuickOrderCard({
 
 export default function MenuPageClientHybrid({
   store,
-  categories,
+  categories: sourceCategories,
   dailyMenus,
   whatsappNumber,
   landingHref,
   storeSlug,
 }: Props) {
+  const { locale } = useDeParisLanguage();
   const params = useSearchParams();
   const accent = store.primary_color || DEFAULT_ACCENT;
+
+  const categories = useMemo(
+    () => sourceCategories.map((category) => ({
+      ...category,
+      menu_items: category.menu_items.map((item) => ({
+        ...item,
+        name: locale === "en" && item.name_en?.trim() ? item.name_en : item.name,
+        description: locale === "en" && item.description_en?.trim() ? item.description_en : item.description,
+      })),
+    })),
+    [locale, sourceCategories]
+  );
 
   const availableCategories = useMemo(
     () => categories.filter((category) => category.menu_items.length > 0),
