@@ -5,8 +5,6 @@ import Link from "next/link";
 import { BadgePercent, CheckCircle2, Package } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
-import { useStore } from "@/hooks/useStore";
-import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type ComboItem = {
   id: string;
@@ -38,7 +36,6 @@ function getSafeImageUrl(url?: string | null) {
 
 export default function StoreComboCard({ combo, storeSlug }: Props) {
   const { addComboToCart } = useCart();
-  const { store } = useStore();
 
   const normalPrice =
     combo.combo_items?.reduce((total, item) => {
@@ -62,17 +59,6 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
     (combo.combo_items?.length || 0) - visibleItems.length;
 
   function handleAddCombo() {
-    if (store?.id) {
-      void trackAnalyticsEvent({
-        storeId: store.id,
-        eventName: "add_to_cart",
-        comboId: combo.id,
-        itemName: combo.name,
-        quantity: 1,
-        value: comboPrice,
-      });
-    }
-
     addComboToCart({
       id: combo.id,
       name: combo.name,

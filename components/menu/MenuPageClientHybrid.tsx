@@ -30,6 +30,7 @@ import type {
   PublicDailyMenu,
 } from "@/lib/menu/types";
 import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type StoreForMenu = {
   id: string;
@@ -508,8 +509,27 @@ export default function MenuPageClientHybrid({
 
   const addLine = (line: MenuCartLine) => {
     setCart((prev) => [...prev, line]);
+    trackAnalyticsEvent({
+      storeId: store.id,
+      eventName: "add_to_cart",
+      menuItemId: line.menu_item_id,
+      itemName: line.name,
+      quantity: line.quantity,
+      value: line.unit_base_price * line.quantity,
+    });
     showToast(`${line.name} agregado`);
   };
+
+  useEffect(() => {
+    if (!activeItem) return;
+    trackAnalyticsEvent({
+      storeId: store.id,
+      eventName: "menu_item_view",
+      menuItemId: activeItem.id,
+      itemName: activeItem.name,
+      value: activeItem.price,
+    });
+  }, [activeItem, store.id]);
 
   const saveEditedLine = (line: MenuCartLine) => {
     setCart((prev) =>
@@ -856,6 +876,7 @@ export default function MenuPageClientHybrid({
 
       {cartOpen && !editing && (
         <MenuCartDrawer
+          storeId={store.id}
           storeSlug={storeSlug}
           storeName={store.name}
           whatsappNumber={whatsappNumber}

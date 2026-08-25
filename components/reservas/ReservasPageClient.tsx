@@ -34,6 +34,7 @@ import type {
   ReservationTable,
 } from "@/lib/reservas/types";
 import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type BoardStore = {
   id: string;
@@ -194,6 +195,13 @@ export default function ReservasPageClient({
     );
     setSubmitError(null);
     setShowForm(false);
+    if (board?.store.id) {
+      trackAnalyticsEvent({
+        storeId: board.store.id,
+        eventName: "reservation_started",
+        metadata: { tableId: table.id, date, slotId: selectedSlotId },
+      });
+    }
   };
 
   const step = success ? 4 : showForm ? 4 : selectedTable ? 3 : 2;
@@ -281,6 +289,13 @@ export default function ReservasPageClient({
       }
 
       setSuccess(true);
+      trackAnalyticsEvent({
+        storeId: board?.store.id || "",
+        eventName: "reservation_completed",
+        orderId: String(body.id || ""),
+        quantity: partySize,
+        metadata: { tableId: selectedTable.id, date, slotId: selectedSlotId },
+      });
       setSubmitting(false);
     } catch {
       setSubmitError("No se pudo crear la reserva. Intenta de nuevo.");

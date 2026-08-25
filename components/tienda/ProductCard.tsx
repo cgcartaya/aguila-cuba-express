@@ -14,7 +14,6 @@ import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import Price from "@/components/tienda/Price";
 import type { Product } from "@/types/cart";
-import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
   applyPlatformFee,
   getNextQuantityPriceTier,
@@ -90,22 +89,6 @@ export default function ProductCard({
     quantity > 0 && effectivePrice < displayBasePrice;
 
   function handleAddToCart() {
-    if (store?.id) {
-      void trackAnalyticsEvent({
-        storeId: store.id,
-        eventName: "add_to_cart",
-        productId: String(product.id),
-        itemName: product.name,
-        quantity: 1,
-        value: getUnitPriceForQuantity(
-          basePrice,
-          Math.max(1, quantity + 1),
-          tiers,
-          feePercent
-        ),
-      });
-    }
-
     onAddToCart({ ...product, image_url: imageUrl });
   }
 

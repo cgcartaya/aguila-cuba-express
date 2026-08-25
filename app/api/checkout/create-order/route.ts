@@ -48,6 +48,13 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
+import {
+  calculateDistanceDeliveryFee,
+  getDrivingRoute,
+  normalizeDistanceSettings,
+  validCoordinate,
+  normalizeCubanAddress,
+} from "@/lib/checkout/distance-delivery";
 
 
 // Vercel Pro: allow headroom for DB/storage/network work without applying a global timeout.
@@ -93,6 +100,11 @@ type CreateOrderBody = {
     reference?: string;
     exact_address?: string;
     notes?: string;
+    delivery_latitude?: number | null;
+    delivery_longitude?: number | null;
+    delivery_formatted_address?: string;
+    delivery_distance_meters?: number | null;
+    delivery_quoted_fee?: number | null;
   };
 };
 
@@ -514,16 +526,43 @@ export async function POST(request: Request) {
     let zoneName: string | null = null;
     let zoneMinimumOrder = 0;
     let zoneFreeDeliveryFrom = 0;
+    let deliveryDistanceMeters: number | null = null;
+    let deliveryLatitude: number | null = null;
+    let deliveryLongitude: number | null = null;
+    let deliveryRouteProvider: string | null = null;
 
-    if (isYoyo && isLocalDelivery) {
-      const { data: settings } = await supabaseAdmin
-        .from("checkout_settings")
-        .select("show_delivery_price, fixed_delivery_fee")
-        .eq("store_id", storeId)
-        .maybeSingle();
+    const { data: checkoutDeliverySettings } = await supabaseAdmin
+      .from("checkout_settings")
+      .select("delivery_address_mode,show_delivery_price,fixed_delivery_fee,delivery_origin_address,delivery_origin_latitude,delivery_origin_longitude,distance_base_km,distance_base_fee,distance_additional_fee_per_km,max_delivery_distance_km")
+      .eq("store_id", storeId)
+      .maybeSingle();
+    const isDistanceDelivery =
+      body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
 
-      deliveryFee = settings?.show_delivery_price
-        ? money(settings.fixed_delivery_fee)
+    if (isDistanceDelivery) {
+      const settings = normalizeDistanceSettings(checkoutDeliverySettings as Record<string, unknown>);
+      deliveryLatitude = validCoordinate(form.delivery_latitude, -90, 90);
+      deliveryLongitude = validCoordinate(form.delivery_longitude, -180, 180);
+      if (deliveryLatitude == null || deliveryLongitude == null) {
+        return fail("Confirma la ubicación de entrega en el mapa.");
+      }
+      if (settings.delivery_origin_latitude == null || settings.delivery_origin_longitude == null) {
+        return fail("La tienda todavía no configuró el punto de salida.", 409);
+      }
+      const route = await getDrivingRoute(
+        { latitude: settings.delivery_origin_latitude, longitude: settings.delivery_origin_longitude },
+        { latitude: deliveryLatitude, longitude: deliveryLongitude }
+      );
+      deliveryDistanceMeters = Math.round(route.distanceMeters);
+      deliveryRouteProvider = route.provider;
+      if (settings.max_delivery_distance_km && deliveryDistanceMeters / 1000 > settings.max_delivery_distance_km) {
+        return fail(`La dirección supera la distancia máxima de ${settings.max_delivery_distance_km.toFixed(2)} km.`, 422);
+      }
+      deliveryFee = calculateDistanceDeliveryFee(deliveryDistanceMeters, settings);
+      zoneName = "Tarifa por distancia";
+    } else if (isYoyo && isLocalDelivery) {
+      deliveryFee = checkoutDeliverySettings?.show_delivery_price
+        ? money(checkoutDeliverySettings.fixed_delivery_fee)
         : 0;
     } else {
       const zoneId = clean(body.zoneId, 64);
@@ -633,7 +672,8 @@ export async function POST(request: Request) {
 
     const total = money(Math.max(subtotal + deliveryFee - discountAmount, 0));
 
-    const city = isLocalDelivery
+    const customerIsRecipient = isLocalDelivery || isDistanceDelivery;
+    const city = customerIsRecipient
       ? clean(form.city, 120)
       : clean(form.municipality, 120);
 
@@ -712,14 +752,21 @@ export async function POST(request: Request) {
       municipality: city,
       delivery_zone_id: deliveryZoneId,
       zone_name: zoneName,
+      delivery_latitude: deliveryLatitude,
+      delivery_longitude: deliveryLongitude,
+      delivery_distance_meters: deliveryDistanceMeters,
+      delivery_route_provider: deliveryRouteProvider,
+      delivery_formatted_address: isDistanceDelivery
+        ? clean(form.delivery_formatted_address || form.exact_address, 300)
+        : null,
       exact_address: clean(form.exact_address, 300),
-      recipient_name: isLocalDelivery
+      recipient_name: customerIsRecipient
         ? customerName
         : clean(form.recipient_name, 150),
-      recipient_phone: isLocalDelivery
+      recipient_phone: customerIsRecipient
         ? customerPhone
         : clean(form.recipient_phone, 40),
-      recipient_phone_alt: isLocalDelivery
+      recipient_phone_alt: customerIsRecipient
         ? null
         : clean(form.recipient_phone_alt, 40),
       address: clean(form.exact_address, 300),
@@ -740,6 +787,27 @@ export async function POST(request: Request) {
     if (orderError || !order) {
       console.error("CREATE ORDER ERROR:", orderError);
       return fail("No se pudo crear la orden.", 500);
+    }
+
+    // Cada entrega confirmada mejora el catálogo local de esa tienda. Es
+    // una ayuda para búsquedas futuras y nunca bloquea la creación del pedido.
+    if (isDistanceDelivery && deliveryLatitude != null && deliveryLongitude != null) {
+      const displayAddress = clean(form.delivery_formatted_address || form.exact_address, 300);
+      const normalizedAddress = normalizeCubanAddress(displayAddress);
+      if (normalizedAddress) {
+        const { error: catalogError } = await supabaseAdmin
+          .from("delivery_address_catalog")
+          .upsert({
+            store_id: storeId,
+            normalized_address: normalizedAddress,
+            display_address: displayAddress,
+            latitude: deliveryLatitude,
+            longitude: deliveryLongitude,
+            source: "confirmed_order",
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "store_id,normalized_address" });
+        if (catalogError) console.error("delivery address catalog learning failed", catalogError);
+      }
     }
 
     // Algunas instalaciones antiguas no generan order_number

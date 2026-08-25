@@ -21,8 +21,10 @@ import { buildMenuOrderMessage, getCartTotal } from "@/lib/menu/whatsapp-message
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 import MenuUpsellSuggestions from "@/components/menu/MenuUpsellSuggestions";
 import type { MenuCartLine, MenuOrderType } from "@/lib/menu/types";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
+  storeId: string;
   storeSlug: string;
   storeName: string;
   whatsappNumber: string | null;
@@ -60,6 +62,7 @@ const ORDER_TYPES: {
 ];
 
 export default function MenuCartDrawer({
+  storeId,
   storeSlug,
   storeName,
   whatsappNumber,
@@ -175,6 +178,14 @@ export default function MenuCartDrawer({
         setSubmitting(false);
         return;
       }
+
+      trackAnalyticsEvent({
+        storeId,
+        eventName: "order_created",
+        orderId: String(body.id || ""),
+        value: Number(body.total || grandTotal),
+        metadata: { source: "menu", orderType, items: totalUnits },
+      });
 
       if (whatsappNumber) {
         const message = buildMenuOrderMessage({
