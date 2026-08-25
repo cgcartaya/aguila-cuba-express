@@ -20,6 +20,7 @@ import {
 import Price from "@/components/tienda/Price";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import ZelleIcon from "@/components/checkout/ZelleIcon";
+import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
 
 type Props = {
   cart: CheckoutCartItem[];
@@ -78,6 +79,10 @@ export function OrderSummary({
   const { currency, format } = useCurrency();
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
+  const cardSurcharge = payWith === "card"
+    ? Math.round(finalTotal * CARD_SURCHARGE_RATE * 100) / 100
+    : 0;
+  const amountToPay = finalTotal + cardSurcharge;
 
   return (
     <aside className="h-fit min-w-0 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_18px_50px_rgba(15,23,42,0.10)] lg:sticky lg:top-5">
@@ -205,6 +210,13 @@ export function OrderSummary({
           </div>
         )}
 
+        {payWith === "card" && (
+          <div className="flex items-center justify-between font-semibold text-blue-700">
+            <span>Recargo por tarjeta ({(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)</span>
+            <span>+<Price usd={cardSurcharge} /></span>
+          </div>
+        )}
+
         {(locationLabel || selectedZone) && (
           <div className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
             <strong>
@@ -241,13 +253,13 @@ export function OrderSummary({
       <div className="my-5 border-t" />
 
       <div className="flex items-center justify-between text-lg font-bold">
-        <span>Total</span>
-        <span><Price usd={finalTotal} /></span>
+        <span>{payWith === "card" ? "Total a pagar" : "Total"}</span>
+        <span><Price usd={amountToPay} /></span>
       </div>
 
       {currency !== "USD" && (
         <p className="mt-1 text-right text-[11px] font-semibold text-gray-400">
-          ≈ ${finalTotal.toFixed(2)} USD — el cobro se hace en dólares
+          ≈ ${amountToPay.toFixed(2)} USD — el cobro se hace en dólares
         </p>
       )}
 
@@ -320,8 +332,9 @@ export function OrderSummary({
             <div className="mt-3 flex items-start gap-2.5 rounded-2xl bg-blue-50 px-3.5 py-3">
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><Zap size={12} /></span>
               <p className="text-xs font-semibold leading-relaxed text-blue-900">
-                Pagas ahora mismo con tu tarjeta, de forma segura. En cuanto confirmes verás
-                tu pedido aprobado al instante — no tienes que hacer nada más.
+                Se añadirá un recargo de {(CARD_SURCHARGE_RATE * 100).toFixed(1)}% por tarjeta.
+                Pagarás exactamente <strong>${amountToPay.toFixed(2)} USD</strong> de forma segura.
+                En cuanto confirmes verás tu pedido aprobado al instante.
               </p>
             </div>
           ) : (
@@ -378,7 +391,7 @@ export function OrderSummary({
         ) : payWith === "card" ? (
           <>
             <CreditCard size={20} />
-            Pagar con tarjeta
+            Pagar ${amountToPay.toFixed(2)} con tarjeta
           </>
         ) : (
           <>
