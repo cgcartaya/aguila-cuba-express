@@ -15,6 +15,13 @@ function normalize(row: CheckoutSettingsRow): CheckoutSettings {
   return {
     ...row,
     fixed_delivery_fee: Number(row.fixed_delivery_fee || 0),
+    delivery_origin_address: String(row.delivery_origin_address || ""),
+    delivery_origin_latitude: row.delivery_origin_latitude == null ? null : Number(row.delivery_origin_latitude),
+    delivery_origin_longitude: row.delivery_origin_longitude == null ? null : Number(row.delivery_origin_longitude),
+    distance_base_km: Number(row.distance_base_km ?? 1),
+    distance_base_fee: Number(row.distance_base_fee ?? 200),
+    distance_additional_fee_per_km: Number(row.distance_additional_fee_per_km ?? 100),
+    max_delivery_distance_km: row.max_delivery_distance_km == null ? null : Number(row.max_delivery_distance_km),
     blocks: {
       ...DEFAULT_CHECKOUT_BLOCKS,
       ...(row.blocks || {}),
@@ -75,6 +82,13 @@ export async function saveCheckoutSettings(settings: CheckoutSettings) {
     cuba_address_mode: settings.cuba_address_mode,
     show_delivery_price: settings.show_delivery_price,
     fixed_delivery_fee: Math.max(0, Number(settings.fixed_delivery_fee || 0)),
+    delivery_origin_address: settings.delivery_origin_address.trim(),
+    delivery_origin_latitude: settings.delivery_origin_latitude,
+    delivery_origin_longitude: settings.delivery_origin_longitude,
+    distance_base_km: Math.max(0, Number(settings.distance_base_km || 0)),
+    distance_base_fee: Math.max(0, Number(settings.distance_base_fee || 0)),
+    distance_additional_fee_per_km: Math.max(0, Number(settings.distance_additional_fee_per_km || 0)),
+    max_delivery_distance_km: settings.max_delivery_distance_km == null ? null : Math.max(0, Number(settings.max_delivery_distance_km)),
     blocks: settings.blocks,
     updated_at: new Date().toISOString(),
   };

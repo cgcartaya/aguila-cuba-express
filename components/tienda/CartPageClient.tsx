@@ -229,18 +229,6 @@ export default function CartPageClient() {
 
   function handleAddRecommendation(product: Product) {
     addToCart(product);
-
-    if (store?.id) {
-      void trackAnalyticsEvent({
-        storeId: store.id,
-        eventName: "add_to_cart",
-        productId: String(product.id),
-        itemName: product.name,
-        quantity: 1,
-        value: Number(product.price || 0),
-        metadata: { source: "cart_recommendations" },
-      });
-    }
   }
 
   function scrollRecommendations(direction: "left" | "right") {

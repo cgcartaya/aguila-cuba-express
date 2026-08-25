@@ -619,6 +619,7 @@ export default function MenuPageClient({
 
       {cartOpen && !editing && (
         <MenuCartDrawer
+          storeId={store.id}
           storeSlug={storeSlug}
           storeName={store.name}
           whatsappNumber={whatsappNumber}

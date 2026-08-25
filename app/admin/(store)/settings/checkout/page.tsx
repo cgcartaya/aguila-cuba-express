@@ -185,6 +185,13 @@ export default function CheckoutBuilderPage() {
 
   async function handleSave() {
     if (!settings) return;
+    if (
+      settings.delivery_address_mode === "distance" &&
+      (settings.delivery_origin_latitude == null || settings.delivery_origin_longitude == null)
+    ) {
+      setError("Para cobrar por distancia debes indicar la latitud y longitud del punto de salida.");
+      return;
+    }
     setSaving(true);
     setMessage("");
     setError("");
@@ -332,6 +339,34 @@ export default function CheckoutBuilderPage() {
 
             <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-bold text-[#0B1F4D]">Costo de delivery</h2>
+              {settings.delivery_address_mode === "distance" ? (
+                <div className="mt-5 space-y-5">
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                    El checkout calculará la ruta por carretera desde este punto. Los kilómetros adicionales se cobran proporcionalmente, incluyendo sus decimales.
+                  </div>
+                  <label className="block text-sm font-bold text-[#0B1F4D]">
+                    Dirección de salida del restaurante
+                    <input
+                      value={settings.delivery_origin_address}
+                      onChange={(e) => update("delivery_origin_address", e.target.value)}
+                      placeholder="Ej. 5301 Avenida 5 de Septiembre, Cienfuegos"
+                      className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+                    />
+                  </label>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <NumberSetting label="Latitud de salida" value={settings.delivery_origin_latitude} step="0.000001" onChange={(value) => update("delivery_origin_latitude", value)} />
+                    <NumberSetting label="Longitud de salida" value={settings.delivery_origin_longitude} step="0.000001" onChange={(value) => update("delivery_origin_longitude", value)} />
+                    <NumberSetting label="Kilómetros incluidos" value={settings.distance_base_km} step="0.1" min={0} onChange={(value) => update("distance_base_km", value || 0)} />
+                    <NumberSetting label="Precio de los kilómetros incluidos" value={settings.distance_base_fee} step="0.01" min={0} onChange={(value) => update("distance_base_fee", value || 0)} />
+                    <NumberSetting label="Precio por km adicional" value={settings.distance_additional_fee_per_km} step="0.01" min={0} onChange={(value) => update("distance_additional_fee_per_km", value || 0)} />
+                    <NumberSetting label="Distancia máxima (vacío = sin límite)" value={settings.max_delivery_distance_km} step="0.1" min={0} onChange={(value) => update("max_delivery_distance_km", value)} />
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+                    Ejemplo con la configuración actual: 1.2 km = <strong>{(settings.distance_base_fee + Math.max(0, 1.2 - settings.distance_base_km) * settings.distance_additional_fee_per_km).toFixed(2)}</strong>
+                  </div>
+                </div>
+              ) : (
+                <>
               <div className="mt-5 flex items-center justify-between rounded-2xl border border-slate-200 p-4">
                 <div>
                   <p className="font-bold text-slate-700">Mostrar delivery en el resumen</p>
@@ -348,6 +383,8 @@ export default function CheckoutBuilderPage() {
                 onChange={(e) => update("fixed_delivery_fee", Number(e.target.value || 0))}
                 className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               />
+                </>
+              )}
             </section>
 
             {(message || error) && (
@@ -372,10 +409,32 @@ export default function CheckoutBuilderPage() {
   );
 }
 
+function NumberSetting({ label, value, onChange, step = "0.01", min }: {
+  label: string;
+  value: number | null;
+  onChange: (value: number | null) => void;
+  step?: string;
+  min?: number;
+}) {
+  return (
+    <label className="block text-sm font-bold text-[#0B1F4D]">
+      {label}
+      <input
+        type="number"
+        min={min}
+        step={step}
+        value={value ?? ""}
+        onChange={(event) => onChange(event.target.value === "" ? null : Number(event.target.value))}
+        className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 font-normal outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+      />
+    </label>
+  );
+}
+
 function AddressModeCard({ title, value, onChange, disabled }: {
   title: string;
-  value: "free" | "zones";
-  onChange: (value: "free" | "zones") => void;
+  value: "free" | "zones" | "distance";
+  onChange: (value: "free" | "zones" | "distance") => void;
   disabled: boolean;
 }) {
   return (
@@ -385,6 +444,7 @@ function AddressModeCard({ title, value, onChange, disabled }: {
         {[
           { value: "free" as const, label: "Dirección libre", icon: MapPin },
           { value: "zones" as const, label: "Provincias y zonas", icon: Map },
+          { value: "distance" as const, label: "Distancia por carretera", icon: Truck },
         ].map((option) => {
           const Icon = option.icon;
           const selected = value === option.value;
@@ -431,7 +491,11 @@ function CheckoutPreview({ settings }: { settings: CheckoutSettings }) {
         {settings.blocks.address && activeMethod.key !== "pickup" && (
           <PreviewBlock
             title="Dirección"
-            fields={(activeMethod.key === "cuba" ? settings.cuba_address_mode : settings.delivery_address_mode) === "zones" ? ["Provincia", "Municipio", "Zona", "Dirección"] : ["Dirección", "Ciudad", "Referencia"]}
+            fields={(activeMethod.key === "cuba" ? settings.cuba_address_mode : settings.delivery_address_mode) === "zones"
+              ? ["Provincia", "Municipio", "Zona", "Dirección"]
+              : activeMethod.key === "delivery" && settings.delivery_address_mode === "distance"
+                ? ["Buscar dirección", "Confirmar en el mapa", "Distancia y tarifa"]
+                : ["Dirección", "Ciudad", "Referencia"]}
           />
         )}
         {activeMethod.key === "pickup" && <PreviewBlock title="Recogida" fields={["Fecha", "Hora"]} />}

@@ -12,11 +12,13 @@ type Props = {
   enableGeolocation?: boolean;
   addressLabel?: string;
   startLocked?: boolean;
+  initialCenter?: [number, number];
+  initialZoom?: number;
 };
 
 const SOUTH_CAROLINA_CENTER: [number, number] = [33.8361, -80.8987];
 
-export default function LocationPickerMap({ latitude, longitude, onChange, onClear, enableGeolocation = false, addressLabel = "", startLocked = false }: Props) {
+export default function LocationPickerMap({ latitude, longitude, onChange, onClear, enableGeolocation = false, addressLabel = "", startLocked = false, initialCenter = SOUTH_CAROLINA_CENTER, initialZoom = 7 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
@@ -60,8 +62,8 @@ export default function LocationPickerMap({ latitude, longitude, onChange, onCle
       if (cancelled || !containerRef.current) return;
       leafletRef.current = L;
       const hasPoint = latitude != null && longitude != null;
-      const initial: [number, number] = hasPoint ? [latitude, longitude] : SOUTH_CAROLINA_CENTER;
-      const map = L.map(containerRef.current, { scrollWheelZoom: false }).setView(initial, hasPoint ? 17 : 7);
+      const initial: [number, number] = hasPoint ? [latitude, longitude] : initialCenter;
+      const map = L.map(containerRef.current, { scrollWheelZoom: false }).setView(initial, hasPoint ? 17 : initialZoom);
       mapRef.current = map;
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
@@ -100,7 +102,7 @@ export default function LocationPickerMap({ latitude, longitude, onChange, onCle
 
   function recenter() {
     if (latitude != null && longitude != null) mapRef.current?.setView([latitude, longitude], 17);
-    else mapRef.current?.setView(SOUTH_CAROLINA_CENTER, 7);
+    else mapRef.current?.setView(initialCenter, initialZoom);
   }
 
   function useCurrentLocation() {

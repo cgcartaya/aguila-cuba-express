@@ -8,7 +8,7 @@ import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
-import { trackAnalyticsEvent } from "@/lib/analytics/client";
+import { flushAnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
   savePendingMetaPurchase,
   trackMetaInitiateCheckout,
@@ -29,6 +29,7 @@ import { CustomerInfoForm } from "@/components/checkout/CustomerInfoForm";
 import { RecipientInfoForm } from "@/components/checkout/RecipientInfoForm";
 import { DeliveryAddressForm } from "@/components/checkout/DeliveryAddressForm";
 import { LocalDeliveryAddressForm } from "@/components/checkout/LocalDeliveryAddressForm";
+import { DistanceDeliveryAddressForm } from "@/components/checkout/DistanceDeliveryAddressForm";
 import { CheckoutMethodSelector } from "@/components/checkout/CheckoutMethodSelector";
 import { OrderSummary } from "@/components/checkout/OrderSummary";
 import RememberedCustomerBanner from "@/components/checkout/RememberedCustomerBanner";
@@ -61,6 +62,11 @@ const initialForm: CheckoutForm = {
   municipality: "",
   delivery_zone_id: "",
   exact_address: "",
+  delivery_latitude: null,
+  delivery_longitude: null,
+  delivery_formatted_address: "",
+  delivery_distance_meters: null,
+  delivery_quoted_fee: null,
   notes: "",
 };
 
@@ -426,12 +432,34 @@ export default function CheckoutPage() {
     [zones, form.delivery_zone_id]
   );
 
+  const usesDistanceDelivery =
+    method === "delivery" && checkoutSettings?.delivery_address_mode === "distance";
+
   const cubaTotals = useMemo(
     () => calculateCheckoutTotals(checkoutCart, selectedZone),
     [checkoutCart, selectedZone]
   );
 
   const totals = useMemo<CheckoutTotals>(() => {
+    if (usesDistanceDelivery) {
+      const subtotal = cart.reduce(
+        (sum, item) => sum + Number(item.price) * item.quantity,
+        0
+      );
+      const shippingCost = Number(form.delivery_quoted_fee || 0);
+      return {
+        subtotal,
+        minimumOrder: 0,
+        baseDeliveryFee: shippingCost,
+        freeDeliveryFrom: 0,
+        hasFreeDelivery: shippingCost === 0,
+        shippingCost,
+        finalTotal: subtotal + shippingCost,
+        missingAmount: 0,
+        minimumOrderExempt: false,
+        deliveryIncludedForAllItems: false,
+      };
+    }
     if (!isYoyo || method === "cuba") return cubaTotals;
 
     const subtotal = cart.reduce(
@@ -454,7 +482,7 @@ export default function CheckoutPage() {
       minimumOrderExempt: false,
       deliveryIncludedForAllItems: false,
     };
-  }, [cart, checkoutSettings, cubaTotals, isYoyo, method]);
+  }, [cart, checkoutSettings, cubaTotals, form.delivery_quoted_fee, isYoyo, method, usesDistanceDelivery]);
 
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotalWithDiscount = Math.max(totals.finalTotal - discountAmount, 0);
@@ -512,6 +540,20 @@ export default function CheckoutPage() {
     Boolean(form.municipality) && !loadingCheckout && availableZones.length === 0;
 
   const canCheckout = useMemo(() => {
+    if (usesDistanceDelivery) {
+      return (
+        cart.length > 0 &&
+        Boolean(form.name.trim()) &&
+        Boolean(form.email.trim()) &&
+        Boolean(form.phone.trim()) &&
+        Boolean(form.city.trim()) &&
+        Boolean(form.exact_address.trim()) &&
+        form.delivery_latitude != null &&
+        form.delivery_longitude != null &&
+        form.delivery_distance_meters != null &&
+        form.delivery_quoted_fee != null
+      );
+    }
     if (!isYoyo || method === "cuba") {
       return isCheckoutFormComplete(form, checkoutCart, selectedZone, totals);
     }
@@ -522,9 +564,14 @@ export default function CheckoutPage() {
       Boolean(form.email.trim()) &&
       Boolean(form.phone.trim()) &&
       Boolean(form.city.trim()) &&
-      Boolean(form.exact_address.trim())
+      Boolean(form.exact_address.trim()) &&
+      (!usesDistanceDelivery ||
+        (form.delivery_latitude != null &&
+          form.delivery_longitude != null &&
+          form.delivery_distance_meters != null &&
+          form.delivery_quoted_fee != null))
     );
-  }, [cart, form, isYoyo, method, selectedZone, totals]);
+  }, [cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery]);
 
   const missingCheckoutFields = useMemo(() => {
     const missing: Array<{ name: keyof CheckoutForm; label: string }> = [];
@@ -536,9 +583,15 @@ export default function CheckoutPage() {
     requireField("email", "email");
     requireField("phone", "teléfono del cliente");
 
-    if (isYoyo && method === "delivery") {
+    if (isYoyo && method === "delivery" && !usesDistanceDelivery) {
       requireField("city", "ciudad");
       requireField("exact_address", "dirección de entrega");
+    } else if (usesDistanceDelivery) {
+      requireField("city", "ciudad");
+      requireField("exact_address", "dirección de entrega");
+      if (form.delivery_latitude == null || form.delivery_longitude == null || form.delivery_distance_meters == null) {
+        missing.push({ name: "exact_address", label: "ubicación confirmada en el mapa" });
+      }
     } else {
       requireField("recipient_name", "nombre del destinatario");
       requireField("recipient_phone", "teléfono del destinatario");
@@ -550,7 +603,7 @@ export default function CheckoutPage() {
     }
 
     return missing;
-  }, [form, isYoyo, method, selectedZone]);
+  }, [form, isYoyo, method, selectedZone, usesDistanceDelivery]);
 
   // Mismo array de missingCheckoutFields, solo separado por a qué paso
   // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
@@ -631,8 +684,23 @@ export default function CheckoutPage() {
       if (name === "municipality") {
         return { ...current, municipality: value, delivery_zone_id: "" };
       }
+      if (usesDistanceDelivery && (name === "exact_address" || name === "city")) {
+        return {
+          ...current,
+          [name]: value,
+          delivery_latitude: null,
+          delivery_longitude: null,
+          delivery_formatted_address: "",
+          delivery_distance_meters: null,
+          delivery_quoted_fee: null,
+        };
+      }
       return { ...current, [name]: value };
     });
+  }
+
+  function updateDeliveryLocation(patch: Partial<CheckoutForm>) {
+    setForm((current) => ({ ...current, ...patch }));
   }
 
   function applyDiscount(discount: AppliedDiscount) {
@@ -762,6 +830,11 @@ Ver pedido:
 ${orderUrl}`);
   }
 
+  function buildDistanceWhatsappMessage(orderNumber: string, orderUrl: string) {
+    const products = cart.map((item) => `*${item.quantity}x* ${item.name}: $${(Number(item.price) * item.quantity).toFixed(2)}`).join("\n");
+    return encodeURIComponent(`PEDIDO NUEVO\nOrden: ${orderNumber}\n\nCLIENTE\nNombre: ${form.name}\nTeléfono: ${form.phone}\nEmail: ${form.email}\n\nENTREGA\nCiudad: ${form.city}\nDirección: ${form.exact_address}${form.reference ? `\nReferencia: ${form.reference}` : ""}\nDistancia por carretera: ${form.delivery_distance_meters != null ? (form.delivery_distance_meters / 1000).toFixed(2) : "-"} km\n\nPRODUCTOS\n${products}\n\nRESUMEN\nSubtotal: $${totals.subtotal.toFixed(2)}\nDelivery: $${totals.shippingCost.toFixed(2)}\nTOTAL: $${finalTotalWithDiscount.toFixed(2)}\n\nVer pedido:\n${orderUrl}`);
+  }
+
   function continueToWhatsappStep(params: {
     orderNumber: string;
     orderUrl: string;
@@ -875,13 +948,17 @@ ${orderUrl}`);
           },
         });
 
+        await flushAnalyticsEvents();
+
         if (store?.slug) clearCheckoutDraft(store.slug);
         window.location.href = payResult.url;
         return;
       }
 
       const orderUrl = `${window.location.origin}${orderUrlBase}/${orderNumber}`;
-      const whatsappMessage = isYoyo
+      const whatsappMessage = usesDistanceDelivery
+        ? buildDistanceWhatsappMessage(orderNumber, orderUrl)
+        : isYoyo
         ? buildYoyoWhatsappMessage(orderNumber, orderUrl)
         : buildWhatsappOrderMessage({
             orderNumber,
@@ -924,7 +1001,9 @@ ${orderUrl}`);
   }
 
   const settings = checkoutSettings || (store?.id ? createDefaultCheckoutSettings(store.id) : null);
-  const showRecipient = !isYoyo || (method === "cuba" && settings?.blocks.recipient !== false);
+  const showRecipient = usesDistanceDelivery
+    ? false
+    : !isYoyo || (method === "cuba" && settings?.blocks.recipient !== false);
   const showAddress = !isYoyo || settings?.blocks.address !== false;
   const showNotes = !isYoyo || settings?.blocks.notes !== false;
   const showCoupon = !isYoyo || settings?.blocks.coupon !== false;
@@ -992,7 +1071,19 @@ ${orderUrl}`);
                   <>
                     {showRecipient && <RecipientInfoForm form={form} onChange={handleChange} />}
 
-                    {showAddress && method === "delivery" && isYoyo ? (
+                    {showAddress && usesDistanceDelivery ? (
+                      <DistanceDeliveryAddressForm
+                        form={form}
+                        storeId={store?.id || ""}
+                        origin={{
+                          latitude: settings?.delivery_origin_latitude ?? null,
+                          longitude: settings?.delivery_origin_longitude ?? null,
+                        }}
+                        showNotes={showNotes}
+                        onChange={handleChange}
+                        onLocationChange={updateDeliveryLocation}
+                      />
+                    ) : showAddress && method === "delivery" && isYoyo ? (
                       <LocalDeliveryAddressForm
                         form={form}
                         showNotes={showNotes}

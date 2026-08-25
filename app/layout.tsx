@@ -8,6 +8,7 @@ import { StoreProvider } from "@/contexts/StoreContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { buildPerlaMetadata } from "@/lib/saas/store-metadata";
 import MetaPixel from "@/components/analytics/MetaPixel";
+import InternalAnalyticsTracker from "@/components/analytics/InternalAnalyticsTracker";
 
 /*
  * Metadata por defecto/estática para todo el sitio.
@@ -39,6 +40,7 @@ export default function RootLayout({
       <body>
         <MetaPixel />
         <StoreProvider>
+          <InternalAnalyticsTracker />
           <CurrencyProvider>
             <CartProvider>{children}</CartProvider>
           </CurrencyProvider>

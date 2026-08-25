@@ -25,6 +25,7 @@ import {
   MessageSquareText,
   CalendarCheck2,
   Armchair,
+  ChartNoAxesCombined,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
@@ -77,6 +78,16 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
       { href: "/admin/customers", label: "Clientes", icon: Users },
+    ],
+  },
+  {
+    title: "Analítica",
+    links: [
+      {
+        href: "/admin/analytics",
+        label: "Rendimiento de la tienda",
+        icon: ChartNoAxesCombined,
+      },
     ],
   },
   {

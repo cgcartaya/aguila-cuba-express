@@ -18,6 +18,7 @@ import {
   normalizeQuantityPriceTiers,
 } from "@/lib/storefront/product-quantity-pricing";
 import { trackMetaAddToCart } from "@/lib/analytics/meta-pixel";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type CartContextType = {
   cart: CartItem[];
@@ -157,6 +158,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     if (trackedQuantity > 0) {
       trackMetaAddToCart(product, trackedQuantity, trackedUnitPrice);
+      if (store?.id) {
+        trackAnalyticsEvent({
+          storeId: store.id,
+          eventName: "add_to_cart",
+          productId: String(product.id),
+          itemName: product.name,
+          quantity: trackedQuantity,
+          value: trackedUnitPrice * trackedQuantity,
+        });
+      }
     }
 
     setCart((prevCart) => {
@@ -251,6 +262,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addComboToCart = (combo: Combo) => {
     const cartId = `combo-${combo.id}`;
+
+    if (store?.id) {
+      trackAnalyticsEvent({
+        storeId: store.id,
+        eventName: "add_to_cart",
+        comboId: combo.id,
+        itemName: combo.name,
+        quantity: 1,
+        value: Number(combo.price),
+      });
+    }
 
     setCart((prevCart) => {
       const existing = prevCart.find(

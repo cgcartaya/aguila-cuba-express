@@ -14,6 +14,11 @@ export type CheckoutForm = {
   municipality: string;
   delivery_zone_id: string;
   exact_address: string;
+  delivery_latitude: number | null;
+  delivery_longitude: number | null;
+  delivery_formatted_address: string;
+  delivery_distance_meters: number | null;
+  delivery_quoted_fee: number | null;
   notes: string;
 };
 

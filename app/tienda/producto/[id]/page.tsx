@@ -24,6 +24,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
 import { trackMetaViewContent } from "@/lib/analytics/meta-pixel";
+import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type ProductImage = {
   id: string;
@@ -104,8 +105,10 @@ export default function ProductDetailPage({ params }: PageProps) {
   }, [id, store?.id, storeLoading]);
 
   useEffect(() => {
-    if (product) trackMetaViewContent(product);
-  }, [product]);
+    if (!product) return;
+    trackMetaViewContent(product);
+    if (store?.id) trackAnalyticsEvent({ storeId: store.id, eventName: "product_view", productId: String(product.id), itemName: product.name, value: Number(product.price) });
+  }, [product, store?.id]);
 
   if (!product) {
     return (
