@@ -7,6 +7,7 @@ import { ArrowRight, BookOpen, CalendarCheck2, MessageCircle, ShoppingBag } from
 import DeParisMarquee from "./DeParisMarquee";
 import RevealText from "@/components/ui/RevealText";
 import { STORE_URL, WHATSAPP_URL } from "./constants";
+import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 22 },
@@ -24,6 +25,8 @@ export default function DeParisHero({
   menuHref?: string;
   reservasHref?: string;
 }) {
+  const { locale } = useDeParisLanguage();
+
   return (
     <section
       id="inicio"
@@ -63,9 +66,9 @@ export default function DeParisHero({
             className="mt-6 text-5xl leading-[1.02] tracking-tight text-[#1B1410] sm:text-6xl lg:text-[4.4rem]"
             style={{ fontFamily: "var(--font-dp-display)", fontWeight: 600 }}
           >
-            <RevealText text="Sabor que reúne," startDelay={0.15} />
+            <RevealText text={locale === "en" ? "Flavor that brings us together," : "Sabor que reúne,"} startDelay={0.15} />
             <RevealText
-              text="momentos que quedan."
+              text={locale === "en" ? "moments that stay with you." : "momentos que quedan."}
               startDelay={0.5}
               className="mt-1 block text-[#FC6C26]"
               style={{ fontFamily: "var(--font-dp-script)", fontWeight: 400 }}
