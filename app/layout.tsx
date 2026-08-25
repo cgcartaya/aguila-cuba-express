@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { StoreProvider } from "@/contexts/StoreContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { buildPerlaMetadata } from "@/lib/saas/store-metadata";
+import MetaPixel from "@/components/analytics/MetaPixel";
 
 /*
  * Metadata por defecto/estática para todo el sitio.
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${manrope.variable} h-full antialiased`}>
       <body>
+        <MetaPixel />
         <StoreProvider>
           <CurrencyProvider>
             <CartProvider>{children}</CartProvider>
