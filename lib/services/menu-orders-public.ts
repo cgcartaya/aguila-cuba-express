@@ -5,6 +5,12 @@ import {
   sendMenuOrderAdminAlertEmail,
   sendMenuOrderReceivedEmail,
 } from "@/lib/notifications/menu-order-email";
+import {
+  calculateDistanceDeliveryFee,
+  getDrivingRoute,
+  normalizeDistanceSettings,
+  validCoordinate,
+} from "@/lib/checkout/distance-delivery";
 
 import type {
   MenuCartSelectedOption,
@@ -24,6 +30,9 @@ export type CreateMenuOrderInput = {
   tableNumber?: string;
   deliveryAddress?: string;
   deliveryZoneId?: string;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  deliveryFormattedAddress?: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -264,17 +273,57 @@ export async function createMenuOrder(
 
   let deliveryFee = 0;
   let deliveryZoneName: string | null = null;
+  let deliveryZoneId: string | null = null;
+  let deliveryLatitude: number | null = null;
+  let deliveryLongitude: number | null = null;
+  let deliveryDistanceMeters: number | null = null;
+  let deliveryRouteProvider: string | null = null;
+  let deliveryAddress = input.deliveryAddress?.slice(0, 300) || null;
 
   if (input.orderType === "delivery") {
-    if (!input.deliveryZoneId) {
+    const { data: checkoutSettings } = await supabaseAdmin
+      .from("checkout_settings")
+      .select("delivery_address_mode,delivery_origin_address,delivery_origin_latitude,delivery_origin_longitude,distance_base_km,distance_base_fee,distance_additional_fee_per_km,max_delivery_distance_km")
+      .eq("store_id", store.id)
+      .maybeSingle();
+
+    if (checkoutSettings?.delivery_address_mode === "distance") {
+      deliveryLatitude = validCoordinate(input.deliveryLatitude, -90, 90);
+      deliveryLongitude = validCoordinate(input.deliveryLongitude, -180, 180);
+      const settings = normalizeDistanceSettings(checkoutSettings);
+
+      if (deliveryLatitude == null || deliveryLongitude == null) {
+        return { ok: false, status: 400, error: "Confirma la ubicación de entrega en el mapa." };
+      }
+      if (settings.delivery_origin_latitude == null || settings.delivery_origin_longitude == null) {
+        return { ok: false, status: 409, error: "El restaurante todavía no configuró su punto de salida." };
+      }
+
+      try {
+        const route = await getDrivingRoute(
+          { latitude: settings.delivery_origin_latitude, longitude: settings.delivery_origin_longitude },
+          { latitude: deliveryLatitude, longitude: deliveryLongitude }
+        );
+        deliveryDistanceMeters = Math.round(route.distanceMeters);
+        deliveryRouteProvider = route.provider;
+        const distanceKm = deliveryDistanceMeters / 1000;
+        if (settings.max_delivery_distance_km && distanceKm > settings.max_delivery_distance_km) {
+          return { ok: false, status: 422, error: `La dirección supera la distancia máxima de ${settings.max_delivery_distance_km.toFixed(2)} km.` };
+        }
+        deliveryFee = calculateDistanceDeliveryFee(deliveryDistanceMeters, settings);
+        deliveryZoneName = `Por distancia · ${distanceKm.toFixed(2)} km`;
+        deliveryAddress = input.deliveryFormattedAddress?.slice(0, 300) || deliveryAddress;
+      } catch (error) {
+        return { ok: false, status: 502, error: error instanceof Error ? error.message : "No se pudo calcular la ruta de entrega." };
+      }
+    } else if (!input.deliveryZoneId) {
       return {
         ok: false,
         status: 400,
         error: "Selecciona una zona de entrega.",
       };
-    }
-
-    const { data: zone, error: zoneError } = await supabaseAdmin
+    } else {
+      const { data: zone, error: zoneError } = await supabaseAdmin
       .from("delivery_zones")
       .select("id, municipality, zone_name, delivery_fee, minimum_order, free_delivery_from")
       .eq("id", input.deliveryZoneId)
@@ -282,7 +331,7 @@ export async function createMenuOrder(
       .eq("is_active", true)
       .maybeSingle();
 
-    if (zoneError || !zone) {
+      if (zoneError || !zone) {
       return {
         ok: false,
         status: 422,
@@ -290,7 +339,7 @@ export async function createMenuOrder(
       };
     }
 
-    if (subtotal < Number(zone.minimum_order || 0)) {
+      if (subtotal < Number(zone.minimum_order || 0)) {
       return {
         ok: false,
         status: 422,
@@ -303,13 +352,15 @@ export async function createMenuOrder(
       };
     }
 
-    const freeDeliveryFrom = Number(zone.free_delivery_from || 0);
+      const freeDeliveryFrom = Number(zone.free_delivery_from || 0);
 
-    deliveryFee =
-      freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom
-        ? 0
-        : Number(zone.delivery_fee || 0);
-    deliveryZoneName = `${zone.municipality} · ${zone.zone_name}`;
+      deliveryFee =
+        freeDeliveryFrom > 0 && subtotal >= freeDeliveryFrom
+          ? 0
+          : Number(zone.delivery_fee || 0);
+      deliveryZoneId = zone.id;
+      deliveryZoneName = `${zone.municipality} · ${zone.zone_name}`;
+    }
   }
 
   const total = subtotal + deliveryFee;
@@ -325,14 +376,19 @@ export async function createMenuOrder(
           : null,
       delivery_address:
         input.orderType === "delivery"
-          ? input.deliveryAddress?.slice(0, 300) || null
+          ? deliveryAddress
           : null,
       delivery_fee: deliveryFee,
       delivery_zone_id:
         input.orderType === "delivery"
-          ? input.deliveryZoneId || null
+          ? deliveryZoneId
           : null,
       delivery_zone_name: deliveryZoneName,
+      delivery_latitude: deliveryLatitude,
+      delivery_longitude: deliveryLongitude,
+      delivery_distance_meters: deliveryDistanceMeters,
+      delivery_route_provider: deliveryRouteProvider,
+      delivery_formatted_address: deliveryAddress,
       customer_name: input.customerName.slice(0, 120),
       customer_phone: input.customerPhone.slice(0, 60),
       customer_email: input.customerEmail?.slice(0, 160) || null,

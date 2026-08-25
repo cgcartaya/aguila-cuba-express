@@ -20,6 +20,7 @@ import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 import { buildMenuOrderMessage, getCartTotal } from "@/lib/menu/whatsapp-message";
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 import MenuUpsellSuggestions from "@/components/menu/MenuUpsellSuggestions";
+import MenuDistanceDeliveryFields from "@/components/menu/MenuDistanceDeliveryFields";
 import type { MenuCartLine, MenuOrderType } from "@/lib/menu/types";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
@@ -40,6 +41,14 @@ type Props = {
 };
 
 type Step = "cart" | "fulfillment" | "customer";
+type DeliveryMode = "zones" | "distance";
+type DistanceQuote = {
+  latitude: number;
+  longitude: number;
+  formattedAddress: string;
+  distanceMeters: number;
+  fee: number;
+} | null;
 
 const ORDER_TYPES: {
   value: MenuOrderType;
@@ -85,6 +94,9 @@ export default function MenuCartDrawer({
   const [tableNumber] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryZoneId, setDeliveryZoneId] = useState("");
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("zones");
+  const [deliveryOrigin, setDeliveryOrigin] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [distanceQuote, setDistanceQuote] = useState<DistanceQuote>(null);
   const [deliveryZones, setDeliveryZones] = useState<Array<{
     id: string;
     name: string;
@@ -98,6 +110,16 @@ export default function MenuCartDrawer({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
+    fetch(`/api/public/menu-delivery-config?slug=${encodeURIComponent(storeSlug)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        setDeliveryMode(data?.mode === "distance" ? "distance" : "zones");
+        setDeliveryOrigin(data?.origin || null);
+      })
+      .catch(() => {
+        setDeliveryMode("zones");
+        setDeliveryOrigin(null);
+      });
     fetch(`/api/public/menu-delivery-zones?slug=${encodeURIComponent(storeSlug)}`)
       .then(r => r.ok ? r.json() : null).then(data => setDeliveryZones(data?.zones || []))
       .catch(() => setDeliveryZones([]));
@@ -112,21 +134,27 @@ export default function MenuCartDrawer({
     selectedZoneFreeFrom > 0 &&
     total >= selectedZoneFreeFrom;
 
-  const deliveryFeePreview =
-    orderType === "delivery" && selectedZone
-      ? qualifiesForFreeDelivery
-        ? 0
-        : selectedZoneRegularFee
-      : 0;
+  const deliveryFeePreview = orderType !== "delivery"
+    ? 0
+    : deliveryMode === "distance"
+      ? Number(distanceQuote?.fee || 0)
+      : selectedZone
+        ? qualifiesForFreeDelivery ? 0 : selectedZoneRegularFee
+        : 0;
 
   const grandTotal = total + deliveryFeePreview;
   const totalUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
   const selectedOrderType = ORDER_TYPES.find((item) => item.value === orderType)!;
 
   const canContinueFulfillment = useMemo(() => {
-    if (orderType === "delivery") return Boolean(deliveryZoneId) && deliveryAddress.trim().length >= 5;
+    if (orderType === "delivery") {
+      if (deliveryMode === "distance") {
+        return Boolean(distanceQuote) && deliveryAddress.trim().length >= 5;
+      }
+      return Boolean(deliveryZoneId) && deliveryAddress.trim().length >= 5;
+    }
     return true;
-  }, [orderType, deliveryAddress, deliveryZoneId]);
+  }, [orderType, deliveryAddress, deliveryZoneId, deliveryMode, distanceQuote]);
 
   const handleSend = async () => {
     if (!customerName.trim() || customerPhone.replace(/\D/g, "").length < 7) {
@@ -155,7 +183,22 @@ export default function MenuCartDrawer({
             orderType === "dine_in" ? tableNumber.trim() : undefined,
           delivery_address:
             orderType === "delivery" ? deliveryAddress.trim() : undefined,
-          delivery_zone_id: orderType === "delivery" ? deliveryZoneId : undefined,
+          delivery_zone_id:
+            orderType === "delivery" && deliveryMode === "zones"
+              ? deliveryZoneId
+              : undefined,
+          delivery_latitude:
+            orderType === "delivery" && deliveryMode === "distance"
+              ? distanceQuote?.latitude
+              : undefined,
+          delivery_longitude:
+            orderType === "delivery" && deliveryMode === "distance"
+              ? distanceQuote?.longitude
+              : undefined,
+          delivery_formatted_address:
+            orderType === "delivery" && deliveryMode === "distance"
+              ? distanceQuote?.formattedAddress
+              : undefined,
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
           customer_email: customerEmail.trim(),
@@ -518,12 +561,25 @@ export default function MenuCartDrawer({
 
               {orderType === "delivery" && (
                 <div className="mt-5 space-y-3">
-                  <select value={deliveryZoneId} onChange={e=>setDeliveryZoneId(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none">
-                    <option value="">Selecciona tu zona de entrega</option>
-                    {deliveryZones.map(z=><option key={z.id} value={z.id}>{z.name} · ${Number(z.fee).toFixed(2)}</option>)}
-                  </select>
-                  {selectedZone && <div className="rounded-2xl bg-orange-50 px-4 py-3 text-xs font-semibold text-orange-900">Delivery ${Number(selectedZone.fee).toFixed(2)} · mínimo ${Number(selectedZone.minimum_order).toFixed(2)}</div>}
-                  <input value={deliveryAddress} onChange={e=>setDeliveryAddress(e.target.value)} placeholder="Dirección exacta y referencia" className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"/>
+                  {deliveryMode === "distance" ? (
+                    <MenuDistanceDeliveryFields
+                      storeId={storeId}
+                      address={deliveryAddress}
+                      origin={deliveryOrigin}
+                      quote={distanceQuote}
+                      onAddressChange={setDeliveryAddress}
+                      onQuote={setDistanceQuote}
+                    />
+                  ) : (
+                    <>
+                      <select value={deliveryZoneId} onChange={e=>setDeliveryZoneId(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none">
+                        <option value="">Selecciona tu zona de entrega</option>
+                        {deliveryZones.map(z=><option key={z.id} value={z.id}>{z.name} · ${Number(z.fee).toFixed(2)}</option>)}
+                      </select>
+                      {selectedZone && <div className="rounded-2xl bg-orange-50 px-4 py-3 text-xs font-semibold text-orange-900">Delivery ${Number(selectedZone.fee).toFixed(2)} · mínimo ${Number(selectedZone.minimum_order).toFixed(2)}</div>}
+                      <input value={deliveryAddress} onChange={e=>setDeliveryAddress(e.target.value)} placeholder="Dirección exacta y referencia" className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"/>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -537,8 +593,13 @@ export default function MenuCartDrawer({
             <div className="border-t border-black/[0.07] p-5">
               <button
                 onClick={() => {
-                  if (orderType === "delivery" && !deliveryZoneId) {
+                  if (orderType === "delivery" && deliveryMode === "zones" && !deliveryZoneId) {
                     setSubmitError("Selecciona tu zona de entrega.");
+                    return;
+                  }
+
+                  if (orderType === "delivery" && deliveryMode === "distance" && !distanceQuote) {
+                    setSubmitError("Busca la dirección y confirma la ubicación en el mapa.");
                     return;
                   }
 
@@ -592,6 +653,11 @@ export default function MenuCartDrawer({
                   {orderType === "delivery" && selectedZone && (
                     <span className="text-xs font-bold text-black/40">
                       · {selectedZone.name}
+                    </span>
+                  )}
+                  {orderType === "delivery" && deliveryMode === "distance" && distanceQuote && (
+                    <span className="text-xs font-bold text-black/40">
+                      · {(distanceQuote.distanceMeters / 1000).toFixed(2)} km
                     </span>
                   )}
                 </div>
@@ -656,7 +722,7 @@ export default function MenuCartDrawer({
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <span className="font-semibold text-black/55">Delivery</span>
-                      {orderType === "delivery" && selectedZone && (
+                      {orderType === "delivery" && deliveryMode === "zones" && selectedZone && (
                         <span className="ml-1 text-[10px] font-bold text-black/35">
                           · {selectedZone.name}
                         </span>
@@ -664,7 +730,7 @@ export default function MenuCartDrawer({
                     </div>
 
                     {orderType === "delivery" ? (
-                      qualifiesForFreeDelivery ? (
+                      deliveryMode === "zones" && qualifiesForFreeDelivery ? (
                         <div className="text-right">
                           {selectedZoneRegularFee > 0 && (
                             <span className="mr-2 text-xs font-semibold text-black/30 line-through">

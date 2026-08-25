@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
     const tableNumber = clean(body.table_number, 30);
     const deliveryAddress = clean(body.delivery_address, 300);
     const deliveryZoneId = clean(body.delivery_zone_id, 100);
+    const deliveryLatitude = Number(body.delivery_latitude);
+    const deliveryLongitude = Number(body.delivery_longitude);
+    const deliveryFormattedAddress = clean(body.delivery_formatted_address, 300);
     const customerName = clean(body.customer_name, 120);
     const customerPhone = clean(body.customer_phone, 30).replace(/[^0-9+\s()-]/g, "");
     const customerEmail = clean(body.customer_email, 160);
@@ -38,13 +41,6 @@ export async function POST(request: NextRequest) {
 
     if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       return NextResponse.json({ error: "El correo no es válido." }, { status: 400 });
-    }
-
-    if (orderType === "delivery" && !deliveryZoneId) {
-      return NextResponse.json(
-        { error: "Selecciona una zona de entrega." },
-        { status: 400 }
-      );
     }
 
     if (orderType === "delivery" && !deliveryAddress) {
@@ -77,6 +73,9 @@ export async function POST(request: NextRequest) {
       tableNumber,
       deliveryAddress,
       deliveryZoneId,
+      deliveryLatitude,
+      deliveryLongitude,
+      deliveryFormattedAddress,
       customerName,
       customerPhone,
       customerEmail: customerEmail || undefined,
