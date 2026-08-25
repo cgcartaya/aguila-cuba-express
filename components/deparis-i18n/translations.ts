@@ -120,6 +120,17 @@ export const ENGLISH_UI: Record<string, string> = {
   "Esa mesa acaba de reservarse. Regresa y elige otra disponible.": "That table was just reserved. Go back and choose another available table.",
   "No se pudo crear la reserva.": "The reservation could not be created.",
   "No se pudo crear la reserva. Intenta de nuevo.": "The reservation could not be created. Please try again.",
+  "PASO 1": "STEP 1", "PASO 2": "STEP 2", "PASO 3": "STEP 3", "PASO 4": "STEP 4",
+  "Elige tu fecha": "Choose your date", "Selecciona el día en que quieres visitarnos.": "Select the day you would like to visit us.",
+  "Elige el horario": "Choose a time", "Elige tu mesa": "Choose your table",
+  "Salón": "Dining room", "Salon": "Dining room", "Planta Baja": "Ground floor", "Planta baja": "Ground floor",
+  "Entrada principal": "Main entrance", "ENTRADA PRINCIPAL": "MAIN ENTRANCE", "Baño": "Restroom", "BAÑO": "RESTROOM",
+  "Barra": "Bar counter", "Barra 1": "Bar counter 1", "Piso": "Floor",
+  "Lun": "Mon", "Mar": "Tue", "Mié": "Wed", "Jue": "Thu", "Vie": "Fri", "Sáb": "Sat", "Dom": "Sun",
+  "lunes": "Monday", "martes": "Tuesday", "miércoles": "Wednesday", "jueves": "Thursday",
+  "viernes": "Friday", "sábado": "Saturday", "domingo": "Sunday",
+  "enero": "January", "febrero": "February", "marzo": "March", "abril": "April", "mayo": "May", "junio": "June",
+  "julio": "July", "agosto": "August", "septiembre": "September", "octubre": "October", "noviembre": "November", "diciembre": "December",
 };
 
 export const ENGLISH_PATTERNS: Array<[RegExp, (...matches: string[]) => string]> = [
@@ -135,6 +146,10 @@ export const ENGLISH_PATTERNS: Array<[RegExp, (...matches: string[]) => string]>
   [/^(\d+) opciones$/, (_all, count) => `${count} options`],
   [/^(\d+) mesa$/, (_all, count) => `${count} table`],
   [/^(\d+) mesas$/, (_all, count) => `${count} tables`],
+  [/^(\d+) mesas disponibles para este horario\.$/, (_all, count) => `${count} tables available at this time.`],
+  [/^Mesa (\d+)$/, (_all, count) => `Table ${count}`],
+  [/^(lunes|martes|miércoles|jueves|viernes|sábado|domingo), (\d+) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre) de (\d{4})$/i,
+    (_all, weekday, day, month, year) => `${ENGLISH_UI[weekday.toLowerCase()] || weekday}, ${ENGLISH_UI[month.toLowerCase()] || month} ${day}, ${year}`],
   [/^Hasta (\d+)$/, (_all, count) => `Up to ${count}`],
   [/^(.+) activo ahora$/, (_all, names) => `${names} active now`],
   [/^Agregar (.+)$/, (_all, name) => `Add ${name}`],
