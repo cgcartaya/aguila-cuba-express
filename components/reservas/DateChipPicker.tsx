@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CalendarPlus } from "lucide-react";
+import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 type Props = {
   value: string;
@@ -32,6 +33,7 @@ export default function DateChipPicker({
   accent,
   daysAhead = 14,
 }: Props) {
+  const { locale } = useDeParisLanguage();
   const [showCustom, setShowCustom] = useState(false);
 
   const today = new Date();
@@ -54,7 +56,7 @@ export default function DateChipPicker({
                 ? "Hoy"
                 : i === 1
                 ? "Mañana"
-                : day.toLocaleDateString("es", { weekday: "short" });
+                : day.toLocaleDateString(locale === "en" ? "en-US" : "es", { weekday: "short" });
 
             return (
               <button

@@ -33,6 +33,7 @@ import type {
   ReservationSpaceElement,
   ReservationTable,
 } from "@/lib/reservas/types";
+import { useDeParisLanguage } from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 type BoardStore = {
   id: string;
@@ -70,9 +71,9 @@ function todayISO() {
   return local.toISOString().slice(0, 10);
 }
 
-function formatDateLabel(value: string) {
+function formatDateLabel(value: string, locale: "es" | "en") {
   const date = new Date(`${value}T12:00:00`);
-  return date.toLocaleDateString("es", {
+  return date.toLocaleDateString(locale === "en" ? "en-US" : "es", {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -93,6 +94,7 @@ export default function ReservasPageClient({
   landingHref,
   accent,
 }: Props) {
+  const { locale } = useDeParisLanguage();
   const resolvedAccent = accent || DEFAULT_ACCENT;
 
   const [date, setDate] = useState(todayISO());
@@ -544,7 +546,7 @@ export default function ReservasPageClient({
                     <SummaryRow
                       icon={<CalendarDays size={17} />}
                       label="Fecha"
-                      value={formatDateLabel(date)}
+                      value={formatDateLabel(date, locale)}
                     />
                     <SummaryRow
                       icon={<Clock3 size={17} />}
@@ -753,7 +755,7 @@ export default function ReservasPageClient({
             </p>
 
             <div className="mt-6 rounded-2xl bg-[#F8F3EC] p-5 text-left">
-              <p className="font-black">{formatDateLabel(date)}</p>
+              <p className="font-black">{formatDateLabel(date, locale)}</p>
               <p className="mt-1 text-sm font-semibold text-black/55">
                 {formatTime(selectedSlot.start_time)} · {selectedTable.name} ·{" "}
                 {partySize} personas
