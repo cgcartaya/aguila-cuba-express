@@ -30,6 +30,7 @@ import { getCombosContainingProduct } from "@/lib/services/combos";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
+import { trackMetaViewContent } from "@/lib/analytics/meta-pixel";
 
 type ProductImage = {
   id: string;
@@ -141,6 +142,10 @@ export default function ProductDetailClient({
 
     loadProduct();
   }, [id, slug, store?.id, store?.slug, storeLoading]);
+
+  useEffect(() => {
+    if (product) trackMetaViewContent(product);
+  }, [product]);
 
   if (!product) {
     return (

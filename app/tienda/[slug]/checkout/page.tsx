@@ -10,6 +10,10 @@ import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 import {
+  savePendingMetaPurchase,
+  trackMetaInitiateCheckout,
+} from "@/lib/analytics/meta-pixel";
+import {
   getActiveDeliveryZones,
   getStoreSettings,
   type DeliveryZone,
@@ -457,6 +461,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!store?.id || cart.length === 0) return;
+    trackMetaInitiateCheckout(cart, Number(finalTotalWithDiscount));
     void trackAnalyticsEvent({
       storeId: store.id,
       eventName: "begin_checkout",
@@ -838,6 +843,7 @@ ${orderUrl}`);
       const order = await createOrderSecure(orderItemsBase);
 
       const orderNumber = order.order_number || order.id;
+      savePendingMetaPurchase(orderNumber, cart, Number(order.total));
 
       if (payWith === "card") {
         const payResponse = await fetch("/api/checkout/pay-with-card", {

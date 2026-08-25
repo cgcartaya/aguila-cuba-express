@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, ExternalLink, MessageCircle, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
+import { trackPendingMetaPurchase } from "@/lib/analytics/meta-pixel";
 
 type PendingWhatsappOrder = {
   orderNumber: string;
@@ -73,6 +74,10 @@ function SuccessPageContent() {
     const phone = normalizeWhatsappPhone(pendingOrder.businessWhatsapp);
     return `https://wa.me/${phone}?text=${pendingOrder.whatsappMessage}`;
   }, [pendingOrder]);
+
+  useEffect(() => {
+    if (orderNumber) trackPendingMetaPurchase(orderNumber);
+  }, [orderNumber]);
 
   function handleViewOrder() {
     window.location.assign(orderUrl);

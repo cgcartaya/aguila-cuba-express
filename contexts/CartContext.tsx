@@ -17,6 +17,7 @@ import {
   getUnitPriceForQuantity,
   normalizeQuantityPriceTiers,
 } from "@/lib/storefront/product-quantity-pricing";
+import { trackMetaAddToCart } from "@/lib/analytics/meta-pixel";
 
 type CartContextType = {
   cart: CartItem[];
@@ -139,6 +140,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
       maxQuantityPerOrder:
         product.max_quantity_per_order,
     });
+
+    const currentQuantity =
+      cart.find((item) => item.id === cartId)?.quantity || 0;
+    const quantityToAdd = Math.max(1, Math.floor(Number(requestedQuantity || 1)));
+    const trackedQuantity = Math.max(
+      0,
+      Math.min(maxAllowed, currentQuantity + quantityToAdd) - currentQuantity
+    );
+    const trackedUnitPrice = getUnitPriceForQuantity(
+      basePrice,
+      currentQuantity + trackedQuantity,
+      tiers,
+      feePercent
+    );
+
+    if (trackedQuantity > 0) {
+      trackMetaAddToCart(product, trackedQuantity, trackedUnitPrice);
+    }
 
     setCart((prevCart) => {
       const existing = prevCart.find(

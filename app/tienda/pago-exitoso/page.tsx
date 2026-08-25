@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle, ExternalLink, ShoppingBag } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
+import { trackPendingMetaPurchase } from "@/lib/analytics/meta-pixel";
 
 // Si no hay un order_number amigable, la orden cae al id completo (uuid) —
 // se ve feo y se corta en pantallas chicas. Mostramos una versión corta
@@ -28,6 +29,7 @@ function SuccessPageContent() {
   // se queda tapando esta pantalla.
   useEffect(() => {
     clearCart();
+    if (orderNumber) trackPendingMetaPurchase(orderNumber);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

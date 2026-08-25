@@ -23,6 +23,7 @@ import {
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import type { Product } from "@/types/cart";
+import { trackMetaViewContent } from "@/lib/analytics/meta-pixel";
 
 type ProductImage = {
   id: string;
@@ -101,6 +102,10 @@ export default function ProductDetailPage({ params }: PageProps) {
 
     loadProduct();
   }, [id, store?.id, storeLoading]);
+
+  useEffect(() => {
+    if (product) trackMetaViewContent(product);
+  }, [product]);
 
   if (!product) {
     return (
