@@ -21,37 +21,6 @@ type OrderItemRow = {
   quantity: number | null;
 };
 
-async function restoreProductStock(productId: string, quantity: number) {
-  if (!productId || !quantity) return;
-
-  const { data: product } = await supabaseAdmin
-    .from("products")
-    .select("id, stock")
-    .eq("id", productId)
-    .maybeSingle();
-
-  if (!product) return;
-
-  await supabaseAdmin
-    .from("products")
-    .update({ stock: Number(product.stock || 0) + Number(quantity || 0) })
-    .eq("id", productId);
-}
-
-async function restoreComboStock(comboId: string, comboQuantity: number) {
-  if (!comboId || !comboQuantity) return;
-
-  const { data: comboItems } = await supabaseAdmin
-    .from("combo_items")
-    .select("quantity, product_id")
-    .eq("combo_id", comboId);
-
-  for (const comboItem of comboItems || []) {
-    const totalToRestore = Number(comboItem.quantity || 0) * Number(comboQuantity || 0);
-    await restoreProductStock(comboItem.product_id, totalToRestore);
-  }
-}
-
 /**
  * Devuelve al stock todos los productos (directos o dentro de combos) de
  * una orden. Segura de llamar más de una vez PERO quien la llama debe
