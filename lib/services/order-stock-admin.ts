@@ -59,21 +59,27 @@ async function restoreComboStock(comboId: string, comboQuantity: number) {
  * el webhook y en OrdersManager.tsx (sendOrderToTrash).
  */
 export async function restoreOrderStockServerSide(orderId: string) {
-  const { data: items, error } = await supabaseAdmin
-    .from("order_items")
-    .select("item_type, product_id, combo_id, quantity")
-    .eq("order_id", orderId);
+  const [{ data: order, error: orderError }, needs] = await Promise.all([
+    supabaseAdmin
+      .from("orders")
+      .select("store_id")
+      .eq("id", orderId)
+      .maybeSingle(),
+    collectProductNeeds(orderId),
+  ]);
 
-  if (error || !items) return;
+  if (orderError || !order || needs.size === 0) return;
 
-  for (const item of items as OrderItemRow[]) {
-    if (item.item_type === "product" && item.product_id) {
-      await restoreProductStock(item.product_id, Number(item.quantity || 0));
-    }
+  const { error } = await supabaseAdmin.rpc("restore_product_inventory", {
+    p_store_id: order.store_id,
+    p_needs: Array.from(needs, ([productId, quantity]) => ({
+      product_id: productId,
+      quantity,
+    })),
+  });
 
-    if (item.item_type === "combo" && item.combo_id) {
-      await restoreComboStock(item.combo_id, Number(item.quantity || 0));
-    }
+  if (error) {
+    console.error("ATOMIC ORDER STOCK RESTORE ERROR:", error);
   }
 }
 
@@ -130,45 +136,66 @@ export type ReactivateOrderResult =
  * crear la nueva sesión de Stripe, solo cuando payment_status === "expired".
  */
 export async function reactivateExpiredOrder(orderId: string): Promise<ReactivateOrderResult> {
-  const needs = await collectProductNeeds(orderId);
+  const [{ data: order, error: orderError }, needs] = await Promise.all([
+    supabaseAdmin
+      .from("orders")
+      .select("store_id, payment_status, stock_restored")
+      .eq("id", orderId)
+      .maybeSingle(),
+    collectProductNeeds(orderId),
+  ]);
 
-  // 1) Validar TODO primero, antes de descontar nada — así nunca se
-  //    queda a medio descontar si un producto ya no alcanza.
-  for (const [productId, neededQty] of needs) {
-    const { data: product } = await supabaseAdmin
-      .from("products")
-      .select("stock, name")
-      .eq("id", productId)
-      .maybeSingle();
-
-    if (!product || Number(product.stock || 0) < neededQty) {
-      return {
-        ok: false,
-        message: `Ya no hay suficiente stock de "${product?.name || "un producto de tu pedido"}" para retomar este pedido tal como estaba.`,
-      };
-    }
+  if (orderError || !order) {
+    return { ok: false, message: "No se pudo verificar la orden." };
   }
 
-  // 2) Todo disponible: descontar de nuevo y reactivar la orden.
-  for (const [productId, neededQty] of needs) {
-    const { data: product } = await supabaseAdmin
-      .from("products")
-      .select("stock")
-      .eq("id", productId)
-      .maybeSingle();
-
-    if (!product) continue;
-
-    await supabaseAdmin
-      .from("products")
-      .update({ stock: Number(product.stock || 0) - neededQty })
-      .eq("id", productId);
+  if (order.payment_status !== "expired" || order.stock_restored !== true) {
+    return { ok: false, message: "Esta orden ya no necesita reactivar inventario." };
   }
 
-  await supabaseAdmin
+  const inventoryNeeds = Array.from(needs, ([productId, quantity]) => ({
+    product_id: productId,
+    quantity,
+  }));
+
+  const { data, error } = await supabaseAdmin.rpc("reserve_product_inventory", {
+    p_store_id: order.store_id,
+    p_needs: inventoryNeeds,
+  });
+
+  const reservation = data as {
+    success?: boolean;
+    message?: string;
+  } | null;
+
+  if (error || !reservation?.success) {
+    return {
+      ok: false,
+      message:
+        reservation?.message ||
+        "Ya no hay suficiente inventario para retomar este pedido.",
+    };
+  }
+
+  const { data: updated, error: updateError } = await supabaseAdmin
     .from("orders")
     .update({ payment_status: "pending", stock_restored: false })
-    .eq("id", orderId);
+    .eq("id", orderId)
+    .eq("payment_status", "expired")
+    .eq("stock_restored", true)
+    .select("id")
+    .maybeSingle();
+
+  if (updateError || !updated) {
+    await supabaseAdmin.rpc("restore_product_inventory", {
+      p_store_id: order.store_id,
+      p_needs: inventoryNeeds,
+    });
+    return {
+      ok: false,
+      message: "La orden cambió mientras se intentaba reactivar.",
+    };
+  }
 
   return { ok: true };
 }
