@@ -155,20 +155,19 @@ function getServerUnitPriceForQuantity(
   return money(unitPrice);
 }
 
-async function restoreStock(changes: StockChange[]) {
-  for (const change of [...changes].reverse()) {
-    const { data } = await supabaseAdmin
-      .from("products")
-      .select("stock")
-      .eq("id", change.productId)
-      .maybeSingle();
+async function restoreStock(storeId: string, changes: StockChange[]) {
+  if (changes.length === 0) return;
 
-    if (!data) continue;
+  const { error } = await supabaseAdmin.rpc("restore_product_inventory", {
+    p_store_id: storeId,
+    p_needs: changes.map((change) => ({
+      product_id: change.productId,
+      quantity: change.quantity,
+    })),
+  });
 
-    await supabaseAdmin
-      .from("products")
-      .update({ stock: Number(data.stock || 0) + change.quantity })
-      .eq("id", change.productId);
+  if (error) {
+    console.error("ATOMIC STOCK RESTORE ERROR:", error);
   }
 }
 
@@ -853,6 +852,66 @@ export async function POST(request: Request) {
       return fail("No se pudieron guardar los productos de la orden.", 500);
     }
 
+    const inventoryChanges: StockChange[] = Array.from(
+      stockNeeds,
+      ([productId, quantity]) => ({ productId, quantity })
+    );
+
+    // RESERVA ATÓMICA: PostgreSQL bloquea todas las filas involucradas,
+    // vuelve a comprobar el stock y descuenta todo dentro de una sola
+    // transacción. Dos checkouts simultáneos ya no pueden leer ambos la
+    // última unidad y venderla dos veces.
+    const { data: reservationData, error: reservationError } =
+      inventoryChanges.length > 0
+        ? await supabaseAdmin.rpc("reserve_product_inventory", {
+            p_store_id: storeId,
+            p_needs: inventoryChanges.map((change) => ({
+              product_id: change.productId,
+              quantity: change.quantity,
+            })),
+          })
+        : { data: { success: true }, error: null };
+
+    const reservation = reservationData as {
+      success?: boolean;
+      code?: string;
+      message?: string;
+      product_id?: string;
+      product_name?: string;
+      available?: number;
+      requested?: number;
+    } | null;
+
+    if (reservationError || !reservation?.success) {
+      console.error("ATOMIC STOCK RESERVATION ERROR:", reservationError);
+      await deleteCreatedOrder(order.id);
+
+      return NextResponse.json(
+        {
+          success: false,
+          code: reservation?.code || "INVENTORY_ERROR",
+          message:
+            reservation?.message ||
+            "No se pudo confirmar el inventario. Inténtalo nuevamente.",
+          inventory:
+            reservation?.product_id
+              ? [
+                  {
+                    productId: reservation.product_id,
+                    productName: reservation.product_name || null,
+                    available: Number(reservation.available || 0),
+                    requested: Number(reservation.requested || 0),
+                  },
+                ]
+              : [],
+        },
+        { status: reservationError ? 500 : 409 }
+      );
+    }
+
+    // El bono se reclama solamente DESPUÉS de asegurar el inventario.
+    // Si el bono falla, se devuelve la reserva atómicamente antes de
+    // eliminar la orden.
     if (discountCampaignId) {
       const { data: claimData, error: claimError } = await supabaseAdmin.rpc(
         "claim_discount_coupon",
@@ -866,58 +925,10 @@ export async function POST(request: Request) {
 
       const claimResult = claimData?.[0];
       if (claimError || !claimResult?.success) {
+        await restoreStock(storeId, inventoryChanges);
         await deleteCreatedOrder(order.id);
         return fail(claimResult?.message || "El bono ya no está disponible.", 409);
       }
-    }
-
-    // Relectura final del stock justo antes de descontarlo. Conservamos
-    // la protección contra cambios ocurridos durante el checkout, pero
-    // hacemos UNA consulta para todos los productos en vez de una por ID.
-    const stockProductIds = Array.from(stockNeeds.keys());
-    const { data: currentStockRows, error: currentStockError } =
-      stockProductIds.length > 0
-        ? await supabaseAdmin
-            .from("products")
-            .select("id, stock")
-            .eq("store_id", storeId)
-            .in("id", stockProductIds)
-        : { data: [], error: null };
-
-    if (currentStockError) {
-      await deleteCreatedOrder(order.id);
-      return fail("No se pudo validar el inventario.", 500);
-    }
-
-    const currentStockMap = new Map(
-      (currentStockRows || []).map((row) => [row.id, Number(row.stock || 0)])
-    );
-
-    for (const [productId, needed] of stockNeeds) {
-      const currentStock = currentStockMap.get(productId);
-      if (currentStock == null || currentStock < needed) {
-        await deleteCreatedOrder(order.id);
-        return fail("El stock cambió mientras se procesaba el pedido.", 409);
-      }
-    }
-
-    const appliedStockChanges: StockChange[] = [];
-    for (const [productId, needed] of stockNeeds) {
-      const currentStock = currentStockMap.get(productId)!;
-
-      const { error: stockUpdateError } = await supabaseAdmin
-        .from("products")
-        .update({ stock: currentStock - needed })
-        .eq("id", productId)
-        .eq("store_id", storeId);
-
-      if (stockUpdateError) {
-        await restoreStock(appliedStockChanges);
-        await deleteCreatedOrder(order.id);
-        return fail("No se pudo actualizar el inventario.", 500);
-      }
-
-      appliedStockChanges.push({ productId, quantity: needed });
     }
 
     // RECORDATORIO DE CARRITO ABANDONADO: la orden se completó de verdad,
