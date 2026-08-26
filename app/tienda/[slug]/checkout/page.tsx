@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
@@ -139,7 +139,7 @@ function ensureDeviceToken(slug: string): string {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, clearCart, addToCart } = useCart();
+  const { cart, clearCart, addToCart, syncInventory } = useCart();
   const { store } = useStore();
 
   const isYoyo = store?.slug === YOYO_SLUG;
@@ -161,6 +161,7 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState<CheckoutMethod>("cuba");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [loadingCheckout, setLoadingCheckout] = useState(true);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   // Telefono con el que se valido el bono. Si el cliente lo cambia despues
@@ -760,7 +761,24 @@ export default function CheckoutPage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok || !result?.success || !result?.order) {
-      throw new Error(result?.message || "No se pudo crear la orden.");
+      if (
+        result?.code === "OUT_OF_STOCK" &&
+        Array.isArray(result?.inventory)
+      ) {
+        syncInventory(
+          result.inventory.map(
+            (item: { productId: string; available: number }) => ({
+              productId: String(item.productId),
+              stock: Number(item.available || 0),
+            })
+          )
+        );
+      }
+
+      throw new Error(
+        result?.message ||
+          "El inventario cambió mientras realizabas la compra. No se realizó ningún cobro."
+      );
     }
 
     // Recuerda a este cliente en este navegador para la próxima compra —
@@ -882,6 +900,7 @@ ${orderUrl}`);
   }
 
   async function handleSubmit() {
+    if (submittingRef.current) return;
     setError("");
 
     if (!store?.id) return showCheckoutError("No se pudo identificar la tienda del pedido. Recarga la página e inténtalo otra vez.");
@@ -911,6 +930,7 @@ ${orderUrl}`);
     }
 
     try {
+      submittingRef.current = true;
       setLoading(true);
       const orderItemsBase = buildOrderItemsBase();
       const order = await createOrderSecure(orderItemsBase);
@@ -996,6 +1016,7 @@ ${orderUrl}`);
       console.error("ERROR CHECKOUT:", submitError);
       setError(submitError?.message || "Ocurrió un error al crear la orden.");
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   }
