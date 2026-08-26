@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const storeId = clean(body.storeId, 80);
     const query = clean(body.query);
+    const catalogOnly = body.catalogOnly === true;
     if (!storeId || query.length < 1) {
       return NextResponse.json({ error: "Escribe una calle, avenida o número." }, { status: 400 });
     }
@@ -100,6 +101,13 @@ export async function POST(request: Request) {
         fee: calculateDistanceDeliveryFee(Number(row.distance_meters), settingsForFee),
         zone: row.zone_name,
       }));
+
+    if (catalogOnly) {
+      return NextResponse.json(
+        { results: catalogResults },
+        { headers: { "Cache-Control": "private, max-age=300" } }
+      );
+    }
 
     const expandedQuery = expandCienfuegosQuery(query);
     const params = new URLSearchParams({
