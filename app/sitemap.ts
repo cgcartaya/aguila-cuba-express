@@ -17,6 +17,7 @@ type DomainSitemap = {
   baseUrl: string;
   routes: PublicRoute[];
 };
+//prueba
 
 const DOMAIN_SITEMAPS: Record<string, DomainSitemap> = {
   "aguilaexpressusa.com": {
