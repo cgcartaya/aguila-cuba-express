@@ -58,6 +58,8 @@ export default function CartPageClient() {
     decreaseQuantity,
     removeFromCart,
     clearCart,
+    inventoryNotice,
+    clearInventoryNotice,
   } = useCart();
   const { store } = useStore();
   const { currency } = useCurrency();
@@ -280,6 +282,19 @@ export default function CartPageClient() {
         >
           <ArrowLeft size={17} /> Volver a la tienda
         </Link>
+
+        {inventoryNotice && (
+          <div className="mt-4 flex items-start justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
+            <span>{inventoryNotice}</span>
+            <button
+              type="button"
+              onClick={clearInventoryNotice}
+              className="shrink-0 text-xs font-black text-amber-700 underline"
+            >
+              Entendido
+            </button>
+          </div>
+        )}
 
         {cart.length === 0 ? (
           <div className="mx-auto mt-8 max-w-xl rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
