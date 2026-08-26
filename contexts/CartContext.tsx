@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/storefront/product-quantity-pricing";
 import { trackMetaAddToCart } from "@/lib/analytics/meta-pixel";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
+import { supabase } from "@/lib/supabase";
 
 type CartContextType = {
   cart: CartItem[];
@@ -33,6 +35,11 @@ type CartContextType = {
   clearCart: () => void;
 
   getItemQuantity: (itemId: string) => number;
+  syncInventory: (
+    updates: Array<{ productId: string; stock: number }>
+  ) => void;
+  inventoryNotice: string;
+  clearInventoryNotice: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -44,6 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
+  const [inventoryNotice, setInventoryNotice] = useState("");
 
   const cartStorageKey = useMemo(() => {
     const isAguilaStore = store?.slug === "aguila";
@@ -120,6 +128,112 @@ export function CartProvider({ children }: { children: ReactNode }) {
       JSON.stringify(cart)
     );
   }, [cart, cartLoaded, cartStorageKey]);
+
+  const syncInventory = useCallback(
+    (updates: Array<{ productId: string; stock: number }>) => {
+      if (updates.length === 0) return;
+
+      const stockByProduct = new Map(
+        updates.map((update) => [
+          `product-${update.productId}`,
+          Math.max(0, Math.trunc(Number(update.stock || 0))),
+        ])
+      );
+
+      let notice = "";
+
+      setCart((current) =>
+        current
+          .map((item) => {
+            if (item.type !== "product" || !stockByProduct.has(item.id)) {
+              return item;
+            }
+
+            const liveStock = stockByProduct.get(item.id)!;
+            if (liveStock <= 0) {
+              notice = `${item.name} se agotó y fue retirado de tu carrito.`;
+              return null;
+            }
+
+            if (item.quantity > liveStock) {
+              notice = `La cantidad de ${item.name} se ajustó a ${liveStock} por disponibilidad.`;
+              return { ...item, stock: liveStock, quantity: liveStock };
+            }
+
+            return { ...item, stock: liveStock };
+          })
+          .filter((item): item is CartItem => item !== null)
+      );
+
+      if (notice) setInventoryNotice(notice);
+    },
+    []
+  );
+
+  const clearInventoryNotice = useCallback(() => {
+    setInventoryNotice("");
+  }, []);
+
+  // Sincroniza el stock al recuperar un carrito antiguo del navegador.
+  useEffect(() => {
+    if (!cartLoaded || !store?.id) return;
+
+    const productIds = cart
+      .filter((item) => item.type === "product")
+      .map((item) => item.id.replace("product-", ""));
+
+    if (productIds.length === 0) return;
+
+    void supabase
+      .from("products")
+      .select("id, stock")
+      .eq("store_id", store.id)
+      .in("id", productIds)
+      .then(({ data }) => {
+        syncInventory(
+          (data || []).map((product) => ({
+            productId: String(product.id),
+            stock: Number(product.stock || 0),
+          }))
+        );
+      });
+    // Se ejecuta cuando termina de cargar el carrito de esta tienda.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartLoaded, cartStorageKey, store?.id, syncInventory]);
+
+  // Actualización visual en tiempo real. No reserva productos: solo refleja
+  // cambios ya confirmados en la base de datos. La autoridad final sigue
+  // siendo reserve_product_inventory al crear la orden.
+  useEffect(() => {
+    if (!store?.id) return;
+
+    const channel = supabase
+      .channel(`storefront-stock-${store.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "products",
+          filter: `store_id=eq.${store.id}`,
+        },
+        (payload) => {
+          const product = payload.new as { id?: string; stock?: number };
+          if (!product.id) return;
+          syncInventory([
+            {
+              productId: String(product.id),
+              stock: Number(product.stock || 0),
+            },
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [store?.id, syncInventory]);
 
   /* =========================================================
      AGREGAR PRODUCTO
@@ -450,6 +564,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeFromCart,
         clearCart,
         getItemQuantity,
+        syncInventory,
+        inventoryNotice,
+        clearInventoryNotice,
       }}
     >
       {children}
