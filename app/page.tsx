@@ -20,6 +20,21 @@ const PLATFORM_DOMAIN = "perlamarketplace.com";
 
 type LandingType = "aguila" | "yoyo" | "deparis" | "jotajota" | "perla";
 
+const DEPARIS_STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  name: "DeParis",
+  url: "https://depariscienfuegos.com",
+  telephone: "+5352994719",
+  hasMap: "https://maps.app.goo.gl/pKMAzeFc3uCsxxr18",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Cienfuegos",
+    addressRegion: "Cienfuegos",
+    addressCountry: "CU",
+  },
+};
+
 function normalizeHost(value: string | null) {
   return normalizeStoreHost(value || "");
 }
@@ -262,11 +277,22 @@ export default async function HomePage() {
     }));
 
     return (
-      <DeParisLanding
-        menuHref={menuEnabled ? "/menu/deparis" : undefined}
-        featuredDishes={featuredDishes}
-        reservasHref={reservasEnabled ? "/reservas/deparis" : undefined}
-      />
+      <>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(DEPARIS_STRUCTURED_DATA).replace(
+              /</g,
+              "\\u003c"
+            ),
+          }}
+        />
+        <DeParisLanding
+          menuHref={menuEnabled ? "/menu/deparis" : undefined}
+          featuredDishes={featuredDishes}
+          reservasHref={reservasEnabled ? "/reservas/deparis" : undefined}
+        />
+      </>
     );
   }
 

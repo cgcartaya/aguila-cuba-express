@@ -30,7 +30,7 @@ const DOMAIN_SITEMAPS: Record<string, DomainSitemap> = {
     ],
   },
   "depariscienfuegos.com": {
-    baseUrl: "https://www.depariscienfuegos.com",
+    baseUrl: "https://depariscienfuegos.com",
     routes: [
       { path: "/", changeFrequency: "weekly", priority: 1 },
       { path: "/menu/deparis", changeFrequency: "daily", priority: 0.9 },
