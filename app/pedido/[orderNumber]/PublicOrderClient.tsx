@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { openWhatsAppShare } from "@/lib/utils/whatsapp";
+import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
 
 type Order = {
   id: string;
@@ -77,7 +78,35 @@ const statusLabels: Record<string, string> = {
   cancelled: "Cancelado",
 };
 
-function PayNowButton({ orderId, storeId }: { orderId: string; storeId: string }) {
+function roundMoney(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
+function getOrderPaymentTotals(order: Order) {
+  const baseTotal = roundMoney(
+    Number(order.subtotal || 0) +
+      Number(order.delivery_fee || 0) -
+      Number(order.discount_amount || 0)
+  );
+  const storedTotal = Number(order.total || 0);
+
+  if (order.payment_method !== "card") {
+    return { baseTotal, cardSurcharge: 0, displayedTotal: storedTotal };
+  }
+
+  const cardSurcharge =
+    storedTotal > baseTotal
+      ? roundMoney(storedTotal - baseTotal)
+      : roundMoney(baseTotal * CARD_SURCHARGE_RATE);
+
+  return {
+    baseTotal,
+    cardSurcharge,
+    displayedTotal: roundMoney(baseTotal + cardSurcharge),
+  };
+}
+
+function PayNowButton({ orderId, storeId, amountToPay }: { orderId: string; storeId: string; amountToPay: number }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -113,7 +142,7 @@ function PayNowButton({ orderId, storeId }: { orderId: string; storeId: string }
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 font-black text-black transition hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
       >
         {loading ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
-        {loading ? "Abriendo el pago..." : "Pagar ahora"}
+        {loading ? "Abriendo el pago..." : `Pagar ${amountToPay.toFixed(2)} ahora`}
       </button>
 
       {error && (
@@ -138,6 +167,7 @@ function buildShareMessage({
   pageUrl: string;
 }) {
   const publicNumber = order.order_number || order.id;
+  const { cardSurcharge, displayedTotal } = getOrderPaymentTotals(order);
   const itemLines = items.map(
     (item) => `• ${item.product_name} ×${item.quantity}`
   );
@@ -148,7 +178,7 @@ function buildShareMessage({
     `Número de orden: *${publicNumber}*`,
     ...(itemLines.length ? ["", ...itemLines] : []),
     "",
-    `Total: *$${Number(order.total || 0).toFixed(2)}*`,
+    `Total final: *${getOrderPaymentTotals(order).displayedTotal.toFixed(2)}*`,
     "",
     "Ver el pedido:",
     pageUrl,
@@ -348,7 +378,7 @@ export function PublicOrderClient({
                   ? "El intento de pago anterior venció sin completarse. Puedes intentarlo de nuevo:"
                   : "Todavía no se ha completado el pago de este pedido."}
               </p>
-              <PayNowButton orderId={order.id} storeId={order.store_id || ""} />
+              <PayNowButton orderId={order.id} storeId={order.store_id || ""} amountToPay={displayedTotal} />
             </>
           )}
         </section>
@@ -408,7 +438,10 @@ export function PublicOrderClient({
             {Number(order.discount_amount || 0) > 0 && (
               <div className="flex justify-between text-green-600"><span>Descuento</span><strong>-${Number(order.discount_amount).toFixed(2)}</strong></div>
             )}
-            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">Total pagado</span><span className="font-black">${Number(order.total || 0).toFixed(2)}</span></div>
+            {order.payment_method === "card" && (
+              <div className="flex justify-between text-blue-700"><span>Recargo por tarjeta ({(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)</span><strong>+${cardSurcharge.toFixed(2)}</strong></div>
+            )}
+            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">{order.payment_status === "paid" ? "Total pagado" : "Total a pagar"}</span><span className="font-black">${displayedTotal.toFixed(2)}</span></div>
           </div>
         </section>
 
