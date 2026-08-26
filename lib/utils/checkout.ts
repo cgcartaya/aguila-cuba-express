@@ -1,4 +1,5 @@
 import type { DeliveryZone } from "@/lib/services/settings";
+import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
 import type {
   CheckoutCartItem,
   CheckoutForm,
@@ -154,6 +155,23 @@ export function buildWhatsappOrderMessageFromDbOrder({
         : "Tarjeta — sin confirmar todavía"
       : "Pendiente de confirmar";
 
+  const baseTotal =
+    Number(order.subtotal || 0) +
+    Number(order.delivery_fee || 0) -
+    Number(order.discount_amount || 0);
+  const storedTotal = Number(order.total || 0);
+  const inferredCardSurcharge = Math.round(baseTotal * CARD_SURCHARGE_RATE * 100) / 100;
+  const cardSurcharge =
+    order.payment_method === "card"
+      ? storedTotal > baseTotal
+        ? Math.round((storedTotal - baseTotal) * 100) / 100
+        : inferredCardSurcharge
+      : 0;
+  const displayedTotal =
+    order.payment_method === "card"
+      ? Math.round((baseTotal + cardSurcharge) * 100) / 100
+      : storedTotal;
+
   return `
 AGUILA EXPRESS USA
 --------------------
@@ -223,9 +241,10 @@ RESUMEN
 
 Subtotal: $${Number(order.subtotal || 0).toFixed(2)}
 Domicilio: $${Number(order.delivery_fee || 0).toFixed(2)}
-${order.discount_code ? `Descuento (${order.discount_code}): -$${Number(order.discount_amount || 0).toFixed(2)}` : ""}
+${order.discount_code ? `Descuento (${order.discount_code}): -${Number(order.discount_amount || 0).toFixed(2)}` : ""}
+${order.payment_method === "card" ? `Recargo por tarjeta (${(CARD_SURCHARGE_RATE * 100).toFixed(1)}%): ${cardSurcharge.toFixed(2)}` : ""}
 
-TOTAL: $${Number(order.total || 0).toFixed(2)}
+TOTAL FINAL: ${displayedTotal.toFixed(2)}
 
 Estado:
 Pendiente
