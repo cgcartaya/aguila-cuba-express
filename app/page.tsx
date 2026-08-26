@@ -54,6 +54,7 @@ function resolveLanding(host: string): LandingType {
   if (
     normalizedHost === `deparis.${PLATFORM_DOMAIN}` ||
     normalizedHost.startsWith("deparis.") ||
+    normalizedHost === "depariscienfuegos.com" ||
     normalizedHost === "depariscuba.com" ||
     normalizedHost.startsWith("depariscuba.")
   ) {
