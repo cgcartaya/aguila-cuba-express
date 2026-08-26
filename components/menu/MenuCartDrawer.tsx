@@ -43,11 +43,14 @@ type Props = {
 type Step = "cart" | "fulfillment" | "customer";
 type DeliveryMode = "zones" | "distance";
 type DistanceQuote = {
-  latitude: number;
-  longitude: number;
+  catalogId?: string;
+  source: "catalog" | "map";
+  latitude: number | null;
+  longitude: number | null;
   formattedAddress: string;
   distanceMeters: number;
   fee: number;
+  zone?: string | null;
 } | null;
 
 const ORDER_TYPES: {
@@ -198,6 +201,10 @@ export default function MenuCartDrawer({
           delivery_formatted_address:
             orderType === "delivery" && deliveryMode === "distance"
               ? distanceQuote?.formattedAddress
+              : undefined,
+          delivery_catalog_id:
+            orderType === "delivery" && deliveryMode === "distance"
+              ? distanceQuote?.catalogId
               : undefined,
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),

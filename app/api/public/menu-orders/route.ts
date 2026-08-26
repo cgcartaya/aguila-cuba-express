@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     const deliveryLatitude = Number(body.delivery_latitude);
     const deliveryLongitude = Number(body.delivery_longitude);
     const deliveryFormattedAddress = clean(body.delivery_formatted_address, 300);
+    const deliveryCatalogId = clean(body.delivery_catalog_id, 100);
     const customerName = clean(body.customer_name, 120);
     const customerPhone = clean(body.customer_phone, 30).replace(/[^0-9+\s()-]/g, "");
     const customerEmail = clean(body.customer_email, 160);
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
       deliveryLatitude,
       deliveryLongitude,
       deliveryFormattedAddress,
+      deliveryCatalogId,
       customerName,
       customerPhone,
       customerEmail: customerEmail || undefined,

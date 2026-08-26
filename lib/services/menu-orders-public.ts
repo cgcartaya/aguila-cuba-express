@@ -33,6 +33,7 @@ export type CreateMenuOrderInput = {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliveryFormattedAddress?: string;
+  deliveryCatalogId?: string;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -288,18 +289,34 @@ export async function createMenuOrder(
       .maybeSingle();
 
     if (checkoutSettings?.delivery_address_mode === "distance") {
-      deliveryLatitude = validCoordinate(input.deliveryLatitude, -90, 90);
-      deliveryLongitude = validCoordinate(input.deliveryLongitude, -180, 180);
       const settings = normalizeDistanceSettings(checkoutSettings);
-
-      if (deliveryLatitude == null || deliveryLongitude == null) {
-        return { ok: false, status: 400, error: "Confirma la ubicación de entrega en el mapa." };
-      }
-      if (settings.delivery_origin_latitude == null || settings.delivery_origin_longitude == null) {
-        return { ok: false, status: 409, error: "El restaurante todavía no configuró su punto de salida." };
-      }
-
-      try {
+      if (input.deliveryCatalogId) {
+        const { data: segment } = await supabaseAdmin
+          .from("delivery_address_segments")
+          .select("display_address,zone_name,distance_meters")
+          .eq("id", input.deliveryCatalogId)
+          .eq("store_id", store.id)
+          .maybeSingle();
+        if (!segment) {
+          return { ok: false, status: 422, error: "La dirección seleccionada ya no está disponible." };
+        }
+        deliveryDistanceMeters = Number(segment.distance_meters);
+        deliveryFee = calculateDistanceDeliveryFee(deliveryDistanceMeters, settings);
+        deliveryZoneName = segment.zone_name
+          ? `${segment.zone_name} · ${Math.round(deliveryDistanceMeters) / 1000} km`
+          : `Por distancia · ${Math.round(deliveryDistanceMeters) / 1000} km`;
+        deliveryAddress = segment.display_address;
+        deliveryRouteProvider = "catalog_csv";
+      } else {
+        deliveryLatitude = validCoordinate(input.deliveryLatitude, -90, 90);
+        deliveryLongitude = validCoordinate(input.deliveryLongitude, -180, 180);
+        if (deliveryLatitude == null || deliveryLongitude == null) {
+          return { ok: false, status: 400, error: "Selecciona una dirección del catálogo o confirma la ubicación en el mapa." };
+        }
+        if (settings.delivery_origin_latitude == null || settings.delivery_origin_longitude == null) {
+          return { ok: false, status: 409, error: "El restaurante todavía no configuró su punto de salida." };
+        }
+        try {
         const route = await getDrivingRoute(
           { latitude: settings.delivery_origin_latitude, longitude: settings.delivery_origin_longitude },
           { latitude: deliveryLatitude, longitude: deliveryLongitude }
@@ -313,8 +330,9 @@ export async function createMenuOrder(
         deliveryFee = calculateDistanceDeliveryFee(deliveryDistanceMeters, settings);
         deliveryZoneName = `Por distancia · ${distanceKm.toFixed(2)} km`;
         deliveryAddress = input.deliveryFormattedAddress?.slice(0, 300) || deliveryAddress;
-      } catch (error) {
-        return { ok: false, status: 502, error: error instanceof Error ? error.message : "No se pudo calcular la ruta de entrega." };
+        } catch (error) {
+          return { ok: false, status: 502, error: error instanceof Error ? error.message : "No se pudo calcular la ruta de entrega." };
+        }
       }
     } else if (!input.deliveryZoneId) {
       return {
