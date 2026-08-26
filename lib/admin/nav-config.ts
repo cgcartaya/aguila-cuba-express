@@ -26,6 +26,7 @@ import {
   CalendarCheck2,
   Armchair,
   ChartNoAxesCombined,
+  RadioTower,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
@@ -132,6 +133,7 @@ export const adminNavSections: AdminSection[] = [
     links: [
       { href: "/admin/menu", label: "Categorías y platillos", icon: Utensils },
       { href: "/admin/menu/menu-del-dia", label: "Menú del día", icon: CalendarDays },
+      { href: "/admin/menu/operacion", label: "Operación en vivo", icon: RadioTower },
       { href: "/admin/menu/inventario", label: "Inventario", icon: Boxes },
       { href: "/admin/menu/ordenes", label: "Órdenes", icon: CalendarCheck2 },
     ],
