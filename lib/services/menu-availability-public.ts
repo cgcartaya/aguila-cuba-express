@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import type { MenuChannelAvailability } from "@/lib/menu/types";
 
 async function restaurantDateISO(storeId: string) {
   const { data } = await supabaseAdmin
@@ -102,4 +103,38 @@ export async function getMenuAvailabilityMap(
   }
 
   return map;
+}
+
+export async function getMenuChannelAvailabilityMap(
+  storeId: string,
+  requestedDate?: string
+): Promise<Record<string, MenuChannelAvailability>> {
+  const date = requestedDate || (await restaurantDateISO(storeId));
+  const { data: items } = await supabaseAdmin
+    .from("menu_items")
+    .select(
+      "id, available_dine_in, available_takeaway, available_delivery, delivery_paused_date, delivery_pause_reason"
+    )
+    .eq("store_id", storeId)
+    .eq("is_active", true);
+
+  return Object.fromEntries(
+    (items || []).map((item) => {
+      const deliveryPausedToday = item.delivery_paused_date === date;
+      return [
+        item.id,
+        {
+          dine_in: item.available_dine_in !== false,
+          takeaway: item.available_takeaway !== false,
+          delivery:
+            item.available_delivery !== false && !deliveryPausedToday,
+          delivery_reason: deliveryPausedToday
+            ? item.delivery_pause_reason || "No disponible para delivery hoy"
+            : item.available_delivery === false
+              ? "Este plato no está disponible para delivery"
+              : null,
+        },
+      ];
+    })
+  );
 }

@@ -54,6 +54,9 @@ export default function EditMenuItemPage() {
         track_stock: item.stock !== null && item.stock !== undefined,
         stock: item.stock ?? 0,
         daily_stock_enabled: Boolean(item.daily_stock_enabled),
+        available_dine_in: item.available_dine_in !== false,
+        available_takeaway: item.available_takeaway !== false,
+        available_delivery: item.available_delivery !== false,
         option_groups: (item.menu_item_option_groups || []).map((g: any) => ({
           id: g.id,
           name: g.name,

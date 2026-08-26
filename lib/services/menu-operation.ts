@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getRestaurantNow, normalizeMenuTimeZone } from "@/lib/menu/daytime";
 
 export type MenuOperationSettings = {
   menu_orders_paused: boolean;
@@ -26,6 +27,10 @@ export type OperationMenuItem = {
   manual_unavailable: boolean;
   stock: number | null;
   daily_stock_enabled: boolean;
+  available_takeaway: boolean;
+  available_delivery: boolean;
+  delivery_paused_date: string | null;
+  delivery_pause_reason: string | null;
   groups: OperationMenuGroup[];
 };
 
@@ -69,15 +74,20 @@ export async function saveMenuOperationSettings(
 }
 
 export async function getOperationMenuItems(storeId: string) {
-  const { data, error } = await supabase
-    .from("menu_items")
-    .select(`
+  const [{ data, error }, { data: settings }] = await Promise.all([
+    supabase
+      .from("menu_items")
+      .select(`
       id,
       name,
       is_active,
       manual_unavailable,
       stock,
       daily_stock_enabled,
+      available_takeaway,
+      available_delivery,
+      delivery_paused_date,
+      delivery_pause_reason,
       menu_item_option_groups (
         id,
         name,
@@ -90,10 +100,20 @@ export async function getOperationMenuItems(storeId: string) {
           is_available
         )
       )
-    `)
-    .eq("store_id", storeId)
-    .eq("is_active", true)
-    .order("name", { ascending: true });
+      `)
+      .eq("store_id", storeId)
+      .eq("is_active", true)
+      .order("name", { ascending: true }),
+    supabase
+      .from("store_settings")
+      .select("menu_timezone")
+      .eq("store_id", storeId)
+      .maybeSingle(),
+  ]);
+
+  const today = getRestaurantNow(
+    normalizeMenuTimeZone(settings?.menu_timezone)
+  ).date;
 
   const items: OperationMenuItem[] = (data || []).map((item: any) => ({
     id: item.id,
@@ -102,6 +122,12 @@ export async function getOperationMenuItems(storeId: string) {
     manual_unavailable: item.manual_unavailable ?? false,
     stock: item.stock,
     daily_stock_enabled: item.daily_stock_enabled,
+    available_takeaway: item.available_takeaway !== false,
+    available_delivery: item.available_delivery !== false,
+    delivery_paused_date:
+      item.delivery_paused_date === today ? item.delivery_paused_date : null,
+    delivery_pause_reason:
+      item.delivery_paused_date === today ? item.delivery_pause_reason : null,
     groups: (item.menu_item_option_groups || [])
       .sort((a: any, b: any) => a.sort_order - b.sort_order)
       .map((group: any) => ({
@@ -130,6 +156,36 @@ export async function setMenuItemManualUnavailable(
     .update({ manual_unavailable: unavailable })
     .eq("id", itemId)
     .select("id, manual_unavailable")
+    .single();
+}
+
+export async function setMenuItemDeliveryPausedToday(
+  storeId: string,
+  itemId: string,
+  paused: boolean,
+  reason?: string
+) {
+  const { data: settings } = await supabase
+    .from("store_settings")
+    .select("menu_timezone")
+    .eq("store_id", storeId)
+    .maybeSingle();
+
+  const today = getRestaurantNow(
+    normalizeMenuTimeZone(settings?.menu_timezone)
+  ).date;
+
+  return supabase
+    .from("menu_items")
+    .update({
+      delivery_paused_date: paused ? today : null,
+      delivery_pause_reason: paused
+        ? reason?.trim().slice(0, 160) || "No disponible para delivery hoy"
+        : null,
+    })
+    .eq("id", itemId)
+    .eq("store_id", storeId)
+    .select("id, delivery_paused_date, delivery_pause_reason")
     .single();
 }
 

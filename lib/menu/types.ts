@@ -32,6 +32,11 @@ export type MenuItem = {
   sort_order: number;
   stock: number | null;
   daily_stock_enabled: boolean;
+  available_dine_in: boolean;
+  available_takeaway: boolean;
+  available_delivery: boolean;
+  delivery_paused_date: string | null;
+  delivery_pause_reason: string | null;
   menu_item_option_groups: MenuOptionGroup[];
 };
 
@@ -80,6 +85,9 @@ export type MenuItemFormData = {
   track_stock: boolean;
   stock: number;
   daily_stock_enabled: boolean;
+  available_dine_in: boolean;
+  available_takeaway: boolean;
+  available_delivery: boolean;
   option_groups: MenuOptionGroupFormData[];
 };
 
@@ -99,6 +107,13 @@ export type MenuCartLine = {
   quantity: number;
   selected_options: MenuCartSelectedOption[];
   notes?: string;
+};
+
+export type MenuChannelAvailability = {
+  dine_in: boolean;
+  takeaway: boolean;
+  delivery: boolean;
+  delivery_reason: string | null;
 };
 
 export type MenuOrderType = "dine_in" | "takeaway" | "delivery";
@@ -209,6 +224,11 @@ export type EligibleDailyMenuItem = {
   image_url: string | null;
   daily_stock_enabled: boolean;
   stock: number | null;
+  available_dine_in: boolean;
+  available_takeaway: boolean;
+  available_delivery: boolean;
+  delivery_paused_date: string | null;
+  delivery_pause_reason: string | null;
   category: {
     id: string;
     name: string;

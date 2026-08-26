@@ -142,6 +142,11 @@ export async function getEligibleItemsForAdmin(storeId: string) {
       image_url,
       daily_stock_enabled,
       stock,
+      available_dine_in,
+      available_takeaway,
+      available_delivery,
+      delivery_paused_date,
+      delivery_pause_reason,
       category:menu_categories!menu_items_category_id_fkey (
         id,
         name,
@@ -166,6 +171,11 @@ const normalizedItems: EligibleDailyMenuItem[] = (data || []).map((item) => {
     image_url: item.image_url,
     daily_stock_enabled: item.daily_stock_enabled,
     stock: item.stock,
+    available_dine_in: item.available_dine_in !== false,
+    available_takeaway: item.available_takeaway !== false,
+    available_delivery: item.available_delivery !== false,
+    delivery_paused_date: item.delivery_paused_date,
+    delivery_pause_reason: item.delivery_pause_reason,
     category,
   };
 });
@@ -273,4 +283,3 @@ export async function getMenuToday(storeId: string) {
   const { timeZone } = await getMenuTimeZone(storeId);
   return { ...getRestaurantNow(timeZone), timeZone };
 }
-

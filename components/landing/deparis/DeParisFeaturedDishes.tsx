@@ -58,6 +58,11 @@ function asMenuItem(dish: FeaturedDish): MenuItem {
     sort_order: dish.sort_order || 0,
     stock: dish.stock ?? null,
     daily_stock_enabled: dish.daily_stock_enabled === true,
+    available_dine_in: true,
+    available_takeaway: true,
+    available_delivery: true,
+    delivery_paused_date: null,
+    delivery_pause_reason: null,
     menu_item_option_groups: dish.menu_item_option_groups || [],
   };
 }

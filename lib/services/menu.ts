@@ -31,6 +31,11 @@ const MENU_ITEM_SELECT = `
   sort_order,
   stock,
   daily_stock_enabled,
+  available_dine_in,
+  available_takeaway,
+  available_delivery,
+  delivery_paused_date,
+  delivery_pause_reason,
   menu_item_option_groups (
     id,
     menu_item_id,
@@ -446,6 +451,9 @@ export async function saveMenuItem(
       : null,
     daily_stock_enabled:
       form.daily_stock_enabled,
+    available_dine_in: form.available_dine_in,
+    available_takeaway: form.available_takeaway,
+    available_delivery: form.available_delivery,
   };
 
   let itemId = form.id;

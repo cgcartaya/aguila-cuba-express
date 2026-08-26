@@ -26,6 +26,7 @@ import type {
   MenuCartLine,
   MenuCartSelectedOption,
   MenuCategory,
+  MenuChannelAvailability,
   MenuItem,
   PublicDailyMenu,
 } from "@/lib/menu/types";
@@ -104,6 +105,7 @@ function QuickOrderCard({
   accent,
   onOpen,
   onAdd,
+  channels,
 }: {
   item: MenuItem;
   soldOut: boolean;
@@ -111,6 +113,7 @@ function QuickOrderCard({
   accent: string;
   onOpen: () => void;
   onAdd: (line: MenuCartLine) => void;
+  channels?: MenuChannelAvailability;
 }) {
   const simple = canUseInlineConfigurator(item);
   const [quantity, setQuantity] = useState(1);
@@ -204,6 +207,12 @@ function QuickOrderCard({
         {soldOut && (
           <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-1 text-[7px] font-black uppercase text-white shadow-sm sm:right-3 sm:top-3 sm:px-3 sm:text-[9px]">
             Agotado
+          </span>
+        )}
+
+        {!soldOut && channels && (!channels.takeaway || !channels.delivery) && (
+          <span className="absolute right-2 top-2 rounded-full bg-black/75 px-2 py-1 text-[7px] font-black uppercase text-white shadow-sm sm:right-3 sm:top-3 sm:text-[9px]">
+            {channels.takeaway ? "Solo recoger" : channels.delivery ? "Solo delivery" : "Solo en el local"}
           </span>
         )}
       </button>
@@ -475,6 +484,9 @@ export default function MenuPageClientHybrid({
   const [availability, setAvailability] = useState<
     Record<string, number | null>
   >({});
+  const [channelAvailability, setChannelAvailability] = useState<
+    Record<string, MenuChannelAvailability>
+  >({});
   const [toast, setToast] = useState<string | null>(null);
   const categoriesAnchorRef = useRef<HTMLDivElement | null>(null);
   const [categoriesPinned, setCategoriesPinned] = useState(false);
@@ -488,6 +500,7 @@ export default function MenuPageClientHybrid({
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         if (data?.availability) setAvailability(data.availability);
+        if (data?.channels) setChannelAvailability(data.channels);
       })
       .catch(() => {});
   }, [storeSlug]);
@@ -866,7 +879,10 @@ export default function MenuPageClientHybrid({
                 <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-4 lg:grid-cols-3">
                   {category.menu_items.map((item) => {
                     const remaining = availability[item.id];
-                    const soldOut = remaining === 0;
+                    const channels = channelAvailability[item.id];
+                    const soldOut =
+                      remaining === 0 ||
+                      Boolean(channels && !channels.takeaway && !channels.delivery);
 
                     return (
                       <QuickOrderCard
@@ -877,6 +893,7 @@ export default function MenuPageClientHybrid({
                         accent={accent}
                         onOpen={() => setActiveItem(item)}
                         onAdd={addLine}
+                        channels={channels}
                       />
                     );
                   })}
@@ -964,6 +981,7 @@ export default function MenuPageClientHybrid({
             setCart([]);
             setCartOpen(false);
           }}
+          channelAvailability={channelAvailability}
         />
       )}
 

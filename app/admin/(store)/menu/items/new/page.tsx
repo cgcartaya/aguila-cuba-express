@@ -22,6 +22,9 @@ const EMPTY_ITEM: MenuItemFormData = {
   track_stock: false,
   stock: 0,
   daily_stock_enabled: false,
+  available_dine_in: true,
+  available_takeaway: true,
+  available_delivery: true,
   option_groups: [],
 };
 

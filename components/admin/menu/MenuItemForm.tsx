@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, Box, Eye, Info, Languages, Loader2, Save, Sparkles } from "lucide-react";
+import { AlertCircle, Bike, Box, Eye, Info, Languages, Loader2, Save, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
 
 import MenuItemImageUploader from "./MenuItemImageUploader";
 import ModifierTemplatePicker from "./ModifierTemplatePicker";
@@ -129,6 +129,9 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
         <div className="divide-y divide-slate-100">
           <ToggleRow checked={formData.is_active} description="El platillo estará disponible para los clientes en el menú público." icon={<Eye size={18} />} label="Visible en el menú público" onChange={(is_active) => setFormData((prev) => ({ ...prev, is_active }))} />
           <ToggleRow checked={formData.is_featured} description="Resalta este platillo en la página principal del restaurante." icon={<Sparkles size={18} />} label="Destacar en la landing" onChange={(is_featured) => setFormData((prev) => ({ ...prev, is_featured }))} />
+          <ToggleRow checked={formData.available_dine_in} description="Permite servir este platillo en las mesas del restaurante." icon={<UtensilsCrossed size={18} />} label="Disponible en el restaurante" onChange={(available_dine_in) => setFormData((prev) => ({ ...prev, available_dine_in }))} />
+          <ToggleRow checked={formData.available_takeaway} description="El cliente puede pedirlo y pasar a recogerlo." icon={<ShoppingBag size={18} />} label="Disponible para recoger" onChange={(available_takeaway) => setFormData((prev) => ({ ...prev, available_takeaway }))} />
+          <ToggleRow checked={formData.available_delivery} description="Permite incluir este platillo en pedidos con entrega a domicilio." icon={<Bike size={18} />} label="Disponible para delivery" onChange={(available_delivery) => setFormData((prev) => ({ ...prev, available_delivery }))} />
           <ToggleRow checked={formData.track_stock} description="Descuenta cada venta del inventario disponible del platillo." icon={<Box size={18} />} label="Inventario permanente" onChange={(track_stock) => setFormData((prev) => ({ ...prev, track_stock }))} />
         </div>
         {formData.track_stock && (

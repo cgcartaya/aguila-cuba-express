@@ -18,6 +18,7 @@ import {
   getOperationMenuItems,
   saveMenuOperationSettings,
   setMenuItemManualUnavailable,
+  setMenuItemDeliveryPausedToday,
   setMenuOptionAvailability,
   type MenuOperationSettings,
   type OperationMenuItem,
@@ -116,6 +117,40 @@ export default function MenuOperationPanel({ storeId }: Props) {
                     }
               ),
             }
+      )
+    );
+  };
+
+  const toggleDeliveryToday = async (item: OperationMenuItem) => {
+    const paused = Boolean(item.delivery_paused_date);
+    const reason = paused
+      ? undefined
+      : prompt(
+          "Motivo para pausar el delivery de este plato hoy:",
+          "Sin envases disponibles"
+        ) || undefined;
+
+    if (!paused && !reason) return;
+
+    setBusyId(`delivery-${item.id}`);
+    const { data, error } = await setMenuItemDeliveryPausedToday(
+      storeId,
+      item.id,
+      !paused,
+      reason
+    );
+    setBusyId(null);
+    if (error || !data) return alert("No se pudo cambiar el delivery del plato.");
+
+    setItems((prev) =>
+      prev.map((current) =>
+        current.id === item.id
+          ? {
+              ...current,
+              delivery_paused_date: data.delivery_paused_date,
+              delivery_pause_reason: data.delivery_pause_reason,
+            }
+          : current
       )
     );
   };
@@ -284,23 +319,48 @@ export default function MenuOperationPanel({ storeId }: Props) {
                   </p>
                 </div>
 
-                <button
-                  onClick={() => toggleItem(item)}
-                  disabled={busyId === item.id}
-                  className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-[10px] font-black ${
-                    item.manual_unavailable
-                      ? "bg-red-100 text-red-700"
-                      : "bg-emerald-100 text-emerald-700"
-                  }`}
-                >
-                  {item.manual_unavailable ? (
-                    <Ban size={12} />
-                  ) : (
-                    <CheckCircle2 size={12} />
+                <div className="flex flex-wrap justify-end gap-2">
+                  {item.available_delivery && (
+                    <button
+                      onClick={() => toggleDeliveryToday(item)}
+                      disabled={busyId === `delivery-${item.id}`}
+                      title={item.delivery_pause_reason || undefined}
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-[10px] font-black ${
+                        item.delivery_paused_date
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-blue-50 text-blue-700"
+                      }`}
+                    >
+                      <PauseCircle size={12} />
+                      {item.delivery_paused_date
+                        ? "Delivery pausado hoy"
+                        : "Pausar delivery hoy"}
+                    </button>
                   )}
-                  {item.manual_unavailable ? "Agotado manualmente" : "Disponible"}
-                </button>
+                  <button
+                    onClick={() => toggleItem(item)}
+                    disabled={busyId === item.id}
+                    className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-[10px] font-black ${
+                      item.manual_unavailable
+                        ? "bg-red-100 text-red-700"
+                        : "bg-emerald-100 text-emerald-700"
+                    }`}
+                  >
+                    {item.manual_unavailable ? (
+                      <Ban size={12} />
+                    ) : (
+                      <CheckCircle2 size={12} />
+                    )}
+                    {item.manual_unavailable ? "Agotado manualmente" : "Disponible"}
+                  </button>
+                </div>
               </div>
+
+              {item.delivery_paused_date && item.delivery_pause_reason && (
+                <p className="mt-2 rounded-xl bg-orange-50 px-3 py-2 text-[10px] font-bold text-orange-700">
+                  Delivery: {item.delivery_pause_reason}
+                </p>
+              )}
 
               {item.groups.some((g) => g.options.length > 0) && (
                 <div className="mt-4 space-y-3 border-t border-slate-100 pt-3">

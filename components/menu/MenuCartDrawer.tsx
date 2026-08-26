@@ -21,7 +21,7 @@ import { buildMenuOrderMessage, getCartTotal } from "@/lib/menu/whatsapp-message
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
 import MenuUpsellSuggestions from "@/components/menu/MenuUpsellSuggestions";
 import MenuDistanceDeliveryFields from "@/components/menu/MenuDistanceDeliveryFields";
-import type { MenuCartLine, MenuOrderType } from "@/lib/menu/types";
+import type { MenuCartLine, MenuChannelAvailability, MenuOrderType } from "@/lib/menu/types";
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
@@ -31,6 +31,7 @@ type Props = {
   whatsappNumber: string | null;
   cart: MenuCartLine[];
   accentColor: string;
+  channelAvailability?: Record<string, MenuChannelAvailability>;
   initialTableNumber?: string;
   onClose: () => void;
   onUpdateQuantity: (lineId: string, quantity: number) => void;
@@ -80,6 +81,7 @@ export default function MenuCartDrawer({
   whatsappNumber,
   cart,
   accentColor,
+  channelAvailability = {},
   initialTableNumber,
   onClose,
   onUpdateQuantity,
@@ -148,8 +150,17 @@ export default function MenuCartDrawer({
   const grandTotal = total + deliveryFeePreview;
   const totalUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
   const selectedOrderType = ORDER_TYPES.find((item) => item.value === orderType)!;
+  const channelBlockedLines = useMemo(
+    () =>
+      cart.filter((line) => {
+        const channels = channelAvailability[line.menu_item_id];
+        return channels ? !channels[orderType] : false;
+      }),
+    [cart, channelAvailability, orderType]
+  );
 
   const canContinueFulfillment = useMemo(() => {
+    if (channelBlockedLines.length > 0) return false;
     if (orderType === "delivery") {
       if (deliveryMode === "distance") {
         return Boolean(distanceQuote) && deliveryAddress.trim().length >= 5;
@@ -157,7 +168,7 @@ export default function MenuCartDrawer({
       return Boolean(deliveryZoneId) && deliveryAddress.trim().length >= 5;
     }
     return true;
-  }, [orderType, deliveryAddress, deliveryZoneId, deliveryMode, distanceQuote]);
+  }, [orderType, deliveryAddress, deliveryZoneId, deliveryMode, distanceQuote, channelBlockedLines.length]);
 
   const handleSend = async () => {
     if (!customerName.trim() || customerPhone.replace(/\D/g, "").length < 7) {
@@ -565,6 +576,27 @@ export default function MenuCartDrawer({
                   }
                 )}
               </div>
+
+              {channelBlockedLines.length > 0 && (
+                <div className="mt-4 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-orange-800">
+                  <p className="text-xs font-black">
+                    Algunos platos no están disponibles para {orderType === "delivery" ? "delivery" : "recoger"}:
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs font-semibold">
+                    {channelBlockedLines.map((line) => (
+                      <li key={line.lineId}>
+                        • {line.name}
+                        {orderType === "delivery" && channelAvailability[line.menu_item_id]?.delivery_reason
+                          ? ` — ${channelAvailability[line.menu_item_id].delivery_reason}`
+                          : ""}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-[11px] font-bold">
+                    Cambia el método o regresa al pedido para retirar esos platos.
+                  </p>
+                </div>
+              )}
 
               {orderType === "delivery" && (
                 <div className="mt-5 space-y-3">

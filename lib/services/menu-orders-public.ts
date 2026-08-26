@@ -1,6 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreBySlug } from "@/lib/services/stores";
-import { getMenuAvailabilityMap } from "@/lib/services/menu-availability-public";
+import { getMenuAvailabilityMap, getMenuChannelAvailabilityMap } from "@/lib/services/menu-availability-public";
 import {
   sendMenuOrderAdminAlertEmail,
   sendMenuOrderReceivedEmail,
@@ -120,6 +120,9 @@ export async function createMenuOrder(
       stock,
       is_active,
       manual_unavailable,
+      available_dine_in,
+      available_takeaway,
+      available_delivery,
       menu_item_option_groups (
         id,
         name,
@@ -245,11 +248,27 @@ export async function createMenuOrder(
     });
   }
 
-  const availability = await getMenuAvailabilityMap(store.id);
+  const [availability, channelAvailability] = await Promise.all([
+    getMenuAvailabilityMap(store.id),
+    getMenuChannelAvailabilityMap(store.id),
+  ]);
 
   for (const [itemId, neededQty] of neededByItem) {
     const item: any = itemsById.get(itemId)!;
     const remaining = availability[itemId];
+    const channels = channelAvailability[itemId];
+
+    if (!channels?.[input.orderType]) {
+      const reason =
+        input.orderType === "delivery" && channels?.delivery_reason
+          ? ` ${channels.delivery_reason}.`
+          : "";
+      return {
+        ok: false,
+        status: 422,
+        error: `“${item.name}” no está disponible para este tipo de pedido.${reason}`,
+      };
+    }
 
     if (
       remaining !== null &&
