@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -476,6 +476,8 @@ export default function MenuPageClientHybrid({
     Record<string, number | null>
   >({});
   const [toast, setToast] = useState<string | null>(null);
+  const categoriesAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [categoriesPinned, setCategoriesPinned] = useState(false);
 
   const { cart, setCart } = useSharedCart(storeSlug);
 
@@ -489,6 +491,29 @@ export default function MenuPageClientHybrid({
       })
       .catch(() => {});
   }, [storeSlug]);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const updatePinnedCategories = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        const anchor = categoriesAnchorRef.current;
+        if (!anchor) return;
+        setCategoriesPinned(anchor.getBoundingClientRect().top <= 0);
+      });
+    };
+
+    updatePinnedCategories();
+    window.addEventListener("scroll", updatePinnedCategories, { passive: true });
+    window.addEventListener("resize", updatePinnedCategories);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", updatePinnedCategories);
+      window.removeEventListener("resize", updatePinnedCategories);
+    };
+  }, []);
 
   const activeDailyMenu =
     dailyMenus.find((menu) => menu.id === dailyMenuId) ||
@@ -781,7 +806,13 @@ export default function MenuPageClientHybrid({
         </div>
       </div>
 
-      <div className="sticky top-0 z-50 w-full border-b border-[#E9E0D4] bg-[#FBF6EC] shadow-[0_4px_14px_rgba(32,22,17,.08)] [transform:translateZ(0)]">
+      <div ref={categoriesAnchorRef} className="h-px w-full" aria-hidden="true" />
+      {categoriesPinned && <div className="h-[53px] w-full" aria-hidden="true" />}
+      <div
+        className={`${
+          categoriesPinned ? "fixed inset-x-0 top-0" : "relative"
+        } z-50 w-full border-b border-[#E9E0D4] bg-[#FBF6EC] shadow-[0_4px_14px_rgba(32,22,17,.08)] [transform:translateZ(0)]`}
+      >
         <nav className="flex w-full gap-2 overflow-x-auto overscroll-x-contain px-4 py-2.5 [-webkit-overflow-scrolling:touch] sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
             {visibleCategories.map((category) => (
               <a
