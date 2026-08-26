@@ -167,7 +167,6 @@ function buildShareMessage({
   pageUrl: string;
 }) {
   const publicNumber = order.order_number || order.id;
-  const { cardSurcharge, displayedTotal } = getOrderPaymentTotals(order);
   const itemLines = items.map(
     (item) => `• ${item.product_name} ×${item.quantity}`
   );
@@ -320,6 +319,7 @@ export function PublicOrderClient({
   const storeName = store?.name?.trim() || "Perla Marketplace";
   const storeUrl = store?.slug ? `/tienda/${store.slug}` : "/tienda";
   const publicNumber = order.order_number || order.id;
+  const { cardSurcharge, displayedTotal } = getOrderPaymentTotals(order);
   const deliveryLocation = [order.municipality, order.zone_name]
     .filter(Boolean)
     .join(" / ");
