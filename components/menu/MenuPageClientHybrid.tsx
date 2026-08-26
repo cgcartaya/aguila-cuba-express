@@ -781,7 +781,8 @@ export default function MenuPageClientHybrid({
         </div>
       </div>
 
-      <nav className="sticky top-0 z-30 flex gap-2 overflow-x-auto border-b border-[#E9E0D4] bg-[#FBF6EC]/95 px-4 py-2.5 shadow-[0_4px_14px_rgba(32,22,17,.06)] backdrop-blur-xl sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
+      <div className="sticky top-0 z-50 w-full border-b border-[#E9E0D4] bg-[#FBF6EC] shadow-[0_4px_14px_rgba(32,22,17,.08)] [transform:translateZ(0)]">
+        <nav className="flex w-full gap-2 overflow-x-auto overscroll-x-contain px-4 py-2.5 [-webkit-overflow-scrolling:touch] sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
             {visibleCategories.map((category) => (
               <a
                 key={category.id}
@@ -791,7 +792,8 @@ export default function MenuPageClientHybrid({
                 {category.name}
               </a>
             ))}
-      </nav>
+        </nav>
+      </div>
 
       <div className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-10">
         {visibleCategories.length === 0 ? (
