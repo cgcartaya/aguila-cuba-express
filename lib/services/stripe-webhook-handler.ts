@@ -38,7 +38,11 @@ export async function handleStripeWebhookEvent(
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as { id: string; metadata?: Record<string, string> };
+    const session = event.data.object as {
+      id: string;
+      amount_total?: number | null;
+      metadata?: Record<string, string>;
+    };
     const shipmentId = session.metadata?.shipment_id;
     const orderId = session.metadata?.order_id;
 
@@ -47,9 +51,17 @@ export async function handleStripeWebhookEvent(
     if (orderId && metadataStoreId) {
       // Pedido de tienda: el evento solo puede modificar la orden
       // indicada dentro del mismo tenant que quedó grabado en Stripe.
+      const chargedTotal =
+        typeof session.amount_total === "number"
+          ? Math.round(session.amount_total) / 100
+          : null;
+
       await supabaseAdmin
         .from("orders")
-        .update({ payment_status: "paid" })
+        .update({
+          payment_status: "paid",
+          ...(chargedTotal != null ? { total: chargedTotal } : {}),
+        })
         .eq("id", orderId)
         .eq("store_id", metadataStoreId)
         .is("deleted_at", null);
