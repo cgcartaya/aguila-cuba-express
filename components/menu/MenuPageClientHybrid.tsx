@@ -170,18 +170,18 @@ function QuickOrderCard({
   };
 
   return (
-    <article className="group overflow-hidden rounded-[22px] border border-[#E6DED2] bg-white shadow-[0_8px_28px_rgba(40,28,20,.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(40,28,20,.08)]">
+    <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[18px] border border-[#E6DED2] bg-white shadow-[0_6px_18px_rgba(40,28,20,.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(40,28,20,.08)] sm:rounded-[22px]">
       <button
         type="button"
         onClick={onOpen}
-        className="relative block h-44 w-full overflow-hidden bg-[#F0E9DE] text-left sm:h-48"
+        className="relative block h-28 w-full shrink-0 overflow-hidden bg-[#F0E9DE] text-left min-[390px]:h-32 sm:h-48"
       >
         {item.image_url ? (
           <Image
             src={item.image_url}
             alt={item.name}
             fill
-            sizes="(max-width: 768px) 100vw, 420px"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 420px"
             className="object-cover transition duration-500 group-hover:scale-[1.025]"
           />
         ) : (
@@ -194,7 +194,7 @@ function QuickOrderCard({
 
         {item.is_featured && (
           <span
-            className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[9px] font-black uppercase shadow-sm"
+            className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[7px] font-black uppercase shadow-sm sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px]"
             style={{ backgroundColor: accent, color: INK }}
           >
             <Sparkles size={10} /> Recomendado
@@ -202,31 +202,54 @@ function QuickOrderCard({
         )}
 
         {soldOut && (
-          <span className="absolute right-3 top-3 rounded-full bg-red-600 px-3 py-1 text-[9px] font-black uppercase text-white shadow-sm">
+          <span className="absolute right-2 top-2 rounded-full bg-red-600 px-2 py-1 text-[7px] font-black uppercase text-white shadow-sm sm:right-3 sm:top-3 sm:px-3 sm:text-[9px]">
             Agotado
           </span>
         )}
       </button>
 
-      <div className="p-4">
+      <div className="flex flex-1 flex-col p-2.5 sm:block sm:p-4">
         <button type="button" onClick={onOpen} className="w-full text-left">
-          <div className="flex items-start justify-between gap-3">
-            <h3 className="text-[16px] font-black leading-tight text-[#201611]">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            <h3 className="line-clamp-2 min-h-[2.25rem] text-[13px] font-black leading-[1.125rem] text-[#201611] sm:min-h-0 sm:text-[16px] sm:leading-tight">
               {item.name}
             </h3>
 
-            <strong className="shrink-0 text-[16px]" style={{ color: accent }}>
+            <strong className="shrink-0 text-[14px] sm:text-[16px]" style={{ color: accent }}>
               ${item.price.toFixed(2)}
             </strong>
           </div>
 
           {item.description && (
-            <p className="mt-1.5 line-clamp-2 text-xs font-medium leading-5 text-black/45">
+            <p className="mt-1.5 hidden text-xs font-medium leading-5 text-black/45 sm:line-clamp-2">
               {item.description}
             </p>
           )}
         </button>
 
+        {!soldOut && (
+          <button
+            type="button"
+            onClick={() =>
+              groups.length > 0
+                ? onOpen()
+                : onAdd({
+                    lineId: crypto.randomUUID(),
+                    menu_item_id: item.id,
+                    name: item.name,
+                    unit_base_price: item.price,
+                    quantity: 1,
+                    selected_options: [],
+                  })
+            }
+            className="mt-auto flex w-full items-center justify-center rounded-xl px-2 py-2.5 text-[10px] font-black sm:hidden"
+            style={{ backgroundColor: accent, color: "#fff" }}
+          >
+            {groups.length > 0 ? "Elegir opciones" : "Agregar"}
+          </button>
+        )}
+
+        <div className="hidden sm:block">
         {remaining !== null &&
           remaining !== undefined &&
           !soldOut &&
@@ -379,6 +402,13 @@ function QuickOrderCard({
         {soldOut && (
           <div className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wide text-red-600">
             No disponible en este momento
+          </div>
+        )}
+        </div>
+
+        {soldOut && (
+          <div className="mt-auto rounded-lg bg-red-50 px-2 py-2 text-center text-[8px] font-black uppercase text-red-600 sm:hidden">
+            No disponible
           </div>
         )}
       </div>
@@ -732,8 +762,8 @@ export default function MenuPageClientHybrid({
         </div>
       </header>
 
-      <div className="sticky top-0 z-30 border-b border-[#E9E0D4] bg-[#FBF6EC]/95 backdrop-blur-xl">
-        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+      <div className="border-b border-[#E9E0D4] bg-[#FBF6EC]">
+        <div className="mx-auto max-w-6xl px-4 pb-3 pt-4 sm:px-6">
           <div className="relative">
             <Search
               size={14}
@@ -748,22 +778,22 @@ export default function MenuPageClientHybrid({
               className="w-full rounded-2xl border border-[#DDD4C8] bg-white py-3 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-orange-300"
             />
           </div>
+        </div>
+      </div>
 
-          <nav className="mt-3 flex gap-2 overflow-x-auto pb-1">
+      <nav className="sticky top-0 z-30 flex gap-2 overflow-x-auto border-b border-[#E9E0D4] bg-[#FBF6EC]/95 px-4 py-2.5 shadow-[0_4px_14px_rgba(32,22,17,.06)] backdrop-blur-xl sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
             {visibleCategories.map((category) => (
               <a
                 key={category.id}
                 href={`#cat-${category.id}`}
-                className="shrink-0 rounded-full border border-[#DDD4C8] bg-white px-3.5 py-1.5 text-[9px] font-black uppercase tracking-wide text-black/50"
+                className="shrink-0 scroll-ml-4 rounded-full border border-[#DDD4C8] bg-white px-3.5 py-2 text-[9px] font-black uppercase tracking-wide text-black/55 active:border-orange-300 active:bg-orange-50"
               >
                 {category.name}
               </a>
             ))}
-          </nav>
-        </div>
-      </div>
+      </nav>
 
-      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-10">
         {visibleCategories.length === 0 ? (
           <div className="rounded-3xl border border-[#E4DBCE] bg-white p-10 text-center">
             <p className="text-sm font-bold text-black/40">
@@ -771,14 +801,14 @@ export default function MenuPageClientHybrid({
             </p>
           </div>
         ) : (
-          <div className="space-y-12">
+          <div className="space-y-9 sm:space-y-12">
             {visibleCategories.map((category) => (
               <section
                 key={category.id}
                 id={`cat-${category.id}`}
-                className="scroll-mt-32"
+                className="scroll-mt-16"
               >
-                <div className="mb-5 flex items-end justify-between gap-3">
+                <div className="mb-3 flex items-end justify-between gap-3 sm:mb-5">
                   <div>
                     <p
                       className="text-[9px] font-black uppercase tracking-[.24em]"
@@ -789,7 +819,7 @@ export default function MenuPageClientHybrid({
                         : activeDailyMenu?.name || "Menú del día"}
                     </p>
 
-                    <h2 className="mt-1 text-2xl font-black tracking-tight text-[#201611]">
+                    <h2 className="mt-1 text-xl font-black tracking-tight text-[#201611] sm:text-2xl">
                       {category.name}
                     </h2>
                   </div>
@@ -800,7 +830,7 @@ export default function MenuPageClientHybrid({
                   </span>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-4 lg:grid-cols-3">
                   {category.menu_items.map((item) => {
                     const remaining = availability[item.id];
                     const soldOut = remaining === 0;
