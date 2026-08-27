@@ -27,33 +27,18 @@ import {
   Armchair,
   ChartNoAxesCombined,
   RadioTower,
+  CircleDollarSign,
 } from "lucide-react";
 
 import type { AccessStore } from "@/lib/admin/access";
 
-/*
- * Fuente única de verdad del menú de administración de tienda.
- * La usan tanto StoreAdminNav (desktop) como StoreAdminMobileMenu
- * (mobile), así nunca vuelven a desincronizarse entre sí.
- *
- * Taxonomía de módulos confirmada con Carlos:
- *   - "store"    -> Dashboard, Órdenes, Productos, Combos, Clientes e
- *                   Inventario (todo el "Marketplace" base).
- *   - "pickups"  -> Recogidas + Portal comercial (cotizador y
- *                   cotizaciones van de la mano con recogidas).
- *   - "shipping" -> todo lo de Envíos.
- * "Marketing" y "Configuración" quedan sin módulo (core, siempre
- * visibles) hasta que se diga lo contrario.
- *
- * Para agregar un módulo nuevo en el futuro:
- *   1. Agrega la columna module_x_enabled en `stores` (migración SQL).
- *   2. Agrégala a AccessStore en lib/admin/access.ts y al SELECT
- *      de access-service.ts.
- *   3. Agrega la key en AdminModuleKey y en isModuleEnabled() abajo.
- *   4. Márcala en la sección correspondiente con `module: "x"`.
- */
-
-export type AdminModuleKey = "store" | "pickups" | "shipping" | "menu" | "reservas";
+export type AdminModuleKey =
+  | "store"
+  | "pickups"
+  | "shipping"
+  | "menu"
+  | "reservas"
+  | "economy";
 
 export type AdminLink = {
   href: string;
@@ -79,6 +64,17 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
       { href: "/admin/customers", label: "Clientes", icon: Users },
+    ],
+  },
+  {
+    title: "Economía",
+    module: "economy",
+    links: [
+      {
+        href: "/admin/economy",
+        label: "Economía y rentabilidad",
+        icon: CircleDollarSign,
+      },
     ],
   },
   {
@@ -162,19 +158,6 @@ export const adminNavSections: AdminSection[] = [
   },
 ];
 
-/**
- * Cada módulo replica el MISMO criterio "activado/desactivado" que ya
- * usa el resto del código para ese flag específico — no asumí que
- * todos se comportan igual:
- *   - "store": ya se usa en la API de checkout como
- *     `=== false` para BLOQUEAR (o sea, por defecto está permitido).
- *     Aquí replico ese mismo criterio: solo se oculta si es false.
- *   - "shipping": ya se usa en ShippingAccessGuard como
- *     `!store?.module_shipping_enabled` para bloquear (por defecto
- *     está BLOQUEADO salvo que sea true explícito).
- *   - "pickups": es un flag nuevo, lo trato igual que shipping
- *     (opt-in, por defecto false) porque así quedó la migración SQL.
- */
 export function isModuleEnabled(
   store:
     | Pick<
@@ -184,6 +167,7 @@ export function isModuleEnabled(
         | "module_pickups_enabled"
         | "module_menu_enabled"
         | "module_reservas_enabled"
+        | "module_economy_enabled"
       >
     | null
     | undefined,
@@ -198,25 +182,17 @@ export function isModuleEnabled(
       return store?.module_shipping_enabled === true;
     case "pickups":
       return store?.module_pickups_enabled === true;
-    // "menu" es un flag nuevo, lo trato igual que shipping/pickups
-    // (opt-in, por defecto false) — mismo criterio que quedó
-    // documentado arriba para módulos nuevos.
     case "menu":
       return store?.module_menu_enabled === true;
-    // "reservas" es un flag nuevo, mismo criterio opt-in.
     case "reservas":
       return store?.module_reservas_enabled === true;
+    case "economy":
+      return store?.module_economy_enabled === true;
     default:
       return true;
   }
 }
 
-/**
- * El Super Admin siempre ve todas las secciones (necesita poder
- * entrar a configurar/inspeccionar cualquier módulo de cualquier
- * tienda). Un usuario de tienda normal solo ve las secciones cuyo
- * módulo esté contratado.
- */
 export function getVisibleAdminSections(
   store:
     | Pick<
@@ -226,6 +202,7 @@ export function getVisibleAdminSections(
         | "module_pickups_enabled"
         | "module_menu_enabled"
         | "module_reservas_enabled"
+        | "module_economy_enabled"
       >
     | null
     | undefined,

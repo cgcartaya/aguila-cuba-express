@@ -97,6 +97,7 @@ export async function getCurrentAdminAccess(): Promise<{
         module_pickups_enabled,
         module_menu_enabled,
         module_reservas_enabled,
+        module_economy_enabled,
         platform_fee_enabled
       )
     `
@@ -136,18 +137,6 @@ export async function getCurrentAdminAccess(): Promise<{
 
 /* =========================================================
    CACHE COMPARTIDA
-
-   useAdminAccess() se usa en decenas de componentes (nav, menús,
-   layout, cada página del admin). Sin esto, cada uno dispara sus
-   propias consultas a `profiles` + `store_users` por separado —
-   en una sola pantalla se pueden acumular 10+ peticiones
-   idénticas compitiendo por conexión con el resto de la página
-   (imágenes incluidas).
-
-   Esta cache comparte una misma promesa en vuelo entre llamadas
-   simultáneas, y guarda el resultado un rato corto para que los
-   componentes que montan casi al mismo tiempo (típico al navegar
-   entre páginas del admin) no vuelvan a pedirlo.
 ========================================================= */
 
 type AdminAccessResult = {
