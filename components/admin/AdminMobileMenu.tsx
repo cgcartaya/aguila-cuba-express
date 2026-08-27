@@ -6,7 +6,6 @@ import {
   X,
   LayoutDashboard,
   Package,
-  Tags,
   Boxes,
   ClipboardList,
   Settings,
@@ -15,10 +14,12 @@ import {
   Building2,
   Layers3,
   ExternalLink,
+  CircleDollarSign,
 } from "lucide-react";
 
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useEconomyModule } from "@/hooks/useEconomyModule";
 
 type AdminMobileMenuProps = {
   open: boolean;
@@ -36,7 +37,7 @@ const saasLinks: MenuItem[] = [
   { label: "Tiendas", href: "/admin/stores", icon: Building2 },
 ];
 
-const storeLinks: MenuItem[] = [
+const baseStoreLinks: MenuItem[] = [
   { label: "Dashboard tienda", href: "/admin", icon: LayoutDashboard },
   { label: "Productos", href: "/admin/products", icon: Package },
   { label: "Combos", href: "/admin/combos", icon: Layers3 },
@@ -101,7 +102,15 @@ export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps)
   const { store } = useStore();
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
-  const activeStore = accessStore || store;
+  const activeStore = isSuperAdmin ? store || accessStore : accessStore;
+  const { enabled: economyEnabled } = useEconomyModule(activeStore?.id);
+  const storeLinks = economyEnabled || isSuperAdmin
+    ? [
+        ...baseStoreLinks.slice(0, 4),
+        { label: "Economía", href: "/admin/economy", icon: CircleDollarSign },
+        ...baseStoreLinks.slice(4),
+      ]
+    : baseStoreLinks;
 
   if (!open) return null;
 

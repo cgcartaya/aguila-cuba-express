@@ -11,6 +11,7 @@ import {
   Store,
 } from "lucide-react"
 import { getStores } from "@/lib/services/stores"
+import EconomyModuleToggle from "@/components/admin/saas/EconomyModuleToggle"
 
 function getPaymentBadge(status?: string | null) {
   switch (status) {
@@ -223,6 +224,8 @@ export default async function AdminStoresPage() {
                   >
                     {getPaymentText(store.payment_status)}
                   </span>
+
+                  <EconomyModuleToggle storeId={store.id} />
 
                   <Link
                     href={`/admin/stores/${store.id}/users`}

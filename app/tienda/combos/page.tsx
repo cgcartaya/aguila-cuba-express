@@ -3,7 +3,7 @@
 /* =========================================================
    TIENDA - COMBOS PÚBLICOS
 
-   Página completa para mostrar todos los combos activos.
+   Página completa para mostrar todos los combos activos..
 ========================================================= */
 
 import { useEffect, useState } from "react";
