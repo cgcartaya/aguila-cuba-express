@@ -26,6 +26,10 @@ export const PHONE_COUNTRIES: PhoneCountry[] = [
   { iso2: "ca", name: "Canadá", dialCode: "+1", digits: 10 },
   { iso2: "ch", name: "Suiza", dialCode: "+41", digits: 9 },
   { iso2: "uy", name: "Uruguay", dialCode: "+598", digits: 8 },
+  { iso2: "pa", name: "Panamá", dialCode: "+507", digits: 8 },
+  { iso2: "cr", name: "Costa Rica", dialCode: "+506", digits: 8 },
+  { iso2: "ru", name: "Rusia", dialCode: "+7", digits: 10 },
+  { iso2: "cl", name: "Chile", dialCode: "+56", digits: 9 },
 ];
 
 export const DEFAULT_PHONE_COUNTRY = PHONE_COUNTRIES[0]; // Estados Unidos
