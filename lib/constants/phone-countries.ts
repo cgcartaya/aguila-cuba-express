@@ -25,6 +25,7 @@ export const PHONE_COUNTRIES: PhoneCountry[] = [
   { iso2: "gy", name: "Guyana", dialCode: "+592", digits: 7 },
   { iso2: "ca", name: "Canadá", dialCode: "+1", digits: 10 },
   { iso2: "ch", name: "Suiza", dialCode: "+41", digits: 9 },
+  { iso2: "uy", name: "Uruguay", dialCode: "+598", digits: 8 },
 ];
 
 export const DEFAULT_PHONE_COUNTRY = PHONE_COUNTRIES[0]; // Estados Unidos
