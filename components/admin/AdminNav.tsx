@@ -16,11 +16,13 @@ import {
   Tags,
   Layers3,
   ExternalLink,
+  CircleDollarSign,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useEconomyModule } from "@/hooks/useEconomyModule";
 
 type AdminLink = {
   href: string;
@@ -41,7 +43,7 @@ const saasLinks: AdminLink[] = [
   },
 ];
 
-const storeLinks: AdminLink[] = [
+const baseStoreLinks: AdminLink[] = [
   {
     href: "/admin",
     label: "Dashboard tienda",
@@ -143,6 +145,20 @@ export default function AdminNav() {
   const activeStore = isSuperAdmin
     ? selectedStore || accessStore
     : accessStore;
+
+  const { enabled: economyEnabled } = useEconomyModule(activeStore?.id);
+
+  const storeLinks = economyEnabled || isSuperAdmin
+    ? [
+        ...baseStoreLinks.slice(0, 5),
+        {
+          href: "/admin/economy",
+          label: "Economía",
+          icon: CircleDollarSign,
+        },
+        ...baseStoreLinks.slice(5),
+      ]
+    : baseStoreLinks;
 
   const primaryColor = activeStore?.primary_color || "#0B1F4D";
   const storeName = activeStore?.name || "Tienda activa";
