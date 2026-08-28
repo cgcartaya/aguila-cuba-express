@@ -1,269 +1,91 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { BadgeDollarSign, RefreshCw, Save } from "lucide-react";
-
 import { getStoreSettings, saveStoreSettings } from "@/lib/services/settings";
 import { supabase } from "@/lib/supabase";
 
-type Props = {
-  storeId: string;
-};
-
-type CurrencyState = {
-  enabled: boolean;
-  rate: string;
-  source: "manual" | "eltoque";
-  updatedAt: string | null;
-};
-
-const EMPTY_STATE: CurrencyState = {
-  enabled: false,
-  rate: "",
-  source: "manual",
-  updatedAt: null,
-};
+type Props = { storeId: string };
+type Source = "manual" | "eltoque";
+type RateState = { rate: string; source: Source; updatedAt: string | null };
 
 export default function MenuCurrencySettings({ storeId }: Props) {
-  const [state, setState] = useState<CurrencyState>(EMPTY_STATE);
+  const [enabled, setEnabled] = useState(false);
+  const [usd, setUsd] = useState<RateState>({ rate: "", source: "manual", updatedAt: null });
+  const [eur, setEur] = useState<RateState>({ rate: "", source: "manual", updatedAt: null });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const numericRate = useMemo(() => Number(state.rate.replace(",", ".")), [state.rate]);
-  const validRate = Number.isFinite(numericRate) && numericRate > 0;
-
-  const reload = async () => {
-    const { data, error } = await getStoreSettings(storeId);
-    if (error) throw error;
-    setState({
-      enabled: data?.menu_show_usd_equivalent === true,
-      rate: data?.menu_cup_per_usd ? String(data.menu_cup_per_usd) : "",
-      source: data?.menu_exchange_rate_source === "eltoque" ? "eltoque" : "manual",
-      updatedAt: data?.menu_exchange_rate_updated_at || null,
-    });
-  };
-
-  useEffect(() => {
-    let active = true;
+  const load = async () => {
     setLoading(true);
-
-    getStoreSettings(storeId)
-      .then(({ data, error }) => {
-        if (!active) return;
-        if (error) {
-          setMessage("No se pudo cargar la configuración de moneda.");
-          return;
-        }
-        setState({
-          enabled: data?.menu_show_usd_equivalent === true,
-          rate: data?.menu_cup_per_usd ? String(data.menu_cup_per_usd) : "",
-          source: data?.menu_exchange_rate_source === "eltoque" ? "eltoque" : "manual",
-          updatedAt: data?.menu_exchange_rate_updated_at || null,
-        });
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [storeId]);
-
-  const refreshElToque = async () => {
-    setRefreshing(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      if (!token) throw new Error("No hay una sesión válida para actualizar la tasa.");
-
-      const response = await fetch("/api/admin/menu/eltoque-refresh", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ storeId }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data?.error || "No se pudo actualizar desde elTOQUE.");
-
-      await reload();
-      setMessage(`Tasa actualizada desde elTOQUE: 1 USD = ${data.rate} CUP.`);
-      return true;
-    } catch (error) {
-      setMessage(
-        `${error instanceof Error ? error.message : "No se pudo actualizar desde elTOQUE."} Se conserva la última tasa válida.`
-      );
-      return false;
-    } finally {
-      setRefreshing(false);
+    const { data, error } = await getStoreSettings(storeId);
+    if (error) setMessage("No se pudo cargar la configuración de moneda.");
+    else {
+      setEnabled(data?.menu_show_usd_equivalent === true);
+      setUsd({ rate: data?.menu_cup_per_usd ? String(data.menu_cup_per_usd) : "", source: data?.menu_exchange_rate_source === "eltoque" ? "eltoque" : "manual", updatedAt: data?.menu_exchange_rate_updated_at || null });
+      setEur({ rate: data?.menu_cup_per_eur ? String(data.menu_cup_per_eur) : "", source: data?.menu_eur_exchange_rate_source === "eltoque" ? "eltoque" : "manual", updatedAt: data?.menu_eur_exchange_rate_updated_at || null });
     }
+    setLoading(false);
   };
+  useEffect(() => { load(); }, [storeId]);
 
+  const number = (value: string) => Number(value.replace(",", "."));
   const save = async () => {
-    if (state.source === "manual" && state.enabled && !validRate) {
-      setMessage("Escribe una tasa válida, por ejemplo 420.");
-      return;
-    }
-
-    setSaving(true);
-    setMessage(null);
-    const now = new Date().toISOString();
-
-    const { error } = await saveStoreSettings(
-      {
-        menu_show_usd_equivalent: state.enabled,
-        menu_cup_per_usd: state.source === "manual" ? (validRate ? numericRate : null) : undefined,
-        menu_exchange_rate_source: state.source,
-        menu_exchange_rate_updated_at:
-          state.source === "manual" ? (validRate ? now : null) : undefined,
-      },
-      storeId
-    );
-
-    if (error) {
-      setMessage("No se pudo guardar la tasa de cambio.");
-      setSaving(false);
-      return;
-    }
-
-    if (state.source === "manual") {
-      setState((current) => ({ ...current, updatedAt: validRate ? now : null }));
-      setMessage("Configuración guardada. El menú público ya puede mostrar el equivalente USD.");
-      setSaving(false);
-      return;
-    }
-
+    const usdRate = number(usd.rate), eurRate = number(eur.rate);
+    if (usd.source === "manual" && (!Number.isFinite(usdRate) || usdRate <= 0)) return setMessage("Escribe una tasa USD válida o selecciona elTOQUE.");
+    if (eur.source === "manual" && eur.rate && (!Number.isFinite(eurRate) || eurRate <= 0)) return setMessage("Escribe una tasa EUR válida o selecciona elTOQUE.");
+    setSaving(true); setMessage(null); const now = new Date().toISOString();
+    const { error } = await saveStoreSettings({
+      menu_show_usd_equivalent: enabled,
+      menu_cup_per_usd: usd.source === "manual" ? usdRate : undefined,
+      menu_exchange_rate_source: usd.source,
+      menu_exchange_rate_updated_at: usd.source === "manual" ? now : undefined,
+      menu_cup_per_eur: eur.source === "manual" ? (eur.rate ? eurRate : null) : undefined,
+      menu_eur_exchange_rate_source: eur.source,
+      menu_eur_exchange_rate_updated_at: eur.source === "manual" && eur.rate ? now : undefined,
+    }, storeId);
     setSaving(false);
-    setMessage("Fuente elTOQUE guardada. Buscando la tasa actual...");
-    await refreshElToque();
+    if (error) return setMessage("No se pudo guardar la configuración.");
+    setMessage("Configuración guardada. CUP, USD y EUR ya están preparados para el selector del menú.");
+    await load();
   };
 
-  if (loading) {
-    return (
-      <section className="mt-5 rounded-3xl border border-slate-200/80 bg-white p-5 text-sm font-semibold text-slate-500 shadow-[0_8px_28px_rgba(15,23,42,.04)]">
-        Cargando configuración de moneda...
-      </section>
-    );
-  }
+  const refresh = async () => {
+    setRefreshing(true); setMessage("Consultando USD y EUR en elTOQUE...");
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) { setRefreshing(false); return setMessage("La sesión expiró. Vuelve a iniciar sesión."); }
+    const response = await fetch("/api/admin/menu/eltoque-refresh", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ storeId }) });
+    const result = await response.json();
+    setRefreshing(false);
+    if (!response.ok) return setMessage(result.error || "No se pudieron actualizar las tasas.");
+    setMessage(`elTOQUE actualizado: USD ${result.usd} CUP · EUR ${result.eur} CUP.`);
+    await load();
+  };
 
-  return (
-    <section className="mt-5 overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-[0_8px_28px_rgba(15,23,42,.04)]">
-      <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-white p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
-            <BadgeDollarSign size={22} />
-          </div>
-          <div>
-            <h2 className="text-lg font-black text-[#071B35]">Precio de referencia en USD</h2>
-            <p className="mt-1 max-w-2xl text-xs font-semibold leading-5 text-slate-500">
-              Mantiene el precio real del menú en CUP y muestra debajo un equivalente aproximado en USD.
-            </p>
-          </div>
-        </div>
+  if (loading) return <section className="mt-5 rounded-3xl border bg-white p-5 text-sm font-semibold text-slate-500">Cargando configuración de moneda...</section>;
 
-        <label className="inline-flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-          <input
-            type="checkbox"
-            checked={state.enabled}
-            onChange={(event) => setState((current) => ({ ...current, enabled: event.target.checked }))}
-            className="h-4 w-4 accent-emerald-600"
-          />
-          <span className="text-sm font-black text-slate-700">Mostrar USD en el menú</span>
-        </label>
-      </div>
-
-      <div className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
-        <label>
-          <span className="mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-500">Tasa de cambio</span>
-          <div className="flex items-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 focus-within:border-emerald-300">
-            <span className="border-r border-slate-200 px-3 py-3 text-sm font-black text-slate-500">1 USD =</span>
-            <input
-              inputMode="decimal"
-              value={state.rate}
-              disabled={state.source === "eltoque"}
-              onChange={(event) => setState((current) => ({ ...current, rate: event.target.value }))}
-              placeholder="420"
-              className="min-w-0 flex-1 bg-transparent px-3 py-3 text-base font-black text-[#071B35] outline-none disabled:cursor-not-allowed disabled:text-slate-400"
-            />
-            <span className="px-3 py-3 text-sm font-black text-slate-500">CUP</span>
-          </div>
-          {state.source === "eltoque" && (
-            <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">
-              Tasa controlada automáticamente por elTOQUE.
-            </p>
-          )}
-        </label>
-
-        <div>
-          <span className="mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-500">Fuente</span>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setState((current) => ({ ...current, source: "manual" }))}
-              className={`rounded-2xl border px-4 py-3 text-sm font-black ${state.source === "manual" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500"}`}
-            >
-              Manual
-            </button>
-            <button
-              type="button"
-              onClick={() => setState((current) => ({ ...current, source: "eltoque" }))}
-              className={`rounded-2xl border px-4 py-3 text-sm font-black ${state.source === "eltoque" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500"}`}
-              title="Actualización automática diaria desde elTOQUE"
-            >
-              elTOQUE
-            </button>
-          </div>
-          <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-            Manual: tú controlas la tasa. elTOQUE: se actualiza al guardar y luego automáticamente una vez al día.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={save}
-            disabled={saving || refreshing}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#071B35] px-5 py-3 text-sm font-black text-white shadow-sm disabled:opacity-60"
-          >
-            {saving || refreshing ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-            {saving ? "Guardando..." : refreshing ? "Consultando elTOQUE..." : "Guardar"}
-          </button>
-          {state.source === "eltoque" && (
-            <button
-              type="button"
-              onClick={refreshElToque}
-              disabled={saving || refreshing}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-xs font-black text-emerald-800 disabled:opacity-60"
-            >
-              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} /> Actualizar ahora
-            </button>
-          )}
+  const CurrencyCard = ({ label, flag, symbol, value, setValue }: { label: string; flag: string; symbol: string; value: RateState; setValue: (v: RateState) => void }) => (
+    <div className="rounded-2xl border border-slate-200 p-4">
+      <div className="mb-3 flex items-center gap-2"><span className="text-2xl">{flag}</span><div><p className="font-black text-[#071B35]">{label}</p><p className="text-[10px] font-bold text-slate-400">1 {symbol} = CUP</p></div></div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="flex overflow-hidden rounded-xl border bg-slate-50"><input disabled={value.source === "eltoque"} value={value.rate} onChange={e => setValue({ ...value, rate: e.target.value })} inputMode="decimal" placeholder="Tasa en CUP" className="min-w-0 flex-1 bg-transparent px-3 py-2.5 font-black outline-none disabled:text-slate-400"/><span className="px-3 py-2.5 text-xs font-black text-slate-400">CUP</span></div>
+        <div className="grid grid-cols-2 gap-2">
+          {(["manual", "eltoque"] as Source[]).map(source => <button key={source} type="button" onClick={() => setValue({ ...value, source })} className={`rounded-xl border px-3 py-2.5 text-xs font-black ${value.source === source ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-500"}`}>{source === "manual" ? "Manual" : "elTOQUE"}</button>)}
         </div>
       </div>
-
-      <div className="border-t border-slate-100 px-5 py-4">
-        <div className="rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600">
-          Vista previa: {validRate ? (
-            <><strong className="text-[#071B35]">1,650 CUP</strong> · ≈ <strong className="text-emerald-700">${(1650 / numericRate).toFixed(2)} USD</strong></>
-          ) : (
-            state.source === "eltoque" ? "esperando la primera tasa automática de elTOQUE" : "escribe una tasa para ver la conversión"
-          )}
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-400">
-          <span>
-            Fuente activa: <strong className="text-slate-600">{state.source === "eltoque" ? "elTOQUE · automática" : "Manual"}</strong>
-          </span>
-          {state.updatedAt && (
-            <span>· Última actualización: {new Date(state.updatedAt).toLocaleString("es-CU")}</span>
-          )}
-        </div>
-        {message && <p className="mt-2 text-xs font-bold text-emerald-700">{message}</p>}
-      </div>
-    </section>
+      <p className="mt-2 text-[10px] font-semibold text-slate-400">{value.source === "eltoque" ? "Actualización automática diaria" : "Tasa controlada por el restaurante"}{value.updatedAt ? ` · ${new Date(value.updatedAt).toLocaleString("es-CU")}` : ""}</p>
+    </div>
   );
+
+  return <section className="mt-5 overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-sm">
+    <div className="flex flex-col gap-4 border-b bg-gradient-to-r from-emerald-50 to-white p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700"><BadgeDollarSign/></div><div><h2 className="text-lg font-black">Selector de monedas del menú</h2><p className="text-xs font-semibold text-slate-500">El cliente podrá elegir 🇨🇺 CUP, 🇺🇸 USD o 🇪🇺 EUR. El precio base siempre permanece en CUP.</p></div></div>
+      <label className="flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-sm font-black"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)} className="accent-emerald-600"/>Activar selector</label>
+    </div>
+    <div className="grid gap-4 p-5 lg:grid-cols-2"><CurrencyCard label="Dólar estadounidense" flag="🇺🇸" symbol="USD" value={usd} setValue={setUsd}/><CurrencyCard label="Euro" flag="🇪🇺" symbol="EUR" value={eur} setValue={setEur}/></div>
+    <div className="flex flex-wrap items-center gap-2 border-t px-5 py-4"><button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#071B35] px-5 py-3 text-sm font-black text-white"><Save size={16}/>{saving ? "Guardando..." : "Guardar"}</button>{(usd.source === "eltoque" || eur.source === "eltoque") && <button onClick={refresh} disabled={refreshing} className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800"><RefreshCw size={16} className={refreshing ? "animate-spin" : ""}/>{refreshing ? "Actualizando..." : "Actualizar ahora"}</button>}{message && <p className="text-xs font-bold text-emerald-700">{message}</p>}</div>
+  </section>;
 }
