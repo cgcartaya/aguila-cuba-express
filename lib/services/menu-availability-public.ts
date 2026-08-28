@@ -120,23 +120,22 @@ export async function getMenuChannelAvailabilityMap(
 
   return Object.fromEntries(
     (items || []).map((item) => {
-      const deliveryPausedToday = item.delivery_paused_date === date;
+      const operationalBlockActive = Boolean(
+        item.delivery_paused_date && item.delivery_paused_date >= date
+      );
       const permanentlyRestaurantOnly = item.available_delivery === false;
-      const restaurantOnly = deliveryPausedToday || permanentlyRestaurantOnly;
+      const restaurantOnly = operationalBlockActive || permanentlyRestaurantOnly;
 
-      const reason = deliveryPausedToday
-        ? item.delivery_pause_reason || "Solo disponible para consumir en el restaurante hoy"
+      const reason = operationalBlockActive
+        ? item.delivery_pause_reason || "Solo disponible para consumir en el restaurante"
         : permanentlyRestaurantOnly
-          ? item.delivery_pause_reason || "Solo disponible para consumir en el restaurante"
+          ? "Solo disponible para consumir en el restaurante"
           : null;
 
       return [
         item.id,
         {
           dine_in: item.available_dine_in !== false,
-          // Regla comercial: si no sale por delivery tampoco sale para recogida.
-          // Conservamos las columnas existentes, pero exponemos una única regla
-          // coherente a menú, carrito y checkout.
           takeaway: restaurantOnly ? false : item.available_takeaway !== false,
           delivery: restaurantOnly ? false : item.available_delivery !== false,
           delivery_reason: reason,
