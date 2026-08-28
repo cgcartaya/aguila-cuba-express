@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Plus, Rocket, Store } from "lucide-react";
+import { ExternalLink, Plus, Rocket, Store, UserRound } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
@@ -10,6 +10,7 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
 import { usePendingMenuOrdersCount } from "@/hooks/usePendingMenuOrdersCount";
+import { useAdminProfile } from "@/hooks/useAdminProfile";
 import { getVisibleAdminSections } from "@/lib/admin/nav-config";
 import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
 
@@ -22,17 +23,14 @@ export default function StoreAdminNav() {
   const pathname = usePathname();
   const { store: selectedStore } = useStore();
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
+  const { profile } = useAdminProfile();
 
   const activeStore = isSuperAdmin ? selectedStore || accessStore : accessStore;
   const theme = getStoreTheme(activeStore);
-  // Probando: el lateral ahora se pinta con el color SECUNDARIO en vez
-  // del primario. El primario queda como acento (botón "Agregar
-  // producto", ítem activo del menú) para que siga resaltando encima.
   const sidebarBg = theme.secondary;
   const textColor = theme.textOnSecondary;
   const accentColor = theme.primary;
   const storeName = activeStore?.name || "Tienda activa";
-
   const publicStoreHref = "/portal";
 
   const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
@@ -40,31 +38,46 @@ export default function StoreAdminNav() {
   const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
   const pendingMenuOrdersCount = usePendingMenuOrdersCount(activeStore?.id);
 
+  const initials = profile.fullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || profile.email.slice(0, 1).toUpperCase() || "U";
+
   return (
     <aside
-      className="
-        fixed
-        inset-y-0
-        left-0
-        z-40
-        hidden
-        h-screen
-        w-72
-        overflow-hidden
-        p-5
-        shadow-xl
-        xl:flex
-        xl:flex-col
-      "
+      className="fixed inset-y-0 left-0 z-40 hidden h-screen w-72 overflow-hidden p-5 shadow-xl xl:flex xl:flex-col"
       style={{ backgroundColor: sidebarBg, color: textColor }}
     >
       <div className="mb-6 shrink-0">
-        <div
-          className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: withAlpha(textColor, 0.15) }}
-        >
-          <Store size={24} />
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div
+            className="flex h-12 w-12 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: withAlpha(textColor, 0.15) }}
+          >
+            <Store size={24} />
+          </div>
+
+          <Link
+            href="/admin/account"
+            aria-label="Abrir mi perfil"
+            title={profile.fullName || profile.email || "Mi perfil"}
+            className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border transition hover:scale-[1.03]"
+            style={{
+              borderColor: withAlpha(textColor, 0.28),
+              backgroundColor: withAlpha(textColor, 0.12),
+              color: textColor,
+            }}
+          >
+            {profile.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="Mi perfil" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-sm font-black">{initials}</span>
+            )}
+          </Link>
         </div>
+
         <h1 className="line-clamp-2 text-xl font-black">{storeName}</h1>
         <p className="text-sm font-semibold" style={{ color: withAlpha(textColor, 0.7) }}>
           Administración de tienda
@@ -135,25 +148,19 @@ export default function StoreAdminNav() {
                     {link.label}
 
                     {link.href === "/admin/inventory" && lowStockCount > 0 && (
-                      <span
-                        className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
-                      >
+                      <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white">
                         {lowStockCount > 99 ? "99+" : lowStockCount}
                       </span>
                     )}
 
                     {link.href === "/admin/reservas/solicitudes" && pendingReservationsCount > 0 && (
-                      <span
-                        className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
-                      >
+                      <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white">
                         {pendingReservationsCount > 99 ? "99+" : pendingReservationsCount}
                       </span>
                     )}
 
                     {link.href === "/admin/menu/ordenes" && pendingMenuOrdersCount > 0 && (
-                      <span
-                        className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white"
-                      >
+                      <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-black text-white">
                         {pendingMenuOrdersCount > 99 ? "99+" : pendingMenuOrdersCount}
                       </span>
                     )}
@@ -167,9 +174,20 @@ export default function StoreAdminNav() {
 
       <div className="shrink-0 border-t pt-4" style={{ borderColor: withAlpha(textColor, 0.2) }}>
         <Link
+          href="/admin/account"
+          className={`flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80 ${
+            pathname.startsWith("/admin/account") ? "bg-white shadow-lg" : ""
+          }`}
+          style={pathname.startsWith("/admin/account") ? { color: accentColor } : { color: textColor }}
+        >
+          <UserRound size={20} />
+          Mi perfil
+        </Link>
+
+        <Link
           href={publicStoreHref}
           target="_blank"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80"
+          className="mt-1 flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80"
           style={{ color: textColor }}
         >
           <ExternalLink size={20} />
