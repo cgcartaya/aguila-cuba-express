@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { BadgeDollarSign, RefreshCw, Save } from "lucide-react";
 
 import { getStoreSettings, saveStoreSettings } from "@/lib/services/settings";
+import { supabase } from "@/lib/supabase";
 
 type Props = {
   storeId: string;
@@ -27,15 +28,27 @@ export default function MenuCurrencySettings({ storeId }: Props) {
   const [state, setState] = useState<CurrencyState>(EMPTY_STATE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const numericRate = useMemo(() => Number(state.rate.replace(",", ".")), [state.rate]);
   const validRate = Number.isFinite(numericRate) && numericRate > 0;
 
+  const reload = async () => {
+    const { data, error } = await getStoreSettings(storeId);
+    if (error) throw error;
+    setState({
+      enabled: data?.menu_show_usd_equivalent === true,
+      rate: data?.menu_cup_per_usd ? String(data.menu_cup_per_usd) : "",
+      source: data?.menu_exchange_rate_source === "eltoque" ? "eltoque" : "manual",
+      updatedAt: data?.menu_exchange_rate_updated_at || null,
+    });
+  };
+
   useEffect(() => {
     let active = true;
-
     setLoading(true);
+
     getStoreSettings(storeId)
       .then(({ data, error }) => {
         if (!active) return;
@@ -43,7 +56,6 @@ export default function MenuCurrencySettings({ storeId }: Props) {
           setMessage("No se pudo cargar la configuración de moneda.");
           return;
         }
-
         setState({
           enabled: data?.menu_show_usd_equivalent === true,
           rate: data?.menu_cup_per_usd ? String(data.menu_cup_per_usd) : "",
@@ -59,6 +71,38 @@ export default function MenuCurrencySettings({ storeId }: Props) {
       active = false;
     };
   }, [storeId]);
+
+  const refreshElToque = async () => {
+    setRefreshing(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("No hay una sesión válida para actualizar la tasa.");
+
+      const response = await fetch("/api/admin/menu/eltoque-refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ storeId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error || "No se pudo actualizar desde elTOQUE.");
+
+      await reload();
+      setMessage(`Tasa actualizada desde elTOQUE: 1 USD = ${data.rate} CUP.`);
+      return true;
+    } catch (error) {
+      setMessage(
+        `${error instanceof Error ? error.message : "No se pudo actualizar desde elTOQUE."} Se conserva la última tasa válida.`
+      );
+      return false;
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const save = async () => {
     if (state.source === "manual" && state.enabled && !validRate) {
@@ -90,13 +134,13 @@ export default function MenuCurrencySettings({ storeId }: Props) {
     if (state.source === "manual") {
       setState((current) => ({ ...current, updatedAt: validRate ? now : null }));
       setMessage("Configuración guardada. El menú público ya puede mostrar el equivalente USD.");
-    } else {
-      setMessage(
-        "Fuente elTOQUE activada. La tasa se actualizará automáticamente una vez al día; si la fuente falla se conserva la última tasa válida."
-      );
+      setSaving(false);
+      return;
     }
 
     setSaving(false);
+    setMessage("Fuente elTOQUE guardada. Buscando la tasa actual...");
+    await refreshElToque();
   };
 
   if (loading) {
@@ -175,19 +219,31 @@ export default function MenuCurrencySettings({ storeId }: Props) {
             </button>
           </div>
           <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-            Manual: tú controlas la tasa. elTOQUE: Vercel la revisa automáticamente una vez al día.
+            Manual: tú controlas la tasa. elTOQUE: se actualiza al guardar y luego automáticamente una vez al día.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#071B35] px-5 py-3 text-sm font-black text-white shadow-sm disabled:opacity-60"
-        >
-          {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-          {saving ? "Guardando..." : "Guardar"}
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving || refreshing}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#071B35] px-5 py-3 text-sm font-black text-white shadow-sm disabled:opacity-60"
+          >
+            {saving || refreshing ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
+            {saving ? "Guardando..." : refreshing ? "Consultando elTOQUE..." : "Guardar"}
+          </button>
+          {state.source === "eltoque" && (
+            <button
+              type="button"
+              onClick={refreshElToque}
+              disabled={saving || refreshing}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-xs font-black text-emerald-800 disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} /> Actualizar ahora
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="border-t border-slate-100 px-5 py-4">
