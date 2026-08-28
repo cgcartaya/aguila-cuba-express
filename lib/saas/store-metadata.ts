@@ -19,6 +19,11 @@ export type StoreMetadataRow = {
   has_landing: boolean | null;
 };
 
+export type StoreMetadataOverrides = {
+  title?: string | null;
+  description?: string | null;
+};
+
 export function normalizeStoreHost(value: string) {
   return value
     .split(",")[0]
@@ -81,16 +86,6 @@ async function fetchStore(
         apikey: supabaseAnonKey,
         Authorization: `Bearer ${supabaseAnonKey}`,
       },
-
-      /*
-       * La identidad/branding de una tienda es demasiado sensible para
-       * compartir una respuesta ISR entre requests. El host/slug se consulta
-       * siempre de forma fresca y los datos funcionales siguen teniendo sus
-       * propios filtros por store_id.
-       *
-       * Esto elimina cualquier posibilidad de arrastrar durante varios
-       * minutos title/favicon/OG de una configuración anterior.
-       */
       cache: "no-store",
     });
 
@@ -156,15 +151,6 @@ export function getStorePublicBaseUrl(store: StoreMetadataRow) {
   return `https://${PLATFORM_DOMAIN}/tienda/${store.slug}`;
 }
 
-/**
- * URL pública real de la tienda.
- *
- * - Tienda con landing + dominio propio: https://dominio.com/tienda
- * - Tienda sin landing + dominio/subdominio: https://dominio.com
- * - Sin dominio propio: https://perlamarketplace.com/tienda/slug
- *
- * Esto evita publicar como canonical una ruta interna generada por middleware.
- */
 export function getStorefrontCanonicalUrl(store: StoreMetadataRow) {
   const hasOwnHost = Boolean(
     normalizeStoreHost(store.domain || "") ||
@@ -228,13 +214,16 @@ export function buildPerlaMetadata(): Metadata {
 
 export function buildStoreMetadata(
   store: StoreMetadataRow,
-  canonicalUrl: string
+  canonicalUrl: string,
+  overrides: StoreMetadataOverrides = {}
 ): Metadata {
   const title =
+    overrides.title?.trim() ||
     store.meta_title?.trim() ||
     `${store.name} | Tienda online`;
 
   const description =
+    overrides.description?.trim() ||
     store.meta_description?.trim() ||
     `Compra productos disponibles en ${store.name}.`;
 
