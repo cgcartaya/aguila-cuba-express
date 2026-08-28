@@ -11,8 +11,10 @@ export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURICom
 
 export const PHONE_DISPLAY = "+53 5299 4719";
 
-// Ruta de la tienda dentro de Perla Marketplace (slug real: deparis)
-export const STORE_URL = "/tienda/deparis";
+// Ruta pública de la tienda dentro del dominio propio de DeParis.
+// Al ser relativa, desde https://depariscienfuegos.com apunta a
+// https://depariscienfuegos.com/tienda y evita exponer el slug interno.
+export const STORE_URL = "/tienda";
 
 // Bar & Restaurante y Mercado son dos locales físicos distintos en
 // Cienfuegos — cada uno con su propia dirección y enlace de mapa.
