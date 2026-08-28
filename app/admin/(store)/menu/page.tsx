@@ -18,6 +18,7 @@ import {
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import CategoryManager from "@/components/admin/menu/CategoryManager";
 import MenuItemCard from "@/components/admin/menu/MenuItemCard";
+import MenuCurrencySettings from "@/components/admin/menu/MenuCurrencySettings";
 import {
   deleteMenuItem,
   getMenuCategoriesForAdmin,
@@ -153,6 +154,8 @@ export default function AdminMenuPage() {
                 </div>
               ))}
             </section>
+
+            {activeStore?.id && <MenuCurrencySettings storeId={activeStore.id} />}
 
             {categories.length === 0 ? (
               <div className="mt-5 rounded-3xl bg-white p-10 text-center shadow-sm">
