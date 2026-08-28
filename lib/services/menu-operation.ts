@@ -159,6 +159,9 @@ export async function setMenuItemManualUnavailable(
     .single();
 }
 
+// Conservamos los nombres de columna por compatibilidad con la base actual.
+// En la experiencia pública esta pausa significa "solo en el restaurante hoy":
+// bloquea tanto recogida como delivery hasta cambiar el día del restaurante.
 export async function setMenuItemDeliveryPausedToday(
   storeId: string,
   itemId: string,
@@ -180,7 +183,7 @@ export async function setMenuItemDeliveryPausedToday(
     .update({
       delivery_paused_date: paused ? today : null,
       delivery_pause_reason: paused
-        ? reason?.trim().slice(0, 160) || "No disponible para delivery hoy"
+        ? reason?.trim().slice(0, 160) || "Solo disponible para consumir en el restaurante hoy"
         : null,
     })
     .eq("id", itemId)
