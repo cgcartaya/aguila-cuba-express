@@ -42,7 +42,6 @@ function normalizeHost(value: string | null) {
 function resolveLanding(host: string): LandingType {
   const normalizedHost = normalizeHost(host);
 
-  // Dominios personalizados de Águila.
   if (
     normalizedHost === "aguilacubaexpress.com" ||
     normalizedHost === "aguila-cuba-express.com" ||
@@ -55,7 +54,6 @@ function resolveLanding(host: string): LandingType {
     return "aguila";
   }
 
-  // Subdominios/dominios admitidos de YOYO.
   if (
     normalizedHost === `yoyo.${PLATFORM_DOMAIN}` ||
     normalizedHost === `yoyo-envios.${PLATFORM_DOMAIN}` ||
@@ -65,7 +63,6 @@ function resolveLanding(host: string): LandingType {
     return "yoyo";
   }
 
-  // Subdominio y dominios personalizados de De Paris.
   if (
     normalizedHost === `deparis.${PLATFORM_DOMAIN}` ||
     normalizedHost.startsWith("deparis.") ||
@@ -76,13 +73,9 @@ function resolveLanding(host: string): LandingType {
     return "deparis";
   }
 
-  // Subdominio y dominios personalizados de Jota Jota.
   if (
     normalizedHost === `jotajota.${PLATFORM_DOMAIN}` ||
     normalizedHost.startsWith("jotajota.")
-    // TODO: cuando tengan dominio propio (ej. jotajotapizza.com), agréguenlo aquí:
-    // || normalizedHost === "jotajotapizza.com"
-    // || normalizedHost.startsWith("jotajotapizza.")
   ) {
     return "jotajota";
   }
@@ -102,12 +95,6 @@ async function getCurrentLanding(): Promise<LandingType> {
   return resolveLanding(await getCurrentHost());
 }
 
-/**
- * Fallback aislado.
- *
- * Si Supabase no pudiera resolver temporalmente una tienda, NO dejamos
- * que OpenGraph/Twitter hereden datos de otra marca desde el layout raíz.
- */
 function buildLandingFallbackMetadata(
   title: string,
   description: string,
@@ -118,9 +105,7 @@ function buildLandingFallbackMetadata(
     metadataBase: new URL(canonicalUrl),
     title,
     description,
-    alternates: {
-      canonical: canonicalUrl,
-    },
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title,
       description,
@@ -136,26 +121,14 @@ function buildLandingFallbackMetadata(
       description,
       images: [],
     },
-    icons: {
-      icon: [],
-      shortcut: [],
-      apple: [],
-    },
-    robots: {
-      index: true,
-      follow: true,
-    },
+    icons: { icon: [], shortcut: [], apple: [] },
+    robots: { index: true, follow: true },
   };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = await getCurrentHost();
 
-  /*
-   * PRIMERA REGLA:
-   * si el dominio/subdominio pertenece a una tienda registrada, toda la
-   * metadata sale de ESA tienda. No usamos slug fijo ni branding por defecto.
-   */
   if (
     host &&
     host !== PLATFORM_DOMAIN &&
@@ -173,20 +146,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const landing = resolveLanding(host);
 
   if (landing === "aguila") {
-    const canonicalUrl = host
-      ? `https://${host}`
-      : "https://aguilacubaexpress.com";
-
-    /*
-     * Águila puede responder por varios dominios históricos.
-     * Si el host actual no coincide con stores.domain, recuperamos la misma
-     * tienda por su slug para conservar favicon, OG image y logo.
-     */
+    const canonicalUrl = host ? `https://${host}` : "https://aguilacubaexpress.com";
     const store = await resolveStoreBySlug("aguila");
 
-    if (store) {
-      return buildStoreMetadata(store, canonicalUrl);
-    }
+    if (store) return buildStoreMetadata(store, canonicalUrl);
 
     return buildLandingFallbackMetadata(
       "Aguila Express USA | Paquetería, compras y envíos",
@@ -197,9 +160,7 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   if (landing === "yoyo") {
-    const canonicalUrl = host
-      ? `https://${host}`
-      : `https://yoyo.${PLATFORM_DOMAIN}`;
+    const canonicalUrl = host ? `https://${host}` : `https://yoyo.${PLATFORM_DOMAIN}`;
 
     return buildLandingFallbackMetadata(
       "YOYO Envíos | Envíos seguros a Cuba",
@@ -210,32 +171,28 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   if (landing === "deparis") {
-    const canonicalUrl = host
-      ? `https://${host}`
-      : "https://depariscuba.com";
+    const canonicalUrl = host ? `https://${host}` : "https://depariscienfuegos.com";
+
+    // Si el dominio no pudo resolverse temporalmente, intentamos por slug
+    // antes de usar un fallback sin imagen. Así el SEO configurado en el
+    // admin sigue siendo la fuente de verdad para DeParis.
+    const store = await resolveStoreBySlug("deparis");
+
+    if (store) return buildStoreMetadata(store, canonicalUrl);
 
     return buildLandingFallbackMetadata(
-      "De Paris | Panadería, bistró y mercado gourmet",
-      "Panadería francesa, bistró y mercado gourmet — pide en línea con entrega y rastreo.",
+      "DeParis | Restaurante en Cienfuegos",
+      "Restaurante en Cienfuegos con comida cubana, bar, reservas y pedidos en línea.",
       canonicalUrl,
-      "De Paris"
+      "DeParis"
     );
   }
 
   if (landing === "jotajota") {
-    const canonicalUrl = host
-      ? `https://${host}`
-      : `https://jotajota.${PLATFORM_DOMAIN}`;
-
-    /*
-     * Igual que Águila: recuperamos la tienda por su slug para heredar
-     * favicon, OG image y logo reales en vez de valores genéricos.
-     */
+    const canonicalUrl = host ? `https://${host}` : `https://jotajota.${PLATFORM_DOMAIN}`;
     const store = await resolveStoreBySlug("jotajota");
 
-    if (store) {
-      return buildStoreMetadata(store, canonicalUrl);
-    }
+    if (store) return buildStoreMetadata(store, canonicalUrl);
 
     return buildLandingFallbackMetadata(
       "Jota Jota | Snack Bar Napolitano",
@@ -256,9 +213,7 @@ export default async function HomePage() {
     return <AguilaLanding logoUrl={store?.logo_url || null} />;
   }
 
-  if (landing === "yoyo") {
-    return <YoyoLanding />;
-  }
+  if (landing === "yoyo") return <YoyoLanding />;
 
   if (landing === "deparis") {
     const [menuEnabled, featuredItems, reservasEnabled] = await Promise.all([
@@ -281,10 +236,7 @@ export default async function HomePage() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(DEPARIS_STRUCTURED_DATA).replace(
-              /</g,
-              "\\u003c"
-            ),
+            __html: JSON.stringify(DEPARIS_STRUCTURED_DATA).replace(/</g, "\\u003c"),
           }}
         />
         <DeParisLanding
