@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { getStoreBySlug } from "@/lib/services/stores";
+import { buildStoreMetadata, resolveStoreBySlug } from "@/lib/saas/store-metadata";
 import ReservasPageClient from "@/components/reservas/ReservasPageClient";
 import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
@@ -32,9 +33,12 @@ async function getCanonicalUrl(pathname: string) {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const store = await getStoreBySlug(slug);
+  const [store, metadataStore] = await Promise.all([
+    getStoreBySlug(slug),
+    resolveStoreBySlug(slug),
+  ]);
 
-  if (!store) {
+  if (!store || !metadataStore) {
     return { title: "Reservas | Perla Marketplace" };
   }
 
@@ -45,21 +49,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       : `Reservar mesa | ${store.name}`;
   const description =
     slug === "deparis"
-      ? "Reserva tu mesa en DeParis, restaurante ubicado en el centro histórico de Cienfuegos, Cuba."
+      ? "Reserva tu mesa en DeParis, restaurante en Cienfuegos, Cuba."
       : `Reserva tu mesa en línea en ${store.name}.`;
 
-  return {
-    title: { absolute: title },
+  return buildStoreMetadata(metadataStore, canonicalUrl, {
+    title,
     description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      type: "website",
-    },
-    robots: { index: true, follow: true },
-  };
+  });
 }
 
 export default async function ReservasPage({ params }: PageProps) {
@@ -78,10 +74,6 @@ export default async function ReservasPage({ params }: PageProps) {
     <ReservasPageClient
       storeSlug={slug}
       storeName={store.name}
-      // Mismo criterio que /menu/[slug]: la landing real de De Paris
-      // vive en "/" (detección por host en app/page.tsx), no en
-      // "/deparis" — evita repetir el 404 del botón "Volver" que ya
-      // se dio en el módulo de menú.
       landingHref={slug === "deparis" ? "/" : undefined}
       accent={store.primary_color || ""}
       bg={store.secondary_color || ""}
