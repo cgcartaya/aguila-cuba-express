@@ -1,83 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { fetchElToqueUsdCupRate } from "@/lib/services/eltoque-rate";
+import { fetchElToqueRates } from "@/lib/services/eltoque-rate";
 
 export const maxDuration = 30;
+
+function safeChange(next: number, current: unknown) {
+  const previous = Number(current || 0);
+  return previous <= 0 || Math.abs(next - previous) / previous <= 0.35;
+}
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization") || "";
   const expected = `Bearer ${process.env.CRON_SECRET || ""}`;
-
-  if (!process.env.CRON_SECRET || authHeader !== expected) {
-    return NextResponse.json({ error: "No autorizado." }, { status: 401 });
-  }
+  if (!process.env.CRON_SECRET || authHeader !== expected) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
 
   try {
-    const result = await fetchElToqueUsdCupRate();
-
-    const { data: configuredStores, error: readError } = await supabaseAdmin
+    const rates = await fetchElToqueRates();
+    const { data: rows, error } = await supabaseAdmin
       .from("store_settings")
-      .select("id, store_id, menu_cup_per_usd")
-      .eq("menu_exchange_rate_source", "eltoque");
+      .select("id, menu_cup_per_usd, menu_exchange_rate_source, menu_cup_per_eur, menu_eur_exchange_rate_source")
+      .or("menu_exchange_rate_source.eq.eltoque,menu_eur_exchange_rate_source.eq.eltoque");
+    if (error) return NextResponse.json({ error: "No se pudo leer la configuración de restaurantes." }, { status: 500 });
 
-    if (readError) {
-      console.error("Error leyendo restaurantes configurados con elTOQUE:", readError);
-      return NextResponse.json({ error: "No se pudo leer la configuración de restaurantes." }, { status: 500 });
-    }
-
-    const rows = configuredStores || [];
-    let updated = 0;
+    let updatedUsd = 0;
+    let updatedEur = 0;
     let skipped = 0;
-
-    for (const row of rows) {
-      const current = Number(row.menu_cup_per_usd || 0);
-
-      if (current > 0) {
-        const deltaPercent = Math.abs(result.rate - current) / current;
-        if (deltaPercent > 0.35) {
-          console.warn(
-            `Tasa elTOQUE ignorada para store_settings ${row.id}: cambio de ${(deltaPercent * 100).toFixed(1)}% (${current} -> ${result.rate})`
-          );
-          skipped++;
-          continue;
-        }
+    for (const row of rows || []) {
+      const patch: Record<string, unknown> = {};
+      if (row.menu_exchange_rate_source === "eltoque") {
+        if (safeChange(rates.USD.rate, row.menu_cup_per_usd)) {
+          patch.menu_cup_per_usd = rates.USD.rate;
+          patch.menu_exchange_rate_updated_at = rates.USD.fetchedAt;
+          updatedUsd++;
+        } else skipped++;
       }
-
-      const { error: updateError } = await supabaseAdmin
-        .from("store_settings")
-        .update({
-          menu_cup_per_usd: result.rate,
-          menu_exchange_rate_updated_at: result.fetchedAt,
-        })
-        .eq("id", row.id)
-        .eq("menu_exchange_rate_source", "eltoque");
-
-      if (updateError) {
-        console.error(`Error actualizando store_settings ${row.id}:`, updateError);
-        skipped++;
-        continue;
+      if (row.menu_eur_exchange_rate_source === "eltoque") {
+        if (safeChange(rates.EUR.rate, row.menu_cup_per_eur)) {
+          patch.menu_cup_per_eur = rates.EUR.rate;
+          patch.menu_eur_exchange_rate_updated_at = rates.EUR.fetchedAt;
+          updatedEur++;
+        } else skipped++;
       }
-
-      updated++;
+      if (Object.keys(patch).length) {
+        const { error: updateError } = await supabaseAdmin.from("store_settings").update(patch).eq("id", row.id);
+        if (updateError) console.error(`Error actualizando tasas ${row.id}:`, updateError);
+      }
     }
-
-    return NextResponse.json({
-      ok: true,
-      rate: result.rate,
-      fetchedAt: result.fetchedAt,
-      updatedStores: updated,
-      skippedStores: skipped,
-    });
+    return NextResponse.json({ ok: true, usd: rates.USD.rate, eur: rates.EUR.rate, fetchedAt: rates.USD.fetchedAt, updatedUsd, updatedEur, skipped });
   } catch (error) {
     console.error("Falló la actualización automática de elTOQUE:", error);
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "No se pudo obtener la tasa de elTOQUE.",
-        preservedPreviousRate: true,
-      },
-      { status: 502 }
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "No se pudieron obtener las tasas de elTOQUE.", preservedPreviousRates: true }, { status: 502 });
   }
 }
