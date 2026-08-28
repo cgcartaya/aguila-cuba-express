@@ -7,6 +7,7 @@ import { getPublicMenu } from "@/lib/services/menu";
 import { getStoreSettings } from "@/lib/services/settings";
 import { buildStoreMetadata, resolveStoreBySlug } from "@/lib/saas/store-metadata";
 import MenuPageClientHybrid from "@/components/menu/MenuPageClientHybrid";
+import MenuUsdPriceDecorator from "@/components/menu/MenuUsdPriceDecorator";
 import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
 export const revalidate = 300;
@@ -74,9 +75,21 @@ export default async function MenuPage({ params }: PageProps) {
   }
 
   const { data: settings } = await getStoreSettings(menu.store.id);
+  const cupPerUsd = settings?.menu_cup_per_usd
+    ? Number(settings.menu_cup_per_usd)
+    : null;
+  const showUsdEquivalent =
+    settings?.menu_show_usd_equivalent === true &&
+    cupPerUsd !== null &&
+    Number.isFinite(cupPerUsd) &&
+    cupPerUsd > 0;
 
   const content = (
     <Suspense fallback={null}>
+      <MenuUsdPriceDecorator
+        enabled={showUsdEquivalent}
+        cupPerUsd={cupPerUsd}
+      />
       <MenuPageClientHybrid
         store={menu.store}
         categories={menu.categories}
