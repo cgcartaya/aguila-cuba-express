@@ -23,6 +23,7 @@ export type OperationMenuGroup = {
 export type OperationMenuItem = {
   id: string;
   name: string;
+  image_url: string | null;
   is_active: boolean;
   manual_unavailable: boolean;
   stock: number | null;
@@ -80,6 +81,7 @@ export async function getOperationMenuItems(storeId: string) {
       .select(`
       id,
       name,
+      image_url,
       is_active,
       manual_unavailable,
       stock,
@@ -118,6 +120,7 @@ export async function getOperationMenuItems(storeId: string) {
   const items: OperationMenuItem[] = (data || []).map((item: any) => ({
     id: item.id,
     name: item.name,
+    image_url: item.image_url || null,
     is_active: item.is_active,
     manual_unavailable: item.manual_unavailable ?? false,
     stock: item.stock,
