@@ -35,6 +35,12 @@ export type StoreSettings = {
   favicon_url?: string | null;
   hide_products_without_images?: boolean;
 
+  // MENÚ - PRECIO DE REFERENCIA EN USD
+  menu_show_usd_equivalent?: boolean;
+  menu_cup_per_usd?: number | null;
+  menu_exchange_rate_source?: "manual" | "eltoque";
+  menu_exchange_rate_updated_at?: string | null;
+
   // LANDING BUILDER V16.5
   show_hero?: boolean;
   show_promotions?: boolean;
