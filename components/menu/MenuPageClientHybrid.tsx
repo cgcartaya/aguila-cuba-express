@@ -101,6 +101,7 @@ function getDefaultSelections(item: MenuItem) {
 function QuickOrderCard({
   item,
   soldOut,
+  restaurantOnly,
   remaining,
   accent,
   onOpen,
@@ -109,6 +110,7 @@ function QuickOrderCard({
 }: {
   item: MenuItem;
   soldOut: boolean;
+  restaurantOnly: boolean;
   remaining: number | null | undefined;
   accent: string;
   onOpen: () => void;
@@ -116,6 +118,7 @@ function QuickOrderCard({
   channels?: MenuChannelAvailability;
 }) {
   const simple = canUseInlineConfigurator(item);
+  const blockedOnline = soldOut || restaurantOnly;
   const [quantity, setQuantity] = useState(1);
   const [selections, setSelections] = useState<Record<string, string>>(
     () => getDefaultSelections(item)
@@ -160,7 +163,7 @@ function QuickOrderCard({
     );
 
   const addInline = () => {
-    if (!requiredReady || soldOut) return;
+    if (!requiredReady || blockedOnline) return;
 
     onAdd({
       lineId: crypto.randomUUID(),
@@ -176,8 +179,8 @@ function QuickOrderCard({
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-[18px] border border-[#E6DED2] bg-white shadow-[0_6px_18px_rgba(40,28,20,.05)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(40,28,20,.08)] sm:rounded-[22px]">
       <button
         type="button"
-        onClick={onOpen}
-        className="relative block h-28 w-full shrink-0 overflow-hidden bg-[#F0E9DE] text-left min-[390px]:h-32 sm:h-48"
+        onClick={() => !blockedOnline && onOpen()}
+        className={`relative block h-28 w-full shrink-0 overflow-hidden bg-[#F0E9DE] text-left min-[390px]:h-32 sm:h-48 ${blockedOnline ? "cursor-default" : ""}`}
       >
         {item.image_url ? (
           <Image
@@ -185,7 +188,7 @@ function QuickOrderCard({
             alt={item.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 420px"
-            className="object-cover transition duration-500 group-hover:scale-[1.025]"
+            className={`object-cover transition duration-500 ${blockedOnline ? "" : "group-hover:scale-[1.025]"}`}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-xs font-black uppercase tracking-[.18em] text-black/25">
@@ -210,7 +213,13 @@ function QuickOrderCard({
           </span>
         )}
 
-        {!soldOut && channels && (!channels.takeaway || !channels.delivery) && (
+        {restaurantOnly && (
+          <span className="absolute right-2 top-2 rounded-full bg-orange-500 px-2 py-1 text-[7px] font-black uppercase text-white shadow-sm sm:right-3 sm:top-3 sm:px-3 sm:text-[9px]">
+            Solo en restaurante
+          </span>
+        )}
+
+        {!blockedOnline && channels && (!channels.takeaway || !channels.delivery) && (
           <span className="absolute right-2 top-2 rounded-full bg-black/75 px-2 py-1 text-[7px] font-black uppercase text-white shadow-sm sm:right-3 sm:top-3 sm:text-[9px]">
             {channels.takeaway ? "Solo recoger" : channels.delivery ? "Solo delivery" : "Solo en el local"}
           </span>
@@ -218,7 +227,11 @@ function QuickOrderCard({
       </button>
 
       <div className="flex flex-1 flex-col p-2.5 sm:block sm:p-4">
-        <button type="button" onClick={onOpen} className="w-full text-left">
+        <button
+          type="button"
+          onClick={() => !blockedOnline && onOpen()}
+          className={`w-full text-left ${blockedOnline ? "cursor-default" : ""}`}
+        >
           <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
             <h3 className="line-clamp-2 min-h-[2.25rem] text-[13px] font-black leading-[1.125rem] text-[#201611] sm:min-h-0 sm:text-[16px] sm:leading-tight">
               {item.name}
@@ -236,7 +249,7 @@ function QuickOrderCard({
           )}
         </button>
 
-        {!soldOut && (
+        {!blockedOnline && (
           <button
             type="button"
             onClick={() =>
@@ -259,165 +272,177 @@ function QuickOrderCard({
         )}
 
         <div className="hidden sm:block">
-        {remaining !== null &&
-          remaining !== undefined &&
-          !soldOut &&
-          remaining <= 5 && (
-            <p className="mt-2 text-[10px] font-black uppercase tracking-wide text-amber-700">
-              Quedan {remaining}
-            </p>
+          {remaining !== null &&
+            remaining !== undefined &&
+            !blockedOnline &&
+            remaining <= 5 && (
+              <p className="mt-2 text-[10px] font-black uppercase tracking-wide text-amber-700">
+                Quedan {remaining}
+              </p>
+            )}
+
+          {!blockedOnline && simple && (
+            <div className="mt-4 space-y-2.5">
+              {groups.map((group) => {
+                const available = group.menu_item_options.filter(
+                  (option) => option.is_available !== false
+                );
+
+                return (
+                  <label key={group.id} className="block">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-wide text-black/45">
+                        {group.name}
+                      </span>
+                      {group.is_required ? (
+                        <span className="text-[9px] font-black uppercase text-orange-600">
+                          Requerido
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold uppercase text-black/30">
+                          Opcional
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="relative">
+                      <select
+                        value={selections[group.id] || ""}
+                        onChange={(event) =>
+                          setSelections((prev) => ({
+                            ...prev,
+                            [group.id]: event.target.value,
+                          }))
+                        }
+                        className="w-full appearance-none rounded-xl border border-[#DDD4C8] bg-[#F8F4EE] px-3 py-2.5 pr-9 text-xs font-bold text-[#201611] outline-none focus:border-orange-300"
+                      >
+                        <option value="">
+                          {group.is_required
+                            ? `Elige ${group.name.toLowerCase()}`
+                            : `${group.name} (opcional)`}
+                        </option>
+
+                        {available.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                            {Number(option.price_delta) > 0
+                              ? ` (+$${Number(option.price_delta).toFixed(2)})`
+                              : ""}
+                          </option>
+                        ))}
+                      </select>
+
+                      <ChevronDown
+                        size={14}
+                        className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black/45"
+                      />
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
           )}
 
-        {!soldOut && simple && (
-          <div className="mt-4 space-y-2.5">
-            {groups.map((group) => {
-              const available = group.menu_item_options.filter(
-                (option) => option.is_available !== false
-              );
+          {!blockedOnline && !simple && groups.length > 0 && (
+            <button
+              type="button"
+              onClick={onOpen}
+              className="mt-3 inline-flex items-center rounded-full bg-[#F4EEE6] px-3 py-1.5 text-[9px] font-black uppercase tracking-wide text-black/50"
+            >
+              Personalizable · {groups.length}{" "}
+              {groups.length === 1 ? "grupo" : "grupos"}
+            </button>
+          )}
 
-              return (
-                <label key={group.id} className="block">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-wide text-black/45">
-                      {group.name}
-                    </span>
-                    {group.is_required ? (
-                      <span className="text-[9px] font-black uppercase text-orange-600">
-                        Requerido
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-bold uppercase text-black/30">
-                        Opcional
-                      </span>
-                    )}
-                  </div>
+          {!blockedOnline && (
+            <div className="mt-4 flex items-center gap-3">
+              <div className="flex shrink-0 items-center rounded-full border border-[#DDD4C8] bg-[#F8F4EE] p-1">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-black/55 hover:bg-white"
+                  aria-label="Quitar uno"
+                >
+                  <Minus size={13} />
+                </button>
 
-                  <div className="relative">
-                    <select
-                      value={selections[group.id] || ""}
-                      onChange={(event) =>
-                        setSelections((prev) => ({
-                          ...prev,
-                          [group.id]: event.target.value,
-                        }))
-                      }
-                      className="w-full appearance-none rounded-xl border border-[#DDD4C8] bg-[#F8F4EE] px-3 py-2.5 pr-9 text-xs font-bold text-[#201611] outline-none focus:border-orange-300"
-                    >
-                      <option value="">
-                        {group.is_required
-                          ? `Elige ${group.name.toLowerCase()}`
-                          : `${group.name} (opcional)`}
-                      </option>
+                <span className="w-7 text-center text-xs font-black">
+                  {quantity}
+                </span>
 
-                      {available.map((option) => (
-                        <option key={option.id} value={option.id}>
-                          {option.label}
-                          {Number(option.price_delta) > 0
-                            ? ` (+$${Number(option.price_delta).toFixed(2)})`
-                            : ""}
-                        </option>
-                      ))}
-                    </select>
+                <button
+                  type="button"
+                  onClick={() => setQuantity((value) => value + 1)}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-black/55 hover:bg-white"
+                  aria-label="Agregar uno"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
 
-                    <ChevronDown
-                      size={14}
-                      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-black/45"
-                    />
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-        )}
-
-        {!soldOut && !simple && groups.length > 0 && (
-          <button
-            type="button"
-            onClick={onOpen}
-            className="mt-3 inline-flex items-center rounded-full bg-[#F4EEE6] px-3 py-1.5 text-[9px] font-black uppercase tracking-wide text-black/50"
-          >
-            Personalizable · {groups.length}{" "}
-            {groups.length === 1 ? "grupo" : "grupos"}
-          </button>
-        )}
-
-        {!soldOut && (
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex shrink-0 items-center rounded-full border border-[#DDD4C8] bg-[#F8F4EE] p-1">
-              <button
-                type="button"
-                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-black/55 hover:bg-white"
-                aria-label="Quitar uno"
-              >
-                <Minus size={13} />
-              </button>
-
-              <span className="w-7 text-center text-xs font-black">
-                {quantity}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => setQuantity((value) => value + 1)}
-                className="flex h-7 w-7 items-center justify-center rounded-full text-black/55 hover:bg-white"
-                aria-label="Agregar uno"
-              >
-                <Plus size={13} />
-              </button>
+              {groups.length === 0 ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onAdd({
+                      lineId: crypto.randomUUID(),
+                      menu_item_id: item.id,
+                      name: item.name,
+                      unit_base_price: item.price,
+                      quantity,
+                      selected_options: [],
+                    })
+                  }
+                  className="flex flex-1 items-center justify-center rounded-full px-4 py-2.5 text-xs font-black"
+                  style={{ backgroundColor: accent, color: "#fff" }}
+                >
+                  Agregar · ${(item.price * quantity).toFixed(2)}
+                </button>
+              ) : simple ? (
+                <button
+                  type="button"
+                  onClick={addInline}
+                  disabled={!requiredReady}
+                  className="flex flex-1 items-center justify-center rounded-full px-4 py-2.5 text-xs font-black disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ backgroundColor: accent, color: "#fff" }}
+                >
+                  Agregar · ${(unitPrice * quantity).toFixed(2)}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpen}
+                  className="flex flex-1 items-center justify-center rounded-full px-4 py-2.5 text-xs font-black"
+                  style={{ backgroundColor: accent, color: "#fff" }}
+                >
+                  Personalizar
+                </button>
+              )}
             </div>
+          )}
 
-            {groups.length === 0 ? (
-              <button
-                type="button"
-                onClick={() =>
-                  onAdd({
-                    lineId: crypto.randomUUID(),
-                    menu_item_id: item.id,
-                    name: item.name,
-                    unit_base_price: item.price,
-                    quantity,
-                    selected_options: [],
-                  })
-                }
-                className="flex flex-1 items-center justify-center rounded-full px-4 py-2.5 text-xs font-black"
-                style={{ backgroundColor: accent, color: "#fff" }}
-              >
-                Agregar · ${(item.price * quantity).toFixed(2)}
-              </button>
-            ) : simple ? (
-              <button
-                type="button"
-                onClick={addInline}
-                disabled={!requiredReady}
-                className="flex flex-1 items-center justify-center rounded-full px-4 py-2.5 text-xs font-black disabled:cursor-not-allowed disabled:opacity-40"
-                style={{ backgroundColor: accent, color: "#fff" }}
-              >
-                Agregar · ${(unitPrice * quantity).toFixed(2)}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onOpen}
-                className="flex flex-1 items-center justify-center rounded-full px-4 py-2.5 text-xs font-black"
-                style={{ backgroundColor: accent, color: "#fff" }}
-              >
-                Personalizar
-              </button>
-            )}
-          </div>
-        )}
+          {soldOut && (
+            <div className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wide text-red-600">
+              No disponible en este momento
+            </div>
+          )}
 
-        {soldOut && (
-          <div className="mt-4 rounded-xl bg-red-50 px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wide text-red-600">
-            No disponible en este momento
-          </div>
-        )}
+          {restaurantOnly && (
+            <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-center text-[10px] font-black uppercase tracking-wide text-orange-700">
+              Solo disponible para consumir en el restaurante
+            </div>
+          )}
         </div>
 
         {soldOut && (
           <div className="mt-auto rounded-lg bg-red-50 px-2 py-2 text-center text-[8px] font-black uppercase text-red-600 sm:hidden">
             No disponible
+          </div>
+        )}
+
+        {restaurantOnly && (
+          <div className="mt-auto rounded-lg border border-orange-200 bg-orange-50 px-2 py-2 text-center text-[8px] font-black uppercase text-orange-700 sm:hidden">
+            Solo en restaurante
           </div>
         )}
       </div>
@@ -576,6 +601,12 @@ export default function MenuPageClientHybrid({
   };
 
   const addLine = (line: MenuCartLine) => {
+    const channels = channelAvailability[line.menu_item_id];
+    if (channels && !channels.takeaway && !channels.delivery) {
+      showToast("Este producto solo está disponible en el restaurante");
+      return;
+    }
+
     setCart((prev) => [...prev, line]);
     trackAnalyticsEvent({
       storeId: store.id,
@@ -611,6 +642,12 @@ export default function MenuPageClientHybrid({
   };
 
   const editCartLine = (line: MenuCartLine) => {
+    const channels = channelAvailability[line.menu_item_id];
+    if (channels && !channels.takeaway && !channels.delivery) {
+      showToast("Este producto ya solo está disponible en el restaurante");
+      return;
+    }
+
     const item = allItems.find(
       (candidate) => candidate.id === line.menu_item_id
     );
@@ -621,6 +658,12 @@ export default function MenuPageClientHybrid({
   };
 
   const handleSuggestion = (itemId: string) => {
+    const channels = channelAvailability[itemId];
+    if (channels && !channels.takeaway && !channels.delivery) {
+      showToast("Este producto solo está disponible en el restaurante");
+      return;
+    }
+
     const item = allItems.find(
       (candidate) => candidate.id === itemId
     );
@@ -827,15 +870,15 @@ export default function MenuPageClientHybrid({
         } z-50 w-full border-b border-[#E9E0D4] bg-[#FBF6EC] shadow-[0_4px_14px_rgba(32,22,17,.08)] [transform:translateZ(0)]`}
       >
         <nav className="flex w-full gap-2 overflow-x-auto overscroll-x-contain px-4 py-2.5 [-webkit-overflow-scrolling:touch] sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
-            {visibleCategories.map((category) => (
-              <a
-                key={category.id}
-                href={`#cat-${category.id}`}
-                className="shrink-0 scroll-ml-4 rounded-full border border-[#DDD4C8] bg-white px-3.5 py-2 text-[9px] font-black uppercase tracking-wide text-black/55 active:border-orange-300 active:bg-orange-50"
-              >
-                {category.name}
-              </a>
-            ))}
+          {visibleCategories.map((category) => (
+            <a
+              key={category.id}
+              href={`#cat-${category.id}`}
+              className="shrink-0 scroll-ml-4 rounded-full border border-[#DDD4C8] bg-white px-3.5 py-2 text-[9px] font-black uppercase tracking-wide text-black/55 active:border-orange-300 active:bg-orange-50"
+            >
+              {category.name}
+            </a>
+          ))}
         </nav>
       </div>
 
@@ -880,15 +923,20 @@ export default function MenuPageClientHybrid({
                   {category.menu_items.map((item) => {
                     const remaining = availability[item.id];
                     const channels = channelAvailability[item.id];
-                    const soldOut =
-                      remaining === 0 ||
-                      Boolean(channels && !channels.takeaway && !channels.delivery);
+                    const soldOut = remaining === 0;
+                    const restaurantOnly = Boolean(
+                      !soldOut &&
+                        channels &&
+                        !channels.takeaway &&
+                        !channels.delivery
+                    );
 
                     return (
                       <QuickOrderCard
                         key={item.id}
                         item={item}
                         soldOut={soldOut}
+                        restaurantOnly={restaurantOnly}
                         remaining={remaining}
                         accent={accent}
                         onOpen={() => setActiveItem(item)}
