@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 
 import { getPublicMenu } from "@/lib/services/menu";
 import { getStoreSettings } from "@/lib/services/settings";
+import { buildStoreMetadata, resolveStoreBySlug } from "@/lib/saas/store-metadata";
 import MenuPageClientHybrid from "@/components/menu/MenuPageClientHybrid";
 import DeParisLanguageProvider from "@/components/deparis-i18n/DeParisLanguageProvider";
 
@@ -35,9 +36,12 @@ async function getCanonicalUrl(pathname: string) {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const menu = await getPublicMenu(slug);
+  const [menu, metadataStore] = await Promise.all([
+    getPublicMenu(slug),
+    resolveStoreBySlug(slug),
+  ]);
 
-  if (!menu?.store) {
+  if (!menu?.store || !metadataStore) {
     return { title: "Menú | Perla Marketplace" };
   }
 
@@ -51,18 +55,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       ? "Consulta el menú de DeParis en Cienfuegos y descubre sus platos, bebidas y especialidades disponibles."
       : `Ordena en línea el menú de ${menu.store.name}.`;
 
-  return {
-    title: { absolute: title },
+  return buildStoreMetadata(metadataStore, canonicalUrl, {
+    title,
     description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      type: "website",
-    },
-    robots: { index: true, follow: true },
-  };
+  });
 }
 
 export default async function MenuPage({ params }: PageProps) {
