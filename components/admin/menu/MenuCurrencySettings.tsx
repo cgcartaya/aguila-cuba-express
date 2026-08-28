@@ -61,7 +61,7 @@ export default function MenuCurrencySettings({ storeId }: Props) {
   }, [storeId]);
 
   const save = async () => {
-    if (state.enabled && !validRate) {
+    if (state.source === "manual" && state.enabled && !validRate) {
       setMessage("Escribe una tasa válida, por ejemplo 420.");
       return;
     }
@@ -73,9 +73,10 @@ export default function MenuCurrencySettings({ storeId }: Props) {
     const { error } = await saveStoreSettings(
       {
         menu_show_usd_equivalent: state.enabled,
-        menu_cup_per_usd: validRate ? numericRate : null,
+        menu_cup_per_usd: state.source === "manual" ? (validRate ? numericRate : null) : undefined,
         menu_exchange_rate_source: state.source,
-        menu_exchange_rate_updated_at: validRate ? now : null,
+        menu_exchange_rate_updated_at:
+          state.source === "manual" ? (validRate ? now : null) : undefined,
       },
       storeId
     );
@@ -86,8 +87,15 @@ export default function MenuCurrencySettings({ storeId }: Props) {
       return;
     }
 
-    setState((current) => ({ ...current, updatedAt: validRate ? now : null }));
-    setMessage("Configuración guardada. El menú público ya puede mostrar el equivalente USD.");
+    if (state.source === "manual") {
+      setState((current) => ({ ...current, updatedAt: validRate ? now : null }));
+      setMessage("Configuración guardada. El menú público ya puede mostrar el equivalente USD.");
+    } else {
+      setMessage(
+        "Fuente elTOQUE activada. La tasa se actualizará automáticamente una vez al día; si la fuente falla se conserva la última tasa válida."
+      );
+    }
+
     setSaving(false);
   };
 
@@ -133,12 +141,18 @@ export default function MenuCurrencySettings({ storeId }: Props) {
             <input
               inputMode="decimal"
               value={state.rate}
+              disabled={state.source === "eltoque"}
               onChange={(event) => setState((current) => ({ ...current, rate: event.target.value }))}
               placeholder="420"
-              className="min-w-0 flex-1 bg-transparent px-3 py-3 text-base font-black text-[#071B35] outline-none"
+              className="min-w-0 flex-1 bg-transparent px-3 py-3 text-base font-black text-[#071B35] outline-none disabled:cursor-not-allowed disabled:text-slate-400"
             />
             <span className="px-3 py-3 text-sm font-black text-slate-500">CUP</span>
           </div>
+          {state.source === "eltoque" && (
+            <p className="mt-1.5 text-[10px] font-semibold text-emerald-700">
+              Tasa controlada automáticamente por elTOQUE.
+            </p>
+          )}
         </label>
 
         <div>
@@ -155,13 +169,13 @@ export default function MenuCurrencySettings({ storeId }: Props) {
               type="button"
               onClick={() => setState((current) => ({ ...current, source: "eltoque" }))}
               className={`rounded-2xl border px-4 py-3 text-sm font-black ${state.source === "eltoque" ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-white text-slate-500"}`}
-              title="Queda preparado para la actualización automática desde elTOQUE"
+              title="Actualización automática diaria desde elTOQUE"
             >
               elTOQUE
             </button>
           </div>
           <p className="mt-1.5 text-[10px] font-semibold text-slate-400">
-            Por ahora la tasa se escribe manualmente. La opción elTOQUE queda preparada para automatizarla.
+            Manual: tú controlas la tasa. elTOQUE: Vercel la revisa automáticamente una vez al día.
           </p>
         </div>
 
@@ -181,14 +195,17 @@ export default function MenuCurrencySettings({ storeId }: Props) {
           Vista previa: {validRate ? (
             <><strong className="text-[#071B35]">1,650 CUP</strong> · ≈ <strong className="text-emerald-700">${(1650 / numericRate).toFixed(2)} USD</strong></>
           ) : (
-            "escribe una tasa para ver la conversión"
+            state.source === "eltoque" ? "esperando la primera tasa automática de elTOQUE" : "escribe una tasa para ver la conversión"
           )}
         </div>
-        {state.updatedAt && (
-          <p className="mt-2 text-[10px] font-semibold text-slate-400">
-            Última actualización: {new Date(state.updatedAt).toLocaleString("es-CU")}
-          </p>
-        )}
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] font-semibold text-slate-400">
+          <span>
+            Fuente activa: <strong className="text-slate-600">{state.source === "eltoque" ? "elTOQUE · automática" : "Manual"}</strong>
+          </span>
+          {state.updatedAt && (
+            <span>· Última actualización: {new Date(state.updatedAt).toLocaleString("es-CU")}</span>
+          )}
+        </div>
         {message && <p className="mt-2 text-xs font-bold text-emerald-700">{message}</p>}
       </div>
     </section>
