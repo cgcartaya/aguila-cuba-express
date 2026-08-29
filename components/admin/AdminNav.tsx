@@ -17,6 +17,9 @@ import {
   Layers3,
   ExternalLink,
   CircleDollarSign,
+  ReceiptText,
+  Truck,
+  History,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
@@ -31,64 +34,31 @@ type AdminLink = {
 };
 
 const saasLinks: AdminLink[] = [
-  {
-    href: "/admin/saas",
-    label: "Dashboard SaaS",
-    icon: Rocket,
-  },
-  {
-    href: "/admin/stores",
-    label: "Tiendas",
-    icon: Building2,
-  },
+  { href: "/admin/saas", label: "Dashboard SaaS", icon: Rocket },
+  { href: "/admin/stores", label: "Tiendas", icon: Building2 },
 ];
 
 const baseStoreLinks: AdminLink[] = [
-  {
-    href: "/admin",
-    label: "Dashboard tienda",
-    icon: LayoutDashboard,
-  },
-  {
-    href: "/admin/products",
-    label: "Productos",
-    icon: Package,
-  },
-  {
-    href: "/admin/categories",
-    label: "Categorías",
-    icon: Tags,
-  },
-  {
-    href: "/admin/combos",
-    label: "Combos",
-    icon: Layers3,
-  },
-  {
-    href: "/admin/inventory",
-    label: "Inventario",
-    icon: Boxes,
-  },
-  {
-    href: "/admin/orders",
-    label: "Órdenes",
-    icon: ShoppingCart,
-  },
-  {
-    href: "/admin/customers",
-    label: "Clientes",
-    icon: Users,
-  },
-  {
-    href: "/admin/settings",
-    label: "Ajustes tienda",
-    icon: Settings,
-  },
+  { href: "/admin", label: "Dashboard tienda", icon: LayoutDashboard },
+  { href: "/admin/products", label: "Productos", icon: Package },
+  { href: "/admin/categories", label: "Categorías", icon: Tags },
+  { href: "/admin/combos", label: "Combos", icon: Layers3 },
+  { href: "/admin/inventory", label: "Inventario", icon: Boxes },
+  { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
+  { href: "/admin/customers", label: "Clientes", icon: Users },
+  { href: "/admin/settings", label: "Ajustes tienda", icon: Settings },
+];
+
+const economyLinks: AdminLink[] = [
+  { href: "/admin/economy", label: "Resumen", icon: CircleDollarSign },
+  { href: "/admin/economy/compras", label: "Compras", icon: ReceiptText },
+  { href: "/admin/economy/proveedores", label: "Proveedores", icon: Truck },
+  { href: "/admin/economy/historico", label: "Rentabilidad histórica", icon: History },
 ];
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
-
+  if (href === "/admin/economy") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -137,28 +107,11 @@ export default function AdminNav() {
   const { store: selectedStore } = useStore();
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
-  /*
-    Regla SaaS:
-    - Store Owner: SIEMPRE usa accessStore.
-    - Super Admin: usa la tienda seleccionada en el switcher.
-  */
   const activeStore = isSuperAdmin
     ? selectedStore || accessStore
     : accessStore;
 
   const { enabled: economyEnabled } = useEconomyModule(activeStore?.id);
-
-  const storeLinks = economyEnabled || isSuperAdmin
-    ? [
-        ...baseStoreLinks.slice(0, 5),
-        {
-          href: "/admin/economy",
-          label: "Economía",
-          icon: CircleDollarSign,
-        },
-        ...baseStoreLinks.slice(5),
-      ]
-    : baseStoreLinks;
 
   const primaryColor = activeStore?.primary_color || "#0B1F4D";
   const storeName = activeStore?.name || "Tienda activa";
@@ -208,10 +161,20 @@ export default function AdminNav() {
         <div className={isSuperAdmin ? "border-t border-white/15 pt-6" : ""}>
           <NavSection
             title="Tienda activa"
-            links={storeLinks}
+            links={baseStoreLinks}
             primaryColor={primaryColor}
           />
         </div>
+
+        {(economyEnabled || isSuperAdmin) && (
+          <div className="border-t border-white/15 pt-6">
+            <NavSection
+              title="Economía"
+              links={economyLinks}
+              primaryColor={primaryColor}
+            />
+          </div>
+        )}
       </nav>
 
       <div className="mt-8 border-t border-white/20 pt-5">

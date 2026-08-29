@@ -15,6 +15,9 @@ import {
   Layers3,
   ExternalLink,
   CircleDollarSign,
+  ReceiptText,
+  Truck,
+  History,
 } from "lucide-react";
 
 import { useStore } from "@/hooks/useStore";
@@ -48,9 +51,16 @@ const baseStoreLinks: MenuItem[] = [
   { label: "Ver tienda pública", href: "/tienda", icon: ExternalLink },
 ];
 
+const economyLinks: MenuItem[] = [
+  { label: "Resumen", href: "/admin/economy", icon: CircleDollarSign },
+  { label: "Compras", href: "/admin/economy/compras", icon: ReceiptText },
+  { label: "Proveedores", href: "/admin/economy/proveedores", icon: Truck },
+  { label: "Rentabilidad histórica", href: "/admin/economy/historico", icon: History },
+];
+
 function isActivePath(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin";
-
+  if (href === "/admin/economy") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -97,20 +107,16 @@ function MenuSection({
   );
 }
 
-export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
+export default function AdminMobileMenu({
+  open,
+  onClose,
+}: AdminMobileMenuProps) {
   const pathname = usePathname();
   const { store } = useStore();
   const { isSuperAdmin, store: accessStore } = useAdminAccess();
 
   const activeStore = isSuperAdmin ? store || accessStore : accessStore;
   const { enabled: economyEnabled } = useEconomyModule(activeStore?.id);
-  const storeLinks = economyEnabled || isSuperAdmin
-    ? [
-        ...baseStoreLinks.slice(0, 4),
-        { label: "Economía", href: "/admin/economy", icon: CircleDollarSign },
-        ...baseStoreLinks.slice(4),
-      ]
-    : baseStoreLinks;
 
   if (!open) return null;
 
@@ -153,10 +159,19 @@ export default function AdminMobileMenu({ open, onClose }: AdminMobileMenuProps)
 
           <MenuSection
             title="Tienda activa"
-            links={storeLinks}
+            links={baseStoreLinks}
             pathname={pathname}
             onClose={onClose}
           />
+
+          {(economyEnabled || isSuperAdmin) && (
+            <MenuSection
+              title="Economía"
+              links={economyLinks}
+              pathname={pathname}
+              onClose={onClose}
+            />
+          )}
         </nav>
       </aside>
     </div>
