@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, Lock } from "lucide-react";
+import { Building2, ChevronDown, Lock } from "lucide-react";
 
 import { getStores } from "@/lib/services/stores";
 import { useStore } from "@/contexts/StoreContext";
@@ -10,7 +10,11 @@ import { getStoreTheme } from "@/lib/admin/theme";
 
 import type { Store } from "@/lib/saas/store-types";
 
-export default function StoreSwitcher() {
+export default function StoreSwitcher({
+  compact = false,
+}: {
+  compact?: boolean;
+}) {
   const { store, setCurrentStore } = useStore();
   const { isSuperAdmin, loading, store: accessStore } = useAdminAccess();
 
@@ -40,11 +44,6 @@ export default function StoreSwitcher() {
     return null;
   }
 
-  /*
-    Seguridad visual:
-    - El selector de tiendas solo pertenece al super_admin.
-    - El store_owner queda amarrado a su tienda desde store_users.
-  */
   if (!isSuperAdmin) {
     if (!accessStore) return null;
 
@@ -64,6 +63,31 @@ export default function StoreSwitcher() {
             {accessStore.name}
           </span>
         </div>
+      </div>
+    );
+  }
+
+  if (compact) {
+    return (
+      <div className="relative flex h-10 min-w-[230px] items-center rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-3 transition focus-within:border-blue-300 focus-within:bg-white">
+        <Building2 className="absolute left-3 h-4 w-4 text-slate-500" />
+
+        <select
+          value={store?.id || ""}
+          onChange={handleChange}
+          aria-label="Cambiar tienda activa"
+          className="h-full w-full appearance-none bg-transparent pr-7 text-xs font-black text-[#061b3a] outline-none"
+        >
+          <option value="">Cambiar tienda...</option>
+
+          {stores.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+
+        <ChevronDown className="pointer-events-none absolute right-3 h-4 w-4 text-slate-400" />
       </div>
     );
   }

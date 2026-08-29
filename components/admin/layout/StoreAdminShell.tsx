@@ -60,8 +60,14 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
             </button>
 
             <div className="flex min-w-0 items-center gap-2">
-              <Store className="h-5 w-5 shrink-0" style={{ color: theme.accentOnWhite }} />
-              <span className="truncate text-sm font-black" style={{ color: theme.accentOnWhite }}>
+              <Store
+                className="h-5 w-5 shrink-0"
+                style={{ color: theme.accentOnWhite }}
+              />
+              <span
+                className="truncate text-sm font-black"
+                style={{ color: theme.accentOnWhite }}
+              >
                 {accessLoading ? "Cargando tienda..." : storeName}
               </span>
             </div>
@@ -86,33 +92,36 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <div className="hidden border-b bg-white px-6 py-4 xl:block">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-slate-500">
-                Panel operativo
-              </p>
+        {isSuperAdmin && (
+          <div className="sticky top-0 z-30 hidden h-14 border-b border-slate-200 bg-white/95 px-6 backdrop-blur xl:flex xl:items-center xl:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700">
+                <Store size={16} />
+              </span>
 
-              <h2 className="text-2xl font-black" style={{ color: theme.accentOnWhite }}>
-                {accessLoading ? "Cargando tienda..." : storeName}
-              </h2>
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-400">
+                  Tienda activa
+                </p>
+                <p className="truncate text-sm font-black text-[#061b3a]">
+                  {accessLoading ? "Cargando tienda..." : storeName}
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {isSuperAdmin && (
-                <Link
-                  href="/admin/saas"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-[#061b3a] shadow-sm transition hover:bg-slate-50"
-                >
-                  <Rocket size={18} />
-                  Panel SaaS
-                </Link>
-              )}
+            <div className="flex items-center gap-2">
+              <Link
+                href="/admin/saas"
+                className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-[#061b3a] transition hover:bg-slate-50"
+              >
+                <Rocket size={15} />
+                Panel SaaS
+              </Link>
 
-              <StoreSwitcher />
+              <StoreSwitcher compact />
             </div>
           </div>
-        </div>
+        )}
 
         {children}
       </div>
