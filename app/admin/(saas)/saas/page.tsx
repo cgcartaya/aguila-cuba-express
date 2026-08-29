@@ -136,7 +136,6 @@ export default async function AdminSaasDashboardPage() {
   )
   const activePercent = totalStores ? Math.round((activeStores / totalStores) * 100) : 0
   const averageRevenue = totalStores ? monthlyRevenue / totalStores : 0
-  const maxMonthly = Math.max(...stores.map((s) => Number(s.monthly_price || 0)), 1)
 
   return (
     <main className="min-h-screen bg-[#f6f8fc] px-4 py-5 md:px-6 xl:px-8">
@@ -387,78 +386,199 @@ export default async function AdminSaasDashboardPage() {
           </article>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
+        <section className="grid gap-5 xl:grid-cols-[1.55fr_.75fr]">
           <article className="rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wide text-blue-600">
-                  Ingresos recurrentes
-                </p>
-                <h2 className="mt-1 text-xl font-black text-[#071a3d]">
-                  Distribución del MRR
-                </h2>
-                <p className="mt-1 text-sm font-semibold text-slate-400">
-                  Peso de cada cliente dentro de los ${monthlyRevenue.toFixed(2)} mensuales actuales.
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                      Resumen de ingresos
+                    </p>
+                    <h2 className="mt-1 text-xl font-black text-[#071a3d]">
+                      Ingreso recurrente mensual
+                    </h2>
+                  </div>
+
+                  <span className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-500">
+                    Mensual
+                  </span>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-end gap-x-4 gap-y-2">
+                  <div>
+                    <p className="text-xs font-bold text-slate-400">Ingresos (USD)</p>
+                    <p className="mt-1 text-3xl font-black tracking-tight text-[#071a3d]">
+                      ${monthlyRevenue.toFixed(2)}
+                    </p>
+                  </div>
+
+                  <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                    <TrendingUp size={13} />
+                    MRR actual
+                  </span>
+                </div>
+
+                <div className="relative mt-5 overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-b from-blue-50/70 to-white px-4 pb-3 pt-5">
+                  <div className="pointer-events-none absolute inset-x-4 top-6 grid h-[118px] grid-rows-4">
+                    <div className="border-t border-dashed border-slate-200" />
+                    <div className="border-t border-dashed border-slate-200" />
+                    <div className="border-t border-dashed border-slate-200" />
+                    <div className="border-t border-dashed border-slate-200" />
+                  </div>
+
+                  <svg
+                    viewBox="0 0 520 145"
+                    className="relative z-10 h-[145px] w-full"
+                    role="img"
+                    aria-label="MRR contratado actual"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <linearGradient id="mrrArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#2563eb" stopOpacity="0.20" />
+                        <stop offset="100%" stopColor="#2563eb" stopOpacity="0.02" />
+                      </linearGradient>
+                    </defs>
+
+                    <path
+                      d="M0 78 C85 78, 130 78, 205 78 S360 78, 520 78 L520 145 L0 145 Z"
+                      fill="url(#mrrArea)"
+                    />
+                    <path
+                      d="M0 78 C85 78, 130 78, 205 78 S360 78, 520 78"
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="520" cy="78" r="6" fill="#2563eb" />
+                  </svg>
+
+                  <div className="relative z-10 mt-1 flex items-center justify-between text-[10px] font-bold text-slate-400">
+                    <span>MRR contratado</span>
+                    <span>Actual</span>
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs font-semibold text-slate-400">
+                  Todavía no existe historial mensual de cobros suficiente para mostrar una tendencia real.
+                  Esta gráfica representa el MRR contratado actual, sin inventar meses anteriores.
                 </p>
               </div>
-              <BarChart3 className="text-blue-600" size={24} />
-            </div>
 
-            <div className="mt-6 space-y-4">
-              {stores
-                .slice()
-                .sort((a, b) => Number(b.monthly_price || 0) - Number(a.monthly_price || 0))
-                .slice(0, 8)
-                .map((store) => {
-                  const price = Number(store.monthly_price || 0)
-                  const percent = monthlyRevenue ? (price / monthlyRevenue) * 100 : 0
-                  return (
-                    <div key={store.id}>
-                      <div className="mb-2 flex items-center justify-between gap-4 text-sm">
-                        <span className="truncate font-black text-slate-700">{store.name}</span>
-                        <span className="shrink-0 font-black text-[#071a3d]">
-                          ${price.toFixed(2)} · {percent.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-500"
-                          style={{ width: `${Math.max(2, (price / maxMonthly) * 100)}%` }}
-                        />
+              <div className="w-full rounded-2xl border border-slate-100 bg-slate-50/70 p-4 lg:w-[260px]">
+                <p className="text-xs font-black uppercase tracking-wide text-slate-400">
+                  Clientes por estado
+                </p>
+
+                <div className="mt-4 flex justify-center">
+                  <div
+                    className="relative grid h-36 w-36 place-items-center rounded-full"
+                    style={{
+                      background: totalStores
+                        ? `conic-gradient(#34d399 0 ${activePercent}%, #f59e0b ${activePercent}% 100%)`
+                        : "#e2e8f0",
+                    }}
+                  >
+                    <div className="grid h-[92px] w-[92px] place-items-center rounded-full bg-white shadow-inner">
+                      <div className="text-center">
+                        <p className="text-3xl font-black text-[#071a3d]">{totalStores}</p>
+                        <p className="text-[10px] font-black uppercase tracking-wide text-slate-400">
+                          Total
+                        </p>
                       </div>
                     </div>
-                  )
-                })}
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 font-bold text-slate-600">
+                      <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                      Activos
+                    </span>
+                    <strong className="text-[#071a3d]">
+                      {activeStores} · {activePercent}%
+                    </strong>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center gap-2 font-bold text-slate-600">
+                      <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                      Suspendidos
+                    </span>
+                    <strong className="text-[#071a3d]">
+                      {inactiveStores} · {totalStores ? Math.round((inactiveStores / totalStores) * 100) : 0}%
+                    </strong>
+                  </div>
+                </div>
+              </div>
             </div>
           </article>
 
-          <article className="overflow-hidden rounded-[28px] bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-600 p-6 text-white shadow-lg shadow-blue-600/15">
-            <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15">
-              <Rocket size={22} />
-            </span>
-            <h2 className="mt-5 text-2xl font-black">Haz crecer tu plataforma</h2>
-            <p className="mt-2 max-w-md text-sm font-semibold text-blue-100">
-              Centraliza tus clientes, activa nuevos módulos y aumenta tu ingreso mensual recurrente.
-            </p>
+          <article className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-500 p-6 text-white shadow-lg shadow-blue-600/20">
+            <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-sm" />
+            <div className="absolute -bottom-20 -left-14 h-52 w-52 rounded-full bg-indigo-300/15 blur-sm" />
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase text-blue-100">MRR actual</p>
-                <p className="mt-1 text-2xl font-black">${monthlyRevenue.toFixed(0)}</p>
+            <div className="relative z-10">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white/15 backdrop-blur">
+                <Rocket size={22} />
+              </span>
+
+              <h2 className="mt-5 text-2xl font-black leading-tight">
+                Haz crecer tu plataforma
+              </h2>
+              <p className="mt-2 max-w-sm text-sm font-semibold leading-6 text-blue-100">
+                Invita a más negocios, activa nuevos módulos y aumenta tu ingreso mensual recurrente.
+              </p>
+
+              <div className="relative mt-5 h-36 overflow-hidden rounded-2xl bg-white/10">
+                <div className="absolute bottom-4 left-1/2 h-20 w-28 -translate-x-1/2 rounded-2xl bg-white/95 shadow-xl">
+                  <div className="absolute -top-5 left-1/2 flex h-10 w-32 -translate-x-1/2 overflow-hidden rounded-xl shadow-md">
+                    <span className="flex-1 bg-[#071a3d]" />
+                    <span className="flex-1 bg-white" />
+                    <span className="flex-1 bg-[#071a3d]" />
+                    <span className="flex-1 bg-white" />
+                    <span className="flex-1 bg-[#071a3d]" />
+                  </div>
+                  <div className="absolute bottom-3 left-4 h-9 w-8 rounded-md bg-blue-100" />
+                  <div className="absolute bottom-3 right-4 grid h-10 w-10 place-items-center rounded-full bg-emerald-100 text-emerald-700">
+                    <DollarSign size={18} />
+                  </div>
+                </div>
+
+                <div className="absolute right-6 top-7 flex items-end gap-1">
+                  <span className="h-5 w-2 rounded-full bg-white/50" />
+                  <span className="h-9 w-2 rounded-full bg-white/65" />
+                  <span className="h-14 w-2 rounded-full bg-white" />
+                  <TrendingUp className="ml-1 text-white" size={24} />
+                </div>
               </div>
-              <div className="rounded-2xl bg-white/10 p-4">
-                <p className="text-xs font-black uppercase text-blue-100">Clientes</p>
-                <p className="mt-1 text-2xl font-black">{totalStores}</p>
+
+              <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-blue-100">
+                    MRR actual
+                  </p>
+                  <p className="mt-1 text-2xl font-black">${monthlyRevenue.toFixed(0)}</p>
+                </div>
+                <div className="rounded-2xl bg-white/10 p-4 backdrop-blur">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-blue-100">
+                    Clientes
+                  </p>
+                  <p className="mt-1 text-2xl font-black">{totalStores}</p>
+                </div>
               </div>
+
+              <Link
+                href="/admin/stores"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-blue-700 shadow-sm transition hover:bg-blue-50"
+              >
+                <Users size={16} />
+                Gestionar clientes
+              </Link>
             </div>
-
-            <Link
-              href="/admin/stores"
-              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-black text-blue-700"
-            >
-              <Users size={16} />
-              Gestionar clientes
-            </Link>
           </article>
         </section>
 
