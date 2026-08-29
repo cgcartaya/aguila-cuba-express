@@ -1,35 +1,75 @@
 "use client";
-import {supabase} from "@/lib/supabase";
 
-export type OrderPeriodStat={orders:number;sales:number};
-export type OrderPeriodSummary={
-  today:OrderPeriodStat;week:OrderPeriodStat;previousWeek:OrderPeriodStat;
-  month:OrderPeriodStat;previousMonth:OrderPeriodStat;
+import { supabase } from "@/lib/supabase";
+
+export type OrderPeriodStat = { orders: number; sales: number };
+export type OrderPeriodSummary = {
+  today: OrderPeriodStat;
+  week: OrderPeriodStat;
+  previousWeek: OrderPeriodStat;
+  month: OrderPeriodStat;
+  previousMonth: OrderPeriodStat;
 };
 
-function iso(d:Date){return d.toISOString();}
-function startDay(d:Date){const x=new Date(d);x.setHours(0,0,0,0);return x;}
-function startWeek(d:Date){const x=startDay(d);const day=x.getDay();x.setDate(x.getDate()-(day===0?6:day-1));return x;}
-function startMonth(d:Date){return new Date(d.getFullYear(),d.getMonth(),1);}
-function addDays(d:Date,n:number){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
-
-async function period(storeId:string,from:Date,to:Date):Promise<OrderPeriodStat>{
-  const {data,error}=await supabase.from("orders").select("id,total")
-    .eq("store_id",storeId).is("deleted_at",null).neq("status","cancelled")
-    .gte("created_at",iso(from)).lt("created_at",iso(to));
-  if(error)throw error;
-  return {orders:(data||[]).length,sales:(data||[]).reduce((s:any,x:any)=>s+Number(x.total||0),0)};
+function startOfDay(date: Date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
-export async function getOrderPeriodSummary(storeId:string):Promise<OrderPeriodSummary>{
-  const now=new Date(),tomorrow=addDays(startDay(now),1);
-  const week=startWeek(now),previousWeek=addDays(week,-7);
-  const month=startMonth(now),previousMonth=new Date(now.getFullYear(),now.getMonth()-1,1);
+function addDays(date: Date, days: number) {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function startOfWeek(date: Date) {
+  const d = startOfDay(date);
+  const day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d;
+}
+
+async function getPeriod(storeId: string, from: Date, to: Date): Promise<OrderPeriodStat> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id,total")
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .neq("status", "cancelled")
+    .gte("created_at", from.toISOString())
+    .lt("created_at", to.toISOString());
+
+  if (error) throw error;
+
   return {
-    today:await period(storeId,startDay(now),tomorrow),
-    week:await period(storeId,week,tomorrow),
-    previousWeek:await period(storeId,previousWeek,week),
-    month:await period(storeId,month,tomorrow),
-    previousMonth:await period(storeId,previousMonth,month),
+    orders: (data || []).length,
+    sales: (data || []).reduce((sum, row: any) => sum + Number(row.total || 0), 0),
+  };
+}
+
+export async function getOrderPeriodSummary(storeId: string): Promise<OrderPeriodSummary> {
+  const now = new Date();
+  const today = startOfDay(now);
+  const tomorrow = addDays(today, 1);
+  const week = startOfWeek(now);
+  const previousWeek = addDays(week, -7);
+  const month = new Date(now.getFullYear(), now.getMonth(), 1);
+  const previousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const [todayData, weekData, previousWeekData, monthData, previousMonthData] = await Promise.all([
+    getPeriod(storeId, today, tomorrow),
+    getPeriod(storeId, week, tomorrow),
+    getPeriod(storeId, previousWeek, week),
+    getPeriod(storeId, month, tomorrow),
+    getPeriod(storeId, previousMonth, month),
+  ]);
+
+  return {
+    today: todayData,
+    week: weekData,
+    previousWeek: previousWeekData,
+    month: monthData,
+    previousMonth: previousMonthData,
   };
 }

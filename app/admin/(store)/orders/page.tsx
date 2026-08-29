@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import OrdersManager from "@/components/admin/OrdersManager";
+import OrderPeriodStats from "@/components/admin/orders/OrderPeriodStats";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -306,7 +307,9 @@ export default function AdminOrdersPage() {
             Cargando órdenes...
           </div>
         ) : (
-          <OrdersManager
+          <>
+            <OrderPeriodStats storeId={activeStore!.id} />
+            <OrdersManager
             initialOrders={activeOrders || []}
             initialDeletedOrders={deletedOrders || []}
             storeId={activeStore!.id}
@@ -324,6 +327,7 @@ export default function AdminOrdersPage() {
             onLoadMoreActive={loadMoreActive}
             onLoadMoreTrash={loadMoreTrash}
           />
+          </>
         )}
       </div>
     </main>
