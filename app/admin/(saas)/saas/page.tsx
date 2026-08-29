@@ -23,6 +23,7 @@ import {
 
 import { getStores } from "@/lib/services/stores"
 import MarkPaidButton from "@/components/admin/saas/MarkPaidButton"
+import SaasPlatformRevenue from "@/components/admin/saas/SaasPlatformRevenue"
 
 function cleanPhone(phone?: string | null) {
   return (phone || "").replace(/\D/g, "")
@@ -135,7 +136,6 @@ export default async function AdminSaasDashboardPage() {
     0
   )
   const activePercent = totalStores ? Math.round((activeStores / totalStores) * 100) : 0
-  const averageRevenue = totalStores ? monthlyRevenue / totalStores : 0
 
   return (
     <main className="min-h-screen bg-[#f6f8fc] px-4 py-5 md:px-6 xl:px-8">
@@ -191,12 +191,10 @@ export default async function AdminSaasDashboardPage() {
             tone="bg-amber-50 text-amber-700"
             badge={inactiveStores ? "Revisar" : "0%"}
           />
-          <StatCard
-            label="Ingreso mensual"
-            value={`$${monthlyRevenue.toFixed(2)}`}
-            helper={`Promedio $${averageRevenue.toFixed(2)} por cliente`}
-            icon={DollarSign}
-            tone="bg-violet-50 text-violet-700"
+          <SaasPlatformRevenue
+            variant="stat"
+            subscriptions={monthlyRevenue}
+            stores={stores.map((store) => ({ id: store.id, name: store.name }))}
           />
           <StatCard
             label="Alertas"
@@ -396,7 +394,7 @@ export default async function AdminSaasDashboardPage() {
                       Resumen de ingresos
                     </p>
                     <h2 className="mt-1 text-xl font-black text-[#071a3d]">
-                      Ingreso recurrente mensual
+                      Ingreso de plataforma del mes
                     </h2>
                   </div>
 
@@ -406,17 +404,11 @@ export default async function AdminSaasDashboardPage() {
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-end gap-x-4 gap-y-2">
-                  <div>
-                    <p className="text-xs font-bold text-slate-400">Ingresos (USD)</p>
-                    <p className="mt-1 text-3xl font-black tracking-tight text-[#071a3d]">
-                      ${monthlyRevenue.toFixed(2)}
-                    </p>
-                  </div>
-
-                  <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
-                    <TrendingUp size={13} />
-                    MRR actual
-                  </span>
+                  <SaasPlatformRevenue
+                    variant="summary"
+                    subscriptions={monthlyRevenue}
+                    stores={stores.map((store) => ({ id: store.id, name: store.name }))}
+                  />
                 </div>
 
                 <div className="relative mt-5 overflow-hidden rounded-2xl border border-slate-100 bg-gradient-to-b from-blue-50/70 to-white px-4 pb-3 pt-5">
@@ -431,7 +423,7 @@ export default async function AdminSaasDashboardPage() {
                     viewBox="0 0 520 145"
                     className="relative z-10 h-[145px] w-full"
                     role="img"
-                    aria-label="MRR contratado actual"
+                    aria-label="Suscripciones (MRR) actual"
                     preserveAspectRatio="none"
                   >
                     <defs>
