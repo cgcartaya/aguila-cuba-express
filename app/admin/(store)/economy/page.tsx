@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CircleDollarSign, Loader2, LockKeyhole, PackagePlus } from "lucide-react";
+import { Building2, CircleDollarSign, Loader2, LockKeyhole, PackagePlus, UtensilsCrossed } from "lucide-react";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import EconomyDashboard from "@/components/admin/economy/EconomyDashboard";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -41,6 +41,7 @@ export default function EconomyPage() {
       title="Economía y rentabilidad"
       description={`Costos, márgenes, gastos y rendimiento de ${activeStore.name||"la tienda activa"}.`}
       actions={<>
+        <Link href="/admin/economy/restaurante" className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-black text-white shadow-sm"><UtensilsCrossed size={16}/>Costeo restaurante</Link>
         <Link href="/admin/economy/compras" className="inline-flex items-center gap-2 rounded-xl bg-[#061b3a] px-4 py-2.5 text-sm font-black text-white shadow-sm"><PackagePlus size={16}/>Compras</Link>
         <Link href="/admin/economy/proveedores" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700"><Building2 size={16}/>Proveedores</Link>
       </>}
