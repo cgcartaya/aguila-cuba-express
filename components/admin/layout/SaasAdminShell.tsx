@@ -15,9 +15,11 @@ export default function SaasAdminShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+
     getSaasSettings().then((data) => {
       if (mounted) setSettings(data);
     });
+
     return () => {
       mounted = false;
     };
@@ -42,20 +44,19 @@ export default function SaasAdminShell({ children }: { children: ReactNode }) {
             </button>
 
             <div className="flex min-w-0 items-center gap-2">
-              <Rocket className="h-5 w-5 shrink-0" style={{ color: theme.accentOnWhite }} />
-              <span className="truncate text-sm font-black" style={{ color: theme.accentOnWhite }}>
+              <Rocket
+                className="h-5 w-5 shrink-0"
+                style={{ color: theme.accentOnWhite }}
+              />
+              <span
+                className="truncate text-sm font-black"
+                style={{ color: theme.accentOnWhite }}
+              >
                 Administración SaaS
               </span>
             </div>
           </div>
         </header>
-
-        <div className="hidden border-b bg-white px-6 py-4 xl:block">
-          <p className="text-sm font-bold text-slate-500">Super Admin</p>
-          <h2 className="text-2xl font-black" style={{ color: theme.accentOnWhite }}>
-            Plataforma SaaS multitienda
-          </h2>
-        </div>
 
         {children}
       </div>
