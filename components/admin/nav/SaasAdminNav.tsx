@@ -4,19 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Rocket,
-  Building2,
-  LayoutDashboard,
-  Store,
-  Settings,
   BarChart3,
-  KeyRound,
+  Building2,
   History,
+  KeyRound,
+  LayoutDashboard,
+  Rocket,
+  Settings,
+  Store,
 } from "lucide-react";
 
 import LogoutButton from "@/components/admin/LogoutButton";
 import { getSaasSettings, type SaasSettings } from "@/lib/saas/settings-service";
-import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
 
 type AdminLink = {
   href: string;
@@ -24,106 +23,134 @@ type AdminLink = {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 };
 
-const saasLinks: AdminLink[] = [
-  { href: "/admin/saas", label: "Dashboard SaaS", icon: LayoutDashboard },
+const mainLinks: AdminLink[] = [
+  { href: "/admin/saas", label: "Dashboard general", icon: LayoutDashboard },
   { href: "/admin/stores", label: "Tiendas", icon: Building2 },
+];
+
+const analyticsLinks: AdminLink[] = [
   { href: "/admin/saas/metrics", label: "Métricas", icon: BarChart3 },
   {
     href: "/admin/saas/movimientos-inventario",
-    label: "Movimientos de inventario",
+    label: "Movimientos inventario",
     icon: History,
   },
-  { href: "/admin/saas/settings", label: "Ajustes SaaS", icon: Settings },
+];
+
+const configLinks: AdminLink[] = [
+  { href: "/admin/saas/settings", label: "Configuración SaaS", icon: Settings },
   { href: "/admin/account/password", label: "Mi contraseña", icon: KeyRound },
 ];
 
 function isActivePath(pathname: string, href: string) {
+  if (href === "/admin/saas") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function Section({
+  title,
+  links,
+  pathname,
+}: {
+  title: string;
+  links: AdminLink[];
+  pathname: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+        {title}
+      </p>
+      {links.map((link) => {
+        const Icon = link.icon
+        const active = isActivePath(pathname, link.href)
+
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${
+              active
+                ? "bg-blue-50 text-blue-700"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <span
+              className={`grid h-8 w-8 place-items-center rounded-xl ${
+                active ? "bg-blue-100" : "bg-slate-100"
+              }`}
+            >
+              <Icon size={16} />
+            </span>
+            {link.label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function SaasAdminNav() {
-  const pathname = usePathname();
-  const [settings, setSettings] = useState<SaasSettings | null>(null);
+  const pathname = usePathname()
+  const [settings, setSettings] = useState<SaasSettings | null>(null)
 
   useEffect(() => {
-    let mounted = true;
+    let mounted = true
     getSaasSettings().then((data) => {
-      if (mounted) setSettings(data);
-    });
+      if (mounted) setSettings(data)
+    })
     return () => {
-      mounted = false;
-    };
-  }, []);
-
-  const theme = getStoreTheme(settings);
-  const primaryColor = theme.primary;
-  const textColor = theme.textOnPrimary;
+      mounted = false
+    }
+  }, [])
 
   return (
-    <aside
-      className="hidden min-h-screen w-72 p-5 shadow-xl xl:block"
-      style={{ backgroundColor: primaryColor, color: textColor }}
-    >
-      <div className="mb-8">
-        <div
-          className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: withAlpha(textColor, 0.1) }}
-        >
-          <Rocket size={24} />
+    <aside className="hidden min-h-screen w-[270px] shrink-0 border-r border-slate-200 bg-white p-4 xl:flex xl:flex-col">
+      <div className="flex items-center gap-3 px-2 py-3">
+        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+          <Rocket size={21} />
+        </span>
+        <div>
+          <p className="text-xs font-black uppercase tracking-wide text-slate-400">Super Admin</p>
+          <h1 className="text-base font-black leading-tight text-blue-700">
+            Plataforma SaaS
+          </h1>
+          <p className="text-xs font-semibold text-slate-400">multitienda</p>
         </div>
-
-        <h1 className="text-xl font-black">SaaS Admin</h1>
-        <p className="text-sm font-semibold" style={{ color: withAlpha(textColor, 0.6) }}>
-          Plataforma multitienda
-        </p>
       </div>
 
       <Link
         href="/admin/stores"
-        className="mb-6 flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 font-bold shadow-lg transition hover:opacity-90"
-        style={{ color: primaryColor }}
+        className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white shadow-lg shadow-blue-600/15 transition hover:bg-blue-700"
       >
-        <Store size={18} />
+        <Store size={17} />
         Administrar tiendas
       </Link>
 
-      <nav className="space-y-2">
-        {saasLinks.map((link) => {
-          const Icon = link.icon;
-          const active = isActivePath(pathname, link.href);
-
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80"
-              style={
-                active
-                  ? { backgroundColor: "#fff", color: primaryColor }
-                  : { color: textColor }
-              }
-            >
-              <Icon size={20} />
-              {link.label}
-            </Link>
-          );
-        })}
+      <nav className="mt-7 space-y-7">
+        <Section title="Principal" links={mainLinks} pathname={pathname} />
+        <Section title="Analítica" links={analyticsLinks} pathname={pathname} />
+        <Section title="Configuración" links={configLinks} pathname={pathname} />
       </nav>
 
-      <div className="mt-8 border-t pt-5" style={{ borderColor: withAlpha(textColor, 0.2) }}>
+      <div className="mt-auto space-y-3 pt-7">
         <Link
           href="/admin"
-          className="flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80"
-          style={{ color: textColor }}
+          className="flex items-center gap-3 rounded-xl border border-slate-200 px-3 py-3 text-sm font-black text-slate-600 transition hover:bg-slate-50"
         >
-          <Store size={20} />
+          <Store size={17} />
           Ir a tienda activa
         </Link>
-      </div>
 
-      <div className="mt-4">
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <p className="text-xs font-black text-slate-700">Super Admin</p>
+          <p className="mt-1 truncate text-[11px] font-semibold text-slate-400">
+            {settings ? "Panel SaaS configurado" : "Cargando configuración..."}
+          </p>
+        </div>
+
         <LogoutButton />
       </div>
     </aside>
-  );
+  )
 }
