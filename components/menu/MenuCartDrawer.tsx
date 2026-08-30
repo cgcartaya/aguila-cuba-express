@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit3,
+  Gift,
   Loader2,
   MapPin,
   Minus,
@@ -95,8 +96,12 @@ export default function MenuCartDrawer({
   const [customerPhone, setCustomerPhone] = useState("+53 ");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerNotes, setCustomerNotes] = useState("");
+  const [isGiftRecipient, setIsGiftRecipient] = useState(false);
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("+53 ");
+  const [recipientNote, setRecipientNote] = useState("");
   const [orderType, setOrderType] = useState<MenuOrderType>("takeaway");
-  const [tableNumber] = useState("");
+  const [tableNumber] = useState(initialTableNumber || "");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryZoneId, setDeliveryZoneId] = useState("");
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>("zones");
@@ -116,8 +121,8 @@ export default function MenuCartDrawer({
 
   useEffect(() => {
     fetch(`/api/public/menu-delivery-config?slug=${encodeURIComponent(storeSlug)}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
         setDeliveryMode(data?.mode === "distance" ? "distance" : "zones");
         setDeliveryOrigin(data?.origin || null);
       })
@@ -125,31 +130,35 @@ export default function MenuCartDrawer({
         setDeliveryMode("zones");
         setDeliveryOrigin(null);
       });
+
     fetch(`/api/public/menu-delivery-zones?slug=${encodeURIComponent(storeSlug)}`)
-      .then(r => r.ok ? r.json() : null).then(data => setDeliveryZones(data?.zones || []))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setDeliveryZones(data?.zones || []))
       .catch(() => setDeliveryZones([]));
   }, [storeSlug]);
-  const selectedZone = deliveryZones.find(z => z.id === deliveryZoneId) || null;
-  const total = getCartTotal(cart);
 
+  const selectedZone = deliveryZones.find((z) => z.id === deliveryZoneId) || null;
+  const total = getCartTotal(cart);
   const selectedZoneRegularFee = Number(selectedZone?.fee || 0);
   const selectedZoneFreeFrom = Number(selectedZone?.free_delivery_from || 0);
   const qualifiesForFreeDelivery =
-    orderType === "delivery" &&
-    selectedZoneFreeFrom > 0 &&
-    total >= selectedZoneFreeFrom;
+    orderType === "delivery" && selectedZoneFreeFrom > 0 && total >= selectedZoneFreeFrom;
 
-  const deliveryFeePreview = orderType !== "delivery"
-    ? 0
-    : deliveryMode === "distance"
-      ? Number(distanceQuote?.fee || 0)
-      : selectedZone
-        ? qualifiesForFreeDelivery ? 0 : selectedZoneRegularFee
-        : 0;
+  const deliveryFeePreview =
+    orderType !== "delivery"
+      ? 0
+      : deliveryMode === "distance"
+        ? Number(distanceQuote?.fee || 0)
+        : selectedZone
+          ? qualifiesForFreeDelivery
+            ? 0
+            : selectedZoneRegularFee
+          : 0;
 
   const grandTotal = total + deliveryFeePreview;
   const totalUnits = cart.reduce((sum, line) => sum + line.quantity, 0);
   const selectedOrderType = ORDER_TYPES.find((item) => item.value === orderType)!;
+
   const channelBlockedLines = useMemo(
     () =>
       cart.filter((line) => {
@@ -175,11 +184,17 @@ export default function MenuCartDrawer({
       setSubmitError("Completa tu nombre y un teléfono válido.");
       return;
     }
-    if (
-      customerEmail.trim() &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
-    ) {
+
+    if (customerEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) {
       setSubmitError("El correo no es válido.");
+      return;
+    }
+
+    if (
+      isGiftRecipient &&
+      (!recipientName.trim() || recipientPhone.replace(/\D/g, "").length < 7)
+    ) {
+      setSubmitError("Completa el nombre y un teléfono válido de la persona que recibirá el pedido.");
       return;
     }
 
@@ -193,14 +208,10 @@ export default function MenuCartDrawer({
         body: JSON.stringify({
           store_slug: storeSlug,
           order_type: orderType,
-          table_number:
-            orderType === "dine_in" ? tableNumber.trim() : undefined,
-          delivery_address:
-            orderType === "delivery" ? deliveryAddress.trim() : undefined,
+          table_number: orderType === "dine_in" ? tableNumber.trim() : undefined,
+          delivery_address: orderType === "delivery" ? deliveryAddress.trim() : undefined,
           delivery_zone_id:
-            orderType === "delivery" && deliveryMode === "zones"
-              ? deliveryZoneId
-              : undefined,
+            orderType === "delivery" && deliveryMode === "zones" ? deliveryZoneId : undefined,
           delivery_latitude:
             orderType === "delivery" && deliveryMode === "distance"
               ? distanceQuote?.latitude
@@ -220,6 +231,10 @@ export default function MenuCartDrawer({
           customer_name: customerName.trim(),
           customer_phone: customerPhone.trim(),
           customer_email: customerEmail.trim(),
+          is_gift_recipient: isGiftRecipient,
+          recipient_name: isGiftRecipient ? recipientName.trim() : undefined,
+          recipient_phone: isGiftRecipient ? recipientPhone.trim() : undefined,
+          recipient_note: isGiftRecipient ? recipientNote.trim() : undefined,
           notes: customerNotes.trim(),
           lines: cart.map((line) => ({
             menu_item_id: line.menu_item_id,
@@ -233,9 +248,7 @@ export default function MenuCartDrawer({
       const body = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setSubmitError(
-          body.error || "No se pudo enviar el pedido. Intenta de nuevo."
-        );
+        setSubmitError(body.error || "No se pudo enviar el pedido. Intenta de nuevo.");
         setSubmitting(false);
         return;
       }
@@ -249,22 +262,26 @@ export default function MenuCartDrawer({
       });
 
       if (whatsappNumber) {
+        const recipientText = isGiftRecipient
+          ? `Recibe: ${recipientName.trim()} · Tel: ${recipientPhone.trim()}${
+              recipientNote.trim() ? ` · ${recipientNote.trim()}` : ""
+            }`
+          : "";
+        const whatsappNotes = [recipientText, customerNotes.trim()].filter(Boolean).join(" | ");
+
         const message = buildMenuOrderMessage({
           storeName,
           cart,
           orderType,
           tableNumber:
-            orderType === "dine_in"
-              ? tableNumber.trim() || undefined
-              : undefined,
+            orderType === "dine_in" ? tableNumber.trim() || undefined : undefined,
           deliveryAddress:
-            orderType === "delivery"
-              ? deliveryAddress.trim()
-              : undefined,
+            orderType === "delivery" ? deliveryAddress.trim() : undefined,
           customerName: customerName.trim() || undefined,
-          customerNotes: customerNotes.trim() || undefined,
+          customerNotes: whatsappNotes || undefined,
           deliveryFee: Number(body.total || total) - total,
         });
+
         openWhatsAppMessage({
           app: "personal",
           phone: whatsappNumber,
@@ -310,16 +327,12 @@ export default function MenuCartDrawer({
                   className="h-1.5 rounded-full"
                   style={{
                     backgroundColor:
-                      index <= stepIndex
-                        ? accentColor
-                        : "rgba(27,20,16,.08)",
+                      index <= stepIndex ? accentColor : "rgba(27,20,16,.08)",
                   }}
                 />
                 <p
                   className={`mt-1 text-center text-[9px] font-black uppercase ${
-                    index === stepIndex
-                      ? "text-[#1B1410]"
-                      : "text-black/30"
+                    index === stepIndex ? "text-[#1B1410]" : "text-black/30"
                   }`}
                 >
                   {label}
@@ -347,8 +360,7 @@ export default function MenuCartDrawer({
                         (sum, opt) => sum + opt.price_delta,
                         0
                       );
-                      const unitTotal =
-                        line.unit_base_price + optionsTotal;
+                      const unitTotal = line.unit_base_price + optionsTotal;
                       const lineTotal = unitTotal * line.quantity;
 
                       return (
@@ -381,16 +393,12 @@ export default function MenuCartDrawer({
                                     >
                                       <span className="font-semibold text-black/50">
                                         {opt.group_name}:{" "}
-                                        <strong className="text-black/70">
-                                          {opt.option_label}
-                                        </strong>
+                                        <strong className="text-black/70">{opt.option_label}</strong>
                                       </span>
                                       {opt.price_delta !== 0 && (
                                         <span className="shrink-0 font-black text-black/40">
                                           {opt.price_delta > 0 ? "+" : "−"}$
-                                          {Math.abs(
-                                            opt.price_delta
-                                          ).toFixed(2)}
+                                          {Math.abs(opt.price_delta).toFixed(2)}
                                         </span>
                                       )}
                                     </div>
@@ -410,28 +418,16 @@ export default function MenuCartDrawer({
                             <div className="flex items-center rounded-full border border-black/10 bg-[#FFFCF6] p-1">
                               <button
                                 onClick={() => {
-                                  if (line.quantity <= 1)
-                                    onRemove(line.lineId);
-                                  else
-                                    onUpdateQuantity(
-                                      line.lineId,
-                                      line.quantity - 1
-                                    );
+                                  if (line.quantity <= 1) onRemove(line.lineId);
+                                  else onUpdateQuantity(line.lineId, line.quantity - 1);
                                 }}
                                 className="flex h-7 w-7 items-center justify-center text-black/55"
                               >
                                 <Minus size={13} />
                               </button>
-                              <span className="w-7 text-center text-xs font-black">
-                                {line.quantity}
-                              </span>
+                              <span className="w-7 text-center text-xs font-black">{line.quantity}</span>
                               <button
-                                onClick={() =>
-                                  onUpdateQuantity(
-                                    line.lineId,
-                                    line.quantity + 1
-                                  )
-                                }
+                                onClick={() => onUpdateQuantity(line.lineId, line.quantity + 1)}
                                 className="flex h-7 w-7 items-center justify-center text-black/55"
                               >
                                 <Plus size={13} />
@@ -472,26 +468,22 @@ export default function MenuCartDrawer({
               <div className="border-t border-black/[0.07] bg-[#FFFDF8] p-5">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-bold text-black/40">
-                      {totalUnits} artículos
-                    </p>
-                    <p className="text-sm font-black text-[#1B1410]">
-                      Subtotal
-                    </p>
+                    <p className="text-xs font-bold text-black/40">{totalUnits} artículos</p>
+                    <p className="text-sm font-black text-[#1B1410]">Subtotal</p>
                   </div>
-                  <strong className="text-xl text-[#1B1410]">
-                    ${total.toFixed(2)}
-                  </strong>
+                  <strong className="text-xl text-[#1B1410]">${total.toFixed(2)}</strong>
                 </div>
 
-                <button onClick={onClose} className="mb-2 flex w-full items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 text-xs font-black text-[#1B1410]"><Plus size={14}/> Seguir agregando</button>
+                <button
+                  onClick={onClose}
+                  className="mb-2 flex w-full items-center justify-center gap-2 rounded-full border border-black/10 bg-white px-5 py-3 text-xs font-black text-[#1B1410]"
+                >
+                  <Plus size={14} /> Seguir agregando
+                </button>
                 <button
                   onClick={() => setStep("fulfillment")}
                   className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
-                  style={{
-                    backgroundColor: accentColor,
-                    color: "#1B1410",
-                  }}
+                  style={{ backgroundColor: accentColor, color: "#1B1410" }}
                 >
                   Continuar <ChevronRight size={16} />
                 </button>
@@ -510,71 +502,58 @@ export default function MenuCartDrawer({
                 <ChevronLeft size={14} /> Volver al pedido
               </button>
 
-              <h3 className="text-xl font-black text-[#1B1410]">
-                ¿Cómo quieres recibirlo?
-              </h3>
+              <h3 className="text-xl font-black text-[#1B1410]">¿Cómo quieres recibirlo?</h3>
 
               <div className="mt-5 space-y-3">
-                {ORDER_TYPES.map(
-                  ({ value, title, description, icon: Icon }) => {
-                    const selected = value === orderType;
-                    return (
-                      <button
-                        key={value}
-                        onClick={() => {
-                          setOrderType(value);
-                          setSubmitError(null);
-                        }}
-                        className="flex w-full items-center gap-4 rounded-2xl border p-4 text-left"
+                {ORDER_TYPES.map(({ value, title, description, icon: Icon }) => {
+                  const selected = value === orderType;
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setOrderType(value);
+                        setSubmitError(null);
+                      }}
+                      className="flex w-full items-center gap-4 rounded-2xl border p-4 text-left"
+                      style={
+                        selected
+                          ? { borderColor: accentColor, backgroundColor: `${accentColor}14` }
+                          : {
+                              borderColor: "rgba(27,20,16,.08)",
+                              backgroundColor: "white",
+                            }
+                      }
+                    >
+                      <span
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
                         style={
                           selected
-                            ? {
-                                borderColor: accentColor,
-                                backgroundColor: `${accentColor}14`,
-                              }
+                            ? { backgroundColor: accentColor, color: "#1B1410" }
                             : {
-                                borderColor: "rgba(27,20,16,.08)",
-                                backgroundColor: "white",
+                                backgroundColor: "rgba(27,20,16,.05)",
+                                color: "rgba(27,20,16,.5)",
                               }
                         }
                       >
+                        <Icon size={18} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <strong className="block text-sm text-[#1B1410]">{title}</strong>
+                        <span className="mt-0.5 block text-xs font-semibold text-black/40">
+                          {description}
+                        </span>
+                      </span>
+                      {selected && (
                         <span
-                          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-                          style={
-                            selected
-                              ? {
-                                  backgroundColor: accentColor,
-                                  color: "#1B1410",
-                                }
-                              : {
-                                  backgroundColor:
-                                    "rgba(27,20,16,.05)",
-                                  color: "rgba(27,20,16,.5)",
-                                }
-                          }
+                          className="flex h-6 w-6 items-center justify-center rounded-full"
+                          style={{ backgroundColor: accentColor }}
                         >
-                          <Icon size={18} />
+                          <Check size={13} strokeWidth={3} />
                         </span>
-                        <span className="min-w-0 flex-1">
-                          <strong className="block text-sm text-[#1B1410]">
-                            {title}
-                          </strong>
-                          <span className="mt-0.5 block text-xs font-semibold text-black/40">
-                            {description}
-                          </span>
-                        </span>
-                        {selected && (
-                          <span
-                            className="flex h-6 w-6 items-center justify-center rounded-full"
-                            style={{ backgroundColor: accentColor }}
-                          >
-                            <Check size={13} strokeWidth={3} />
-                          </span>
-                        )}
-                      </button>
-                    );
-                  }
-                )}
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {channelBlockedLines.length > 0 && (
@@ -586,7 +565,8 @@ export default function MenuCartDrawer({
                     {channelBlockedLines.map((line) => (
                       <li key={line.lineId}>
                         • {line.name}
-                        {orderType === "delivery" && channelAvailability[line.menu_item_id]?.delivery_reason
+                        {orderType === "delivery" &&
+                        channelAvailability[line.menu_item_id]?.delivery_reason
                           ? ` — ${channelAvailability[line.menu_item_id].delivery_reason}`
                           : ""}
                       </li>
@@ -611,12 +591,29 @@ export default function MenuCartDrawer({
                     />
                   ) : (
                     <>
-                      <select value={deliveryZoneId} onChange={e=>setDeliveryZoneId(e.target.value)} className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none">
+                      <select
+                        value={deliveryZoneId}
+                        onChange={(e) => setDeliveryZoneId(e.target.value)}
+                        className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
+                      >
                         <option value="">Selecciona tu zona de entrega</option>
-                        {deliveryZones.map(z=><option key={z.id} value={z.id}>{z.name} · ${Number(z.fee).toFixed(2)}</option>)}
+                        {deliveryZones.map((z) => (
+                          <option key={z.id} value={z.id}>
+                            {z.name} · ${Number(z.fee).toFixed(2)}
+                          </option>
+                        ))}
                       </select>
-                      {selectedZone && <div className="rounded-2xl bg-orange-50 px-4 py-3 text-xs font-semibold text-orange-900">Delivery ${Number(selectedZone.fee).toFixed(2)} · mínimo ${Number(selectedZone.minimum_order).toFixed(2)}</div>}
-                      <input value={deliveryAddress} onChange={e=>setDeliveryAddress(e.target.value)} placeholder="Dirección exacta y referencia" className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"/>
+                      {selectedZone && (
+                        <div className="rounded-2xl bg-orange-50 px-4 py-3 text-xs font-semibold text-orange-900">
+                          Delivery ${Number(selectedZone.fee).toFixed(2)} · mínimo ${Number(selectedZone.minimum_order).toFixed(2)}
+                        </div>
+                      )}
+                      <input
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        placeholder="Dirección exacta y referencia"
+                        className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-bold outline-none"
+                      />
                     </>
                   )}
                 </div>
@@ -642,15 +639,11 @@ export default function MenuCartDrawer({
                     return;
                   }
 
-                  if (
-                    orderType === "delivery" &&
-                    deliveryAddress.trim().length < 5
-                  ) {
-                    setSubmitError(
-                      "Escribe una dirección de entrega válida."
-                    );
+                  if (orderType === "delivery" && deliveryAddress.trim().length < 5) {
+                    setSubmitError("Escribe una dirección de entrega válida.");
                     return;
                   }
+
                   setSubmitError(null);
                   setStep("customer");
                 }}
@@ -678,23 +671,15 @@ export default function MenuCartDrawer({
                 <ChevronLeft size={14} /> Cambiar entrega
               </button>
 
-              <h3 className="text-xl font-black text-[#1B1410]">
-                Tus datos
-              </h3>
+              <h3 className="text-xl font-black text-[#1B1410]">Tus datos</h3>
 
               <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-                <p className="text-[10px] font-black uppercase text-black/35">
-                  Método seleccionado
-                </p>
+                <p className="text-[10px] font-black uppercase text-black/35">Método seleccionado</p>
                 <div className="mt-2 flex items-center gap-2">
                   <selectedOrderType.icon size={15} />
-                  <strong className="text-sm">
-                    {selectedOrderType.title}
-                  </strong>
+                  <strong className="text-sm">{selectedOrderType.title}</strong>
                   {orderType === "delivery" && selectedZone && (
-                    <span className="text-xs font-bold text-black/40">
-                      · {selectedZone.name}
-                    </span>
+                    <span className="text-xs font-bold text-black/40">· {selectedZone.name}</span>
                   )}
                   {orderType === "delivery" && deliveryMode === "distance" && distanceQuote && (
                     <span className="text-xs font-bold text-black/40">
@@ -715,9 +700,7 @@ export default function MenuCartDrawer({
                 <PhoneCountryField
                   name="customerPhone"
                   value={customerPhone}
-                  onChange={(e) =>
-                    setCustomerPhone(e.target.value)
-                  }
+                  onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="Tu teléfono"
                   className=""
                 />
@@ -730,11 +713,79 @@ export default function MenuCartDrawer({
                   className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold outline-none"
                 />
 
+                <section className="rounded-2xl border border-black/[0.08] bg-white p-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGiftRecipient((value) => !value);
+                      setSubmitError(null);
+                    }}
+                    className="flex w-full items-center justify-between gap-3 text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="grid h-10 w-10 place-items-center rounded-xl"
+                        style={{
+                          backgroundColor: isGiftRecipient ? `${accentColor}22` : "rgba(27,20,16,.05)",
+                          color: "#1B1410",
+                        }}
+                      >
+                        <Gift size={18} />
+                      </span>
+                      <div>
+                        <p className="text-sm font-black text-[#1B1410]">
+                          Este pedido es para otra persona
+                        </p>
+                        <p className="mt-0.5 text-xs font-semibold text-black/40">
+                          Indica quién lo recibirá y cómo contactarlo.
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
+                      style={{
+                        backgroundColor: isGiftRecipient ? accentColor : "rgba(27,20,16,.12)",
+                      }}
+                    >
+                      <span
+                        className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${
+                          isGiftRecipient ? "left-6" : "left-1"
+                        }`}
+                      />
+                    </span>
+                  </button>
+
+                  {isGiftRecipient && (
+                    <div className="mt-4 space-y-3 border-t border-black/[0.07] pt-4">
+                      <input
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        placeholder="Nombre de quien recibe"
+                        className="w-full rounded-2xl border border-black/10 bg-[#FFFDF8] px-4 py-3 text-sm font-semibold outline-none"
+                      />
+
+                      <PhoneCountryField
+                        name="recipientPhone"
+                        value={recipientPhone}
+                        onChange={(e) => setRecipientPhone(e.target.value)}
+                        placeholder="Teléfono del destinatario"
+                        className=""
+                      />
+
+                      <textarea
+                        value={recipientNote}
+                        onChange={(e) => setRecipientNote(e.target.value)}
+                        placeholder="Nota para la entrega (opcional)"
+                        rows={2}
+                        className="w-full resize-none rounded-2xl border border-black/10 bg-[#FFFDF8] px-4 py-3 text-sm font-semibold outline-none"
+                      />
+                    </div>
+                  )}
+                </section>
+
                 <textarea
                   value={customerNotes}
-                  onChange={(e) =>
-                    setCustomerNotes(e.target.value)
-                  }
+                  onChange={(e) => setCustomerNotes(e.target.value)}
                   placeholder="Nota general para el pedido (opcional)"
                   rows={3}
                   className="w-full resize-none rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold outline-none"
@@ -781,9 +832,7 @@ export default function MenuCartDrawer({
                           <strong className="text-emerald-600">GRATIS</strong>
                         </div>
                       ) : (
-                        <strong className="text-[#1B1410]">
-                          ${deliveryFeePreview.toFixed(2)}
-                        </strong>
+                        <strong className="text-[#1B1410]">${deliveryFeePreview.toFixed(2)}</strong>
                       )
                     ) : (
                       <strong className="text-emerald-600">No aplica</strong>
@@ -799,9 +848,7 @@ export default function MenuCartDrawer({
                         {totalUnits} {totalUnits === 1 ? "artículo" : "artículos"}
                       </p>
                     </div>
-                    <strong className="text-2xl text-[#1B1410]">
-                      ${grandTotal.toFixed(2)}
-                    </strong>
+                    <strong className="text-2xl text-[#1B1410]">${grandTotal.toFixed(2)}</strong>
                   </div>
                 </div>
               </div>
@@ -810,14 +857,9 @@ export default function MenuCartDrawer({
                 onClick={handleSend}
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black disabled:opacity-60"
-                style={{
-                  backgroundColor: accentColor,
-                  color: "#1B1410",
-                }}
+                style={{ backgroundColor: accentColor, color: "#1B1410" }}
               >
-                {submitting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : null}
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
                 Confirmar pedido
               </button>
             </div>
