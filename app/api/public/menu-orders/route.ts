@@ -9,6 +9,10 @@ function clean(value: unknown, max = 300) {
   return String(value ?? "").trim().slice(0, max);
 }
 
+function cleanPhone(value: unknown, max = 60) {
+  return clean(value, max).replace(/[^0-9+\s()-]/g, "");
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!request.headers.get("content-type")?.includes("application/json")) {
@@ -27,9 +31,15 @@ export async function POST(request: NextRequest) {
     const deliveryFormattedAddress = clean(body.delivery_formatted_address, 300);
     const deliveryCatalogId = clean(body.delivery_catalog_id, 100);
     const customerName = clean(body.customer_name, 120);
-    const customerPhone = clean(body.customer_phone, 30).replace(/[^0-9+\s()-]/g, "");
+    const customerPhone = cleanPhone(body.customer_phone, 60);
     const customerEmail = clean(body.customer_email, 160);
     const notes = clean(body.notes, 400);
+
+    const isGiftRecipient = body.is_gift_recipient === true;
+    const recipientName = clean(body.recipient_name, 120);
+    const recipientPhone = cleanPhone(body.recipient_phone, 60);
+    const recipientNote = clean(body.recipient_note, 250);
+
     const rawLines = Array.isArray(body.lines) ? body.lines : [];
 
     if (!storeSlug || !["takeaway", "delivery"].includes(orderType)) {
@@ -42,6 +52,15 @@ export async function POST(request: NextRequest) {
 
     if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       return NextResponse.json({ error: "El correo no es válido." }, { status: 400 });
+    }
+
+    if (isGiftRecipient) {
+      if (!recipientName || recipientPhone.replace(/\D/g, "").length < 7) {
+        return NextResponse.json(
+          { error: "Completa el nombre y un teléfono válido de la persona que recibirá el pedido." },
+          { status: 400 }
+        );
+      }
     }
 
     if (orderType === "delivery" && !deliveryAddress) {
@@ -68,6 +87,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
     }
 
+    const recipientSummary = isGiftRecipient
+      ? [
+          `Recibe: ${recipientName}`,
+          `Tel. destinatario: ${recipientPhone}`,
+          recipientNote ? `Nota destinatario: ${recipientNote}` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : "";
+
+    const combinedNotes = [recipientSummary, notes ? `Nota cliente: ${notes}` : ""]
+      .filter(Boolean)
+      .join(" | ")
+      .slice(0, 500);
+
     const input: CreateMenuOrderInput = {
       storeSlug,
       orderType: orderType as CreateMenuOrderInput["orderType"],
@@ -81,7 +115,7 @@ export async function POST(request: NextRequest) {
       customerName,
       customerPhone,
       customerEmail: customerEmail || undefined,
-      notes,
+      notes: combinedNotes,
       lines,
     };
 
