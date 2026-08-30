@@ -15,6 +15,9 @@ export type StoreMetadataRow = {
   meta_title: string | null;
   meta_description: string | null;
   og_image_url: string | null;
+  store_og_image_url: string | null;
+  order_og_image_url: string | null;
+  tracking_og_image_url: string | null;
   is_active: boolean | null;
   has_landing: boolean | null;
 };
@@ -71,6 +74,9 @@ async function fetchStore(
       "meta_title",
       "meta_description",
       "og_image_url",
+      "store_og_image_url",
+      "order_og_image_url",
+      "tracking_og_image_url",
       "is_active",
       "has_landing",
     ].join(",")
@@ -278,5 +284,49 @@ export function buildStoreMetadata(
       index: true,
       follow: true,
     },
+  };
+}
+
+export function buildStoreTrackingMetadata(
+  store: StoreMetadataRow,
+  canonicalUrl: string,
+  trackingCode?: string
+): Metadata {
+  const cleanCode = trackingCode?.trim().toUpperCase();
+  const title = cleanCode
+    ? `Rastrea tu envío ${cleanCode} | ${store.name}`
+    : `Rastrea tu envío | ${store.name}`;
+  const description = cleanCode
+    ? `Consulta el estado y las actualizaciones del envío ${cleanCode} en ${store.name}.`
+    : `Consulta el estado y las actualizaciones de tu envío en ${store.name}.`;
+  const image =
+    store.tracking_og_image_url?.trim() ||
+    store.og_image_url?.trim() ||
+    store.logo_url?.trim() ||
+    PERLA_OG_IMAGE;
+
+  return {
+    metadataBase: new URL(canonicalUrl),
+    title,
+    description,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: store.name,
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+      locale: "es_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+    robots: cleanCode
+      ? { index: false, follow: false }
+      : { index: true, follow: true },
   };
 }

@@ -10,6 +10,9 @@ const STORE_PUBLIC_FIELDS = `
   meta_title,
   meta_description,
   og_image_url,
+  store_og_image_url,
+  order_og_image_url,
+  tracking_og_image_url,
   logo_url,
   favicon_url,
   primary_color,
@@ -125,6 +128,9 @@ export async function createStore(store: {
   meta_title?: string | null
   meta_description?: string | null
   og_image_url?: string | null
+  store_og_image_url?: string | null
+  order_og_image_url?: string | null
+  tracking_og_image_url?: string | null
   logo_url?: string | null
   favicon_url?: string | null
   primary_color?: string | null
@@ -155,6 +161,9 @@ export async function updateStore(
     meta_title?: string | null
     meta_description?: string | null
     og_image_url?: string | null
+    store_og_image_url?: string | null
+    order_og_image_url?: string | null
+    tracking_og_image_url?: string | null
     logo_url?: string | null
     favicon_url?: string | null
     primary_color?: string | null
@@ -281,9 +290,23 @@ export async function uploadStoreFavicon(storeId: string, file: File) {
   return uploadStoreAsset(storeId, file, "favicon")
 }
 
-export async function uploadStoreOgImage(storeId: string, file: File) {
+type StoreSocialImageKind = "site" | "store" | "order" | "tracking"
+
+const SOCIAL_IMAGE_FILENAMES: Record<StoreSocialImageKind, string> = {
+  site: "og-image",
+  store: "store-og-image",
+  order: "order-og-image",
+  tracking: "tracking-og-image",
+}
+
+async function uploadStoreSocialImage(
+  storeId: string,
+  file: File,
+  kind: StoreSocialImageKind
+) {
   const extension = getSafeExtension(file)
-  const filePath = `${storeId}/og-image.${extension}`
+  const filename = SOCIAL_IMAGE_FILENAMES[kind]
+  const filePath = `${storeId}/${filename}.${extension}`
 
   const { error: uploadError } = await supabase.storage
     .from("seo")
@@ -301,12 +324,28 @@ export async function uploadStoreOgImage(storeId: string, file: File) {
     "seo",
     storeId,
     filePath,
-    ["open-graph-", "og-image."]
+    kind === "site" ? ["open-graph-", "og-image."] : [`${filename}.`]
   )
 
   const { data } = supabase.storage.from("seo").getPublicUrl(filePath)
 
   return { data: withCacheVersion(data.publicUrl), error: null }
+}
+
+export function uploadStoreOgImage(storeId: string, file: File) {
+  return uploadStoreSocialImage(storeId, file, "site")
+}
+
+export function uploadStorefrontOgImage(storeId: string, file: File) {
+  return uploadStoreSocialImage(storeId, file, "store")
+}
+
+export function uploadStoreOrderOgImage(storeId: string, file: File) {
+  return uploadStoreSocialImage(storeId, file, "order")
+}
+
+export function uploadStoreTrackingOgImage(storeId: string, file: File) {
+  return uploadStoreSocialImage(storeId, file, "tracking")
 }
 
 /**

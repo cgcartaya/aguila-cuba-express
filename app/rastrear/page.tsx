@@ -1,4 +1,39 @@
+import type { Metadata } from "next";
+import { headers } from "next/headers";
 import TrackingSearch from "@/components/tracking/TrackingSearch";
+import {
+  buildStoreTrackingMetadata,
+  normalizeStoreHost,
+  resolveStoreByHost,
+  resolveStoreBySlug,
+} from "@/lib/saas/store-metadata";
+
+async function getTrackingContext() {
+  const requestHeaders = await headers();
+  const host = normalizeStoreHost(
+    requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || ""
+  );
+  const protocol =
+    requestHeaders.get("x-forwarded-proto") ||
+    (host.includes("localhost") ? "http" : "https");
+  const store = (host ? await resolveStoreByHost(host) : null) ||
+    (await resolveStoreBySlug("aguila"));
+
+  return { store, canonicalUrl: `${protocol}://${host || "aguilaexpressusa.com"}/rastrear` };
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { store, canonicalUrl } = await getTrackingContext();
+
+  if (!store) {
+    return {
+      title: "Rastrea tu envío | Águila Express USA",
+      description: "Consulta el estado y las actualizaciones de tu envío.",
+    };
+  }
+
+  return buildStoreTrackingMetadata(store, canonicalUrl);
+}
 
 export default function RastrearPage() {
   return (

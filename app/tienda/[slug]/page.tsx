@@ -40,7 +40,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `${baseUrl}/tienda/${store.slug}`
     : `https://perlamarketplace.com/tienda/${store.slug}`;
 
-  const image = store.og_image_url || `${baseUrl}/og-image.jpg`;
+  const image =
+    store.store_og_image_url ||
+    store.og_image_url ||
+    `${baseUrl}/og-image.jpg`;
 
   return {
     title,

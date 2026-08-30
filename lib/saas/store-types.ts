@@ -12,6 +12,9 @@ export interface Store {
   meta_title: string | null
   meta_description: string | null
   og_image_url: string | null
+  store_og_image_url: string | null
+  order_og_image_url: string | null
+  tracking_og_image_url: string | null
 
   logo_url: string | null
   favicon_url: string | null

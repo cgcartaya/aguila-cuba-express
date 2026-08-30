@@ -37,6 +37,9 @@ import {
   uploadStoreFavicon,
   uploadStoreLogo,
   uploadStoreOgImage,
+  uploadStorefrontOgImage,
+  uploadStoreOrderOgImage,
+  uploadStoreTrackingOgImage,
 } from "@/lib/services/stores"
 import {
   getPendingPlatformFee,
@@ -62,6 +65,9 @@ type StoreForm = {
   meta_title: string
   meta_description: string
   og_image_url: string
+  store_og_image_url: string
+  order_og_image_url: string
+  tracking_og_image_url: string
   primary_color: string
   secondary_color: string
   plan: string
@@ -95,6 +101,9 @@ const EMPTY_FORM: StoreForm = {
   meta_title: "",
   meta_description: "",
   og_image_url: "",
+  store_og_image_url: "",
+  order_og_image_url: "",
+  tracking_og_image_url: "",
   primary_color: "#0B1F4D",
   secondary_color: "#DC2626",
   plan: "basic",
@@ -232,6 +241,46 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="mb-2 block text-sm font-black text-slate-700">{children}</label>
 }
 
+function SocialImageCard({
+  title,
+  description,
+  previewUrl,
+  selectedFile,
+  onSelect,
+}: {
+  title: string
+  description: string
+  previewUrl: string
+  selectedFile: File | null
+  onSelect: (file: File | null) => void
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 p-5">
+      <div className="flex items-center gap-3">
+        <Share2 className="h-5 w-5 shrink-0 text-indigo-600" />
+        <div>
+          <p className="font-black text-slate-900">{title}</p>
+          <p className="mt-0.5 text-xs font-semibold leading-5 text-slate-400">{description}</p>
+        </div>
+      </div>
+      <div className="mt-4 aspect-[1.91/1] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+        {previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={previewUrl} alt={`Vista previa: ${title}`} className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full place-items-center"><ImageIcon className="h-8 w-8 text-slate-300" /></div>
+        )}
+      </div>
+      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-black text-white transition hover:bg-slate-800">
+        <Upload className="h-4 w-4" /> Subir imagen
+        <input type="file" accept="image/*" className="hidden" onChange={(e) => onSelect(e.target.files?.[0] || null)} />
+      </label>
+      {selectedFile ? <p className="mt-2 truncate text-xs font-bold text-emerald-600">Seleccionada: {selectedFile.name}</p> : null}
+      <p className="mt-3 text-xs font-semibold text-slate-400">Recomendado: 1200 × 630 px.</p>
+    </div>
+  )
+}
+
 const inputClass =
   "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition placeholder:text-slate-300 focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
 
@@ -249,7 +298,9 @@ export default function EditStorePage() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [faviconFile, setFaviconFile] = useState<File | null>(null)
   const [ogImageFile, setOgImageFile] = useState<File | null>(null)
-  const [ogPreviewUrl, setOgPreviewUrl] = useState("")
+  const [storeOgImageFile, setStoreOgImageFile] = useState<File | null>(null)
+  const [orderOgImageFile, setOrderOgImageFile] = useState<File | null>(null)
+  const [trackingOgImageFile, setTrackingOgImageFile] = useState<File | null>(null)
 
   const [feeSummary, setFeeSummary] = useState<{ totalSales: number; totalFee: number; ordersCount: number } | null>(null)
   const [pendingFee, setPendingFee] = useState<PendingPlatformFee | null>(null)
@@ -281,6 +332,9 @@ export default function EditStorePage() {
         meta_title: store.meta_title || "",
         meta_description: store.meta_description || "",
         og_image_url: store.og_image_url || "",
+        store_og_image_url: store.store_og_image_url || "",
+        order_og_image_url: store.order_og_image_url || "",
+        tracking_og_image_url: store.tracking_og_image_url || "",
         primary_color: store.primary_color || "#0B1F4D",
         secondary_color: store.secondary_color || "#DC2626",
         plan: store.plan || "basic",
@@ -316,16 +370,10 @@ export default function EditStorePage() {
     void loadStore()
   }, [router, storeId])
 
-  useEffect(() => {
-    if (!ogImageFile) {
-      setOgPreviewUrl(form.og_image_url)
-      return
-    }
-
-    const objectUrl = URL.createObjectURL(ogImageFile)
-    setOgPreviewUrl(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
-  }, [ogImageFile, form.og_image_url])
+  const ogPreviewUrl = form.og_image_url
+  const storeOgPreviewUrl = form.store_og_image_url
+  const orderOgPreviewUrl = form.order_og_image_url
+  const trackingOgPreviewUrl = form.tracking_og_image_url
 
   const publicUrl = useMemo(() => {
     if (form.domain.trim()) {
@@ -399,6 +447,27 @@ export default function EditStorePage() {
         ogImageUrl = data
       }
 
+      let storeOgImageUrl = form.store_og_image_url || null
+      if (storeOgImageFile) {
+        const { data, error } = await uploadStorefrontOgImage(storeId, storeOgImageFile)
+        if (error) throw error
+        storeOgImageUrl = data
+      }
+
+      let orderOgImageUrl = form.order_og_image_url || null
+      if (orderOgImageFile) {
+        const { data, error } = await uploadStoreOrderOgImage(storeId, orderOgImageFile)
+        if (error) throw error
+        orderOgImageUrl = data
+      }
+
+      let trackingOgImageUrl = form.tracking_og_image_url || null
+      if (trackingOgImageFile) {
+        const { data, error } = await uploadStoreTrackingOgImage(storeId, trackingOgImageFile)
+        if (error) throw error
+        trackingOgImageUrl = data
+      }
+
       const payload = {
         name: form.name.trim(),
         slug: form.slug.trim().toLowerCase(),
@@ -409,6 +478,9 @@ export default function EditStorePage() {
         meta_title: form.meta_title.trim() === "" ? null : form.meta_title.trim(),
         meta_description: form.meta_description.trim() === "" ? null : form.meta_description.trim(),
         og_image_url: ogImageUrl,
+        store_og_image_url: storeOgImageUrl,
+        order_og_image_url: orderOgImageUrl,
+        tracking_og_image_url: trackingOgImageUrl,
         primary_color: form.primary_color,
         secondary_color: form.secondary_color,
         plan: form.plan,
@@ -444,10 +516,16 @@ export default function EditStorePage() {
         logo_url: logoUrl || "",
         favicon_url: faviconUrl || "",
         og_image_url: ogImageUrl || "",
+        store_og_image_url: storeOgImageUrl || "",
+        order_og_image_url: orderOgImageUrl || "",
+        tracking_og_image_url: trackingOgImageUrl || "",
       }))
       setLogoFile(null)
       setFaviconFile(null)
       setOgImageFile(null)
+      setStoreOgImageFile(null)
+      setOrderOgImageFile(null)
+      setTrackingOgImageFile(null)
       setSaved(true)
       router.refresh()
       window.setTimeout(() => setSaved(false), 3500)
@@ -804,22 +882,42 @@ export default function EditStorePage() {
                       </div>
                     </div>
 
-                    <div className="mt-5 rounded-2xl border border-slate-200 p-5">
-                      <div className="flex items-center gap-3"><Share2 className="h-5 w-5 text-indigo-600" /><p className="font-black text-slate-900">Imagen para compartir</p></div>
-                      <div className="mt-4 grid gap-4 lg:grid-cols-[280px_1fr]">
-                        <div className="aspect-[1.91/1] overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
-                          {ogPreviewUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={ogPreviewUrl} alt="Vista previa" className="h-full w-full object-cover" />
-                          ) : <div className="grid h-full place-items-center"><ImageIcon className="h-8 w-8 text-slate-300" /></div>}
-                        </div>
-                        <div>
-                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-black text-white">
-                            <Upload className="h-4 w-4" /> Subir imagen
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => setOgImageFile(e.target.files?.[0] || null)} />
-                          </label>
-                          <p className="mt-3 text-xs font-semibold leading-5 text-slate-400">Recomendado: 1200 × 630 px. Esta imagen se usa al compartir enlaces de la tienda.</p>
-                        </div>
+                    <div className="mt-6">
+                      <div className="mb-4">
+                        <h4 className="font-black text-slate-900">Imágenes para compartir por sección</h4>
+                        <p className="mt-1 text-xs font-semibold leading-5 text-slate-400">
+                          Cada enlace usa su imagen correspondiente. Si dejas una vacía, el sistema utiliza automáticamente la imagen general.
+                        </p>
+                      </div>
+                      <div className="grid gap-5 xl:grid-cols-2">
+                        <SocialImageCard
+                          title="Sitio general"
+                          description="Landing principal y páginas informativas."
+                          previewUrl={ogPreviewUrl}
+                          selectedFile={ogImageFile}
+                          onSelect={setOgImageFile}
+                        />
+                        <SocialImageCard
+                          title="Tienda online"
+                          description="Catálogo, categorías, productos y carrito."
+                          previewUrl={storeOgPreviewUrl || ogPreviewUrl}
+                          selectedFile={storeOgImageFile}
+                          onSelect={setStoreOgImageFile}
+                        />
+                        <SocialImageCard
+                          title="Estado del pedido"
+                          description="Enlaces públicos /pedido/[número]."
+                          previewUrl={orderOgPreviewUrl || storeOgPreviewUrl || ogPreviewUrl}
+                          selectedFile={orderOgImageFile}
+                          onSelect={setOrderOgImageFile}
+                        />
+                        <SocialImageCard
+                          title="Rastreo de envío"
+                          description="Buscador y enlaces /rastrear/[código]."
+                          previewUrl={trackingOgPreviewUrl || ogPreviewUrl}
+                          selectedFile={trackingOgImageFile}
+                          onSelect={setTrackingOgImageFile}
+                        />
                       </div>
                     </div>
                   </div>

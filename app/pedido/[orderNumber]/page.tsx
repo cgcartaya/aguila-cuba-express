@@ -46,6 +46,8 @@ type StoreBrandRow = {
   slug: string | null;
   logo_url: string | null;
   og_image_url: string | null;
+  store_og_image_url: string | null;
+  order_og_image_url: string | null;
 };
 
 type PublicOrderData = {
@@ -114,7 +116,7 @@ const loadPublicOrder = cache(async (orderNumber: string): Promise<PublicOrderDa
     order.store_id
       ? supabase
           .from("stores")
-          .select("id,name,slug,logo_url,og_image_url")
+          .select("id,name,slug,logo_url,og_image_url,store_og_image_url,order_og_image_url")
           .eq("id", order.store_id)
           .maybeSingle()
       : Promise.resolve({ data: null, error: null }),
@@ -156,6 +158,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `Pedido ${publicNumber} | ${storeName}`;
   const description = `Consulta el estado de tu pedido en ${storeName}.`;
   const image =
+    data?.store?.order_og_image_url?.trim() ||
+    data?.store?.store_og_image_url?.trim() ||
     data?.store?.og_image_url?.trim() ||
     data?.store?.logo_url?.trim() ||
     FALLBACK_IMAGE;
