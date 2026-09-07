@@ -12,6 +12,7 @@ import {
 } from "@/lib/storefront/product-quantity-pricing";
 import { useStore } from "@/hooks/useStore";
 import Price from "@/components/tienda/Price";
+import ProductShareButton from "@/components/tienda/product-detail/ProductShareButton";
 
 type ProductInfoProps = {
   name: string;
@@ -228,6 +229,8 @@ export default function ProductInfo({
           ? `Agregar ${quantity} al carrito`
           : "Producto agotado"}
       </button>
+
+      <ProductShareButton productName={name} />
     </section>
   );
 }
