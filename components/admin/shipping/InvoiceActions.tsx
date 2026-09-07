@@ -7,11 +7,23 @@ import {
   FileDown,
   MessageCircle,
   Printer,
+  ShoppingBag,
   Share2,
   X,
 } from "lucide-react";
 
 import type { Shipment } from "@/lib/shipping/types";
+
+type MessageKind = "invoice" | "promotion";
+type PromotionStore = {
+  name: string;
+  slug: string;
+  domain?: string | null;
+  subdomain?: string | null;
+  has_landing?: boolean | null;
+  module_landing_enabled?: boolean | null;
+  module_store_enabled?: boolean | null;
+};
 
 function onlyDigits(value?: string | null) {
   return String(value || "").replace(/\D/g, "");
@@ -33,7 +45,7 @@ function getPublicBaseUrl() {
   return "";
 }
 
-function buildInvoiceMessage(shipment: Shipment) {
+function buildInvoiceMessage(shipment: Shipment, storeName: string) {
   const baseUrl = getPublicBaseUrl();
   const trackingCode = shipment.tracking_code || shipment.id;
 
@@ -44,7 +56,7 @@ function buildInvoiceMessage(shipment: Shipment) {
     `${baseUrl}/rastrear/${encodeURIComponent(trackingCode)}`;
 
   return [
-    "🧾 *Aguila Express USA*",
+    `🧾 *${storeName}*`,
     "",
     `Hola ${shipment.sender_name || ""}, aquí tiene la información de su operación.`,
     "",
@@ -58,6 +70,50 @@ function buildInvoiceMessage(shipment: Shipment) {
     "",
     "📦 *Rastrear el envío:*",
     trackingUrl,
+  ].join("\n");
+}
+
+function getStorefrontUrl(store: PromotionStore) {
+  const hasLanding = store.has_landing || store.module_landing_enabled;
+  const domain = store.domain
+    ?.trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "");
+
+  if (domain) {
+    return `https://${domain}${hasLanding ? "/tienda" : ""}`;
+  }
+
+  const subdomain = store.subdomain?.trim().toLowerCase();
+  if (subdomain) {
+    return `https://${subdomain}.perlamarketplace.com${hasLanding ? "/tienda" : ""}`;
+  }
+
+  return `https://perlamarketplace.com/tienda/${encodeURIComponent(store.slug)}`;
+}
+
+function buildStorePromotionMessage(store: PromotionStore) {
+  const storefrontUrl = getStorefrontUrl(store);
+  const catalogDescription =
+    store.slug === "aguila"
+      ? "En nuestra tienda online encontrarás alimentos, carnes, bebidas, aseo, combos y mucho más."
+      : "En nuestra tienda online encontrarás productos, ofertas y combos disponibles para comprar desde tu teléfono.";
+
+  return [
+    "🛒 *¿YA CONOCES NUESTRA TIENDA ONLINE?*",
+    "",
+    "Ya hiciste tu envío. Ahora también puedes hacerles la compra.",
+    "",
+    catalogDescription,
+    "",
+    "⚡ Compra online y nosotros nos encargamos de la entrega.",
+    "",
+    "🔥 *Mira las ofertas disponibles hoy:*",
+    storefrontUrl,
+    "",
+    `*${store.name.toUpperCase()}*`,
+    "Envíos + Tienda Online",
   ].join("\n");
 }
 
@@ -88,17 +144,24 @@ function openWhatsApp(
 
 export default function InvoiceActions({
   shipment,
+  store,
   compact = false,
 }: {
   shipment: Shipment;
+  store?: PromotionStore | null;
   compact?: boolean;
 }) {
-  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [messageKind, setMessageKind] = useState<MessageKind | null>(null);
 
   const phone = shipment.sender_phone || "";
   const trackingCode = shipment.tracking_code || shipment.id;
   const publicInvoiceUrl =
     `/factura/${encodeURIComponent(trackingCode)}`;
+  const storeName = store?.name || "Aguila Express USA";
+  const message =
+    messageKind === "promotion" && store
+      ? buildStorePromotionMessage(store)
+      : buildInvoiceMessage(shipment, storeName);
 
   return (
     <>
@@ -115,36 +178,49 @@ export default function InvoiceActions({
 
         <button
           type="button"
-          onClick={() => setSelectorOpen(true)}
+          onClick={() => setMessageKind("invoice")}
           className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
         >
           <Share2 size={17} />
           {compact ? "WhatsApp" : "Compartir factura"}
         </button>
+
+        {store?.module_store_enabled && (
+          <button
+            type="button"
+            onClick={() => setMessageKind("promotion")}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
+            title="Enviar un segundo mensaje promocionando la tienda"
+          >
+            <ShoppingBag size={17} />
+            {compact ? "Promo" : "Promocionar tienda"}
+          </button>
+        )}
       </div>
 
-      {selectorOpen && (
+      {messageKind && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-emerald-700">
-                  Compartir operación
+                  {messageKind === "promotion" ? "Promoción de la tienda" : "Compartir operación"}
                 </p>
 
                 <h2 className="mt-1 text-2xl font-extrabold text-slate-950">
-                  Elige WhatsApp
+                  {messageKind === "promotion" ? "Enviar segundo mensaje" : "Elige WhatsApp"}
                 </h2>
 
                 <p className="mt-2 text-sm font-medium leading-6 text-slate-500">
-                  El mensaje incluirá el enlace de la factura descargable,
-                  el código y el enlace público de rastreo.
+                  {messageKind === "promotion"
+                    ? "Se abrirá un mensaje separado con la promoción y el enlace directo a la tienda. Podrás revisarlo antes de enviarlo."
+                    : "El mensaje incluirá el enlace de la factura descargable, el código y el enlace público de rastreo."}
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => setSelectorOpen(false)}
+                onClick={() => setMessageKind(null)}
                 className="rounded-xl border border-slate-200 p-2 text-slate-500 transition hover:bg-slate-50"
                 aria-label="Cerrar"
               >
@@ -166,7 +242,7 @@ export default function InvoiceActions({
                   openWhatsApp(
                     "normal",
                     phone,
-                    buildInvoiceMessage(shipment)
+                    message
                   )
                 }
                 className="flex items-center gap-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-left transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40"
@@ -192,7 +268,7 @@ export default function InvoiceActions({
                   openWhatsApp(
                     "business",
                     phone,
-                    buildInvoiceMessage(shipment)
+                    message
                   )
                 }
                 className="flex items-center gap-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-left transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
@@ -212,17 +288,30 @@ export default function InvoiceActions({
               </button>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <FileDown size={17} className="text-blue-700" />
-                Factura descargable desde la web
+            {messageKind === "promotion" ? (
+              <div className="mt-5 rounded-2xl border border-violet-100 bg-violet-50 p-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-violet-800">
+                  <ShoppingBag size={17} />
+                  Promoción separada de la factura
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-violet-800">
+                  <ExternalLink size={17} />
+                  Enlace directo a {storeName}
+                </div>
               </div>
+            ) : (
+              <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+                  <FileDown size={17} className="text-blue-700" />
+                  Factura descargable desde la web
+                </div>
 
-              <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
-                <ExternalLink size={17} className="text-blue-700" />
-                Rastreo público incluido
+                <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-slate-600">
+                  <ExternalLink size={17} className="text-blue-700" />
+                  Rastreo público incluido
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}

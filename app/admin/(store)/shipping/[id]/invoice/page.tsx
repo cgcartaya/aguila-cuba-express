@@ -222,7 +222,7 @@ export default function ShippingInvoicePage({
             </Link>
 
             <div className="flex flex-wrap gap-3">
-              <InvoiceActions shipment={shipment} />
+              <InvoiceActions shipment={shipment} store={activeStore} />
               <PrintInvoiceButton />
             </div>
           </div>

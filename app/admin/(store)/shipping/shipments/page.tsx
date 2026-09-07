@@ -415,7 +415,7 @@ export default function ShippingShipmentsPage() {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-1.5 xl:justify-end">
-                        <InvoiceActions shipment={shipment} compact />
+                        <InvoiceActions shipment={shipment} store={activeStore} compact />
                         <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
                         <Link
                           href={`/admin/shipping/${shipment.id}/edit`}
