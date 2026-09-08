@@ -19,6 +19,10 @@ import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
 import { getComboById } from "@/lib/services/combos";
 import { useStore } from "@/hooks/useStore";
+import {
+  applyPlatformFee,
+  getPlatformFeePercent,
+} from "@/lib/storefront/product-quantity-pricing";
 
 type ComboProduct = {
   id: string;
@@ -124,6 +128,7 @@ export default function ComboDetailPage() {
   const slug = params.slug as string;
   const backHref = slug ? `/tienda/${slug}` : "/tienda";
   const { store, loading: storeLoading } = useStore();
+  const feePercent = getPlatformFeePercent(store);
 
   const [combo, setCombo] = useState<ComboDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,7 +161,7 @@ export default function ComboDetailPage() {
     loadCombo();
   }, [comboId, slug, store?.id, store?.slug, storeLoading]);
 
-  const regularPrice =
+  const regularBasePrice =
     combo?.combo_items.reduce((total, item) => {
       return (
         total +
@@ -164,7 +169,8 @@ export default function ComboDetailPage() {
       );
     }, 0) || 0;
 
-  const comboPrice = Number(combo?.price || 0);
+  const regularPrice = applyPlatformFee(regularBasePrice, feePercent);
+  const comboPrice = applyPlatformFee(Number(combo?.price || 0), feePercent);
   const savings = regularPrice - comboPrice;
 
   if (loading) {
@@ -305,7 +311,10 @@ export default function ComboDetailPage() {
                   </p>
 
                   <p className="mt-1 text-sm font-black text-red-600">
-                    ${Number(item.products.price || 0).toFixed(2)}
+                    ${applyPlatformFee(
+                      Number(item.products.price || 0),
+                      feePercent
+                    ).toFixed(2)}
                   </p>
                 </div>
               </article>

@@ -27,6 +27,7 @@ type OrderRow = {
   platform_fee_amount: number | string | null;
   created_at: string;
   status: string | null;
+  payment_status: string | null;
   deleted_at: string | null;
 };
 
@@ -118,18 +119,18 @@ export default async function SaasMetricsPage() {
 
   const { data: orderData, error } = await supabase
     .from("orders")
-    .select("store_id,total,platform_fee_amount,created_at,status,deleted_at")
+    .select("store_id,total,platform_fee_amount,created_at,status,payment_status,deleted_at")
     .gte("created_at", from.toISOString())
     .lt("created_at", to.toISOString())
     .is("deleted_at", null)
-    .neq("status", "cancelled");
+    .eq("payment_status", "paid");
 
   if (error) {
     console.error("Error loading SaaS metrics orders:", error);
   }
 
   const orders = ((orderData || []) as OrderRow[]).filter(
-    (row) => !row.deleted_at && row.status !== "cancelled"
+    (row) => !row.deleted_at && row.payment_status === "paid"
   );
 
   const currentMonth = monthKey(new Date());

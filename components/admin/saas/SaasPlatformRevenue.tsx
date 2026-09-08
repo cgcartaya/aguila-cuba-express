@@ -44,7 +44,7 @@ export default function SaasPlatformRevenue({
           .gte("created_at", from.toISOString())
           .lt("created_at", to.toISOString())
           .is("deleted_at", null)
-          .neq("status", "cancelled")
+          .eq("payment_status", "paid")
           .gt("platform_fee_amount", 0);
 
         if (error) throw error;

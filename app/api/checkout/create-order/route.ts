@@ -468,9 +468,11 @@ export async function POST(request: Request) {
           }
         }
 
-        // El fee de plataforma solo aplica a productos individuales,
-        // no a combos (precio fijo).
-        const price = money(combo.price);
+        // Los combos conservan su precio base en Supabase y reciben el
+        // mismo fee configurado que los productos individuales.
+        const basePrice = money(combo.price);
+        const price = applyPlatformFee(basePrice, platformFeePercent);
+        const unitFeeAmount = money(price - basePrice);
         preparedItems.push({
           item_type: "combo",
           product_id: null,
@@ -478,8 +480,8 @@ export async function POST(request: Request) {
           product_name: clean(combo.name, 200),
           quantity,
           price,
-          base_price: price,
-          platform_fee_amount: 0,
+          base_price: basePrice,
+          platform_fee_amount: money(unitFeeAmount * quantity),
           subtotal: money(price * quantity),
           minimum_order_exempt: false,
           delivery_included: false,

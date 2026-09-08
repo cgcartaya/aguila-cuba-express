@@ -5,6 +5,11 @@ import Link from "next/link";
 import { BadgePercent, CheckCircle2, Package } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
+import { useStore } from "@/hooks/useStore";
+import {
+  applyPlatformFee,
+  getPlatformFeePercent,
+} from "@/lib/storefront/product-quantity-pricing";
 
 type ComboItem = {
   id: string;
@@ -36,6 +41,8 @@ function getSafeImageUrl(url?: string | null) {
 
 export default function StoreComboCard({ combo, storeSlug }: Props) {
   const { addComboToCart } = useCart();
+  const { store } = useStore();
+  const feePercent = getPlatformFeePercent(store);
 
   const normalPrice =
     combo.combo_items?.reduce((total, item) => {
@@ -45,8 +52,10 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
       );
     }, 0) || 0;
 
-  const comboPrice = Number(combo.price || 0);
-  const savings = Math.max(normalPrice - comboPrice, 0);
+  const comboBasePrice = Number(combo.price || 0);
+  const normalPriceWithFee = applyPlatformFee(normalPrice, feePercent);
+  const comboPrice = applyPlatformFee(comboBasePrice, feePercent);
+  const savings = Math.max(normalPriceWithFee - comboPrice, 0);
   const comboImageUrl = getSafeImageUrl(combo.image_url);
 
   const comboHref = storeSlug
@@ -136,9 +145,9 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
       </div>
 
       <div className="mt-auto pt-4">
-        {normalPrice > comboPrice && (
+        {normalPriceWithFee > comboPrice && (
           <p className="text-xs font-semibold text-slate-400 line-through">
-            ${normalPrice.toFixed(2)}
+            ${normalPriceWithFee.toFixed(2)}
           </p>
         )}
 

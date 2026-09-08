@@ -64,6 +64,7 @@ export async function getPendingPlatformFee(
     .from("orders")
     .select("total, platform_fee_amount")
     .eq("store_id", storeId)
+    .eq("payment_status", "paid")
     .gt("created_at", periodStart)
 
   if (error || !data) {

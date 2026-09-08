@@ -13,6 +13,7 @@ import {
 import { useStore } from "@/hooks/useStore";
 import type { Product, Combo, CartItem } from "@/types/cart";
 import {
+  applyPlatformFee,
   getPlatformFeePercent,
   getPurchaseQuantityLimit,
   getUnitPriceForQuantity,
@@ -83,10 +84,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           item.base_price ?? item.price ?? 0
         );
 
-        if (item.type !== "product") {
+        if (item.type === "combo") {
           return {
             ...item,
             base_price: basePrice,
+            price: applyPlatformFee(basePrice, feePercent),
           };
         }
 
@@ -376,6 +378,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addComboToCart = (combo: Combo) => {
     const cartId = `combo-${combo.id}`;
+    const basePrice = Number(combo.price || 0);
+    const effectivePrice = applyPlatformFee(basePrice, feePercent);
 
     if (store?.id) {
       trackAnalyticsEvent({
@@ -384,7 +388,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         comboId: combo.id,
         itemName: combo.name,
         quantity: 1,
-        value: Number(combo.price),
+        value: effectivePrice,
       });
     }
 
@@ -409,8 +413,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           id: cartId,
           name: combo.name,
-          price: Number(combo.price),
-          base_price: Number(combo.price),
+          price: effectivePrice,
+          base_price: basePrice,
           image_url:
             combo.image_url ||
             "/placeholder-product.png",
