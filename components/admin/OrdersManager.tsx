@@ -990,7 +990,7 @@ export default function OrdersManager({
 
                     {Number(order.platform_fee_amount || 0) > 0 && (
                       <p className="mt-1 text-xs font-semibold text-emerald-700">
-                        Incluye ${Number(order.platform_fee_amount).toFixed(2)} de comisión de plataforma
+                        Comisión de plataforma: ${Number(order.platform_fee_amount).toFixed(2)}
                       </p>
                     )}
 
@@ -1084,7 +1084,7 @@ export default function OrdersManager({
                           )}
                           {Number(order.platform_fee_amount || 0) > 0 && (
                             <p className="pt-1 text-xs font-semibold text-emerald-700">
-                              Incluye ${Number(order.platform_fee_amount).toFixed(2)} de comisión de plataforma (ya está dentro del total)
+                              Comisión de plataforma: ${Number(order.platform_fee_amount).toFixed(2)} (incluye ${Number(order.platform_fixed_fee_amount || 0).toFixed(2)} asumidos por la tienda)
                             </p>
                           )}
                           <div className="flex items-center justify-between border-t pt-2 text-lg font-black text-[#061b3a]">

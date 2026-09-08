@@ -43,7 +43,6 @@ export default function SaasPlatformRevenue({
           .select("store_id,platform_fee_amount,status,deleted_at")
           .gte("created_at", from.toISOString())
           .lt("created_at", to.toISOString())
-          .is("deleted_at", null)
           .eq("payment_status", "paid")
           .gt("platform_fee_amount", 0);
 

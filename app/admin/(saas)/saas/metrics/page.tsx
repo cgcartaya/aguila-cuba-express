@@ -122,7 +122,6 @@ export default async function SaasMetricsPage() {
     .select("store_id,total,platform_fee_amount,created_at,status,payment_status,deleted_at")
     .gte("created_at", from.toISOString())
     .lt("created_at", to.toISOString())
-    .is("deleted_at", null)
     .eq("payment_status", "paid");
 
   if (error) {
@@ -130,7 +129,7 @@ export default async function SaasMetricsPage() {
   }
 
   const orders = ((orderData || []) as OrderRow[]).filter(
-    (row) => !row.deleted_at && row.payment_status === "paid"
+    (row) => row.payment_status === "paid"
   );
 
   const currentMonth = monthKey(new Date());

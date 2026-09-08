@@ -20,3 +20,8 @@ export const CARD_PAYMENTS_ENABLED = true;
 // el Checkout) — vale la pena confirmar con un contador/abogado que 2.5%
 // esté dentro de lo permitido en Florida antes de dejarlo en producción.
 export const CARD_SURCHARGE_RATE = 0.025;
+
+// Tarifa fija que la plataforma gana por cada orden de tienda. La asume
+// la tienda: no se suma al total que paga el cliente. Se guarda separada
+// para auditoría y también forma parte de orders.platform_fee_amount.
+export const PLATFORM_ORDER_FIXED_FEE = 0.3;

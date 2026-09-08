@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
-import { CARD_SURCHARGE_RATE } from "@/lib/config/features";
+import {
+  CARD_SURCHARGE_RATE,
+  PLATFORM_ORDER_FIXED_FEE,
+} from "@/lib/config/features";
 import { reactivateExpiredOrder } from "@/lib/services/order-stock-admin";
 
 const fail = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
@@ -62,7 +65,11 @@ export async function POST(request: NextRequest) {
   // con la plataforma). En modo "direct" no hay application_fee_amount: la
   // comisión ya va incluida en el precio.
   const PLATFORM_FEE_RATE = 0.02;
-  const applicationFeeCents = Math.round(amountCents * PLATFORM_FEE_RATE);
+  const fixedPlatformFeeCents = Math.round(PLATFORM_ORDER_FIXED_FEE * 100);
+  const applicationFeeCents = Math.min(
+    amountCents,
+    Math.round(amountCents * PLATFORM_FEE_RATE) + fixedPlatformFeeCents
+  );
 
   const session = await stripeCtx.stripe.checkout.sessions.create(
     {
