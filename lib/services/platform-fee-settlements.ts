@@ -60,11 +60,13 @@ export async function getPendingPlatformFee(
 ): Promise<PendingPlatformFee> {
   const periodStart = await getLastSettlementEnd(storeId)
 
+  // Toda orden que todavía existe cuenta como comisión pendiente,
+  // aunque su payment_status sea pending (por ejemplo Zelle/WhatsApp).
+  // Solo deja de contar cuando se elimina definitivamente de la tabla.
   const { data, error } = await supabase
     .from("orders")
     .select("total, platform_fee_amount")
     .eq("store_id", storeId)
-    .eq("payment_status", "paid")
     .gt("created_at", periodStart)
 
   if (error || !data) {
