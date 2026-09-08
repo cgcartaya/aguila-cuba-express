@@ -350,7 +350,8 @@ export function uploadStoreTrackingOgImage(storeId: string, file: File) {
 
 /**
  * Resumen de comisión de plataforma generada por una tienda.
- * Suma orders.platform_fee_amount únicamente de órdenes pagadas.
+ * Toda orden existente cuenta, sin importar el método o estado de pago.
+ * Al eliminarla definitivamente deja de contar porque la fila ya no existe.
  */
 export async function getStorePlatformFeeSummary(storeId: string): Promise<{
   totalSales: number
@@ -361,7 +362,6 @@ export async function getStorePlatformFeeSummary(storeId: string): Promise<{
     .from("orders")
     .select("total, platform_fee_amount")
     .eq("store_id", storeId)
-    .eq("payment_status", "paid")
 
   if (error || !data) {
     console.error("Error loading platform fee summary:", error)

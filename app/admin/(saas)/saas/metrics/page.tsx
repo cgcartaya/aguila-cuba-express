@@ -121,16 +121,13 @@ export default async function SaasMetricsPage() {
     .from("orders")
     .select("store_id,total,platform_fee_amount,created_at,status,payment_status,deleted_at")
     .gte("created_at", from.toISOString())
-    .lt("created_at", to.toISOString())
-    .eq("payment_status", "paid");
+    .lt("created_at", to.toISOString());
 
   if (error) {
     console.error("Error loading SaaS metrics orders:", error);
   }
 
-  const orders = ((orderData || []) as OrderRow[]).filter(
-    (row) => row.payment_status === "paid"
-  );
+  const orders = (orderData || []) as OrderRow[];
 
   const currentMonth = monthKey(new Date());
   const previousMonth = monthKey(monthStart(-1));
