@@ -253,8 +253,8 @@ export default function ShippingShipmentsPage() {
     access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] p-4 pb-24 md:p-6">
-      <div className="mx-auto max-w-[1600px]">
+    <main className="min-h-screen min-w-0 overflow-x-hidden bg-[#f5f7fb] px-3 pb-24 pt-3 sm:p-4 sm:pb-24 md:p-6 md:pb-24">
+      <div className="mx-auto min-w-0 max-w-[1600px]">
         <AdminPageHeader
           eyebrow="Centro operativo"
           title="Todos los envíos"
@@ -265,25 +265,25 @@ export default function ShippingShipmentsPage() {
             { label: "Todos los envíos" },
           ]}
           actions={
-            <>
-              <Link href="/admin/shipping/trips" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15">
+            <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+              <Link href="/admin/shipping/trips" className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15 sm:px-5">
                 <Route size={17} />
                 Viajes
               </Link>
-              <Link href="/admin/shipping/shipments/trash" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15">
+              <Link href="/admin/shipping/shipments/trash" className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15 sm:px-5">
                 <Archive size={17} />
                 Papelera
               </Link>
               {canCreate && activeStore && (
-                <Link href="/admin/shipping/new" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-[#061b3a] shadow-lg">
+                <Link href="/admin/shipping/new" className="col-span-2 inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-white px-3 py-3 text-sm font-extrabold text-[#061b3a] shadow-lg sm:px-5">
                   <Plus size={18} />
                   Nuevo envío
                 </Link>
               )}
-            </>
+            </div>
           }
           stats={
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid min-w-0 gap-2 sm:grid-cols-3 sm:gap-3">
               <HeaderStat label="Envíos activos" value={summary.total} icon={<Truck size={17} />} />
               <HeaderStat label="Cobro pendiente/parcial" value={summary.pending} icon={<CircleDollarSign size={17} />} />
               <HeaderStat label="Sin repartidor" value={summary.unassigned} icon={<UserRound size={17} />} />
@@ -291,7 +291,7 @@ export default function ShippingShipmentsPage() {
           }
         />
 
-        <section className="mb-5 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm">
+        <section className="mb-5 min-w-0 rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
           <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
             <label className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
@@ -331,7 +331,7 @@ export default function ShippingShipmentsPage() {
         ) : shipments.length === 0 ? (
           <div className="rounded-3xl border bg-white p-10 text-center"><PackageSearch className="mx-auto mb-4 text-slate-300" size={44} /><h2 className="text-xl font-extrabold">No hay envíos con estos filtros</h2><p className="mt-2 text-sm text-slate-500">Prueba limpiando alguno de los criterios de búsqueda.</p></div>
         ) : (
-          <section className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+          <section className="min-w-0 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
             <div className="hidden grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] gap-3 border-b bg-slate-50 px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 xl:grid">
               <span>Orden</span>
               <span>Cliente / rastreo</span>
@@ -346,28 +346,28 @@ export default function ShippingShipmentsPage() {
               {shipments.map((shipment) => {
                 const trip = shipment.trip_id ? tripMap.get(shipment.trip_id) : null;
                 return (
-                  <article key={shipment.id} className="group px-4 py-3 transition hover:bg-blue-50/35">
-                    <div className="grid gap-3 xl:grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] xl:items-center">
-                      <div className="flex items-center justify-between xl:block">
+                  <article key={shipment.id} className="group min-w-0 px-3 py-4 transition hover:bg-blue-50/35 sm:px-4 sm:py-3">
+                    <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] xl:items-center">
+                      <div className="flex min-w-0 items-center justify-between gap-3 sm:col-span-2 xl:col-span-1 xl:block">
                         <span className="text-[10px] font-extrabold uppercase text-slate-400 xl:hidden">Orden</span>
                         <span className="text-base font-black text-[#061b3a]">{shipment.order_number ? `#${shipment.order_number}` : "—"}</span>
                       </div>
 
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <p className="truncate text-sm font-extrabold text-slate-900">{shipment.sender_name || "Sin cliente"}</p>
+                          <p className="break-words text-sm font-extrabold text-slate-900 sm:truncate">{shipment.sender_name || "Sin cliente"}</p>
                           <ShippingStatusBadge status={shipment.status} />
                         </div>
-                        <p className="mt-0.5 truncate text-xs font-bold text-blue-700">{shipment.tracking_code || shipment.id.slice(0, 8)}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500">{shipment.sender_phone || "Sin teléfono"}</p>
+                        <p className="mt-0.5 break-all text-xs font-bold text-blue-700 sm:truncate">{shipment.tracking_code || shipment.id.slice(0, 8)}</p>
+                        <p className="mt-0.5 break-words text-[11px] text-slate-500 sm:truncate">{shipment.sender_phone || "Sin teléfono"}</p>
                       </div>
 
                       <CompactCell label="Destinatario" primary={shipment.recipient_name || "Sin destinatario"} secondary={shipment.recipient_phone || "Sin teléfono"} />
 
                       <div className="min-w-0">
                         <p className="text-[10px] font-extrabold uppercase text-slate-400 xl:hidden">Destino</p>
-                        <p className="truncate text-sm font-bold text-slate-800">{shipment.location || "Sin lugar"}</p>
-                        <p className="mt-0.5 truncate text-[11px] text-slate-500">{shipment.recipient_address || "Sin dirección"}</p>
+                        <p className="break-words text-sm font-bold text-slate-800 sm:truncate">{shipment.location || "Sin lugar"}</p>
+                        <p className="mt-0.5 break-words text-[11px] text-slate-500 sm:truncate">{shipment.recipient_address || "Sin dirección"}</p>
                       </div>
 
                       <div className="min-w-0">
@@ -380,7 +380,7 @@ export default function ShippingShipmentsPage() {
                         ) : (
                           <div className="space-y-1.5">
                             <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700">Sin viaje</span>
-                            <div className="flex min-w-[170px] gap-1">
+                            <div className="grid w-full min-w-0 gap-1 min-[380px]:grid-cols-[minmax(0,1fr)_auto]">
                               <select
                                 value={tripSelections[shipment.id] || ""}
                                 onChange={(event) => setTripSelections((current) => ({ ...current, [shipment.id]: event.target.value }))}
@@ -414,23 +414,25 @@ export default function ShippingShipmentsPage() {
                         </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-1.5 xl:justify-end">
+                      <div className="min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
                         <InvoiceActions shipment={shipment} store={activeStore} compact />
-                        <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
-                        <Link
-                          href={`/admin/shipping/${shipment.id}/edit`}
-                          title="Editar envío"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-blue-300 hover:bg-white hover:text-blue-700"
-                        >
-                          <Edit3 size={16} />
-                        </Link>
-                        <button
-                          onClick={() => void trash(shipment)}
-                          title="Mover a papelera"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 text-red-600 transition hover:bg-red-50"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
+                          <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
+                          <Link
+                            href={`/admin/shipping/${shipment.id}/edit`}
+                            title="Editar envío"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-blue-300 hover:bg-white hover:text-blue-700"
+                          >
+                            <Edit3 size={16} />
+                          </Link>
+                          <button
+                            onClick={() => void trash(shipment)}
+                            title="Mover a papelera"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 text-red-600 transition hover:bg-red-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -447,16 +449,16 @@ export default function ShippingShipmentsPage() {
         )}
 
         {!loading && totalCount > PAGE_SIZE && (
-          <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+          <div className="mt-4 flex min-w-0 flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-3 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between sm:px-4">
             <span className="text-xs font-bold text-slate-500">
               Página {page} de {totalPages} · {totalCount} envíos
             </span>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 min-[420px]:flex">
               <button
                 type="button"
                 onClick={() => setPage((current) => Math.max(1, current - 1))}
                 disabled={page <= 1}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
               >
                 <ChevronLeft size={16} />
                 Anterior
@@ -465,7 +467,7 @@ export default function ShippingShipmentsPage() {
                 type="button"
                 onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
                 disabled={page >= totalPages}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex min-w-0 items-center justify-center gap-1 rounded-xl border border-slate-200 px-2 py-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 sm:px-3"
               >
                 Siguiente
                 <ChevronRight size={16} />
@@ -491,8 +493,8 @@ function CompactCell({ label, primary, secondary }: { label: string; primary: st
   return (
     <div className="min-w-0">
       <p className="text-[10px] font-extrabold uppercase text-slate-400 xl:hidden">{label}</p>
-      <p className="truncate text-sm font-bold text-slate-800">{primary}</p>
-      <p className="mt-0.5 truncate text-[11px] text-slate-500">{secondary}</p>
+      <p className="break-words text-sm font-bold text-slate-800 sm:truncate">{primary}</p>
+      <p className="mt-0.5 break-words text-[11px] text-slate-500 sm:truncate">{secondary}</p>
     </div>
   );
 }

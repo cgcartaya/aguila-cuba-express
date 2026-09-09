@@ -165,12 +165,12 @@ export default function InvoiceActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid w-full min-w-0 grid-cols-2 gap-2 min-[520px]:flex min-[520px]:w-auto min-[520px]:flex-wrap xl:justify-end">
         <a
           href={publicInvoiceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-800 transition hover:border-blue-300 hover:bg-blue-50"
+          className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 transition hover:border-blue-300 hover:bg-blue-50 sm:px-4"
         >
           <Printer size={17} />
           {compact ? "Factura" : "Ver factura"}
@@ -179,7 +179,7 @@ export default function InvoiceActions({
         <button
           type="button"
           onClick={() => setMessageKind("invoice")}
-          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700"
+          className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 sm:px-4"
         >
           <Share2 size={17} />
           {compact ? "WhatsApp" : "Compartir factura"}
@@ -189,7 +189,7 @@ export default function InvoiceActions({
           <button
             type="button"
             onClick={() => setMessageKind("promotion")}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700"
+            className="col-span-2 inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700 min-[520px]:col-span-1 sm:px-4"
             title="Enviar un segundo mensaje promocionando la tienda"
           >
             <ShoppingBag size={17} />
