@@ -93,7 +93,7 @@ export default function ProductCard({
   }
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
       <Link href={productUrl}>
         <div className="relative aspect-square w-full overflow-hidden bg-white p-2">
           {product.delivery_included === true && (
@@ -121,7 +121,7 @@ export default function ProductCard({
         </div>
       </Link>
 
-      <div className="p-3 pt-1">
+      <div className="flex flex-1 flex-col p-3 pt-1">
         <Link href={productUrl}>
           <h3 className="line-clamp-2 min-h-[38px] text-sm font-black leading-tight text-[#061b3a]">
             {product.name}
@@ -148,7 +148,7 @@ export default function ProductCard({
           </div>
         )}
 
-        <div className="mt-2">
+        <div className="mt-auto pt-2">
           <div className="flex flex-wrap items-baseline gap-2">
             <p className="text-lg font-black text-[#061b3a]">
               <Price usd={effectivePrice} />
