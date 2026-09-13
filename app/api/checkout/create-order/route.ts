@@ -873,6 +873,7 @@ export async function POST(request: Request) {
             p_needs: inventoryChanges.map((change) => ({
               product_id: change.productId,
               quantity: change.quantity,
+              order_id: order.id,
             })),
           })
         : { data: { success: true }, error: null };
