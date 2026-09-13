@@ -139,7 +139,10 @@ export default function InventoryPage() {
           description={`Controla existencias y movimientos de ${activeStore?.name || "la tienda activa"}.`}
         />
 
-        <InventoryManager initialProducts={products} />
+        <InventoryManager
+          initialProducts={products}
+          storeId={activeStore?.id || ""}
+        />
       </div>
     </main>
   );
