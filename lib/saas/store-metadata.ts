@@ -330,3 +330,41 @@ export function buildStoreTrackingMetadata(
       : { index: true, follow: true },
   };
 }
+
+export function buildStoreShippingInvoiceMetadata(
+  store: StoreMetadataRow,
+  canonicalUrl: string,
+  trackingCode: string
+): Metadata {
+  const cleanCode = trackingCode.trim().toUpperCase();
+  const title = `Factura del envío ${cleanCode} | ${store.name}`;
+  const description = `Consulta o descarga la factura del envío ${cleanCode} y accede a su rastreo en ${store.name}.`;
+  const image =
+    store.tracking_og_image_url?.trim() ||
+    store.og_image_url?.trim() ||
+    store.logo_url?.trim() ||
+    PERLA_OG_IMAGE;
+
+  return {
+    metadataBase: new URL(canonicalUrl),
+    title,
+    description,
+    alternates: { canonical: canonicalUrl },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: store.name,
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+      locale: "es_US",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+    robots: { index: false, follow: false },
+  };
+}
