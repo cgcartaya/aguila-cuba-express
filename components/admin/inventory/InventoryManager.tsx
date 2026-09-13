@@ -10,13 +10,14 @@
    - Conserva acciones de entrada, ajuste e historial.
 ========================================================= */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Plus, History, Pencil, Download } from "lucide-react";
 
 import StockModal from "./StockModal";
 import StockEntryModal from "./StockEntryModal";
 import StockHistoryModal from "./StockHistoryModal";
 import { downloadCsv } from "@/lib/utils/csv";
+import { supabase } from "@/lib/supabase";
 
 type InventoryProductImage = {
   image_url: string;
@@ -38,8 +39,10 @@ export type InventoryProduct = {
 
 export default function InventoryManager({
   initialProducts,
+  storeId,
 }: {
   initialProducts: InventoryProduct[];
+  storeId: string;
 }) {
   const [products, setProducts] = useState<InventoryProduct[]>(
     initialProducts || []
@@ -53,6 +56,43 @@ export default function InventoryManager({
   const [historyProduct, setHistoryProduct] =
     useState<InventoryProduct | null>(null);
   const [filter, setFilter] = useState<"all" | "low" | "empty">("all");
+
+  useEffect(() => {
+    if (!storeId) return;
+
+    const channel = supabase
+      .channel(`admin-inventory-${storeId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "products",
+          filter: `store_id=eq.${storeId}`,
+        },
+        (payload) => {
+          const changedProduct = payload.new as {
+            id?: string;
+            stock?: number | null;
+          };
+
+          if (!changedProduct.id) return;
+
+          setProducts((currentProducts) =>
+            currentProducts.map((product) =>
+              product.id === changedProduct.id
+                ? { ...product, stock: Number(changedProduct.stock || 0) }
+                : product
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [storeId]);
 
   function handleStockUpdated(productId: string, newStock: number) {
     setProducts((currentProducts) =>

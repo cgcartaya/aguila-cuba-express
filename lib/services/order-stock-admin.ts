@@ -44,6 +44,7 @@ export async function restoreOrderStockServerSide(orderId: string) {
     p_needs: Array.from(needs, ([productId, quantity]) => ({
       product_id: productId,
       quantity,
+      order_id: orderId,
     })),
   });
 
@@ -125,6 +126,7 @@ export async function reactivateExpiredOrder(orderId: string): Promise<Reactivat
   const inventoryNeeds = Array.from(needs, ([productId, quantity]) => ({
     product_id: productId,
     quantity,
+    order_id: orderId,
   }));
 
   const { data, error } = await supabaseAdmin.rpc("reserve_product_inventory", {
