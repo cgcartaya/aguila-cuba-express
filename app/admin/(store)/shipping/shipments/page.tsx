@@ -331,8 +331,8 @@ export default function ShippingShipmentsPage() {
         ) : shipments.length === 0 ? (
           <div className="rounded-3xl border bg-white p-10 text-center"><PackageSearch className="mx-auto mb-4 text-slate-300" size={44} /><h2 className="text-xl font-extrabold">No hay envíos con estos filtros</h2><p className="mt-2 text-sm text-slate-500">Prueba limpiando alguno de los criterios de búsqueda.</p></div>
         ) : (
-          <section className="min-w-0 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-            <div className="hidden grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] gap-3 border-b bg-slate-50 px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 xl:grid">
+          <section className="shipping-mobile-safe min-w-0 overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+            <div className="shipping-desktop-header hidden grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] gap-3 border-b bg-slate-50 px-4 py-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 xl:grid">
               <span>Orden</span>
               <span>Cliente / rastreo</span>
               <span>Destinatario</span>
@@ -347,7 +347,7 @@ export default function ShippingShipmentsPage() {
                 const trip = shipment.trip_id ? tripMap.get(shipment.trip_id) : null;
                 return (
                   <article key={shipment.id} className="group min-w-0 px-3 py-4 transition hover:bg-blue-50/35 sm:px-4 sm:py-3">
-                    <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] xl:items-center">
+                    <div className="shipping-shipment-grid grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-[80px_minmax(190px,1.2fr)_minmax(150px,1fr)_minmax(150px,1fr)_minmax(135px,.8fr)_110px_260px] xl:items-center">
                       <div className="flex min-w-0 items-center justify-between gap-3 sm:col-span-2 xl:col-span-1 xl:block">
                         <span className="text-[10px] font-extrabold uppercase text-slate-400 xl:hidden">Orden</span>
                         <span className="text-base font-black text-[#061b3a]">{shipment.order_number ? `#${shipment.order_number}` : "—"}</span>
@@ -414,7 +414,7 @@ export default function ShippingShipmentsPage() {
                         </span>
                       </div>
 
-                      <div className="min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
+                      <div className="shipping-actions-panel min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
                         <InvoiceActions shipment={shipment} store={activeStore} compact />
                         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
                           <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />

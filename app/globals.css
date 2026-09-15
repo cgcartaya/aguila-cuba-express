@@ -159,3 +159,35 @@ select,
 textarea {
   font: inherit;
 }
+/* Android puede solicitar la versión de escritorio o reportar un viewport
+   artificialmente ancho. En equipos táctiles conservamos las tarjetas de
+   envíos en modo móvil para evitar que la columna de acciones quede recortada. */
+@media (pointer: coarse) {
+  .shipping-mobile-safe .shipping-desktop-header {
+    display: none !important;
+  }
+
+  .shipping-mobile-safe .shipping-shipment-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+  }
+
+  .shipping-mobile-safe .shipping-shipment-grid > * {
+    grid-column: 1 / -1 !important;
+  }
+
+  .shipping-mobile-safe .shipping-actions-panel {
+    border-top-width: 1px !important;
+    padding-top: 0.75rem !important;
+  }
+
+  .shipping-mobile-safe .shipping-actions-grid {
+    display: grid !important;
+    width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .shipping-mobile-safe .shipping-promo-action {
+    grid-column: 1 / -1 !important;
+  }
+}
