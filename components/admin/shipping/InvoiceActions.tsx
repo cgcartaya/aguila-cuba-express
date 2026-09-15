@@ -165,7 +165,7 @@ export default function InvoiceActions({
 
   return (
     <>
-      <div className="grid w-full min-w-0 grid-cols-2 gap-2 min-[520px]:flex min-[520px]:w-auto min-[520px]:flex-wrap xl:justify-end">
+      <div className="grid w-full min-w-0 grid-cols-2 gap-2 xl:flex xl:w-auto xl:flex-wrap xl:justify-end">
         <a
           href={publicInvoiceUrl}
           target="_blank"
@@ -185,11 +185,11 @@ export default function InvoiceActions({
           {compact ? "WhatsApp" : "Compartir factura"}
         </button>
 
-        {store?.module_store_enabled && (
+        {store && store.module_store_enabled !== false && (
           <button
             type="button"
             onClick={() => setMessageKind("promotion")}
-            className="col-span-2 inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700 min-[520px]:col-span-1 sm:px-4"
+            className="col-span-2 inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-violet-700 sm:px-4 xl:col-span-1"
             title="Enviar un segundo mensaje promocionando la tienda"
           >
             <ShoppingBag size={17} />
