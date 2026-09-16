@@ -19,6 +19,7 @@ import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
 import { getComboById } from "@/lib/services/combos";
 import { useStore } from "@/hooks/useStore";
+import ProductShareButton from "@/components/tienda/product-detail/ProductShareButton";
 import {
   applyPlatformFee,
   getPlatformFeePercent,
@@ -277,6 +278,11 @@ export default function ComboDetailPage() {
               <ShoppingCart size={18} />
               Agregar combo al carrito
             </button>
+
+            <ProductShareButton
+              productName={combo.name}
+              itemType="combo"
+            />
           </div>
         </section>
 
