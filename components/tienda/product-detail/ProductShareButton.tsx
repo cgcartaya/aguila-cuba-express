@@ -13,6 +13,7 @@ import {
 
 type ProductShareButtonProps = {
   productName: string;
+  itemType?: "producto" | "combo";
 };
 
 function openShareUrl(url: string) {
@@ -21,6 +22,7 @@ function openShareUrl(url: string) {
 
 export default function ProductShareButton({
   productName,
+  itemType = "producto",
 }: ProductShareButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -40,7 +42,7 @@ export default function ProductShareButton({
     const url = window.location.href;
     return {
       title: productName,
-      text: `Mira este producto: ${productName}`,
+      text: `Mira este ${itemType}: ${productName}`,
       url,
     };
   };
@@ -109,7 +111,7 @@ export default function ProductShareButton({
         className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-[#061b3a] bg-white px-5 py-3.5 text-sm font-black text-[#061b3a] transition hover:bg-slate-50"
       >
         <Share2 size={19} />
-        Compartir producto
+        Compartir {itemType}
       </button>
 
       {isOpen && (
