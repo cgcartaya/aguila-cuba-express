@@ -32,6 +32,7 @@ export const PHONE_COUNTRIES: PhoneCountry[] = [
   { iso2: "cl", name: "Chile", dialCode: "+56", digits: 9 },
   { iso2: "pe", name: "Perú", dialCode: "+51", digits: 9 },
   { iso2: "ec", name: "Ecuador", dialCode: "+593", digits: 9 },
+  { iso2: "mk", name: "Macedonia del Norte", dialCode: "+389", digits: 8 },
 ];
 
 export const DEFAULT_PHONE_COUNTRY = PHONE_COUNTRIES[0]; // Estados Unidos
