@@ -9,11 +9,13 @@ DECLARE
   v_category record;
   v_product record;
 BEGIN
-  SELECT count(*), min(id) INTO v_matches, v_store_id FROM public.stores
+  SELECT count(*) INTO v_matches FROM public.stores
   WHERE subdomain = 'combos-martinez';
   IF v_matches <> 1 THEN
     RAISE EXCEPTION 'Se esperaba exactamente una tienda con subdomain combos-martinez; encontradas: %', v_matches;
   END IF;
+
+  SELECT id INTO STRICT v_store_id FROM public.stores WHERE subdomain = 'combos-martinez';
 
   FOR v_category IN
     SELECT * FROM (VALUES
