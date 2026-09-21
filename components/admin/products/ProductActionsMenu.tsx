@@ -28,7 +28,7 @@ export default function ProductActionsMenu({
         type="button"
         onClick={() => setOpenMenuId(isOpen ? null : product.id)}
         disabled={disabled}
-        className="flex w-14 items-center justify-center rounded-xl border px-3 py-2 text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-11 w-12 shrink-0 items-center justify-center rounded-xl border px-2 py-2 text-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
         aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
       >
         {disabled ? (
@@ -41,12 +41,12 @@ export default function ProductActionsMenu({
       </button>
 
       {isOpen && (
-        <div className="mt-3 rounded-xl border bg-slate-50 p-2">
+        <div className="w-full basis-full rounded-xl border bg-slate-50 p-2 shadow-sm">
           <button
             type="button"
             onClick={() => onToggleStatus(product)}
             disabled={disabled}
-            className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
+            className={`flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
               product.is_active
                 ? "text-orange-600 hover:bg-orange-50"
                 : "text-green-600 hover:bg-green-50"
@@ -59,7 +59,7 @@ export default function ProductActionsMenu({
             type="button"
             onClick={() => onMoveToTrash(product.id)}
             disabled={disabled}
-            className="mt-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-1 flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {disabled ? (
               <Loader2 size={16} className="animate-spin" />

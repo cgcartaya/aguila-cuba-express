@@ -143,7 +143,7 @@ export default function TrashPage() {
       const { error } = await restoreProductByStoreId(productId, activeStore.id);
 
       if (error) {
-        alert("Error restaurando producto");
+        alert(`No se pudo restaurar el producto: ${error.message}`);
         setActionLoadingId(null);
         return;
       }
@@ -160,7 +160,7 @@ export default function TrashPage() {
     );
 
     if (error) {
-      alert("Error eliminando producto definitivamente");
+      alert(`No se pudo eliminar el producto: ${error.message}`);
       setActionLoadingId(null);
       return;
     }

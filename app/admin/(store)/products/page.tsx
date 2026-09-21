@@ -173,7 +173,7 @@ export default function AdminProductsPage() {
     );
 
     if (error) {
-      alert("Error actualizando el producto");
+      alert(`No se pudo actualizar el producto: ${error.message}`);
       return;
     }
 
@@ -187,7 +187,8 @@ export default function AdminProductsPage() {
   }
 
   async function moveProductToTrash(id: string) {
-    const confirmed = confirm("¿Mover este producto a la papelera?");
+    if (movingToTrashId) return;
+    const confirmed = confirm("¿Mover este producto a la papelera? Podrás restaurarlo después desde Papelera.");
 
     if (!confirmed) return;
 
@@ -201,7 +202,7 @@ export default function AdminProductsPage() {
     const { error } = await moveProductToTrashByStoreId(id, activeStore.id);
 
     if (error) {
-      alert("Error moviendo producto a la papelera");
+      alert(`No se pudo mover el producto a la papelera: ${error.message}`);
       setMovingToTrashId(null);
       return;
     }
