@@ -857,6 +857,7 @@ ${orderUrl}`);
     orderNumber: string;
     orderUrl: string;
     whatsappMessage: string;
+    totalUsd: number;
   }) {
     if (store?.slug) clearCheckoutDraft(store.slug);
     const host = window.location.hostname
