@@ -491,7 +491,10 @@ export async function toggleProductStatus(
       is_active: !product.is_active,
     })
     .eq("id", product.id)
-    .eq("store_id", storeId);
+    .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .select("id")
+    .single();
 }
 
 // Compatibilidad: eliminación física siempre debe estar acotada por tienda.
@@ -762,7 +765,9 @@ export async function moveProductToTrashByStoreId(
     })
     .eq("id", productId)
     .eq("store_id", storeId)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .select("id")
+    .single();
 }
 
 export async function restoreProductByStoreId(
@@ -777,7 +782,9 @@ export async function restoreProductByStoreId(
     })
     .eq("id", productId)
     .eq("store_id", storeId)
-    .not("deleted_at", "is", null);
+    .not("deleted_at", "is", null)
+    .select("id")
+    .single();
 }
 
 export async function deleteProductForeverByStoreId(
@@ -789,6 +796,7 @@ export async function deleteProductForeverByStoreId(
     .select("id, store_id")
     .eq("id", productId)
     .eq("store_id", storeId)
+    .not("deleted_at", "is", null)
     .maybeSingle();
 
   if (productError) {
@@ -842,16 +850,6 @@ export async function deleteProductForeverByStoreId(
       ?.map((image) => image.storage_path)
       .filter((path): path is string => Boolean(path)) || [];
 
-  if (storagePaths.length > 0) {
-    const { error: storageError } = await supabase.storage
-      .from("product-images")
-      .remove(storagePaths);
-
-    if (storageError) {
-      return { data: null, error: storageError };
-    }
-  }
-
   const { error: inventoryDeleteError } = await supabase
     .from("inventory_movements")
     .delete()
@@ -879,11 +877,25 @@ export async function deleteProductForeverByStoreId(
     return { data: null, error: imagesDeleteError };
   }
 
-  return supabase
+  const result = await supabase
     .from("products")
     .delete()
     .eq("id", productId)
-    .eq("store_id", storeId);
+    .eq("store_id", storeId)
+    .not("deleted_at", "is", null)
+    .select("id")
+    .single();
+
+  if (result.error) return result;
+
+  // Storage cleanup is best-effort after the database row has been deleted.
+  if (storagePaths.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from("product-images")
+      .remove(storagePaths);
+    if (storageError) console.error("Product image storage cleanup failed:", storageError);
+  }
+  return result;
 }
 
 
