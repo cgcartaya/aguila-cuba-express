@@ -185,8 +185,14 @@ export async function deleteCategory(
     .select("id");
 }
 
-export async function countCategoryProducts(categoryId: string, storeId: string) {
-  return supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("category_id", categoryId);
+export async function countCategoryProducts(categoryName: string, storeId: string) {
+  // Products use a textual category field, not a category_id foreign key.
+  // Include inactive and trashed products to prevent orphaning references.
+  return supabase
+    .from("products")
+    .select("id", { count: "exact", head: true })
+    .eq("store_id", storeId)
+    .eq("category", categoryName);
 }
 
 /* =========================================================
