@@ -886,6 +886,9 @@ ${orderUrl}`);
         storeUrl,
         businessWhatsapp,
         whatsappMessage: params.whatsappMessage,
+        paymentMethod: payWith === "whatsapp" ? "zelle" : "other",
+        zelleInfo: payWith === "whatsapp" ? businessZelle : "",
+        totalUsd: params.totalUsd,
       })
     );
 
@@ -1012,6 +1015,7 @@ ${orderUrl}`);
         orderNumber,
         orderUrl,
         whatsappMessage,
+        totalUsd: Number(order.total),
       });
     } catch (submitError: any) {
       console.error("ERROR CHECKOUT:", submitError);
