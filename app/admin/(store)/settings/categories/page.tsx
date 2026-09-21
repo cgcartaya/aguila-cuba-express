@@ -72,6 +72,8 @@ export default function AdminCategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reordering, setReordering] = useState(false);
+  const [colorDrafts, setColorDrafts] = useState<Record<string, string>>({});
+  const [savingColorId, setSavingColorId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
@@ -105,6 +107,7 @@ export default function AdminCategoriesPage() {
       }
 
       setCategories(data || []);
+      setColorDrafts({});
     } catch (error) {
       console.error("Error inesperado cargando categorías:", error);
       setCategories([]);
@@ -328,6 +331,25 @@ export default function AdminCategoriesPage() {
         ),
       });
       await loadCategories();
+    }
+  };
+
+  const saveCategoryColor = async (id: string) => {
+    if (!activeStore?.id || savingColorId) return;
+    const value = colorDrafts[id];
+    if (!value || !/^#[0-9a-fA-F]{6}$/.test(value)) return;
+    setSavingColorId(id);
+    setFeedback(null);
+    try {
+      const { data, error } = await updateCategory(id, { color: value }, activeStore.id);
+      if (error || !data) throw error || new Error("No se confirmó el guardado del color.");
+      setCategories((prev) => prev.map((category) => category.id === id ? { ...category, color: data.color } : category));
+      setColorDrafts((prev) => { const next = { ...prev }; delete next[id]; return next; });
+      setFeedback({ type: "success", message: "Color guardado. Actualiza la tienda pública para verlo." });
+    } catch (error) {
+      setFeedback({ type: "error", message: getErrorMessage(error, "No se pudo guardar el color.") });
+    } finally {
+      setSavingColorId(null);
     }
   };
 
@@ -559,11 +581,14 @@ export default function AdminCategoriesPage() {
                   <AdminInput
                     label="Color"
                     type="color"
-                    value={category.color}
-                    onChange={(value) =>
-                      void handleUpdate(category.id, "color", value)
-                    }
+                    value={colorDrafts[category.id] ?? category.color ?? "#2563EB"}
+                    onChange={(value) => setColorDrafts((prev) => ({ ...prev, [category.id]: value }))}
                   />
+                  <button type="button" onClick={() => void saveCategoryColor(category.id)}
+                    disabled={!colorDrafts[category.id] || colorDrafts[category.id] === category.color || savingColorId !== null}
+                    className="self-end rounded-xl bg-slate-900 px-3 py-3 text-xs font-bold text-white disabled:opacity-40">
+                    {savingColorId === category.id ? "Guardando..." : "Guardar color"}
+                  </button>
 
                   <AdminInput
                     label="Orden"
