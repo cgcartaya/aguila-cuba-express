@@ -339,33 +339,11 @@ export function OrderSummary({
             </div>
           ) : (
             <div className="mt-3 rounded-2xl bg-purple-50 px-3.5 py-3">
-              <p className="mb-2 text-xs font-extrabold text-purple-900">Así se paga con Zelle:</p>
-              <ol className="space-y-2 text-xs font-semibold text-purple-900">
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">1</span>
-                  <span>
-                    Abre tu banco o la app de Zelle y envía <strong><Price usd={finalTotal} /></strong> a:{" "}
-                    {zelleInfo ? (
-                      <span className="mt-1 flex items-center gap-1.5 rounded-lg bg-white px-2 py-1 font-mono text-[11px] text-purple-800 shadow-sm">
-                        <Copy size={11} className="shrink-0 text-purple-400" />
-                        {zelleInfo}
-                      </span>
-                    ) : (
-                      "el Zelle de la tienda (te lo confirmamos por WhatsApp)"
-                    )}
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">2</span>
-                  <span>Toca el botón de abajo para enviarnos tu pedido por WhatsApp.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">3</span>
-                  <span>Adjunta ahí mismo la captura del envío — así confirmamos tu pago y procesamos el pedido.</span>
-                </li>
-              </ol>
-              <p className="mt-2.5 rounded-lg bg-amber-100 px-2.5 py-1.5 text-[10.5px] font-bold text-amber-800">
-                Tu pedido queda pendiente hasta que confirmes el pago por WhatsApp.
+              <p className="mb-2 text-xs font-extrabold text-purple-900">Primero confirma tu pedido</p>
+              <p className="text-xs font-semibold leading-relaxed text-purple-900">
+                Al confirmar, registraremos tu pedido y te mostraremos el número de orden,
+                el importe exacto en USD y las instrucciones para pagar por Zelle.
+                El negocio verificará la recepción del dinero antes de marcarlo como pagado.
               </p>
             </div>
           )}
@@ -396,7 +374,7 @@ export function OrderSummary({
         ) : (
           <>
             <ZelleIcon size={20} />
-            Ya pagué por Zelle, enviar pedido
+            Confirmar pedido y continuar al pago
           </>
         )}
       </button>
