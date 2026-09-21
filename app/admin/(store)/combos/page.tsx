@@ -10,7 +10,7 @@ import { Plus, Package } from "lucide-react";
 
 import ComboCard from "@/components/admin/combos/ComboCard";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
-import { getCombosByStoreId, deleteCombo } from "@/lib/services/combos";
+import { getCombosByStoreId, deleteCombo, updateCombo } from "@/lib/services/combos";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 
@@ -52,6 +52,7 @@ export default function AdminCombosPage() {
 
   const [combos, setCombos] = useState<Combo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const loadCombos = async () => {
     if (accessLoading || storeLoading) return;
@@ -80,6 +81,21 @@ export default function AdminCombosPage() {
     loadCombos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessLoading, storeLoading, activeStore?.id]);
+
+  const handleToggle = async (comboId: string, isActive: boolean) => {
+    if (!activeStore?.id || togglingId) return;
+    setTogglingId(comboId);
+    try {
+      const { error } = await updateCombo(comboId, { is_active: isActive }, activeStore.id);
+      if (error) throw error;
+      setCombos((current) => current.map((combo) => combo.id === comboId ? { ...combo, is_active: isActive } : combo));
+    } catch (error) {
+      console.error("Error cambiando visibilidad del combo:", error);
+      alert("No se pudo actualizar la visibilidad del combo.");
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const handleDelete = async (comboId: string) => {
     const confirmDelete = confirm("¿Seguro que quieres eliminar este combo?");
@@ -137,7 +153,7 @@ export default function AdminCombosPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {combos.map((combo) => (
-              <ComboCard key={combo.id} combo={combo} onDelete={handleDelete} />
+              <ComboCard key={combo.id} combo={combo} onDelete={handleDelete} onToggle={handleToggle} toggling={togglingId !== null} />
             ))}
           </div>
         )}

@@ -28,6 +28,7 @@ import {
   updateCombo,
   addProductToCombo,
   removeProductFromCombo,
+  updateComboItemQuantity,
 } from "@/lib/services/combos";
 
 import type {
@@ -176,36 +177,36 @@ export default function ComboForm({
       return;
     }
 
-    for (const item of initialProducts) {
-      if (item.combo_item_id) {
-        const { error } = await removeProductFromCombo(
-          item.combo_item_id,
-          comboId,
-          storeId
-        );
+    // Actualizar solo las diferencias: conservar los IDs de los componentes existentes.
+    const selectedByProduct = new Map(selectedProducts.map((item) => [item.product.id, item]));
+    const initialByProduct = new Map(initialProducts.map((item) => [item.product.id, item]));
 
-        if (error) {
-          console.error("Error eliminando producto anterior:", error);
-          alert("No se pudieron actualizar los productos del combo.");
-          return;
-        }
+    // Primero agregar/actualizar; no eliminar componentes existentes si falla una inserción.
+    for (const item of selectedProducts) {
+      const previous = initialByProduct.get(item.product.id);
+      const result = previous?.combo_item_id
+        ? Number(previous.quantity) === Number(item.quantity)
+          ? { error: null }
+          : await updateComboItemQuantity(previous.combo_item_id, comboId, item.quantity, storeId)
+        : await addProductToCombo(
+            { combo_id: comboId, product_id: item.product.id, quantity: item.quantity },
+            storeId
+          );
+      if (result.error) {
+        console.error("Error guardando componente del combo:", result.error);
+        alert("No se pudieron guardar todos los componentes. Revisa el combo antes de reintentar.");
+        return;
       }
     }
 
-    for (const item of selectedProducts) {
-      const { error } = await addProductToCombo(
-        {
-          combo_id: comboId,
-          product_id: item.product.id,
-          quantity: item.quantity,
-        },
-        storeId
-      );
-
-      if (error) {
-        console.error("Error agregando producto actualizado:", error);
-        alert("No se pudieron guardar los productos del combo.");
-        return;
+    for (const item of initialProducts) {
+      if (item.combo_item_id && !selectedByProduct.has(item.product.id)) {
+        const { error } = await removeProductFromCombo(item.combo_item_id, comboId, storeId);
+        if (error) {
+          console.error("Error eliminando componente:", error);
+          alert("No se pudieron eliminar todos los componentes. Revisa el combo antes de reintentar.");
+          return;
+        }
       }
     }
 

@@ -8,7 +8,7 @@
 ========================================================= */
 
 import Image from "next/image";
-import { Minus, Plus, ShoppingBasket } from "lucide-react";
+import { Minus, Plus, ShoppingBasket, Trash2 } from "lucide-react";
 
 import type {
   ComboProduct,
@@ -106,6 +106,12 @@ export default function ProductSelector({
     );
   };
 
+  const removeProduct = (productId: string) => {
+    setSelectedProducts((current) => current.filter((item) => item.product.id !== productId));
+  };
+
+  const orderedProducts = [...products].sort((a, b) => Number(Boolean(getSelectedItem(b.id))) - Number(Boolean(getSelectedItem(a.id))));
+
   return (
     <section className="rounded-3xl bg-white p-5 shadow-sm">
       <div className="mb-4">
@@ -114,12 +120,13 @@ export default function ProductSelector({
         </h2>
 
         <p className="mt-1 text-sm font-semibold text-slate-500">
-          Selecciona productos existentes y define cuántas unidades incluye el combo.
+          Los productos incluidos aparecen primero. Puedes ajustar cantidades o eliminarlos del combo.
         </p>
       </div>
 
+      <p className="mb-3 text-sm font-bold text-slate-600">{selectedProducts.length} productos diferentes incluidos</p>
       <div className="grid gap-3">
-        {products.map((product) => {
+        {orderedProducts.map((product) => {
           const selectedItem = getSelectedItem(product.id);
           const isSelected = Boolean(selectedItem);
 
@@ -182,6 +189,7 @@ export default function ProductSelector({
                   >
                     <Plus size={16} />
                   </button>
+                  <button type="button" onClick={() => removeProduct(product.id)} aria-label={`Eliminar ${product.name} del combo`} title="Eliminar del combo" className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-red-600 shadow-sm"><Trash2 size={16} /></button>
                 </div>
               ) : (
                 <button

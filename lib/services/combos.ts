@@ -61,8 +61,7 @@ export async function getActiveCombosByStoreId(storeId: string) {
     .eq("store_id", storeId)
     .eq("is_active", true)
     .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(8);
+    .order("created_at", { ascending: false });
 }
 
 export async function getComboById(id: string, storeId: string) {
