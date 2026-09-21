@@ -144,10 +144,10 @@ export default function ProductCard({
 
           {/* ACCIONES */}
 
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap items-start gap-2">
             <Link
               href={editHref || `/admin/products/${product.id}/edit`}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium text-slate-700"
+              className="flex min-h-11 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium text-slate-700"
             >
               <Pencil size={15} />
               Editar
