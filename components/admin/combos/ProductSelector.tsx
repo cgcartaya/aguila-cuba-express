@@ -8,7 +8,8 @@
 ========================================================= */
 
 import Image from "next/image";
-import { Minus, Plus, ShoppingBasket, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Minus, Plus, ShoppingBasket, Trash2, Search } from "lucide-react";
 
 import type {
   ComboProduct,
@@ -110,27 +111,26 @@ export default function ProductSelector({
     setSelectedProducts((current) => current.filter((item) => item.product.id !== productId));
   };
 
-  const orderedProducts = [...products].sort((a, b) => Number(Boolean(getSelectedItem(b.id))) - Number(Boolean(getSelectedItem(a.id))));
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const categories = useMemo(
+    () => [...new Set(products.map((product) => product.category).filter((category): category is string => Boolean(category)))].sort((a, b) => a.localeCompare(b, "es")),
+    [products]
+  );
+  const availableProducts = useMemo(() => {
+    const selectedIds = new Set(selectedProducts.map((item) => item.product.id));
+    const term = search.trim().toLocaleLowerCase("es");
+    return products.filter((product) =>
+      !selectedIds.has(product.id) &&
+      (!categoryFilter || product.category === categoryFilter) &&
+      (!term || product.name.toLocaleLowerCase("es").includes(term))
+    );
+  }, [products, selectedProducts, search, categoryFilter]);
 
-  return (
-    <section className="rounded-3xl bg-white p-5 shadow-sm">
-      <div className="mb-4">
-        <h2 className="text-lg font-black text-[#061b3a]">
-          Productos del combo
-        </h2>
-
-        <p className="mt-1 text-sm font-semibold text-slate-500">
-          Los productos incluidos aparecen primero. Puedes ajustar cantidades o eliminarlos del combo.
-        </p>
-      </div>
-
-      <p className="mb-3 text-sm font-bold text-slate-600">{selectedProducts.length} productos diferentes incluidos</p>
-      <div className="grid gap-3">
-        {orderedProducts.map((product) => {
-          const selectedItem = getSelectedItem(product.id);
-          const isSelected = Boolean(selectedItem);
-
-          return (
+  const renderProduct = (product: ComboProduct) => {
+    const selectedItem = getSelectedItem(product.id);
+    const isSelected = Boolean(selectedItem);
+    return (
             <article
               key={product.id}
               className={`flex items-center gap-4 rounded-2xl border p-3 transition ${
@@ -201,8 +201,46 @@ export default function ProductSelector({
                 </button>
               )}
             </article>
-          );
-        })}
+    );
+  };
+
+  return (
+    <section className="rounded-3xl bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-lg font-black text-[#061b3a]">
+          Productos del combo
+        </h2>
+
+        <p className="mt-1 text-sm font-semibold text-slate-500">
+          Los productos incluidos aparecen primero. Puedes ajustar cantidades o eliminarlos del combo.
+        </p>
+      </div>
+
+      <p className="mb-3 text-sm font-bold text-slate-600">{selectedProducts.length} productos diferentes incluidos</p>
+      <div className="grid gap-3">
+        {selectedProducts.map((item) => renderProduct(item.product))}
+      </div>
+      <div className="mt-6 border-t border-slate-100 pt-5">
+        <h3 className="mb-3 text-base font-black text-[#061b3a]">Agregar productos</h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="relative block">
+            <Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input type="search" value={search} onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar producto por nombre..." aria-label="Buscar productos para el combo"
+              className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-3 text-sm outline-none focus:border-red-500" />
+          </label>
+          <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}
+            aria-label="Filtrar productos por categoría"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm">
+            <option value="">Todas las categorías</option>
+            {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select>
+        </div>
+        <p className="my-3 text-xs font-semibold text-slate-500">{availableProducts.length} productos disponibles</p>
+        <div className="grid max-h-[560px] gap-3 overflow-y-auto">
+          {availableProducts.map(renderProduct)}
+          {availableProducts.length === 0 && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">No hay productos disponibles con estos filtros.</p>}
+        </div>
       </div>
     </section>
   );
