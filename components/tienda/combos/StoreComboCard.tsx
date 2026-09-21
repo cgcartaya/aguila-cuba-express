@@ -6,6 +6,8 @@ import { BadgePercent, CheckCircle2, Package } from "lucide-react";
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
+import Price from "@/components/tienda/Price";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   applyPlatformFee,
   getPlatformFeePercent,
@@ -42,6 +44,7 @@ function getSafeImageUrl(url?: string | null) {
 export default function StoreComboCard({ combo, storeSlug }: Props) {
   const { addComboToCart } = useCart();
   const { store } = useStore();
+  const { format } = useCurrency();
   const feePercent = getPlatformFeePercent(store);
 
   const normalPrice =
@@ -85,7 +88,7 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
         {savings > 0 && (
           <div className="absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full bg-green-600 px-2 py-1 text-[10px] font-black text-white shadow">
             <BadgePercent size={11} />
-            Ahorra ${savings.toFixed(0)}
+            Ahorra {format(savings)}
           </div>
         )}
 
@@ -147,12 +150,12 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
       <div className="mt-auto pt-4">
         {normalPriceWithFee > comboPrice && (
           <p className="text-xs font-semibold text-slate-400 line-through">
-            ${normalPriceWithFee.toFixed(2)}
+            <Price usd={normalPriceWithFee} />
           </p>
         )}
 
         <p className="text-xl font-black text-[#061b3a]">
-          ${comboPrice.toFixed(2)}
+          <Price usd={comboPrice} />
         </p>
       </div>
 

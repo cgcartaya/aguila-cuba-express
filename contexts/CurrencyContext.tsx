@@ -140,8 +140,17 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     fetch("/api/exchange-rates")
       .then((res) => res.json())
       .then((data) => {
-        if (!active || !data?.rates) return;
-        setRates(data.rates);
+        if (!active) return;
+        if (data?.rates && typeof data.rates === "object") {
+          setRates((previous) => {
+            const next = { ...previous };
+            for (const code of SUPPORTED_CURRENCIES) {
+              const rate = data.rates[code];
+              if (typeof rate === "number" && Number.isFinite(rate) && rate > 0) next[code] = rate;
+            }
+            return next;
+          });
+        }
         setRatesLoaded(true);
       })
       .catch(() => {
@@ -166,8 +175,8 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const convert = useCallback(
     (usdAmount: number) => {
       if (currency === "USD") return usdAmount;
-      const rate = rates[currency as SupportedCurrency] ?? FALLBACK_RATES[currency as SupportedCurrency];
-      return usdAmount * rate;
+      const rate = rates[currency as SupportedCurrency];
+      return usdAmount * (typeof rate === "number" && Number.isFinite(rate) && rate > 0 ? rate : FALLBACK_RATES[currency as SupportedCurrency]);
     },
     [currency, rates]
   );

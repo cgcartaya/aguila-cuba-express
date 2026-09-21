@@ -19,6 +19,8 @@ import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
 import { getComboById } from "@/lib/services/combos";
 import { useStore } from "@/hooks/useStore";
+import Price from "@/components/tienda/Price";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import ProductShareButton from "@/components/tienda/product-detail/ProductShareButton";
 import {
   applyPlatformFee,
@@ -130,6 +132,7 @@ export default function ComboDetailPage() {
   const backHref = slug ? `/tienda/${slug}` : "/tienda";
   const { store, loading: storeLoading } = useStore();
   const feePercent = getPlatformFeePercent(store);
+  const { format } = useCurrency();
 
   const [combo, setCombo] = useState<ComboDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -250,7 +253,7 @@ export default function ComboDetailPage() {
                 </span>
 
                 <span className="text-sm font-black text-slate-400 line-through">
-                  ${regularPrice.toFixed(2)}
+                  <Price usd={regularPrice} />
                 </span>
               </div>
 
@@ -260,13 +263,13 @@ export default function ComboDetailPage() {
                 </span>
 
                 <span className="text-3xl font-black text-red-600">
-                  ${comboPrice.toFixed(2)}
+                  <Price usd={comboPrice} />
                 </span>
               </div>
 
               {savings > 0 && (
                 <p className="mt-2 text-sm font-black text-green-600">
-                  Ahorras ${savings.toFixed(2)}
+                  Ahorras {format(savings)}
                 </p>
               )}
             </div>
@@ -317,10 +320,7 @@ export default function ComboDetailPage() {
                   </p>
 
                   <p className="mt-1 text-sm font-black text-red-600">
-                    ${applyPlatformFee(
-                      Number(item.products.price || 0),
-                      feePercent
-                    ).toFixed(2)}
+                    <Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)} />
                   </p>
                 </div>
               </article>
