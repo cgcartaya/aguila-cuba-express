@@ -5,7 +5,7 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Loader2, Plus, Tag, Trash2 } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, Loader2, Plus, Tag, Trash2 } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import AdminBackButton from "@/components/admin/ui/AdminBackButton";
@@ -71,6 +71,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
@@ -330,6 +331,34 @@ export default function AdminCategoriesPage() {
     }
   };
 
+  const moveCategory = async (index: number, direction: -1 | 1) => {
+    if (!activeStore?.id || reordering) return;
+    const target = index + direction;
+    if (target < 0 || target >= categories.length) return;
+    const previous = categories;
+    const reordered = [...categories];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    setReordering(true);
+    setFeedback(null);
+    // Assign a unique position to every category, avoiding ties in sort_order.
+    // Update the moved pair last so a partial failure is visible and reloadable.
+    try {
+      for (let position = 0; position < reordered.length; position++) {
+        const category = reordered[position];
+        const { error } = await updateCategory(category.id, { sort_order: position + 1 }, activeStore.id);
+        if (error) throw error;
+      }
+      setCategories(reordered.map((category, position) => ({ ...category, sort_order: position + 1 })));
+      setFeedback({ type: "success", message: "Orden de categorías guardado." });
+    } catch (error) {
+      setCategories(previous);
+      setFeedback({ type: "error", message: getErrorMessage(error, "No se pudo guardar el orden. Vuelve a intentarlo.") });
+      await loadCategories();
+    } finally {
+      setReordering(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!activeStore?.id) {
       setFeedback({
@@ -508,11 +537,17 @@ export default function AdminCategoriesPage() {
             </p>
           ) : (
             <div className="space-y-4">
-              {categories.map((category) => (
+              {categories.map((category, index) => (
                 <article
                   key={category.id}
                   className="grid gap-3 rounded-2xl border border-slate-100 p-4 md:grid-cols-[1fr_180px_130px_160px_130px_50px]"
                 >
+                  <div className="flex items-center gap-2 md:col-span-6">
+                    <span className="min-w-8 text-center text-sm font-black text-slate-500">{index + 1}</span>
+                    <span className="flex-1 text-sm font-bold">{category.name}</span>
+                    <button type="button" aria-label={`Subir ${category.name}`} title="Subir categoría" disabled={reordering || index === 0} onClick={() => void moveCategory(index, -1)} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={18} /></button>
+                    <button type="button" aria-label={`Bajar ${category.name}`} title="Bajar categoría" disabled={reordering || index === categories.length - 1} onClick={() => void moveCategory(index, 1)} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={18} /></button>
+                  </div>
                   <AdminInput
                     label="Nombre"
                     value={category.name}
