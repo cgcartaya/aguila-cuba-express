@@ -578,6 +578,7 @@ export default function AdminCategoriesPage() {
                     }
                   />
 
+                  <div className="space-y-2">
                   <AdminInput
                     label="Color"
                     type="color"
@@ -589,6 +590,7 @@ export default function AdminCategoriesPage() {
                     className="self-end rounded-xl bg-slate-900 px-3 py-3 text-xs font-bold text-white disabled:opacity-40">
                     {savingColorId === category.id ? "Guardando..." : "Guardar color"}
                   </button>
+                  </div>
 
                   <AdminInput
                     label="Orden"
