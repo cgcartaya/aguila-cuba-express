@@ -181,7 +181,9 @@ export async function deleteCategory(
     .from("categories")
     .delete()
     .eq("id", id)
-    .eq("store_id", storeId);
+    .eq("store_id", storeId)
+    .select("id")
+    .single();
 }
 
 /* =========================================================
