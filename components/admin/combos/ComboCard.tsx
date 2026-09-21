@@ -41,6 +41,8 @@ type Combo = {
 type ComboCardProps = {
   combo: Combo;
   onDelete: (comboId: string) => void;
+  onToggle: (comboId: string, active: boolean) => void;
+  toggling?: boolean;
 };
 
 function normalizeComboProduct(
@@ -53,7 +55,7 @@ function normalizeComboProduct(
   return productRelation ?? null;
 }
 
-export default function ComboCard({ combo, onDelete }: ComboCardProps) {
+export default function ComboCard({ combo, onDelete, onToggle, toggling = false }: ComboCardProps) {
   const normalPrice =
     combo.combo_items?.reduce((total, item) => {
       const product = normalizeComboProduct(item.products);
@@ -93,7 +95,7 @@ export default function ComboCard({ combo, onDelete }: ComboCardProps) {
               : "bg-slate-100 text-slate-500"
           }`}
         >
-          {combo.is_active ? "Activo" : "Off"}
+          {combo.is_active ? "Activo" : "Inactivo"}
         </span>
       </div>
 
@@ -140,6 +142,12 @@ export default function ComboCard({ combo, onDelete }: ComboCardProps) {
         <div className="mt-3 rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-600">
           {totalItems} productos incluidos
         </div>
+
+        <label className="mt-3 flex items-center gap-2 text-xs font-bold text-slate-700">
+          <input type="checkbox" checked={Boolean(combo.is_active)} disabled={toggling}
+            onChange={(event) => onToggle(combo.id, event.target.checked)} />
+          {toggling ? "Guardando..." : combo.is_active ? "Visible en tienda" : "Oculto en tienda"}
+        </label>
 
         {/* ACCIONES */}
         <div className="mt-3 flex gap-2">
