@@ -14,6 +14,7 @@ import AdminInput from "@/components/admin/ui/AdminInput";
 
 import {
   createCategoryForStore,
+  countCategoryProducts,
   deleteCategory,
   getCategoriesByStoreId,
   updateCategory,
@@ -392,17 +393,26 @@ export default function AdminCategoriesPage() {
 
     if (deletingId) return;
     const category = categories.find((item) => item.id === id);
-    const ok = window.confirm(
-      `¿Eliminar la categoría "${category?.name ?? ""}"? Si contiene productos u otras referencias, la eliminación puede estar bloqueada. No se eliminarán productos automáticamente.`
-    );
-
-    if (!ok) return;
-
     setDeletingId(id);
     setFeedback(null);
+    const linked = await countCategoryProducts(id, activeStore.id);
+    if (linked.error) {
+      setFeedback({ type: "error", message: "No se pudo comprobar los productos asociados: " + linked.error.message });
+      setDeletingId(null);
+      return;
+    }
+    if ((linked.count ?? 0) > 0) {
+      setFeedback({ type: "error", message: "La categoría tiene " + linked.count + " producto(s) asociado(s), incluidos inactivos o en papelera. Reasígnalos antes de eliminarla." });
+      setDeletingId(null);
+      return;
+    }
+    if (!window.confirm("¿Eliminar la categoría vacía " + (category?.name ?? "") + "?")) {
+      setDeletingId(null);
+      return;
+    }
 
     try {
-      const { error } = await deleteCategory(id, activeStore.id);
+      const { data: deletedRows, error } = await deleteCategory(id, activeStore.id);
 
       if (error) {
         console.error("Error eliminando categoría:", error);
@@ -416,6 +426,10 @@ export default function AdminCategoriesPage() {
         return;
       }
 
+      if (!deletedRows?.length) {
+        setFeedback({ type: "error", message: "Supabase no eliminó ninguna fila. Revisa permisos RLS de la tienda." });
+        return;
+      }
       const verification = await getCategoriesByStoreId(activeStore.id);
       if (verification.error) throw verification.error;
       setCategories(verification.data || []);
