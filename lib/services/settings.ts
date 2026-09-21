@@ -182,8 +182,11 @@ export async function deleteCategory(
     .delete()
     .eq("id", id)
     .eq("store_id", storeId)
-    .select("id")
-    .single();
+    .select("id");
+}
+
+export async function countCategoryProducts(categoryId: string, storeId: string) {
+  return supabase.from("products").select("id", { count: "exact", head: true }).eq("store_id", storeId).eq("category_id", categoryId);
 }
 
 /* =========================================================
