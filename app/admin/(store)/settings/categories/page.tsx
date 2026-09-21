@@ -395,7 +395,12 @@ export default function AdminCategoriesPage() {
     const category = categories.find((item) => item.id === id);
     setDeletingId(id);
     setFeedback(null);
-    const linked = await countCategoryProducts(id, activeStore.id);
+    if (!category) {
+      setFeedback({ type: "error", message: "No se encontró la categoría seleccionada. Recarga la página." });
+      setDeletingId(null);
+      return;
+    }
+    const linked = await countCategoryProducts(category.name, activeStore.id);
     if (linked.error) {
       setFeedback({ type: "error", message: "No se pudo comprobar los productos asociados: " + linked.error.message });
       setDeletingId(null);
