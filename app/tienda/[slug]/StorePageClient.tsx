@@ -211,6 +211,7 @@ export default function StoreSlugTiendaPage() {
                 <CategoryProductsSection
                   key={grupo.categoria}
                   title={grupo.categoria}
+                  color={grupo.color}
                   products={grupo.productos}
                   onAddToCart={addToCart}
                   storeSlug={slug}

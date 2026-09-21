@@ -30,6 +30,7 @@ import type { Product } from "@/types/cart";
 
 type Props = {
   title: string;
+  color?: string | null;
   products: Product[];
   onAddToCart: (product: Product) => void;
   storeSlug?: string;
@@ -117,6 +118,7 @@ const CATEGORY_META = {
 
 export default function CategoryProductsSection({
   title,
+  color,
   products,
   onAddToCart,
   storeSlug,
@@ -158,12 +160,14 @@ export default function CategoryProductsSection({
       image: "",
     };
 
+  const categoryColor = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : null;
   const Icon = meta.icon;
   const categoryImage = meta.image || "";
 
   return (
     <section id={title} className="scroll-mt-[170px] py-6">
-      <div className={`relative mb-5 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r ${meta.bg} px-5 py-4 shadow-sm`}>
+      <div className={`relative mb-5 overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r ${meta.bg} px-5 py-4 shadow-sm`}
+        style={categoryColor ? { borderColor: `${categoryColor}55`, background: `linear-gradient(90deg, ${categoryColor}18, white)` } : undefined}>
         {categoryImage && (
           <>
             <img
@@ -179,7 +183,8 @@ export default function CategoryProductsSection({
 
         <div className="relative z-10 flex items-start justify-between gap-4">
           <div className="flex gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm transition-transform duration-300 hover:-translate-y-1 ${meta.iconBg}`}>
+            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm transition-transform duration-300 hover:-translate-y-1 ${meta.iconBg}`}
+              style={categoryColor ? { backgroundColor: `${categoryColor}20`, color: categoryColor } : undefined}>
               <Icon size={24} />
             </div>
 
@@ -201,6 +206,7 @@ export default function CategoryProductsSection({
           <Link
             href={categoryUrl}
             className="relative z-20 flex shrink-0 items-center gap-2 text-sm font-black text-red-600 hover:text-red-700"
+            style={categoryColor ? { color: categoryColor } : undefined}
           >
             Ver todos
             <ArrowRight size={18} />
