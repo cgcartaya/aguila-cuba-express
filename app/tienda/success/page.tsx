@@ -14,6 +14,9 @@ type PendingWhatsappOrder = {
   storeUrl: string;
   businessWhatsapp: string;
   whatsappMessage: string;
+  paymentMethod?: "zelle" | "other";
+  zelleInfo?: string;
+  totalUsd?: number;
 };
 
 const STORAGE_KEY = "perla_pending_whatsapp_order";
@@ -93,8 +96,9 @@ function SuccessPageContent() {
         </h1>
 
         <p className="mt-3 text-gray-600">
-          Tu pedido ya fue guardado correctamente. Puedes enviarlo por WhatsApp,
-          ver el pedido o volver a la tienda para seguir comprando.
+          Tu pedido ya fue guardado correctamente. {pendingOrder?.paymentMethod === "zelle"
+            ? "Ahora puedes realizar el pago por Zelle siguiendo las instrucciones de abajo."
+            : "Puedes enviarlo por WhatsApp, ver el pedido o volver a la tienda para seguir comprando."}
         </p>
 
         {orderNumber && (
@@ -104,6 +108,15 @@ function SuccessPageContent() {
           </div>
         )}
 
+        {pendingOrder?.paymentMethod === "zelle" && (
+          <div className="mt-5 rounded-2xl border border-purple-200 bg-purple-50 p-4 text-left text-sm text-purple-950">
+            <h2 className="font-bold">Pago pendiente por Zelle</h2>
+            <p className="mt-2">Importe a transferir: <strong>${Number(pendingOrder.totalUsd || 0).toFixed(2)} USD</strong></p>
+            <p className="mt-2">Destinatario: <strong className="break-all">{pendingOrder.zelleInfo || "Solicita los datos de Zelle al negocio por WhatsApp."}</strong></p>
+            <p className="mt-2">Referencia del pago: <strong>{orderNumber}</strong></p>
+            <p className="mt-2">Realiza la transferencia desde tu banco y envía el comprobante al negocio por WhatsApp. Tu pedido seguirá pendiente de pago hasta que el negocio verifique la recepción del dinero.</p>
+          </div>
+        )}
         <div className="mt-6 space-y-3">
           {whatsappUrl ? (
             <a
@@ -111,7 +124,7 @@ function SuccessPageContent() {
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 px-5 py-4 font-bold text-white transition hover:bg-green-700"
             >
               <MessageCircle size={21} />
-              Abrir WhatsApp para enviar el pedido
+              {pendingOrder?.paymentMethod === "zelle" ? "Enviar pedido y comprobante por WhatsApp" : "Abrir WhatsApp para enviar el pedido"}
             </a>
           ) : (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
