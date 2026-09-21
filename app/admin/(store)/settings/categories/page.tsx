@@ -390,8 +390,10 @@ export default function AdminCategoriesPage() {
       return;
     }
 
+    if (deletingId) return;
+    const category = categories.find((item) => item.id === id);
     const ok = window.confirm(
-      "¿Seguro que quieres eliminar esta categoría?"
+      `¿Eliminar la categoría "${category?.name ?? ""}"? Si contiene productos u otras referencias, la eliminación puede estar bloqueada. No se eliminarán productos automáticamente.`
     );
 
     if (!ok) return;
@@ -408,19 +410,22 @@ export default function AdminCategoriesPage() {
           type: "error",
           message: getErrorMessage(
             error,
-            "No se pudo eliminar la categoría."
+            "No se pudo eliminar la categoría. Si contiene productos u otras referencias, trasládalos antes de intentar eliminarla."
           ),
         });
         return;
       }
 
-      setCategories((prev) =>
-        prev.filter((category) => category.id !== id)
-      );
-
+      const verification = await getCategoriesByStoreId(activeStore.id);
+      if (verification.error) throw verification.error;
+      setCategories(verification.data || []);
+      if (verification.data?.some((category) => category.id === id)) {
+        setFeedback({ type: "error", message: "La categoría sigue existiendo en Supabase. No se confirmó su eliminación; comprueba permisos y referencias asociadas." });
+        return;
+      }
       setFeedback({
         type: "success",
-        message: "Categoría eliminada correctamente.",
+        message: "Categoría eliminada y ausencia confirmada en Supabase.",
       });
     } catch (error) {
       console.error("Error inesperado eliminando categoría:", error);
