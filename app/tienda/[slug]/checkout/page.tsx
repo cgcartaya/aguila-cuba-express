@@ -159,15 +159,15 @@ export default function CheckoutPage() {
   const [businessZelle, setBusinessZelle] = useState("");
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings | null>(null);
   const [method, setMethod] = useState<CheckoutMethod>("cuba");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
+  const [loadingCheckout, setLoadingCheckout] = useState(true);
   useEffect(() => {
     if (!loadingCheckout && checkoutSettings?.blocks.customer === false) {
       setStep((current) => current === 1 ? 2 : current);
     }
   }, [loadingCheckout, checkoutSettings?.blocks.customer]);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const submittingRef = useRef(false);
-  const [loadingCheckout, setLoadingCheckout] = useState(true);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   // Telefono con el que se valido el bono. Si el cliente lo cambia despues
   // de aplicarlo, el bono deja de ser valido para ese numero y hay que
