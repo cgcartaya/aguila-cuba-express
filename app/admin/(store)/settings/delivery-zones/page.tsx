@@ -207,6 +207,7 @@ export default function AdminDeliveryZonesPage() {
     setForm((current) => ({
       ...current,
       [target.name]: target.value,
+      ...(target.name === "province" ? { municipality: target.value === DEFAULT_CUBA_PROVINCE ? "Cienfuegos" : "" } : {}),
     }));
   }
 
@@ -595,7 +596,7 @@ export default function AdminDeliveryZonesPage() {
                 >
                   {form.province === DEFAULT_CUBA_PROVINCE ? MUNICIPALITIES.map((municipality) => (
                     <option key={municipality} value={municipality}>{municipality}</option>
-                  )) : <option value={form.municipality}>{form.municipality}</option>}
+                  )) : <option value="">Escribe el municipio debajo</option>}
                 </select>
                 {form.province !== DEFAULT_CUBA_PROVINCE && <input name="municipality" value={form.municipality} onChange={handleChange} placeholder="Escribe el municipio" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" /> }
               </div>
