@@ -98,6 +98,7 @@ type CreateOrderBody = {
     recipient_phone_alt?: string;
     city?: string;
     municipality?: string;
+    province?: string;
     reference?: string;
     exact_address?: string;
     notes?: string;
@@ -573,14 +574,14 @@ export async function POST(request: Request) {
       const { data: zoneData, error: zoneError } = await supabaseAdmin
         .from("delivery_zones")
         .select(
-          "id, zone_name, delivery_fee, minimum_order, free_delivery_from, store_id"
+          "id, province, municipality, is_active, zone_name, delivery_fee, minimum_order, free_delivery_from, store_id"
         )
         .eq("id", zoneId)
         .eq("store_id", storeId)
         .maybeSingle();
 
-      if (zoneError || !zoneData) {
-        return fail("La zona de entrega no es válida.", 409);
+      if (zoneError || !zoneData || !zoneData.is_active || zoneData.province !== clean(form.province || "Cienfuegos", 120) || zoneData.municipality !== clean(form.municipality, 120)) {
+        return fail("La provincia, municipio o zona de entrega no está disponible.", 409);
       }
 
       deliveryFee = money(zoneData.delivery_fee);
@@ -752,7 +753,7 @@ export async function POST(request: Request) {
       discount_amount: discountAmount,
       total,
       country: isLocalDelivery ? "Estados Unidos" : "Cuba",
-      state: isLocalDelivery ? null : "Cienfuegos",
+      state: isLocalDelivery ? null : clean(form.province || "Cienfuegos", 120),
       municipality: city,
       delivery_zone_id: deliveryZoneId,
       zone_name: zoneName,
