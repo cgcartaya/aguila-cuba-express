@@ -119,6 +119,7 @@ export function buildWhatsappOrderMessageFromDbOrder({
     recipient_phone?: string | null;
     recipient_phone_alt?: string | null;
     municipality?: string | null;
+    state?: string | null;
     zone_name?: string | null;
     exact_address?: string | null;
     subtotal?: number | null;
@@ -218,7 +219,7 @@ ${
 ENTREGA
 
 Provincia:
-Cienfuegos
+${order.state || "Cienfuegos"}
 
 Municipio:
 ${order.municipality || ""}
@@ -350,7 +351,7 @@ ${
 ENTREGA
 
 Provincia:
-Cienfuegos
+${form.province || "Cienfuegos"}
 
 Municipio:
 ${form.municipality}
