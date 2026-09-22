@@ -159,6 +159,11 @@ export default function CheckoutPage() {
   const [businessZelle, setBusinessZelle] = useState("");
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings | null>(null);
   const [method, setMethod] = useState<CheckoutMethod>("cuba");
+  useEffect(() => {
+    if (!loadingCheckout && checkoutSettings?.blocks.customer === false) {
+      setStep((current) => current === 1 ? 2 : current);
+    }
+  }, [loadingCheckout, checkoutSettings?.blocks.customer]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const submittingRef = useRef(false);
@@ -580,9 +585,11 @@ export default function CheckoutPage() {
       if (!String(form[name] || "").trim()) missing.push({ name, label });
     };
 
-    requireField("name", "nombre del cliente");
-    requireField("email", "email");
-    requireField("phone", "teléfono del cliente");
+    if (checkoutSettings?.blocks.customer !== false) {
+      requireField("name", "nombre del cliente");
+      requireField("email", "email");
+      requireField("phone", "teléfono del cliente");
+    }
 
     if (isYoyo && method === "delivery" && !usesDistanceDelivery) {
       requireField("city", "ciudad");
@@ -604,7 +611,7 @@ export default function CheckoutPage() {
     }
 
     return missing;
-  }, [form, isYoyo, method, selectedZone, usesDistanceDelivery]);
+  }, [form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   // Mismo array de missingCheckoutFields, solo separado por a qué paso
   // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
@@ -619,6 +626,7 @@ export default function CheckoutPage() {
   );
 
   function goToStep(nextStep: 1 | 2 | 3) {
+    if (checkoutSettings?.blocks.customer === false && nextStep === 1) nextStep = 2;
     // Retroceder nunca necesita validación.
     if (nextStep < step) {
       setError("");
@@ -1087,7 +1095,7 @@ ${orderUrl}`);
                       />
                     )}
 
-                    {(!isYoyo || settings?.blocks.customer !== false) && (
+                    {checkoutSettings?.blocks.customer !== false && (
                       <CustomerInfoForm form={form} onChange={handleChange} />
                     )}
                   </>
@@ -1139,7 +1147,7 @@ ${orderUrl}`);
                 <CheckoutContinueBar
                   total={finalTotalWithDiscount}
                   step={step === 2 ? 2 : 1}
-                  onBack={step === 2 ? () => goToStep(1) : undefined}
+                  onBack={step === 2 && checkoutSettings?.blocks.customer !== false ? () => goToStep(1) : undefined}
                   onContinue={() => goToStep(step === 1 ? 2 : 3)}
                 />
               </div>
