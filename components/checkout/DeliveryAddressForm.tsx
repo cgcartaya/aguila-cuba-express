@@ -1,10 +1,11 @@
 import { MapPin } from "lucide-react";
 import type { DeliveryAddressProps } from "./types";
-import { CIENFUEGOS_MUNICIPALITIES } from "@/lib/utils/checkout";
+import { DEFAULT_CUBA_PROVINCE } from "@/lib/checkout/cuba-provinces";
 
 export function DeliveryAddressForm({
   form,
   availableZones,
+  zones,
   loadingZones,
   municipalityHasNoZones,
   showNotes = true,
@@ -18,7 +19,7 @@ export function DeliveryAddressForm({
       </h2>
 
       <p className="mb-5 text-sm text-gray-500">
-        País fijo: Cuba · Provincia fija: Cienfuegos
+        País: Cuba · Selecciona una provincia y un municipio con entrega disponible
       </p>
 
       <div className="grid gap-4">
@@ -29,8 +30,10 @@ export function DeliveryAddressForm({
           </div>
 
           <div className="rounded-xl border bg-gray-50 px-4 py-3">
-            <p className="text-xs font-semibold text-gray-500">Provincia</p>
-            <p className="font-bold text-gray-900">Cienfuegos</p>
+            <label htmlFor="checkout-province" className="text-xs font-semibold text-gray-500">Provincia *</label>
+            <select id="checkout-province" name="province" value={form.province || DEFAULT_CUBA_PROVINCE} onChange={onChange} disabled={loadingZones} className="w-full bg-transparent font-bold text-gray-900">
+              {Array.from(new Set(zones.map((zone) => zone.province || DEFAULT_CUBA_PROVINCE))).map((province) => <option key={province} value={province}>{province}</option>)}
+            </select>
           </div>
         </div>
 
@@ -47,7 +50,7 @@ export function DeliveryAddressForm({
               : "Selecciona un municipio *"}
           </option>
 
-          {CIENFUEGOS_MUNICIPALITIES.map((municipality) => (
+          {Array.from(new Set(zones.filter((zone) => (zone.province || DEFAULT_CUBA_PROVINCE) === (form.province || DEFAULT_CUBA_PROVINCE)).map((zone) => zone.municipality))).map((municipality) => (
             <option key={municipality} value={municipality}>
               {municipality}
             </option>

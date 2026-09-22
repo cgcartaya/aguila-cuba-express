@@ -12,6 +12,7 @@ export type CheckoutForm = {
   city: string;
   reference: string;
   municipality: string;
+  province: string;
   delivery_zone_id: string;
   exact_address: string;
   delivery_latitude: number | null;

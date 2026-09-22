@@ -35,6 +35,8 @@ import {
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 
+import { CUBA_PROVINCES, DEFAULT_CUBA_PROVINCE } from "@/lib/checkout/cuba-provinces";
+
 const MUNICIPALITIES = [
   "Cienfuegos",
   "Aguada de Pasajeros",
@@ -56,6 +58,7 @@ const BULK_FIELD_LABELS: Record<BulkField, string> = {
 };
 
 const emptyForm = {
+  province: DEFAULT_CUBA_PROVINCE,
   municipality: "Cienfuegos",
   zone_name: "",
   delivery_fee: "0",
@@ -204,6 +207,7 @@ export default function AdminDeliveryZonesPage() {
     setForm((current) => ({
       ...current,
       [target.name]: target.value,
+      ...(target.name === "province" ? { municipality: target.value === DEFAULT_CUBA_PROVINCE ? "Cienfuegos" : "" } : {}),
     }));
   }
 
@@ -211,6 +215,7 @@ export default function AdminDeliveryZonesPage() {
     setEditingId(zone.id);
 
     setForm({
+      province: zone.province || DEFAULT_CUBA_PROVINCE,
       municipality: zone.municipality,
       zone_name: zone.zone_name,
       delivery_fee: String(zone.delivery_fee ?? 0),
@@ -229,6 +234,10 @@ export default function AdminDeliveryZonesPage() {
     setError("");
     setSuccess("");
 
+    if (!form.municipality.trim()) {
+      setError("Escribe el municipio de entrega.");
+      return;
+    }
     if (!form.zone_name.trim()) {
       setError("Escribe el nombre de la zona.");
       return;
@@ -238,7 +247,8 @@ export default function AdminDeliveryZonesPage() {
       setSaving(true);
 
       const payload = {
-        municipality: form.municipality,
+        province: form.province,
+        municipality: form.municipality.trim(),
         zone_name: form.zone_name.trim(),
         delivery_fee: Number(form.delivery_fee || 0),
         minimum_order: Number(form.minimum_order || 0),
@@ -568,6 +578,12 @@ export default function AdminDeliveryZonesPage() {
 
             <div className="space-y-4">
               <div>
+                <label className="mb-1 block text-sm font-bold text-[#0B1F4D]">Provincia</label>
+                <select name="province" value={form.province} onChange={handleChange} className="w-full rounded-xl border border-slate-200 px-4 py-3">
+                  {CUBA_PROVINCES.map((province) => <option key={province} value={province}>{province}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="mb-1 block text-sm font-bold text-[#0B1F4D]">
                   Municipio
                 </label>
@@ -578,12 +594,11 @@ export default function AdminDeliveryZonesPage() {
                   onChange={handleChange}
                   className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                 >
-                  {MUNICIPALITIES.map((municipality) => (
-                    <option key={municipality} value={municipality}>
-                      {municipality}
-                    </option>
-                  ))}
+                  {form.province === DEFAULT_CUBA_PROVINCE ? MUNICIPALITIES.map((municipality) => (
+                    <option key={municipality} value={municipality}>{municipality}</option>
+                  )) : <option value="">Escribe el municipio debajo</option>}
                 </select>
+                {form.province !== DEFAULT_CUBA_PROVINCE && <input name="municipality" value={form.municipality} onChange={handleChange} placeholder="Escribe el municipio" className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-3" /> }
               </div>
 
               <Input

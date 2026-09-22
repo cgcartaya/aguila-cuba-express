@@ -60,6 +60,7 @@ const initialForm: CheckoutForm = {
   city: "",
   reference: "",
   municipality: "",
+  province: "Cienfuegos",
   delivery_zone_id: "",
   exact_address: "",
   delivery_latitude: null,
@@ -430,12 +431,12 @@ export default function CheckoutPage() {
 
   const availableZones = useMemo(() => {
     if (!form.municipality) return [];
-    return zones.filter((zone) => zone.municipality === form.municipality);
-  }, [zones, form.municipality]);
+    return zones.filter((zone) => zone.municipality === form.municipality && (zone.province || "Cienfuegos") === form.province);
+  }, [zones, form.municipality, form.province]);
 
   const selectedZone = useMemo(
-    () => zones.find((zone) => zone.id === form.delivery_zone_id) || null,
-    [zones, form.delivery_zone_id]
+    () => zones.find((zone) => zone.id === form.delivery_zone_id && zone.municipality === form.municipality && (zone.province || "Cienfuegos") === form.province) || null,
+    [zones, form.delivery_zone_id, form.municipality, form.province]
   );
 
   const usesDistanceDelivery =
@@ -690,6 +691,9 @@ export default function CheckoutPage() {
     }
 
     setForm((current) => {
+      if (name === "province") {
+        return { ...current, province: value, municipality: "", delivery_zone_id: "" };
+      }
       if (name === "municipality") {
         return { ...current, municipality: value, delivery_zone_id: "" };
       }
@@ -822,7 +826,7 @@ export default function CheckoutPage() {
           }`
         : `ENVÍO A CUBA\nDestinatario: ${form.recipient_name}\nTeléfono: ${
             form.recipient_phone
-          }${form.recipient_phone_alt ? `\nTeléfono alternativo: ${form.recipient_phone_alt}` : ""}\nMunicipio: ${form.municipality}\nZona: ${selectedZone?.zone_name || ""}\nDirección: ${form.exact_address}`;
+          }${form.recipient_phone_alt ? `\nTeléfono alternativo: ${form.recipient_phone_alt}` : ""}\nProvincia: ${form.province}\nMunicipio: ${form.municipality}\nZona: ${selectedZone?.zone_name || ""}\nDirección: ${form.exact_address}`;
 
     return encodeURIComponent(`YOYO ENVÍOS
 --------------------
