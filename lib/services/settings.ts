@@ -14,6 +14,7 @@ export type DeliveryZone = {
   id: string;
   store_id?: string | null;
   municipality: string;
+  province: string;
   zone_name: string;
   delivery_fee: number;
   minimum_order: number;
