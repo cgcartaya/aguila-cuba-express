@@ -30,8 +30,8 @@ export default function MarketingPostsPage() {
  const canvas = useRef<HTMLCanvasElement>(null);
  const selected = ids.map(id => products.find(p=>p.id===id)).filter((p):p is Product => Boolean(p));
  const max = template==="multi" ? 6 : template==="store" ? 4 : 1;
- const storeUrl = typeof window !== "undefined" ? window.location.origin + (store?.has_landing ? "/tienda" : "/") : "";
- const productBase = typeof window !== "undefined" ? window.location.origin + (store?.has_landing ? "/tienda/producto/" : "/producto/") : "";
+ const storeUrl = typeof window !== "undefined" ? window.location.origin + "/" : "";
+ const productBase = typeof window !== "undefined" ? window.location.origin + "/producto/" : "";
  const shareUrl = selected.length === 1 ? productBase + encodeURIComponent(selected[0].id) : storeUrl;
  const shareMessage = `${store?.name || "Tienda"}\n${headline}\n${selected.map(p => p.name).join(", ")}\n${shareUrl}`;
  const postProducts: PostProduct[] = selected.map(p=>({id:p.id,name:p.name,price:p.price,image:imageFor(p),url: typeof window !== "undefined" ? productBase + encodeURIComponent(p.id) : ""}));
