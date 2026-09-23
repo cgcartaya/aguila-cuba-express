@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import PhoneCountryField from "@/components/checkout/PhoneCountryField"
 import {
   ArrowLeft,
   BarChart3,
@@ -1033,7 +1034,7 @@ export default function EditStorePage() {
                     </div>
                     <div>
                       <FieldLabel>Teléfono / WhatsApp</FieldLabel>
-                      <input className={inputClass} placeholder="Ej: 17861234567" value={form.client_phone} onChange={(e) => setValue("client_phone", e.target.value)} />
+                      <PhoneCountryField name="client_phone" className="w-full" placeholder="Número de teléfono" value={form.client_phone} onChange={(e) => setValue("client_phone", e.target.value)} />
                     </div>
                     <div className="md:col-span-2">
                       <FieldLabel>Email</FieldLabel>
