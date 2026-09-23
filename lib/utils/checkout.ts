@@ -112,7 +112,7 @@ export function buildWhatsappOrderMessageFromDbOrder({
   orderUrl,
   storeName,
 }: {
-  storeName: string;
+  storeName?: string;
   order: {
     order_number?: string | null;
     id: string;
@@ -176,7 +176,7 @@ export function buildWhatsappOrderMessageFromDbOrder({
       : storedTotal;
 
   return `
-${storeName}
+${storeName || "Tienda"}
 --------------------
 
 PEDIDO NUEVO
@@ -281,7 +281,7 @@ export function buildWhatsappOrderMessage({
   orderUrl,
   storeName,
 }: {
-  storeName: string;
+  storeName?: string;
   orderNumber: string;
   form: CheckoutForm;
   cart: CheckoutCartItem[];
@@ -310,7 +310,7 @@ export function buildWhatsappOrderMessage({
   });
 
   return encodeURIComponent(`
-${storeName}
+${storeName || "Tienda"}
 --------------------
 
 PEDIDO NUEVO
