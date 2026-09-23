@@ -13,6 +13,8 @@ import {
 
 type ProductShareButtonProps = {
   productName: string;
+  priceUsd?: number;
+  storeName?: string;
   itemType?: "producto" | "combo";
 };
 
@@ -22,6 +24,8 @@ function openShareUrl(url: string) {
 
 export default function ProductShareButton({
   productName,
+  priceUsd,
+  storeName,
   itemType = "producto",
 }: ProductShareButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,9 +44,12 @@ export default function ProductShareButton({
 
   const getShareData = () => {
     const url = window.location.href;
+    const priceLine = priceUsd != null && Number.isFinite(priceUsd)
+      ? `\n💰 Precio: ${priceUsd.toFixed(2)} USD`
+      : "";
     return {
       title: productName,
-      text: `Mira este ${itemType}: ${productName}`,
+      text: `🛒 ${productName}${priceLine}${storeName ? `\n🏪 ${storeName}` : ""}\nMira este ${itemType}:`,
       url,
     };
   };
