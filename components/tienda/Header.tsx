@@ -20,6 +20,7 @@ import {
 
 import { useStore } from "@/hooks/useStore";
 import { getStoreSettings } from "@/lib/services/settings";
+import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import CurrencySelector from "@/components/tienda/CurrencySelector";
 import CurrencyFlagSelector from "@/components/tienda/CurrencyFlagSelector";
@@ -41,8 +42,7 @@ export default function Header({ cartCount }: HeaderProps) {
     if (!store?.id || storeLoading) return () => { active = false; };
     getStoreSettings(store.id).then(({ data }) => {
       if (!active) return;
-      const digits = (data?.whatsapp || data?.phone || store.client_phone || "").replace(/\D/g, "");
-      setHelpPhone(digits.length >= 8 ? digits : null);
+      setHelpPhone(normalizeStoreWhatsapp(data?.whatsapp));
     }).catch(() => { if (active) setHelpPhone(null); });
     return () => { active = false; };
   }, [store?.id, storeLoading, store?.client_phone]);
