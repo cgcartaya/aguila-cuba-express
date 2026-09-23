@@ -209,9 +209,6 @@ export async function POST(request: Request) {
     const incomingDeviceToken = clean(body.deviceToken || "", 100) || null;
 
     if (!storeId) return fail("Falta el id de la tienda.");
-    if (!customerName || !customerPhone) {
-      return fail("Faltan datos obligatorios del cliente.");
-    }
     if (requestedItems.length === 0 || requestedItems.length > 100) {
       return fail("El carrito está vacío o contiene demasiados artículos.");
     }
@@ -233,6 +230,18 @@ export async function POST(request: Request) {
       return fail("Esta tienda no está disponible.", 404);
     }
 
+    // La obligatoriedad del comprador se decide con la configuración guardada
+    // de esta tienda, nunca con un indicador enviado desde el navegador.
+    const { data: checkoutConfig, error: checkoutConfigError } = await supabaseAdmin
+      .from("checkout_settings")
+      .select("blocks")
+      .eq("store_id", storeId)
+      .maybeSingle();
+    if (checkoutConfigError) return fail("No se pudo validar la configuración del checkout.", 500);
+    const customerRequired = checkoutConfig?.blocks?.customer !== false;
+    if (customerRequired && (!customerName || !customerPhone || !email)) {
+      return fail("Faltan datos obligatorios del cliente.");
+    }
     const isYoyo = store.slug === YOYO_SLUG;
     const isLocalDelivery = Boolean(body.isLocalDelivery);
 
@@ -704,31 +713,36 @@ export async function POST(request: Request) {
     const resolvedDeviceToken = incomingDeviceToken || randomUUID();
 
     let customerId: string | null = null;
-    const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
-      .from("customers")
-      .upsert(
-        {
-          store_id: storeId,
-          phone: customerPhone,
-          name: customerName || "Cliente sin nombre",
-          email: email || null,
-          city: city || null,
-          device_token: resolvedDeviceToken,
-        },
-        { onConflict: "store_id,phone" }
-      )
-      .select("id")
-      .single();
-
-    if (customerError) {
-      // No debe pasar casi nunca ahora (era el caso que causaba
-      // "Cliente sin nombre"), pero si pasa igual el pedido no se
-      // pierde: el nombre/teléfono ya quedan guardados directo en la
-      // orden más abajo (customer_name / customer_phone), así que se ve
-      // bien en el admin aunque el enlace a customers haya fallado.
-      console.error("UPSERT CUSTOMER ERROR:", customerError);
-    } else {
-      customerId = upsertedCustomer.id;
+    // Sin teléfono del comprador no creamos un cliente ficticio ni
+    // vinculamos el pedido al teléfono del destinatario.
+    if (customerPhone) {
+      const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
+        .from("customers")
+        .upsert(
+          {
+            store_id: storeId,
+            phone: customerPhone,
+            name: customerName || "Cliente sin nombre",
+            email: email || null,
+            city: city || null,
+            device_token: resolvedDeviceToken,
+          },
+          { onConflict: "store_id,phone" }
+        )
+        .select("id")
+        .single();
+  
+      if (customerError) {
+        // No debe pasar casi nunca ahora (era el caso que causaba
+        // "Cliente sin nombre"), pero si pasa igual el pedido no se
+        // pierde: el nombre/teléfono ya quedan guardados directo en la
+        // orden más abajo (customer_name / customer_phone), así que se ve
+        // bien en el admin aunque el enlace a customers haya fallado.
+        console.error("UPSERT CUSTOMER ERROR:", customerError);
+      } else {
+        customerId = upsertedCustomer.id;
+      }
+  
     }
 
     const payload = {
