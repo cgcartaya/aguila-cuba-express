@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getStoreSettings } from "@/lib/services/settings";
+import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/hooks/useStore";
 
@@ -24,8 +25,7 @@ export default function BottomNavigation() {
     if (!store?.id || storeLoading) return () => { active = false; };
     getStoreSettings(store.id).then(({ data }) => {
       if (!active) return;
-      const digits = (data?.whatsapp || data?.phone || store.client_phone || "").replace(/\D/g, "");
-      setHelpPhone(digits.length >= 8 ? digits : null);
+      setHelpPhone(normalizeStoreWhatsapp(data?.whatsapp));
     }).catch(() => { if (active) setHelpPhone(null); });
     return () => { active = false; };
   }, [store?.id, storeLoading, store?.client_phone]);
