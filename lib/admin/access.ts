@@ -37,6 +37,9 @@ export type AccessStore = {
   module_menu_enabled?: boolean;
   module_reservas_enabled?: boolean;
   module_economy_enabled?: boolean;
+  module_marketing_posts_enabled?: boolean;
+  module_marketing_catalogs_enabled?: boolean;
+  module_marketing_analytics_enabled?: boolean;
   platform_fee_enabled?: boolean;
 };
 
