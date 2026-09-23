@@ -12,6 +12,12 @@ type Config = { product_ids?: string[]; product_id?: string; template?: Template
 type Asset = { id: string; title: string; configuration: Config; created_at: string };
 const colors = ["#C81E35", "#10233F", "#00875A", "#6D28D9", "#D97706"];
 const templates: { id: Template; label: string; description: string }[] = [
+  { id: "classic", label: "Clásico moderno", description: "Color, producto protagonista y precio" },
+  { id: "premium", label: "Premium elegante", description: "Presentación limpia y sofisticada" },
+  { id: "discount", label: "Estilo descuento", description: "Oferta llamativa y precio destacado" },
+  { id: "minimal", label: "Minimalista", description: "Producto y precio sin distracciones" },
+  { id: "benefits", label: "Con beneficios", description: "Producto y mensaje comercial" },
+  { id: "recipe", label: "Receta o uso", description: "Producto con sugerencia de uso" },
   { id: "offer", label: "Oferta destacada", description: "Un producto y su precio" },
   { id: "multi", label: "Varios productos", description: "Hasta seis productos" },
   { id: "combo", label: "Combo", description: "Un combo del inventario" },
@@ -69,6 +75,7 @@ export default function MarketingPostsPage() {
  {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">{error}</p>}
  <div className="grid gap-6 lg:grid-cols-2"><section className="space-y-5 rounded-2xl border bg-white p-5">
  <h2 className="text-xl font-bold">1. Elige una plantilla</h2><div className="grid grid-cols-2 gap-2">{templates.map(t=><button key={t.id} type="button" onClick={()=>changeTemplate(t.id)} aria-pressed={template===t.id} className={"rounded-xl border p-3 text-left "+(template===t.id?"border-blue-600 bg-blue-50":"")}><strong>{t.label}</strong><p className="text-xs text-slate-500">{t.description}</p></button>)}</div>
+ <p className="text-xs text-slate-500">Los seis nuevos estilos muestran un producto. Para anunciar varios productos, utiliza Varios productos o Promoción de tienda.</p>
  <h2 className="text-xl font-bold">2. Selecciona productos ({ids.length}/{max})</h2><input className="w-full rounded-lg border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar productos de esta tienda"/>
  <div className="max-h-64 space-y-2 overflow-y-auto">{products.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())).map(p=><button key={p.id} type="button" onClick={()=>toggle(p.id)} aria-pressed={ids.includes(p.id)} className={"flex w-full items-center gap-3 rounded-lg border p-2 text-left "+(ids.includes(p.id)?"border-blue-600 bg-blue-50":"")}><img src={imageFor(p)} alt="" className="h-12 w-12 object-contain"/><span className="flex-1">{p.name}</span><strong>${Number(p.price).toFixed(2)}</strong></button>)}</div>
  <h2 className="text-xl font-bold">3. Personaliza</h2>
