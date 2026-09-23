@@ -129,7 +129,16 @@ export async function resolveStoreByHost(
   const subdomain = getSubdomain(host);
 
   if (subdomain) {
-    return fetchStore("subdomain", subdomain);
+    const bySubdomain = await fetchStore("subdomain", subdomain);
+    if (bySubdomain) return bySubdomain;
+
+    // Legacy stores can have a public subdomain matching their slug while
+    // the subdomain column is empty. Never resolve a different store by slug.
+    const bySlug = await fetchStore("slug", subdomain);
+    if (bySlug && (!bySlug.subdomain || bySlug.subdomain.trim().toLowerCase() === subdomain)) {
+      return bySlug;
+    }
+    return null;
   }
 
   return fetchStore("domain", host);
@@ -239,6 +248,7 @@ export function buildStoreMetadata(
     PERLA_FAVICON;
 
   const image =
+    store.store_og_image_url?.trim() ||
     store.og_image_url?.trim() ||
     store.logo_url?.trim() ||
     PERLA_OG_IMAGE;
