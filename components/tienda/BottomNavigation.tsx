@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { getStoreSettings } from "@/lib/services/settings";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/hooks/useStore";
 
@@ -15,6 +17,18 @@ import {
 export default function BottomNavigation() {
   const pathname = usePathname();
   const { store, loading: storeLoading } = useStore();
+  const [helpPhone, setHelpPhone] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    setHelpPhone(null);
+    if (!store?.id || storeLoading) return () => { active = false; };
+    getStoreSettings(store.id).then(({ data }) => {
+      if (!active) return;
+      const digits = (data?.whatsapp || data?.phone || store.client_phone || "").replace(/\D/g, "");
+      setHelpPhone(digits.length >= 8 ? digits : null);
+    }).catch(() => { if (active) setHelpPhone(null); });
+    return () => { active = false; };
+  }, [store?.id, storeLoading, store?.client_phone]);
   const showShipping = !storeLoading && store?.module_shipping_enabled === true;
   const showDepartures = showShipping && store?.module_pickups_enabled === true;
 
@@ -67,15 +81,15 @@ const storeBaseUrl =
           <span>Salidas</span>
         </Link>}
 
-        <a
-          href="https://wa.me/13054974891"
+        {helpPhone && <a
+          href={`https://wa.me/${helpPhone}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center gap-1 text-green-600 transition"
         >
           <MessageCircle size={21} />
           <span>Ayuda</span>
-        </a>
+        </a>}
       </div>
     </nav>
   );
