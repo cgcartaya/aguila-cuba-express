@@ -7,6 +7,7 @@ import { CheckCircle, ExternalLink, MessageCircle, ShoppingBag } from "lucide-re
 
 import { useCart } from "@/contexts/CartContext";
 import { trackPendingMetaPurchase } from "@/lib/analytics/meta-pixel";
+import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 
 type PendingWhatsappOrder = {
   orderNumber: string;
@@ -20,22 +21,6 @@ type PendingWhatsappOrder = {
 };
 
 const STORAGE_KEY = "perla_pending_whatsapp_order";
-
-function normalizeWhatsappPhone(value: string) {
-  let digits = value.replace(/\D/g, "");
-
-  // Acepta números escritos como 0018032623676.
-  if (digits.startsWith("00")) {
-    digits = digits.slice(2);
-  }
-
-  // Si tiene 10 dígitos, se interpreta como EE. UU./Canadá y se añade +1.
-  if (digits.length === 10) {
-    return `1${digits}`;
-  }
-
-  return digits;
-}
 
 function SuccessPageContent() {
   const searchParams = useSearchParams();
@@ -74,7 +59,8 @@ function SuccessPageContent() {
   const whatsappUrl = useMemo(() => {
     if (!pendingOrder) return "";
 
-    const phone = normalizeWhatsappPhone(pendingOrder.businessWhatsapp);
+    const phone = normalizeStoreWhatsapp(pendingOrder.businessWhatsapp);
+    if (!phone) return null;
     return `https://wa.me/${phone}?text=${pendingOrder.whatsappMessage}`;
   }, [pendingOrder]);
 

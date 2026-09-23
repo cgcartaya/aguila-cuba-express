@@ -987,6 +987,7 @@ ${orderUrl}`);
         : isYoyo
         ? buildYoyoWhatsappMessage(orderNumber, orderUrl)
         : buildWhatsappOrderMessage({
+            storeName: store.name,
             orderNumber,
             form,
             cart,
