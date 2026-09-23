@@ -30,8 +30,11 @@ export default function MarketingPostsPage() {
  const canvas = useRef<HTMLCanvasElement>(null);
  const selected = ids.map(id => products.find(p=>p.id===id)).filter((p):p is Product => Boolean(p));
  const max = template==="multi" ? 6 : template==="store" ? 4 : 1;
- const storeUrl = typeof window !== "undefined" ? window.location.origin + "/" : "";
- const postProducts: PostProduct[] = selected.map(p=>({id:p.id,name:p.name,price:p.price,image:imageFor(p),url: typeof window !== "undefined" ? window.location.origin + "/producto/" + encodeURIComponent(p.id) : ""}));
+ const storeUrl = typeof window !== "undefined" ? window.location.origin + (store?.has_landing ? "/tienda" : "/") : "";
+ const productBase = typeof window !== "undefined" ? window.location.origin + (store?.has_landing ? "/tienda/producto/" : "/producto/") : "";
+ const shareUrl = selected.length === 1 ? productBase + encodeURIComponent(selected[0].id) : storeUrl;
+ const shareMessage = `${store?.name || "Tienda"}\n${headline}\n${selected.map(p => p.name).join(", ")}\n${shareUrl}`;
+ const postProducts: PostProduct[] = selected.map(p=>({id:p.id,name:p.name,price:p.price,image:imageFor(p),url: typeof window !== "undefined" ? productBase + encodeURIComponent(p.id) : ""}));
  useEffect(()=>{ let cancelled=false; setProducts([]);setAssets([]);setIds([]);setError(""); if(loading||!storeId||!enabled)return;
  Promise.all([getAdminProductsByStoreId(storeId),supabase.from("marketing_commercial_assets").select("id,title,configuration,created_at").eq("store_id",storeId).eq("kind","post").order("created_at",{ascending:false}).limit(30)]).then(([catalog,saved])=>{
  if(cancelled)return; if(catalog.error||saved.error)setError("No se pudieron cargar todos los datos.");
@@ -42,7 +45,7 @@ export default function MarketingPostsPage() {
  const timer=window.setTimeout(()=>{if(!canvas.current)return;
  void renderPost(canvas.current,{template,format,products:postProducts,storeName:store.name||"Tienda",storeUrl,headline,footer,accent,showQr,showPrice}).then(()=>{if(!cancelled){setReady(true);setError("");}}).catch(e=>{if(!cancelled)setError(e instanceof Error?e.message:"No se pudo generar la publicación.");});
  },180);return()=>{cancelled=true;window.clearTimeout(timer)};
- },[store,ids,products,template,format,headline,footer,accent,showQr,showPrice,storeUrl]);
+ },[store,ids,products,template,format,headline,footer,accent,showQr,showPrice,storeUrl,productBase]);
  function toggle(id:string){setIds(current=>current.includes(id)?current.filter(x=>x!==id):current.length>=max?[...current.slice(1),id]:[...current,id]);}
  function changeTemplate(next:Template){setTemplate(next);setIds(current=>current.slice(0,next==="multi"?6:next==="store"?4:1));}
  async function save(){if(!storeId||!enabled||!selected.length||!ready)return;setBusy(true);try{
@@ -53,7 +56,7 @@ export default function MarketingPostsPage() {
  async function exportImage(share=false){if(!canvas.current||!ready)return;try{
  const blob=await new Promise<Blob|null>(resolve=>canvas.current!.toBlob(resolve,"image/png"));if(!blob)throw new Error("No se pudo generar el archivo.");
  const file=new File([blob],"publicacion-"+(store?.slug||"tienda")+".png",{type:"image/png"});
- if(share&&navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:headline});return;}
+ if(share&&navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:headline,text:shareMessage,url:shareUrl});return;}
  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=file.name;a.click();window.setTimeout(()=>URL.revokeObjectURL(url),10000);
  }catch(e){if(e instanceof Error&&e.name==="AbortError")return;setError("No se pudo exportar o compartir la imagen. Comprueba que las fotografías permitan exportación.");}}
  function restore(asset:Asset){const c=asset.configuration||{};const restored=(c.product_ids||[c.product_id||""]).filter(id=>products.some(p=>p.id===id));if(!restored.length){setError("Los productos de este borrador ya no están disponibles.");return;}
@@ -74,6 +77,7 @@ export default function MarketingPostsPage() {
  <div className="flex flex-wrap gap-3">{colors.map(c=><button key={c} type="button" aria-label={"Color "+c} aria-pressed={accent===c} onClick={()=>setAccent(c)} className={"h-10 w-10 rounded-full "+(accent===c?"ring-4 ring-blue-300":"")} style={{backgroundColor:c}}/>)}</div>
  <label className="flex items-center gap-2"><input type="checkbox" checked={showPrice} onChange={e=>setShowPrice(e.target.checked)}/> Mostrar precios actuales</label>
  <label className="flex items-center gap-2"><input type="checkbox" checked={showQr} onChange={e=>setShowQr(e.target.checked)}/> Incluir QR de compra</label>
+ <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 space-y-2"><p className="font-semibold text-slate-900">{selected.length === 1 ? "Enlace directo del producto" : "Enlace de la tienda"}</p><input aria-label="Enlace de compra" readOnly value={selected.length ? shareUrl : ""} className="w-full rounded-lg border bg-white p-2 text-sm" /><div className="flex flex-wrap gap-2"><button type="button" disabled={!selected.length} onClick={()=>void navigator.clipboard.writeText(shareUrl).then(()=>setError("Enlace copiado.")).catch(()=>setError("No se pudo copiar el enlace."))} className="rounded-lg bg-slate-900 px-3 py-2 text-white disabled:opacity-50">Copiar enlace</button><button type="button" disabled={!selected.length} onClick={()=>window.open("https://wa.me/?text="+encodeURIComponent(shareMessage),"_blank","noopener,noreferrer")} className="rounded-lg bg-green-700 px-3 py-2 text-white disabled:opacity-50">Compartir enlace por WhatsApp</button></div>{selected.length > 1 && <p className="text-xs text-slate-600">La colección promocional todavía no está publicada: este enlace abre la tienda, no una selección exclusiva de productos.</p>}</div>
  <label className="block text-sm">Formato<select className="mt-1 w-full rounded-lg border p-3" value={format} onChange={e=>setFormat(e.target.value as Format)}><option value="square">Publicación cuadrada · 1080 × 1080</option><option value="story">Historia / estado · 1080 × 1920</option></select></label>
  <div className="flex flex-wrap gap-2"><button disabled={!ready||busy} onClick={save} className="rounded-lg bg-slate-900 px-4 py-3 text-white disabled:opacity-50">{busy?"Guardando...":"Guardar borrador"}</button><button disabled={!ready} onClick={()=>void exportImage()} className="rounded-lg bg-blue-600 px-4 py-3 text-white disabled:opacity-50">Descargar PNG</button><button disabled={!ready} onClick={()=>void exportImage(true)} className="rounded-lg bg-green-700 px-4 py-3 text-white disabled:opacity-50">Compartir imagen</button></div>
  </section><section className="space-y-3 rounded-2xl border bg-white p-5"><h2 className="text-xl font-bold">Vista previa</h2><canvas ref={canvas} width={1080} height={1080} className="w-full rounded-xl border" aria-label="Vista previa de la publicación"/><p className="text-sm text-slate-500">Los precios provienen del inventario actual. Comprueba el QR y el diseño antes de compartir.</p></section></div>
