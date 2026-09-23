@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Menu,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/hooks/useStore";
+import { getStoreSettings } from "@/lib/services/settings";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import CurrencySelector from "@/components/tienda/CurrencySelector";
 import CurrencyFlagSelector from "@/components/tienda/CurrencyFlagSelector";
@@ -33,6 +34,20 @@ export default function Header({ cartCount }: HeaderProps) {
   const showShipping = !storeLoading && store?.module_shipping_enabled === true;
   const showDepartures = showShipping && store?.module_pickups_enabled === true;
   const { search, setSearch, clearSearch } = useTiendaSearch();
+  const [helpPhone, setHelpPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    setHelpPhone(null);
+    if (!store?.id || storeLoading) return () => { active = false; };
+    getStoreSettings(store.id).then(({ data }) => {
+      if (!active) return;
+      const phone = data?.whatsapp || data?.phone || store.client_phone || "";
+      const digits = phone.replace(/\D/g, "");
+      setHelpPhone(digits.length >= 8 ? digits : null);
+    }).catch(() => { if (active) setHelpPhone(null); });
+    return () => { active = false; };
+  }, [store?.id, storeLoading, store?.client_phone]);
 
   const primaryColor = store?.primary_color || "#061b3a";
   const secondaryColor = store?.secondary_color || "#ef233c";
@@ -223,15 +238,15 @@ export default function Header({ cartCount }: HeaderProps) {
             </Link>
           </div>
 
-          <a
-            href="https://wa.me/13054974891?text=Hola,%20necesito%20ayuda%20con%20un%20pedido."
+          {helpPhone && <a
+            href={`https://wa.me/${helpPhone}?text=${encodeURIComponent("Hola, necesito ayuda con un pedido.")}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-green-600 transition hover:bg-green-50"
           >
             <MessageCircle size={21} />
             Ayuda por WhatsApp
-          </a>
+          </a>}
         </nav>
       </aside>
     </>
