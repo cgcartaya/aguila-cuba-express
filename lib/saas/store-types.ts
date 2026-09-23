@@ -27,6 +27,9 @@ export interface Store {
   module_pickups_enabled: boolean
   module_menu_enabled: boolean
   module_reservas_enabled: boolean
+  module_marketing_posts_enabled?: boolean
+  module_marketing_catalogs_enabled?: boolean
+  module_marketing_analytics_enabled?: boolean
   plan: StorePlan
   monthly_price: number | null
 

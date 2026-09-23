@@ -38,7 +38,10 @@ export type AdminModuleKey =
   | "shipping"
   | "menu"
   | "reservas"
-  | "economy";
+  | "economy"
+  | "marketing_posts"
+  | "marketing_catalogs"
+  | "marketing_analytics";
 
 export type AdminLink = {
   href: string;
@@ -150,6 +153,21 @@ export const adminNavSections: AdminSection[] = [
     ],
   },
   {
+    title: "Marketing comercial · Publicaciones",
+    module: "marketing_posts",
+    links: [{ href: "/admin/marketing/commercial/posts", label: "Crear publicaciones", icon: Megaphone }],
+  },
+  {
+    title: "Marketing comercial · Catálogos",
+    module: "marketing_catalogs",
+    links: [{ href: "/admin/marketing/commercial/catalogs", label: "Catálogos promocionales", icon: Layers3 }],
+  },
+  {
+    title: "Marketing comercial · Resultados",
+    module: "marketing_analytics",
+    links: [{ href: "/admin/marketing/commercial/analytics", label: "Resultados de campañas", icon: ChartNoAxesCombined }],
+  },
+  {
     title: "Configuración",
     links: [
       { href: "/admin/settings", label: "Ajustes de tienda", icon: Settings },
@@ -168,6 +186,9 @@ export function isModuleEnabled(
         | "module_menu_enabled"
         | "module_reservas_enabled"
         | "module_economy_enabled"
+        | "module_marketing_posts_enabled"
+        | "module_marketing_catalogs_enabled"
+        | "module_marketing_analytics_enabled"
       >
     | null
     | undefined,
@@ -188,6 +209,12 @@ export function isModuleEnabled(
       return store?.module_reservas_enabled === true;
     case "economy":
       return store?.module_economy_enabled === true;
+    case "marketing_posts":
+      return store?.module_marketing_posts_enabled === true;
+    case "marketing_catalogs":
+      return store?.module_marketing_catalogs_enabled === true;
+    case "marketing_analytics":
+      return store?.module_marketing_analytics_enabled === true;
     default:
       return true;
   }
@@ -208,8 +235,7 @@ export function getVisibleAdminSections(
     | undefined,
   isSuperAdmin: boolean,
 ): AdminSection[] {
-  if (isSuperAdmin) return adminNavSections;
-  return adminNavSections.filter((section) => isModuleEnabled(store, section.module));
+  return adminNavSections.filter((section) => isSuperAdmin || isModuleEnabled(store, section.module));
 }
 
 export { Store as StoreIcon, ExternalLink };

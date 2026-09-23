@@ -83,6 +83,9 @@ type StoreForm = {
   module_menu_enabled: boolean
   module_reservas_enabled: boolean
   module_economy_enabled: boolean
+  module_marketing_posts_enabled: boolean
+  module_marketing_catalogs_enabled: boolean
+  module_marketing_analytics_enabled: boolean
   last_payment_date: string
   next_payment_date: string
   payment_status: string
@@ -119,6 +122,9 @@ const EMPTY_FORM: StoreForm = {
   module_menu_enabled: false,
   module_reservas_enabled: false,
   module_economy_enabled: false,
+  module_marketing_posts_enabled: false,
+  module_marketing_catalogs_enabled: false,
+  module_marketing_analytics_enabled: false,
   last_payment_date: "",
   next_payment_date: "",
   payment_status: "pending",
@@ -350,6 +356,9 @@ export default function EditStorePage() {
         module_menu_enabled: Boolean(store.module_menu_enabled),
         module_reservas_enabled: Boolean(store.module_reservas_enabled),
         module_economy_enabled: Boolean(economy?.module_economy_enabled),
+        module_marketing_posts_enabled: Boolean(store.module_marketing_posts_enabled),
+        module_marketing_catalogs_enabled: Boolean(store.module_marketing_catalogs_enabled),
+        module_marketing_analytics_enabled: Boolean(store.module_marketing_analytics_enabled),
         last_payment_date: store.last_payment_date || "",
         next_payment_date: store.next_payment_date || "",
         payment_status: store.payment_status || "pending",
@@ -495,6 +504,9 @@ export default function EditStorePage() {
         module_pickups_enabled: form.module_pickups_enabled,
         module_menu_enabled: form.module_menu_enabled,
         module_reservas_enabled: form.module_reservas_enabled,
+        module_marketing_posts_enabled: form.module_marketing_posts_enabled,
+        module_marketing_catalogs_enabled: form.module_marketing_catalogs_enabled,
+        module_marketing_analytics_enabled: form.module_marketing_analytics_enabled,
         last_payment_date: form.last_payment_date || null,
         next_payment_date: form.next_payment_date || null,
         payment_status: form.payment_status,
@@ -691,6 +703,33 @@ export default function EditStorePage() {
                       helper="Permite recibir y administrar reservas en línea."
                       checked={form.module_reservas_enabled}
                       onChange={(value) => setValue("module_reservas_enabled", value)}
+                    />
+                    <ModuleCard
+                      icon={Share2}
+                      iconClass="bg-sky-50 text-sky-700"
+                      title="Marketing · Publicaciones"
+                      description="Generación de publicaciones comerciales."
+                      helper="Activación independiente por tienda."
+                      checked={form.module_marketing_posts_enabled}
+                      onChange={(value) => setValue("module_marketing_posts_enabled", value)}
+                    />
+                    <ModuleCard
+                      icon={Layers3}
+                      iconClass="bg-sky-50 text-sky-700"
+                      title="Marketing · Catálogos"
+                      description="Catálogos promocionales de varios productos."
+                      helper="Activación independiente por tienda."
+                      checked={form.module_marketing_catalogs_enabled}
+                      onChange={(value) => setValue("module_marketing_catalogs_enabled", value)}
+                    />
+                    <ModuleCard
+                      icon={BarChart3}
+                      iconClass="bg-sky-50 text-sky-700"
+                      title="Marketing · Analítica"
+                      description="Seguimiento de enlaces y campañas."
+                      helper="Activación independiente por tienda."
+                      checked={form.module_marketing_analytics_enabled}
+                      onChange={(value) => setValue("module_marketing_analytics_enabled", value)}
                     />
                     <ModuleCard
                       icon={BarChart3}
