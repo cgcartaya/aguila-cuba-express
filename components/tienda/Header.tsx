@@ -29,7 +29,9 @@ type HeaderProps = {
 
 export default function Header({ cartCount }: HeaderProps) {
   const [open, setOpen] = useState(false);
-  const { store } = useStore();
+  const { store, loading: storeLoading } = useStore();
+  const showShipping = !storeLoading && store?.module_shipping_enabled === true;
+  const showDepartures = showShipping && store?.module_pickups_enabled === true;
   const { search, setSearch, clearSearch } = useTiendaSearch();
 
   const primaryColor = store?.primary_color || "#061b3a";
@@ -55,10 +57,14 @@ export default function Header({ cartCount }: HeaderProps) {
         icon: Star,
       },
       { label: "Combos", href: `${storeBaseUrl}/combos`, icon: Gift },
-      { label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch },
-      { label: "Salidas", href: "/salidas", icon: CalendarDays },
+      ...(showShipping
+        ? [{ label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch }]
+        : []),
+      ...(showDepartures
+        ? [{ label: "Salidas", href: "/salidas", icon: CalendarDays }]
+        : []),
     ],
-    [storeBaseUrl]
+    [storeBaseUrl, showShipping, showDepartures]
   );
 
   return (
