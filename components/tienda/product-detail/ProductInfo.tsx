@@ -230,7 +230,7 @@ export default function ProductInfo({
           : "Producto agotado"}
       </button>
 
-      <ProductShareButton productName={name} />
+      <ProductShareButton productName={name} priceUsd={displayBasePrice} storeName={store?.name} />
     </section>
   );
 }

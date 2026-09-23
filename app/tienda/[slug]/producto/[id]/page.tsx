@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cache } from "react";
 
 import { buildStoreMetadata } from "@/lib/saas/store-metadata";
+import { applyPlatformFee, getPlatformFeePercent } from "@/lib/storefront/product-quantity-pricing";
 import { getStoreProductById } from "@/lib/services/products";
 import { getStoreBySlug } from "@/lib/services/stores";
 import ProductDetailClient from "./ProductDetailClient";
@@ -108,10 +109,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     });
   }
 
-  const title = `${product.name} | ${store.name}`;
-  const description =
-    String(product.description || "").replace(/\s+/g, " ").trim().slice(0, 200) ||
-    `Compra ${product.name} en ${store.name}.`;
+  const price = applyPlatformFee(Number(product.price), getPlatformFeePercent(store));
+  const priceLabel = Number.isFinite(price) ? `${price.toFixed(2)} USD` : null;
+  const title = `${product.name}${priceLabel ? ` | ${priceLabel}` : ""} | ${store.name}`;
+  const productDescription = String(product.description || "").replace(/\s+/g, " ").trim();
+  const description = `${priceLabel ? `Precio: ${priceLabel}. ` : ""}${productDescription || `Compra ${product.name} en ${store.name}.`}`.slice(0, 200);
   const image = getProductMainImage(product);
   const fallbackMetadata = buildStoreMetadata(store, canonicalUrl, {
     title,
