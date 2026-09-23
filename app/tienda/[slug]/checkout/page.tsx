@@ -45,7 +45,6 @@ import {
   buildWhatsappOrderMessage,
   calculateCheckoutTotals,
   getOriginalCartItemId,
-  isCheckoutFormComplete,
 } from "@/lib/utils/checkout";
 
 const YOYO_SLUG = "yoyo-envios";
@@ -547,38 +546,28 @@ export default function CheckoutPage() {
     Boolean(form.municipality) && !loadingCheckout && availableZones.length === 0;
 
   const canCheckout = useMemo(() => {
-    if (usesDistanceDelivery) {
-      return (
-        cart.length > 0 &&
-        Boolean(form.name.trim()) &&
-        Boolean(form.email.trim()) &&
-        Boolean(form.phone.trim()) &&
-        Boolean(form.city.trim()) &&
-        Boolean(form.exact_address.trim()) &&
-        form.delivery_latitude != null &&
-        form.delivery_longitude != null &&
-        form.delivery_distance_meters != null &&
-        form.delivery_quoted_fee != null
-      );
-    }
-    if (!isYoyo || method === "cuba") {
-      return isCheckoutFormComplete(form, checkoutCart, selectedZone, totals);
-    }
-
-    return (
-      cart.length > 0 &&
+    const customerRequired = checkoutSettings?.blocks.customer !== false;
+    const customerComplete = !customerRequired || (
       Boolean(form.name.trim()) &&
       Boolean(form.email.trim()) &&
-      Boolean(form.phone.trim()) &&
-      Boolean(form.city.trim()) &&
-      Boolean(form.exact_address.trim()) &&
-      (!usesDistanceDelivery ||
-        (form.delivery_latitude != null &&
-          form.delivery_longitude != null &&
-          form.delivery_distance_meters != null &&
-          form.delivery_quoted_fee != null))
+      Boolean(form.phone.trim())
     );
-  }, [cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery]);
+    if (usesDistanceDelivery) {
+      return cart.length > 0 && customerComplete &&
+        Boolean(form.city.trim()) && Boolean(form.exact_address.trim()) &&
+        form.delivery_latitude != null && form.delivery_longitude != null &&
+        form.delivery_distance_meters != null && form.delivery_quoted_fee != null;
+    }
+    if (!isYoyo || method === "cuba") {
+      return cart.length > 0 && customerComplete &&
+        Boolean(selectedZone) && totals.subtotal >= totals.minimumOrder &&
+        Boolean(form.recipient_name.trim()) && Boolean(form.recipient_phone.trim()) &&
+        Boolean(form.municipality.trim()) && Boolean(form.delivery_zone_id.trim()) &&
+        Boolean(form.exact_address.trim());
+    }
+    return cart.length > 0 && customerComplete &&
+      Boolean(form.city.trim()) && Boolean(form.exact_address.trim());
+  }, [cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   const missingCheckoutFields = useMemo(() => {
     const missing: Array<{ name: keyof CheckoutForm; label: string }> = [];
