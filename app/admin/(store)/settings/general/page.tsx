@@ -13,6 +13,7 @@ import AdminBackButton from "@/components/admin/ui/AdminBackButton";
 import AdminButton from "@/components/admin/ui/AdminButton";
 import AdminInput from "@/components/admin/ui/AdminInput";
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
+import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -131,6 +132,11 @@ export default function AdminGeneralSettingsPage() {
       return;
     }
 
+    if (form.whatsapp.trim() && !normalizeStoreWhatsapp(form.whatsapp)) {
+      setError("Selecciona el país del WhatsApp y escribe un número nacional válido. No se guardaron los cambios.");
+      return;
+    }
+
     try {
       setSaving(true);
       setSuccess("");
@@ -139,6 +145,7 @@ export default function AdminGeneralSettingsPage() {
       const { error: saveError } = await saveStoreSettings(
         {
           ...form,
+          whatsapp: form.whatsapp.trim() ? `+${normalizeStoreWhatsapp(form.whatsapp)}` : "",
           updated_at: new Date().toISOString(),
         },
         activeStore.id
@@ -233,7 +240,7 @@ export default function AdminGeneralSettingsPage() {
             </label>
 
             <label className="block">
-              <span className="mb-1.5 block text-sm font-bold text-slate-700">WhatsApp</span>
+              <span className="mb-1.5 block text-sm font-bold text-slate-700">WhatsApp comercial (pedidos y ayuda)</span>
               <PhoneCountryField
                 name="whatsapp"
                 value={form.whatsapp}

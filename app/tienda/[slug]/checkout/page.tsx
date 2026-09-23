@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
 import { supabase } from "@/lib/supabase";
+import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
 import { flushAnalyticsEvents, trackAnalyticsEvent } from "@/lib/analytics/client";
@@ -231,7 +232,7 @@ export default function CheckoutPage() {
 
         setZones(zonesResponse.data || []);
         setBusinessWhatsapp(
-          storeSettingsResponse.data?.whatsapp?.replace(/\D/g, "") || ""
+          normalizeStoreWhatsapp(storeSettingsResponse.data?.whatsapp) || ""
         );
         setBusinessZelle(storeSettingsResponse.data?.zelle_info || "");
         const cardAvailable = Boolean(paymentAvailabilityResponse?.available) && CARD_PAYMENTS_ENABLED;

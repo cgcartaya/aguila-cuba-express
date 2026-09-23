@@ -37,9 +37,10 @@ type PhoneCountryFieldProps = {
 function splitPhone(fullValue: string): { country: PhoneCountry; nationalNumber: string } {
   const trimmed = fullValue.trim();
 
-  const match = PHONE_COUNTRIES.find((c) => trimmed.startsWith(c.dialCode));
+  const match = [...PHONE_COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length).find((c) => trimmed.startsWith(c.dialCode) || trimmed.startsWith(`00${c.dialCode.slice(1)}`));
   if (match) {
-    return { country: match, nationalNumber: trimmed.slice(match.dialCode.length).trim() };
+    const normalized = trimmed.startsWith("00") ? `+${trimmed.slice(2)}` : trimmed;
+    return { country: match, nationalNumber: normalized.slice(match.dialCode.length).trim() };
   }
 
   return { country: DEFAULT_PHONE_COUNTRY, nationalNumber: trimmed };
@@ -57,16 +58,12 @@ export default function PhoneCountryField({
   const [nationalNumber, setNationalNumber] = useState("");
   const [touched, setTouched] = useState(false);
 
-  // Solo se sincroniza desde afuera una vez (ej. si el form ya trae un
-  // valor precargado). Después de eso el componente maneja su propio
-  // estado para no pelear con lo que el usuario está escribiendo.
+  // Sincronizar cuando llegan los ajustes guardados de forma asíncrona.
   useEffect(() => {
-    if (!value) return;
-    const { country: parsedCountry, nationalNumber: parsedNumber } = splitPhone(value);
+    const { country: parsedCountry, nationalNumber: parsedNumber } = splitPhone(value || "");
     setCountry(parsedCountry);
     setNationalNumber(parsedNumber);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [value]);
 
   function emit(nextCountry: PhoneCountry, nextNumber: string) {
     const combined = nextNumber ? `${nextCountry.dialCode} ${nextNumber}` : "";
