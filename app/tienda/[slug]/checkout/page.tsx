@@ -818,7 +818,7 @@ export default function CheckoutPage() {
             form.recipient_phone
           }${form.recipient_phone_alt ? `\nTeléfono alternativo: ${form.recipient_phone_alt}` : ""}\nProvincia: ${form.province}\nMunicipio: ${form.municipality}\nZona: ${selectedZone?.zone_name || ""}\nDirección: ${form.exact_address}`;
 
-    return encodeURIComponent(`YOYO ENVÍOS
+    return encodeURIComponent(`${store?.name || "Tienda"}
 --------------------
 PEDIDO NUEVO
 Orden: ${orderNumber}
@@ -852,7 +852,7 @@ ${orderUrl}`);
 
   function buildDistanceWhatsappMessage(orderNumber: string, orderUrl: string) {
     const products = cart.map((item) => `*${item.quantity}x* ${item.name}: $${(Number(item.price) * item.quantity).toFixed(2)}`).join("\n");
-    return encodeURIComponent(`PEDIDO NUEVO\nOrden: ${orderNumber}\n\nCLIENTE\nNombre: ${form.name}\nTeléfono: ${form.phone}\nEmail: ${form.email}\n\nENTREGA\nCiudad: ${form.city}\nDirección: ${form.exact_address}${form.reference ? `\nReferencia: ${form.reference}` : ""}\nDistancia por carretera: ${form.delivery_distance_meters != null ? (form.delivery_distance_meters / 1000).toFixed(2) : "-"} km\n\nPRODUCTOS\n${products}\n\nRESUMEN\nSubtotal: $${totals.subtotal.toFixed(2)}\nDelivery: $${totals.shippingCost.toFixed(2)}\nTOTAL: $${finalTotalWithDiscount.toFixed(2)}\n\nVer pedido:\n${orderUrl}`);
+    return encodeURIComponent(`${store?.name || "Tienda"}\nPEDIDO NUEVO\nOrden: ${orderNumber}\n\nCLIENTE\nNombre: ${form.name}\nTeléfono: ${form.phone}\nEmail: ${form.email}\n\nENTREGA\nCiudad: ${form.city}\nDirección: ${form.exact_address}${form.reference ? `\nReferencia: ${form.reference}` : ""}\nDistancia por carretera: ${form.delivery_distance_meters != null ? (form.delivery_distance_meters / 1000).toFixed(2) : "-"} km\n\nPRODUCTOS\n${products}\n\nRESUMEN\nSubtotal: $${totals.subtotal.toFixed(2)}\nDelivery: $${totals.shippingCost.toFixed(2)}\nTOTAL: $${finalTotalWithDiscount.toFixed(2)}\n\nVer pedido:\n${orderUrl}`);
   }
 
   function continueToWhatsappStep(params: {
