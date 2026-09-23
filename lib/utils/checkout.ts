@@ -110,7 +110,9 @@ export function buildWhatsappOrderMessageFromDbOrder({
   customer,
   orderItems,
   orderUrl,
+  storeName,
 }: {
+  storeName: string;
   order: {
     order_number?: string | null;
     id: string;
@@ -174,7 +176,7 @@ export function buildWhatsappOrderMessageFromDbOrder({
       : storedTotal;
 
   return `
-AGUILA EXPRESS USA
+${storeName}
 --------------------
 
 PEDIDO NUEVO
@@ -277,7 +279,9 @@ export function buildWhatsappOrderMessage({
   discountCode,
   discountAmount,
   orderUrl,
+  storeName,
 }: {
+  storeName: string;
   orderNumber: string;
   form: CheckoutForm;
   cart: CheckoutCartItem[];
@@ -306,7 +310,7 @@ export function buildWhatsappOrderMessage({
   });
 
   return encodeURIComponent(`
-AGUILA EXPRESS USA
+${storeName}
 --------------------
 
 PEDIDO NUEVO
