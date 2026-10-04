@@ -201,8 +201,8 @@ export default function ProductDetailClient({
 
   return (
     <>
-      <main className="min-h-screen bg-white pb-24 text-[#061b3a]">
-      <div className="mx-auto max-w-6xl px-4 py-5">
+      <main className="min-h-screen bg-white pb-36 text-[#061b3a] xl:pb-24">
+      <div className="mx-auto min-w-0 max-w-6xl px-4 py-5">
         {/* BOTÓN VOLVER */}
         <div className="mb-5">
           <Link
@@ -215,7 +215,7 @@ export default function ProductDetailClient({
         </div>
 
         {/* INFO PRINCIPAL */}
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid min-w-0 gap-8 md:grid-cols-2">
           <ProductGallery
             productName={product.name}
             selectedImage={selectedImage}
