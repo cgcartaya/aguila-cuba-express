@@ -68,14 +68,14 @@ export default function ProductInfo({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <section>
+    <section className="min-w-0">
       {tag && (
         <span className="inline-block rounded-full bg-red-100 px-3 py-1 text-xs font-black text-red-600">
           {tag}
         </span>
       )}
 
-      <h1 className="mt-3 text-3xl font-black leading-tight md:text-5xl">
+      <h1 className="mt-3 break-words text-2xl font-black leading-tight sm:text-3xl md:text-5xl">
         {name}
       </h1>
 
@@ -160,7 +160,7 @@ export default function ProductInfo({
           </h3>
 
           <p
-            className={`leading-relaxed text-slate-600 ${
+            className={`break-words leading-relaxed text-slate-600 ${
               !expanded ? "line-clamp-4" : ""
             }`}
           >

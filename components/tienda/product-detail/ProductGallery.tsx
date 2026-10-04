@@ -36,11 +36,11 @@ export default function ProductGallery({
   const safeSelectedImage = getSafeImageUrl(selectedImage);
 
   return (
-    <section>
+    <section className="min-w-0 max-w-full overflow-hidden">
       <button
         type="button"
         onClick={onOpenZoom}
-        className="relative flex h-[360px] w-full items-center justify-center overflow-hidden rounded-3xl bg-slate-100 md:h-[520px]"
+        className="relative flex h-[320px] w-full max-w-full items-center justify-center overflow-hidden rounded-3xl bg-slate-100 sm:h-[360px] md:h-[520px]"
       >
         <Image
           src={safeSelectedImage}
@@ -49,7 +49,7 @@ export default function ProductGallery({
           priority
           sizes="(max-width: 768px) 100vw, 720px"
           quality={82}
-          className="object-contain p-4 transition duration-300 hover:scale-105"
+          className="object-contain object-center p-4 transition duration-300 hover:scale-105"
         />
 
         <span className="absolute bottom-4 right-4 rounded-full bg-white/90 px-3 py-1 text-xs font-black shadow-sm">
@@ -57,7 +57,7 @@ export default function ProductGallery({
         </span>
       </button>
 
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
+      <div className="mt-4 flex w-full max-w-full gap-3 overflow-x-auto overscroll-x-contain pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {images.map((img) => {
           const imageUrl = getSafeImageUrl(img.image_url);
 
