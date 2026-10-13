@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
+import Bar1820Landing from "@/components/landing/bar1820/Bar1820Landing";
 import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import JotaJotaLanding from "@/components/landing/jotajota/JotaJotaLanding";
@@ -18,7 +19,7 @@ import {
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
-type LandingType = "aguila" | "yoyo" | "deparis" | "jotajota" | "perla";
+type LandingType = "aguila" | "yoyo" | "deparis" | "jotajota" | "bar1820" | "perla";
 
 const DEPARIS_STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -79,6 +80,8 @@ function resolveLanding(host: string): LandingType {
   ) {
     return "jotajota";
   }
+
+  if (normalizedHost === `bar1820.${PLATFORM_DOMAIN}`) return "bar1820";
 
   return "perla";
 }
@@ -207,6 +210,14 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const landing = await getCurrentLanding();
+
+  if (landing === "bar1820") {
+    const [store, menuEnabled] = await Promise.all([
+      resolveStoreBySlug("bar1820"),
+      isMenuModuleEnabled("bar1820"),
+    ]);
+    return <Bar1820Landing logoUrl={store?.logo_url} menuHref={menuEnabled ? "/menu/bar1820" : undefined} />;
+  }
 
   if (landing === "aguila") {
     const store = await resolveStoreBySlug("aguila");
