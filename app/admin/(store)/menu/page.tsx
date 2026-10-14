@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -51,6 +51,34 @@ export default function AdminMenuPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
+  const restoredStoreId = useRef<string | null>(null);
+  const pendingScroll = useRef<number | null>(null);
+
+  const rememberMenuPosition = () => {
+    if (!activeStore?.id) return;
+    try {
+      sessionStorage.setItem(`admin-menu-position:${activeStore.id}`, JSON.stringify({
+        categoryId: selectedCategoryId,
+        search,
+        scrollY: window.scrollY,
+      }));
+    } catch {
+      // Navigation still works when browser storage is unavailable.
+    }
+  };
+
+  useEffect(() => {
+    if (loading || accessLoading || storeLoading || pendingScroll.current === null) return;
+    const frame = requestAnimationFrame(() => {
+      const position = pendingScroll.current;
+      if (position !== null) {
+        window.scrollTo({ top: position, behavior: "instant" });
+        pendingScroll.current = null;
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading, accessLoading, storeLoading]);
+
   const loadData = async () => {
     if (accessLoading || storeLoading) return;
     if (!activeStore?.id) {
@@ -73,10 +101,28 @@ export default function AdminMenuPage() {
     const nextCategories = (cats as Category[]) || [];
     setCategories(nextCategories);
     setItems((menuItems as unknown as MenuItem[]) || []);
+    let rememberedCategory: string | null = null;
+    if (restoredStoreId.current !== activeStore.id) {
+      restoredStoreId.current = activeStore.id;
+      setSearch("");
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(`admin-menu-position:${activeStore.id}`) || "null");
+        sessionStorage.removeItem(`admin-menu-position:${activeStore.id}`);
+        if (saved && typeof saved.categoryId === "string" &&
+            nextCategories.some((category) => category.id === saved.categoryId)) {
+          rememberedCategory = saved.categoryId;
+          setSearch(typeof saved.search === "string" ? saved.search : "");
+          pendingScroll.current = Number.isFinite(saved.scrollY) ? Math.max(0, saved.scrollY) : 0;
+        }
+      } catch {
+        // Fall back to the first category if stored context is invalid.
+      }
+    }
     setSelectedCategoryId((current) =>
+      rememberedCategory || (
       current && nextCategories.some((category) => category.id === current)
         ? current
-        : nextCategories[0]?.id || null
+        : nextCategories[0]?.id || null)
     );
     setLoading(false);
   };
@@ -201,7 +247,7 @@ export default function AdminMenuPage() {
                     {categoryItems.length === 0 ? (
                       <div className="p-10 text-center text-sm font-semibold text-slate-400">No encontramos platillos en esta categoría.</div>
                     ) : categoryItems.map((item) => (
-                      <MenuItemCard key={item.id} item={item} onDelete={handleDeleteItem}/>
+                      <MenuItemCard key={item.id} item={item} onDelete={handleDeleteItem} onEdit={rememberMenuPosition}/>
                     ))}
                   </div>
                 </div>
