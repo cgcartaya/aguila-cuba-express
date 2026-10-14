@@ -8,12 +8,13 @@ export default function Bar1820Landing({ logoUrl, menuHref }: { logoUrl?: string
   return (
     <div className="min-h-screen bg-[#1D1F1E] text-[#FEFAEF] selection:bg-[#D4A54F] selection:text-[#1D1F1E]">
       <header className="border-b border-white/10">
-        <nav aria-label="Navegación principal" className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+        <nav aria-label="Navegación principal" className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <a href="#inicio" className="flex items-center gap-3">
             <Image src={logoUrl || "/bar1820/logo.webp"} alt="Logo de Bar 1820" width={56} height={56} unoptimized className="rounded-full" />
             <span className="font-serif text-xl tracking-wide">BAR <span className="text-[#D4A54F]">1820</span></span>
           </a>
-          <div className="flex items-center gap-5 text-sm">
+          <div className="flex w-full flex-wrap items-center justify-end gap-3 text-sm sm:w-auto sm:gap-5">
+            <Link href="/login" className="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full bg-[#D4A54F] px-4 py-2 font-semibold text-[#1D1F1E] transition hover:bg-[#e6bc72] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D4A54F]">Iniciar sesión</Link>
             {menuHref && <Link href={menuHref} className="hidden hover:text-[#D4A54F] sm:block">Nuestro menú</Link>}
             <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="rounded-full border border-[#D4A54F]/60 px-4 py-2 text-[#D4A54F] hover:bg-[#D4A54F] hover:text-[#1D1F1E]">Contáctanos</a>
           </div>
