@@ -112,10 +112,37 @@ export function newDraft(
     itemId: item?.id,
     title: item?.name || `Descubre ${storeName}`,
     body: item
-      ? `${item.name}\nPrecio: ${Number(item.price).toFixed(2)} USD\n${item.description || ""}`
+      ? `${item.name}\nPrecio: ${Number(item.price).toFixed(2)} USD\n${publicationExcerpt(item.description || "", item.name)}`
           .trim()
           .slice(0, 5000)
       : `Descubre los productos de ${storeName}. Consulta precios y disponibilidad en nuestra tienda.`,
     network: "whatsapp",
   };
+}
+
+// Only the initial suggestion is shortened; the gestor can edit up to 5000 chars.
+export function publicationExcerpt(description: string, name: string) {
+  const plain = description
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .trim();
+  const normalize = (value: string) =>
+    value.toLocaleLowerCase("es").replace(/[^\p{L}\p{N}]/gu, "");
+  const lines = plain
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  while (lines.length && normalize(lines[0]) === normalize(name)) lines.shift();
+  const text = lines.join(" ").replace(/\s+/g, " ");
+  if (text.length <= 220) return text;
+  const clipped = text.slice(0, 217);
+  return (
+    clipped.slice(
+      0,
+      clipped.lastIndexOf(" ") > 150
+        ? clipped.lastIndexOf(" ")
+        : clipped.length,
+    ) + "…"
+  );
 }

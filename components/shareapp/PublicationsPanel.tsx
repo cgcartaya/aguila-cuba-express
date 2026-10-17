@@ -6,7 +6,7 @@ import {
   Copy,
   FileText,
   Pause,
-  Pencil,
+  ImagePlus,
   Play,
   Save,
   Send,
@@ -20,6 +20,7 @@ import {
   type Publication,
 } from "@/lib/shareapp/workspace-types";
 import styles from "./workspace.module.css";
+import PhotoShare from "./PhotoShare";
 function shareText(body: string, url: string) {
   return body.includes(url) ? body : `${body}\n${url}`;
 }
@@ -27,7 +28,7 @@ async function share(body: string, url: string) {
   if (navigator.share) {
     try {
       await navigator.share({ text: shareText(body, url) });
-      return "Opciones de compartir completadas. La publicación depende de la aplicación elegida.";
+      return "Opciones de enlace abiertas. Para enviar la foto, usa Foto y texto.";
     } catch (e) {
       if ((e as Error).name === "AbortError") return "";
       throw e;
@@ -122,7 +123,9 @@ export default function PublicationsPanel({
               network: row.network,
               saved: { title: row.title, body: row.body, network: row.network },
             });
-            setNotice("Publicación guardada. Ya puedes compartir su enlace.");
+            setNotice(
+              "Publicación guardada. Elige foto y texto, o comparte el enlace.",
+            );
             setPage(0);
             setVersion((v) => v + 1);
           }}
@@ -180,7 +183,7 @@ export default function PublicationsPanel({
                 }
               >
                 <Share2 size={15} />
-                Compartir
+                Compartir enlace
               </button>
               <button
                 className={styles.secondary}
@@ -220,8 +223,8 @@ export default function PublicationsPanel({
                   window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
               >
-                <Pencil size={15} />
-                Editar
+                <ImagePlus size={15} />
+                Ver foto y editar
               </button>
               <button
                 className={row.active ? styles.danger : styles.secondary}
@@ -263,29 +266,31 @@ export default function PublicationsPanel({
           </button>
         </div>
       )}
-      <div className={styles.pagination}>
-        <button
-          className={styles.secondary}
-          disabled={!page || loading}
-          onClick={() => {
-            setPage((p) => p - 1);
-            setLoading(true);
-          }}
-        >
-          Anterior
-        </button>
-        <span>Página {page + 1}</span>
-        <button
-          className={styles.secondary}
-          disabled={!more || loading}
-          onClick={() => {
-            setPage((p) => p + 1);
-            setLoading(true);
-          }}
-        >
-          Siguiente
-        </button>
-      </div>
+      {(more || page > 0) && (
+        <div className={styles.pagination}>
+          <button
+            className={styles.secondary}
+            disabled={!page || loading}
+            onClick={() => {
+              setPage((p) => p - 1);
+              setLoading(true);
+            }}
+          >
+            Anterior
+          </button>
+          <span>Página {page + 1}</span>
+          <button
+            className={styles.secondary}
+            disabled={!more || loading}
+            onClick={() => {
+              setPage((p) => p + 1);
+              setLoading(true);
+            }}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -468,6 +473,15 @@ function PublicationEditor({
       )}
       {url && (
         <div style={{ marginTop: 20 }}>
+          {draft.kind !== "store" && (
+            <PhotoShare
+              key={url}
+              url={url}
+              title={title}
+              body={body}
+              disabled={dirty || !online || draft.active === false}
+            />
+          )}
           <span className={styles.link}>{url}</span>
           <p className={styles.fresh}>
             {dirty
@@ -483,7 +497,7 @@ function PublicationEditor({
               onClick={() => void social(() => share(body, url))}
             >
               <Share2 size={16} />
-              Compartir…
+              Compartir enlace
             </button>
             <button
               className={styles.secondary}

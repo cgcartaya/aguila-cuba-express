@@ -1,20 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
-  CODE,
   cookieName,
   destination,
   storefront,
   signReceipt,
   isPreviewBot,
 } from "@/lib/shareapp/core";
-import {
-  db,
-  settings,
-  secret,
-  fail,
-  errorResponse,
-} from "@/lib/shareapp/server";
+import { secret, errorResponse } from "@/lib/shareapp/server";
+
+import { promotion, itemImage } from "@/lib/shareapp/promotion";
+import { previewHtml } from "@/lib/shareapp/preview";
 
 export async function GET(
   request: NextRequest,
@@ -22,55 +18,29 @@ export async function GET(
 ) {
   try {
     const { code } = await context.params;
-    if (!CODE.test(code)) return fail("Enlace inválido.", 404);
-    const { data: link, error } = await db
-      .from("shareapp_links")
-      .select("id,store_id,member_id,kind,item_id")
-      .eq("code", code)
-      .eq("active", true)
-      .maybeSingle();
-    if (error) throw error;
-    if (!link) return fail("Este enlace ya no está disponible.", 404);
-    const [
-      { data: store, error: storeError },
-      { data: promoter, error: memberError },
-      config,
-    ] = await Promise.all([
-      db
-        .from("stores")
-        .select("id,slug,domain,subdomain,has_landing,is_active,module_store_enabled")
-        .eq("id", link.store_id)
-        .eq("is_active", true)
-        .maybeSingle(),
-      db
-        .from("shareapp_members")
-        .select("id")
-        .eq("id", link.member_id)
-        .eq("active", true)
-        .not("user_id", "is", null)
-        .maybeSingle(),
-      settings(link.store_id),
-    ]);
-    if (storeError) throw storeError;
-    if (memberError) throw memberError;
-    if (!store || !store.module_store_enabled || !promoter || !config.enabled)
-      return fail("Esta promoción está desactivada.", 410);
+    const { link, store, config, kind, item } = await promotion(code);
     const canonical = storefront(store).origin;
-    // Cookies must be set on the same host where this store performs checkout.
     if (request.nextUrl.origin !== canonical)
       return NextResponse.redirect(`${canonical}/r/${code}`, 307);
-    let kind = link.kind;
-    if (kind !== "store") {
-      const { data: item, error: itemError } = await db
-        .from(kind === "combo" ? "combos" : "products")
-        .select("id")
-        .eq("id", link.item_id)
-        .eq("store_id", store.id)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (itemError) throw itemError;
-      if (!item) kind = "store"; // Old posts remain useful when an item is retired.
+    if (isPreviewBot(request.headers.get("user-agent") || "")) {
+      const html = previewHtml({
+        title: item?.name || store.name,
+        description: item
+          ? `Precio: ${Number(item.price).toFixed(2)} USD · ${store.name}`
+          : `Descubre los productos de ${store.name}.`,
+        url: `${canonical}/r/${code}`,
+        image: itemImage(item) ? `${canonical}/r/${code}/image` : null,
+        destination: destination(store, kind, link.item_id),
+      });
+      return new NextResponse(html, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "private, no-store",
+          "X-Robots-Tag": "noindex",
+          "Content-Security-Policy":
+            "default-src 'none'; style-src 'none'; frame-ancestors 'none'",
+        },
+      });
     }
     const response = NextResponse.redirect(
       `${destination(store, kind, link.item_id)}?perla_ref=${store.id}`,

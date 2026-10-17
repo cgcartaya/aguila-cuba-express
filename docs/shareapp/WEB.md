@@ -51,3 +51,11 @@ Para repetir la prueba de navegador, con el servidor local de desarrollo en el p
     SHAREAPP_PLAYWRIGHT_MODULE=/tmp/shareapp-ui/node_modules/playwright node tests/shareapp/browser.cjs
 
 El módulo puede instalarse fuera del proyecto con npm install --prefix /tmp/shareapp-ui --no-package-lock playwright@1.51.1 y su Chromium de pruebas. SHAREAPP_BASE_URL permite elegir otro servidor local y SHAREAPP_SCREENSHOTS permite guardar capturas de los datos sintéticos en un directorio temporal.
+
+## Fotos y vistas previas
+
+Después de guardar una publicación de producto o combo, el editor prepara la foto antes del toque en «Foto y texto». El selector nativo recibe un archivo JPEG real, texto y enlace de atribución. Si la aplicación elegida omite el texto, usa «Copiar texto» y pégalo como descripción. «Descargar foto» permite hacerlo manualmente. «Compartir enlace» y WhatsApp envían texto/enlace; no adjuntan fotos. Desde el historial, «Ver foto y editar» abre estas opciones.
+
+/r/[code] devuelve Open Graph a los rastreadores reconocidos sin cookie de atribución. Los compradores mantienen la redirección y cookie originales. /r/[code]/image valida enlace, gestor, tienda, módulo y producto; no registra visitas. Solo descarga fotos del Storage público del proyecto configurado, sin redirecciones y con límite de 8 MB, 10 segundos y 25 millones de píxeles. Devuelve JPEG de hasta 1200 px, sin caché. No requiere migración.
+
+Las redes deciden si muestran la vista previa y pueden conservar la anterior en caché. Las fotos adjuntas no garantizan un enlace pulsable en estados/historias. Comprobar en WhatsApp real después de desplegar: conversación, estado, foto y texto, y que una compra desde el enlace conserve la atribución.
