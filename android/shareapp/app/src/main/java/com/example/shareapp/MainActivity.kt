@@ -41,6 +41,12 @@ private fun ShareApp() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var signedIn by remember { mutableStateOf(false) }
+    var accountEmail by remember { mutableStateOf("") }
+    var accountName by remember { mutableStateOf("") }
+    var passwordPending by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var notice by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -85,14 +91,23 @@ private fun ShareApp() {
         LazyColumn(modifier = Modifier.fillMaxSize().safeDrawingPadding(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             item { Text("ShareAPP", style = MaterialTheme.typography.headlineLarge); Text("Perla Marketplace · Gestores") }
             if (error.isNotBlank()) item { Text(error, color = MaterialTheme.colorScheme.error) }
+            if (notice.isNotBlank()) item { Text(notice) }
             if (busy) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
             if (!signedIn) {
                 item { Text("Entra con tu cuenta de Perla Marketplace.") }
                 item { OutlinedTextField(email, { email = it }, label = { Text("Correo") }, singleLine = true, modifier = Modifier.fillMaxWidth()) }
                 item { OutlinedTextField(password, { password = it }, label = { Text("Contraseña") }, visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth()) }
-                item { Button(enabled = !busy && email.isNotBlank() && password.isNotEmpty(), onClick = { action { api.login(email, password); password = ""; signedIn = true; loadStores() } }, modifier = Modifier.fillMaxWidth()) { Text("Entrar") } }
+                item { Button(enabled = !busy && email.isNotBlank() && password.isNotEmpty(), onClick = { action { api.login(email, password); password = ""; val me = api.call("me"); accountEmail = me.optString("email"); accountName = me.optString("fullName"); passwordPending = me.optBoolean("passwordPending"); signedIn = true; if (!passwordPending) loadStores() } }, modifier = Modifier.fillMaxWidth()) { Text("Entrar") } }
+                item { TextButton(enabled = !busy, onClick = { action { api.recover(email); notice = "Si el correo tiene una cuenta, recibirás un enlace para definir una contraseña nueva." } }) { Text("Olvidé mi contraseña") } }
             } else {
+                item { Text("${accountName.ifBlank { "Gestor" }}\nCuenta conectada: $accountEmail") }
                 item { OutlinedButton(enabled = !busy, onClick = { action { try { api.logout() } finally { signedIn = false; stores = emptyList(); storeId = ""; catalog = emptyList(); results = emptyList(); publication = ""; link = "" } } }) { Text("Cerrar sesión") } }
+                if (passwordPending) {
+                    item { Text("Define tu contraseña personal", style = MaterialTheme.typography.titleLarge); Text("Usa mínimo 12 caracteres, letras y números. Debe ser diferente a la temporal.") }
+                    item { OutlinedTextField(newPassword, { newPassword = it }, label = { Text("Nueva contraseña") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()) }
+                    item { OutlinedTextField(confirmPassword, { confirmPassword = it }, label = { Text("Repite la contraseña") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()) }
+                    item { Button(enabled = !busy, onClick = { action { require(newPassword == confirmPassword) { "Las contraseñas no coinciden." }; api.call("password", JSONObject().put("password", newPassword)); newPassword = ""; confirmPassword = ""; passwordPending = false; loadStores(); notice = "Contraseña personal guardada." } }) { Text("Guardar y continuar") } }
+                } else {
                 item { Text("Invitación del dueño", style = MaterialTheme.typography.titleMedium); OutlinedTextField(invite, { invite = it }, label = { Text("Pega el enlace de invitación") }, modifier = Modifier.fillMaxWidth()) }
                 item { OutlinedButton(enabled = !busy && invite.isNotBlank(), onClick = { action { val code = if (invite.contains("invite=")) android.net.Uri.parse(invite.trim()).getQueryParameter("invite").orEmpty() else invite.trim(); api.call("join", JSONObject().put("code", code)); invite = ""; loadStores() } }) { Text("Aceptar invitación") } }
                 if (stores.isEmpty()) item { Text("No tienes tiendas habilitadas. Pide al dueño una invitación y que active ShareAPP."); OutlinedButton(enabled = !busy, onClick = { action { loadStores() } }) { Text("Actualizar tiendas") } }
@@ -112,6 +127,7 @@ private fun ShareApp() {
                         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { ProductPicture(item); Text(item.getString("name"), style = MaterialTheme.typography.titleMedium); Text("${String.format(java.util.Locale.US, "%.2f", item.optDouble("price"))} USD · ${if (available) "Disponible" else "Agotado"}"); Button(enabled = !busy && available, onClick = { prepare(item) }) { Text("Preparar publicación") } } }
                     }
                     item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(enabled = !busy && page > 0, onClick = { page--; action { loadCatalog() } }) { Text("Anterior") }; Text("${page + 1}", Modifier.padding(top = 12.dp)); OutlinedButton(enabled = !busy && more, onClick = { page++; action { loadCatalog() } }) { Text("Siguiente") } } }
+                }
                 }
             }
         }

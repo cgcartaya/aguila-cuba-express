@@ -8,6 +8,7 @@ import {
   fail,
   errorResponse,
 } from "@/lib/shareapp/server";
+import { normalizeEmail, validEmail } from "@/lib/shareapp/accounts";
 import { UUID } from "@/lib/shareapp/core";
 
 export async function GET(request: NextRequest) {
@@ -17,12 +18,31 @@ export async function GET(request: NextRequest) {
     const { data, error } = await db
       .from("shareapp_members")
       .select(
-        "id,display_name,active,user_id,invite_code,invite_expires_at,created_at",
+        "id,display_name,email,active,user_id,invite_code,invite_expires_at,created_at",
       )
       .eq("store_id", storeId)
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return json({ members: data, settings: await settings(storeId) });
+    const userIds = (data || []).flatMap((row) =>
+      row.user_id ? [row.user_id] : [],
+    );
+    const { data: accounts, error: accountError } = userIds.length
+      ? await db
+          .from("shareapp_accounts")
+          .select("user_id,password_pending")
+          .in("user_id", userIds)
+      : { data: [], error: null };
+    if (accountError) throw accountError;
+    const pending = new Map(
+      (accounts || []).map((row) => [row.user_id, row.password_pending]),
+    );
+    return json({
+      members: (data || []).map((row) => ({
+        ...row,
+        password_pending: pending.get(row.user_id) || false,
+      })),
+      settings: await settings(storeId),
+    });
   } catch (error) {
     return errorResponse(error);
   }
@@ -34,12 +54,15 @@ export async function POST(request: NextRequest) {
     const name = String(body.displayName || "")
       .trim()
       .slice(0, 100);
-    if (!name) return fail("Escribe el nombre del gestor.");
+    const email = normalizeEmail(body.email);
+    if (!name || !validEmail(email))
+      return fail("Escribe el nombre y correo del gestor existente.");
     const { data, error } = await db
       .from("shareapp_members")
       .insert({
         store_id: body.storeId,
         display_name: name,
+        email,
         invited_by: actor.id,
         invite_code: randomBytes(24).toString("hex"),
         invite_expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),

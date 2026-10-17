@@ -1,8 +1,13 @@
 "use client";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import { shareappApi, type Result } from "@/lib/shareapp/client";
+import { gestorAuth as supabase } from "@/lib/shareapp/auth-client";
+import PasswordForm from "@/components/shareapp/PasswordForm";
+import {
+  gestorApi as shareappApi,
+  type Identity,
+  type Result,
+} from "@/lib/shareapp/client";
 import Results from "@/components/shareapp/Results";
 
 type Membership = {
@@ -46,6 +51,8 @@ function available(item: Item, storeId: string, kind: string) {
 export default function GestoresPage() {
   const [ready, setReady] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [identity, setIdentity] = useState<Identity | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [memberships, setMemberships] = useState<Membership[]>([]);
@@ -79,22 +86,29 @@ export default function GestoresPage() {
         new URLSearchParams(window.location.search).get("invite") || "",
       );
       setSignedIn(Boolean(data.session));
+      setUserId(data.session?.user.id || "");
       setReady(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) =>
-      setSignedIn(Boolean(session)),
-    );
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSignedIn(Boolean(session));
+      setUserId(session?.user.id || "");
+      if (!session) setIdentity(null);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
   useEffect(() => {
     if (signedIn)
       void supabase.auth
         .getSession()
-        .then(() => loadStores())
+        .then(async () => {
+          const me = await shareappApi<Identity>("me");
+          setIdentity(me);
+          if (!me.passwordPending) await loadStores();
+        })
         .catch((e) => setError(e.message));
-  }, [signedIn, loadStores]);
+  }, [signedIn, userId, loadStores]);
   useEffect(() => {
-    if (!signedIn || !storeId) return;
+    if (!signedIn || !storeId || !identity || identity.passwordPending) return;
     let canceled = false;
     void Promise.all([
       shareappApi<{ items: Item[]; hasMore: boolean }>(
@@ -115,7 +129,7 @@ export default function GestoresPage() {
     return () => {
       canceled = true;
     };
-  }, [signedIn, storeId, kind, search, page]);
+  }, [signedIn, storeId, kind, search, page, identity]);
   async function act(work: () => Promise<void>) {
     setBusy(true);
     setError("");
@@ -178,7 +192,7 @@ export default function GestoresPage() {
               className="rounded-xl border bg-white px-4 py-2"
               onClick={() =>
                 void act(async () => {
-                  await supabase.auth.signOut();
+                  await supabase.auth.signOut({ scope: "local" });
                   setMemberships([]);
                   setStoreId("");
                   setItems([]);
@@ -188,10 +202,18 @@ export default function GestoresPage() {
                 })
               }
             >
-              Cerrar sesión
+              Cerrar sesión de ShareAPP
             </button>
           )}
         </header>
+        {signedIn && identity && (
+          <div className="rounded-xl border bg-white p-4">
+            <p className="font-bold">{identity.fullName || "Gestor"}</p>
+            <p className="break-all text-sm text-slate-500">
+              Cuenta conectada: {identity.email}
+            </p>
+          </div>
+        )}
         {error && (
           <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">
             {error}
@@ -222,9 +244,9 @@ export default function GestoresPage() {
           >
             <h2 className="text-xl font-bold">Entrar como gestor</h2>
             <p className="text-sm text-slate-500">
-              Usa tu cuenta de Perla Marketplace. Si aún no tienes cuenta,
-              solicita al administrador que la prepare antes de aceptar la
-              invitación.
+              Entra con el correo y la contraseña de tu cuenta de gestor. Si aún
+              no tienes acceso, solicita al dueño que cree tu cuenta. Esta
+              sesión es independiente del panel administrativo.
             </p>
             <label className="block">
               Correo
@@ -254,7 +276,47 @@ export default function GestoresPage() {
             >
               Entrar
             </button>
+            <button
+              type="button"
+              disabled={busy}
+              className="w-full text-sm font-bold text-indigo-700 underline"
+              onClick={() =>
+                void act(async () => {
+                  if (!email.trim())
+                    throw new Error(
+                      "Escribe tu correo para recuperar la contraseña.",
+                    );
+                  const { error } = await supabase.auth.resetPasswordForEmail(
+                    email.trim(),
+                    {
+                      redirectTo:
+                        "https://perlamarketplace.com/gestores/recuperar",
+                    },
+                  );
+                  if (error)
+                    throw new Error(
+                      "No se pudo solicitar la recuperación. Espera unos minutos e inténtalo de nuevo.",
+                    );
+                  setNotice(
+                    "Si el correo tiene una cuenta, recibirás un enlace para definir una nueva contraseña.",
+                  );
+                })
+              }
+            >
+              Olvidé mi contraseña
+            </button>
           </form>
+        ) : !identity ? (
+          <p>Verificando tu cuenta…</p>
+        ) : identity.passwordPending ? (
+          <PasswordForm
+            email={identity.email}
+            onComplete={async () => {
+              setIdentity({ ...identity, passwordPending: false });
+              await loadStores();
+              setNotice("Tu contraseña personal está lista.");
+            }}
+          />
         ) : (
           <>
             {invite && (
@@ -263,8 +325,9 @@ export default function GestoresPage() {
                   Tienes una invitación para promocionar una tienda
                 </h2>
                 <p className="mt-2 text-sm">
-                  Al aceptarla se vinculará a la cuenta con la que has iniciado
-                  sesión.
+                  Esta invitación se vinculará a {identity.email}. Si no es tu
+                  cuenta de gestor, cierra esta sesión e inicia con el correo
+                  correcto.
                 </p>
                 <button
                   disabled={busy}

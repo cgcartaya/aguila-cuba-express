@@ -30,7 +30,7 @@ export function errorResponse(error: unknown) {
     500,
   );
 }
-export async function user(request: NextRequest) {
+export async function user(request: NextRequest, allowPending = false) {
   const token = request.headers
     .get("authorization")
     ?.replace(/^Bearer\s+/i, "");
@@ -45,7 +45,21 @@ export async function user(request: NextRequest) {
     .maybeSingle();
   if (profileError) throw profileError;
   if (profile && !profile.active) throw new AccessError("Usuario inactivo.");
-  return { id: data.user.id, superAdmin: profile?.role === "super_admin" };
+  const { data: account, error: accountError } = await db
+    .from("shareapp_accounts")
+    .select("password_pending")
+    .eq("user_id", data.user.id)
+    .maybeSingle();
+  if (accountError) throw accountError;
+  if (account?.password_pending && !allowPending)
+    throw new AccessError("Define tu contraseña personal para continuar.", 428);
+  return {
+    id: data.user.id,
+    superAdmin: profile?.role === "super_admin",
+    email: data.user.email || "",
+    fullName: String(data.user.user_metadata?.full_name || ""),
+    passwordPending: Boolean(account?.password_pending),
+  };
 }
 export async function owner(request: NextRequest, storeId: string) {
   if (!UUID.test(storeId)) throw new AccessError("Tienda inválida.", 400);

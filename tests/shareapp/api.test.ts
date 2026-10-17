@@ -47,6 +47,7 @@ test("ShareAPP API authorization and scope", async (t) => {
     "a store viewer cannot invite or administer gestores",
     async () => {
       db.from = ((table: string) => {
+        if (table === "shareapp_accounts") return query(null);
         if (table === "profiles")
           return query({ active: true, role: "store_owner" });
         if (table === "store_users") return query({ role: "VIEWER" });
@@ -63,6 +64,7 @@ test("ShareAPP API authorization and scope", async (t) => {
     "membership in another store cannot read its catalog",
     async () => {
       db.from = ((table: string) => {
+        if (table === "shareapp_accounts") return query(null);
         if (table === "profiles") return query(null);
         if (table === "shareapp_members") return query(null);
         if (table === "stores")
@@ -83,6 +85,7 @@ test("ShareAPP API authorization and scope", async (t) => {
     "gestor results use only the authenticated membership, ignoring caller memberId",
     async () => {
       db.from = ((table: string) => {
+        if (table === "shareapp_accounts") return query(null);
         if (table === "profiles") return query(null);
         if (table === "shareapp_members")
           return query({ id: memberId, store_id: storeId });

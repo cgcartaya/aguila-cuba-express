@@ -8,6 +8,7 @@ import { StoreProvider } from "@/contexts/StoreContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { buildPerlaMetadata } from "@/lib/saas/store-metadata";
 import MetaPixel from "@/components/analytics/MetaPixel";
+import RecoveryRedirect from "@/components/shareapp/RecoveryRedirect";
 import ReferralTracker from "@/components/shareapp/ReferralTracker";
 import InternalAnalyticsTracker from "@/components/analytics/InternalAnalyticsTracker";
 
@@ -39,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${manrope.variable} h-full antialiased`}>
       <body>
+        <RecoveryRedirect />
         <MetaPixel />
         <StoreProvider>
           <InternalAnalyticsTracker />

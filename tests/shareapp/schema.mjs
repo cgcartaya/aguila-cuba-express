@@ -20,6 +20,15 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  readFileSync(
+    new URL(
+      "../../supabase/migrations/20261017202012_shareapp_accounts.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
 const id = (n) => `${String(n).padStart(8, "0")}-1111-4111-8111-111111111111`;
 await db.query(`insert into stores values ($1),($2)`, [id(1), id(2)]);
 await db.query(`insert into auth.users values ($1)`, [id(3)]);
@@ -113,6 +122,7 @@ for (const role of ["anon", "authenticated"]) {
     "shareapp_links",
     "shareapp_events",
     "shareapp_order_attributions",
+    "shareapp_accounts",
   ]) {
     await assert.rejects(
       () => db.query(`select * from ${table}`),
@@ -127,11 +137,13 @@ for (const role of ["anon", "authenticated"]) {
       /permission denied/,
     );
     const column =
-      table === "shareapp_settings"
-        ? "enabled"
-        : table === "shareapp_members" || table === "shareapp_links"
-          ? "active"
-          : "store_id";
+      table === "shareapp_accounts"
+        ? "email"
+        : table === "shareapp_settings"
+          ? "enabled"
+          : table === "shareapp_members" || table === "shareapp_links"
+            ? "active"
+            : "store_id";
     await assert.rejects(
       () => db.query(`update ${table} set ${column}=${column}`),
       /permission denied/,
