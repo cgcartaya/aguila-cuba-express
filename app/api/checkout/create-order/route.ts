@@ -44,6 +44,7 @@
 
 import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
@@ -951,6 +952,9 @@ export async function POST(request: Request) {
         return fail(claimResult?.message || "El bono ya no está disponible.", 409);
       }
     }
+
+    // Record attribution only after stock and coupon validation have succeeded.
+    await attributeOrder(order.id, storeId);
 
     // RECORDATORIO DE CARRITO ABANDONADO: la orden se completó de verdad,
     // así que si había un snapshot de checkout en progreso para este
