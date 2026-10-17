@@ -44,6 +44,8 @@ function getSubdomain(host: string) {
 function shouldIgnorePath(pathname: string) {
   return (
     pathname.startsWith("/api") ||
+    pathname.startsWith("/r/") ||
+    pathname === "/gestores" || pathname.startsWith("/gestores/") ||
     // Public order pages have their own server-side tenant lookup and OG metadata.
     // Rewriting /pedido/* to /tienda/[slug]/pedido/* produces a 404 for social crawlers.
     (pathname === "/pedido" || pathname.startsWith("/pedido/")) ||
