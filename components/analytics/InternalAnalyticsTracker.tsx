@@ -10,7 +10,7 @@ export default function InternalAnalyticsTracker() {
   const { store } = useStore();
 
   useEffect(() => {
-    if (store?.id) trackPageViewOnce(store.id, pathname);
+    if (store?.id && !/^\/gestores(?:\/|$)/.test(pathname)) trackPageViewOnce(store.id, pathname);
   }, [pathname, store?.id]);
 
   useEffect(() => {

@@ -1,0 +1,624 @@
+"use client";
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  FileText,
+  LayoutGrid,
+  Loader2,
+  LogOut,
+  RefreshCw,
+  Share2,
+  Store,
+  UserRound,
+  WifiOff,
+} from "lucide-react";
+import { gestorAuth } from "@/lib/shareapp/auth-client";
+import { gestorApi, type Identity } from "@/lib/shareapp/client";
+import {
+  sections,
+  type Section,
+  type Membership,
+  type Draft,
+} from "@/lib/shareapp/workspace-types";
+import CatalogPanel from "./CatalogPanel";
+import PublicationsPanel from "./PublicationsPanel";
+import ResultsPanel from "./ResultsPanel";
+import AccountPanel from "./AccountPanel";
+import PasswordForm from "./PasswordForm";
+import InstallCard, { PwaRegistration, useOnline } from "./PwaSupport";
+import styles from "./workspace.module.css";
+const icons = {
+  catalogo: LayoutGrid,
+  publicaciones: FileText,
+  resultados: BarChart3,
+  cuenta: UserRound,
+};
+function Brand() {
+  return (
+    <Link href="/gestores" className={styles.brand}>
+      <Image src="/shareapp/mark.svg" alt="" width={38} height={38} />
+      <span>
+        ShareAPP<small>PERLA MARKETPLACE</small>
+      </span>
+    </Link>
+  );
+}
+function Nav({
+  section,
+  onChange,
+}: {
+  section: Section;
+  onChange: (id: Section) => void;
+}) {
+  return (
+    <>
+      {sections.map((item) => {
+        const Icon = icons[item.id];
+        return (
+          <button
+            key={item.id}
+            className={styles.navButton}
+            aria-current={section === item.id ? "page" : undefined}
+            onClick={() => onChange(item.id)}
+          >
+            <Icon size={19} />
+            {item.label}
+          </button>
+        );
+      })}
+    </>
+  );
+}
+export default function Workspace() {
+  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [identity, setIdentity] = useState<Identity | null>(null);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [storeId, setStoreId] = useState("");
+  const [section, setSection] = useState<Section>("catalogo");
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [invite, setInvite] = useState("");
+  const [version, setVersion] = useState(0);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const online = useOnline();
+  const activeIdentity = identity?.id === user?.id ? identity : null;
+  const currentStore = memberships.find((m) => m.store_id === storeId);
+  useEffect(() => {
+    let current = true;
+    void gestorAuth.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!current) return;
+        setUser(data.session?.user || null);
+        setInvite(
+          new URLSearchParams(window.location.search).get("invite") || "",
+        );
+        const view = window.location.hash.slice(1);
+        if (sections.some((s) => s.id === view)) setSection(view as Section);
+        setReady(true);
+      })
+      .catch(() => {
+        if (current) {
+          setReady(true);
+          setError("No se pudo recuperar la sesión. Vuelve a entrar.");
+        }
+      });
+    const { data } = gestorAuth.auth.onAuthStateChange((_event, session) =>
+      setUser(session?.user || null),
+    );
+    const pop = () => {
+      const view = window.location.hash.slice(1);
+      setSection(
+        sections.some((s) => s.id === view) ? (view as Section) : "catalogo",
+      );
+    };
+    window.addEventListener("popstate", pop);
+    window.addEventListener("hashchange", pop);
+    return () => {
+      current = false;
+      data.subscription.unsubscribe();
+      window.removeEventListener("popstate", pop);
+      window.removeEventListener("hashchange", pop);
+    };
+  }, []);
+  useEffect(() => {
+    if (!user?.id) return;
+    let current = true;
+    void (async () => {
+      const me = await gestorApi<Identity>("me");
+      const data = me.passwordPending
+        ? { memberships: [] }
+        : await gestorApi<{ memberships: Membership[] }>("stores");
+      if (!current) return;
+      setIdentity(me);
+      setMemberships(data.memberships);
+      setStoreId((existing) => {
+        if (data.memberships.some((m) => m.store_id === existing))
+          return existing;
+        let saved = "";
+        try {
+          saved = localStorage.getItem(`shareapp:last-store:${me.id}`) || "";
+        } catch {}
+        return data.memberships.some((m) => m.store_id === saved)
+          ? saved
+          : data.memberships[0]?.store_id || "";
+      });
+      setError("");
+    })().catch((e) => {
+      if (current) setError(e.message);
+    });
+    return () => {
+      current = false;
+    };
+  }, [user?.id, version]);
+  function navigate(id: Section) {
+    setSection(id);
+    window.history.pushState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#${id}`,
+    );
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function selectStore(id: string) {
+    if (id === storeId) return;
+    setStoreId(id);
+    setDraft(null);
+    try {
+      localStorage.setItem(`shareapp:last-store:${user?.id}`, id);
+    } catch {}
+  }
+  async function act(work: () => Promise<void>) {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await work();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo completar.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function logout() {
+    await gestorAuth.auth.signOut({ scope: "local" });
+    setUser(null);
+    setIdentity(null);
+    setMemberships([]);
+    setStoreId("");
+    setDraft(null);
+    setPassword("");
+    setNotice("");
+  }
+  const alerts = (
+    <>
+      {!online && (
+        <p role="status" className={`${styles.alert} ${styles.offline}`}>
+          <WifiOff size={15} style={{ display: "inline", marginRight: 7 }} />
+          Sin conexión. Conéctate para consultar información actualizada y
+          compartir.
+        </p>
+      )}
+      {error && (
+        <p role="alert" className={`${styles.alert} ${styles.error}`}>
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className={styles.alert}>
+          {notice}
+        </p>
+      )}
+    </>
+  );
+  const storePicker = (
+    <>
+      <span className={styles.contextLabel}>TU TIENDA</span>
+      <select
+        className={styles.storeSelect}
+        aria-label="Seleccionar tienda"
+        value={storeId}
+        onChange={(e) => selectStore(e.target.value)}
+      >
+        {!memberships.length && (
+          <option value="">Sin tiendas habilitadas</option>
+        )}
+        {memberships.map((m) => (
+          <option key={m.id} value={m.store_id}>
+            {m.stores.name}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+  if (!ready)
+    return (
+      <main className={styles.app}>
+        <div className={styles.empty} style={{ minHeight: "100dvh" }}>
+          <Image
+            src="/shareapp/mark.svg"
+            width={58}
+            height={58}
+            alt="ShareAPP"
+          />
+          <p>Cargando tu espacio…</p>
+        </div>
+      </main>
+    );
+  if (!user)
+    return (
+      <main className={styles.app}>
+        <PwaRegistration />
+        <div className={styles.login}>
+          <section className={styles.loginHero}>
+            <Brand />
+            <div>
+              <span className={styles.eyebrow} style={{ color: "#b8a9ff" }}>
+                TU ESPACIO COMO GESTOR
+              </span>
+              <h1>
+                Cada enlace,
+                <br />
+                <span>una oportunidad.</span>
+              </h1>
+              <p>
+                El catálogo de tus tiendas, tus publicaciones y tus resultados.
+                Todo en un solo lugar, estés donde estés.
+              </p>
+              <div className={styles.features}>
+                <div>
+                  <LayoutGrid size={18} />
+                  Productos y combos listos para compartir
+                </div>
+                <div>
+                  <Share2 size={18} />
+                  Publicaciones con tu enlace personal
+                </div>
+                <div>
+                  <BarChart3 size={18} />
+                  Visitas y ventas que puedes medir
+                </div>
+              </div>
+            </div>
+            <span className={styles.desktopNote}>
+              Una misma cuenta. iPhone, Android y computadora.
+            </span>
+          </section>
+          <section className={styles.loginForm}>
+            <div>
+              <span className={styles.eyebrow}>BIENVENIDO A SHAREAPP</span>
+              <h2>Tu próxima venta empieza aquí.</h2>
+              <p>Entra con tu cuenta de gestor para continuar.</p>
+              {alerts}
+              {invite && (
+                <p className={styles.alert}>
+                  Tienes una invitación. Entra con el correo al que va dirigida
+                  para aceptarla.
+                </p>
+              )}
+              <form
+                className={styles.form}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void act(async () => {
+                    const { error } = await gestorAuth.auth.signInWithPassword({
+                      email: email.trim(),
+                      password,
+                    });
+                    if (error)
+                      throw new Error(
+                        "No se pudo iniciar sesión. Revisa el correo y la contraseña.",
+                      );
+                    setPassword("");
+                  });
+                }}
+              >
+                <label className={styles.field}>
+                  Correo electrónico
+                  <input
+                    className={styles.input}
+                    type="email"
+                    autoComplete="email"
+                    required
+                    placeholder="tu@correo.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </label>
+                <label className={styles.field}>
+                  Contraseña
+                  <input
+                    className={styles.input}
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    placeholder="Tu contraseña"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </label>
+                <button className={styles.primary} disabled={busy || !online}>
+                  {busy ? (
+                    <Loader2 size={17} />
+                  ) : (
+                    <>
+                      Entrar a ShareAPP
+                      <ArrowRight size={17} />
+                    </>
+                  )}
+                </button>
+              </form>
+              <button
+                className={styles.textButton}
+                disabled={busy || !online}
+                style={{ marginTop: 10 }}
+                onClick={() =>
+                  void act(async () => {
+                    if (!email.trim())
+                      throw new Error(
+                        "Escribe tu correo para recuperar la contraseña.",
+                      );
+                    const { error } =
+                      await gestorAuth.auth.resetPasswordForEmail(
+                        email.trim(),
+                        {
+                          redirectTo:
+                            "https://perlamarketplace.com/gestores/recuperar",
+                        },
+                      );
+                    if (error)
+                      throw new Error(
+                        "No se pudo solicitar la recuperación. Espera unos minutos e inténtalo de nuevo.",
+                      );
+                    setNotice(
+                      "Si el correo tiene una cuenta, recibirás un enlace para definir una contraseña nueva.",
+                    );
+                  })
+                }
+              >
+                Olvidé mi contraseña
+              </button>
+              <div style={{ marginTop: 24 }}>
+                <InstallCard />
+              </div>
+              <p className={styles.loginFoot}>
+                ¿Todavía no tienes acceso? Solicita al dueño de la tienda una
+                cuenta de gestor.
+                <br />
+                <Link href="/login" className={styles.textButton}>
+                  Acceso a la administración →
+                </Link>
+              </p>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  const setup = !activeIdentity || activeIdentity.passwordPending;
+  return (
+    <main className={styles.app}>
+      <PwaRegistration />
+      <aside className={styles.sidebar}>
+        <Brand />
+        {!setup && (
+          <nav className={styles.navigation} aria-label="ShareAPP">
+            <Nav section={section} onChange={navigate} />
+          </nav>
+        )}
+        <div className={styles.sidebarFooter}>
+          <p>
+            Comparte con propósito.
+            <br />
+            Conoce tus resultados.
+          </p>
+          <button
+            className={styles.textButton}
+            disabled={busy}
+            onClick={() => void act(logout)}
+          >
+            <LogOut size={13} style={{ display: "inline", marginRight: 5 }} />
+            Cerrar sesión de ShareAPP
+          </button>
+        </div>
+      </aside>
+      <div className={styles.workspace}>
+        <header className={styles.topbar}>
+          <div className={styles.mobileBrand}>
+            <Brand />
+          </div>
+          <div className={styles.topbarContext}>{storePicker}</div>
+          <div className={styles.headerAccount}>
+            <div>
+              <p>{activeIdentity?.fullName || "Mi cuenta"}</p>
+              <small>{activeIdentity?.email || user.email}</small>
+            </div>
+            <button
+              className={styles.avatar}
+              aria-label="Abrir mi cuenta"
+              onClick={() => navigate("cuenta")}
+            >
+              {(activeIdentity?.fullName || user.email || "G")
+                .slice(0, 1)
+                .toUpperCase()}
+            </button>
+          </div>
+        </header>
+        <div className={styles.content}>
+          {alerts}
+          {!activeIdentity ? (
+            <section className={styles.empty}>
+              <RefreshCw size={25} />
+              <h2>Verificando tu cuenta</h2>
+              <p>Comprobamos tus tiendas autorizadas.</p>
+              {error && (
+                <button
+                  className={styles.secondary}
+                  disabled={busy || !online}
+                  onClick={() => setVersion((v) => v + 1)}
+                >
+                  Volver a intentar
+                </button>
+              )}
+              <button
+                className={styles.textButton}
+                onClick={() => void act(logout)}
+              >
+                Cambiar de cuenta
+              </button>
+            </section>
+          ) : activeIdentity.passwordPending ? (
+            <div className={styles.recoveryWrapper}>
+              <PasswordForm
+                email={activeIdentity.email}
+                onComplete={() => {
+                  setVersion((v) => v + 1);
+                  setNotice("Contraseña guardada. Ya puedes comenzar.");
+                }}
+              />
+              <button
+                className={styles.textButton}
+                style={{ marginTop: 20 }}
+                onClick={() => void act(logout)}
+              >
+                Entrar con otra cuenta
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={styles.storeMobile}>{storePicker}</div>
+              <div className={styles.heading}>
+                <div>
+                  <span className={styles.eyebrow}>
+                    {currentStore?.stores.name || "TU ESPACIO DE TRABAJO"}
+                  </span>
+                  <h1>{sections.find((s) => s.id === section)?.label}</h1>
+                  <p>{sections.find((s) => s.id === section)?.hint}</p>
+                </div>
+                {section === "catalogo" && (
+                  <span className={styles.badge}>
+                    <CheckCircle2 size={12} />
+                    Tu catálogo conectado
+                  </span>
+                )}
+              </div>
+              {invite && (
+                <section className={styles.card} style={{ marginBottom: 24 }}>
+                  <h2>Una tienda te invita a su equipo</h2>
+                  <p>
+                    La invitación se vinculará a{" "}
+                    <strong>{activeIdentity.email}</strong>. Si no es tu correo
+                    de gestor, cambia de cuenta.
+                  </p>
+                  <div className={styles.row}>
+                    <button
+                      className={styles.primary}
+                      disabled={busy || !online}
+                      onClick={() =>
+                        void act(async () => {
+                          await gestorApi("join", { code: invite });
+                          setInvite("");
+                          const url = new URL(window.location.href);
+                          url.searchParams.delete("invite");
+                          window.history.replaceState(
+                            null,
+                            "",
+                            url.pathname + url.search + url.hash,
+                          );
+                          setVersion((v) => v + 1);
+                          setNotice(
+                            "Invitación aceptada. Tu tienda ya está disponible.",
+                          );
+                        })
+                      }
+                    >
+                      Aceptar invitación
+                    </button>
+                    <button
+                      className={styles.secondary}
+                      onClick={() => void act(logout)}
+                    >
+                      Cambiar de cuenta
+                    </button>
+                  </div>
+                </section>
+              )}
+              {section === "cuenta" ? (
+                <AccountPanel
+                  identity={activeIdentity}
+                  memberships={memberships}
+                  storeId={storeId}
+                  onStore={(id) => {
+                    selectStore(id);
+                    navigate("catalogo");
+                  }}
+                  onLogout={() => void act(logout)}
+                  online={online}
+                />
+              ) : !currentStore ? (
+                <section className={styles.empty}>
+                  <Store size={35} />
+                  <h2>Tu próxima tienda está por llegar</h2>
+                  <p>
+                    Pide al dueño que habilite ShareAPP y cree tu acceso o envíe
+                    una invitación.
+                  </p>
+                  <button
+                    className={styles.secondary}
+                    disabled={!online}
+                    onClick={() => setVersion((v) => v + 1)}
+                  >
+                    <RefreshCw size={15} />
+                    Actualizar mis tiendas
+                  </button>
+                </section>
+              ) : section === "catalogo" ? (
+                <CatalogPanel
+                  key={`catalog:${storeId}`}
+                  storeId={storeId}
+                  storeName={currentStore.stores.name}
+                  online={online}
+                  onPrepare={(value) => {
+                    setDraft(value);
+                    navigate("publicaciones");
+                  }}
+                />
+              ) : section === "publicaciones" ? (
+                <PublicationsPanel
+                  key={`posts:${storeId}`}
+                  storeId={storeId}
+                  draft={draft}
+                  onDraft={setDraft}
+                  onCatalog={() => navigate("catalogo")}
+                  online={online}
+                />
+              ) : (
+                <ResultsPanel
+                  key={`results:${storeId}`}
+                  storeId={storeId}
+                  online={online}
+                />
+              )}
+            </>
+          )}
+        </div>
+      </div>
+      {!setup && (
+        <nav
+          className={styles.bottomNav}
+          aria-label="Navegación móvil de ShareAPP"
+        >
+          <Nav section={section} onChange={navigate} />
+        </nav>
+      )}
+    </main>
+  );
+}

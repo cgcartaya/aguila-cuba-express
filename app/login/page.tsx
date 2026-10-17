@@ -289,6 +289,7 @@ export default function LoginPage() {
           </button>
         </form>
 
+        <a href="/gestores" className="mt-6 block text-center text-sm font-bold text-violet-700">¿Eres gestor de ventas? Entrar a ShareAPP →</a>
         <p className="mt-6 text-center text-xs font-semibold text-slate-400">
           Acceso protegido por Perla Marketplace
         </p>

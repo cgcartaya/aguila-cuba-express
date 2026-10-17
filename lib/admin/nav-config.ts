@@ -148,6 +148,7 @@ export const adminNavSections: AdminSection[] = [
   {
     title: "Marketing",
     links: [
+      { href: "/gestores", label: "Entrar a ShareAPP", icon: ExternalLink },
       { href: "/admin/marketing/gestores", label: "Gestores · ShareAPP", icon: Megaphone },
       { href: "/admin/marketing/promotions", label: "Promociones", icon: Megaphone },
       { href: "/admin/marketing/recordatorios", label: "Recordatorios", icon: BellRing },
