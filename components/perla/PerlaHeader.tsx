@@ -116,7 +116,9 @@ export default function PerlaHeader() {
                     {isOpen && (
                       <MegaMenu
                         id={`mega-menu-${menu}`}
-                        groups={menu === "platform" ? platformGroups : undefined}
+                        groups={
+                          menu === "platform" ? platformGroups : undefined
+                        }
                         items={
                           menu === "solutions"
                             ? solutions
@@ -134,12 +136,20 @@ export default function PerlaHeader() {
           </nav>
 
           <div className="hidden items-center gap-5 lg:flex">
-            <Link
-              href="/admin"
-              className="flex min-h-12 items-center px-2 text-sm font-black text-[#10152f] outline-none hover:text-violet-700 focus-visible:ring-4 focus-visible:ring-violet-200"
-            >
-              Iniciar sesión
-            </Link>
+            <div className="flex flex-col gap-1">
+              <Link
+                href="/admin"
+                className="text-xs font-bold text-slate-500 hover:text-violet-700"
+              >
+                Administración
+              </Link>
+              <Link
+                href="/gestores"
+                className="text-sm font-black text-violet-700 hover:text-violet-900"
+              >
+                Entrar a ShareAPP →
+              </Link>
+            </div>
             <a
               href={whatsappUrl}
               target="_blank"

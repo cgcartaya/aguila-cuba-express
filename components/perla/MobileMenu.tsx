@@ -175,6 +175,13 @@ export default function MobileMenu({
             <div className="border-t border-slate-200 bg-white p-5">
               <div className="grid gap-3">
                 <Link
+                  href="/gestores"
+                  onClick={onClose}
+                  className="flex min-h-12 items-center justify-center rounded-xl bg-violet-50 text-sm font-black text-violet-700"
+                >
+                  Entrar a ShareAPP →
+                </Link>
+                <Link
                   href="/admin"
                   onClick={onClose}
                   className="flex min-h-12 items-center justify-center rounded-xl border border-slate-200 text-sm font-black text-[#10152f] outline-none hover:bg-slate-50 focus-visible:ring-4 focus-visible:ring-violet-200"

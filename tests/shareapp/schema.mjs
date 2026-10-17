@@ -29,6 +29,15 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  readFileSync(
+    new URL(
+      "../../supabase/migrations/20261017210037_shareapp_publications.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
 const id = (n) => `${String(n).padStart(8, "0")}-1111-4111-8111-111111111111`;
 await db.query(`insert into stores values ($1),($2)`, [id(1), id(2)]);
 await db.query(`insert into auth.users values ($1)`, [id(3)]);
