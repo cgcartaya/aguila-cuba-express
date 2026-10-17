@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import { shareappApi, type Member, type Result } from "@/lib/shareapp/client";
+import AccountCreator from "@/components/shareapp/AccountCreator";
 import Results from "@/components/shareapp/Results";
 
 export default function GestoresAdminPage() {
@@ -23,6 +24,8 @@ function GestoresPanel({ storeId }: { storeId: string }) {
   const [enabled, setEnabled] = useState(false);
   const [days, setDays] = useState(7);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [activationLink, setActivationLink] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -138,20 +141,26 @@ function GestoresPanel({ storeId }: { storeId: string }) {
         </p>
       </form>
       <Results rows={rows} />
+      <AccountCreator storeId={storeId} onCreated={refresh} />
       <section className="space-y-4 rounded-2xl border bg-white p-5">
-        <h2 className="text-xl font-bold">Invitar un gestor</h2>
+        <h2 className="text-xl font-bold">Invitar gestor existente</h2>
         <p className="text-sm text-slate-500">
-          Genera un enlace privado y envíaselo tú al gestor. Caduca en 7 días y
-          se usa una sola vez. El gestor entra con una cuenta de Perla; no
-          recibe acceso administrativo.
+          Para una persona que ya tiene cuenta. La invitación queda vinculada al
+          correo indicado, caduca en 7 días y se acepta una sola vez. No cambia
+          su contraseña.
         </p>
         <form
           className="flex flex-wrap gap-3"
           onSubmit={(e) => {
             e.preventDefault();
             void action(async () => {
-              await shareappApi("members", { storeId, displayName: name });
+              await shareappApi("members", {
+                storeId,
+                displayName: name,
+                email,
+              });
               setName("");
+              setEmail("");
             });
           }}
         >
@@ -164,6 +173,15 @@ function GestoresPanel({ storeId }: { storeId: string }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+          <input
+            aria-label="Correo del gestor existente"
+            className="min-w-0 flex-1 rounded-xl border p-3"
+            placeholder="Correo de su cuenta"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
           <button
             disabled={busy || !name.trim()}
             className="rounded-xl bg-indigo-600 px-5 py-3 font-bold text-white disabled:opacity-50"
@@ -171,6 +189,30 @@ function GestoresPanel({ storeId }: { storeId: string }) {
             Crear invitación
           </button>
         </form>
+        {activationLink && (
+          <div className="space-y-2 rounded-xl bg-indigo-50 p-4">
+            <p className="text-sm">
+              Nuevo enlace de activación. El anterior deja de funcionar.
+            </p>
+            <input
+              className="w-full rounded-lg border p-2 text-sm"
+              readOnly
+              value={activationLink}
+              aria-label="Nuevo enlace de activación"
+            />
+            <button
+              className="rounded-lg border bg-white px-3 py-2"
+              onClick={() => {
+                void navigator.clipboard
+                  .writeText(activationLink)
+                  .then(() => setNotice("Enlace copiado."))
+                  .catch(() => setError("Copia el enlace manualmente."));
+              }}
+            >
+              Copiar enlace
+            </button>
+          </div>
+        )}
         <div className="divide-y">
           {members.map((m) => (
             <article
@@ -181,8 +223,15 @@ function GestoresPanel({ storeId }: { storeId: string }) {
                 <p className="font-bold">{m.display_name}</p>
                 <p className="text-sm text-slate-500">
                   {m.active ? "Activo" : "Desactivado"} ·{" "}
-                  {m.user_id ? "Cuenta vinculada" : "Invitación pendiente"}
+                  {m.password_pending
+                    ? "Pendiente de definir contraseña"
+                    : m.user_id
+                      ? "Cuenta vinculada"
+                      : "Invitación pendiente"}
                 </p>
+                {m.email && (
+                  <p className="break-all text-sm text-slate-500">{m.email}</p>
+                )}
                 {m.invite_code && (
                   <p className="text-xs text-slate-500">
                     Vence: {new Date(m.invite_expires_at!).toLocaleDateString()}
@@ -190,6 +239,22 @@ function GestoresPanel({ storeId }: { storeId: string }) {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
+                {m.password_pending && (
+                  <button
+                    disabled={busy || !m.active}
+                    className="rounded-lg border px-3 py-2 text-sm"
+                    onClick={() =>
+                      void action(async () => {
+                        const result = await shareappApi<{
+                          activationUrl: string;
+                        }>("accounts", { storeId, memberId: m.id });
+                        setActivationLink(result.activationUrl);
+                      })
+                    }
+                  >
+                    Generar enlace de activación
+                  </button>
+                )}
                 {m.invite_code && (
                   <button
                     className="rounded-lg border px-3 py-2 text-sm"

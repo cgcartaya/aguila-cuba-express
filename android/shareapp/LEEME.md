@@ -1,42 +1,45 @@
-# ShareAPP · Primeras fases para Android
+# ShareAPP · Cuentas de gestores y acceso
 
-Estos archivos se integran en el proyecto **ShareAPP** que ya creaste con **Empty Activity / Kotlin / Jetpack Compose**. No es una APK compilada ni un proyecto Gradle independiente.
+Kit para el proyecto ShareAPP / Empty Activity / Kotlin / Jetpack Compose, paquete com.example.shareapp. Es código fuente para integrar; todavía no es una APK compilada.
 
-## Primero: publicar el backend
+## Primero, desplegar el backend
 
-El PR de Perla Marketplace debe estar fusionado y desplegado en `https://perlamarketplace.com`. La migración `shareapp_gestores` ya se instaló en Supabase el 17 de octubre de 2026; el módulo está deshabilitado por defecto. No la ejecutes de nuevo manualmente.
+Fusionar y desplegar el PR de cuentas en perlamarketplace.com. Las dos migraciones de ShareAPP ya están instaladas; no ejecutarlas otra vez.
 
-En el administrador de una tienda abre **Marketing → Gestores · ShareAPP**, habilita el módulo y guarda. Crea una invitación, cópiala y compártela con el gestor.
+En Marketing → Gestores · ShareAPP:
 
-En esta fase el gestor necesita una cuenta de autenticación de Perla ya existente. El gestor no necesita pertenecer a `store_users` ni recibir un rol administrativo. No añadas una membresía de administrador para darle acceso a ShareAPP. El autorregistro y la recuperación de contraseña dentro de la app quedan para una fase posterior.
+1. Habilita ShareAPP en la tienda y guarda.
+2. Usa Crear cuenta de gestor con nombre y correo.
+3. Elige Enlace de activación (recomendado) o Contraseña temporal.
+4. Comparte el enlace privado con el gestor para que elija su contraseña. Vence en 7 días y se usa una vez. También puede entrar en la app con la temporal; debe cambiarla antes de ver productos.
+5. Si ya tiene cuenta, usa Invitar gestor existente con su correo. Su contraseña no se modifica.
 
-## Instalar en tu proyecto Android Studio
+La cuenta no recibe perfil administrativo ni membresía en store_users. Puede vincularse a varias tiendas. Desactivarla en una tienda no elimina sus otros accesos.
 
-1. Haz una copia de tu `MainActivity.kt` actual.
-2. Copia los dos archivos de `app/src/main/java/com/example/shareapp/` a la misma carpeta de tu proyecto: `MainActivity.kt` y `ShareApi.kt`. Reemplaza el primero.
-3. En `app/src/main/AndroidManifest.xml`, agrega esta línea dentro de `<manifest>`, antes de `<application>`:
+## Android Studio
 
-   ```xml
-   <uses-permission android:name="android.permission.INTERNET" />
-   ```
+1. Respalda MainActivity.kt.
+2. Copia MainActivity.kt y ShareApi.kt desde app/src/main/java/com/example/shareapp/ de este paquete a la misma carpeta de tu proyecto. Reemplaza ambos si instalaste la primera versión.
+3. En app/src/main/AndroidManifest.xml, dentro de manifest y antes de application, agrega: <uses-permission android:name="android.permission.INTERNET" />
+4. Si cambiaste el paquete de tu proyecto, adapta la primera línea de ambos archivos Kotlin.
+5. Sincroniza Gradle y ejecuta Run ▶.
+6. Entra con correo y contraseña del gestor. Si es temporal, define una nueva al entrar.
+7. Comprueba el nombre/correo y la tienda seleccionada, busca un producto y prepara una publicación.
 
-4. El paquete de ambos archivos es `com.example.shareapp`, el que aparece en tu captura. Si lo cambiaste, modifica la primera línea de ambos.
-5. Sincroniza Gradle y ejecuta la aplicación con **Run ▶**.
-6. Entra con una cuenta de Perla. Pega la invitación del dueño y pulsa **Aceptar invitación**.
-7. Selecciona tienda, busca un producto o combo y pulsa **Preparar publicación**. Revisa el texto y pulsa **Compartir en redes…**. Android abrirá el selector de aplicaciones.
+Usa Compose/Material 3 y coroutines del proyecto estándar; no contiene claves privadas. La sesión queda en memoria y se renueva mientras la app está abierta. Tras cerrarla por completo hay que entrar de nuevo.
 
-Usa las dependencias de Compose / Material 3 y coroutines incluidas por el proyecto Compose estándar. No instala SDK de Supabase ni utiliza claves privadas en el teléfono. La app solicita la configuración pública al backend.
+## Recuperación
 
-## Prueba de atribución
+Escribe tu correo y pulsa Olvidé mi contraseña. La entrega del correo depende de Supabase Auth y su configuración de email. La contraseña nueva se define en una página web de ShareAPP. Agrega https://perlamarketplace.com/gestores/recuperar a Supabase Auth → URL Configuration → Redirect URLs. Hay un reenvío de recuperación si el proveedor vuelve a una URL de esta misma aplicación.
 
-- Abre el enlace compartido en otro navegador o teléfono.
-- Navega a otro producto, agrega artículos y crea un pedido de prueba autorizado por la tienda.
-- En ShareAPP debe aparecer un pedido creado, sin venta pagada.
-- Cuando la tienda confirme el pago mediante su flujo habitual, actualizar los resultados debe mostrar la venta pagada.
-- La app conserva la sesión solo en memoria y refresca sus tokens mientras está abierta. Después de cerrarla por completo tendrás que entrar otra vez. La persistencia segura de sesión queda para una fase posterior.
+Después del despliegue, comprueba la recepción real del correo con una cuenta de prueba.
 
-Los enlaces deben conservarse en las publicaciones. Una foto o texto publicado sin enlace no permite atribuir entradas. Las vistas previas de WhatsApp/Facebook usan las imágenes del producto de la tienda; compartir la imagen como archivo, crear postales y seleccionar varios productos quedan para fases posteriores.
+## Pruebas
 
-## Validación y límites
+- Cuenta nueva: activar enlace y entrar en Android con la contraseña elegida.
+- Temporal: catálogo bloqueado hasta cambiarla por una distinta.
+- Invitación: solo la acepta el correo previsto.
+- Cerrar ShareAPP no cierra la sesión administrativa del navegador.
+- Producto compartido → visita desde otro navegador → pedido pendiente → venta tras confirmar pago.
 
-Backend: TypeScript, lint de archivos nuevos, pruebas de firmas/permisos y pruebas SQL de aislamiento y ventas. Los archivos Kotlin no se han compilado en este entorno, que no dispone de Android SDK ni del Gradle de tu proyecto. Si aparece un error al integrar, comparte el mensaje de compilación y los archivos Gradle de ShareAPP para adaptar las versiones exactas.
+Backend validado con TypeScript, ESLint, build y pruebas de permisos/contraseñas/atribución. Kotlin aún requiere compilación en tu proyecto: este entorno no dispone de Android SDK ni de tus archivos Gradle.

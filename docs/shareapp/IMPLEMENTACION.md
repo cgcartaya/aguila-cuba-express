@@ -1,3 +1,5 @@
+> Actualización: consulta CUENTAS.md para creación de cuentas, temporales, activación y sesiones independientes. Las notas de cuentas existentes y recuperación pendiente de este documento describen la entrega inicial.
+
 # ShareAPP · Fases 1 y 2
 
 ## Entregado

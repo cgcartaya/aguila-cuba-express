@@ -42,11 +42,19 @@ class ShareApi {
         refreshToken = session.getString("refresh_token")
         expiresAt = System.currentTimeMillis() + session.getLong("expires_in") * 1000 - 60000
     }
-    suspend fun login(email: String, password: String) {
+    private suspend fun loadConfig() {
         val config = http("$base/api/shareapp/config")
         authUrl = config.getString("authUrl")
         publicKey = config.getString("anonKey")
         require(authUrl.startsWith("https://")) { "Configuración de acceso inválida." }
+    }
+    suspend fun recover(email: String) {
+        require(email.contains("@")) { "Escribe tu correo para recuperar la contraseña." }
+        loadConfig()
+        http("$authUrl/auth/v1/recover?redirect_to=${encode("https://perlamarketplace.com/gestores/recuperar")}", "POST", JSONObject().put("email", email.trim()), mapOf("apikey" to publicKey))
+    }
+    suspend fun login(email: String, password: String) {
+        loadConfig()
         remember(http("$authUrl/auth/v1/token?grant_type=password", "POST", JSONObject().put("email", email.trim()).put("password", password), mapOf("apikey" to publicKey)))
     }
     suspend fun call(path: String, body: JSONObject? = null): JSONObject {
