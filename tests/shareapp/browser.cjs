@@ -28,6 +28,10 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   await screenshot("login-desktop.png");
   await page.setViewportSize({ width: 390, height: 844 });
   await screenshot("login-mobile.png");
+  const loginButton = await page
+    .getByRole("button", { name: "Entrar a ShareAPP", exact: true })
+    .boundingBox();
+  assert.ok(loginButton.y + loginButton.height < 844, "login fits on mobile");
   const enc = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
   const userId = "22222222-2222-4222-8222-222222222222";
   const storeId = "11111111-1111-4111-8111-111111111111";
@@ -54,6 +58,34 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
       );
     },
     { jwt, userId },
+  );
+  await page.addInitScript(() => {
+    window.__shared = [];
+    Object.defineProperty(navigator, "canShare", {
+      configurable: true,
+      value: () => true,
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data) => {
+        window.__shared.push({
+          text: data.text,
+          files: data.files?.map((f) => ({
+            name: f.name,
+            type: f.type,
+            size: f.size,
+          })),
+        });
+      },
+    });
+  });
+  const fixturePhoto = await require("sharp")({
+    create: { width: 160, height: 160, channels: 3, background: "#6252d8" },
+  })
+    .jpeg()
+    .toBuffer();
+  await page.route("**/r/*/image", (route) =>
+    route.fulfill({ body: fixturePhoto, contentType: "image/jpeg" }),
   );
   let posts = [];
   await page.route("**/api/shareapp/**", async (route) => {
@@ -138,7 +170,7 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
         ...b,
         id: "88888888-8888-4888-8888-888888888888",
         item_id: b.itemId,
-        url: "https://example.com/r/fixture",
+        url: "https://example.com/r/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -184,11 +216,34 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
     .getByRole("button", { name: "Guardar publicación", exact: true })
     .click();
   await page
-    .getByText("Publicación guardada. Ya puedes compartir su enlace.")
+    .getByText(
+      "Publicación guardada. Elige foto y texto, o comparte el enlace.",
+    )
     .waitFor();
   assert.equal(posts.length, 1);
   assert.ok(posts[0].body.includes("Arroz de calidad"));
+  await page
+    .getByRole("button", { name: "Foto y texto", exact: true })
+    .waitFor();
+  await page.getByRole("button", { name: "Foto y texto", exact: true }).click();
+  const shared = await page.evaluate(() => window.__shared);
+  assert.equal(shared.length, 1);
+  assert.equal(shared[0].files[0].name, "producto.jpg");
+  assert.equal(shared[0].files[0].type, "image/jpeg");
+  assert.ok(shared[0].files[0].size > 0);
+  assert.ok(shared[0].text.includes("/r/" + "a".repeat(48)));
   await screenshot("publications-mobile.png");
+  for (const width of [320, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+      false,
+      `photo editor width ${width}`,
+    );
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page
     .getByRole("textbox", { name: "Texto de la publicación" })
     .fill("Borrador conservado entre secciones.");
@@ -204,7 +259,8 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   );
   assert.equal(
     await page
-      .getByRole("button", { name: "Compartir…", exact: true })
+      .getByRole("region", { name: "Editor de publicación" })
+      .getByRole("button", { name: "Compartir enlace", exact: true })
       .isDisabled(),
     true,
   );

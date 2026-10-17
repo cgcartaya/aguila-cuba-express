@@ -483,6 +483,7 @@
 }
 .form textarea {
   min-height: 165px;
+  font-weight: 400;
   resize: vertical;
   line-height: 1.65;
 }
@@ -1017,5 +1018,72 @@
   }
   .heading .badge {
     display: none;
+  }
+}
+
+.photoShare {
+  border: 1px solid var(--line, #e2e5ef);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: #fafaff;
+}
+.photoPreview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.photoPreview img {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  background: white;
+  border-radius: 12px;
+}
+.photoPreview h3 {
+  margin: 0 0 5px;
+  font-size: 15px;
+}
+.photoPreview p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 767px) {
+  .loginHero {
+    padding: 20px 24px;
+    gap: 14px;
+  }
+  .loginHero h1 {
+    font-size: 25px;
+    margin: 8px 0 0;
+    letter-spacing: -0.7px;
+  }
+  .loginHero h1 br {
+    display: none;
+  }
+  .loginHero h1 span::before {
+    content: " ";
+  }
+  .loginHero p,
+  .loginHero .eyebrow {
+    display: none;
+  }
+  .loginForm {
+    padding-top: 24px;
+  }
+  .photoShare {
+    padding: 13px;
+  }
+  .form {
+    gap: 14px;
+  }
+  .card {
+    padding: 17px;
+  }
+  .photoShare .row > * {
+    flex: 1 1 140px;
+    justify-content: center;
   }
 }
