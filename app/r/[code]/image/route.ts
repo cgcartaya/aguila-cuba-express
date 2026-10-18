@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { NextRequest } from "next/server";
-import { promotion, itemImage } from "@/lib/shareapp/promotion";
+import { promotion } from "@/lib/shareapp/promotion";
 import { storageImageUrl } from "@/lib/shareapp/preview";
 import { errorResponse, fail } from "@/lib/shareapp/server";
 const LIMIT = 8 * 1024 * 1024;
@@ -9,14 +9,13 @@ export async function GET(
   context: { params: Promise<{ code: string }> },
 ) {
   try {
-    const { item } = await promotion((await context.params).code);
-    const image = itemImage(item);
+    const { image } = await promotion((await context.params).code);
     const url =
       image &&
       storageImageUrl(image, process.env.NEXT_PUBLIC_SUPABASE_URL || "");
     if (!url)
       return fail(
-        "Este producto no tiene una foto disponible para compartir.",
+        "Esta publicación no tiene una imagen disponible para compartir.",
         404,
       );
     const controller = new AbortController();
@@ -68,7 +67,7 @@ export async function GET(
     return new Response(new Uint8Array(output), {
       headers: {
         "Content-Type": "image/jpeg",
-        "Content-Disposition": 'inline; filename="producto.jpg"',
+        "Content-Disposition": 'inline; filename="publicacion.jpg"',
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
         "X-Robots-Tag": "noindex",

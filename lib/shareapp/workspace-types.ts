@@ -1,9 +1,15 @@
-export type Section = "catalogo" | "publicaciones" | "resultados" | "cuenta";
+export type Section =
+  "catalogo" | "campanas" | "publicaciones" | "resultados" | "cuenta";
 export const sections: { id: Section; label: string; hint: string }[] = [
   {
     id: "catalogo",
     label: "Catálogo",
     hint: "Encuentra tu próxima publicación",
+  },
+  {
+    id: "campanas",
+    label: "Campañas",
+    hint: "Pósteres de tu tienda, listos para compartir",
   },
   {
     id: "publicaciones",
@@ -44,6 +50,7 @@ export type CatalogItem = {
   }[];
 };
 export type Publication = {
+  campaign_id?: string | null;
   id: string;
   kind: "store" | "product" | "combo";
   item_id: string | null;
@@ -56,6 +63,7 @@ export type Publication = {
   updated_at: string;
 };
 export type Draft = {
+  campaignId?: string | null;
   key: string;
   imageUrl?: string | null;
   id?: string;

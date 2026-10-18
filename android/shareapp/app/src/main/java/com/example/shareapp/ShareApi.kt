@@ -57,9 +57,9 @@ class ShareApi {
         loadConfig()
         remember(http("$authUrl/auth/v1/token?grant_type=password", "POST", JSONObject().put("email", email.trim()).put("password", password), mapOf("apikey" to publicKey)))
     }
-    suspend fun call(path: String, body: JSONObject? = null): JSONObject {
+    suspend fun call(path: String, body: JSONObject? = null, method: String? = null): JSONObject {
         if (System.currentTimeMillis() >= expiresAt) remember(http("$authUrl/auth/v1/token?grant_type=refresh_token", "POST", JSONObject().put("refresh_token", refreshToken), mapOf("apikey" to publicKey)))
-        return http("$base/api/shareapp/$path", if (body == null) "GET" else "POST", body, mapOf("Authorization" to "Bearer $accessToken"))
+        return http("$base/api/shareapp/$path", method ?: (if (body == null) "GET" else "POST"), body, mapOf("Authorization" to "Bearer $accessToken"))
     }
     suspend fun logout() {
         try { if (accessToken.isNotBlank()) http("$authUrl/auth/v1/logout?scope=local", "POST", JSONObject(), mapOf("apikey" to publicKey, "Authorization" to "Bearer $accessToken")) }

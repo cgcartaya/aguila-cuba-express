@@ -41,11 +41,13 @@ export default function PublicationPreview({
         <span className={styles.eyebrow}>
           {!active
             ? "ENLACE PAUSADO"
-            : kind === "store"
-              ? "TU TIENDA"
-              : hasPhoto
-                ? "FOTO DEL CATÁLOGO"
-                : "FOTO NO DISPONIBLE"}
+            : kind === "campaign"
+              ? "PÓSTER DE CAMPAÑA"
+              : kind === "store"
+                ? "TU TIENDA"
+                : hasPhoto
+                  ? "FOTO DEL CATÁLOGO"
+                  : "FOTO NO DISPONIBLE"}
         </span>
         <h3>{title}</h3>
         <p>

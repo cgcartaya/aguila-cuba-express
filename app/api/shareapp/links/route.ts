@@ -1,15 +1,23 @@
 import { randomBytes } from "node:crypto";
 import { NextRequest } from "next/server";
 import { db, member, json, fail, errorResponse } from "@/lib/shareapp/server";
+import { activeCampaign } from "@/lib/shareapp/campaigns";
 import { UUID, storefront } from "@/lib/shareapp/core";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const promoter = await member(request, String(body.storeId || ""));
-    const kind = String(body.kind || "");
+    const campaignId = body.campaignId ? String(body.campaignId) : null;
+    const campaign = campaignId
+      ? await activeCampaign(campaignId, promoter.store_id)
+      : null;
+    const kind = campaign?.kind || String(body.kind || "");
     if (!["store", "product", "combo"].includes(kind))
       return fail("Tipo de publicación inválido.");
-    const itemId = kind === "store" ? null : String(body.itemId || "");
+    const itemId =
+      kind === "store"
+        ? null
+        : String(campaign ? campaign.item_id || "" : body.itemId || "");
     if (itemId) {
       if (!UUID.test(itemId)) return fail("Producto inválido.");
       const { data, error } = await db
@@ -35,6 +43,7 @@ export async function POST(request: NextRequest) {
       .insert({
         store_id: promoter.store_id,
         member_id: promoter.id,
+        campaign_id: campaignId,
         code: randomBytes(24).toString("hex"),
         kind,
         item_id: itemId,
@@ -45,7 +54,7 @@ export async function POST(request: NextRequest) {
           .slice(0, 160),
       })
       .select(
-        "id,code,kind,item_id,network,title,body,active,created_at,updated_at",
+        "id,code,kind,item_id,campaign_id,network,title,body,active,created_at,updated_at",
       )
       .single();
     if (error) throw error;
@@ -72,7 +81,7 @@ export async function GET(request: NextRequest) {
     const { data, error } = await db
       .from("shareapp_links")
       .select(
-        "id,kind,item_id,network,title,body,active,created_at,updated_at,code",
+        "id,kind,item_id,campaign_id,network,title,body,active,created_at,updated_at,code",
       )
       .eq("store_id", storeId)
       .eq("member_id", promoter.id)
@@ -124,7 +133,7 @@ export async function PATCH(request: NextRequest) {
       .eq("store_id", promoter.store_id)
       .eq("member_id", promoter.id)
       .select(
-        "id,code,kind,item_id,network,title,body,active,created_at,updated_at",
+        "id,code,kind,item_id,campaign_id,network,title,body,active,created_at,updated_at",
       )
       .maybeSingle();
     if (error) throw error;

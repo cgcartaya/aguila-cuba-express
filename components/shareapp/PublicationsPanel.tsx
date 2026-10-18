@@ -127,7 +127,7 @@ export default function PublicationsPanel({
               saved: { title: row.title, body: row.body, network: row.network },
             });
             setNotice(
-              "Publicación guardada. Comparte el enlace para mostrar la tarjeta del producto.",
+              "Publicación guardada. Comparte tu enlace o la imagen con texto.",
             );
             setPage(0);
             setVersion((v) => v + 1);
@@ -175,7 +175,7 @@ export default function PublicationsPanel({
               imageUrl={publicationImage(row.url)}
               title={row.title}
               body={row.body || ""}
-              kind={row.kind}
+              kind={row.campaign_id ? "campaign" : row.kind}
               active={row.active}
             />
             <span className={styles.link}>{row.url}</span>
@@ -218,6 +218,7 @@ export default function PublicationsPanel({
                     id: row.id,
                     kind: row.kind,
                     itemId: row.item_id,
+                    campaignId: row.campaign_id,
                     imageUrl: publicationImage(row.url),
                     title: row.title,
                     body: row.body || row.title,
@@ -372,7 +373,7 @@ function PublicationEditor({
         imageUrl={url ? publicationImage(url) : draft.imageUrl}
         title={title}
         body={body}
-        kind={draft.kind}
+        kind={draft.campaignId ? "campaign" : draft.kind}
         active={draft.active}
       />
       <p className={styles.fresh}>
@@ -393,6 +394,7 @@ function PublicationEditor({
                 storeId,
                 id,
                 kind: draft.kind,
+                campaignId: draft.campaignId,
                 itemId: draft.itemId,
                 title,
                 body,
@@ -546,7 +548,7 @@ function PublicationEditor({
               WhatsApp
             </a>
           </div>
-          {draft.kind !== "store" && (
+          {(draft.kind !== "store" || draft.campaignId) && (
             <details
               className={styles.mediaAlternative}
               open={network === "instagram"}

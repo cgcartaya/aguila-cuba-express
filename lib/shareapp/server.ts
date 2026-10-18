@@ -133,13 +133,24 @@ export async function resolveReceipt(storeId: string) {
   if (!receipt) return null;
   const { data: link, error } = await db
     .from("shareapp_links")
-    .select("id,member_id,active")
+    .select("id,member_id,active,campaign_id")
     .eq("id", receipt.linkId)
     .eq("store_id", storeId)
     .eq("active", true)
     .maybeSingle();
   if (error) throw error;
   if (!link) return null;
+  if (link.campaign_id) {
+    const { data: campaign, error: campaignError } = await db
+      .from("shareapp_campaigns")
+      .select("id")
+      .eq("id", link.campaign_id)
+      .eq("store_id", storeId)
+      .eq("active", true)
+      .maybeSingle();
+    if (campaignError) throw campaignError;
+    if (!campaign) return null;
+  }
   const { data: promoter, error: memberError } = await db
     .from("shareapp_members")
     .select("id")

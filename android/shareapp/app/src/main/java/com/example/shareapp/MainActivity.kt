@@ -62,6 +62,8 @@ private fun ShareApp() {
     var more by remember { mutableStateOf(false) }
     var publication by remember { mutableStateOf("") }
     var link by remember { mutableStateOf("") }
+    var publicationId by remember { mutableStateOf("") }
+    var campaignResults by remember { mutableStateOf(emptyList<JSONObject>()) }
 
     fun action(work: suspend () -> Unit) {
         if (busy) return
@@ -74,18 +76,21 @@ private fun ShareApp() {
     }
     suspend fun loadCatalog() {
         catalog = emptyList()
-        val data = api.call("catalog?storeId=$storeId&kind=$kind&q=${ShareApi.encode(query)}&page=$page")
-        catalog = data.rows("items"); more = data.optBoolean("hasMore")
+        val data = if (kind == "campaign") api.call("campaigns?storeId=$storeId&page=$page") else api.call("catalog?storeId=$storeId&kind=$kind&q=${ShareApi.encode(query)}&page=$page")
+        catalog = data.rows(if (kind == "campaign") "campaigns" else "items"); more = data.optBoolean("hasMore")
+        campaignResults = if (kind == "campaign") api.call("campaign-results?storeId=$storeId").rows("campaigns") else emptyList()
         results = api.call("results?storeId=$storeId").rows("results")
     }
     fun prepare(item: JSONObject?) = action {
-        val body = JSONObject().put("storeId", storeId).put("kind", if (item == null) "store" else kind).put("network", "other").put("title", item?.getString("name") ?: "Mi tienda")
-        if (item != null) body.put("itemId", item.getString("id"))
-        link = api.call("links", body).getString("url")
-        publication = if (item == null) "Descubre los productos de nuestra tienda." else "${item.getString("name")}\nPrecio: ${String.format(java.util.Locale.US, "%.2f", item.optDouble("price"))} USD\n${item.optString("description", "")}"
+        val campaign = item != null && kind == "campaign"
+        publication = if (campaign) item!!.optString("body") else if (item == null) "Descubre los productos de nuestra tienda." else "${item.getString("name")}\nPrecio: ${String.format(java.util.Locale.US, "%.2f", item.optDouble("price"))} USD\n${item.optString("description", "")}"
+        val body = JSONObject().put("storeId", storeId).put("kind", if (campaign) item!!.getString("kind") else if (item == null) "store" else kind).put("network", "other").put("title", if (campaign) item!!.getString("title") else item?.getString("name") ?: "Mi tienda").put("body", publication)
+        if (campaign) body.put("campaignId", item!!.getString("id")) else if (item != null) body.put("itemId", item.getString("id"))
+        val saved = api.call("links", body)
+        link = saved.getString("url"); publicationId = saved.getString("id")
     }
     LaunchedEffect(storeId) {
-        if (storeId.isNotEmpty()) { page = 0; publication = ""; link = ""; action { loadCatalog() } }
+        if (storeId.isNotEmpty()) { page = 0; publication = ""; link = ""; publicationId = ""; campaignResults = emptyList(); action { loadCatalog() } }
     }
     Surface(modifier = Modifier.fillMaxSize()) {
         LazyColumn(modifier = Modifier.fillMaxSize().safeDrawingPadding(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -101,7 +106,7 @@ private fun ShareApp() {
                 item { TextButton(enabled = !busy, onClick = { action { api.recover(email); notice = "Si el correo tiene una cuenta, recibirás un enlace para definir una contraseña nueva." } }) { Text("Olvidé mi contraseña") } }
             } else {
                 item { Text("${accountName.ifBlank { "Gestor" }}\nCuenta conectada: $accountEmail") }
-                item { OutlinedButton(enabled = !busy, onClick = { action { try { api.logout() } finally { signedIn = false; stores = emptyList(); storeId = ""; catalog = emptyList(); results = emptyList(); publication = ""; link = "" } } }) { Text("Cerrar sesión") } }
+                item { OutlinedButton(enabled = !busy, onClick = { action { try { api.logout() } finally { signedIn = false; stores = emptyList(); storeId = ""; catalog = emptyList(); results = emptyList(); publication = ""; link = ""; publicationId = ""; campaignResults = emptyList() } } }) { Text("Cerrar sesión") } }
                 if (passwordPending) {
                     item { Text("Define tu contraseña personal", style = MaterialTheme.typography.titleLarge); Text("Usa mínimo 12 caracteres, letras y números. Debe ser diferente a la temporal.") }
                     item { OutlinedTextField(newPassword, { newPassword = it }, label = { Text("Nueva contraseña") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth()) }
@@ -117,14 +122,19 @@ private fun ShareApp() {
                 }
                 if (storeId.isNotEmpty()) {
                     items(results) { stats -> Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text("Tus resultados · últimos 30 días", style = MaterialTheme.typography.titleMedium); Text("Visitas: ${stats.optLong("visits")} · Productos vistos: ${stats.optLong("product_views")}"); Text("Pedidos: ${stats.optLong("orders")} · Pagados: ${stats.optLong("paid_orders")}"); Text("Ventas pagadas: ${String.format(java.util.Locale.US, "%.2f", stats.optDouble("paid_total"))} USD") } } }
-                    item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("product" to "Productos", "combo" to "Combos").forEach { (value, label) -> FilterChip(selected = kind == value, enabled = !busy, onClick = { kind = value; page = 0; action { loadCatalog() } }, label = { Text(label) }) } } }
+                    item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("product" to "Productos", "combo" to "Combos", "campaign" to "Campañas").forEach { (value, label) -> FilterChip(selected = kind == value, enabled = !busy, onClick = { kind = value; page = 0; action { loadCatalog() } }, label = { Text(label) }) } } }
                     item { OutlinedTextField(query, { query = it }, label = { Text("Buscar productos") }, modifier = Modifier.fillMaxWidth()); Button(enabled = !busy, onClick = { page = 0; action { loadCatalog() } }) { Text("Buscar") } }
                     item { OutlinedButton(enabled = !busy, onClick = { prepare(null) }) { Text("Compartir tienda completa") } }
-                    if (link.isNotEmpty()) item { Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Tu publicación", style = MaterialTheme.typography.titleMedium); OutlinedTextField(publication, { publication = it }, modifier = Modifier.fillMaxWidth()); Text(link); Text("Conserva el enlace para atribuir visitas y pedidos. El precio se confirma en la tienda."); Button(enabled = !busy, onClick = { val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, "$publication\n$link") }; context.startActivity(Intent.createChooser(intent, "Compartir producto")) }) { Text("Compartir en redes…") } } } }
+                    if (link.isNotEmpty()) item { Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Tu publicación", style = MaterialTheme.typography.titleMedium); OutlinedTextField(publication, { publication = it }, modifier = Modifier.fillMaxWidth()); Text(link); Text("Conserva el enlace para atribuir visitas y pedidos. El precio se confirma en la tienda."); Button(enabled = !busy, onClick = { action { api.call("links", JSONObject().put("storeId", storeId).put("id", publicationId).put("body", publication), "PATCH"); val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, "$publication\n$link") }; context.startActivity(Intent.createChooser(intent, "Compartir publicación")) } }) { Text("Compartir en redes…") } } } }
+                    items(campaignResults) { stats -> Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp)) { Text(stats.optString("title"), style = MaterialTheme.typography.titleMedium); Text("Tus visitas del enlace: ${stats.optLong("visits")} · Pedidos pagados: ${stats.optLong("paid_orders")}"); Text("Tus ventas: ${String.format(java.util.Locale.US, "%.2f", stats.optDouble("paid_total"))} USD · Últimos 30 días") } } }
                     items(catalog, key = { it.getString("id") }) { item ->
+                        if (kind == "campaign") {
+                            Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { ProductPicture(JSONObject().put("name", item.getString("title")).put("image_url", item.getString("image_url"))); Text(item.getString("title"), style = MaterialTheme.typography.titleMedium); Text(item.optString("body")); Button(enabled = !busy, onClick = { prepare(item) }) { Text("Crear mi publicación") } } }
+                        } else {
                         val comboRows = item.rows("combo_items")
                         val available = if (kind == "product") item.optInt("stock") > 0 else comboRows.isNotEmpty() && comboRows.all { row -> val product = row.optJSONObject("products"); val quantity = row.optInt("quantity"); product != null && product.optBoolean("is_active") && product.isNull("deleted_at") && product.optString("store_id") == storeId && quantity > 0 && product.optInt("stock") >= quantity }
                         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { ProductPicture(item); Text(item.getString("name"), style = MaterialTheme.typography.titleMedium); Text("${String.format(java.util.Locale.US, "%.2f", item.optDouble("price"))} USD · ${if (available) "Disponible" else "Agotado"}"); Button(enabled = !busy && available, onClick = { prepare(item) }) { Text("Preparar publicación") } } }
+                    }
                     }
                     item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { OutlinedButton(enabled = !busy && page > 0, onClick = { page--; action { loadCatalog() } }) { Text("Anterior") }; Text("${page + 1}", Modifier.padding(top = 12.dp)); OutlinedButton(enabled = !busy && more, onClick = { page++; action { loadCatalog() } }) { Text("Siguiente") } } }
                 }

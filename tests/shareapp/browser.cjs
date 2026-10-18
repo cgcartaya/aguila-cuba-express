@@ -239,7 +239,7 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
     .click();
   await page
     .getByText(
-      "Publicación guardada. Comparte el enlace para mostrar la tarjeta del producto.",
+      "Publicación guardada. Comparte tu enlace o la imagen con texto.",
     )
     .waitFor();
   assert.equal(posts.length, 1);
