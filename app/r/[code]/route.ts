@@ -9,7 +9,7 @@ import {
 } from "@/lib/shareapp/core";
 import { secret, errorResponse } from "@/lib/shareapp/server";
 
-import { promotion, itemImage } from "@/lib/shareapp/promotion";
+import { promotion } from "@/lib/shareapp/promotion";
 import {
   applyPlatformFee,
   getPlatformFeePercent,
@@ -22,7 +22,8 @@ export async function GET(
 ) {
   try {
     const { code } = await context.params;
-    const { link, store, config, kind, item } = await promotion(code);
+    const { link, store, config, kind, item, campaign, image } =
+      await promotion(code);
     const canonical = storefrontForRequest(
       store,
       request.nextUrl.origin,
@@ -40,23 +41,27 @@ export async function GET(
             getPlatformFeePercent(store),
           ).toFixed(2)
         : null;
-      const photo = itemImage(item);
+      const photo = image;
       // Same original public image as the product page, without a processing hop.
       // Other image sources retain the constrained media endpoint fallback.
       const original =
         photo &&
         storageImageUrl(photo, process.env.NEXT_PUBLIC_SUPABASE_URL || "");
       const html = previewHtml({
-        title: item
-          ? `${item.name} | ${price} USD | ${store.name}`
-          : store.name,
-        description: item
-          ? `Precio: ${price} USD. ${String(
-              item.description || `Compra ${item.name} en ${store.name}.`,
-            )
-              .replace(/\s+/g, " ")
-              .trim()}`.slice(0, 200)
-          : `Descubre los productos de ${store.name}.`,
+        title: campaign
+          ? `${campaign.title} | ${store.name}`
+          : item
+            ? `${item.name} | ${price} USD | ${store.name}`
+            : store.name,
+        description: campaign
+          ? campaign.body.slice(0, 200)
+          : item
+            ? `Precio: ${price} USD. ${String(
+                item.description || `Compra ${item.name} en ${store.name}.`,
+              )
+                .replace(/\s+/g, " ")
+                .trim()}`.slice(0, 200)
+            : `Descubre los productos de ${store.name}.`,
         url: `${canonical}/r/${code}`,
         image: original
           ? original.href

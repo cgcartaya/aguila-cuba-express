@@ -1,3 +1,4 @@
+import { activeCampaign, posterUrl } from "./campaigns";
 import { CODE } from "./core";
 import { AccessError, db, settings } from "./server";
 export type PromotionItem = {
@@ -23,7 +24,7 @@ export async function promotion(code: string) {
   if (!CODE.test(code)) throw new AccessError("Enlace inválido.", 404);
   const { data: link, error } = await db
     .from("shareapp_links")
-    .select("id,store_id,member_id,kind,item_id")
+    .select("id,store_id,member_id,kind,item_id,campaign_id")
     .eq("code", code)
     .eq("active", true)
     .maybeSingle();
@@ -56,6 +57,9 @@ export async function promotion(code: string) {
   if (memberError) throw memberError;
   if (!store || !store.module_store_enabled || !member || !config.enabled)
     throw new AccessError("Esta promoción está desactivada.", 410);
+  const campaign = link.campaign_id
+    ? await activeCampaign(link.campaign_id, link.store_id)
+    : null;
   let kind = link.kind;
   let item: PromotionItem | null = null;
   if (kind !== "store") {
@@ -75,5 +79,13 @@ export async function promotion(code: string) {
     item = data as PromotionItem | null;
     if (!item) kind = "store";
   }
-  return { link, store, config, kind, item };
+  return {
+    link,
+    store,
+    config,
+    kind,
+    item,
+    campaign,
+    image: campaign ? posterUrl(campaign.poster_path) : itemImage(item),
+  };
 }

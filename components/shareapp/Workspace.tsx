@@ -8,6 +8,7 @@ import {
   BarChart3,
   CheckCircle2,
   FileText,
+  ImagePlus,
   LayoutGrid,
   Loader2,
   LogOut,
@@ -25,6 +26,7 @@ import {
   type Membership,
   type Draft,
 } from "@/lib/shareapp/workspace-types";
+import CampaignPanel from "./CampaignPanel";
 import CatalogPanel from "./CatalogPanel";
 import PublicationsPanel from "./PublicationsPanel";
 import ResultsPanel from "./ResultsPanel";
@@ -34,6 +36,7 @@ import InstallCard, { PwaRegistration, useOnline } from "./PwaSupport";
 import styles from "./workspace.module.css";
 const icons = {
   catalogo: LayoutGrid,
+  campanas: ImagePlus,
   publicaciones: FileText,
   resultados: BarChart3,
   cuenta: UserRound,
@@ -592,6 +595,16 @@ export default function Workspace() {
                   key={`catalog:${storeId}`}
                   storeId={storeId}
                   storeName={currentStore.stores.name}
+                  online={online}
+                  onPrepare={(value) => {
+                    setDraft(value);
+                    navigate("publicaciones");
+                  }}
+                />
+              ) : section === "campanas" ? (
+                <CampaignPanel
+                  key={`campaigns:${storeId}`}
+                  storeId={storeId}
                   online={online}
                   onPrepare={(value) => {
                     setDraft(value);

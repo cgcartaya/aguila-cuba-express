@@ -87,3 +87,7 @@ Esto no fuerza el tamaño de tarjeta de WhatsApp: sus estados pueden usar una ta
 En **Mi cuenta → Actualizar aplicación**, una recarga completa obtiene el HTML y los scripts desplegados, conservando la sesión, la tienda y las publicaciones guardadas. La recarga se deshabilita sin conexión, con una publicación sin guardar (aunque se haya cambiado de sección) o mientras se cambia la contraseña. El service worker sirve las navegaciones de `/gestores` desde la red con `cache: no-store`; no se borran credenciales ni cachés.
 
 Después del primer despliegue que incorpora este botón, cerrar completamente la app desde el selector de aplicaciones del teléfono y abrirla de nuevo para cargarlo. Los cambios deben estar desplegados en producción: actualizar no aplica una PR pendiente ni modifica mensajes ya enviados a redes sociales.
+
+## Campañas con póster
+
+El dueño crea campañas desde Marketing → Gestores · ShareAPP → Campañas. El gestor abre Campañas en su portal, personaliza el texto y guarda un enlace personal. Los informes comparan visitas y ventas por campaña, gestor y publicación. Ver [CAMPAIGNS.md](./CAMPAIGNS.md) para uso, métricas, migración, permisos y pruebas.

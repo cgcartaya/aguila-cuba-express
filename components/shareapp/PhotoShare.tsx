@@ -51,7 +51,7 @@ export default function PhotoShare({
         if (active) {
           objectUrl = URL.createObjectURL(blob);
           setPhoto({
-            file: new File([blob], "producto.jpg", { type: "image/jpeg" }),
+            file: new File([blob], "publicacion.jpg", { type: "image/jpeg" }),
             objectUrl,
           });
         }
@@ -89,7 +89,7 @@ export default function PhotoShare({
           <ImagePlus size={30} />
         )}
         <div>
-          <h3>Foto del producto</h3>
+          <h3>Imagen de la publicación</h3>
           <p>
             {loading
               ? "Preparando la foto…"
@@ -149,7 +149,7 @@ export default function PhotoShare({
               className={styles.secondary}
               href={disabled ? undefined : photo.objectUrl}
               aria-disabled={disabled}
-              download="producto.jpg"
+              download="publicacion.jpg"
             >
               <Download size={16} />
               Descargar foto

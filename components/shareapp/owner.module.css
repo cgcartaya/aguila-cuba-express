@@ -1279,3 +1279,6 @@
     padding-bottom: calc(100px + env(safe-area-inset-bottom));
   }
 }
+
+.tabs { min-width:0; max-width:100%; overflow-x:auto; flex-shrink:1; }
+.tabs button { flex-shrink:0; white-space:nowrap; }

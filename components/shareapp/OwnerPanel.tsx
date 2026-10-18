@@ -10,6 +10,7 @@ import {
   Copy,
   Eye,
   Info,
+  ImagePlus,
   Link2,
   Mail,
   MousePointer2,
@@ -26,11 +27,13 @@ import {
   X,
 } from "lucide-react";
 import { shareappApi, type Member, type Result } from "@/lib/shareapp/client";
+import CampaignPanel from "./CampaignPanel";
 import AccountCreator from "./AccountCreator";
 import s from "./owner.module.css";
 const tabs = [
   { id: "resumen", name: "Resumen", icon: BarChart3 },
   { id: "equipo", name: "Equipo", icon: Users },
+  { id: "campanas", name: "Campañas", icon: ImagePlus },
   { id: "configuracion", name: "Configuración", icon: Settings2 },
 ] as const;
 type Tab = (typeof tabs)[number]["id"];
@@ -91,7 +94,8 @@ export default function OwnerPanel({
   }, [refresh]);
   useEffect(() => {
     let current = true;
-    void Promise.resolve().then(refresh)
+    void Promise.resolve()
+      .then(refresh)
       .catch((e) => {
         if (current)
           setError(
@@ -786,6 +790,14 @@ export default function OwnerPanel({
             <Check size={17} /> {busy ? "Guardando…" : "Guardar configuración"}
           </button>
         </form>
+      </section>
+      <section
+        id="panel-campanas"
+        role="tabpanel"
+        aria-labelledby="tab-campanas"
+        hidden={tab !== "campanas"}
+      >
+        {tab === "campanas" && <CampaignPanel storeId={storeId} admin />}
       </section>
       <footer className={s.footer}>
         <ShieldCheck size={14} /> Accesos y resultados exclusivos de {storeName}

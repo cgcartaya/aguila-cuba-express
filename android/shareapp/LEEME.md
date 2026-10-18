@@ -43,3 +43,11 @@ Después del despliegue, comprueba la recepción real del correo con una cuenta 
 - Producto compartido → visita desde otro navegador → pedido pendiente → venta tras confirmar pago.
 
 Backend validado con TypeScript, ESLint, build y pruebas de permisos/contraseñas/atribución. Kotlin aún requiere compilación en tu proyecto: este entorno no dispone de Android SDK ni de tus archivos Gradle.
+
+## Campañas con póster
+
+Tras desplegar el backend de campañas, el dueño prepara un póster desde Marketing → Gestores · ShareAPP → Campañas. El gestor encuentra **Campañas** junto a Productos y Combos en el kit Android; puede preparar su texto y guardar antes de compartir el enlace personal. Se muestran sus visitas y ventas de campañas durante los últimos 30 días.
+
+El selector Android comparte texto y URL para que la red prepare su tarjeta con el póster. Para adjuntar o descargar el JPEG utiliza el portal web `/gestores`. Abrir el selector no confirma la publicación ni permite conocer impresiones dentro de redes. Conserva siempre el enlace personal.
+
+Reemplaza ambos archivos Kotlin y compila en tu proyecto con Android Studio. Este cambio actualiza el kit fuente; no genera ni distribuye una APK. Ver `docs/shareapp/CAMPAIGNS.md` del repositorio para instalación y validación del backend.
