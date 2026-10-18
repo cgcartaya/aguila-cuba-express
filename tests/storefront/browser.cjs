@@ -5,7 +5,6 @@ const assert = require("node:assert/strict");
 (async () => {
   const browser = await chromium.launch({
     headless: true,
-    args: ["--host-resolver-rules=MAP storefront.test 127.0.0.1"],
   });
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
@@ -98,6 +97,11 @@ const assert = require("node:assert/strict");
       body: JSON.stringify(single ? data[0] || null : data),
     });
   });
+  // Keep the public hostname for domain resolution, but serve the local build.
+  await page.route("http://storefront.test:3200/**", async (route) => {
+    const response = await route.fetch({url: route.request().url().replace("storefront.test", "127.0.0.1")});
+    await route.fulfill({response});
+  });
   await page.goto("http://storefront.test:3200/tienda", {
     waitUntil: "domcontentloaded",
   });
@@ -146,6 +150,7 @@ const assert = require("node:assert/strict");
       ],
     }),
   );
+  await page.unrouteAll({ behavior: "ignoreErrors" });
   await browser.close();
 })().catch((error) => {
   console.error(error);
