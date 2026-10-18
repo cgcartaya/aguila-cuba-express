@@ -4,9 +4,11 @@ import { shareappApi } from "@/lib/shareapp/client";
 export default function AccountCreator({
   storeId,
   onCreated,
+  className,
 }: {
   storeId: string;
   onCreated: () => Promise<void>;
+  className?: string;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -18,7 +20,12 @@ export default function AccountCreator({
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   return (
-    <section className="space-y-4 rounded-2xl border border-indigo-200 bg-white p-5">
+    <section
+      className={
+        className ||
+        "space-y-4 rounded-2xl border border-indigo-200 bg-white p-5"
+      }
+    >
       <h2 className="text-xl font-bold">Crear cuenta de gestor</h2>
       <p className="text-sm text-slate-500">
         Crea un acceso propio para ShareAPP. El gestor podrá entrar con correo y
