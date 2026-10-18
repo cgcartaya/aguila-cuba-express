@@ -115,3 +115,26 @@ test("combo availability aggregates repeated components", () => {
   assert.equal(itemAvailable(item, "store", "combo"), true);
   assert.equal(itemAvailable(item, "other-store", "combo"), false);
 });
+
+test("drafts keep their catalogue photo and saved previews use the gestor media route", async () => {
+  const { newDraft, publicationImage } =
+    await import("../../lib/shareapp/workspace-types");
+  const draft = newDraft({
+    id: "p",
+    name: "Cerveza",
+    price: 13,
+    description: "",
+    image_url: "",
+    product_images: [
+      { image_url: "https://example.com/photo.jpg", is_main: true },
+    ],
+  });
+  assert.equal(draft.imageUrl, "https://example.com/photo.jpg");
+  const code = "a".repeat(48);
+  assert.equal(
+    publicationImage(`https://www.example.com/r/${code}`),
+    `/r/${code}/image`,
+  );
+  assert.equal(publicationImage("https://example.com/other"), null);
+  assert.equal(publicationImage("invalid"), null);
+});

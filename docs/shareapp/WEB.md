@@ -63,3 +63,13 @@ La acción principal «Compartir publicación» utiliza title, text y url separa
 Las redes deciden si muestran la vista previa y pueden conservar la anterior en caché. Las fotos adjuntas no garantizan un enlace pulsable en estados/historias. Comprobar en WhatsApp real después de desplegar: conversación, estado, foto y texto, y que una compra desde el enlace conserve la atribución.
 
 La ruta de promoción acepta exclusivamente el dominio personalizado guardado y su alias exacto con/sin www cuando el alojamiento normaliza el host. La redirección al producto permanece en el host aceptado para conservar la cookie en checkout. Cualquier otro host se redirige al dominio guardado. Esto evita el bucle apex → www del alojamiento → apex de ShareAPP sin alterar la configuración de dominio de la tienda. No requiere SQL.
+
+## Foto visible y pasos de publicación
+
+El editor muestra la foto del catálogo desde la selección, antes de guardar. En el historial y al reabrir utiliza la imagen del enlace del gestor, que valida el producto y la tienda actuales. Si una imagen falla se indica explícitamente; la vista previa de la herramienta es orientativa, no una reproducción de todas las redes. No se persisten fotos nuevas ni se necesita SQL.
+
+1. Revisa foto y texto, y guarda para preparar el enlace personal.
+2. «Compartir publicación» comparte la URL con metadatos de foto/precio. WhatsApp, Facebook u otras aplicaciones deciden cómo presentar esa URL.
+3. Para enviar un archivo utiliza «Compartir foto en Instagram, estados o historias». Esta opción se despliega automáticamente al elegir Instagram. Conserva/copia el enlace del gestor en las ubicaciones admitidas por la red.
+
+No se puede garantizar que todas las redes conviertan una URL en una foto ni que una foto adjunta sea pulsable. Abrir el selector o guardar no confirma que se haya publicado. El seguimiento requiere una visita por el enlace personal.
