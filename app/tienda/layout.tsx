@@ -21,7 +21,7 @@ import { TiendaSearchProvider } from "@/components/tienda/search/TiendaSearchCon
 
 import { useCart } from "@/contexts/CartContext";
 import { useStore } from "@/hooks/useStore";
-import { getActiveCategoriesByStoreId } from "@/lib/services/settings";
+import { getPublicActiveCategoriesByStoreId as getActiveCategoriesByStoreId } from "@/lib/services/settings";
 import { getStoreBySlug } from "@/lib/services/stores";
 
 import type { Category } from "@/components/admin/settings/types";

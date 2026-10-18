@@ -17,7 +17,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Package, ShoppingCart } from "lucide-react";
 
-import { getComboById } from "@/lib/services/combos";
+import { getPublicComboById as getComboById } from "@/lib/services/combos";
 import { useStore } from "@/hooks/useStore";
 import Price from "@/components/tienda/Price";
 import { useCurrency } from "@/contexts/CurrencyContext";

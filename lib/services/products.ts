@@ -1,5 +1,6 @@
+import { publicSupabase } from "@/lib/supabase-public";
 import { supabase } from "@/lib/supabase";
-import { getStoreSettings } from "@/lib/services/settings";
+import { getPublicStoreSettings as getStoreSettings } from "@/lib/services/settings";
 
 import type { Product } from "@/components/admin/products/types";
 
@@ -120,7 +121,7 @@ export async function getProductById(id: string, storeId: string) {
 // para cualquier flujo que vuelva a agregar un producto al carrito
 // fuera del listado normal (ej. carritos compartidos).
 export async function getProductByIdWithImage(id: string, storeId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await publicSupabase
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("id", id)
@@ -281,7 +282,7 @@ export async function getStoreProducts(storeId?: string) {
 // Obtener productos visibles por tienda sin volver a consultar stores.
 export async function getStoreProductsByStoreId(storeId: string) {
   const [productsResult, settingsResult] = await Promise.all([
-    supabase
+    publicSupabase
       .from("products")
       .select(PRODUCT_PUBLIC_SELECT)
       .eq("store_id", storeId)
@@ -321,7 +322,7 @@ export async function getStoreProductById(
     };
   }
 
-  return supabase
+  return publicSupabase
     .from("products")
     .select(PRODUCT_DETAIL_SELECT)
     .eq("id", id)
@@ -344,7 +345,7 @@ export async function getRelatedProducts(
     return missingStoreIdResult();
   }
 
-  const query = supabase
+  const query = publicSupabase
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", storeId)
@@ -397,7 +398,7 @@ export async function updateHomeFeaturedProduct(
 }
 
 export async function getHomeFeaturedProductsByStoreId(storeId: string) {
-  return supabase
+  return publicSupabase
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", storeId)

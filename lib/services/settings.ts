@@ -1,3 +1,4 @@
+import { publicSupabase } from "@/lib/supabase-public";
 import { supabase } from "@/lib/supabase";
 
 import type {
@@ -105,8 +106,8 @@ export async function getActiveCategories(storeId?: string | null) {
   return getActiveCategoriesByStoreId(resolvedStoreId);
 }
 
-export async function getActiveCategoriesByStoreId(storeId: string) {
-  return supabase
+export async function getActiveCategoriesByStoreId(storeId: string, client = supabase) {
+  return client
     .from("categories")
     .select(
       "id, store_id, name, slug, color, icon, sort_order, is_active, minimum_order_exempt, delivery_included, created_at"
@@ -200,14 +201,14 @@ export async function countCategoryProducts(categoryName: string, storeId: strin
    STORE SETTINGS - MULTIEMPRESA
 ========================================================= */
 
-export async function getStoreSettings(storeId?: string | null) {
+export async function getStoreSettings(storeId?: string | null, client = supabase) {
   const resolvedStoreId = await resolveStoreId(storeId);
 
   if (!resolvedStoreId) {
     return { data: null, error: null };
   }
 
-  return supabase
+  return client
     .from("store_settings")
     .select("*")
     .eq("store_id", resolvedStoreId)
@@ -491,7 +492,7 @@ export async function getAdminBanners(storeId?: string | null) {
 }
 
 export async function getBannersByStoreId(storeId: string) {
-  return supabase
+  return publicSupabase
     .from("banners")
     .select(
       "id, store_id, title, subtitle, image_url, button_text, button_link, is_active, sort_order, layout_type, background_color, text_color, accent_color, badge_text, product_image_url, category_id, created_at"
@@ -584,4 +585,12 @@ export async function deleteBanner(
     .delete()
     .eq("id", id)
     .eq("store_id", resolvedStoreId);
+}
+
+// Explicit public reads: admin getters and writes retain their authenticated client.
+export function getPublicStoreSettings(storeId: string) {
+  return getStoreSettings(storeId, publicSupabase);
+}
+export function getPublicActiveCategoriesByStoreId(storeId: string) {
+  return getActiveCategoriesByStoreId(storeId, publicSupabase);
 }

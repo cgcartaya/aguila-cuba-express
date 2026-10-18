@@ -1,3 +1,4 @@
+import { publicSupabase } from "@/lib/supabase-public";
 import { supabase } from "@/lib/supabase";
 
 /* =========================================================
@@ -55,7 +56,7 @@ export async function getCombos(storeId?: string) {
 }
 
 export async function getActiveCombosByStoreId(storeId: string) {
-  return await supabase
+  return await publicSupabase
     .from("combos")
     .select(COMBO_PUBLIC_SELECT)
     .eq("store_id", storeId)
@@ -70,6 +71,18 @@ export async function getComboById(id: string, storeId: string) {
     .select(COMBO_PUBLIC_SELECT)
     .eq("id", id)
     .eq("store_id", storeId)
+    .is("deleted_at", null)
+    .single();
+}
+
+// Public detail reads are independent of the administrator's session.
+export async function getPublicComboById(id: string, storeId: string) {
+  return publicSupabase
+    .from("combos")
+    .select(COMBO_PUBLIC_SELECT)
+    .eq("id", id)
+    .eq("store_id", storeId)
+    .eq("is_active", true)
     .is("deleted_at", null)
     .single();
 }
@@ -97,7 +110,7 @@ export async function getCombosContainingProduct(
   }
 
   // 1) IDs de combos que tienen este producto entre sus combo_items.
-  const { data: comboIdRows, error: comboIdError } = await supabase
+  const { data: comboIdRows, error: comboIdError } = await publicSupabase
     .from("combo_items")
     .select("combo_id")
     .eq("product_id", productId);
@@ -111,7 +124,7 @@ export async function getCombosContainingProduct(
   if (comboIds.length === 0) return { data: [], error: null };
 
   // 2) Traer esos combos completos (con sus items), solo los activos.
-  return supabase
+  return publicSupabase
     .from("combos")
     .select(COMBO_PUBLIC_SELECT)
     .eq("store_id", storeId)
@@ -134,7 +147,7 @@ export async function getCombosContainingAnyProduct(
     return { data: [], error: null };
   }
 
-  const { data: comboIdRows, error: comboIdError } = await supabase
+  const { data: comboIdRows, error: comboIdError } = await publicSupabase
     .from("combo_items")
     .select("combo_id")
     .in("product_id", cleanIds);
@@ -147,7 +160,7 @@ export async function getCombosContainingAnyProduct(
 
   if (comboIds.length === 0) return { data: [], error: null };
 
-  return supabase
+  return publicSupabase
     .from("combos")
     .select(COMBO_PUBLIC_SELECT)
     .eq("store_id", storeId)

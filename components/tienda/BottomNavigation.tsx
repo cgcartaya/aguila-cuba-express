@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getStoreSettings } from "@/lib/services/settings";
+import { getPublicStoreSettings as getStoreSettings } from "@/lib/services/settings";
 import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 import { usePathname } from "next/navigation";
 import { useStore } from "@/hooks/useStore";
