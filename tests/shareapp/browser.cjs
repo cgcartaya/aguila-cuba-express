@@ -69,6 +69,7 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
       configurable: true,
       value: async (data) => {
         window.__shared.push({
+          url: data.url,
           text: data.text,
           files: data.files?.map((f) => ({
             name: f.name,
@@ -217,21 +218,31 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
     .click();
   await page
     .getByText(
-      "Publicación guardada. Elige foto y texto, o comparte el enlace.",
+      "Publicación guardada. Comparte el enlace para mostrar la tarjeta del producto.",
     )
     .waitFor();
   assert.equal(posts.length, 1);
   assert.ok(posts[0].body.includes("Arroz de calidad"));
-  await page
-    .getByRole("button", { name: "Foto y texto", exact: true })
-    .waitFor();
-  await page.getByRole("button", { name: "Foto y texto", exact: true }).click();
-  const shared = await page.evaluate(() => window.__shared);
+  const editor = page.getByRole("region", { name: "Editor de publicación" });
+  await editor
+    .getByRole("button", { name: "Compartir publicación", exact: true })
+    .click();
+  let shared = await page.evaluate(() => window.__shared);
   assert.equal(shared.length, 1);
-  assert.equal(shared[0].files[0].name, "producto.jpg");
-  assert.equal(shared[0].files[0].type, "image/jpeg");
-  assert.ok(shared[0].files[0].size > 0);
-  assert.ok(shared[0].text.includes("/r/" + "a".repeat(48)));
+  assert.equal(shared[0].url, posts[0].url);
+  assert.equal(shared[0].files, undefined);
+  assert.ok(!shared[0].text.includes(posts[0].url));
+  await page
+    .getByText("Enviar la foto como archivo (sin tarjeta de enlace)", {
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Enviar foto adjunta", exact: true })
+    .click();
+  shared = await page.evaluate(() => window.__shared);
+  assert.equal(shared[1].files[0].type, "image/jpeg");
+  assert.ok(shared[1].text.includes(posts[0].url));
   await screenshot("publications-mobile.png");
   for (const width of [320, 768, 1440]) {
     await page.setViewportSize({ width, height: 1000 });
@@ -260,7 +271,7 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   assert.equal(
     await page
       .getByRole("region", { name: "Editor de publicación" })
-      .getByRole("button", { name: "Compartir enlace", exact: true })
+      .getByRole("button", { name: "Compartir publicación", exact: true })
       .isDisabled(),
     true,
   );

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   cookieName,
   destination,
-  storefront,
+  storefrontForRequest,
   signReceipt,
   isPreviewBot,
 } from "@/lib/shareapp/core";
@@ -19,9 +19,16 @@ export async function GET(
   try {
     const { code } = await context.params;
     const { link, store, config, kind, item } = await promotion(code);
-    const canonical = storefront(store).origin;
-    if (request.nextUrl.origin !== canonical)
-      return NextResponse.redirect(`${canonical}/r/${code}`, 307);
+    const canonical = storefrontForRequest(
+      store,
+      request.nextUrl.origin,
+    ).origin;
+    if (request.nextUrl.origin !== canonical) {
+      const response = NextResponse.redirect(`${canonical}/r/${code}`, 307);
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
+    }
+    const target = `${canonical}${new URL(destination(store, kind, link.item_id)).pathname}`;
     if (isPreviewBot(request.headers.get("user-agent") || "")) {
       const html = previewHtml({
         title: item?.name || store.name,
@@ -30,7 +37,7 @@ export async function GET(
           : `Descubre los productos de ${store.name}.`,
         url: `${canonical}/r/${code}`,
         image: itemImage(item) ? `${canonical}/r/${code}/image` : null,
-        destination: destination(store, kind, link.item_id),
+        destination: target,
       });
       return new NextResponse(html, {
         headers: {
@@ -43,7 +50,7 @@ export async function GET(
       });
     }
     const response = NextResponse.redirect(
-      `${destination(store, kind, link.item_id)}?perla_ref=${store.id}`,
+      `${target}?perla_ref=${store.id}`,
       307,
     );
     response.headers.set("Cache-Control", "private, no-store");

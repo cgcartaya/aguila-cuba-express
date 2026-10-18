@@ -55,6 +55,7 @@ test("promotion preview, original attribution and photo gates", async (t) => {
     retired = false,
     enabled = true,
     kind = "product",
+    domain: string | null = null,
     source = "https://test.supabase.co/storage/v1/object/public/products/a.png";
   const filters: unknown[][] = [];
   db.from = ((table: string) => {
@@ -74,6 +75,7 @@ test("promotion preview, original attribution and photo gates", async (t) => {
               id: storeId,
               slug: "demo",
               name: "Tienda Demo",
+              domain,
               is_active: true,
               module_store_enabled: true,
             }
@@ -136,6 +138,49 @@ test("promotion preview, original attribution and photo gates", async (t) => {
           ?.includes(`/producto/${storeId}?perla_ref=${storeId}`),
       );
       assert.ok(response.headers.get("set-cookie")?.includes("HttpOnly"));
+    },
+  );
+  await t.test(
+    "www hosting canonicalization cannot loop or lose the checkout cookie",
+    async () => {
+      for (const [saved, incoming] of [
+        ["example.com", "www.example.com"],
+        ["www.example.com", "example.com"],
+      ]) {
+        domain = saved;
+        const req = (ua: string) =>
+          new NextRequest(`https://${incoming}/r/${code}`, {
+            headers: { "user-agent": ua },
+          });
+        const buyer = await visit(req("Mozilla/5.0"), ctx);
+        assert.equal(buyer.status, 307);
+        assert.ok(
+          buyer.headers
+            .get("location")
+            ?.startsWith(`https://${incoming}/producto/`),
+        );
+        assert.ok(buyer.headers.get("set-cookie")?.includes("HttpOnly"));
+        const preview = await visit(req("WhatsApp/2.0"), ctx);
+        assert.equal(preview.status, 200);
+        assert.ok(
+          (await preview.text()).includes(
+            `https://${incoming}/r/${code}/image`,
+          ),
+        );
+        assert.equal(preview.headers.get("set-cookie"), null);
+      }
+      const foreign = await visit(
+        new NextRequest(`https://attacker.example/r/${code}`),
+        ctx,
+      );
+      assert.equal(foreign.status, 307);
+      assert.equal(
+        foreign.headers.get("location"),
+        `https://www.example.com/r/${code}`,
+      );
+      assert.equal(foreign.headers.get("set-cookie"), null);
+      assert.equal(foreign.headers.get("cache-control"), "private, no-store");
+      domain = null;
     },
   );
   await t.test(

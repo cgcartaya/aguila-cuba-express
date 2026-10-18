@@ -1087,3 +1087,16 @@
     justify-content: center;
   }
 }
+
+.mediaAlternative {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+}
+.mediaAlternative summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 8px 0;
+}

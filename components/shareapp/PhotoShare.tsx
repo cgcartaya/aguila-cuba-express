@@ -94,7 +94,7 @@ export default function PhotoShare({
             {loading
               ? "Preparando la foto…"
               : photo
-                ? "Lista para mensajes, estados e historias."
+                ? "Archivo de imagen; no es una tarjeta de enlace."
                 : "La foto no está disponible."}
           </p>
         </div>
@@ -142,7 +142,7 @@ export default function PhotoShare({
                 }}
               >
                 <ImagePlus size={16} />
-                Foto y texto
+                Enviar foto adjunta
               </button>
             )}
             <a
@@ -175,8 +175,9 @@ export default function PhotoShare({
             </button>
           </div>
           <p className={styles.fresh}>
-            Algunas redes reciben solo la foto. Copia el texto y pégalo como
-            descripción; incluye tu enlace para registrar visitas y pedidos.
+            La foto adjunta no lleva un enlace en su imagen. Copia el texto y
+            pégalo como descripción; incluye tu enlace para registrar visitas y
+            pedidos.
           </p>
         </>
       )}
