@@ -21,21 +21,22 @@ import {
 } from "@/lib/shareapp/workspace-types";
 import styles from "./workspace.module.css";
 import PhotoShare from "./PhotoShare";
-function shareText(body: string, url: string) {
-  return body.includes(url) ? body : `${body}\n${url}`;
-}
-async function share(body: string, url: string) {
+import {
+  publicationShareData,
+  publicationShareText as shareText,
+} from "@/lib/shareapp/sharing";
+async function share(title: string, body: string, url: string) {
   if (navigator.share) {
     try {
-      await navigator.share({ text: shareText(body, url) });
-      return "Opciones de enlace abiertas. Para enviar la foto, usa Foto y texto.";
+      await navigator.share(publicationShareData(title, body, url));
+      return "Opciones de enlace abiertas. Espera a que la red cargue la vista previa antes de publicar.";
     } catch (e) {
       if ((e as Error).name === "AbortError") return "";
       throw e;
     }
   }
   await navigator.clipboard.writeText(shareText(body, url));
-  return "Texto y enlace copiados. Pégalos en tu red social.";
+  return "Texto y enlace copiados. Pégalos y espera la vista previa.";
 }
 export default function PublicationsPanel({
   storeId,
@@ -124,7 +125,7 @@ export default function PublicationsPanel({
               saved: { title: row.title, body: row.body, network: row.network },
             });
             setNotice(
-              "Publicación guardada. Elige foto y texto, o comparte el enlace.",
+              "Publicación guardada. Comparte el enlace para mostrar la tarjeta del producto.",
             );
             setPage(0);
             setVersion((v) => v + 1);
@@ -178,12 +179,14 @@ export default function PublicationsPanel({
                 disabled={busy || !online || !row.active}
                 onClick={() =>
                   void action(async () =>
-                    setNotice(await share(row.body || row.title, row.url)),
+                    setNotice(
+                      await share(row.title, row.body || row.title, row.url),
+                    ),
                   )
                 }
               >
                 <Share2 size={15} />
-                Compartir enlace
+                Compartir publicación
               </button>
               <button
                 className={styles.secondary}
@@ -473,15 +476,6 @@ function PublicationEditor({
       )}
       {url && (
         <div style={{ marginTop: 20 }}>
-          {draft.kind !== "store" && (
-            <PhotoShare
-              key={url}
-              url={url}
-              title={title}
-              body={body}
-              disabled={dirty || !online || draft.active === false}
-            />
-          )}
           <span className={styles.link}>{url}</span>
           <p className={styles.fresh}>
             {dirty
@@ -494,10 +488,10 @@ function PublicationEditor({
             <button
               className={styles.primary}
               disabled={dirty || !online || draft.active === false}
-              onClick={() => void social(() => share(body, url))}
+              onClick={() => void social(() => share(title, body, url))}
             >
               <Share2 size={16} />
-              Compartir enlace
+              Compartir publicación
             </button>
             <button
               className={styles.secondary}
@@ -527,6 +521,24 @@ function PublicationEditor({
               WhatsApp
             </a>
           </div>
+          <p className={styles.fresh}>
+            Esta opción comparte un enlace. Espera la tarjeta con foto antes de
+            publicar; su presentación depende de la red social.
+          </p>
+          {draft.kind !== "store" && (
+            <details className={styles.mediaAlternative}>
+              <summary>
+                Enviar la foto como archivo (sin tarjeta de enlace)
+              </summary>
+              <PhotoShare
+                key={url}
+                url={url}
+                title={title}
+                body={body}
+                disabled={dirty || !online || draft.active === false}
+              />
+            </details>
+          )}
           <p className={styles.fresh}>
             Guardar o abrir el selector no confirma que la publicación se haya
             enviado a una red social.

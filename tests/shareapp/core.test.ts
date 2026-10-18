@@ -92,3 +92,29 @@ test("social preview crawlers do not receive attribution", () => {
     assert.ok(isPreviewBot(agent));
   assert.equal(isPreviewBot("Mozilla/5.0 Chrome/125.0 Safari/537.36"), false);
 });
+
+test("www alias matching is limited to a valid saved custom domain", async () => {
+  const { storefrontForRequest } = await import("../../lib/shareapp/core");
+  const store = { id: "demo", slug: "demo", domain: "example.com" };
+  assert.equal(
+    storefrontForRequest(store, "https://www.example.com").origin,
+    "https://www.example.com",
+  );
+  for (const origin of [
+    "http://www.example.com",
+    "https://evil.example.com",
+    "https://www.example.com:8080",
+    "https://www.example.com.attacker.com",
+  ])
+    assert.equal(
+      storefrontForRequest(store, origin).origin,
+      "https://example.com",
+    );
+  assert.equal(
+    storefrontForRequest(
+      { ...store, domain: "invalid/path" },
+      "https://www.perlamarketplace.com",
+    ).origin,
+    "https://perlamarketplace.com",
+  );
+});

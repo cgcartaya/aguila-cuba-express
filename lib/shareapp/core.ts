@@ -99,3 +99,24 @@ export function isPreviewBot(userAgent: string) {
     userAgent,
   );
 }
+
+// A custom domain may be canonicalized to/from www by hosting before Next.js.
+// Accept only that exact saved-domain alias, keeping checkout on the cookie host.
+export function storefrontForRequest(
+  store: PublicStore,
+  requestOrigin: string,
+) {
+  const canonical = storefront(store);
+  if (!store.domain?.trim()) return canonical;
+  const host = new URL(canonical.origin).hostname;
+  const configured = store.domain
+    .trim()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/$/, "")
+    .toLowerCase();
+  if (configured !== host) return canonical;
+  const alias = host.startsWith("www.") ? host.slice(4) : `www.${host}`;
+  return requestOrigin === `https://${alias}`
+    ? { ...canonical, origin: requestOrigin }
+    : canonical;
+}

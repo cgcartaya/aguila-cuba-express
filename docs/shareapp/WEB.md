@@ -54,8 +54,12 @@ El módulo puede instalarse fuera del proyecto con npm install --prefix /tmp/sha
 
 ## Fotos y vistas previas
 
-Después de guardar una publicación de producto o combo, el editor prepara la foto antes del toque en «Foto y texto». El selector nativo recibe un archivo JPEG real, texto y enlace de atribución. Si la aplicación elegida omite el texto, usa «Copiar texto» y pégalo como descripción. «Descargar foto» permite hacerlo manualmente. «Compartir enlace» y WhatsApp envían texto/enlace; no adjuntan fotos. Desde el historial, «Ver foto y editar» abre estas opciones.
+La acción principal «Compartir publicación» utiliza title, text y url separados, igual que el botón de la vista del producto. Envía el enlace del gestor /r/[code], que conserva la atribución y proporciona metadatos de foto y precio a los rastreadores. WhatsApp construye la tarjeta; hay que esperar su vista previa antes de publicar. No se adjunta un archivo en esta acción.
+
+«Enviar la foto como archivo (sin tarjeta de enlace)» es una opción secundaria desplegable, con envío de JPEG, descarga y copia. Una foto adjunta es una publicación de imagen; pulsarla no equivale a abrir el producto.
 
 /r/[code] devuelve Open Graph a los rastreadores reconocidos sin cookie de atribución. Los compradores mantienen la redirección y cookie originales. /r/[code]/image valida enlace, gestor, tienda, módulo y producto; no registra visitas. Solo descarga fotos del Storage público del proyecto configurado, sin redirecciones y con límite de 8 MB, 10 segundos y 25 millones de píxeles. Devuelve JPEG de hasta 1200 px, sin caché. No requiere migración.
 
 Las redes deciden si muestran la vista previa y pueden conservar la anterior en caché. Las fotos adjuntas no garantizan un enlace pulsable en estados/historias. Comprobar en WhatsApp real después de desplegar: conversación, estado, foto y texto, y que una compra desde el enlace conserve la atribución.
+
+La ruta de promoción acepta exclusivamente el dominio personalizado guardado y su alias exacto con/sin www cuando el alojamiento normaliza el host. La redirección al producto permanece en el host aceptado para conservar la cookie en checkout. Cualquier otro host se redirige al dominio guardado. Esto evita el bucle apex → www del alojamiento → apex de ShareAPP sin alterar la configuración de dominio de la tienda. No requiere SQL.
