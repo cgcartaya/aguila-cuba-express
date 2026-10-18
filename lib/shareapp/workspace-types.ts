@@ -57,6 +57,7 @@ export type Publication = {
 };
 export type Draft = {
   key: string;
+  imageUrl?: string | null;
   id?: string;
   kind: Publication["kind"];
   itemId?: string | null;
@@ -110,6 +111,7 @@ export function newDraft(
     key: globalThis.crypto.randomUUID(),
     kind: item ? kind : "store",
     itemId: item?.id,
+    imageUrl: item ? catalogImage(item) : null,
     title: item?.name || `Descubre ${storeName}`,
     body: item
       ? `${item.name}\nPrecio: ${Number(item.price).toFixed(2)} USD\n${publicationExcerpt(item.description || "", item.name)}`
@@ -145,4 +147,21 @@ export function publicationExcerpt(description: string, name: string) {
         : clipped.length,
     ) + "…"
   );
+}
+
+export function catalogImage(item: CatalogItem) {
+  return (
+    item.image_url?.trim() ||
+    item.product_images?.find((row) => row.is_main)?.image_url ||
+    item.product_images?.[0]?.image_url ||
+    null
+  );
+}
+export function publicationImage(url: string) {
+  try {
+    const code = new URL(url).pathname.match(/^\/r\/([a-f0-9]{48})$/)?.[1];
+    return code ? `/r/${code}/image` : null;
+  } catch {
+    return null;
+  }
 }

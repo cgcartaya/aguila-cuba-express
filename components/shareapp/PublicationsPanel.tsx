@@ -16,11 +16,13 @@ import {
 import { gestorApi } from "@/lib/shareapp/client";
 import {
   networkNames,
+  publicationImage,
   type Draft,
   type Publication,
 } from "@/lib/shareapp/workspace-types";
 import styles from "./workspace.module.css";
 import PhotoShare from "./PhotoShare";
+import PublicationPreview from "./PublicationPreview";
 import {
   publicationShareData,
   publicationShareText as shareText,
@@ -169,9 +171,13 @@ export default function PublicationsPanel({
                 {row.active ? "Enlace activo" : "Enlace pausado"}
               </span>
             </div>
-            <p className={styles.publicationBody}>
-              {row.body || "Añade un texto a esta publicación desde Editar."}
-            </p>
+            <PublicationPreview
+              imageUrl={publicationImage(row.url)}
+              title={row.title}
+              body={row.body || ""}
+              kind={row.kind}
+              active={row.active}
+            />
             <span className={styles.link}>{row.url}</span>
             <div className={styles.row}>
               <button
@@ -212,6 +218,7 @@ export default function PublicationsPanel({
                     id: row.id,
                     kind: row.kind,
                     itemId: row.item_id,
+                    imageUrl: publicationImage(row.url),
                     title: row.title,
                     body: row.body || row.title,
                     network: row.network,
@@ -227,7 +234,7 @@ export default function PublicationsPanel({
                 }}
               >
                 <ImagePlus size={15} />
-                Ver foto y editar
+                Editar publicación
               </button>
               <button
                 className={row.active ? styles.danger : styles.secondary}
@@ -361,6 +368,17 @@ function PublicationEditor({
           <X size={17} />
         </button>
       </div>
+      <PublicationPreview
+        imageUrl={url ? publicationImage(url) : draft.imageUrl}
+        title={title}
+        body={body}
+        kind={draft.kind}
+        active={draft.active}
+      />
+      <p className={styles.fresh}>
+        1. Revisa la foto y adapta el texto. Guarda para preparar tu enlace de
+        gestor.
+      </p>
       <form
         className={styles.form}
         onSubmit={async (e) => {
@@ -476,14 +494,21 @@ function PublicationEditor({
       )}
       {url && (
         <div style={{ marginTop: 20 }}>
-          <span className={styles.link}>{url}</span>
+          <h3 className={styles.shareStep}>2. Comparte tu publicación</h3>
           <p className={styles.fresh}>
-            {dirty
-              ? "Guarda los cambios antes de compartir."
-              : draft.active === false
-                ? "Este enlace está pausado. Reactívalo en la lista para compartirlo."
-                : "Conserva este enlace en tu publicación para registrar las visitas y pedidos."}
+            Con enlace: la red puede mostrar una tarjeta con la foto y abrir el
+            producto. Conserva este enlace para registrar visitas y pedidos.
           </p>
+          <span className={styles.link}>{url}</span>
+          {(dirty || draft.active === false) && (
+            <p className={styles.fresh}>
+              {dirty
+                ? "Guarda los cambios antes de compartir."
+                : draft.active === false
+                  ? "Este enlace está pausado. Reactívalo en la lista para compartirlo."
+                  : ""}
+            </p>
+          )}
           <div className={styles.row}>
             <button
               className={styles.primary}
@@ -521,14 +546,13 @@ function PublicationEditor({
               WhatsApp
             </a>
           </div>
-          <p className={styles.fresh}>
-            Esta opción comparte un enlace. Espera la tarjeta con foto antes de
-            publicar; su presentación depende de la red social.
-          </p>
           {draft.kind !== "store" && (
-            <details className={styles.mediaAlternative}>
+            <details
+              className={styles.mediaAlternative}
+              open={network === "instagram"}
+            >
               <summary>
-                Enviar la foto como archivo (sin tarjeta de enlace)
+                Compartir foto en Instagram, estados o historias
               </summary>
               <PhotoShare
                 key={url}
@@ -539,10 +563,6 @@ function PublicationEditor({
               />
             </details>
           )}
-          <p className={styles.fresh}>
-            Guardar o abrir el selector no confirma que la publicación se haya
-            enviado a una red social.
-          </p>
         </div>
       )}
     </section>

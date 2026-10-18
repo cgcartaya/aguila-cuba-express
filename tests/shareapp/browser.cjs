@@ -210,6 +210,25 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   await page
     .getByRole("heading", { name: "Nueva publicación", exact: true })
     .waitFor();
+  const draftEditor = page.getByRole("region", {
+    name: "Editor de publicación",
+  });
+  await draftEditor.getByRole("img", { name: /Foto de Arroz/ }).waitFor();
+  assert.equal(
+    new URL(
+      await draftEditor
+        .getByRole("img", { name: /Foto de Arroz/ })
+        .getAttribute("src"),
+      base,
+    ).pathname,
+    "/shareapp/mark.svg",
+  );
+  assert.equal(
+    await draftEditor
+      .getByRole("button", { name: "Compartir publicación", exact: true })
+      .count(),
+    0,
+  );
   await page
     .getByRole("textbox", { name: "Texto de la publicación" })
     .fill("Arroz de calidad para tu hogar. Consulta disponibilidad y entrega.");
@@ -222,6 +241,18 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
     )
     .waitFor();
   assert.equal(posts.length, 1);
+  await page
+    .locator("article")
+    .getByRole("img", { name: /Foto de Arroz/ })
+    .waitFor();
+  assert.ok(
+    (
+      await page
+        .locator("article")
+        .getByRole("img", { name: /Foto de Arroz/ })
+        .getAttribute("src")
+    ).includes("/r/" + "a".repeat(48) + "/image"),
+  );
   assert.ok(posts[0].body.includes("Arroz de calidad"));
   const editor = page.getByRole("region", { name: "Editor de publicación" });
   await editor
@@ -233,7 +264,7 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   assert.equal(shared[0].files, undefined);
   assert.ok(!shared[0].text.includes(posts[0].url));
   await page
-    .getByText("Enviar la foto como archivo (sin tarjeta de enlace)", {
+    .getByText("Compartir foto en Instagram, estados o historias", {
       exact: true,
     })
     .click();
