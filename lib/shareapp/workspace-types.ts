@@ -151,9 +151,11 @@ export function publicationExcerpt(description: string, name: string) {
 
 export function catalogImage(item: CatalogItem) {
   return (
+    item.product_images?.find((row) => row.is_main)?.image_url?.trim() ||
+    item.product_images
+      ?.find((row) => row.image_url?.trim())
+      ?.image_url?.trim() ||
     item.image_url?.trim() ||
-    item.product_images?.find((row) => row.is_main)?.image_url ||
-    item.product_images?.[0]?.image_url ||
     null
   );
 }

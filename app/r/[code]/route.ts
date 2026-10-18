@@ -10,7 +10,11 @@ import {
 import { secret, errorResponse } from "@/lib/shareapp/server";
 
 import { promotion, itemImage } from "@/lib/shareapp/promotion";
-import { previewHtml } from "@/lib/shareapp/preview";
+import {
+  applyPlatformFee,
+  getPlatformFeePercent,
+} from "@/lib/storefront/product-quantity-pricing";
+import { storageImageUrl, previewHtml } from "@/lib/shareapp/preview";
 
 export async function GET(
   request: NextRequest,
@@ -30,13 +34,36 @@ export async function GET(
     }
     const target = `${canonical}${new URL(destination(store, kind, link.item_id)).pathname}`;
     if (isPreviewBot(request.headers.get("user-agent") || "")) {
+      const price = item
+        ? applyPlatformFee(
+            Number(item.price),
+            getPlatformFeePercent(store),
+          ).toFixed(2)
+        : null;
+      const photo = itemImage(item);
+      // Same original public image as the product page, without a processing hop.
+      // Other image sources retain the constrained media endpoint fallback.
+      const original =
+        photo &&
+        storageImageUrl(photo, process.env.NEXT_PUBLIC_SUPABASE_URL || "");
       const html = previewHtml({
-        title: item?.name || store.name,
+        title: item
+          ? `${item.name} | ${price} USD | ${store.name}`
+          : store.name,
         description: item
-          ? `Precio: ${Number(item.price).toFixed(2)} USD · ${store.name}`
+          ? `Precio: ${price} USD. ${String(
+              item.description || `Compra ${item.name} en ${store.name}.`,
+            )
+              .replace(/\s+/g, " ")
+              .trim()}`.slice(0, 200)
           : `Descubre los productos de ${store.name}.`,
         url: `${canonical}/r/${code}`,
-        image: itemImage(item) ? `${canonical}/r/${code}/image` : null,
+        image: original
+          ? original.href
+          : photo
+            ? `${canonical}/r/${code}/image`
+            : null,
+        siteName: store.name,
         destination: target,
       });
       return new NextResponse(html, {

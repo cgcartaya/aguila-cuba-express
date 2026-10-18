@@ -1,9 +1,13 @@
 import { NextRequest } from "next/server";
 import { db, member, json, errorResponse } from "@/lib/shareapp/server";
+import {
+  applyPlatformFee,
+  getPlatformFeePercent,
+} from "@/lib/storefront/product-quantity-pricing";
 export async function GET(request: NextRequest) {
   try {
     const storeId = request.nextUrl.searchParams.get("storeId") || "";
-    await member(request, storeId);
+    const promoter = await member(request, storeId);
     const page = Math.max(
       0,
       Math.min(
@@ -35,7 +39,23 @@ export async function GET(request: NextRequest) {
     if (search) query.ilike("name", `%${search}%`);
     const { data, error } = await query;
     if (error) throw error;
-    return json({ items: data, kind, page, hasMore: data?.length === 50 });
+    // Product and combo selects have different nested shapes; both expose price.
+    const items = (data || []) as unknown as {
+      price: number;
+      [key: string]: unknown;
+    }[];
+    return json({
+      items: items.map((item) => ({
+        ...item,
+        price: applyPlatformFee(
+          Number(item.price),
+          getPlatformFeePercent(promoter.store),
+        ),
+      })),
+      kind,
+      page,
+      hasMore: data?.length === 50,
+    });
   } catch (error) {
     return errorResponse(error);
   }

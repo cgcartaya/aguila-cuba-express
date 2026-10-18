@@ -9,6 +9,7 @@ import {
   type CatalogItem,
   type Draft,
 } from "@/lib/shareapp/workspace-types";
+import { catalogImage } from "@/lib/shareapp/workspace-types";
 import styles from "./workspace.module.css";
 export default function CatalogPanel({
   storeId,
@@ -121,10 +122,7 @@ export default function CatalogPanel({
         <div className={styles.grid}>
           {items.map((item) => {
             const available = itemAvailable(item, storeId, kind);
-            const image =
-              item.image_url ||
-              item.product_images?.find((row) => row.is_main)?.image_url ||
-              item.product_images?.[0]?.image_url;
+            const image = catalogImage(item);
             return (
               <article key={item.id} className={styles.product}>
                 <div className={styles.productImage}>

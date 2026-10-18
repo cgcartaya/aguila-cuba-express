@@ -23,6 +23,7 @@ function query(data: unknown, error: unknown = null) {
     gt: () => chain,
     not: () => chain,
     order: () => chain,
+    range: () => chain,
     maybeSingle: async () => response,
     single: async () => response,
     then: (resolve: (result: unknown) => unknown) =>
@@ -123,6 +124,39 @@ test("ShareAPP API authorization and scope", async (t) => {
         authUrl: "https://test.invalid",
         anonKey: "public-key",
       });
+    },
+  );
+  await t.test(
+    "catalog prices match the storefront with fee enabled and disabled",
+    async () => {
+      for (const enabled of [true, false]) {
+        db.from = ((table: string) => {
+          if (["shareapp_accounts", "profiles"].includes(table))
+            return query(null);
+          if (table === "shareapp_members")
+            return query({ id: memberId, store_id: storeId });
+          if (table === "stores")
+            return query({
+              id: storeId,
+              is_active: true,
+              module_store_enabled: true,
+              platform_fee_enabled: enabled,
+              platform_fee_percent: 2.5,
+            });
+          if (table === "shareapp_settings") return query({ enabled: true });
+          if (["products", "combos"].includes(table))
+            return query([{ id: memberId, name: "Item", price: 13 }]);
+          throw Error(table);
+        }) as never;
+        for (const kind of ["product", "combo"]) {
+          const response = await catalog(
+            request(`catalog?storeId=${storeId}&kind=${kind}`),
+          );
+          assert.equal(response.status, 200);
+          const body = await response.json();
+          assert.equal(body.items[0].price, enabled ? 13.32 : 13);
+        }
+      }
     },
   );
 });
