@@ -3,16 +3,18 @@ import { AccessError, db, settings } from "./server";
 export type PromotionItem = {
   name: string;
   price: number;
+  description?: string | null;
   image_url: string | null;
   product_images?: { image_url: string; is_main: boolean; position?: number }[];
 };
 export function itemImage(item: PromotionItem | null) {
+  const images = item?.product_images
+    ?.slice()
+    .sort((a, b) => (a.position || 0) - (b.position || 0));
   return (
-    item?.image_url ||
-    item?.product_images?.find((i) => i.is_main)?.image_url ||
-    item?.product_images
-      ?.slice()
-      .sort((a, b) => (a.position || 0) - (b.position || 0))[0]?.image_url ||
+    images?.find((i) => i.is_main)?.image_url?.trim() ||
+    images?.find((i) => i.image_url?.trim())?.image_url?.trim() ||
+    item?.image_url?.trim() ||
     null
   );
 }
@@ -35,7 +37,7 @@ export async function promotion(code: string) {
     db
       .from("stores")
       .select(
-        "id,name,slug,domain,subdomain,has_landing,is_active,module_store_enabled",
+        "id,name,slug,domain,subdomain,has_landing,is_active,module_store_enabled,platform_fee_enabled,platform_fee_percent",
       )
       .eq("id", link.store_id)
       .eq("is_active", true)
@@ -61,8 +63,8 @@ export async function promotion(code: string) {
       .from(kind === "combo" ? "combos" : "products")
       .select(
         kind === "combo"
-          ? "name,price,image_url"
-          : "name,price,image_url,product_images(image_url,is_main,position)",
+          ? "name,description,price,image_url"
+          : "name,description,price,image_url,product_images(image_url,is_main,position)",
       )
       .eq("id", link.item_id)
       .eq("store_id", store.id)

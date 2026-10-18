@@ -55,6 +55,7 @@ test("promotion preview, original attribution and photo gates", async (t) => {
     retired = false,
     enabled = true,
     kind = "product",
+    feeEnabled = false,
     domain: string | null = null,
     source = "https://test.supabase.co/storage/v1/object/public/products/a.png";
   const filters: unknown[][] = [];
@@ -76,6 +77,8 @@ test("promotion preview, original attribution and photo gates", async (t) => {
               slug: "demo",
               name: "Tienda Demo",
               domain,
+              platform_fee_enabled: feeEnabled,
+              platform_fee_percent: 2.5,
               is_active: true,
               module_store_enabled: true,
             }
@@ -117,7 +120,7 @@ test("promotion preview, original attribution and photo gates", async (t) => {
       assert.equal(response.status, 200);
       assert.equal(response.headers.get("set-cookie"), null);
       const html = await response.text();
-      assert.ok(html.includes(`https://perlamarketplace.com/r/${code}/image`));
+      assert.ok(html.includes(source));
       assert.ok(html.includes("13.00 USD"));
       assert.ok(
         filters.some(
@@ -125,6 +128,24 @@ test("promotion preview, original attribution and photo gates", async (t) => {
             table === "products" && key === "store_id" && value === storeId,
         ),
       );
+    },
+  );
+  await t.test(
+    "social preview uses the original photo, storefront price and matching card metadata",
+    async () => {
+      feeEnabled = true;
+      const html = await (await visit(request("WhatsApp/2.0"), ctx)).text();
+      assert.ok(html.includes("13.32 USD"));
+      assert.ok(html.includes(`property="og:image" content="${source}"`));
+      assert.ok(html.includes('property="og:type" content="website"'));
+      assert.ok(html.includes('property="og:site_name" content="Tienda Demo"'));
+      assert.ok(html.includes('name="twitter:title"'));
+      assert.ok(
+        html.includes(
+          `property="og:url" content="https://perlamarketplace.com/r/${code}"`,
+        ),
+      );
+      feeEnabled = false;
     },
   );
   await t.test(
@@ -163,9 +184,7 @@ test("promotion preview, original attribution and photo gates", async (t) => {
         const preview = await visit(req("WhatsApp/2.0"), ctx);
         assert.equal(preview.status, 200);
         assert.ok(
-          (await preview.text()).includes(
-            `https://${incoming}/r/${code}/image`,
-          ),
+          (await preview.text()).includes(`https://${incoming}/r/${code}`),
         );
         assert.equal(preview.headers.get("set-cookie"), null);
       }
@@ -248,7 +267,7 @@ test("promotion preview, original attribution and photo gates", async (t) => {
       kind = "combo";
       assert.ok(
         (await (await visit(request("TelegramBot"), ctx)).text()).includes(
-          `r/${code}/image`,
+          source,
         ),
       );
     },

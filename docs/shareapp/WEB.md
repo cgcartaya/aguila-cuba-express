@@ -73,3 +73,11 @@ El editor muestra la foto del catálogo desde la selección, antes de guardar. E
 3. Para enviar un archivo utiliza «Compartir foto en Instagram, estados o historias». Esta opción se despliega automáticamente al elegir Instagram. Conserva/copia el enlace del gestor en las ubicaciones admitidas por la red.
 
 No se puede garantizar que todas las redes conviertan una URL en una foto ni que una foto adjunta sea pulsable. Abrir el selector o guardar no confirma que se haya publicado. El seguimiento requiere una visita por el enlace personal.
+
+## Metadatos de la ficha y precio público
+
+La vista previa del enlace del gestor utiliza la imagen original del Storage público del proyecto, igual que la ficha del producto, en lugar de imponer el procesamiento JPEG a los rastreadores. Se mantienen el endpoint validado para adjuntar/descargar y el fallback de fuentes no permitidas. Se prioriza la imagen principal de galería igual que en la ficha y se alinean og:type=website, site_name y los campos de Twitter.
+
+Los precios del catálogo de ShareAPP (y por tanto de los textos nuevos) y de sus metadatos utilizan las mismas funciones de precio público y ajuste por tienda que el storefront. No se cambia la configuración ni el precio base en la base de datos. Los textos ya guardados no se reescriben: actualizar manualmente su precio o crear una publicación nueva.
+
+Esto no fuerza el tamaño de tarjeta de WhatsApp: sus estados pueden usar una tarjeta compacta, y las vistas previas anteriores pueden estar cacheadas. Tras desplegar se debe probar un enlace de publicación nuevo; no se cambian códigos de atribución ni destinos.

@@ -103,7 +103,7 @@ export async function member(request: NextRequest, storeId: string) {
   const { data: store, error: storeError } = await db
     .from("stores")
     .select(
-      "id,slug,name,domain,subdomain,has_landing,is_active,module_store_enabled",
+      "id,slug,name,domain,subdomain,has_landing,is_active,module_store_enabled,platform_fee_enabled,platform_fee_percent",
     )
     .eq("id", storeId)
     .maybeSingle();
