@@ -39,8 +39,13 @@ export async function GET(request: NextRequest) {
     if (search) query.ilike("name", `%${search}%`);
     const { data, error } = await query;
     if (error) throw error;
+    // Product and combo selects have different nested shapes; both expose price.
+    const items = (data || []) as unknown as {
+      price: number;
+      [key: string]: unknown;
+    }[];
     return json({
-      items: (data || []).map((item) => ({
+      items: items.map((item) => ({
         ...item,
         price: applyPlatformFee(
           Number(item.price),
