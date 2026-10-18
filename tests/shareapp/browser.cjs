@@ -38,6 +38,8 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   const jwt = `${enc({ alg: "HS256", typ: "JWT" })}.${enc({ sub: userId, exp: Math.floor(Date.now() / 1000) + 3600 })}.fixture`;
   await page.addInitScript(
     ({ jwt, userId }) => {
+      if (sessionStorage.getItem("fixture-auth-initialized")) return;
+      sessionStorage.setItem("fixture-auth-initialized", "yes");
       localStorage.setItem(
         "perla-shareapp-auth-v1",
         JSON.stringify({
@@ -289,6 +291,16 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   await page
     .getByRole("textbox", { name: "Texto de la publicación" })
     .fill("Borrador conservado entre secciones.");
+  await page.getByRole("button", { name: "Mi cuenta", exact: true }).click();
+  assert.equal(
+    await page
+      .getByRole("button", { name: "Actualizar aplicación", exact: true })
+      .isDisabled(),
+    true,
+  );
+  await page
+    .getByText("Guarda los cambios de tu publicación", { exact: false })
+    .waitFor();
   await page.getByRole("button", { name: "Resultados", exact: true }).click();
   await page
     .getByRole("button", { name: "Publicaciones", exact: true })
@@ -325,6 +337,50 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   await page
     .getByText("Añadir a pantalla de inicio", { exact: false })
     .waitFor();
+  const update = page.getByRole("button", {
+    name: "Actualizar aplicación",
+    exact: true,
+  });
+  assert.equal(await update.isEnabled(), true);
+  await page
+    .getByRole("button", { name: "Cambiar contraseña", exact: true })
+    .click();
+  assert.equal(await update.isDisabled(), true);
+  await page
+    .getByRole("button", { name: "Cancelar cambio", exact: true })
+    .click();
+  await context.setOffline(true);
+  assert.equal(await update.isDisabled(), true);
+  await context.setOffline(false);
+  await page.evaluate(() =>
+    localStorage.setItem("refresh-preservation-check", "keep"),
+  );
+  const beforeReload = await page.evaluate(() => ({
+    auth: localStorage.getItem("perla-shareapp-auth-v1"),
+    url: location.href,
+  }));
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: "networkidle" }),
+    update.click(),
+  ]);
+  await page
+    .getByRole("heading", { name: "Ana Martínez", exact: true })
+    .waitFor();
+  assert.equal(
+    await page.evaluate(() =>
+      localStorage.getItem("refresh-preservation-check"),
+    ),
+    "keep",
+  );
+  assert.equal(page.url(), beforeReload.url);
+  assert.equal(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("perla-shareapp-auth-v1"))
+          .refresh_token,
+    ),
+    JSON.parse(beforeReload.auth).refresh_token,
+  );
   await screenshot("account-mobile.png");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Catálogo", exact: true }).click();
@@ -407,6 +463,7 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
         "saved publication",
         "results",
         "account and install guide",
+        "app reload preserves URL/session/storage; blocked for unsaved draft, password form and offline",
         "no horizontal overflow",
         "manifest and scoped worker",
         "offline fallback contains no account data",
