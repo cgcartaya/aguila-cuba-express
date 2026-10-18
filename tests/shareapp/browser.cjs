@@ -38,6 +38,8 @@ const base = process.env.SHAREAPP_BASE_URL || "http://127.0.0.1:3200";
   const jwt = `${enc({ alg: "HS256", typ: "JWT" })}.${enc({ sub: userId, exp: Math.floor(Date.now() / 1000) + 3600 })}.fixture`;
   await page.addInitScript(
     ({ jwt, userId }) => {
+      if (sessionStorage.getItem("fixture-auth-initialized")) return;
+      sessionStorage.setItem("fixture-auth-initialized", "yes");
       localStorage.setItem(
         "perla-shareapp-auth-v1",
         JSON.stringify({
