@@ -81,3 +81,9 @@ La vista previa del enlace del gestor utiliza la imagen original del Storage pú
 Los precios del catálogo de ShareAPP (y por tanto de los textos nuevos) y de sus metadatos utilizan las mismas funciones de precio público y ajuste por tienda que el storefront. No se cambia la configuración ni el precio base en la base de datos. Los textos ya guardados no se reescriben: actualizar manualmente su precio o crear una publicación nueva.
 
 Esto no fuerza el tamaño de tarjeta de WhatsApp: sus estados pueden usar una tarjeta compacta, y las vistas previas anteriores pueden estar cacheadas. Tras desplegar se debe probar un enlace de publicación nuevo; no se cambian códigos de atribución ni destinos.
+
+### Actualizar la app instalada
+
+En **Mi cuenta → Actualizar aplicación**, una recarga completa obtiene el HTML y los scripts desplegados, conservando la sesión, la tienda y las publicaciones guardadas. La recarga se deshabilita sin conexión, con una publicación sin guardar (aunque se haya cambiado de sección) o mientras se cambia la contraseña. El service worker sirve las navegaciones de `/gestores` desde la red con `cache: no-store`; no se borran credenciales ni cachés.
+
+Después del primer despliegue que incorpora este botón, cerrar completamente la app desde el selector de aplicaciones del teléfono y abrirla de nuevo para cargarlo. Los cambios deben estar desplegados en producción: actualizar no aplica una PR pendiente ni modifica mensajes ya enviados a redes sociales.

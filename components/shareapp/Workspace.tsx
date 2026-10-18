@@ -562,6 +562,13 @@ export default function Workspace() {
                   }}
                   onLogout={() => void act(logout)}
                   online={online}
+                  hasUnsavedDraft={Boolean(
+                    draft &&
+                    (!draft.saved ||
+                      draft.title !== draft.saved.title ||
+                      draft.body !== draft.saved.body ||
+                      draft.network !== draft.saved.network),
+                  )}
                 />
               ) : !currentStore ? (
                 <section className={styles.empty}>

@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { CheckCircle2, Download, Share2 } from "lucide-react";
+import { CheckCircle2, Download, RefreshCw, Share2 } from "lucide-react";
 import styles from "./workspace.module.css";
 type InstallEvent = Event & {
   prompt: () => Promise<void>;
@@ -43,6 +43,47 @@ export function PwaRegistration() {
         .catch(() => {});
   }, []);
   return null;
+}
+export function AppUpdateCard({
+  hasUnsavedChanges,
+}: {
+  hasUnsavedChanges: boolean;
+}) {
+  const online = useOnline();
+  const [busy, setBusy] = useState(false);
+  return (
+    <section className={styles.card}>
+      <h2>Actualizar ShareAPP</h2>
+      <p>
+        Recarga la aplicación para ver los últimos cambios disponibles. Tu
+        sesión y tus publicaciones guardadas se conservan.
+      </p>
+      <button
+        type="button"
+        className={styles.secondary}
+        disabled={!online || hasUnsavedChanges || busy}
+        onClick={() => {
+          if (!navigator.onLine || hasUnsavedChanges || busy) return;
+          setBusy(true);
+          // Full navigation loads the deployed HTML and scripts. The scoped
+          // worker already fetches app navigations with cache: no-store.
+          window.location.reload();
+        }}
+      >
+        <RefreshCw size={17} />
+        {busy ? "Actualizando…" : "Actualizar aplicación"}
+      </button>
+      {hasUnsavedChanges && (
+        <p role="status">
+          Guarda los cambios de tu publicación o termina el cambio de contraseña
+          antes de actualizar.
+        </p>
+      )}
+      {!online && (
+        <p role="status">Conéctate a internet para actualizar la aplicación.</p>
+      )}
+    </section>
+  );
 }
 export default function InstallCard() {
   const [prompt, setPrompt] = useState<InstallEvent | null>(null);

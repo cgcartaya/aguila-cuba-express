@@ -4,7 +4,7 @@ import { KeyRound, LogOut, ShieldCheck, Store } from "lucide-react";
 import { type Identity } from "@/lib/shareapp/client";
 import { type Membership } from "@/lib/shareapp/workspace-types";
 import PasswordForm from "./PasswordForm";
-import InstallCard from "./PwaSupport";
+import InstallCard, { AppUpdateCard } from "./PwaSupport";
 import styles from "./workspace.module.css";
 export default function AccountPanel({
   identity,
@@ -13,6 +13,7 @@ export default function AccountPanel({
   onStore,
   onLogout,
   online,
+  hasUnsavedDraft,
 }: {
   identity: Identity;
   memberships: Membership[];
@@ -20,6 +21,7 @@ export default function AccountPanel({
   onStore: (id: string) => void;
   onLogout: () => void;
   online: boolean;
+  hasUnsavedDraft: boolean;
 }) {
   const [change, setChange] = useState(false);
   const [notice, setNotice] = useState("");
@@ -103,6 +105,7 @@ export default function AccountPanel({
           />
         </div>
       )}
+      <AppUpdateCard hasUnsavedChanges={hasUnsavedDraft || change} />
       <InstallCard />
       <section className={styles.card}>
         <h2>Tu cuenta viaja contigo</h2>
