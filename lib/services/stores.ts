@@ -1,3 +1,4 @@
+import { publicSupabase } from "@/lib/supabase-public";
 import { supabase } from "@/lib/supabase"
 import type { Store } from "@/lib/saas/store-types"
 
@@ -71,7 +72,7 @@ export async function getStoreById(id: string): Promise<Store | null> {
 }
 
 export async function getStoreBySlug(slug: string): Promise<Store | null> {
-  const { data, error } = await supabase
+  const { data, error } = await publicSupabase
     .from("stores")
     .select(STORE_PUBLIC_FIELDS)
     .eq("slug", slug)
@@ -88,7 +89,7 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
 export async function getStoreByDomain(domain: string): Promise<Store | null> {
   const cleanDomain = domain.replace(/^www\./, "").toLowerCase().trim()
 
-  const { data, error } = await supabase
+  const { data, error } = await publicSupabase
     .from("stores")
     .select(STORE_PUBLIC_FIELDS)
     .eq("domain", cleanDomain)
@@ -107,7 +108,7 @@ export async function getStoreBySubdomain(
 ): Promise<Store | null> {
   const cleanSubdomain = subdomain.toLowerCase().trim()
 
-  const { data, error } = await supabase
+  const { data, error } = await publicSupabase
     .from("stores")
     .select(STORE_PUBLIC_FIELDS)
     .eq("subdomain", cleanSubdomain)

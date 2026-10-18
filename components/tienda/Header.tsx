@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 import { useStore } from "@/hooks/useStore";
-import { getStoreSettings } from "@/lib/services/settings";
+import { getPublicStoreSettings as getStoreSettings } from "@/lib/services/settings";
 import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import CurrencySelector from "@/components/tienda/CurrencySelector";

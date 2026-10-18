@@ -15,8 +15,8 @@ import { useParams } from "next/navigation";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import {
-  getActiveCategoriesByStoreId,
-  getStoreSettings,
+  getPublicActiveCategoriesByStoreId as getActiveCategoriesByStoreId,
+  getPublicStoreSettings as getStoreSettings,
 } from "@/lib/services/settings";
 import { getStoreBySlug } from "@/lib/services/stores";
 
@@ -51,6 +51,8 @@ export default function StoreSlugTiendaPage() {
   const params = useParams();
   const slug = params.slug as string;
 
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [productos, setProductos] = useState<Product[]>([]);
   const [categorias, setCategorias] = useState<Category[]>([]);
   const [storeId, setStoreId] = useState<string | null>(null);
@@ -94,8 +96,8 @@ export default function StoreSlugTiendaPage() {
 
       const [
         { data: productsData, error },
-        { data: categoriesData },
-        { data: settingsData },
+        { data: categoriesData, error: categoriesError },
+        { data: settingsData, error: settingsError },
       ] = await Promise.all([
         getStoreProductsByStoreId(currentStore.id),
         getActiveCategoriesByStoreId(currentStore.id),
@@ -104,9 +106,12 @@ export default function StoreSlugTiendaPage() {
 
       if (!mounted) return;
 
-      if (error) {
-        console.error("Error cargando productos:", error);
+      if (error || categoriesError || settingsError) {
+        console.error("Error cargando catálogo:", error || categoriesError || settingsError);
+        setLoadError(true);
+        return;
       }
+      setLoadError(false);
 
       const productosConImagenPrincipal =
         ((productsData || []) as ProductFromSupabase[]).map((producto) => {
@@ -133,7 +138,7 @@ export default function StoreSlugTiendaPage() {
     return () => {
       mounted = false;
     };
-  }, [slug]);
+  }, [slug, retry]);
 
   const productosBuscados = useMemo(() => {
     if (!hayBusqueda) return productos;
@@ -168,6 +173,12 @@ export default function StoreSlugTiendaPage() {
   return (
     <>
      <main className="min-h-[100dvh] pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      {loadError && (
+        <div role="alert" className="mx-auto my-6 max-w-3xl rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
+          <p>No pudimos cargar el catálogo. Comprueba tu conexión e inténtalo de nuevo.</p>
+          <button type="button" className="mt-3 rounded-lg border border-red-300 bg-white px-4 py-2 font-semibold" onClick={() => { setLoadError(false); setRetry((value) => value + 1); }}>Reintentar carga</button>
+        </div>
+      )}
       {hayBusqueda ? (
         <SearchResultsSection
           products={productosBuscados}

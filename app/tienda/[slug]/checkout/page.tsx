@@ -16,7 +16,7 @@ import {
 } from "@/lib/analytics/meta-pixel";
 import {
   getActiveDeliveryZones,
-  getStoreSettings,
+  getPublicStoreSettings as getStoreSettings,
   type DeliveryZone,
 } from "@/lib/services/settings";
 import { getCheckoutSettings } from "@/lib/checkout/settings-service";
