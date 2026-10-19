@@ -6,6 +6,7 @@ import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import JotaJotaLanding from "@/components/landing/jotajota/JotaJotaLanding";
 import PerlaMarketplaceLanding from "@/components/landing/PerlaMarketplaceLanding";
+import TuMercadoLajeroLanding from "@/components/landing/tumercadolajero/TuMercadoLajeroLanding";
 import YoyoLanding from "@/components/landing/yoyo/YoyoLanding";
 import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
 import { isReservasModuleEnabled } from "@/lib/services/reservas";
@@ -19,7 +20,14 @@ import {
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
-type LandingType = "aguila" | "yoyo" | "deparis" | "jotajota" | "bar1820" | "perla";
+type LandingType =
+  | "aguila"
+  | "yoyo"
+  | "deparis"
+  | "jotajota"
+  | "bar1820"
+  | "tumercadolajero"
+  | "perla";
 
 const DEPARIS_STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -82,6 +90,13 @@ function resolveLanding(host: string): LandingType {
   }
 
   if (normalizedHost === `bar1820.${PLATFORM_DOMAIN}`) return "bar1820";
+
+  if (
+    normalizedHost === `tumercadolajero.${PLATFORM_DOMAIN}` ||
+    normalizedHost.startsWith("tumercadolajero.")
+  ) {
+    return "tumercadolajero";
+  }
 
   return "perla";
 }
@@ -210,6 +225,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const landing = await getCurrentLanding();
+
+  if (landing === "tumercadolajero") {
+    const store = await resolveStoreBySlug("tumercadolajero");
+    return <TuMercadoLajeroLanding logoUrl={store?.logo_url || null} />;
+  }
 
   if (landing === "bar1820") {
     const [store, menuEnabled] = await Promise.all([
