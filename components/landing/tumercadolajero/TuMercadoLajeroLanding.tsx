@@ -58,23 +58,42 @@ export default function TuMercadoLajeroLanding({ logoUrl }: { logoUrl?: string |
             </div>
           </div>
         </section>
-        <section id="nosotros" className="px-4 py-16 sm:px-8 sm:py-24">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+        <section id="nosotros" className="relative isolate overflow-hidden px-4 py-16 sm:px-8 sm:py-24">
+          <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-20 -z-10 h-40 w-[55%] -rotate-6 rounded-[100%] border-t-[18px] border-[#0C8ACB]/20" />
+          <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-8 -z-10 h-64 w-64 rounded-full border-[40px] border-[#50A13A]/10" />
+          <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#C9471D]">Nuestra esencia</p>
-              <h2 className="mt-4 text-4xl font-black leading-tight tracking-tight sm:text-5xl">Un mercado con<br /><span className="text-[#0C8ACB]">corazón lajero.</span></h2>
-              <p className="mt-5 text-base leading-8 text-[#0B1F4D]/65">Nos inspiran nuestras calles, nuestros lugares y nuestra gente. Acercamos la tienda a tu día a día con una forma de comprar sencilla y un trato humano.</p>
-              <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex min-h-11 items-center gap-2 font-bold text-[#397D2A]">Conversemos <ArrowRight size={18} /></a>
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-5">
-              <figure className="relative min-h-72 overflow-hidden rounded-[2rem] bg-[#DCEBF0] sm:min-h-96">
-                <Image src="/tumercadolajero/parque-iglesia.jpeg" alt="Parque y gazebo de Lajas" fill sizes="(max-width: 1023px) 50vw, 30vw" className="object-cover object-[center_58%]" />
-              </figure>
-              <div className="flex flex-col gap-3 sm:gap-5">
-                <article className="flex flex-1 flex-col justify-center rounded-[2rem] bg-[#50A13A] p-5 text-white sm:p-7"><HeartHandshake size={28} /><h3 className="mt-4 text-xl font-black sm:text-2xl">De aquí,<br />para ti.</h3></article>
-                <article className="flex flex-1 flex-col justify-center rounded-[2rem] bg-[#F4B544] p-5 sm:p-7"><ShoppingBag size={28} /><h3 className="mt-4 text-xl font-black sm:text-2xl">Tu tienda.<br />A tu ritmo.</h3></article>
+              <div aria-hidden="true" className="mb-6 flex gap-2">{["#0B1F4D", "#0C8ACB", "#F4B544", "#E55B2D"].map((color) => <span key={color} className="h-1.5 w-8 rounded-full" style={{ backgroundColor: color }} />)}</div>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#C9471D]">Nuestras raíces</p>
+              <h2 className="mt-5 text-4xl font-black leading-tight tracking-tight sm:text-5xl">Un mercado con<br /><span className="text-[#0C8ACB]">corazón lajero.</span></h2>
+              <p className="mt-6 text-base leading-8 text-[#0B1F4D]/70">Nuestra tierra nos inspira. Conectamos a la gente de Lajas con una forma de comprar más sencilla, cercana y confiable.</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <span className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#0B1F4D]/15 bg-white px-4 text-sm font-semibold"><MapPin size={19} className="shrink-0 text-[#E55B2D]" /> Lajas, Cienfuegos</span>
+                <span className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[#0B1F4D]/15 bg-white px-4 text-sm font-semibold"><HeartHandshake size={19} className="shrink-0 text-[#50A13A]" /> De aquí, para ti</span>
               </div>
+              <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#368D31] px-7 font-bold text-white shadow-lg shadow-[#50A13A]/15 transition hover:bg-[#297025]"><MessageCircle size={23} /> Conversemos <ArrowRight size={19} /></a>
             </div>
+            <figure className="relative overflow-hidden rounded-[2rem] border border-white bg-[linear-gradient(135deg,#E4F5FC,#F3FAED)] p-4 shadow-xl shadow-[#0B1F4D]/8 sm:rounded-[2.5rem] sm:p-7">
+              <svg aria-hidden="true" viewBox="0 0 800 600" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full fill-none stroke-white/80"><path d="M-80 80 Q180 200 450 0 M-80 120 Q180 240 490 0 M200 600 Q400 340 850 430 M250 650 Q450 390 900 480" strokeWidth="2" /></svg>
+              <div className="relative aspect-[800/566] w-full">
+                <Image src="/tumercadolajero/mapa-lajas.jpg" alt="Mapa de la provincia de Cienfuegos con el municipio de Lajas destacado en verde en la zona noreste" fill sizes="(max-width: 1023px) 100vw, 55vw" className="object-contain mix-blend-multiply" />
+                <div aria-hidden="true" className="absolute left-[59%] top-[18%] -translate-x-1/2">
+                  <MapPin size={38} fill="#E55B2D" stroke="white" strokeWidth={1.8} className="drop-shadow-md sm:h-12 sm:w-12" />
+                </div>
+                <div className="absolute right-0 top-[3%] rounded-2xl border border-[#0C8ACB]/10 bg-white/95 px-3 py-2 shadow-md sm:px-5 sm:py-3">
+                  <p className="text-sm font-black sm:text-xl">Lajas</p>
+                  <p className="mt-0.5 text-[10px] text-[#0B1F4D]/65 sm:text-sm">Cienfuegos · Cuba</p>
+                </div>
+              </div>
+              <figcaption className="relative mt-4 pb-2 text-sm font-semibold sm:text-base"><span aria-hidden="true" className="mb-3 block h-1.5 w-12 rounded-full bg-[#0C8ACB]" />Aquí están nuestras raíces.</figcaption>
+              <svg aria-hidden="true" viewBox="0 0 220 180" className="pointer-events-none absolute -bottom-1 -right-1 h-28 w-36 fill-none sm:h-36 sm:w-44">
+                <path d="M70 180 Q120 100 220 90" stroke="#F4B544" strokeWidth="26" />
+                <path d="M110 190 Q140 140 230 130" stroke="#0C8ACB" strokeWidth="22" />
+                <path d="M150 180 Q170 165 230 160" stroke="#0B1F4D" strokeWidth="18" />
+                <path d="M165 100 Q120 70 136 21 Q180 50 165 100" fill="#50A13A" />
+                <path d="M175 105 Q170 55 208 35 Q220 80 175 105" fill="#2A7560" />
+              </svg>
+            </figure>
           </div>
         </section>
         <section className="px-4 pb-16 sm:px-8 sm:pb-24">
