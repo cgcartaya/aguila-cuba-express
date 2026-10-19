@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import LajasBanner from "./LajasBanner";
 import {
   ArrowRight,
   HeartHandshake,
@@ -38,7 +39,8 @@ export default function TuMercadoLajeroLanding({
 }) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#FFFDF8] text-[#0B1F4D] selection:bg-[#E55B2D] selection:text-white">
-      <header className="sticky top-0 z-50 border-b border-[#0B1F4D]/8 bg-[#FFFDF8]/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-[#0C8ACB]/20 bg-[#FFFDF8]/95 backdrop-blur-xl">
+        <div aria-hidden="true" className="h-1.5 bg-gradient-to-r from-[#0C8ACB] via-[#50A13A] to-[#E55B2D]" />
         <nav
           aria-label="Navegación principal"
           className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-8"
@@ -88,17 +90,17 @@ export default function TuMercadoLajeroLanding({
       <main>
         <section
           id="inicio"
-          className="relative isolate overflow-hidden px-4 pb-16 pt-10 sm:px-8 sm:pb-24 sm:pt-16 lg:pt-20"
+          className="relative isolate overflow-hidden bg-[linear-gradient(135deg,#EFF8EC_0%,#FFFDF8_45%,#E2F3FC_100%)] px-4 pb-12 pt-7 sm:px-8 sm:pb-20 sm:pt-12 lg:pt-16"
         >
           <div className="absolute -left-24 top-20 -z-10 h-72 w-72 rounded-full bg-[#50A13A]/10 blur-3xl" />
           <div className="absolute -right-24 top-0 -z-10 h-96 w-96 rounded-full bg-[#0C8ACB]/12 blur-3xl" />
 
-          <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
+          <div className="mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[0.92fr_1.08fr] lg:gap-16">
             <div className="max-w-2xl">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#E55B2D]/20 bg-[#E55B2D]/8 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.15em] text-[#C9471D]">
                 <Sparkles size={15} /> El mercado digital de nuestra gente
               </div>
-              <h1 className="text-balance text-5xl font-black leading-[0.98] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+              <h1 className="text-balance text-[2.6rem] font-black leading-[1.02] tracking-[-0.045em] sm:text-6xl lg:text-7xl">
                 Todo Lajas,
                 <span className="mt-2 block text-[#0C8ACB]">más cerca de ti.</span>
               </h1>
@@ -129,30 +131,9 @@ export default function TuMercadoLajeroLanding({
             </div>
 
             <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[2.25rem] bg-[#EAF2F7] shadow-2xl shadow-[#0B1F4D]/15 sm:aspect-[5/4] lg:aspect-[4/5] xl:aspect-[5/4]">
-                <Image
-                  src="/tumercadolajero/iglesia.jpeg"
-                  alt="Iglesia de San José de las Lajas vista entre los árboles"
-                  fill
-                  priority
-                  sizes="(max-width: 1023px) 100vw, 52vw"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B1F4D]/45 via-transparent to-transparent" />
-                <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4 text-white sm:bottom-7 sm:left-7 sm:right-7">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/75">
-                      Nuestra casa
-                    </p>
-                    <p className="mt-1 text-2xl font-black sm:text-3xl">
-                      San José de las Lajas
-                    </p>
-                  </div>
-                  <MapPin className="shrink-0" size={30} />
-                </div>
-              </div>
+              <LajasBanner />
 
-              <div className="absolute -bottom-8 -left-3 flex items-center gap-3 rounded-3xl border border-white/70 bg-white/95 p-3 pr-5 shadow-xl backdrop-blur sm:-left-8 sm:p-4 sm:pr-6">
+              <div className="mx-auto mt-4 flex w-fit max-w-full items-center gap-3 rounded-3xl border border-[#50A13A]/20 bg-white/95 p-3 pr-5 shadow-lg sm:p-4 sm:pr-6">
                 <Image
                   src={logoUrl || "/tumercadolajero/logo.jpeg"}
                   alt="Tu Mercado Lajero"
@@ -165,7 +146,7 @@ export default function TuMercadoLajeroLanding({
                   <p className="text-xs font-bold uppercase tracking-wider text-[#50A13A]">
                     De aquí, para ti
                   </p>
-                  <p className="mt-1 font-black">TuMercadoLajero.com</p>
+                  <p className="mt-1 font-black">Tu Mercado Lajero</p>
                 </div>
               </div>
             </div>
@@ -188,7 +169,7 @@ export default function TuMercadoLajeroLanding({
           </div>
         </section>
 
-        <section id="esencia" className="px-4 py-20 sm:px-8 sm:py-28">
+        <section id="esencia" className="relative border-t-4 border-[#F4B544] bg-[linear-gradient(160deg,#FFFDF8_50%,#EFF8EC_100%)] px-4 py-20 sm:px-8 sm:py-28">
           <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-[#E55B2D]">
@@ -230,7 +211,7 @@ export default function TuMercadoLajeroLanding({
           </div>
         </section>
 
-        <section id="lajas" className="bg-[#F1F6F8] px-4 py-20 sm:px-8 sm:py-28">
+        <section id="lajas" className="border-t-4 border-[#0C8ACB] bg-[linear-gradient(135deg,#E2F3FC,#EFF8EC)] px-4 py-20 sm:px-8 sm:py-28">
           <div className="mx-auto max-w-7xl">
             <div className="mx-auto max-w-3xl text-center">
               <p className="text-xs font-black uppercase tracking-[0.22em] text-[#50A13A]">Hecho para Lajas</p>
