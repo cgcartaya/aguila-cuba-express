@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, MapPin, MessageCircle, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowRight, HeartHandshake, MapPin, MessageCircle, ShoppingBag, Leaf, Store, Users } from "lucide-react";
 import LajasBanner from "./LajasBanner";
 
 const whatsapp = "https://wa.me/5354265429?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20TuMercadoLajero.";
@@ -24,39 +24,39 @@ export default function TuMercadoLajeroLanding({ logoUrl }: { logoUrl?: string |
         </nav>
       </header>
       <main>
-        <section id="inicio" className="relative isolate bg-[#0B1F4D] px-4 pb-12 pt-7 text-white sm:px-8 sm:pb-20 sm:pt-12">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-            <div className="absolute -left-32 -top-40 h-96 w-96 rounded-full border-[60px] border-[#0C8ACB]/20" />
-            <div className="absolute -bottom-48 -right-32 h-[32rem] w-[32rem] rounded-full border-[70px] border-[#50A13A]/15" />
-          </div>
+        <section id="inicio" className="relative isolate overflow-hidden bg-[#FFFDF8] px-4 pb-8 pt-8 sm:px-8 sm:pb-12 sm:pt-12">
           <div className="mx-auto max-w-7xl">
-            <div className="mb-6 flex flex-col justify-between gap-4 sm:mb-8 lg:flex-row lg:items-end">
-              <div>
-                <p className="mb-3 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-[#F4B544]"><Sparkles size={15} /> De nuestra tierra, para nuestra gente</p>
-                <h1 className="text-balance text-[2.25rem] font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">Lajas se vive.<br className="sm:hidden" /> <span className="text-[#8ADAEF]">Y ahora se compra online.</span></h1>
-              </div>
-              <p className="max-w-sm text-sm leading-6 text-white/70 sm:text-base">Tu mercado de siempre, más cerca.<br />Descubre, elige y cuenta con nosotros.</p>
-            </div>
-            <div className="grid items-stretch gap-5 lg:grid-cols-[1.5fr_0.8fr] lg:gap-7">
-              <LajasBanner />
-              <div className="flex flex-col justify-center rounded-[2rem] bg-[#FFFDF8] p-6 text-[#0B1F4D] sm:p-9">
-                <div className="flex items-center gap-4">
-                  <Image src={logo} alt="Tu Mercado Lajero" width={92} height={92} unoptimized={Boolean(logoUrl)} className="h-20 w-20 shrink-0 rounded-2xl bg-white object-contain" />
-                  <div><p className="text-xs font-bold uppercase tracking-widest text-[#50A13A]">Con identidad local</p><p className="mt-1 text-xl font-black">Tu Mercado Lajero</p></div>
+            <div className="grid items-center gap-8 lg:grid-cols-[0.85fr_1.3fr] lg:gap-12">
+              <div className="min-w-0">
+                <p className="mb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#397D2A] sm:text-xs"><Leaf size={21} className="shrink-0" /> Hecho en Lajas, pensado para ti</p>
+                <h1 className="text-[2.65rem] font-black leading-[1.04] tracking-[-0.04em] sm:text-6xl xl:text-7xl">Tu mercado.<br /><span className="text-[#0C8ACB]">Tu gente.</span><br />Más cerca.</h1>
+                <p className="mt-5 max-w-md text-base leading-7 text-[#0B1F4D]/70 sm:mt-7 sm:text-lg sm:leading-8">Descubre una forma sencilla de comprar, con la cercanía y confianza de nuestra tierra.</p>
+                <div className="mt-6 flex flex-wrap gap-3 sm:mt-8">
+                  <Link href="/tienda" className="inline-flex min-h-14 flex-1 items-center justify-center gap-3 whitespace-nowrap rounded-2xl bg-[#E55B2D] px-5 font-bold text-white shadow-lg shadow-[#E55B2D]/15 transition hover:bg-[#C9471D] sm:flex-none">Explorar la tienda <ArrowRight size={20} /></Link>
+                  <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl border border-[#50A13A] bg-white px-5 font-bold text-[#397D2A] transition hover:bg-[#EFF8EC] sm:flex-none"><MessageCircle size={22} /> WhatsApp</a>
                 </div>
-                <div className="my-6 flex gap-1" aria-hidden="true">{["#0C8ACB", "#50A13A", "#F4B544", "#E55B2D"].map((color) => <span key={color} className="h-1.5 w-10 rounded-full" style={{ backgroundColor: color }} />)}</div>
-                <h2 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl">Lo que necesitas,<br />a un clic de ti.</h2>
-                <p className="mt-4 text-sm leading-7 text-[#0B1F4D]/65 sm:text-base">Explora nuestra tienda y consulta tus dudas con atención directa por WhatsApp.</p>
-                <Link href="/tienda" className="mt-6 inline-flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-[#E55B2D] px-5 font-bold text-white shadow-lg shadow-[#E55B2D]/15 transition hover:bg-[#C9471D]">Explorar la tienda <ArrowRight size={20} /></Link>
-                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-[#50A13A]/30 bg-[#EFF8EC] px-4 font-bold text-[#397D2A] hover:bg-[#E0F0D9]"><MessageCircle size={20} /> Hablemos por WhatsApp</a>
+                <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-[#0B1F4D]/65 sm:mt-7 sm:text-sm">
+                  <span className="inline-flex items-center gap-2"><Store size={19} /> Comercio local</span><span aria-hidden="true">·</span><span className="inline-flex items-center gap-2"><HeartHandshake size={19} /> Atención cercana</span>
+                </div>
               </div>
+              <LajasBanner />
             </div>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-xs font-semibold text-white/75 sm:justify-start sm:text-sm">
-              <span className="flex items-center gap-2"><ShoppingBag size={17} className="text-[#8ADAEF]" /> Compra desde donde estés</span>
-              <span className="flex items-center gap-2"><HeartHandshake size={17} className="text-[#A4E687]" /> Atención cercana</span>
-              <span className="flex items-center gap-2"><MapPin size={17} className="text-[#F4B544]" /> Lajas, Cienfuegos</span>
+            <div className="relative mt-10 grid gap-6 border-t border-[#0B1F4D]/10 pt-7 sm:mt-12 sm:grid-cols-3 sm:gap-5 sm:pt-8">
+              {[
+                { icon: ShoppingBag, title: "Compra a tu ritmo", text: "Explora nuestra tienda cuando quieras.", color: "#0C8ACB", background: "#E5F4FB" },
+                { icon: Leaf, title: "Con identidad local", text: "Una experiencia con corazón lajero.", color: "#397D2A", background: "#EAF4E4" },
+                { icon: Users, title: "Estamos para ayudarte", text: "Consúltanos por WhatsApp cuando lo necesites.", color: "#B16D00", background: "#FFF3D7" },
+              ].map(({ icon: Icon, title, text, color, background }) => (
+                <div key={title} className="flex items-start gap-4 sm:border-r sm:border-[#0B1F4D]/10 sm:pr-4 sm:last:border-r-0">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ color, backgroundColor: background }}><Icon size={27} /></span>
+                  <div><h2 className="text-base font-extrabold">{title}</h2><p className="mt-1 max-w-xs text-sm leading-6 text-[#0B1F4D]/65">{text}</p></div>
+                </div>
+              ))}
             </div>
           </div>
+          <svg aria-hidden="true" viewBox="0 0 240 180" className="pointer-events-none absolute -bottom-10 -right-12 -z-10 h-40 w-56 fill-none opacity-30 sm:h-52 sm:w-72">
+            <path d="M20 180 Q70 40 240 40" stroke="#0C8ACB" strokeWidth="25" /><path d="M90 200 Q140 110 260 110" stroke="#F4B544" strokeWidth="27" /><path d="M40 140 Q25 75 80 60 Q90 100 40 140" fill="#50A13A" />
+          </svg>
         </section>
         <section id="nosotros" className="relative isolate overflow-hidden px-4 py-16 sm:px-8 sm:py-24">
           <div aria-hidden="true" className="pointer-events-none absolute -bottom-24 -left-20 -z-10 h-40 w-[55%] -rotate-6 rounded-[100%] border-t-[18px] border-[#0C8ACB]/20" />
