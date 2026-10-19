@@ -30,7 +30,7 @@ export default function LajasBanner() {
       role="region"
       aria-roledescription="carrusel"
       aria-label="Imágenes de Lajas"
-      className="relative overflow-hidden rounded-[2rem] border-4 border-white bg-[#0B1F4D] shadow-2xl shadow-[#0B1F4D]/20 sm:rounded-[2.5rem]"
+      className="relative flex flex-col overflow-hidden rounded-[2rem] border-4 border-white bg-[#0B1F4D] shadow-2xl shadow-[#0B1F4D]/20 sm:rounded-[2.5rem]"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocusCapture={() => setHovered(true)}
@@ -43,7 +43,7 @@ export default function LajasBanner() {
         touchStart.current = null;
       }}
     >
-      <div className="relative aspect-[4/3] sm:aspect-[5/4] lg:aspect-[4/5] xl:aspect-[5/4]" style={{ touchAction: "pan-y" }}>
+      <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[520px] lg:flex-1" style={{ touchAction: "pan-y" }}>
         {slides.map((slide, index) => (
           <div key={slide.src} aria-hidden={index !== active} className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${index === active ? "opacity-100" : "opacity-0"}`}>
             <Image src={slide.src} alt={slide.description} fill preload={index === 0} sizes="(max-width: 1023px) 100vw, 52vw" className="object-cover" style={{ objectPosition: slide.position }} />
