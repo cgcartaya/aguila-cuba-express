@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, HeartHandshake, MapPin, MessageCircle, ShoppingBag, Leaf, Users } from "lucide-react";
+import { ArrowRight, HeartHandshake, MapPin, MessageCircle, ShoppingBag, Leaf, Users, Clock3, CircleCheck } from "lucide-react";
 import LajasBanner from "./LajasBanner";
 
 const whatsapp = "https://wa.me/5354265429?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20TuMercadoLajero.";
@@ -80,6 +80,22 @@ export default function TuMercadoLajeroLanding({ logoUrl }: { logoUrl?: string |
                 <path d="M175 105 Q170 55 208 35 Q220 80 175 105" fill="#2A7560" />
               </svg>
             </figure>
+          </div>
+        </section>
+        <section id="entregas" aria-labelledby="delivery-heading" className="px-4 pb-16 sm:px-8 sm:pb-24">
+          <div className="mx-auto grid max-w-7xl overflow-hidden rounded-[2rem] border border-white bg-[#E4F5FC] shadow-xl shadow-[#0B1F4D]/5 sm:rounded-[2.5rem] lg:grid-cols-2">
+            <div className="relative z-10 flex flex-col items-start justify-center p-6 sm:p-10 lg:p-12">
+              <p className="inline-flex items-center gap-2 rounded-full bg-[#368D31] px-4 py-2 text-[11px] font-extrabold uppercase tracking-wider text-white sm:text-sm"><Clock3 size={21} className="shrink-0" /> Entrega el mismo día</p>
+              <h2 id="delivery-heading" className="mt-6 text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl">Haz tu compra hoy.<br /><span className="text-[#0C8ACB]">Recíbela hoy.</span></h2>
+              <p className="mt-5 max-w-lg text-base leading-8 text-[#0B1F4D]/80 sm:text-lg">Compra en Tu Mercado Lajero y recibe tu pedido el mismo día, con la atención cercana de siempre.</p>
+              <p className="mt-6 flex items-start gap-2 text-sm font-bold"><MapPin size={22} className="shrink-0 text-[#E55B2D]" /> San José de las Lajas · Mayabeque</p>
+              <Link href="/tienda" className="mt-7 inline-flex min-h-14 w-full items-center justify-center gap-3 rounded-full bg-[#E55B2D] px-6 font-bold text-white shadow-lg shadow-[#E55B2D]/15 transition hover:-translate-y-0.5 hover:bg-[#C9471D] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0B1F4D] sm:w-auto sm:px-8"><ShoppingBag size={23} /> Hacer mi compra <ArrowRight size={21} /></Link>
+              <p className="mt-4 text-xs leading-6 text-[#0B1F4D]/65 sm:text-sm">Consulta disponibilidad y horario de entrega.</p>
+            </div>
+            <div className="relative aspect-square min-w-0 lg:aspect-auto lg:min-h-[560px]">
+              <Image src="/tumercadolajero/entrega-mismo-dia.webp" alt="Repartidor ilustrado de Tu Mercado Lajero en una moto naranja con compras para entregar" fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-contain" />
+              <div className="absolute right-5 top-4 flex items-center gap-2 rounded-2xl border border-white bg-white/95 px-4 py-3 text-sm font-extrabold shadow-lg sm:right-7 sm:top-7"><CircleCheck size={25} className="text-[#368D31]" /> Tu pedido, hoy</div>
+            </div>
           </div>
         </section>
         <section className="px-4 pb-16 sm:px-8 sm:pb-24">
