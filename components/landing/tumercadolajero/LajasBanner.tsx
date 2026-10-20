@@ -1,72 +1,98 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, MapPin, Pause, Play } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Pause, Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const slides = [
-  { src: "/tumercadolajero/iglesia.jpeg", title: "El corazón de Lajas", description: "Lajas, Cienfuegos", position: "center 60%" },
-  { src: "/tumercadolajero/edificio-historico.jpeg", title: "Lugares que nos unen", description: "El encanto de nuestra tierra", position: "center" },
-  { src: "/tumercadolajero/parque-iglesia.jpeg", title: "Orgullo lajero", description: "De aquí, para ti", position: "center 58%" },
+  { src: "/tumercadolajero/iglesia.jpeg", title: "Nuestra iglesia", alt: "Iglesia de Lajas enmarcada por árboles", position: "center 60%" },
+  { src: "/tumercadolajero/edificio-historico.jpeg", title: "Patrimonio local", alt: "Edificio histórico azul y blanco de Lajas", position: "center" },
+  { src: "/tumercadolajero/parque-iglesia.jpeg", title: "Nuestro parque", alt: "Gazebo del parque de Lajas junto a la iglesia", position: "center 58%" },
 ];
 
-export default function LajasBanner() {
+export default function LajasBanner({ whatsapp, logoUrl }: { whatsapp: string; logoUrl?: string | null }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [hovered, setHovered] = useState(false);
-  const touchStart = useRef<number | null>(null);
+  const [interacting, setInteracting] = useState(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const move = (direction: number) => setActive((current) => (current + direction + slides.length) % slides.length);
 
   useEffect(() => {
-    if (paused || hovered || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (paused || interacting) return;
     const timer = window.setInterval(() => {
-      if (!document.hidden) setActive((current) => (current + 1) % slides.length);
-    }, 5500);
+      if (!document.hidden && !preference.matches) setActive((current) => (current + 1) % slides.length);
+    }, 6000);
     return () => window.clearInterval(timer);
-  }, [paused, hovered, active]);
+  }, [paused, interacting, active]);
+
+  const control = "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/50 bg-[#0B1F4D]/40 text-white backdrop-blur-sm transition hover:bg-[#0C8ACB] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F4B544]";
 
   return (
     <div
       role="region"
       aria-roledescription="carrusel"
-      aria-label="Imágenes de Lajas"
-      className="relative flex flex-col overflow-hidden rounded-[2rem] bg-[#0B1F4D] shadow-xl shadow-[#0B1F4D]/10 sm:rounded-[2rem]"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onFocusCapture={() => setHovered(true)}
-      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setHovered(false); }}
-      onTouchStart={(event) => { touchStart.current = event.touches[0].clientX; }}
-      onTouchEnd={(event) => {
-        if (touchStart.current === null) return;
-        const distance = touchStart.current - event.changedTouches[0].clientX;
-        if (Math.abs(distance) > 40) move(distance > 0 ? 1 : -1);
-        touchStart.current = null;
-      }}
+      aria-label="Lugares de Lajas"
+      className="relative isolate overflow-hidden bg-[#0B1F4D] text-white"
+      onMouseEnter={() => setInteracting(true)}
+      onMouseLeave={() => setInteracting(false)}
+      onFocusCapture={() => setInteracting(true)}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}
     >
-      <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[540px] lg:flex-1" style={{ touchAction: "pan-y" }}>
+      <div
+        className="absolute inset-0 -z-20"
+        style={{ touchAction: "pan-y" }}
+        onTouchStart={(event) => { touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }; }}
+        onTouchEnd={(event) => {
+          if (!touchStart.current) return;
+          const dx = touchStart.current.x - event.changedTouches[0].clientX;
+          const dy = touchStart.current.y - event.changedTouches[0].clientY;
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : -1);
+          touchStart.current = null;
+        }}
+        onTouchCancel={() => { touchStart.current = null; }}
+      >
         {slides.map((slide, index) => (
-          <div key={slide.src} aria-hidden={index !== active} className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${index === active ? "opacity-100" : "opacity-0"}`}>
-            <Image src={slide.src} alt={slide.description} fill preload={index === 0} sizes="(max-width: 1023px) 100vw, 52vw" className="object-cover" style={{ objectPosition: slide.position }} />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0B1F4D]/90 via-[#0B1F4D]/5 to-transparent" />
+          <div key={slide.src} aria-hidden={active !== index} className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${active === index ? "opacity-100" : "opacity-0"}`}>
+            <Image src={slide.src} alt={slide.alt} fill preload={index === 0} sizes="100vw" className="object-cover" style={{ objectPosition: slide.position }} />
           </div>
         ))}
-        <div className="absolute inset-x-5 bottom-16 text-white sm:inset-x-7 sm:bottom-20" aria-live={paused ? "polite" : "off"}>
-          <p className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[10px] font-semibold text-[#0B1F4D] sm:text-xs"><MapPin size={16} className="text-[#E55B2D]" /> {slides[active].description}</p>
-          <p className="mt-2 text-2xl font-black sm:text-4xl">{slides[active].title}</p>
-        </div>
-        <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 sm:inset-x-6 sm:bottom-5">
-          <div className="flex gap-1" aria-label="Elegir imagen">
-            {slides.map((slide, index) => <button key={slide.src} type="button" onClick={() => setActive(index)} aria-label={`Ver imagen ${index + 1}: ${slide.title}`} aria-current={active === index ? "true" : undefined} className="flex h-11 min-w-9 items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-white"><span className={`h-2 rounded-full transition-all ${active === index ? "w-8 bg-[#F4B544]" : "w-2 bg-white/60"}`} /></button>)}
+      </div>
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-[#061A39]/95 via-[#061A39]/50 to-[#061A39]/10" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-[#061A39]/85 via-transparent to-[#061A39]/10" />
+      <div className="pointer-events-none mx-auto max-w-7xl px-5 pb-6 pt-10 sm:px-8 sm:pb-8 sm:pt-16 lg:pt-20">
+        <div className="pointer-events-auto max-w-lg">
+          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#F4B544] sm:text-sm">Lajas, Cienfuegos</p>
+          <h1 className="mt-4 text-[2.8rem] font-black leading-[1.02] tracking-[-0.035em] sm:text-6xl lg:text-7xl">Tu mercado.<br /><span className="text-[#60D5EE]">Tu gente.</span><br />Más cerca.</h1>
+          <p className="mt-5 max-w-sm text-base leading-7 text-white/85 sm:text-xl sm:leading-8">Compra online con la cercanía de nuestra tierra.</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/tienda" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#E55B2D] px-5 text-sm font-bold shadow-lg transition hover:bg-[#C9471D] sm:min-h-14 sm:text-base">Explorar la tienda <ArrowRight size={20} /></Link>
+            <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/80 bg-[#0B1F4D]/35 px-5 text-sm font-bold backdrop-blur-sm transition hover:bg-[#0B1F4D]/70 sm:min-h-14 sm:text-base"><MessageCircle size={21} /> WhatsApp</a>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="mr-2 hidden text-xs font-semibold text-white sm:inline">{String(active + 1).padStart(2, "0")} / 03</span>
-            <button type="button" onClick={() => move(-1)} aria-label="Imagen anterior" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#0B1F4D]/40 text-white hover:bg-[#0C8ACB]"><ChevronLeft size={20} /></button>
-            <button type="button" onClick={() => setPaused(!paused)} aria-label={paused ? "Reproducir carrusel" : "Pausar carrusel"} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#0B1F4D]/40 text-white hover:bg-[#0C8ACB]">{paused ? <Play size={16} /> : <Pause size={16} />}</button>
-            <button type="button" onClick={() => move(1)} aria-label="Imagen siguiente" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#0B1F4D]/40 text-white hover:bg-[#0C8ACB]"><ChevronRight size={20} /></button>
+        </div>
+        <div className="mt-12 flex flex-col gap-4 lg:mt-14 lg:flex-row lg:items-end lg:gap-6">
+          <div className="pointer-events-auto flex items-center gap-3 lg:order-1 lg:pb-2">
+            <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? "Reproducir carrusel" : "Pausar carrusel"} className={control}>{paused ? <Play size={18} /> : <Pause size={18} />}</button>
+            <span className="min-w-14 text-sm font-semibold tabular-nums">{String(active + 1).padStart(2, "0")} / 03</span>
+            <button type="button" onClick={() => move(-1)} aria-label="Imagen anterior" className={control}><ChevronLeft size={23} /></button>
+            <button type="button" onClick={() => move(1)} aria-label="Imagen siguiente" className={control}><ChevronRight size={23} /></button>
+          </div>
+          <div className="pointer-events-auto grid min-w-0 grid-cols-3 gap-2 lg:order-2 lg:flex-1 lg:gap-3" aria-label="Elegir foto del banner">
+            {slides.map((slide, index) => (
+              <button key={slide.src} type="button" onClick={() => setActive(index)} aria-label={`Mostrar ${slide.title}`} aria-current={active === index ? "true" : undefined} className={`relative aspect-[4/3] min-w-0 overflow-hidden rounded-xl border-[3px] text-left transition focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#F4B544] sm:aspect-[16/9] ${active === index ? "border-[#F4B544] shadow-lg" : "border-white/80 hover:border-[#60D5EE]"}`}>
+                <Image src={slide.src} alt="" fill sizes="(max-width: 1023px) 30vw, 240px" className="object-cover" style={{ objectPosition: slide.position }} />
+                <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                <span className="absolute inset-x-1 bottom-1 text-center text-[10px] font-bold sm:inset-x-2 sm:bottom-2 sm:text-sm">{slide.title}</span>
+              </button>
+            ))}
+          </div>
+          <div className="hidden shrink-0 text-center lg:order-3 lg:block">
+            <Image src={logoUrl || "/tumercadolajero/logo.jpeg"} alt="Tu Mercado Lajero" width={72} height={72} unoptimized={Boolean(logoUrl)} className="mx-auto h-16 w-16 rounded-full bg-white object-contain shadow-lg" />
+            <p className="mt-2 text-xs font-bold">De aquí, para ti</p>
           </div>
         </div>
       </div>
-      <div className="flex h-2"><span className="flex-1 bg-[#0C8ACB]" /><span className="flex-1 bg-[#50A13A]" /><span className="flex-1 bg-[#F4B544]" /><span className="flex-1 bg-[#E55B2D]" /></div>
     </div>
   );
 }
