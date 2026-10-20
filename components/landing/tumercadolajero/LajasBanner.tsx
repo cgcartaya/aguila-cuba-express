@@ -6,9 +6,9 @@ import { ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Pause, Play } fro
 import { useEffect, useRef, useState } from "react";
 
 const slides = [
-  { src: "/tumercadolajero/iglesia-ilustrada.jpeg", title: "Nuestra iglesia", alt: "Ilustración de la iglesia de Lajas rodeada de árboles", position: "center" },
-  { src: "/tumercadolajero/edificio-ilustrado.jpeg", title: "Patrimonio local", alt: "Ilustración del edificio histórico azul y blanco de Lajas", position: "center" },
-  { src: "/tumercadolajero/parque-ilustrado.jpeg", title: "Nuestro parque", alt: "Ilustración del gazebo del parque de Lajas junto a la iglesia", position: "center" },
+  { src: "/tumercadolajero/iglesia-ilustrada.jpeg", title: "Nuestra iglesia", alt: "Ilustración de la iglesia de San José de las Lajas rodeada de árboles", position: "center" },
+  { src: "/tumercadolajero/edificio-ilustrado.jpeg", title: "Patrimonio local", alt: "Ilustración del edificio histórico azul y blanco de San José de las Lajas", position: "center" },
+  { src: "/tumercadolajero/parque-ilustrado.jpeg", title: "Nuestro parque", alt: "Ilustración del gazebo del parque de San José de las Lajas junto a la iglesia", position: "center" },
 ];
 
 export default function LajasBanner({ whatsapp, logoUrl }: { whatsapp: string; logoUrl?: string | null }) {
@@ -33,7 +33,7 @@ export default function LajasBanner({ whatsapp, logoUrl }: { whatsapp: string; l
     <div
       role="region"
       aria-roledescription="carrusel"
-      aria-label="Lugares de Lajas"
+      aria-label="Lugares de San José de las Lajas"
       className="relative isolate overflow-hidden bg-[#0B1F4D] text-white"
       onMouseEnter={() => setInteracting(true)}
       onMouseLeave={() => setInteracting(false)}
@@ -63,7 +63,7 @@ export default function LajasBanner({ whatsapp, logoUrl }: { whatsapp: string; l
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-t from-[#061A39]/85 via-transparent to-[#061A39]/10" />
       <div className="pointer-events-none mx-auto max-w-7xl px-5 pb-6 pt-10 sm:px-8 sm:pb-8 sm:pt-16 lg:pt-20">
         <div className="pointer-events-auto max-w-lg">
-          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#F4B544] sm:text-sm">Lajas, Cienfuegos</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#F4B544] sm:text-sm">San José de las Lajas, Mayabeque</p>
           <h1 className="mt-4 text-[2.8rem] font-black leading-[1.02] tracking-[-0.035em] sm:text-6xl lg:text-7xl">Tu mercado.<br /><span className="text-[#60D5EE]">Tu gente.</span><br />Más cerca.</h1>
           <p className="mt-5 max-w-sm text-base leading-7 text-white/85 sm:text-xl sm:leading-8">Compra online con la cercanía de nuestra tierra.</p>
           <div className="mt-6 flex flex-wrap gap-3">
