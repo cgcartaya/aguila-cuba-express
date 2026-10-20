@@ -6,9 +6,9 @@ import { ArrowRight, ChevronLeft, ChevronRight, MessageCircle, Pause, Play } fro
 import { useEffect, useRef, useState } from "react";
 
 const slides = [
-  { src: "/tumercadolajero/iglesia.jpeg", title: "Nuestra iglesia", alt: "Iglesia de Lajas enmarcada por árboles", position: "center 60%" },
-  { src: "/tumercadolajero/edificio-historico.jpeg", title: "Patrimonio local", alt: "Edificio histórico azul y blanco de Lajas", position: "center" },
-  { src: "/tumercadolajero/parque-iglesia.jpeg", title: "Nuestro parque", alt: "Gazebo del parque de Lajas junto a la iglesia", position: "center 58%" },
+  { src: "/tumercadolajero/iglesia-ilustrada.jpeg", title: "Nuestra iglesia", alt: "Ilustración de la iglesia de Lajas rodeada de árboles", position: "center" },
+  { src: "/tumercadolajero/edificio-ilustrado.jpeg", title: "Patrimonio local", alt: "Ilustración del edificio histórico azul y blanco de Lajas", position: "center" },
+  { src: "/tumercadolajero/parque-ilustrado.jpeg", title: "Nuestro parque", alt: "Ilustración del gazebo del parque de Lajas junto a la iglesia", position: "center" },
 ];
 
 export default function LajasBanner({ whatsapp, logoUrl }: { whatsapp: string; logoUrl?: string | null }) {
