@@ -64,18 +64,19 @@ export async function POST(request: NextRequest) {
     return fail("No hay nada que actualizar.");
   }
 
+  // Empty password inputs mean keep the credentials already saved.
   const update: Record<string, unknown> = {};
-  if (secretKey !== undefined) {
-    if (secretKey && !secretKey.startsWith("sk_")) {
-      return fail("Esa no parece una secret key de Stripe válida (debe empezar con sk_).");
+  if (secretKey) {
+    if (!/^(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+$/.test(secretKey)) {
+      return fail("La clave debe ser secreta o restringida de Stripe: sk_live_, rk_live_, sk_test_ o rk_test_.");
     }
-    update.stripe_direct_secret_key = secretKey || null;
+    update.stripe_direct_secret_key = secretKey;
   }
-  if (webhookSecret !== undefined) {
+  if (webhookSecret) {
     if (webhookSecret && !webhookSecret.startsWith("whsec_")) {
       return fail("Ese no parece un signing secret de webhook válido (debe empezar con whsec_).");
     }
-    update.stripe_direct_webhook_secret = webhookSecret || null;
+    update.stripe_direct_webhook_secret = webhookSecret;
   }
 
   if (mode === "direct") {
@@ -99,6 +100,8 @@ export async function POST(request: NextRequest) {
   if (mode === "connect") {
     update.stripe_mode = "connect";
   }
+
+  if (Object.keys(update).length === 0) return fail("No hay datos nuevos que guardar.");
 
   const { error } = await supabaseAdmin.from("stores").update(update).eq("id", storeId);
   if (error) return fail("No se pudo guardar.", 500);
