@@ -71,6 +71,12 @@ const initialForm: CheckoutForm = {
   notes: "",
 };
 
+// Keep the stored province consistent with the options actually available.
+function alignDeliveryProvince(form: CheckoutForm, zones: DeliveryZone[]): CheckoutForm {
+  if (!zones.length || zones.some((zone) => (zone.province || "Cienfuegos") === form.province)) return form;
+  return { ...form, province: zones[0].province || "Cienfuegos", municipality: "", delivery_zone_id: "" };
+}
+
 // PERFIL DEL CLIENTE (sin login): el token vive en localStorage, uno por
 // tienda (mismo criterio que el carrito, ver contexts/CartContext.tsx),
 // para que un mismo navegador pueda "recordar" a distintas personas en
@@ -230,7 +236,9 @@ export default function CheckoutPage() {
 
         if (zonesResponse.error) throw zonesResponse.error;
 
-        setZones(zonesResponse.data || []);
+        const activeZones = zonesResponse.data || [];
+        setZones(activeZones);
+        setForm((current) => alignDeliveryProvince(current, activeZones));
         setBusinessWhatsapp(
           normalizeStoreWhatsapp(storeSettingsResponse.data?.whatsapp) || ""
         );
@@ -282,7 +290,7 @@ export default function CheckoutPage() {
         };
         const fresh = Number(draft.savedAt || 0) > Date.now() - 24 * 60 * 60 * 1000;
         if (fresh) {
-          if (draft.form) setForm((current) => ({ ...current, ...draft.form }));
+          if (draft.form) setForm((current) => alignDeliveryProvince({ ...current, ...draft.form }, zones));
           if (draft.step === 1 || draft.step === 2 || draft.step === 3) setStep(draft.step);
           if (draft.method === "cuba" || draft.method === "delivery") setMethod(draft.method);
           if (draft.payWith === "whatsapp" || (draft.payWith === "card" && cardPaymentAvailable)) setPayWith(draft.payWith);
@@ -295,7 +303,7 @@ export default function CheckoutPage() {
     } finally {
       setDraftReady(true);
     }
-  }, [cardPaymentAvailable, draftReady, loadingCheckout, store?.slug]);
+  }, [cardPaymentAvailable, draftReady, loadingCheckout, store?.slug, zones]);
 
   // Guarda los datos después de cada cambio. sessionStorage permite ir y
   // volver dentro de la misma pestaña sin dejar datos personales permanentes.
