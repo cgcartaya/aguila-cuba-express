@@ -179,7 +179,7 @@ export default function ShippingOperationalDashboardPage() {
               <Truck size={17} />
               Ver lista de envíos
             </Link>
-            <Link href="/admin/shipping/settings/pagos" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
+            <Link href="/admin/settings/payments" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
               <WalletCards size={17} />
               Cobros en línea
             </Link>
