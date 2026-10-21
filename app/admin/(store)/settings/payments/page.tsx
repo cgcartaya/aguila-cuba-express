@@ -111,8 +111,8 @@ export default function StripeConnectSettingsPage() {
       headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({
         store_id: activeStore.id,
-        secretKey: directSecretKey,
-        webhookSecret: directWebhookSecret,
+        ...(directSecretKey.trim() ? { secretKey: directSecretKey.trim() } : {}),
+        ...(directWebhookSecret.trim() ? { webhookSecret: directWebhookSecret.trim() } : {}),
       }),
     });
     const body = await response.json().catch(() => ({}));
@@ -262,17 +262,22 @@ export default function StripeConnectSettingsPage() {
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
           <p className="text-sm font-black text-[#061b3a]">Cuenta propia de Stripe</p>
           <p className="mt-1 text-xs text-slate-500">
-            Pega aquí la secret key y el webhook signing secret de la cuenta de Stripe de la tienda (no la de la plataforma). Se guardan cifrados en el servidor y nunca se muestran de nuevo.
+            Pega aquí la clave secreta o restringida y el webhook signing secret de la cuenta de Stripe de la tienda (no la de la plataforma). No se muestran de nuevo después de guardarlos.
+          </p>
+
+          <p className="mt-2 text-xs text-slate-500">
+            Para una clave restringida, habilita Checkout Sessions → Write. Conserva los demás permisos en None.
+            Usa la clave y el webhook del mismo entorno: real para cobrar o prueba para probar.
           </p>
 
           <div className="mt-4 space-y-3">
             <div>
-              <label className="text-xs font-bold text-slate-600">Secret key (empieza con sk_)</label>
+              <label className="text-xs font-bold text-slate-600">Clave de API (sk_live_ o rk_live_)</label>
               <input
                 type="password"
                 value={directSecretKey}
                 onChange={(e) => setDirectSecretKey(e.target.value)}
-                placeholder={directConfigured ? "•••••••••••••• (ya guardada — deja vacío para no cambiarla)" : "sk_live_..."}
+                placeholder={directConfigured ? "•••••••••••••• (ya guardada — deja vacío para no cambiarla)" : "rk_live_... o sk_live_..."}
                 className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-[#635bff]"
               />
             </div>
