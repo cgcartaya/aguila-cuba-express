@@ -118,10 +118,15 @@ export default function AdminDeliveryZonesPage() {
     municipalityFilter !== "all" ||
     statusFilter !== "all";
 
+  const provinceZones = useMemo(
+    () => zones.filter((zone) => (zone.province || DEFAULT_CUBA_PROVINCE) === form.province),
+    [zones, form.province]
+  );
+
   const filteredZones = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    return zones.filter((zone) => {
+    return provinceZones.filter((zone) => {
       if (municipalityFilter !== "all" && zone.municipality !== municipalityFilter) {
         return false;
       }
@@ -136,7 +141,7 @@ export default function AdminDeliveryZonesPage() {
 
       return true;
     });
-  }, [zones, searchQuery, municipalityFilter, statusFilter]);
+  }, [provinceZones, searchQuery, municipalityFilter, statusFilter]);
 
   const groupedZones = useMemo(() => {
     return filteredZones.reduce<Record<string, DeliveryZone[]>>((acc, zone) => {
@@ -147,10 +152,10 @@ export default function AdminDeliveryZonesPage() {
   }, [filteredZones]);
 
   const municipalityOptions = useMemo(() => {
-    return Array.from(new Set(zones.map((zone) => zone.municipality))).sort(
+    return Array.from(new Set(provinceZones.map((zone) => zone.municipality))).sort(
       (a, b) => a.localeCompare(b)
     );
-  }, [zones]);
+  }, [provinceZones]);
 
   useEffect(() => {
     loadZones();
@@ -184,7 +189,7 @@ export default function AdminDeliveryZonesPage() {
   }
 
   function resetForm() {
-    setForm(emptyForm);
+    setForm((current) => ({ ...emptyForm, province: current.province, municipality: current.municipality }));
     setEditingId(null);
     setError("");
     setSuccess("");
@@ -194,6 +199,15 @@ export default function AdminDeliveryZonesPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
     const target = e.target;
+    if (target.name === "province") {
+      setMunicipalityFilter("all");
+      setSelectedIds(new Set());
+      setExpandedMunicipios(new Set());
+      setEditingId(null);
+      setBulkField(null);
+      setError("");
+      setSuccess("");
+    }
 
     if (target instanceof HTMLInputElement && target.type === "checkbox") {
       setForm((current) => ({
@@ -213,6 +227,7 @@ export default function AdminDeliveryZonesPage() {
 
   function handleEdit(zone: DeliveryZone) {
     setEditingId(zone.id);
+    setSelectedIds(new Set());
 
     setForm({
       province: zone.province || DEFAULT_CUBA_PROVINCE,
@@ -443,7 +458,7 @@ export default function AdminDeliveryZonesPage() {
     }
 
     const rawValue = Number(bulkValue);
-    const targets = zones.filter((zone) => selectedIds.has(zone.id));
+    const targets = provinceZones.filter((zone) => selectedIds.has(zone.id));
 
     const updates = targets.map((zone) => ({
       id: zone.id,
@@ -701,14 +716,14 @@ export default function AdminDeliveryZonesPage() {
                 </h2>
 
                 <p className="text-sm text-slate-500">
-                  Estas son las zonas que aparecerán en el checkout público.
+                  Zonas de {form.province} que aparecerán en el checkout público.
                 </p>
               </div>
 
               <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700">
-                {filteredZones.length === zones.length
-                  ? `${zones.length} zonas`
-                  : `${filteredZones.length} de ${zones.length} zonas`}
+                {filteredZones.length === provinceZones.length
+                  ? `${provinceZones.length} zonas`
+                  : `${filteredZones.length} de ${provinceZones.length} zonas`}
               </span>
             </div>
 
