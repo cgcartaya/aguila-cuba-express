@@ -13,11 +13,21 @@ import {
   TicketPercent,
   PanelsTopLeft,
   ShoppingBag,
+  WalletCards,
 } from "lucide-react";
 
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 
 const settingsCards = [
+  {
+    title: "Pagos y Stripe",
+    description:
+      "Conecta Stripe y administra la cuenta de cobro de tu tienda para compras y envíos.",
+    href: "/admin/settings/payments",
+    icon: WalletCards,
+    iconBox: "bg-violet-50 text-violet-700",
+    hover: "hover:border-violet-200 hover:bg-violet-50/40",
+  },
 
   {
     title: "Checkout Builder",

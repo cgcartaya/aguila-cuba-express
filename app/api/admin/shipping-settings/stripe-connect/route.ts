@@ -157,8 +157,8 @@ export async function POST(request: NextRequest) {
           type: "account_onboarding",
           account_onboarding: {
             configurations: ["merchant"],
-            refresh_url: `${origin}/admin/shipping/settings/pagos?refresh=1`,
-            return_url: `${origin}/admin/shipping/settings/pagos?done=1`,
+            refresh_url: `${origin}/admin/settings/payments?refresh=1`,
+            return_url: `${origin}/admin/settings/payments?done=1`,
           },
         },
       },
