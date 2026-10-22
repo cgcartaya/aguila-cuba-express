@@ -3,13 +3,15 @@
 import Image from "next/image";
 import {
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   CalendarClock,
   MessageCircle,
   Share2,
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getPublicPromotionsByStoreSlug } from "@/lib/services/marketing";
 import type { MarketingPromotion } from "@/types/marketing";
@@ -77,6 +79,8 @@ export default function YoyoPromotions() {
   const [promotions, setPromotions] = useState<MarketingPromotion[]>([]);
   const [selected, setSelected] = useState<MarketingPromotion | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activePromotion, setActivePromotion] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -152,6 +156,31 @@ export default function YoyoPromotions() {
     }
   }
 
+  function scrollToPromotion(index: number) {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const nextIndex = Math.max(0, Math.min(index, orderedPromotions.length - 1));
+    const card = carousel.children.item(nextIndex) as HTMLElement | null;
+    card?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
+    setActivePromotion(nextIndex);
+  }
+
+  function updateActivePromotion() {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    const cards = Array.from(carousel.children) as HTMLElement[];
+    const closest = cards.reduce(
+      (best, card, index) => {
+        const distance = Math.abs(card.offsetLeft - carousel.scrollLeft);
+        return distance < best.distance ? { index, distance } : best;
+      },
+      { index: 0, distance: Number.POSITIVE_INFINITY }
+    );
+    setActivePromotion(closest.index);
+  }
+
   if (loading) {
     return (
       <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -165,121 +194,71 @@ export default function YoyoPromotions() {
 
   return (
     <>
-      <section id="promociones" className="relative overflow-hidden py-14 sm:py-20">
-        <div className="pointer-events-none absolute inset-x-0 top-20 mx-auto h-72 max-w-5xl rounded-full bg-blue-200/30 blur-3xl" />
-
+      <section id="promociones" className="relative overflow-hidden bg-[#f8fbff] py-14 sm:py-20">
+        <div className="pointer-events-none absolute -right-32 top-4 h-80 w-80 rounded-full bg-blue-100/70 blur-3xl" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-blue-700 shadow-sm">
-              <Sparkles className="h-4 w-4" />
-              Promociones de YOYO
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-blue-700">
+              <Sparkles className="h-4 w-4" /> Promociones de YOYO
             </div>
-            <h2 className="mt-5 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              Ofertas pensadas para tus envíos
+            <h2 className="mt-4 text-4xl font-black leading-[1.02] tracking-[-0.04em] text-slate-950 sm:text-6xl">
+              Ofertas que te llevan más lejos
             </h2>
-            <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">
-              Descubre nuestras promociones vigentes y elige la que mejor se adapte a lo que deseas enviar a Cuba.
+            <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+              Descubre las promociones vigentes para tus envíos a Cuba.
             </p>
           </div>
 
-          <div className="mt-9 grid gap-5 lg:grid-cols-2">
-            {orderedPromotions.map((promotion) => {
+          <div className="mt-9 flex items-center justify-end gap-2">
+            <button type="button" onClick={() => scrollToPromotion(activePromotion - 1)} disabled={activePromotion === 0} className="grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-900 shadow-sm transition hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-35" aria-label="Promoción anterior"><ChevronLeft className="h-5 w-5" /></button>
+            <button type="button" onClick={() => scrollToPromotion(activePromotion + 1)} disabled={activePromotion === orderedPromotions.length - 1} className="grid h-11 w-11 place-items-center rounded-full bg-blue-700 text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-35" aria-label="Promoción siguiente"><ChevronRight className="h-5 w-5" /></button>
+          </div>
+
+          <div ref={carouselRef} onScroll={updateActivePromotion} className="-mx-4 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-6 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden">
+            {orderedPromotions.map((promotion, index) => {
               const destination = resolveDestination(promotion);
-
               return (
-                <article
-                  key={promotion.id}
-                  className={`group relative overflow-hidden rounded-[1.75rem] border bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                    promotion.is_featured
-                      ? "border-slate-900 ring-1 ring-slate-900/10"
-                      : "border-slate-200"
-                  }`}
-                >
-                  <div className="grid min-h-[300px] sm:grid-cols-[42%_58%] lg:min-h-[330px]">
-                    <button
-                      type="button"
-                      onClick={() => setSelected(promotion)}
-                      className="relative min-h-[250px] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50 text-left sm:min-h-full"
-                      aria-label={`Abrir promoción ${promotion.title}`}
-                    >
-                      <PromotionImage promotion={promotion} priority={promotion.is_featured} />
-                      <div className="absolute inset-0 ring-1 ring-inset ring-black/5" />
-                      <span
-                        className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-wider shadow-md ${
-                          promotion.is_featured
-                            ? "bg-amber-300 text-slate-950"
-                            : "bg-white/95 text-blue-700"
-                        }`}
-                      >
-                        {getAutomaticBadge(promotion)}
-                      </span>
-                    </button>
-
-                    <div
-                      className={`flex flex-col justify-center p-6 sm:p-7 ${
-                        promotion.is_featured
-                          ? "bg-slate-950 text-white"
-                          : "bg-white text-slate-950"
-                      }`}
-                    >
-                      <p
-                        className={`text-[11px] font-black uppercase tracking-[0.2em] ${
-                          promotion.is_featured ? "text-sky-300" : "text-blue-600"
-                        }`}
-                      >
-                        {CATEGORY_LABELS[promotion.category]}
-                      </p>
-
-                      <h3 className="mt-3 text-2xl font-black leading-tight">
-                        {promotion.title}
-                      </h3>
-
-                      <p
-                        className={`mt-3 line-clamp-3 text-sm leading-6 ${
-                          promotion.is_featured ? "text-slate-300" : "text-slate-600"
-                        }`}
-                      >
-                        {promotion.subtitle ||
-                          promotion.description ||
-                          "Conoce todos los detalles de esta promoción."}
-                      </p>
-
-                      <div className="mt-5 flex flex-wrap gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => setSelected(promotion)}
-                          className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-black transition hover:-translate-y-0.5 ${
-                            promotion.is_featured
-                              ? "bg-white text-slate-950 hover:bg-sky-50"
-                              : "bg-slate-950 text-white hover:bg-slate-800"
-                          }`}
-                        >
-                          Ver promoción
-                          <ArrowRight className="h-4 w-4" />
-                        </button>
-
-                        {destination && (
-                          <a
-                            href={destination}
-                            target="_blank"
-                            rel="noreferrer"
-                            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-black transition ${
-                              promotion.is_featured
-                                ? "border-white/20 bg-white/10 text-white hover:bg-white/20"
-                                : "border-slate-200 bg-white text-slate-800 hover:bg-slate-50"
-                            }`}
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            {promotion.button_text || "Información"}
-                          </a>
-                        )}
-                      </div>
+                <article key={promotion.id} className="group w-[88%] shrink-0 snap-start overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,.09)] sm:w-[560px]">
+                  <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-slate-100 via-white to-blue-50">
+                    <button type="button" onClick={() => setSelected(promotion)} className="absolute inset-0 z-10" aria-label={`Abrir promoción ${promotion.title}`} />
+                    <PromotionImage promotion={promotion} priority={index === 0} />
+                    <span className={`absolute left-4 top-4 z-20 rounded-full px-3 py-2 text-[11px] font-black uppercase tracking-wider shadow-md ${promotion.is_featured ? "bg-amber-300 text-slate-950" : "bg-white/95 text-blue-700"}`}>{getAutomaticBadge(promotion)}</span>
+                    <button type="button" onClick={() => void sharePromotion(promotion)} className="absolute right-4 top-4 z-20 grid h-11 w-11 place-items-center rounded-full bg-white/95 text-slate-950 shadow-md backdrop-blur transition hover:scale-105" aria-label={`Compartir ${promotion.title}`}><Share2 className="h-5 w-5" /></button>
+                  </div>
+                  <div className="p-5 sm:p-7">
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-700">{CATEGORY_LABELS[promotion.category]}</p>
+                    <h3 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">{promotion.title}</h3>
+                    <p className="mt-2 line-clamp-2 min-h-12 text-sm leading-6 text-slate-600">{promotion.subtitle || promotion.description || "Conoce todos los detalles de esta promoción."}</p>
+                    <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                      <button type="button" onClick={() => setSelected(promotion)} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-blue-700 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-800">Ver promoción <ArrowRight className="h-4 w-4" /></button>
+                      {destination && <a href={destination} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full border-2 border-blue-700 bg-white px-5 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-50"><MessageCircle className="h-4 w-4 text-emerald-600" />{promotion.button_text || "Información"}</a>}
                     </div>
                   </div>
                 </article>
               );
             })}
           </div>
+
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex gap-2" aria-label={`Promoción ${activePromotion + 1} de ${orderedPromotions.length}`}>
+              {orderedPromotions.map((promotion, index) => <button key={promotion.id} type="button" onClick={() => scrollToPromotion(index)} className={`h-2.5 rounded-full transition-all ${activePromotion === index ? "w-8 bg-blue-700" : "w-2.5 bg-slate-300"}`} aria-label={`Ir a promoción ${index + 1}`} />)}
+            </div>
+            {orderedPromotions.length > 1 && <p className="text-xs font-semibold text-slate-500">Desliza para ver más</p>}
+          </div>
+
+          {orderedPromotions.length > 1 && (
+            <div className="mt-10">
+              <div className="flex items-center justify-between gap-4"><h3 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">Más promociones</h3><button type="button" onClick={() => scrollToPromotion(1)} className="inline-flex items-center gap-1 text-sm font-black text-blue-700">Ver todas <ArrowRight className="h-4 w-4" /></button></div>
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {orderedPromotions.slice(1).map((promotion) => (
+                  <button key={promotion.id} type="button" onClick={() => setSelected(promotion)} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
+                    <div className="relative aspect-square bg-gradient-to-br from-slate-100 via-white to-blue-50"><PromotionImage promotion={promotion} /></div>
+                    <div className="p-3 sm:p-4"><p className="text-[10px] font-black uppercase tracking-wider text-blue-700">{CATEGORY_LABELS[promotion.category]}</p><p className="mt-1 line-clamp-2 text-sm font-black leading-snug text-slate-950 sm:text-base">{promotion.title}</p></div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
