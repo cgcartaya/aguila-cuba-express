@@ -75,7 +75,8 @@ function nextDays(count = 8) {
   return days;
 }
 
-export default function PickupPlannerHero() {
+export default function PickupPlannerHero({ variant = "card" }: { variant?: "card" | "horizontal" }) {
+  const horizontal = variant === "horizontal";
   const days = useMemo(() => nextDays(), []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -381,50 +382,26 @@ export default function PickupPlannerHero() {
 
   return (
     <>
-      <section className="relative overflow-hidden rounded-[2rem] border border-white/15 bg-gradient-to-br from-white via-blue-50 to-blue-100 p-6 text-slate-950 shadow-[0_35px_90px_rgba(0,0,0,.32)] sm:p-8">
-        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-blue-600/10" />
-        <div className="absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-red-500/10" />
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-red-600">
-            <Truck size={16} /> Recogida a domicilio
+      <section className={horizontal ? "rounded-[1.75rem] bg-[#0757bb] p-6 text-white sm:p-8" : "relative overflow-hidden rounded-[2rem] border border-white/15 bg-gradient-to-br from-white via-blue-50 to-blue-100 p-6 text-slate-950 shadow-xl sm:p-8"}>
+        <div className={horizontal ? "grid items-center gap-6 lg:grid-cols-[1fr_1.1fr] lg:gap-10" : "relative z-10"}>
+          <div>
+            <div className={`flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] ${horizontal ? "text-blue-100" : "text-red-600"}`}><Truck size={20} /> Recogida a domicilio</div>
+            <h2 className={`mt-3 text-3xl font-black tracking-tight sm:text-4xl ${horizontal ? "text-white" : "text-[#061b3a]"}`}>Recogemos en tu puerta.</h2>
+            <p className={`mt-3 max-w-xl text-sm leading-6 sm:text-base ${horizontal ? "text-blue-50" : "text-slate-600"}`}>Dinos dónde estás y qué días te convienen. Nosotros organizamos la ruta y confirmamos por WhatsApp.</p>
           </div>
-          <h2 className="mt-4 max-w-xl text-3xl font-black tracking-tight text-[#061b3a] sm:text-4xl">
-            Recogemos en tu puerta.
-          </h2>
-          <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-slate-600">
-            Dinos dónde estás y qué días te convienen. Nosotros organizamos la ruta y confirmamos por WhatsApp.
-          </p>
-
-          <button
-            type="button"
-            onClick={openPlanner}
-            className="mt-7 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-[0_18px_45px_rgba(15,23,42,.12)] transition hover:-translate-y-0.5 hover:border-blue-300 sm:p-5"
-          >
-            <span className="flex min-w-0 items-center gap-4">
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600">
-                <MapPin size={24} />
+          <div>
+            <button type="button" onClick={openPlanner} className={`${horizontal ? "" : "mt-7"} flex min-h-20 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:bg-blue-50 sm:p-5`}>
+              <span className="flex min-w-0 items-center gap-3">
+                <MapPin size={28} className="shrink-0 text-red-600" />
+                <span className="min-w-0"><span className="block text-xs font-bold text-red-600">Comienza aquí</span><span className="mt-1 block text-base font-black leading-snug text-[#061b3a] sm:text-lg">Escribe tu ciudad y dirección</span></span>
               </span>
-              <span className="min-w-0">
-                <span className="block text-xs font-black uppercase tracking-[0.12em] text-slate-500">Comienza aquí</span>
-                <span className="mt-1 block truncate text-base font-black text-[#061b3a] sm:text-lg">Escribe tu ciudad y dirección</span>
-              </span>
-            </span>
-            <ChevronRight className="shrink-0 text-blue-700" size={24} />
-          </button>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3.5">
-              <ShieldCheck className="text-emerald-600" size={20} />
-              <span className="text-sm font-black text-slate-700">Solicitud segura</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3.5">
-              <Route className="text-blue-700" size={20} />
-              <span className="text-sm font-black text-slate-700">Ruta flexible</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-white/70 p-3.5">
-              <Sparkles className="text-amber-500" size={20} />
-              <span className="text-sm font-black text-slate-700">Confirmación rápida</span>
+              <ChevronRight className="shrink-0 text-blue-700" size={24} />
+            </button>
+            <div className={`mt-4 flex flex-wrap gap-x-5 gap-y-2 ${horizontal ? "text-blue-50" : "text-slate-700"}`}>
+              {[[ShieldCheck, "Solicitud segura"], [Route, "Ruta flexible"], [Sparkles, "Confirmación rápida"]].map(([Icon, label]) => {
+                const TrustIcon = Icon as typeof ShieldCheck;
+                return <span key={String(label)} className="inline-flex items-center gap-1.5 text-xs font-semibold"><TrustIcon size={15} className="shrink-0" />{String(label)}</span>;
+              })}
             </div>
           </div>
         </div>
