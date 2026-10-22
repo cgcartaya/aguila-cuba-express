@@ -7,7 +7,6 @@ import { useState } from "react";
 import { STORE_URL, WHATSAPP_URL } from "./constants";
 
 const links = [
-  ["Servicios", "#servicios"],
   ["Cotizar", "#cotizar"],
   ["Recogida", "#recogida"],
 ] as const;
