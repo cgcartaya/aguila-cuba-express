@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
 import LocationPickerMap from "@/components/maps/LocationPickerMap";
+import { WHATSAPP_PHONE } from "@/components/landing/yoyo/constants";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,6 +15,7 @@ import {
   ChevronRight,
   Loader2,
   MapPin,
+  MessageCircle,
   Package,
   Route,
   ShieldCheck,
@@ -104,6 +106,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
   const [addressResult, setAddressResult] = useState<AddressValidation | null>(null);
   const [error, setError] = useState("");
   const [successCode, setSuccessCode] = useState("");
+  const [successWhatsappUrl, setSuccessWhatsappUrl] = useState("");
   const [config, setConfig] = useState<PickupPublicConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [requestedRoute, setRequestedRoute] = useState<RequestedRoute | null>(null);
@@ -118,6 +121,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
       const detail = (event as CustomEvent<{ city?: string; routeId?: string; routeName?: string; routeDate?: string }>).detail || {};
       setError("");
       setSuccessCode("");
+      setSuccessWhatsappUrl("");
       setStep(1);
       if (detail.city) setForm((current) => ({ ...current, city: detail.city || current.city }));
       if (detail.routeId && detail.routeName && detail.routeDate) {
@@ -199,6 +203,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
     setSelectedDates([]);
     setAddressResult(null);
     setSuccessCode("");
+    setSuccessWhatsappUrl("");
     setError("");
     setRequestedRoute(null);
     setPin({ latitude: null, longitude: null });
@@ -370,6 +375,21 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "No pudimos registrar la solicitud.");
       setSuccessCode(result.request_code);
+      const message = [
+        "Hola YOYO, acabo de registrar una solicitud de recogida en la web.",
+        `Código: ${result.request_code}`,
+        `Nombre: ${form.customer_name.trim()}`,
+        `Teléfono: ${form.phone.trim()}`,
+        `Dirección: ${[result.address?.formattedAddress || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", "), form.address_line_2].filter(Boolean).join(" · ")}`,
+        `Fechas preferidas: ${selectedDates.slice(0, config?.maxPreferredDates || 3).map((date) => date.split("-").reverse().join("/")).join(", ")}`,
+        `Paquetes: ${form.package_count} · ${form.package_type}`,
+        form.estimated_weight ? `Peso estimado: ${form.estimated_weight} lb` : "",
+        form.needs_box ? "Necesito caja." : "",
+        form.needs_packing_help ? "Necesito ayuda de empaque." : "",
+        form.notes.trim() ? `Notas: ${form.notes.trim()}` : "",
+        "Quedo pendiente de la confirmación del día de recogida.",
+      ].filter(Boolean).join("\n");
+      setSuccessWhatsappUrl(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`);
       setStep(5);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Ocurrió un error inesperado.");
@@ -651,6 +671,12 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-200">Código de solicitud</p>
                     <p className="mt-2 text-3xl font-black">{successCode}</p>
                   </div>
+                  {successWhatsappUrl && <>
+                    <a href={successWhatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex min-h-14 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-700">
+                      <MessageCircle size={22} /> Avisar a YOYO por WhatsApp
+                    </a>
+                    <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">Tu solicitud ya está guardada. Este botón abre WhatsApp con el resumen; pulsa Enviar para hacérselo llegar a YOYO.</p>
+                  </>}
                   <button type="button" onClick={() => { resetPlanner(); closePlanner(); }} className="mt-6 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 hover:bg-slate-50">Cerrar</button>
                 </div>
               )}

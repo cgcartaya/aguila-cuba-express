@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import { sendPickupNotification } from "@/lib/notifications/pickup-notification";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { validatePickupAddress } from "@/lib/pickups/address-validation";
 import type { CreatePickupRequestInput } from "@/lib/pickups/types";
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     const { data: store, error: storeError } = await supabaseAdmin
       .from("stores")
-      .select("id, slug, is_active")
+      .select("id, slug, name, is_active")
       .eq("slug", storeSlug)
       .eq("is_active", true)
       .maybeSingle();
@@ -197,6 +198,22 @@ export async function POST(request: NextRequest) {
       await supabaseAdmin.from("pickup_requests").delete().eq("id", pickup.id);
       return NextResponse.json({ error: "No pudimos guardar las fechas seleccionadas." }, { status: 500 });
     }
+
+    after(() => sendPickupNotification({
+      storeId: store.id,
+      storeName: store.name || store.slug,
+      requestCode: pickup.request_code,
+      customerName,
+      phone,
+      address: [validation.formattedAddress || [validation.addressLine1, validation.city, validation.region, validation.postalCode].filter(Boolean).join(", "), clean(body.address_line_2, 100)].filter(Boolean).join(" · "),
+      dates: selectedDates,
+      packageCount: Math.max(1, Math.min(99, Number(body.package_count) || 1)),
+      packageType: clean(body.package_type, 80),
+      estimatedWeight: body.estimated_weight == null || body.estimated_weight === ("" as any) ? null : Math.max(0, Math.min(10000, Number(body.estimated_weight) || 0)),
+      needsBox: Boolean(body.needs_box),
+      needsPackingHelp: Boolean(body.needs_packing_help),
+      notes: clean(body.notes, 1000),
+    }));
 
     return NextResponse.json(
       { id: pickup.id, request_code: pickup.request_code, address: validation, requested_route: verifiedRequestedRoute },
