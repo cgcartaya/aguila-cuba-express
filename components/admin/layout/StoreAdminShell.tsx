@@ -123,7 +123,9 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        {children}
+        <div className="pb-[calc(6rem+env(safe-area-inset-bottom,0px))] xl:pb-0">
+          {children}
+        </div>
       </div>
 
       <StoreAdminMobileMenu open={open} onClose={() => setOpen(false)} />

@@ -319,7 +319,7 @@ export default function AdminGeneralSettingsPage() {
           )}
 
           <div className="mt-6 flex justify-end">
-            <AdminButton onClick={handleSave} disabled={saving} icon={Save}>
+            <AdminButton onClick={handleSave} disabled={saving} icon={Save} className="min-h-12 w-full sm:w-auto">
               {saving ? "Guardando..." : "Guardar cambios"}
             </AdminButton>
           </div>

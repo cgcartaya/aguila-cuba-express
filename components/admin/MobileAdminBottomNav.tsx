@@ -30,7 +30,7 @@ export default function MobileAdminBottomNav() {
   if (isSaasArea(pathname)) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white/95 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur xl:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white/95 pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur xl:hidden">
       <div className="grid h-20 grid-cols-5 items-center px-2">
         {links.map((link) => {
           const Icon = link.icon;
