@@ -55,6 +55,7 @@ export default function AdminGeneralSettingsPage() {
   }, [accessStore, isSuperAdmin, selectedStore]);
 
   const [form, setForm] = useState(emptyForm);
+  const [savedWhatsapp, setSavedWhatsapp] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -79,6 +80,7 @@ export default function AdminGeneralSettingsPage() {
 
         if (!activeStore?.id) {
           setForm(emptyForm);
+          setSavedWhatsapp("");
           setError(
             "No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda."
           );
@@ -91,6 +93,7 @@ export default function AdminGeneralSettingsPage() {
 
         if (settingsError) throw settingsError;
 
+        setSavedWhatsapp(data?.whatsapp || "");
         setForm({
           store_name: data?.store_name || activeStore.name || "",
           slogan: data?.slogan || "",
@@ -125,6 +128,8 @@ export default function AdminGeneralSettingsPage() {
   };
 
   const handleSave = async () => {
+    setError("");
+    setSuccess("");
     if (!activeStore?.id) {
       setError(
         "No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda."
@@ -132,7 +137,9 @@ export default function AdminGeneralSettingsPage() {
       return;
     }
 
-    if (form.whatsapp.trim() && !normalizeStoreWhatsapp(form.whatsapp)) {
+    const normalizedWhatsapp = normalizeStoreWhatsapp(form.whatsapp);
+    const whatsappChanged = form.whatsapp !== savedWhatsapp;
+    if (whatsappChanged && form.whatsapp.trim() && !normalizedWhatsapp) {
       setError("Selecciona el país del WhatsApp y escribe un número nacional válido. No se guardaron los cambios.");
       return;
     }
@@ -145,7 +152,9 @@ export default function AdminGeneralSettingsPage() {
       const { error: saveError } = await saveStoreSettings(
         {
           ...form,
-          whatsapp: form.whatsapp.trim() ? `+${normalizeStoreWhatsapp(form.whatsapp)}` : "",
+          // Preserve an unchanged legacy number when saving unrelated settings.
+          // Any edited number must pass international phone validation above.
+          whatsapp: form.whatsapp.trim() ? (normalizedWhatsapp ? `+${normalizedWhatsapp}` : savedWhatsapp) : "",
           updated_at: new Date().toISOString(),
         },
         activeStore.id
@@ -153,6 +162,7 @@ export default function AdminGeneralSettingsPage() {
 
       if (saveError) throw saveError;
 
+      setSavedWhatsapp(form.whatsapp);
       setSuccess("Ajustes guardados correctamente.");
     } catch (err: any) {
       console.error("ERROR GUARDANDO AJUSTES GENERALES:", err);
@@ -206,12 +216,6 @@ export default function AdminGeneralSettingsPage() {
               Ver tienda
             </Link>
           </div>
-
-          {error && (
-            <div className="mb-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
-              {error}
-            </div>
-          )}
 
           <div className="grid gap-5 md:grid-cols-2">
             <AdminInput
@@ -312,8 +316,14 @@ export default function AdminGeneralSettingsPage() {
             />
           </div>
 
+          {error && (
+            <div role="alert" className="mt-5 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+              {error}
+            </div>
+          )}
+
           {success && (
-            <div className="mt-5 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
+            <div role="status" className="mt-5 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-700">
               {success}
             </div>
           )}
