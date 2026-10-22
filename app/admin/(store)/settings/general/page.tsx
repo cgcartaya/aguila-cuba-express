@@ -266,7 +266,7 @@ export default function AdminGeneralSettingsPage() {
 
             <div className="md:col-span-2">
               <AdminInput
-                label="Email para avisos de pedidos nuevos"
+                label="Email para avisos de pedidos y recogidas"
                 value={form.order_notification_email}
                 onChange={(value) =>
                   handleChange("order_notification_email", value)
@@ -274,7 +274,7 @@ export default function AdminGeneralSettingsPage() {
                 placeholder="pedidos@negocio.com"
               />
               <p className="mt-1 text-xs text-slate-500">
-                Cada vez que entre un pedido nuevo, se manda un aviso
+                Cada vez que entre un pedido o una solicitud de recogida, se manda un aviso
                 automático a este correo — sin depender de que el cliente
                 lo envíe por WhatsApp. Déjalo vacío si no quieres recibir
                 avisos por email.
