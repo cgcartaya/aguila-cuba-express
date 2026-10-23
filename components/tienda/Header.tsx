@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Menu,
@@ -24,17 +25,33 @@ import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import CurrencySelector from "@/components/tienda/CurrencySelector";
 import CurrencyFlagSelector from "@/components/tienda/CurrencyFlagSelector";
+import { getStorefrontSearchPath } from "@/lib/storefront/search-navigation";
 
 type HeaderProps = {
   cartCount: number;
 };
 
 export default function Header({ cartCount }: HeaderProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchInput = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const { store, loading: storeLoading } = useStore();
   const showShipping = !storeLoading && store?.module_shipping_enabled === true;
   const showDepartures = showShipping && store?.module_pickups_enabled === true;
   const { search, setSearch, clearSearch } = useTiendaSearch();
+  const searchPath = getStorefrontSearchPath(pathname);
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!search.trim()) {
+      searchInput.current?.focus();
+      return;
+    }
+    searchInput.current?.blur();
+    if (pathname.replace(/\/$/, "") !== searchPath) router.push(searchPath);
+    else window.scrollTo({ top: 0, behavior: "auto" });
+  }
   const [helpPhone, setHelpPhone] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -104,7 +121,10 @@ export default function Header({ cartCount }: HeaderProps) {
             <Menu size={26} strokeWidth={2.8} />
           </button>
 
-          <label
+          <form
+            role="search"
+            aria-label="Buscar en esta tienda"
+            onSubmit={submitSearch}
             className="
               flex h-10 min-w-0 items-center rounded-[16px]
               bg-white px-3 shadow-sm ring-1 ring-white/40 transition
@@ -112,14 +132,30 @@ export default function Header({ cartCount }: HeaderProps) {
               sm:h-[46px] sm:px-4
             "
           >
-            <Search size={19} className="mr-2 shrink-0 text-slate-400" />
+            <button type="submit" aria-label="Buscar productos" className="mr-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-blue-600">
+              <Search size={19} />
+            </button>
 
             <input
+              ref={searchInput}
+              aria-label="Buscar productos por nombre, marca o categoría"
               type="search"
               inputMode="search"
               autoComplete="off"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                if (!search.trim() && event.target.value.trim() && pathname.replace(/\/$/, "") === searchPath) {
+                  window.scrollTo({ top: 0, behavior: "auto" });
+                }
+                setSearch(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  clearSearch();
+                  searchInput.current?.focus();
+                }
+              }}
+              enterKeyHint="search"
               placeholder="Buscar productos..."
               className="h-full min-w-0 flex-1 bg-transparent text-[16px] font-bold text-slate-800 outline-none placeholder:font-semibold placeholder:text-slate-400 sm:text-base"
             />
@@ -127,14 +163,14 @@ export default function Header({ cartCount }: HeaderProps) {
             {search.trim().length > 0 && (
               <button
                 type="button"
-                onClick={clearSearch}
+                onClick={() => { clearSearch(); searchInput.current?.focus(); }}
                 aria-label="Limpiar búsqueda"
                 className="ml-1 shrink-0 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
               >
                 <XCircle size={17} />
               </button>
             )}
-          </label>
+          </form>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <CurrencyFlagSelector />

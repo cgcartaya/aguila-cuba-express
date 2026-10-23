@@ -19,19 +19,19 @@ export default function SearchResultsSection({
   const query = search.trim();
 
   return (
-    <section className="px-4 py-5">
+    <section id="store-search-results" className="min-w-0 px-2 py-5 sm:px-4">
       <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
             <Search size={14} />
             Búsqueda activa
           </div>
 
-          <h2 className="mt-3 text-2xl font-black leading-tight text-[#061b3a]">
+          <h2 className="mt-3 break-words text-xl font-black leading-tight text-[#061b3a] [overflow-wrap:anywhere] sm:text-2xl">
             Resultados para “{query}”
           </h2>
 
-          <p className="mt-1 text-sm font-semibold text-slate-500">
+          <p role="status" aria-live="polite" className="mt-1 text-sm font-semibold text-slate-500">
             {products.length === 1
               ? "1 producto encontrado"
               : `${products.length} productos encontrados`}

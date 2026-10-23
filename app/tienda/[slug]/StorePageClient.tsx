@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { productMatchesSearch } from "@/lib/utils/search";
+import { searchProducts } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import {
   getPublicActiveCategoriesByStoreId as getActiveCategoriesByStoreId,
@@ -143,9 +143,7 @@ export default function StoreSlugTiendaPage() {
   const productosBuscados = useMemo(() => {
     if (!hayBusqueda) return productos;
 
-    return productos.filter((producto) =>
-      productMatchesSearch(producto, busqueda)
-    );
+    return searchProducts(productos, busqueda);
   }, [productos, busqueda, hayBusqueda]);
 
   const productosDestacados = useMemo(() => {
