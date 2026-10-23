@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, MapPin, Search, X } from "lucide-react";
 
 type CityAutocompleteProps = {
@@ -29,6 +29,7 @@ export default function CityAutocomplete({
   placeholder = "Ej. Columbia",
 }: CityAutocompleteProps) {
   const [query, setQuery] = useState(value);
+  const listId = useId();
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const blurTimer = useRef<number | null>(null);
@@ -124,6 +125,7 @@ export default function CityAutocomplete({
           autoComplete="off"
           role="combobox"
           aria-expanded={open}
+          aria-controls={open && !disabled ? listId : undefined}
           aria-autocomplete="list"
           className="min-w-0 flex-1 bg-transparent px-3 py-3.5 text-base font-bold text-slate-950 outline-none placeholder:font-medium placeholder:text-slate-400"
         />
@@ -147,12 +149,13 @@ export default function CityAutocomplete({
       {open && !disabled && (
         <div
           role="listbox"
-          className="absolute z-[120] mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,.22)]"
+          id={listId}
+          className="relative z-[120] mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,.22)] sm:absolute"
         >
           <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
             Coincidencias
           </div>
-          <div className="max-h-72 overflow-y-auto p-2">
+          <div className="max-h-48 overflow-y-auto overscroll-contain p-2 sm:max-h-72">
             {matches.length > 0 ? (
               matches.map((city, index) => {
                 const isActive = index === activeIndex;
