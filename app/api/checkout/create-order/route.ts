@@ -49,7 +49,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
-import { PLATFORM_ORDER_FIXED_FEE } from "@/lib/config/features";
+import { getPlatformOrderFixedFee } from "@/lib/config/features";
 import {
   calculateDistanceDeliveryFee,
   getDrivingRoute,
@@ -635,9 +635,10 @@ export async function POST(request: Request) {
       deliveryFee = 0;
     }
 
+    const platformFixedFee = getPlatformOrderFixedFee(store.slug);
     const platformFeeAmount = money(
       preparedItems.reduce((sum, item) => sum + item.platform_fee_amount, 0) +
-        PLATFORM_ORDER_FIXED_FEE
+        platformFixedFee
     );
 
     // Descuento: se re-valida con la misma lógica que
@@ -762,7 +763,7 @@ export async function POST(request: Request) {
       subtotal,
       delivery_fee: deliveryFee,
       platform_fee_amount: platformFeeAmount,
-      platform_fixed_fee_amount: PLATFORM_ORDER_FIXED_FEE,
+      platform_fixed_fee_amount: platformFixedFee,
       discount_campaign_id: discountCampaignId,
       discount_code: discountCode,
       discount_amount: discountAmount,

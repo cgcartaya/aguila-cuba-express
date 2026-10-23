@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   const { data: order, error } = await supabaseAdmin
     .from("orders")
-    .select("id, store_id, order_number, total, payment_status")
+    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount")
     .eq("id", orderId)
     .eq("store_id", storeId)
     .is("deleted_at", null)
@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
   // con la plataforma). En modo "direct" no hay application_fee_amount: la
   // comisión ya va incluida en el precio.
   const PLATFORM_FEE_RATE = 0.02;
-  const fixedPlatformFeeCents = Math.round(PLATFORM_ORDER_FIXED_FEE * 100);
+  // Al retomar el pago se respeta el fijo registrado en esa orden.
+  const fixedPlatformFeeCents = Math.round(
+    Number(order.platform_fixed_fee_amount ?? PLATFORM_ORDER_FIXED_FEE) * 100
+  );
   const applicationFeeCents = Math.min(
     amountCents,
     Math.round(amountCents * PLATFORM_FEE_RATE) + fixedPlatformFeeCents
