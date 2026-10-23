@@ -47,7 +47,13 @@ export function applyPlatformFee(
     return Number(safeAmount.toFixed(2));
   }
 
-  return Number((safeAmount * (1 + safeFee / 100)).toFixed(2));
+  // Prices have two decimals and the configured percentage has two decimals.
+  // Round integer cents instead of a binary float: 1 * 1.025 can otherwise
+  // become 1.024999..., making toFixed(2) incorrectly charge 1.02.
+  const baseCents = Math.round(safeAmount * 100);
+  const feeBasisPoints = Math.round(safeFee * 100);
+  const priceCents = Math.round((baseCents * (10000 + feeBasisPoints)) / 10000);
+  return priceCents / 100;
 }
 
 /**
