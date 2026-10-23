@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
 import LocationPickerMap from "@/components/maps/LocationPickerMap";
@@ -81,6 +81,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
   const horizontal = variant === "horizontal";
   const days = useMemo(() => nextDays(), []);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(1);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -153,6 +154,33 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+
+    // Mobile Safari keeps the layout viewport tall while the keyboard covers it.
+    // Size and position the dialog against the actually visible viewport instead.
+    const viewport = window.visualViewport;
+    let frame = 0;
+    const updateViewport = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        dialogRef.current?.style.setProperty("--pickup-visible-height", `${viewport?.height ?? window.innerHeight}px`);
+        dialogRef.current?.style.setProperty("--pickup-visible-top", `${viewport?.offsetTop ?? 0}px`);
+      });
+    };
+    updateViewport();
+    viewport?.addEventListener("resize", updateViewport);
+    viewport?.addEventListener("scroll", updateViewport);
+    window.addEventListener("resize", updateViewport);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      viewport?.removeEventListener("resize", updateViewport);
+      viewport?.removeEventListener("scroll", updateViewport);
+      window.removeEventListener("resize", updateViewport);
+    };
+  }, [drawerOpen]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -429,37 +457,38 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
 
       {mounted && drawerOpen && createPortal(
         <div
-          className="fixed inset-0 z-[9999] flex h-[100dvh] w-screen justify-end overflow-hidden bg-slate-950/70 backdrop-blur-sm overscroll-none"
+          ref={dialogRef}
+          className="fixed left-0 right-0 top-[var(--pickup-visible-top,0px)] z-[9999] flex h-[var(--pickup-visible-height,100dvh)] w-full justify-end overflow-hidden bg-slate-950/70 backdrop-blur-sm overscroll-none"
           role="dialog"
           aria-modal="true"
           aria-label="Programar recogida"
         >
           <button type="button" onClick={closePlanner} className="absolute inset-0 cursor-default" aria-label="Cerrar formulario" />
 
-          <div className="relative flex h-[100dvh] max-h-[100dvh] w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-l-[2rem]">
-            <header className="flex items-center justify-between border-b border-slate-200 px-5 py-4 sm:px-8">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600">Yoyo Envíos</p>
-                <h2 className="mt-1 text-xl font-black text-[#061b3a] sm:text-2xl">Programa tu recogida</h2>
+          <div className="relative flex h-full max-h-full min-h-0 w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-l-[2rem]">
+            <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-8 sm:py-4">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 sm:text-xs">Yoyo Envíos</p>
+                <h2 className="mt-1 text-lg font-black leading-tight text-[#061b3a] sm:text-2xl">Programa tu recogida</h2>
               </div>
-              <button type="button" onClick={closePlanner} className="rounded-full border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Cerrar">
+              <button type="button" onClick={closePlanner} className="shrink-0 rounded-full border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Cerrar">
                 <X size={22} />
               </button>
             </header>
 
             {step < 5 && (
-              <div className="border-b border-slate-100 px-5 py-4 sm:px-8">
-                <div className="grid grid-cols-3 gap-2">
+              <div className="shrink-0 border-b border-slate-100 px-4 py-2 sm:px-8 sm:py-4">
+                <div className="grid grid-cols-4 gap-1 sm:gap-2" aria-label={`Paso ${step} de 4: ${stepLabels[step - 1]}`}>
                   {stepLabels.map((label, index) => {
                     const number = index + 1;
                     const active = step === number;
                     const completed = step > number;
                     return (
-                      <div key={label} className="flex items-center gap-2">
+                      <div key={label} aria-current={active ? "step" : undefined} className="flex min-w-0 flex-col items-center gap-1 sm:flex-row sm:gap-2">
                         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black ${completed ? "bg-emerald-600 text-white" : active ? "bg-[#082b5c] text-white" : "bg-slate-100 text-slate-400"}`}>
                           {completed ? <Check size={15} /> : number}
                         </span>
-                        <span className={`hidden text-sm font-black sm:block ${active ? "text-[#082b5c]" : "text-slate-400"}`}>{label}</span>
+                        <span className={`text-center text-[9px] font-black leading-tight sm:text-xs ${active ? "text-[#082b5c]" : "text-slate-400"}`}>{label}</span>
                       </div>
                     );
                   })}
@@ -467,7 +496,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
               </div>
             )}
 
-            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-5 py-6 [scroll-padding-bottom:9rem] [-webkit-overflow-scrolling:touch] sm:px-8 sm:py-8">
+            <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 py-4 [scroll-padding-block:1rem] [-webkit-overflow-scrolling:touch] sm:px-8 sm:py-8">
               {requestedRoute && step < 4 && (
                 <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-blue-200 bg-blue-50 p-4">
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Reserva vinculada a una ruta</p>
@@ -478,10 +507,10 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
               )}
               {step === 1 && (
                 <div className="mx-auto max-w-xl">
-                  <h3 className="text-2xl font-black text-slate-950">¿Dónde recogemos?</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">Primero selecciona tu ciudad. Después escribe la dirección exacta.</p>
+                  <h3 className="text-xl font-black text-slate-950 sm:text-2xl">¿Dónde recogemos?</h3>
+                  <p className="mt-2 text-sm font-medium text-slate-500 sm:text-base">Primero selecciona tu ciudad. Después escribe la dirección exacta.</p>
 
-                  <div className="mt-7 space-y-5">
+                  <div className="mt-4 space-y-5 sm:mt-7">
                     <CityAutocomplete
                       cities={config?.cities || []}
                       value={form.city}
@@ -687,7 +716,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
             </div>
 
             {step < 5 && (
-              <footer className="shrink-0 border-t border-slate-200 bg-white px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-4">
+              <footer className="shrink-0 border-t border-slate-200 bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-4">
                 <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
                   <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 4</p>
                   {step === 1 && (
