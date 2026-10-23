@@ -758,6 +758,12 @@ export default function OrdersManager({
             const customer = getCustomer(order);
             const orderNumber = getOrderNumber(order);
             const isActionLoading = actionLoadingId === order.id;
+            const lineCommission = (order.order_items || []).reduce(
+              (sum: number, item: any) => sum + Math.round(Number(item.platform_fee_amount || 0) * 100),
+              0
+            ) / 100;
+            const roundingAdjustment = Math.round((Number(order.platform_fee_amount || 0) -
+              Number(order.platform_fixed_fee_amount || 0) - lineCommission) * 100) / 100;
 
             return (
               <article
@@ -1083,9 +1089,18 @@ export default function OrdersManager({
                             </div>
                           )}
                           {Number(order.platform_fee_amount || 0) > 0 && (
-                            <p className="pt-1 text-xs font-semibold text-emerald-700">
-                              Comisión de plataforma: ${Number(order.platform_fee_amount).toFixed(2)} (incluye ${Number(order.platform_fixed_fee_amount || 0).toFixed(2)} asumidos por la tienda)
-                            </p>
+                            <details className="pt-1 text-xs font-semibold text-emerald-700">
+                              <summary className="cursor-pointer">
+                                Comisión de plataforma: ${Number(order.platform_fee_amount).toFixed(2)}
+                              </summary>
+                              <div className="mt-2 space-y-1 rounded-lg bg-emerald-50 p-3">
+                                <p>Comisión de productos: ${lineCommission.toFixed(2)}</p>
+                                <p>Fijo asumido por la tienda: ${Number(order.platform_fixed_fee_amount || 0).toFixed(2)}</p>
+                                {roundingAdjustment !== 0 && (
+                                  <p>Ajuste de redondeo asumido por la tienda: ${roundingAdjustment.toFixed(2)}</p>
+                                )}
+                              </div>
+                            </details>
                           )}
                           <div className="flex items-center justify-between border-t pt-2 text-lg font-black text-[#061b3a]">
                             <span>Total</span>
