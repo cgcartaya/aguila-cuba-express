@@ -167,7 +167,7 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
       : "pt-[58px]";
 
   const content = (
-    <TiendaSearchProvider>
+    <TiendaSearchProvider key={pathnameStoreSlug || "default"}>
       <main className="min-h-screen w-full max-w-full overflow-x-clip bg-white pb-24 text-[#061b3a]">
         <Header cartCount={cartCount} />
 

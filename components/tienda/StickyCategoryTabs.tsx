@@ -11,6 +11,8 @@
 ========================================================= */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 
 export type StickyCategory = {
   name: string;
@@ -26,6 +28,7 @@ const TABS_HEIGHT = 48;
 const SCROLL_OFFSET = HEADER_OFFSET + TABS_HEIGHT + 12;
 
 export default function StickyCategoryTabs({ categories }: Props) {
+  const { search, clearSearch } = useTiendaSearch();
   const filteredCategories = useMemo(() => {
     return categories.filter((category) => category.name?.trim());
   }, [categories]);
@@ -102,6 +105,8 @@ export default function StickyCategoryTabs({ categories }: Props) {
   }, [activeCategory]);
 
   const scrollToCategory = (category: string) => {
+    // Search results replace category sections. Restore them before measuring.
+    if (search.trim()) flushSync(() => clearSearch());
     const section = document.getElementById(category);
 
     if (!section) return;

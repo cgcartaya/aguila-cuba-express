@@ -11,7 +11,7 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
-import { productMatchesSearch } from "@/lib/utils/search";
+import { searchProducts } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import {
   getPublicActiveCategoriesByStoreId as getActiveCategoriesByStoreId,
@@ -128,9 +128,7 @@ export default function TiendaPage() {
   const productosBuscados = useMemo(() => {
     if (!hayBusqueda) return productos;
 
-    return productos.filter((producto) =>
-      productMatchesSearch(producto, busqueda)
-    );
+    return searchProducts(productos, busqueda);
   }, [productos, busqueda, hayBusqueda]);
 
   const productosDestacados = useMemo(() => {
