@@ -1,4 +1,5 @@
 import { City, Country, State } from "country-state-city";
+import southCarolina from "./data/south-carolina-places.json";
 
 export type GeoOption = { value: string; label: string; latitude?: string | null; longitude?: string | null };
 
@@ -17,15 +18,25 @@ export function getStateOptions(countryCode: string): GeoOption[] {
 
 export function getCityOptions(countryCode: string, stateCode: string): GeoOption[] {
   if (!countryCode || !stateCode) return [];
+  const isSouthCarolina = countryCode === "US" && stateCode === "SC";
+  const options: GeoOption[] = City.getCitiesOfState(countryCode, stateCode)
+    // The upstream list mixes counties into its South Carolina cities.
+    .filter((city) => !isSouthCarolina || !/\sCounty$/i.test(city.name))
+    .map((city) => ({ value: city.name, label: city.name, latitude: city.latitude, longitude: city.longitude }));
+  if (isSouthCarolina) {
+    options.push(...southCarolina.places.map((place) => ({
+      value: place.name, label: place.name,
+      latitude: String(place.latitude), longitude: String(place.longitude),
+    })));
+  }
   const seen = new Set<string>();
-  return City.getCitiesOfState(countryCode, stateCode)
+  return options
     .filter((city) => {
-      const key = city.name.trim().toLocaleLowerCase();
+      const key = city.value.trim().toLocaleLowerCase();
       if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
     })
-    .map((city) => ({ value: city.name, label: city.name, latitude: city.latitude, longitude: city.longitude }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 

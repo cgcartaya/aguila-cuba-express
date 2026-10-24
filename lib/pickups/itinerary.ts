@@ -5,7 +5,8 @@ export type ItineraryGroup = {
 };
 
 export function cityKey(value: string) {
-  return value.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  return value.trim().replace(/,\s*(?:SC|South Carolina)\s*$/i, "").trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 export function localDate(timezone = "America/New_York", now = new Date()) {
