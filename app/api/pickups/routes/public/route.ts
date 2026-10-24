@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   const today = localDate(settings?.timezone || "America/New_York");
   const [{ data, error }, { data: zoneRows }] = await Promise.all([
     supabaseAdmin.from("pickup_routes")
-      .select(`id,name,route_date,status,public_summary,color,public_itinerary,poster_image_url,pickup_route_stops(stop_order,pickup_requests(city))`)
+      .select(`id,name,route_date,status,public_summary,color,public_itinerary,public_itinerary_managed,poster_image_url,pickup_route_stops(stop_order,pickup_requests(city))`)
       .eq("store_id", store.id).eq("is_public", true).in("status", ["published", "in_progress"])
       .gte("route_date", today).order("status", { ascending: true }).order("route_date", { ascending: true }).limit(4),
     supabaseAdmin.from("pickup_zone_cities").select("city_name,pickup_zones(name,color,is_active)").eq("store_id", store.id),
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     let groups: ItineraryGroup[] = [];
     try { groups = validateItinerary(route.public_itinerary); } catch { /* Legacy routes use customer city names only. */ }
     let cities;
-    if (groups?.length) {
+    if (route.public_itinerary_managed || groups?.length) {
       cities = groups.flatMap((group) => group.cities.map((name) => ({ name, start: group.start_time, end: group.end_time }))).map((city, index) => publicCity(city.name, index + 1, city.start, city.end));
     } else {
       const names = (route.pickup_route_stops || []).sort((a, b) => a.stop_order - b.stop_order)

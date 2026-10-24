@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const values = {
       name, route_date: plan.route_date, zone_id: zoneId,
       public_summary: String(plan.public_summary || "").trim().slice(0, 1000) || null,
-      public_itinerary: itinerary, poster_image_url: posterUrl,
+      public_itinerary: itinerary, public_itinerary_managed: true, poster_image_url: posterUrl,
       start_city: cities[0], end_city: cities[cities.length - 1],
       status: plan.publish ? "published" : "draft", is_public: Boolean(plan.publish),
       ...(plan.publish ? { published_at: new Date().toISOString() } : {}),
@@ -93,4 +93,44 @@ export async function DELETE(request: NextRequest) {
   if (!id) return fail("Falta la plantilla.");
   const { error } = await supabaseAdmin.from("pickup_route_templates").delete().eq("store_id", storeId).eq("id", id);
   return error ? fail("No se pudo eliminar la plantilla.", 500) : NextResponse.json({ ok: true });
+}
+
+// Editing an existing route never changes its lifecycle or customer stops.
+export async function PATCH(request: NextRequest) {
+  const storeId = request.nextUrl.searchParams.get("store_id") || "";
+  const denied = await requirePickupRouteWrite(request, storeId);
+  if (denied) return denied;
+  try {
+    const body = await request.json();
+    if (typeof body.route_id !== "string" || typeof body.expected_updated_at !== "string") return fail("Recarga la ruta antes de guardar.");
+    const { data: existing, error: readError } = await supabaseAdmin.from("pickup_routes")
+      .select("id,status,updated_at").eq("id", body.route_id).eq("store_id", storeId).maybeSingle();
+    if (readError) return fail("No se pudo cargar la ruta.", 500);
+    if (!existing) return fail("Ruta no encontrada.", 404);
+    if (!["draft", "published", "in_progress"].includes(existing.status)) return fail("Las rutas cerradas se conservan como historial.", 409);
+    if (body.expected_updated_at !== existing.updated_at) return fail("La ruta cambió en otra ventana. Recárgala antes de guardar para no sobrescribir cambios.", 409);
+    const name = String(body.name || "").trim().slice(0, 120);
+    if (!name || !validRouteDate(body.route_date)) return fail("Revisa el nombre y la fecha de la ruta.");
+    if (!Array.isArray(body.public_itinerary)) return fail("Revisa las ciudades del recorrido.");
+    const itinerary = body.public_itinerary.length ? validateItinerary(body.public_itinerary) : [];
+    const cities = itineraryCities(itinerary);
+    const text = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) || null : null;
+    const values = {
+      name, route_date: body.route_date, public_itinerary: itinerary, public_itinerary_managed: true,
+      start_city: cities[0] || null, end_city: cities[cities.length - 1] || null,
+      driver_name: text(body.driver_name, 120), driver_phone: text(body.driver_phone, 40),
+      vehicle_name: text(body.vehicle_name, 120), public_summary: text(body.public_summary, 1000),
+      notes: text(body.notes, 2000),
+      ...(typeof body.is_public === "boolean" ? { is_public: body.is_public } : {}),
+      updated_at: new Date().toISOString(),
+    };
+    const { data, error } = await supabaseAdmin.from("pickup_routes").update(values)
+      .eq("id", body.route_id).eq("store_id", storeId).eq("updated_at", existing.updated_at)
+      .in("status", ["draft", "published", "in_progress"]).select("*").maybeSingle();
+    if (error) return fail("No se pudieron guardar los cambios.", 500);
+    if (!data) return fail("La ruta cambió mientras guardabas. Recárgala e inténtalo de nuevo.", 409);
+    return NextResponse.json({ route: data });
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : "No se pudieron procesar los cambios.");
+  }
 }
