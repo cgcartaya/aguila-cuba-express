@@ -35,8 +35,9 @@ export default function PublicPickupRouteMap({ route }: { route: PublicRoute }) 
         const L = (await import("leaflet")).default;
         if (cancelled || !ref.current) return;
         instance.current?.remove();
-        const map = L.map(ref.current, { scrollWheelZoom: false, dragging: true, zoomControl: true });
+        const map = L.map(ref.current, { scrollWheelZoom: false, dragging: true, zoomControl: false });
         instance.current = map;
+        L.control.zoom({ position: "topright" }).addTo(map);
         L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 18,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -47,7 +48,9 @@ export default function PublicPickupRouteMap({ route }: { route: PublicRoute }) 
         cities.forEach((city, index) => {
           const type = index === 0 ? "start" : index === cities.length - 1 ? "end" : "stop";
           const icon = L.divIcon({ className: `public-route-marker public-route-marker--${type}`, html: `<span>${city.position}</span>`, iconSize: [38,38], iconAnchor: [19,38] });
-          L.marker([city.lat, city.lng], { icon }).addTo(map).bindTooltip(city.name, { direction: "top", offset: [0,-34] });
+          const label = document.createElement("span");
+          label.textContent = city.name;
+          L.marker([city.lat, city.lng], { icon }).addTo(map).bindTooltip(label, { direction: "top", offset: [0,-34] });
           bounds.extend([city.lat, city.lng]);
         });
         if (cities.length === 1) map.setView(points[0], 11);
@@ -72,7 +75,7 @@ export default function PublicPickupRouteMap({ route }: { route: PublicRoute }) 
       <div ref={ref} className="h-[350px] w-full sm:h-[380px]" aria-label={`Mapa público de ${route.name}`} />
       <div className="absolute left-5 top-5 z-[500] rounded-2xl border border-white/80 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
         <p className="text-xs font-black uppercase tracking-[.15em] text-slate-400">Recorrido público</p>
-        <p className="mt-1 font-black text-slate-900">{route.name} · {cities.length} paradas</p>
+        <p className="mt-1 font-black text-slate-900">{route.name} · {cities.length} {cities.length === 1 ? "ciudad" : "ciudades"}</p>
       </div>
       <div className="absolute bottom-3 left-3 right-3 z-[500] rounded-xl bg-white/90 px-3 py-2 text-center text-[11px] font-bold text-slate-500 backdrop-blur">Mostramos ciudades del recorrido, nunca direcciones privadas de clientes.</div>
       {loading && <div className="absolute inset-0 z-[600] flex items-center justify-center bg-white/80"><Loader2 className="animate-spin text-red-600" /><span className="ml-2 font-black">Cargando recorrido…</span></div>}

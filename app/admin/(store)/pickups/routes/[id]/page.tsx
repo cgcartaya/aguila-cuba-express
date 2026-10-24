@@ -250,6 +250,8 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
 
     {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
+    {["draft", "published"].includes(route.status) && <Link href={`/admin/pickups/routes/quick?route=${route.id}`} className="block rounded-2xl border border-blue-200 bg-blue-50 p-5 font-black text-blue-800">Editar ciudades, horarios y cartel del recorrido público →</Link>}
+
     {requestedForThisRoute > 0 && (
       <button onClick={openAddRequests} className="flex w-full items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:bg-amber-100">
         <span><span className="block font-black text-amber-900">{requestedForThisRoute === 1 ? "Hay 1 nueva solicitud para esta ruta" : `Hay ${requestedForThisRoute} nuevas solicitudes para esta ruta`}</span><span className="mt-1 block text-sm font-bold text-amber-700">Entraron desde el botón público “Reservar en esta ruta”.</span></span>

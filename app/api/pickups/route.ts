@@ -1,5 +1,6 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { sendPickupNotification } from "@/lib/notifications/pickup-notification";
+import { localDate } from "@/lib/pickups/itinerary";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { validatePickupAddress } from "@/lib/pickups/address-validation";
 import type { CreatePickupRequestInput } from "@/lib/pickups/types";
@@ -111,6 +112,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No pudimos identificar la tienda." }, { status: 404 });
     }
 
+    const { data: settings } = await supabaseAdmin
+      .from("pickup_service_settings")
+      .select("max_preferred_dates,timezone")
+      .eq("store_id", store.id)
+      .maybeSingle();
+
     let verifiedRequestedRoute: { id: string; name: string; route_date: string } | null = null;
     if (requestedRouteId) {
       const { data: route } = await supabaseAdmin
@@ -123,6 +130,7 @@ export async function POST(request: NextRequest) {
         // ya salio a recorrer, asi que esas solicitudes quedan pendientes normales
         // y el negocio coordina por WhatsApp si se puede sumar a la siguiente.
         .eq("status", "published")
+        .gte("route_date", localDate(settings?.timezone || "America/New_York"))
         .maybeSingle();
 
       if (route) {
@@ -130,12 +138,6 @@ export async function POST(request: NextRequest) {
         if (!preferredDates.includes(route.route_date) && validDate(route.route_date)) preferredDates.unshift(route.route_date);
       }
     }
-
-    const { data: settings } = await supabaseAdmin
-      .from("pickup_service_settings")
-      .select("max_preferred_dates")
-      .eq("store_id", store.id)
-      .maybeSingle();
 
     const maxDates = Math.max(1, Math.min(7, Number(settings?.max_preferred_dates) || 3));
     const selectedDates = preferredDates.slice(0, maxDates);

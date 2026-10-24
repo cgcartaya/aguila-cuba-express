@@ -160,7 +160,8 @@ export async function GET(request: NextRequest) {
     : { data: [] as Array<{ city: string }> };
 
   const routeCities = new Set(
-    (routeRequests || []).map((item) => clean(item.city).toLowerCase()).filter(Boolean)
+    [...(routeRequests || []).map((item) => clean(item.city).toLowerCase()),
+      ...((route.public_itinerary || []) as Array<{ cities: string[] }>).flatMap((group) => group.cities.map((city) => clean(city).toLowerCase()))].filter(Boolean)
   );
 
   const eligible = (requests || [])
@@ -401,6 +402,8 @@ export async function POST(request: NextRequest) {
         driver_phone: route.driver_phone,
         vehicle_name: route.vehicle_name,
         public_summary: route.public_summary,
+        public_itinerary: route.public_itinerary || [],
+        poster_image_url: route.poster_image_url || null,
         is_public: false,
         color: route.color,
         notes: route.notes,
