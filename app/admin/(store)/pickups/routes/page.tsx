@@ -168,13 +168,14 @@ export default function PickupRoutesPage() {
           </div>
 
           <Link
-            href="/admin/pickups/routes/new"
+            href="/admin/pickups/routes/quick"
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#071d43]"
           >
-            <Plus size={18} /> Crear ruta
+            <Plus size={18} /> Crear ruta rápida
           </Link>
         </div>
 
+        <Link href="/admin/pickups/routes/new" className="mt-4 inline-block text-sm font-bold text-blue-100 underline">Planificar con solicitudes de clientes →</Link>
         <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric
             icon={<CalendarDays size={18} />}

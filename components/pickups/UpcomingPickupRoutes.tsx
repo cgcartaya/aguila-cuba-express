@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import PublicPickupRouteMap from "@/components/maps/PublicPickupRouteMap";
+import { timeWindow } from "@/lib/pickups/itinerary";
 import {
   ArrowRight,
   CalendarDays,
@@ -18,20 +19,20 @@ import {
   X,
 } from "lucide-react";
 
-type PublicCity = { name: string; latitude: number | null; longitude: number | null; order: number };
+type PublicCity = { name: string; latitude: number | null; longitude: number | null; order: number; start_time?: string | null; end_time?: string | null };
 type PublicRoute = {
   id: string;
   name: string;
   route_date: string;
   status: "published" | "in_progress";
   public_summary: string | null;
+  poster_image_url?: string | null;
   color: string | null;
   cities: PublicCity[];
 };
 type CoverageCity = { name: string; zoneName: string | null; zoneColor: string | null };
 type PublicPayload = { routes: PublicRoute[]; coverageCities: CoverageCity[] };
 
-type MapPoint = PublicCity & { x: number; y: number };
 
 function routeDate(value: string) {
   return new Intl.DateTimeFormat("es-US", { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${value}T12:00:00`));
@@ -39,38 +40,6 @@ function routeDate(value: string) {
 
 function normalize(value: string) {
   return value.trim().toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function cityPoint(city: PublicCity, index: number, total: number) {
-  if (city.latitude != null && city.longitude != null) {
-    const x = 12 + ((city.longitude - -83.36) / (-78.45 - -83.36)) * 76;
-    const y = 14 + ((35.22 - city.latitude) / (35.22 - 32.03)) * 70;
-    return { x: Math.max(10, Math.min(90, x)), y: Math.max(12, Math.min(86, y)) };
-  }
-
-  const fallback = [
-    { x: 22, y: 30 },
-    { x: 38, y: 48 },
-    { x: 61, y: 29 },
-    { x: 76, y: 48 },
-    { x: 56, y: 69 },
-    { x: 31, y: 72 },
-  ];
-  return fallback[index] || { x: 18 + (index * 64) / Math.max(1, total - 1), y: index % 2 ? 55 : 35 };
-}
-
-function smoothPath(points: MapPoint[]) {
-  if (!points.length) return "";
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let index = 1; index < points.length; index += 1) {
-    const previous = points[index - 1];
-    const current = points[index];
-    const midX = (previous.x + current.x) / 2;
-    path += ` C ${midX} ${previous.y}, ${midX} ${current.y}, ${current.x} ${current.y}`;
-  }
-  return path;
 }
 
 function openPickupPlanner(city?: string, route?: PublicRoute) {
@@ -90,12 +59,23 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
   const [searched, setSearched] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [showAllStops, setShowAllStops] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/pickups/routes/public?store=${encodeURIComponent(storeSlug)}`)
-      .then((response) => response.json())
-      .then((result) => setPayload({ routes: result.routes || [], coverageCities: result.coverageCities || [] }))
-      .finally(() => setLoading(false));
+    const controller = new AbortController();
+    const refresh = () => {
+      if (document.hidden) return;
+      fetch(`/api/pickups/routes/public?store=${encodeURIComponent(storeSlug)}`, { signal: controller.signal })
+        .then((response) => { if (!response.ok) throw new Error("routes"); return response.json(); })
+        .then((result) => { setPayload({ routes: result.routes || [], coverageCities: result.coverageCities || [] }); setLoadError(false); })
+        .catch((error) => { if (error.name !== "AbortError") setLoadError(true); })
+        .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { controller.abort(); window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [storeSlug]);
 
   const preferredRoute = payload.routes.find((route) => route.status === "in_progress") || payload.routes[0];
@@ -131,7 +111,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-black uppercase tracking-[.22em] text-red-600">Recogidas públicas</p>
           <h2 className="mt-4 text-4xl font-black leading-[1.02] tracking-tight sm:text-5xl">Mira nuestra ruta y descubre cuándo pasamos por tu ciudad.</h2>
-          <p className="mt-5 text-base font-semibold leading-7 text-slate-500 sm:text-lg sm:leading-8">Las ciudades se actualizan automáticamente cuando YOYO publica o inicia una ruta. Nunca mostramos direcciones de clientes.</p>
+          <p className="mt-5 text-base font-semibold leading-7 text-slate-500 sm:text-lg sm:leading-8">Elige tu fecha, consulta las ciudades y solicita tu recogida. Los horarios son orientativos y se confirman directamente contigo.</p>
         </div>
 
         {payload.routes.length > 0 && (
@@ -156,7 +136,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                     <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.14em] ${selected ? "text-blue-200" : "text-slate-400"}`}><CalendarDays size={12} /> {routeDate(route.route_date)}</p>
                     <p className="mt-1 truncate text-base font-black">{route.name}</p>
                     <div className={`mt-3 flex items-center justify-between text-xs font-bold ${selected ? "text-blue-100/75" : "text-slate-500"}`}>
-                      <span>{route.cities.length} paradas</span>
+                      <span>{route.cities.length} {route.cities.length === 1 ? "ciudad" : "ciudades"}</span>
                       <span className={`rounded-full px-2 py-1 ${route.status === "in_progress" ? "bg-emerald-500/20 text-emerald-300" : selected ? "bg-white/10" : "bg-amber-50 text-amber-700"}`}>{route.status === "in_progress" ? "En recorrido" : "Abierta"}</span>
                     </div>
                   </button>
@@ -198,7 +178,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                         )}
                         <li className="relative flex items-center gap-3 py-2.5">
                           <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-black ${active ? "border-emerald-300 bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,.14)]" : "border-white/10 bg-[#102b58]"}`}>{active ? <Truck size={14} /> : index + 1}</span>
-                          <div className="min-w-0 flex-1"><p className="truncate font-black">{city.name}</p><p className="text-xs font-semibold text-blue-100/55">{active ? "Próxima parada" : index === 0 ? "Inicio del recorrido" : index === activeRoute.cities.length - 1 ? "Última parada" : "Parada programada"}</p></div>
+                          <div className="min-w-0 flex-1"><p className="truncate font-black">{city.name}</p><p className="text-xs font-semibold text-blue-100/55">{timeWindow(city.start_time, city.end_time)}</p></div>
                           <MapPin size={15} className={active ? "text-emerald-300" : "text-red-300"} />
                         </li>
                       </Fragment>
@@ -213,9 +193,10 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 )}
 
                 {activeRoute.public_summary && <p className="mt-5 border-t border-white/10 pt-5 font-semibold leading-7 text-blue-100/75">{activeRoute.public_summary}</p>}
+                {activeRoute.poster_image_url && <details className="mt-5 rounded-2xl border border-white/15 p-4"><summary className="cursor-pointer text-sm font-black">Ver cartel de esta ruta</summary><a href={activeRoute.poster_image_url} target="_blank" rel="noopener noreferrer"><img src={activeRoute.poster_image_url} alt={`Cartel de ${activeRoute.name}`} loading="lazy" className="mt-3 max-h-[500px] w-full rounded-xl object-contain" /></a></details>}
                 <button type="button" onClick={() => openPickupPlanner(undefined, activeRoute)} className="mt-7 inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 text-center font-black transition hover:-translate-y-0.5 hover:bg-red-500">{activeRoute.status === "in_progress" ? "Solicitar para la próxima ruta" : "Reservar recogida"} <ArrowRight size={18} /></button>{activeRoute.status === "in_progress" && <p className="mt-2 text-center text-xs font-bold text-blue-100/60">Esta ruta ya salió. Tu solicitud quedará pendiente para el próximo recorrido.</p>}
                 <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-4 text-center">
-                  <div><ShieldCheck size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Reserva sin costo</p></div>
+                  <div><ShieldCheck size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Solicitud sencilla</p></div>
                   <div><Check size={16} className="mx-auto text-emerald-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Confirmación directa</p></div>
                   <div><Clock3 size={16} className="mx-auto text-amber-300" /><p className="mt-1 text-[10px] font-bold leading-4 text-blue-100/65">Según disponibilidad</p></div>
                 </div>
@@ -223,7 +204,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
             </article>
           </div>
         ) : (
-          <div className="mt-12 rounded-[2rem] border border-slate-200 bg-slate-50 p-8 text-center"><Navigation className="mx-auto text-blue-700" /><h3 className="mt-3 text-2xl font-black">Próxima ruta por publicar</h3><p className="mt-2 font-semibold text-slate-500">Puedes comprobar la cobertura de tu ciudad y enviar una solicitud desde ahora.</p></div>
+          <div className="mt-12 rounded-[2rem] border border-slate-200 bg-slate-50 p-8 text-center">{loadError && <p role="status" className="mb-3 text-sm text-amber-800">No pudimos actualizar las rutas. Puedes solicitar tu recogida y confirmar con nosotros.</p>}<Navigation className="mx-auto text-blue-700" /><h3 className="mt-3 text-2xl font-black">Próxima ruta por publicar</h3><p className="mt-2 font-semibold text-slate-500">Puedes comprobar la cobertura de tu ciudad y enviar una solicitud desde ahora.</p></div>
         )}
 
         <div className="mt-10 rounded-[2rem] border border-slate-200 bg-slate-50 p-5 sm:p-8">
@@ -263,7 +244,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 {activeRoute.cities.map((city, index) => (
                   <li key={`${city.name}-modal-${index}`} className="relative flex items-center gap-4 py-3">
                     <span className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#071d43] text-xs font-black text-white">{index + 1}</span>
-                    <div className="min-w-0 flex-1"><p className="font-black text-slate-900">{city.name}</p><p className="text-xs font-semibold text-slate-500">{index === 0 ? "Inicio del recorrido" : index === activeRoute.cities.length - 1 ? "Última parada" : "Parada programada"}</p></div>
+                    <div className="min-w-0 flex-1"><p className="font-black text-slate-900">{city.name}</p><p className="text-xs font-semibold text-slate-500">{timeWindow(city.start_time, city.end_time)}</p></div>
                     <MapPin size={16} className="shrink-0 text-red-500" />
                   </li>
                 ))}
