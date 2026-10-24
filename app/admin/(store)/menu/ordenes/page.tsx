@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
@@ -144,12 +145,12 @@ export default function AdminMenuOrdersPage() {
   };
 
   useEffect(() => {
-    void loadOrders();
+    void Promise.resolve().then(loadOrders);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStore?.id, accessLoading, storeLoading, statusFilter]);
 
   useEffect(() => {
-    void loadStats();
+    void Promise.resolve().then(loadStats);
     if (!activeStore?.id) return;
     getStoreSettings(activeStore.id).then(({ data }) => {
       if (data) setDeliveryFee(String(data.menu_delivery_fee ?? 0));
@@ -229,7 +230,7 @@ export default function AdminMenuOrdersPage() {
       <div className="mx-auto max-w-7xl">
         <AdminPageHeader
           eyebrow="Menú"
-          title="Órdenes"
+          title={activeStore?.slug === "aguila" ? "Pedidos del restaurante" : "Órdenes"}
           description="Operación en tiempo real y resumen de ventas del restaurante."
           storeName={activeStore?.name}
           icon={ClipboardList}
@@ -237,7 +238,7 @@ export default function AdminMenuOrdersPage() {
 
         <section className="mt-5 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-            <div className="flex flex-wrap items-end gap-2">
+            {activeStore?.slug === "aguila" ? <div className="text-sm"><p className="font-bold">Pedidos independientes de la tienda Águila.</p><Link href="/admin/menu/restaurante" className="mt-2 block font-bold text-amber-800 underline">Configurar zonas y tarifas del restaurante</Link><Link href="/admin/orders" className="mt-2 block text-blue-800 underline">Ver pedidos de la tienda</Link></div> : (            <div className="flex flex-wrap items-end gap-2">
               <label className="text-xs font-black uppercase tracking-wide text-slate-500">
                 Costo de domicilio
                 <div className="mt-1.5 flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
@@ -249,7 +250,8 @@ export default function AdminMenuOrdersPage() {
                 {savingFee ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Guardar
               </button>
               <p className="max-w-md text-[11px] font-semibold text-slate-400">Se añade automáticamente a los pedidos marcados como domicilio.</p>
-            </div>
+            </div>)}
+
 
             <div className="flex flex-wrap gap-1.5 rounded-2xl bg-slate-100 p-1.5">
               {PERIODS.map((item) => (

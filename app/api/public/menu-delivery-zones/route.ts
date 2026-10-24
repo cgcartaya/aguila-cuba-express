@@ -1,3 +1,4 @@
+import { getRestaurantSection } from "@/lib/restaurant/server";
 import { NextRequest, NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -15,6 +16,12 @@ export async function GET(request: NextRequest) {
 
     if (!store || !store.module_menu_enabled) {
       return NextResponse.json({ zones: [] });
+    }
+
+    if (store.slug === "aguila") {
+      const { config } = await getRestaurantSection(store.id);
+      const zones = config.enabled ? config.zones.map(zone => ({ ...zone, free_delivery_from: 0, estimated_minutes_min: null, estimated_minutes_max: null })) : [];
+      return NextResponse.json({ zones }, { headers: { "Cache-Control": "no-store" } });
     }
 
     // IMPORTANTE:

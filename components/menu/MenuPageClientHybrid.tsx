@@ -20,6 +20,8 @@ import {
 
 import MenuItemModal from "./MenuItemModal";
 import MenuCartDrawer from "./MenuCartDrawer";
+import { reconcileRestaurantCart } from "@/lib/restaurant/cart";
+import { RESTAURANT_NOTICE, type RestaurantSection } from "@/lib/restaurant/section";
 import { useSharedCart } from "@/lib/menu/useSharedCart";
 import { getCartTotal } from "@/lib/menu/whatsapp-message";
 import type {
@@ -42,6 +44,7 @@ type StoreForMenu = {
 };
 
 type Props = {
+  restaurantSection?: RestaurantSection;
   store: StoreForMenu;
   categories: MenuCategory[];
   dailyMenus: PublicDailyMenu[];
@@ -451,6 +454,7 @@ function QuickOrderCard({
 }
 
 export default function MenuPageClientHybrid({
+  restaurantSection,
   store,
   categories: sourceCategories,
   dailyMenus,
@@ -460,10 +464,10 @@ export default function MenuPageClientHybrid({
 }: Props) {
   const { locale } = useDeParisLanguage();
   const params = useSearchParams();
-  const accent = store.primary_color || DEFAULT_ACCENT;
+  const accent = restaurantSection?.accent || store.primary_color || DEFAULT_ACCENT;
 
   const categories = useMemo(
-    () => sourceCategories.map((category) => ({
+    () => sourceCategories.filter(category => !restaurantSection || category.venue_type !== "bar").map((category) => ({
       ...category,
       menu_items: category.menu_items.map((item) => ({
         ...item,
@@ -471,7 +475,7 @@ export default function MenuPageClientHybrid({
         description: locale === "en" && item.description_en?.trim() ? item.description_en : item.description,
       })),
     })),
-    [locale, sourceCategories]
+    [locale, sourceCategories, restaurantSection]
   );
 
   const availableCategories = useMemo(
@@ -487,13 +491,13 @@ export default function MenuPageClientHybrid({
   const hasRestaurant = availableCategories.some(
     (category) => category.venue_type !== "bar"
   );
-  const hasBar = availableCategories.some(
+  const hasBar = !restaurantSection && availableCategories.some(
     (category) =>
       category.venue_type === "bar" || category.venue_type === "general"
   );
 
   const [venue, setVenue] = useState<VenueFilter>(
-    params.get("tipo") === "bar"
+    restaurantSection ? "restaurant" : params.get("tipo") === "bar"
       ? "bar"
       : hasRestaurant
       ? "restaurant"
@@ -516,7 +520,11 @@ export default function MenuPageClientHybrid({
   const categoriesAnchorRef = useRef<HTMLDivElement | null>(null);
   const [categoriesPinned, setCategoriesPinned] = useState(false);
 
-  const { cart, setCart } = useSharedCart(storeSlug);
+  const { cart, setCart, hydrated } = useSharedCart(storeSlug);
+  useEffect(() => {
+    if (!restaurantSection || !hydrated) return;
+    setCart(current => reconcileRestaurantCart(current, allItems));
+  }, [restaurantSection, hydrated, allItems, setCart]);
 
   useEffect(() => {
     fetch(
@@ -601,6 +609,7 @@ export default function MenuPageClientHybrid({
   };
 
   const addLine = (line: MenuCartLine) => {
+    if (restaurantSection && (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 50)) { showToast("Selecciona entre 1 y 50 unidades por línea."); return; }
     const channels = channelAvailability[line.menu_item_id];
     if (channels && !channels.takeaway && !channels.delivery) {
       showToast("Este producto solo está disponible en el restaurante");
@@ -631,6 +640,7 @@ export default function MenuPageClientHybrid({
   }, [activeItem, store.id]);
 
   const saveEditedLine = (line: MenuCartLine) => {
+    if (restaurantSection && (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 50)) { showToast("Selecciona entre 1 y 50 unidades por línea."); return; }
     setCart((prev) =>
       prev.map((current) =>
         current.lineId === line.lineId ? line : current
@@ -700,7 +710,7 @@ export default function MenuPageClientHybrid({
                 href={landingHref}
                 className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[.16em] text-white/50 transition hover:text-white"
               >
-                <ArrowLeft size={13} /> Volver
+                <ArrowLeft size={13} /> {restaurantSection ? "Volver a la tienda Águila" : "Volver"}
               </Link>
             ) : (
               <span />
@@ -709,6 +719,7 @@ export default function MenuPageClientHybrid({
             <button
               type="button"
               onClick={() => setCartOpen(true)}
+              aria-label={restaurantSection ? "Abrir carrito del restaurante" : "Abrir pedido"}
               className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/[.04]"
             >
               <ShoppingBag size={16} />
@@ -744,7 +755,7 @@ export default function MenuPageClientHybrid({
               </p>
 
               <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
-                {venue === "bar" ? "Bar & Bebidas" : "Menú del día"}
+                {restaurantSection ? restaurantSection.name : venue === "bar" ? "Bar & Bebidas" : "Menú del día"}
               </h1>
 
               {venue === "restaurant" && activeDailyMenu && (
@@ -768,6 +779,7 @@ export default function MenuPageClientHybrid({
             </div>
           </div>
 
+          {restaurantSection && <div className="mt-5 rounded-2xl border border-white/20 bg-white/10 p-4 text-sm leading-6"><p className="font-black">Restaurante asociado · En Águila Express · Precios en {restaurantSection.currency}</p><p className="mt-2">{restaurantSection.description}</p><p className="mt-2 font-semibold">{RESTAURANT_NOTICE}</p>{restaurantSection.delivery_note && <p>{restaurantSection.delivery_note}</p>}{restaurantSection.hours_note && <p>{restaurantSection.hours_note}</p>}<p className="mt-2 text-xs text-white/70">Carrito y pedido independientes · Pago a coordinar con Águila.</p></div>}
           <div className="mt-6 grid gap-2 sm:grid-cols-2">
             {hasRestaurant && (
               <button
@@ -1004,6 +1016,7 @@ export default function MenuPageClientHybrid({
 
       {cartOpen && !editing && (
         <MenuCartDrawer
+          restaurantSection={restaurantSection}
           storeId={store.id}
           storeSlug={storeSlug}
           storeName={store.name}
@@ -1014,7 +1027,7 @@ export default function MenuPageClientHybrid({
           onUpdateQuantity={(lineId, quantity) =>
             setCart((prev) =>
               prev.map((line) =>
-                line.lineId === lineId ? { ...line, quantity } : line
+                line.lineId === lineId ? { ...line, quantity: restaurantSection ? Math.max(1, Math.min(50, quantity)) : quantity } : line
               )
             )
           }

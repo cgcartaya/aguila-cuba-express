@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 
+import { RESTAURANT_NOTICE, type RestaurantSection } from "@/lib/restaurant/section";
 import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 import { buildMenuOrderMessage, getCartTotal } from "@/lib/menu/whatsapp-message";
 import PhoneCountryField from "@/components/checkout/PhoneCountryField";
@@ -26,6 +27,7 @@ import type { MenuCartLine, MenuChannelAvailability, MenuOrderType } from "@/lib
 import { trackAnalyticsEvent } from "@/lib/analytics/client";
 
 type Props = {
+  restaurantSection?: RestaurantSection;
   storeId: string;
   storeSlug: string;
   storeName: string;
@@ -76,6 +78,7 @@ const ORDER_TYPES: {
 ];
 
 export default function MenuCartDrawer({
+  restaurantSection,
   storeId,
   storeSlug,
   storeName,
@@ -91,6 +94,15 @@ export default function MenuCartDrawer({
   onSuggestion,
   onOrderSent,
 }: Props) {
+  const [viewport, setViewport] = useState<{ height: number; top: number } | null>(null);
+  useEffect(() => {
+    if (!restaurantSection) return;
+    const visual = window.visualViewport;
+    const update = () => setViewport({ height: visual?.height || window.innerHeight, top: visual?.offsetTop || 0 });
+    const frame = window.requestAnimationFrame(update);
+    visual?.addEventListener("resize", update); visual?.addEventListener("scroll", update); window.addEventListener("resize", update);
+    return () => { window.cancelAnimationFrame(frame); visual?.removeEventListener("resize", update); visual?.removeEventListener("scroll", update); window.removeEventListener("resize", update); };
+  }, [restaurantSection]);
   const [step, setStep] = useState<Step>("cart");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("+53 ");
@@ -100,7 +112,7 @@ export default function MenuCartDrawer({
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("+53 ");
   const [recipientNote, setRecipientNote] = useState("");
-  const [orderType, setOrderType] = useState<MenuOrderType>("takeaway");
+  const [orderType, setOrderType] = useState<MenuOrderType>(restaurantSection ? "delivery" : "takeaway");
   const [tableNumber] = useState(initialTableNumber || "");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryZoneId, setDeliveryZoneId] = useState("");
@@ -207,6 +219,7 @@ export default function MenuCartDrawer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           store_slug: storeSlug,
+          restaurant_currency: restaurantSection?.currency,
           order_type: orderType,
           table_number: orderType === "dine_in" ? tableNumber.trim() : undefined,
           delivery_address: orderType === "delivery" ? deliveryAddress.trim() : undefined,
@@ -270,8 +283,10 @@ export default function MenuCartDrawer({
         const whatsappNotes = [recipientText, customerNotes.trim()].filter(Boolean).join(" | ");
 
         const message = buildMenuOrderMessage({
-          storeName,
-          cart,
+          storeName: body.restaurant_summary?.name || storeName,
+          cart: body.restaurant_summary?.cart || cart,
+          currencyLabel: body.restaurant_summary?.currency,
+          restaurantNotice: restaurantSection ? RESTAURANT_NOTICE : undefined,
           orderType,
           tableNumber:
             orderType === "dine_in" ? tableNumber.trim() || undefined : undefined,
@@ -279,7 +294,7 @@ export default function MenuCartDrawer({
             orderType === "delivery" ? deliveryAddress.trim() : undefined,
           customerName: customerName.trim() || undefined,
           customerNotes: whatsappNotes || undefined,
-          deliveryFee: Number(body.total || total) - total,
+          deliveryFee: body.restaurant_summary?.deliveryFee ?? (Number(body.total || total) - total),
         });
 
         openWhatsAppMessage({
@@ -300,8 +315,9 @@ export default function MenuCartDrawer({
   const stepIndex = step === "cart" ? 0 : step === "fulfillment" ? 1 : 2;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 sm:items-center sm:p-4">
-      <div className="flex max-h-[94vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[30px] bg-[#FFFDF8] shadow-2xl sm:rounded-[30px]">
+    <div role="dialog" aria-modal="true" aria-label={restaurantSection ? "Pedido del restaurante" : "Pedido del menú"} className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 sm:items-center sm:p-4" style={restaurantSection && viewport ? { top: viewport.top, bottom: "auto", height: viewport.height } : undefined}>
+      <div className={`flex max-h-[94dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[30px] bg-[#FFFDF8] shadow-2xl sm:rounded-[30px] ${restaurantSection ? "[&_input]:text-base [&_select]:text-base" : ""}`} style={restaurantSection && viewport ? { maxHeight: Math.max(180, viewport.height - 16) } : undefined}>
+        {restaurantSection && <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-xs font-semibold leading-5 text-amber-950"><strong>Carrito del restaurante · {restaurantSection.currency}</strong>{(!viewport || viewport.height >= 500) && <><p>{RESTAURANT_NOTICE}</p><p>Pago a coordinar con Águila.</p></>}</div>}
         <div className="border-b border-black/[0.07] px-5 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -314,6 +330,8 @@ export default function MenuCartDrawer({
             </div>
             <button
               onClick={onClose}
+              type="button"
+              aria-label="Cerrar pedido"
               className="flex h-9 w-9 items-center justify-center rounded-full bg-black/[0.05] text-black/45"
             >
               <X size={17} />
@@ -344,7 +362,7 @@ export default function MenuCartDrawer({
 
         {step === "cart" && (
           <>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
               {cart.length === 0 ? (
                 <div className="py-12 text-center">
                   <ShoppingBag size={32} className="mx-auto text-black/15" />
@@ -483,7 +501,7 @@ export default function MenuCartDrawer({
                 <button
                   onClick={() => setStep("fulfillment")}
                   className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
-                  style={{ backgroundColor: accentColor, color: "#1B1410" }}
+                  style={{ backgroundColor: accentColor, color: restaurantSection ? "#fff" : "#1B1410" }}
                 >
                   Continuar <ChevronRight size={16} />
                 </button>
@@ -494,7 +512,7 @@ export default function MenuCartDrawer({
 
         {step === "fulfillment" && (
           <>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
               <button
                 onClick={() => setStep("cart")}
                 className="mb-4 inline-flex items-center gap-1 text-xs font-black text-black/45"
@@ -505,7 +523,7 @@ export default function MenuCartDrawer({
               <h3 className="text-xl font-black text-[#1B1410]">¿Cómo quieres recibirlo?</h3>
 
               <div className="mt-5 space-y-3">
-                {ORDER_TYPES.map(({ value, title, description, icon: Icon }) => {
+                {ORDER_TYPES.filter(type => !restaurantSection || type.value === "delivery").map(({ value, title, description, icon: Icon }) => {
                   const selected = value === orderType;
                   return (
                     <button
@@ -651,7 +669,7 @@ export default function MenuCartDrawer({
                 className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black"
                 style={{
                   backgroundColor: accentColor,
-                  color: "#1B1410",
+                  color: restaurantSection ? "#fff" : "#1B1410",
                   opacity: canContinueFulfillment ? 1 : 0.5,
                 }}
               >
@@ -663,7 +681,7 @@ export default function MenuCartDrawer({
 
         {step === "customer" && (
           <>
-            <div className="flex-1 overflow-y-auto p-5">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
               <button
                 onClick={() => setStep("fulfillment")}
                 className="mb-4 inline-flex items-center gap-1 text-xs font-black text-black/45"
@@ -727,7 +745,7 @@ export default function MenuCartDrawer({
                         className="grid h-10 w-10 place-items-center rounded-xl"
                         style={{
                           backgroundColor: isGiftRecipient ? `${accentColor}22` : "rgba(27,20,16,.05)",
-                          color: "#1B1410",
+                          color: restaurantSection ? "#fff" : "#1B1410",
                         }}
                       >
                         <Gift size={18} />
@@ -857,7 +875,7 @@ export default function MenuCartDrawer({
                 onClick={handleSend}
                 disabled={submitting}
                 className="flex w-full items-center justify-center gap-2 rounded-full px-5 py-3.5 text-sm font-black disabled:opacity-60"
-                style={{ backgroundColor: accentColor, color: "#1B1410" }}
+                style={{ backgroundColor: accentColor, color: restaurantSection ? "#fff" : "#1B1410" }}
               >
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
                 Confirmar pedido

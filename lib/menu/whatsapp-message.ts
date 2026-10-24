@@ -30,6 +30,8 @@ export function buildMenuOrderMessage({
   customerName,
   customerNotes,
   deliveryFee = 0,
+  currencyLabel,
+  restaurantNotice,
 }: {
   storeName: string;
   cart: MenuCartLine[];
@@ -39,10 +41,14 @@ export function buildMenuOrderMessage({
   customerName?: string;
   customerNotes?: string;
   deliveryFee?: number;
+  currencyLabel?: string;
+  restaurantNotice?: string;
 }) {
   const lines: string[] = [];
 
   lines.push(`¡Hola ${storeName}! Quisiera hacer este pedido:`);
+  if (currencyLabel) lines.push(`Moneda: ${currencyLabel}`);
+  if (restaurantNotice) lines.push(restaurantNotice);
   lines.push("");
 
   if (orderType === "dine_in") {

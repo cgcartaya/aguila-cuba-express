@@ -1,0 +1,72 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),ts=require('typescript');
+const {NextRequest,NextResponse}=require('next/server');
+function load(path,mocks={}) {const mod={exports:{}};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module:mod,exports:mod.exports,require:name=>mocks[name]||require(name),Date,Intl,Set,Map,console,process,URL,Number});return mod.exports;}
+const section=load('lib/restaurant/section.ts');const config=section.parseRestaurantSection({enabled:true,name:'Restaurante prueba',currency:'USD',zones:[{id:'zone-one',name:'Zona restaurante',fee:3,minimum_order:10}]});
+const storeId='9c65e62c-6437-4a51-adde-d682d1b90659',dish='11111111-1111-4111-8111-111111111111',orderId='22222222-2222-4222-8222-222222222222';
+function db(replies,user={id:'owner'}){const calls=[];return {calls,auth:{getUser:async()=>({data:{user}})},from(table){const result=replies.shift();assert.ok(result,`unexpected ${table}`);assert.equal(table,result.table);const call={table,ops:[]};calls.push(call);const b={};for(const op of ['select','eq','neq','in','insert','update','delete','order','is'])b[op]=(...args)=>{call.ops.push([op,...args]);return b;};b.single=b.maybeSingle=()=>Promise.resolve(result);b.then=(resolve,reject)=>Promise.resolve(result).then(resolve,reject);return b;}};}
+const store={id:storeId,slug:'aguila',name:'Águila Express',is_active:true,module_menu_enabled:true};
+const item={id:dish,name:'Completa',price:10,stock:null,is_active:true,manual_unavailable:false,menu_item_option_groups:[{id:'g',name:'Extra',is_required:false,max_selections:1,menu_item_options:[{id:'o',group_id:'g',label:'Extra auténtico',price_delta:2,is_available:true}]}]};
+const input={storeSlug:'aguila',restaurantCurrency:'USD',orderType:'delivery',deliveryAddress:'Calle 1 entre 2 y 3',deliveryZoneId:'zone-one',customerName:'Cliente prueba',customerPhone:'+5355555555',lines:[{menu_item_id:dish,quantity:2,selected_options:[{group_id:'g',option_id:'o',price_delta:-999,option_label:'Manipulado'}]}]};
+function service(database,cfg=config,currentStore=store){return load('lib/services/menu-orders-public.ts',{'@/lib/supabase-admin':{supabaseAdmin:database},'@/lib/services/stores':{getStoreBySlug:async()=>currentStore},'@/lib/restaurant/server':{getRestaurantSection:async()=>({config:cfg})},'@/lib/restaurant/section':section,'@/lib/services/menu-availability-public':{getMenuAvailabilityMap:async()=>({[dish]:null}),getMenuChannelAvailabilityMap:async()=>({[dish]:{delivery:true,takeaway:true,dine_in:true}})},'@/lib/notifications/menu-order-email':{sendMenuOrderAdminAlertEmail:async()=>{throw Error('unexpected email')},sendMenuOrderReceivedEmail:async()=>{throw Error('unexpected email')}},'@/lib/checkout/distance-delivery':{getDrivingRoute:()=>{throw Error('must not use shop delivery')}}}).createMenuOrder;}
+const happy=[{table:'store_settings',data:{}},{table:'menu_items',data:[item]},{table:'menu_orders',data:{id:orderId}},{table:'menu_order_items',data:null},{table:'store_settings',data:{order_notification_email:null}}];
+test('draft stays hidden; publication requires brand and independent zones; reject invalid money, duplicate zones and unsafe logos',()=>{
+ assert.equal(section.emptyRestaurantSection().enabled,false);
+ for(const value of [{enabled:true},{...config,zones:[]},{...config,zones:[{id:'z',name:'X',fee:-1,minimum_order:0}]},{...config,zones:[config.zones[0],config.zones[0]]},{...config,logo_url:'javascript:alert(1)'},{...config,currency:'XXX'}])assert.throws(()=>section.parseRestaurantSection(value));
+});
+test('restaurant delivery rejects shop zones and applies restaurant minimum and rate only',()=>{
+ assert.throws(()=>section.restaurantDelivery(config,'shop-zone',100));assert.throws(()=>section.restaurantDelivery(config,'zone-one',9));assert.deepEqual(JSON.parse(JSON.stringify(section.restaurantDelivery(config,'zone-one',10))),{name:'Zona restaurante',fee:3});
+});
+test('server creates restaurant orders with canonical menu prices and no shop products, fees or delivery settings',async()=>{
+ const d=db([...happy]);const r=await service(d)(input);assert.equal(r.ok,true);assert.equal(r.total,27);assert.equal(r.restaurant_summary.currency,'USD');assert.equal(r.restaurant_summary.cart[0].unit_base_price,10);assert.equal(r.restaurant_summary.cart[0].selected_options[0].price_delta,2);
+ const inserted=d.calls.find(x=>x.table==='menu_orders').ops.find(x=>x[0]==='insert')[1];assert.equal(inserted.delivery_fee,3);assert.equal(inserted.delivery_zone_id,null);assert.equal(inserted.delivery_route_provider,'restaurant_zones');assert.match(inserted.notes,/Restaurante prueba.*USD/);
+ assert.ok(d.calls.every(x=>!['orders','order_items','products','combos','delivery_zones','checkout_settings'].includes(x.table)));assert.ok(d.calls.find(x=>x.table==='menu_items').ops.some(x=>x[0]==='eq'&&x[1]==='store_id'&&x[2]===storeId));
+});
+test('closed restaurant, stale currency, pickup attempts and inactive store cannot create orders',async()=>{
+ for(const [cfg,change,status,currentStore] of [[{...config,enabled:false},{},423,store],[config,{restaurantCurrency:'CUP'},409,store],[config,{orderType:'takeaway'},400,store],[config,{},404,{...store,is_active:false}]]){const d=db([]);const r=await service(d,cfg,currentStore)({...input,...change});assert.equal(r.ok,false);assert.equal(r.status,status);assert.equal(d.calls.length,0);}
+});
+test('mixed store product IDs are rejected without a partial restaurant order',async()=>{
+ const d=db(happy.slice(0,2));const r=await service(d)({...input,lines:[...input.lines,{menu_item_id:'product-id-from-shop',quantity:1,selected_options:[]}]});assert.equal(r.ok,false);assert.equal(r.status,422);assert.equal(d.calls.some(x=>x.ops.some(x=>x[0]==='insert')),false);
+});
+test('failed order lines are not reported as a successful order and do not deduct stock',async()=>{
+ const d=db([...happy.slice(0,3),{table:'menu_order_items',error:{message:'fixture failure'}},{table:'menu_orders',data:null}]);const r=await service(d)(input);assert.equal(r.ok,false);assert.equal(r.status,500);const cleanup=d.calls.at(-1);assert.ok(cleanup.ops.some(x=>x[0]==='delete'));assert.ok(cleanup.ops.some(x=>x[0]==='eq'&&x[1]==='store_id'&&x[2]===storeId));assert.equal(d.calls.some(x=>x.table==='menu_items'&&x.ops.some(x=>x[0]==='update')),false);
+});
+test('existing standalone menus retain takeaway behavior and no partner summary',async()=>{
+ const d=db([...happy]);const r=await service(d,config,{...store,slug:'deparis'})({...input,orderType:'takeaway'});assert.equal(r.ok,true);assert.equal(r.total,24);assert.equal('restaurant_summary' in r,false);
+});
+test('public menu POST rejects a mixed product line before any service write',async()=>{
+ let calls=0;const {POST}=load('app/api/public/menu-orders/route.ts',{'next/server':{NextRequest,NextResponse},'@/lib/services/menu-orders-public':{createMenuOrder:async()=>{calls++;}}});const r=await POST(new NextRequest('https://example.test/api/public/menu-orders',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({store_slug:'aguila',order_type:'delivery',delivery_address:'Calle 1',customer_name:'Prueba',customer_phone:'+5355555555',lines:[{menu_item_id:dish,quantity:1},{product_id:'egg',quantity:1}]})}));assert.equal(r.status,400);assert.equal(calls,0);
+});
+test('shop checkout rejects menu item types before any product/order write',async()=>{
+ const d=db([{table:'stores',data:{...store,module_store_enabled:true}},{table:'checkout_settings',data:{blocks:{customer:false}}}]);const mocks={'next/server':{NextResponse,after:()=>{}},'@/lib/supabase-admin':{supabaseAdmin:d},'@/lib/shareapp/server':{},'@/lib/storefront/product-quantity-pricing':{},'@/lib/notifications/order-notification':{},'@/lib/notifications/customer-order-email':{},'@/lib/config/features':{},'@/lib/checkout/distance-delivery':{}};const {POST}=load('app/api/checkout/create-order/route.ts',mocks);const r=await POST(new Request('https://example.test/api/checkout/create-order',{method:'POST',body:JSON.stringify({storeId,items:[{item_type:'menu_item',product_id:dish,quantity:1}],form:{}})}));assert.equal(r.status,400);assert.equal(d.calls.length,2);assert.match((await r.json()).message,/tipo de artículo no permitido/);
+});
+test('cart restoration drops shop IDs and refreshes menu prices/options from live catalog',()=>{
+ const {reconcileRestaurantCart}=load('lib/restaurant/cart.ts');const old={lineId:'line',menu_item_id:dish,name:'Old',unit_base_price:999,quantity:2,selected_options:[]};const r=reconcileRestaurantCart([old,{...old,menu_item_id:'shop-product'}],[item]);assert.equal(r.length,1);assert.equal(r[0].name,'Completa');assert.equal(r[0].unit_base_price,10);
+});
+function admin(database,current={config,updated_at:'version',currency_locked:false}) {return load('app/api/admin/restaurant-section/route.ts',{'next/server':{NextRequest,NextResponse},'@/lib/supabase-admin':{supabaseAdmin:database},'@/lib/restaurant/server':{getRestaurantSection:async()=>current},'@/lib/restaurant/section':section});}
+function adminRequest(method='GET',body,token='fixture'){return new NextRequest(`https://example.test/api/admin/restaurant-section?store_id=${storeId}`,{method,headers:{...(token?{authorization:`Bearer ${token}`}:{})},...(body?{body:JSON.stringify(body)}:{})});}
+const grant=[{table:'profiles',data:{role:'store_owner',active:true}},{table:'store_users',data:{role:'OWNER'}},{table:'stores',data:{id:storeId}}];
+test('restaurant settings require authentication and OWNER/ADMIN scope; other tenants and viewers cannot configure',async()=>{
+ let d=db([]);assert.equal((await admin(d).GET(adminRequest('GET',null,''))).status,401);assert.equal(d.calls.length,0);
+ d=db([{table:'profiles',data:{role:'store_owner',active:true}},{table:'store_users',data:{role:'VIEWER'}}]);assert.equal((await admin(d).GET(adminRequest())).status,403);
+ d=db([...grant.slice(0,2),{table:'stores',data:null}]);assert.equal((await admin(d).GET(adminRequest())).status,404);assert.ok(d.calls[1].ops.some(x=>x[0]==='eq'&&x[1]==='store_id'&&x[2]===storeId));assert.ok(d.calls[2].ops.some(x=>x[0]==='eq'&&x[1]==='slug'&&x[2]==='aguila'));
+});
+test('publishing cannot bypass the menu, delivery-zone or WhatsApp setup and locks currency permanently',async()=>{
+ let d=db([...grant,{table:'menu_items',count:0},{table:'store_settings',data:{whatsapp:'+15555550123'}}]);assert.equal((await admin(d).PUT(adminRequest('PUT',{config,updated_at:'version'}))).status,400);
+ d=db([...grant,{table:'menu_items',count:1},{table:'store_settings',data:{whatsapp:''}}]);assert.equal((await admin(d).PUT(adminRequest('PUT',{config,updated_at:'version'}))).status,400);
+ d=db([...grant,{table:'menu_items',count:1},{table:'store_settings',data:{whatsapp:'+15555550123'}},{table:'store_restaurant_sections',data:{config,updated_at:'new-version'}}]);let r=await admin(d).PUT(adminRequest('PUT',{config,updated_at:'version',currency_locked:false}));assert.equal(r.status,200);const update=d.calls.at(-1).ops.find(x=>x[0]==='update')[1];assert.equal(update.currency_locked,true);assert.ok(d.calls.at(-1).ops.some(x=>x[0]==='eq'&&x[1]==='updated_at'&&x[2]==='version'));
+ d=db([...grant]);r=await admin(d,{config:{...config,enabled:false},updated_at:'version',currency_locked:true}).PUT(adminRequest('PUT',{config:{...config,currency:'CUP',enabled:false},updated_at:'version'}));assert.equal(r.status,409);assert.equal(d.calls.length,3);
+});
+test('a stale edit returns conflict instead of overwriting another administrator',async()=>{
+ const d=db([...grant,{table:'store_restaurant_sections',data:null}]);const r=await admin(d).PUT(adminRequest('PUT',{config:{...config,enabled:false},updated_at:'old-version'}));assert.equal(r.status,409);
+});
+test('public discovery hides drafts and never returns another stores section',async()=>{
+ const d=db([{table:'stores',data:{id:storeId}}]);const {GET}=load('app/api/public/restaurant-section/route.ts',{'next/server':{NextRequest,NextResponse},'@/lib/supabase-admin':{supabaseAdmin:d},'@/lib/restaurant/server':{getRestaurantSection:async()=>({config:{...config,enabled:false}})}});assert.equal((await (await GET(new NextRequest('https://example.test/api/public/restaurant-section?store=aguila'))).json()).section,null);assert.equal((await (await GET(new NextRequest('https://example.test/api/public/restaurant-section?store=other'))).json()).section,null);assert.equal(d.calls.length,1);
+});
+test('restaurant zone endpoint returns only its own zones; other restaurants retain existing delivery zones',async()=>{
+ for(const slug of ['aguila','deparis']){const d=db(slug==='aguila'?[]:[{table:'delivery_zones',data:[{id:'shop-z',municipality:'Municipio',zone_name:'Zona',delivery_fee:9}]}]);const {GET}=load('app/api/public/menu-delivery-zones/route.ts',{'next/server':{NextRequest,NextResponse},'@/lib/supabase-admin':{supabaseAdmin:d},'@/lib/services/stores':{getStoreBySlug:async()=>({...store,slug})},'@/lib/restaurant/server':{getRestaurantSection:async()=>({config})}});const r=await GET(new NextRequest(`https://example.test/api/public/menu-delivery-zones?slug=${slug}`));const p=await r.json();assert.equal(p.zones[0].id,slug==='aguila'?'zone-one':'shop-z');assert.equal(p.zones[0].fee,slug==='aguila'?3:9);}
+});
+test('a menu ID disguised as a shop product still fails the authoritative shop lookup',async()=>{
+ const d=db([{table:'stores',data:{...store,module_store_enabled:true}},{table:'checkout_settings',data:{blocks:{customer:false}}},{table:'categories',data:[]},{table:'product_price_tiers',data:[]},{table:'products',data:[]}]);
+ const mocks={'next/server':{NextResponse,after:()=>{}},'@/lib/supabase-admin':{supabaseAdmin:d},'@/lib/shareapp/server':{},'@/lib/storefront/product-quantity-pricing':{},'@/lib/notifications/order-notification':{},'@/lib/notifications/customer-order-email':{},'@/lib/config/features':{},'@/lib/checkout/distance-delivery':{}};
+ const {POST}=load('app/api/checkout/create-order/route.ts',mocks);const r=await POST(new Request('https://example.test/api/checkout/create-order',{method:'POST',body:JSON.stringify({storeId,items:[{item_type:'product',product_id:dish,quantity:1}],form:{}})}));assert.equal(r.status,409);assert.equal(d.calls.some(c=>c.ops.some(op=>['insert','update','delete'].includes(op[0]))),false);
+});

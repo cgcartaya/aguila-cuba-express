@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
 
     const input: CreateMenuOrderInput = {
       storeSlug,
+      restaurantCurrency: clean(body.restaurant_currency, 3),
       orderType: orderType as CreateMenuOrderInput["orderType"],
       tableNumber,
       deliveryAddress,
@@ -125,7 +126,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    return NextResponse.json({ id: result.id, total: result.total }, { status: 201 });
+    return NextResponse.json({ id: result.id, total: result.total, ...(result.restaurant_summary ? { restaurant_summary: result.restaurant_summary } : {}) }, { status: 201 });
   } catch (error) {
     console.error("POST /api/public/menu-orders error:", error);
     return NextResponse.json({ error: "Error inesperado." }, { status: 500 });

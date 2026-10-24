@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { getPublicMenu } from "@/lib/services/menu";
 import { getStoreSettings } from "@/lib/services/settings";
@@ -34,6 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function MenuPage({ params }: PageProps) {
   const { slug } = await params;
+  if (slug === "aguila") redirect("/restaurante/aguila");
   const menu = await getPublicMenu(slug);
   if (!menu?.store || !menu.store.module_menu_enabled) notFound();
   const { data: settings } = await getStoreSettings(menu.store.id);

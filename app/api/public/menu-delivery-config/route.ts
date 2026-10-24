@@ -7,11 +7,13 @@ export async function GET(request: NextRequest) {
 
   const { data: store } = await supabaseAdmin
     .from("stores")
-    .select("id")
+    .select("id,slug")
     .eq("slug", slug)
     .eq("module_menu_enabled", true)
     .maybeSingle();
   if (!store) return NextResponse.json({ error: "Menú no disponible." }, { status: 404 });
+
+  if (store.slug === "aguila") return NextResponse.json({ mode: "zones", origin: null }, { headers: { "Cache-Control": "no-store" } });
 
   const { data: settings } = await supabaseAdmin
     .from("checkout_settings")

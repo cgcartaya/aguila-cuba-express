@@ -1,3 +1,5 @@
+import { getRestaurantSection } from "@/lib/restaurant/server";
+import { restaurantDelivery } from "@/lib/restaurant/section";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreBySlug } from "@/lib/services/stores";
 import { getMenuAvailabilityMap, getMenuChannelAvailabilityMap } from "@/lib/services/menu-availability-public";
@@ -26,6 +28,7 @@ export type CreateMenuOrderLine = {
 
 export type CreateMenuOrderInput = {
   storeSlug: string;
+  restaurantCurrency?: string;
   orderType: MenuOrderType;
   tableNumber?: string;
   deliveryAddress?: string;
@@ -42,7 +45,7 @@ export type CreateMenuOrderInput = {
 };
 
 export type CreateMenuOrderResult =
-  | { ok: true; id: string; total: number }
+  | { ok: true; id: string; total: number; restaurant_summary?: { name: string; currency: string; cart: import("@/lib/menu/types").MenuCartLine[]; deliveryFee: number } }
   | { ok: false; status: number; error: string };
 
 type DbOption = {
@@ -81,13 +84,19 @@ export async function createMenuOrder(
   }
 
   const store = await getStoreBySlug(input.storeSlug);
-  if (!store || !store.module_menu_enabled) {
+  if (!store || store.is_active === false || !store.module_menu_enabled) {
     return {
       ok: false,
       status: 404,
       error: "Módulo de menú no disponible.",
     };
   }
+
+  const restaurant = store.slug === "aguila" ? (await getRestaurantSection(store.id)).config : null;
+  if (restaurant && !restaurant.enabled) return { ok: false, status: 423, error: "El restaurante todavía no está disponible." };
+  if (restaurant && input.orderType !== "delivery") return { ok: false, status: 400, error: "El restaurante acepta pedidos con su propio delivery." };
+  if (restaurant && input.restaurantCurrency !== restaurant.currency) return { ok: false, status: 409, error: "La moneda del menú cambió. Recarga el restaurante antes de confirmar." };
+  const displayName = restaurant ? `${restaurant.name} (${restaurant.currency}) · ${store.name}` : store.name;
 
   const { data: operationSettings } = await supabaseAdmin
     .from("store_settings")
@@ -111,7 +120,7 @@ export async function createMenuOrder(
     ...new Set(input.lines.map((line) => line.menu_item_id)),
   ];
 
-  const { data: items, error: itemsError } = await supabaseAdmin
+  const itemQuery = supabaseAdmin
     .from("menu_items")
     .select(`
       id,
@@ -136,9 +145,12 @@ export async function createMenuOrder(
           is_available
         )
       )
+      ${restaurant ? ", menu_categories!inner(is_active,venue_type)" : ""}
     `)
     .in("id", itemIds)
     .eq("store_id", store.id);
+  if (restaurant) itemQuery.eq("menu_categories.is_active", true).neq("menu_categories.venue_type", "bar");
+  const { data: items, error: itemsError } = await itemQuery;
 
   if (itemsError || !items) {
     return {
@@ -300,7 +312,10 @@ export async function createMenuOrder(
   let deliveryRouteProvider: string | null = null;
   let deliveryAddress = input.deliveryAddress?.slice(0, 300) || null;
 
-  if (input.orderType === "delivery") {
+  if (restaurant) {
+    try { const quote = restaurantDelivery(restaurant, input.deliveryZoneId, subtotal); deliveryFee = quote.fee; deliveryZoneName = quote.name; deliveryRouteProvider = "restaurant_zones"; }
+    catch (error) { return { ok: false, status: 422, error: error instanceof Error ? error.message : "Zona del restaurante no disponible." }; }
+  } else if (input.orderType === "delivery") {
     const { data: checkoutSettings } = await supabaseAdmin
       .from("checkout_settings")
       .select("delivery_address_mode,delivery_origin_address,delivery_origin_latitude,delivery_origin_longitude,distance_base_km,distance_base_fee,distance_additional_fee_per_km,max_delivery_distance_km")
@@ -429,7 +444,7 @@ export async function createMenuOrder(
       customer_name: input.customerName.slice(0, 120),
       customer_phone: input.customerPhone.slice(0, 60),
       customer_email: input.customerEmail?.slice(0, 160) || null,
-      notes: input.notes?.slice(0, 500) || null,
+      notes: restaurant ? `[Restaurante: ${restaurant.name} | ${restaurant.currency} | Delivery propio] ${input.notes || ""}`.slice(0, 500) : input.notes?.slice(0, 500) || null,
       subtotal,
       total,
       status: "received",
@@ -460,6 +475,9 @@ export async function createMenuOrder(
       "createMenuOrder items insert error:",
       itemsInsertError.message
     );
+    // Do not report success or deduct stock for a header whose order lines failed.
+    await supabaseAdmin.from("menu_orders").delete().eq("id", order.id).eq("store_id", store.id);
+    return { ok: false, status: 500, error: "No se pudo guardar el detalle del pedido. Intenta de nuevo." };
   }
 
   for (const [itemId, neededQty] of neededByItem) {
@@ -484,7 +502,7 @@ export async function createMenuOrder(
     try {
       await sendMenuOrderReceivedEmail({
         to: input.customerEmail,
-        storeName: store.name,
+        storeName: displayName,
         customerFirstName: input.customerName,
         orderType: input.orderType,
         tableNumber: input.tableNumber,
@@ -513,7 +531,7 @@ export async function createMenuOrder(
 
       await sendMenuOrderAdminAlertEmail({
         to: settings.order_notification_email,
-        storeName: store.name,
+        storeName: displayName,
         customerName: input.customerName,
         customerPhone: input.customerPhone,
         orderType: input.orderType,
@@ -528,5 +546,5 @@ export async function createMenuOrder(
     console.error("createMenuOrder email negocio error:", error);
   }
 
-  return { ok: true, id: order.id, total };
+  return { ok: true, id: order.id, total, ...(restaurant ? { restaurant_summary: { name: displayName, currency: restaurant.currency, deliveryFee, cart: canonicalLines.map(line => ({ lineId: line.menu_item_id, menu_item_id: line.menu_item_id, name: line.item_name, unit_base_price: line.unit_price, quantity: line.quantity, selected_options: line.selected_options, notes: line.notes || "" })) } } : {}) };
 }
