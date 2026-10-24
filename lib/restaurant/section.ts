@@ -1,13 +1,17 @@
 export type RestaurantZone = { id: string; name: string; fee: number; minimum_order: number };
-export type RestaurantSection = { enabled: boolean; name: string; logo_url: string; description: string; accent: string; currency: 'USD' | 'CUP'; delivery_note: string; hours_note: string; zones: RestaurantZone[] };
+export type RestaurantSection = { enabled: boolean; name: string; logo_url: string; description: string; accent: string; secondary_color: string; background_color: string; currency: 'USD' | 'CUP'; delivery_note: string; hours_note: string; zones: RestaurantZone[] };
 export const RESTAURANT_NOTICE = 'Este pedido se prepara y entrega por separado de tus compras en la tienda. El delivery lo realiza el restaurante.';
 export const RESTAURANT_PATH = '/restaurante/aguila';
-export function emptyRestaurantSection(): RestaurantSection { return { enabled: false, name: '', logo_url: '', description: '', accent: '#b45309', currency: 'USD', delivery_note: '', hours_note: '', zones: [] }; }
+export function emptyRestaurantSection(): RestaurantSection { return { enabled: false, name: '', logo_url: '', description: '', accent: '#b45309', secondary_color: '#17100c', background_color: '#fbf6ec', currency: 'USD', delivery_note: '', hours_note: '', zones: [] }; }
 const text = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max);
+const color = (value: unknown, fallback: string) => {
+  const result = text(value || fallback, 7);
+  if (!/^#[0-9a-f]{6}$/i.test(result)) throw Error('Selecciona colores válidos.');
+  return result;
+};
 export function parseRestaurantSection(value: unknown): RestaurantSection {
   const source = value && typeof value === 'object' ? value as Record<string, unknown> : {};
-  const config = { ...emptyRestaurantSection(), enabled: source.enabled === true, name: text(source.name, 100), description: text(source.description, 400), logo_url: text(source.logo_url, 1000), accent: text(source.accent || '#b45309', 7), currency: (source.currency === 'CUP' ? 'CUP' : 'USD') as 'USD' | 'CUP', delivery_note: text(source.delivery_note, 250), hours_note: text(source.hours_note, 200), zones: [] as RestaurantZone[] };
-  if (!/^#[0-9a-f]{6}$/i.test(config.accent)) throw Error('Selecciona un color válido.');
+  const config = { ...emptyRestaurantSection(), enabled: source.enabled === true, name: text(source.name, 100), description: text(source.description, 400), logo_url: text(source.logo_url, 1000), accent: color(source.accent, '#b45309'), secondary_color: color(source.secondary_color, '#17100c'), background_color: color(source.background_color, '#fbf6ec'), currency: (source.currency === 'CUP' ? 'CUP' : 'USD') as 'USD' | 'CUP', delivery_note: text(source.delivery_note, 250), hours_note: text(source.hours_note, 200), zones: [] as RestaurantZone[] };
   if (config.logo_url && !/^https:\/\/[^\s]+$/i.test(config.logo_url)) throw Error('El logo debe usar una dirección HTTPS.');
   if (source.currency && !['USD','CUP'].includes(String(source.currency))) throw Error('Selecciona USD o CUP.');
   if (Array.isArray(source.zones)) {
