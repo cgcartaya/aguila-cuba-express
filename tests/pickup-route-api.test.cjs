@@ -37,7 +37,7 @@ test('editing a route from another store is rejected without mutation',async()=>
 });
 test('public route uses announced cities and city centres, never customer coordinates',async()=>{
  const db=database([{table:'stores',value:{data:{id:storeId,module_pickups_enabled:true}}},{table:'pickup_service_settings',value:{data:{timezone:'America/New_York',country_code:'US',region_code:'SC'}}},{table:'pickup_routes',value:{data:[{id,name:'Costa',route_date:'2099-10-26',status:'published',public_itinerary:[group],pickup_route_stops:[{stop_order:1,pickup_requests:{city:'Private City',latitude:1,longitude:2}}]}]}},{table:'pickup_zone_cities',value:{data:[]}}]);
- const {GET}=load('app/api/pickups/routes/public/route.ts',db);const r=await GET(new NextRequest('https://example.test/api/pickups/routes/public?store=yoyo-envios'));const p=await r.json();assert.equal(p.routes[0].cities.length,2);assert.equal(p.routes[0].cities[0].latitude,33.836);assert.equal(p.routes[0].cities[1].start_time,'09:00');
+ const {GET}=load('app/api/pickups/routes/public/route.ts',db);const r=await GET(new NextRequest('https://example.test/api/pickups/routes/public?store=yoyo-envios'));const p=await r.json();assert.equal(p.timezone,'America/New_York');assert.equal(p.routes[0].cities.length,2);assert.equal(p.routes[0].cities[0].latitude,33.836);assert.equal(p.routes[0].cities[1].start_time,'09:00');
  assert.doesNotMatch(JSON.stringify(p),/Private City/);
  const select=db.calls[2].methods.find(m=>m[0]==='select')[1];assert.doesNotMatch(select,/latitude|longitude/);
 });
