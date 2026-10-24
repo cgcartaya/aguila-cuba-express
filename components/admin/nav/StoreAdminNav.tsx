@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ExternalLink, Plus, Rocket, Store, UserRound } from "lucide-react";
 
+import RestaurantAdminNav from "./RestaurantAdminNav";
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -112,7 +113,9 @@ export default function StoreAdminNav() {
         className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain pr-2 pb-4 [scrollbar-width:thin]"
         style={{ scrollbarColor: `${withAlpha(textColor, 0.28)} transparent` }}
       >
-        {sections.map((section) => (
+        {sections.map((section) => activeStore?.slug === "aguila" && section.module === "menu" ? (
+          <RestaurantAdminNav key={`${activeStore.id}-restaurant`} pathname={pathname} pendingOrders={pendingMenuOrdersCount} textColor={textColor} accentColor={accentColor} />
+        ) : (
           <section key={section.title}>
             <p
               className="mb-2 px-4 text-[11px] font-black uppercase tracking-[0.18em]"
