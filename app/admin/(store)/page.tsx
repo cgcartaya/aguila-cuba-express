@@ -10,6 +10,7 @@ import {
 
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import LandingAnalyticsPanel from "@/components/admin/analytics/LandingAnalyticsPanel";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import { supabase } from "@/lib/supabase";
@@ -125,6 +126,8 @@ export default function AdminDashboardPage() {
         <Link href={storeHref} className="inline-flex items-center gap-2 rounded-xl bg-[#061b3a] px-5 py-2.5 text-sm font-black text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">Ver tienda <ExternalLink size={16} /></Link>
       </>}
     />
+
+    {activeStore?.slug === "yoyo-envios" && <LandingAnalyticsPanel key={activeStore.id} storeId={activeStore.id} />}
 
     {pendingFee && pendingFee.feeAmount > 0 && <Link href="/admin/comision" className="mt-5 flex flex-col gap-3 rounded-3xl border border-emerald-200 bg-emerald-50 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-600 text-white"><Wallet size={20} /></span><div><p className="font-black text-emerald-900">Comisión de plataforma pendiente</p><p className="text-xs font-semibold text-emerald-700">{pendingFee.ordersCount} órdenes · {money.format(pendingFee.salesAmount)} en ventas</p></div></div><p className="text-xl font-black text-emerald-800">{money.format(pendingFee.feeAmount)}</p></Link>}
 
