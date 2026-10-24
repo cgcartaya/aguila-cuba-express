@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, ExternalLink, Rocket, UserRound, X } from "lucide-react";
 
+import RestaurantAdminNav from "./RestaurantAdminNav";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -160,7 +161,9 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
             />
           )}
 
-          {sections.map((section) => (
+          {sections.map((section) => activeStore?.slug === "aguila" && section.module === "menu" ? (
+            <RestaurantAdminNav key={`${activeStore.id}-restaurant`} pathname={pathname} pendingOrders={pendingMenuOrdersCount} mobile onNavigate={onClose} />
+          ) : (
             <MenuSection
               key={section.title}
               title={section.title}

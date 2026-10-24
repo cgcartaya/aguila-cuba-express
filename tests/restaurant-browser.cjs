@@ -68,7 +68,28 @@ const fixture=http.createServer(async(req,res)=>{
   await page.waitForFunction(()=>window.__whatsappPreview);const message=new URL(await page.evaluate(()=>window.__whatsappPreview)).searchParams.get('text');assert.match(message,/Restaurante de prueba/);assert.match(message,/Moneda: USD/);assert.match(message,/13.00/);assert.doesNotMatch(message,/Huevos tienda/);
   const shop=await page.evaluate(()=>JSON.parse(localStorage.getItem('cart-aguila')));assert.equal(shop[0].id,'product-shop-eggs');assert.equal(shop[0].quantity,2);assert.equal(await page.evaluate(()=>localStorage.getItem('perla_menu_cart_v1_aguila')),null);
   const order=writes.find(w=>w.table==='menu_orders'&&w.method==='POST');assert.equal(order.body.delivery_fee,3);assert.equal(order.body.delivery_zone_id,null);assert.equal(order.body.total,13);assert.ok(writes.every(w=>!['products','orders','order_items','delivery_zones'].includes(w.table)));
-  await page.goto(origin+'/admin/menu/restaurante',{waitUntil:'domcontentloaded',timeout:120000});await page.getByLabel('Nombre del restaurante',{exact:true}).waitFor({timeout:120000});await page.getByLabel('Nombre del restaurante',{exact:true}).fill('Sazón de prueba');await page.getByRole('button',{name:'Guardar configuración',exact:true}).scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Guardar configuración',exact:true}).click();await page.getByRole('status').filter({hasText:'Configuración guardada.'}).waitFor();assert.equal(state.config.name,'Sazón de prueba');
+  await page.goto(origin+'/admin/menu/restaurante',{waitUntil:'domcontentloaded',timeout:120000});await page.getByLabel('Nombre del restaurante',{exact:true}).waitFor({timeout:120000});await page.getByLabel('Nombre del restaurante',{exact:true}).fill('Sazón de prueba');await page.getByRole('button',{name:'Guardar cambios',exact:true}).scrollIntoViewIfNeeded();await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();await page.getByRole('status').filter({hasText:'Configuración guardada.'}).waitFor();assert.equal(state.config.name,'Sazón de prueba');
+  const saveButton=page.getByRole('button',{name:'Guardar cambios',exact:true});
+  for (const size of [{width:320,height:640},{width:390,height:844},{width:768,height:1024},{width:1440,height:1000}]) {
+   await page.setViewportSize(size); await page.getByRole('heading',{name:'Tu restaurante, en un solo lugar'}).scrollIntoViewIfNeeded();
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`settings no horizontal overflow at ${size.width}`);
+   const saveBox=await saveButton.boundingBox(); if(!saveBox||saveBox.y<0||saveBox.y+saveBox.height>size.height){console.log('save geometry',size,saveBox);await page.screenshot({path:'/tmp/restaurant-settings-overflow.png'});} assert.ok(saveBox&&saveBox.y>=0&&saveBox.y+saveBox.height<=size.height,`save visible at ${size.width}`);
+  }
+  const sidebar=page.locator('aside').filter({has:page.getByRole('navigation')}).first();
+  await sidebar.getByText('Restaurante',{exact:true}).click();
+  await sidebar.getByRole('link',{name:'Configuración',exact:true}).waitFor({state:'hidden'});
+  await sidebar.getByText('Restaurante',{exact:true}).click();
+  await sidebar.getByRole('link',{name:'Zonas y tarifas',exact:true}).click();
+  await page.waitForURL('**/admin/menu/restaurante#zonas');
+  assert.equal(await sidebar.getByRole('link',{name:'Zonas y tarifas',exact:true}).getAttribute('aria-current'),'page');
+  await page.screenshot({path:'/tmp/restaurant-settings-desktop.png',fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  await page.getByRole('button',{name:'Abrir menú',exact:true}).click();
+  const mobileRestaurant=page.locator('aside:visible').getByText('Restaurante',{exact:true});
+  await mobileRestaurant.waitFor();
+  await page.locator('aside:visible').getByRole('link',{name:'Configuración',exact:true}).click();
+  await page.getByLabel('Nombre del restaurante',{exact:true}).waitFor();
+
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'admin mobile has no horizontal overflow');await page.screenshot({path:'/tmp/aguila-restaurant-admin-mobile.png',fullPage:true});
   await page.setViewportSize({width:1440,height:1000});await page.goto(origin+'/restaurante/aguila');await page.getByRole('heading',{name:'Sazón de prueba',exact:true}).waitFor();await page.waitForLoadState('networkidle');await page.screenshot({path:'/tmp/aguila-restaurant-desktop.png',fullPage:true,caret:'initial'});
   const shared=await fetch(origin+'/api/public/menu-delivery-zones?slug=aguila');assert.equal((await shared.json()).zones[0].id,'restaurant-zone');
