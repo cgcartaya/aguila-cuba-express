@@ -41,7 +41,7 @@ const getCachedPickupConfig = unstable_cache(
       },
     };
   },
-  ["pickup-config-v2"],
+  ["pickup-config-v3-sc-2026"],
   { revalidate: 300, tags: ["pickup-config"] },
 );
 
