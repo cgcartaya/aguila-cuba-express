@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Menu,
+  UtensilsCrossed,
   X,
   Home,
   ShoppingBag,
@@ -19,6 +20,8 @@ import {
   XCircle,
 } from "lucide-react";
 
+import { useRestaurantSection } from "@/components/restaurant/RestaurantEntry";
+import { RESTAURANT_PATH } from "@/lib/restaurant/section";
 import { useStore } from "@/hooks/useStore";
 import { getPublicStoreSettings as getStoreSettings } from "@/lib/services/settings";
 import { normalizeStoreWhatsapp } from "@/lib/utils/store-whatsapp";
@@ -37,6 +40,7 @@ export default function Header({ cartCount }: HeaderProps) {
   const searchInput = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const { store, loading: storeLoading } = useStore();
+  const restaurantSection = useRestaurantSection(store?.slug);
   const showShipping = !storeLoading && store?.module_shipping_enabled === true;
   const showDepartures = showShipping && store?.module_pickups_enabled === true;
   const { search, setSearch, clearSearch } = useTiendaSearch();
@@ -55,7 +59,7 @@ export default function Header({ cartCount }: HeaderProps) {
   const [helpPhone, setHelpPhone] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    setHelpPhone(null);
+    void Promise.resolve().then(() => { if (active) setHelpPhone(null); });
     if (!store?.id || storeLoading) return () => { active = false; };
     getStoreSettings(store.id).then(({ data }) => {
       if (!active) return;
@@ -81,6 +85,7 @@ export default function Header({ cartCount }: HeaderProps) {
     () => [
       { label: "Inicio", href: "/", icon: Home },
       { label: "Tienda", href: storeBaseUrl, icon: ShoppingBag },
+      ...(restaurantSection?.enabled ? [{ label: "Restaurante · Comida a domicilio", href: RESTAURANT_PATH, icon: UtensilsCrossed }] : []),
       {
         label: "Productos destacados",
         href: `${storeBaseUrl}/productos-destacados`,
@@ -94,7 +99,7 @@ export default function Header({ cartCount }: HeaderProps) {
         ? [{ label: "Salidas", href: "/salidas", icon: CalendarDays }]
         : []),
     ],
-    [storeBaseUrl, showShipping, showDepartures]
+    [storeBaseUrl, showShipping, showDepartures, restaurantSection]
   );
 
   return (

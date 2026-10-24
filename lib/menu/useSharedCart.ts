@@ -13,7 +13,7 @@ function readCart(storeSlug: string): MenuCartLine[] {
     const raw = window.localStorage.getItem(storageKey(storeSlug));
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as MenuCartLine[]) : [];
+    return Array.isArray(parsed) ? parsed.filter((line): line is MenuCartLine => Boolean(line && typeof line.lineId === "string" && typeof line.menu_item_id === "string" && typeof line.name === "string" && Number.isInteger(line.quantity) && line.quantity > 0 && line.quantity <= 9999 && Number.isFinite(line.unit_base_price) && line.unit_base_price >= 0 && Array.isArray(line.selected_options) && line.selected_options.every((option: Record<string, unknown>) => option && typeof option.group_id === "string" && typeof option.option_id === "string" && Number.isFinite(option.price_delta)))) : [];
   } catch {
     return [];
   }
@@ -47,18 +47,20 @@ function writeCart(storeSlug: string, cart: MenuCartLine[]) {
 export function useSharedCart(storeSlug: string) {
   // Arranca vacío y se hidrata en el primer efecto: evita mismatch de
   // SSR (el server nunca conoce el contenido de localStorage).
-  const [cart, setCartState] = useState<MenuCartLine[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [state, setCartState] = useState<{ slug: string; cart: MenuCartLine[] }>({ slug: "", cart: [] });
+  const cart = state.slug === storeSlug ? state.cart : [];
+  const hydrated = state.slug === storeSlug;
 
   useEffect(() => {
-    setCartState(readCart(storeSlug));
-    setHydrated(true);
+    let active = true;
+    void Promise.resolve().then(() => { if (active) setCartState({ slug: storeSlug, cart: readCart(storeSlug) }); });
+    return () => { active = false; };
   }, [storeSlug]);
 
   useEffect(() => {
     function onStorage(e: StorageEvent) {
-      if (e.key === storageKey(storeSlug)) {
-        setCartState(readCart(storeSlug));
+      if (e.key === null || e.key === storageKey(storeSlug)) {
+        setCartState({ slug: storeSlug, cart: readCart(storeSlug) });
       }
     }
     window.addEventListener("storage", onStorage);
@@ -67,13 +69,14 @@ export function useSharedCart(storeSlug: string) {
 
   const setCart = useCallback(
     (updater: MenuCartLine[] | ((prev: MenuCartLine[]) => MenuCartLine[])) => {
-      setCartState((prev) => {
+      setCartState((state) => {
+        const prev = state.slug === storeSlug ? state.cart : readCart(storeSlug);
         const next =
           typeof updater === "function"
             ? (updater as (p: MenuCartLine[]) => MenuCartLine[])(prev)
             : updater;
         writeCart(storeSlug, next);
-        return next;
+        return { slug: storeSlug, cart: next };
       });
     },
     [storeSlug]

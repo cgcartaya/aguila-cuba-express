@@ -19,6 +19,7 @@ import {
 } from "@/lib/services/settings";
 import { useStore } from "@/hooks/useStore";
 
+import RestaurantEntry from "@/components/restaurant/RestaurantEntry";
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
@@ -170,6 +171,7 @@ export default function TiendaPage() {
         />
       ) : (
         <>
+          <RestaurantEntry storeSlug={store?.slug} />
           {sectionEnabled(storeSettings?.show_hero) && (
             <div className="mt-4 md:mt-5">
               <MainBanner storeId={store?.id || undefined} />

@@ -44,6 +44,7 @@ function getSubdomain(host: string) {
 function shouldIgnorePath(pathname: string) {
   return (
     pathname.startsWith("/api") ||
+    pathname === "/restaurante" || pathname.startsWith("/restaurante/") ||
     pathname.startsWith("/r/") ||
     pathname === "/gestores" || pathname.startsWith("/gestores/") ||
     // Public order pages have their own server-side tenant lookup and OG metadata.

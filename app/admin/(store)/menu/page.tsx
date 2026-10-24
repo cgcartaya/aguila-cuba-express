@@ -171,6 +171,7 @@ export default function AdminMenuPage() {
           description={`Organiza las categorías de ${activeStore?.name || "tu restaurante"} y administra tus platillos.`}
           actions={
             <div className="flex flex-wrap items-center gap-2">
+              {activeStore?.slug === "aguila" && <Link href="/admin/menu/restaurante" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-black text-amber-900">Identidad y delivery del restaurante</Link>}
               <Link href="/admin/menu/qr" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm hover:shadow-md">
                 <QrCode size={17} /> Códigos QR
               </Link>
@@ -202,7 +203,7 @@ export default function AdminMenuPage() {
               ))}
             </section>
 
-            {activeStore?.id && <MenuCurrencySettings storeId={activeStore.id} />}
+            {activeStore?.id && activeStore.slug !== "aguila" && <MenuCurrencySettings storeId={activeStore.id} />}
 
             {categories.length === 0 ? (
               <div className="mt-5 rounded-3xl bg-white p-10 text-center shadow-sm">
