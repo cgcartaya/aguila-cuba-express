@@ -41,3 +41,21 @@ URL/clave pública de Supabase de prueba y Playwright Chromium instalado.
 El test intercepta autenticación/APIs: no publica rutas ni llama a OpenAI.
 `PICKUP_TEST_ORIGIN` permite otra URL local; `PICKUP_CHROMIUM_MODULE` permite
 un módulo alternativo de Chromium para entornos sin navegador instalado.
+
+## Editar una ruta existente
+
+El detalle de ruta muestra primero el recorrido público por ciudades, incluso
+si está En recorrido y todavía no tiene clientes asignados. Se pueden añadir,
+quitar, renombrar y ordenar ciudades, y cambiar sus franjas horarias opcionales.
+Guardar conserva el estado de la ruta y las recogidas de clientes. La confirmación
+se muestra junto al botón; las versiones concurrentes se rechazan sin sobrescribir.
+Las rutas completadas/canceladas quedan de solo lectura para este editor.
+
+Los datos del conductor y las recogidas están en un apartado desplegable separado.
+La migración `20261024145013_explicit_public_itinerary.sql` distingue un anuncio
+vacío intencionadamente de las rutas antiguas basadas en clientes: quitar la
+última ciudad no vuelve a introducir ciudades de clientes en la landing.
+
+Prueba de interfaz: `node tests/pickup-route-editor-browser.cjs` con las mismas
+variables de prueba y Playwright que el editor rápido. Usa servicios simulados;
+no modifica rutas reales ni solicitudes.

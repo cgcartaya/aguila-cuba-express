@@ -178,6 +178,21 @@ export async function updatePickupRoute(routeId: string, storeId: string, values
     .single();
 }
 
+export async function savePickupRouteDetails(storeId: string, route: PickupRoute) {
+  const result = await pickupAdminApi<{ route: PickupRoute }>(
+    `/api/admin/pickups/routes/quick?store_id=${encodeURIComponent(storeId)}`,
+    { method: "PATCH", body: JSON.stringify({
+      route_id: route.id, expected_updated_at: route.updated_at,
+      name: route.name, route_date: route.route_date,
+      public_itinerary: route.public_itinerary || [],
+      driver_name: route.driver_name, driver_phone: route.driver_phone,
+      vehicle_name: route.vehicle_name, public_summary: route.public_summary,
+      notes: route.notes, is_public: route.is_public,
+    }) },
+  );
+  return { data: result.data?.route || null, error: result.error };
+}
+
 export async function updatePickupRouteStatus(routeId: string, storeId: string, status: PickupRouteStatus) {
   const values: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
   if (status === "published") {

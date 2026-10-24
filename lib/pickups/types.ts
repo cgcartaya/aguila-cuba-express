@@ -108,6 +108,7 @@ export type PickupRouteStop = {
 };
 
 export type PickupRoute = {
+  public_itinerary_managed?: boolean;
   public_itinerary?: import("@/lib/pickups/itinerary").ItineraryGroup[];
   poster_image_url?: string | null;
   id: string;

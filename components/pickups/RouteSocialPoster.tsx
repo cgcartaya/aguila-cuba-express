@@ -135,7 +135,7 @@ function shortRouteDate(value: string) {
 }
 
 function uniqueCities(route: PickupRoute) {
-  if (route.public_itinerary?.length) return Array.from(new Set(route.public_itinerary.flatMap((group) => group.cities)));
+  if (route.public_itinerary_managed || route.public_itinerary?.length) return Array.from(new Set((route.public_itinerary || []).flatMap((group) => group.cities)));
   return Array.from(
     new Set(
       (route.stops || [])

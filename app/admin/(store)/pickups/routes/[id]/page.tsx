@@ -2,7 +2,7 @@
 
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, Navigation, Pencil, PlayCircle, Plus, Save, Search, Trash2, Truck, X } from "lucide-react";
+import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, Navigation, Pencil, PlayCircle, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import {
@@ -13,10 +13,11 @@ import {
   managePickupRoute,
   removePickupRouteStop,
   reorderPickupRouteStops,
-  updatePickupRoute,
+  savePickupRouteDetails,
   updatePickupRouteStatus,
   updatePickupRouteStopStatus,
 } from "@/lib/services/pickups";
+import PublicItineraryEditor from "@/components/pickups/PublicItineraryEditor";
 import RouteSocialPoster from "@/components/pickups/RouteSocialPoster";
 import ManualPickupStopModal from "@/components/pickups/ManualPickupStopModal";
 import PickupRouteMap from "@/components/maps/PickupRouteMap";
@@ -38,6 +39,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [eligibleRequests, setEligibleRequests] = useState<Array<PickupRequest & { compatible_city: boolean }>>([]);
   const [selectedRequestIds, setSelectedRequestIds] = useState<string[]>([]);
@@ -53,7 +55,12 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     if (!store?.id) return;
     setLoading(true);
     const result = await getPickupRoute(store.id, id);
-    setRoute(result.data);
+    const loaded = result.data;
+    if (loaded && !loaded.public_itinerary_managed && !loaded.public_itinerary?.length) {
+      const legacyCities = Array.from(new Set((loaded.stops || []).map((stop) => stop.pickup_request?.city).filter((city): city is string => Boolean(city))));
+      loaded.public_itinerary = legacyCities.map((city) => ({ cities: [city], start_time: null, end_time: null }));
+    }
+    setRoute(loaded);
     setError(result.error?.message || "");
     if (result.data) {
       const eligible = await getEligiblePickupRequestsForRoute(store.id, id);
@@ -64,7 +71,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
 
   useEffect(() => { load(); }, [store?.id, id]);
 
-  const cities = useMemo(() => Array.from(new Set((route?.stops || []).map((stop) => stop.pickup_request?.city).filter(Boolean))), [route]);
+  const cities = useMemo(() => (route?.public_itinerary_managed || route?.public_itinerary?.length) ? (route.public_itinerary || []).flatMap((group) => group.cities) : Array.from(new Set((route?.stops || []).map((stop) => stop.pickup_request?.city).filter(Boolean))), [route]);
   const completedStops = useMemo(() => (route?.stops || []).filter((stop) => stop.status === "picked_up").length, [route]);
   const activeStops = useMemo(() => (route?.stops || []).filter((stop) => ["en_route", "arrived"].includes(stop.status)).length, [route]);
   const failedStops = useMemo(() => (route?.stops || []).filter((stop) => stop.status === "failed").length, [route]);
@@ -116,26 +123,19 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
 
   async function saveInfo() {
     if (!route || !store?.id) return;
-    setSaving(true);
-    const { error: updateError } = await updatePickupRoute(route.id, store.id, {
-      name: route.name,
-      route_date: route.route_date,
-      driver_name: route.driver_name,
-      driver_phone: route.driver_phone,
-      vehicle_name: route.vehicle_name,
-      public_summary: route.public_summary,
-      notes: route.notes,
-      is_public: route.is_public,
-    });
+    setSaving(true); setError(""); setSuccess("");
+    const result = await savePickupRouteDetails(store.id, route);
     setSaving(false);
-    if (updateError) setError(updateError.message);
+    if (result.error || !result.data) return setError(result.error?.message || "No se pudieron guardar los cambios.");
+    setRoute({ ...route, ...result.data, stops: route.stops });
+    setSuccess("Cambios guardados. El estado de la ruta se mantiene.");
   }
 
   async function changeRouteStatus(status: PickupRouteStatus) {
     if (!route || !store?.id) return;
-    const { error: updateError } = await updatePickupRouteStatus(route.id, store.id, status);
+    const { data: savedRoute, error: updateError } = await updatePickupRouteStatus(route.id, store.id, status);
     if (updateError) return setError(updateError.message);
-    setRoute({ ...route, status, is_public: status === "published" ? true : route.is_public });
+    setRoute({ ...route, status, updated_at: savedRoute?.updated_at || route.updated_at, is_public: status === "published" ? true : route.is_public });
   }
 
   async function moveStop(index: number, direction: -1 | 1) {
@@ -241,16 +241,21 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   if (loading || accessLoading || storeLoading) return <div className="rounded-[2rem] border bg-white p-12 text-center"><Loader2 className="mx-auto animate-spin" /></div>;
   if (!route) return <div className="rounded-[2rem] border bg-white p-12 text-center font-black">Ruta no encontrada.</div>;
 
-  return <div className="space-y-6">
+  return <div className="space-y-5 pb-[calc(8rem+env(safe-area-inset-bottom))] lg:pb-6">
     <header className="overflow-hidden rounded-[2rem] bg-[#071d43] p-6 text-white sm:p-8">
-      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><Link href="/admin/pickups/routes" className="text-sm font-black text-blue-200">← Volver a rutas</Link><div className="mt-3 flex flex-wrap items-center gap-3"><h1 className="text-3xl font-black sm:text-4xl">{route.name}</h1><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-blue-100">{PICKUP_ROUTE_STATUS_LABELS[route.status]}</span></div><p className="mt-2 text-blue-100/75">{route.route_date} · {route.stops?.length || 0} paradas · {cities.join(" · ") || "Sin ciudades"}</p></div><div className="flex flex-wrap gap-3"><select value={route.status} onChange={(e) => changeRouteStatus(e.target.value as PickupRouteStatus)} className="rounded-2xl bg-white px-4 py-3 font-black text-[#071d43]">{Object.entries(PICKUP_ROUTE_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{route.status === "published" && <button onClick={() => changeRouteStatus("in_progress")} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black"><PlayCircle size={18} /> Iniciar recorrido</button>}<button onClick={saveInfo} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 font-black"><Save size={18} /> Guardar</button></div></div>
-      <div className="mt-7 grid gap-3 sm:grid-cols-5"><Metric label="Paradas" value={route.stops?.length || 0} /><Metric label="Recogidas" value={completedStops} /><Metric label="En proceso" value={activeStops} /><Metric label="Fallidas" value={failedStops} /><Metric label="Progreso" value={`${progress}%`} /></div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div>
+      <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end"><div><Link href="/admin/pickups/routes" className="text-sm font-black text-blue-200">← Volver a rutas</Link><div className="mt-3 flex flex-wrap items-center gap-3"><h1 className="text-3xl font-black sm:text-4xl">{route.name}</h1><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-blue-100">{PICKUP_ROUTE_STATUS_LABELS[route.status]}</span></div><p className="mt-2 text-blue-100/75">{route.route_date} · {cities.length} ciudades · {route.stops?.length || 0} recogidas de clientes</p></div><div className="flex flex-wrap gap-3"><select aria-label="Estado de la ruta" disabled={saving} value={route.status} onChange={(e) => changeRouteStatus(e.target.value as PickupRouteStatus)} className="rounded-2xl bg-white px-4 py-3 font-black text-[#071d43]">{Object.entries(PICKUP_ROUTE_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>{route.status === "published" && <button onClick={() => changeRouteStatus("in_progress")} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-5 py-3 font-black"><PlayCircle size={18} /> Iniciar recorrido</button>}<button onClick={saveInfo} disabled={saving || ["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-3 font-black"><Save size={18} /> Guardar</button></div></div>
+      <div className={`mt-5 grid grid-cols-2 gap-3 ${route.stops?.length ? "sm:grid-cols-5" : "sm:grid-cols-2"}`}><Metric label="Ciudades del recorrido" value={cities.length} /><Metric label="Recogidas asignadas" value={route.stops?.length || 0} />{Boolean(route.stops?.length) && <><Metric label="Recogidas" value={completedStops} /><Metric label="En proceso" value={activeStops} /><Metric label="Fallidas" value={failedStops} /></>}</div>
+      {Boolean(route.stops?.length) && <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-emerald-400 transition-all" style={{ width: `${progress}%` }} /></div>}
     </header>
 
-    {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
+    {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
-    {["draft", "published"].includes(route.status) && <Link href={`/admin/pickups/routes/quick?route=${route.id}`} className="block rounded-2xl border border-blue-200 bg-blue-50 p-5 font-black text-blue-800">Editar ciudades, horarios y cartel del recorrido público →</Link>}
+    {success && <p role="status" className="rounded-2xl bg-emerald-50 p-4 font-bold text-emerald-800">{success}</p>}
+    <PublicItineraryEditor storeId={store.id} groups={route.public_itinerary || []}
+      onChange={(groups) => { setRoute({ ...route, public_itinerary: groups }); setSuccess(""); }}
+      onSave={saveInfo} saving={saving} isPublic={route.is_public}
+      readOnly={["completed", "cancelled"].includes(route.status)} saveError={error} saveSuccess={success} />
+
 
     {requestedForThisRoute > 0 && (
       <button onClick={openAddRequests} className="flex w-full items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:bg-amber-100">
@@ -259,7 +264,10 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
       </button>
     )}
 
-    <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
+    <details className="rounded-3xl border border-slate-200 bg-white p-4 sm:p-5">
+      <summary className="cursor-pointer font-black text-[#071d43]">Recogidas de clientes y datos de la ruta · {route.stops?.length || 0} asignadas</summary>
+      <p className="mt-2 text-sm text-slate-500">Añade clientes, gestiona sus recogidas o cambia conductor y vehículo. Esto no añade ciudades al anuncio automáticamente.</p>
+    <div className="mt-5 grid items-start gap-6 xl:grid-cols-[320px_1fr]">
       <section className="h-fit rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm xl:sticky xl:top-6">
         <h2 className="text-xl font-black">Datos de la ruta</h2>
         <div className="mt-5 space-y-4"><Field label="Nombre"><input className="input" value={route.name} onChange={(e) => setRoute({ ...route, name: e.target.value })} /></Field><Field label="Fecha"><input className="input" type="date" value={route.route_date} onChange={(e) => setRoute({ ...route, route_date: e.target.value })} /></Field><Field label="Conductor"><input className="input" value={route.driver_name || ""} onChange={(e) => setRoute({ ...route, driver_name: e.target.value })} /></Field><Field label="Teléfono"><input className="input" value={route.driver_phone || ""} onChange={(e) => setRoute({ ...route, driver_phone: e.target.value })} /></Field><Field label="Vehículo"><input className="input" value={route.vehicle_name || ""} onChange={(e) => setRoute({ ...route, vehicle_name: e.target.value })} /></Field><Field label="Resumen público"><textarea className="input min-h-24" value={route.public_summary || ""} onChange={(e) => setRoute({ ...route, public_summary: e.target.value })} placeholder="Ej. Columbia · Lexington · Gaston" /></Field></div>
@@ -306,10 +314,11 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
       </section>
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black">Orden de paradas</h2><p className="text-slate-500">Consulta la lista o visualiza el recorrido en el mapa.</p><div className="mt-3 inline-flex rounded-2xl bg-slate-100 p-1"><button onClick={() => setStopsView("list")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "list" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Lista</button><button onClick={() => setStopsView("map")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "map" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Mapa</button></div></div><div className="flex items-center gap-3"><button onClick={() => { setEditingManualRequest(null); setManualOpen(true); }} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Parada manual</button><button onClick={openAddRequests} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Solicitudes web</button><button onClick={optimizeOrder} disabled={saving || ["completed", "cancelled"].includes(route.status) || (route.stops?.length || 0) < 3} title="Reordena las paradas por la ruta más corta calculada" className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Navigation size={18} /> Optimizar orden</button><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div></div>
-        {stopsView === "map" ? <div className="mt-6"><PickupRouteMap stops={route.stops || []} /></div> : <div className="mt-6 space-y-3">{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const whatsapp = encodeURIComponent(`Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{item.customer_name} · {item.city}</h3><SourceBadge source={item.request_source} /><LocationBadge verified={Boolean(item.address_verified)} hasPoint={item.latitude != null && item.longitude != null} /></div><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a>{item.request_source === "manual" && <button onClick={() => { setEditingManualRequest(item); setManualOpen(true); }} title="Editar parada manual" className="rounded-xl border border-orange-200 p-2 text-orange-600"><Pencil size={17} /></button>}{item.request_source === "manual" ? <button onClick={() => deleteManualStop(item.id)} title="Eliminar parada manual" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button> : <button onClick={() => removeStop(stop.id)} title="Quitar solicitud web de esta ruta" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button>}</div></div></article>; })}</div>}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black">Recogidas de clientes</h2><p className="text-slate-500">Cada parada de este apartado corresponde a un cliente.</p><div className="mt-3 inline-flex rounded-2xl bg-slate-100 p-1"><button onClick={() => setStopsView("list")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "list" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Lista</button><button onClick={() => setStopsView("map")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "map" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Mapa</button></div></div><div className="flex flex-wrap items-center gap-3"><button onClick={() => { setEditingManualRequest(null); setManualOpen(true); }} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Parada manual</button><button onClick={openAddRequests} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Solicitudes web</button><button onClick={optimizeOrder} disabled={saving || ["completed", "cancelled"].includes(route.status) || (route.stops?.length || 0) < 3} title="Reordena las paradas por la ruta más corta calculada" className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Navigation size={18} /> Optimizar orden</button><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div></div>
+        {stopsView === "map" ? <div className="mt-6"><PickupRouteMap stops={route.stops || []} /></div> : <div className="mt-6 space-y-3">{!route.stops?.length && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"><p className="font-black">No hay recogidas de clientes asignadas</p><p className="mt-2 text-sm text-slate-500">El recorrido por ciudades se muestra arriba. Usa Parada manual o Solicitudes web para añadir clientes.</p></div>}{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const whatsapp = encodeURIComponent(`Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{item.customer_name} · {item.city}</h3><SourceBadge source={item.request_source} /><LocationBadge verified={Boolean(item.address_verified)} hasPoint={item.latitude != null && item.longitude != null} /></div><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a>{item.request_source === "manual" && <button onClick={() => { setEditingManualRequest(item); setManualOpen(true); }} title="Editar parada manual" className="rounded-xl border border-orange-200 p-2 text-orange-600"><Pencil size={17} /></button>}{item.request_source === "manual" ? <button onClick={() => deleteManualStop(item.id)} title="Eliminar parada manual" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button> : <button onClick={() => removeStop(stop.id)} title="Quitar solicitud web de esta ruta" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button>}</div></div></article>; })}</div>}
       </section>
     </div>
+    </details>
     {addOpen && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target && !addingRequests) setAddOpen(false); }}>
       <div className="flex max-h-[88vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl">
         <div className="flex items-start justify-between border-b p-5 sm:p-6"><div><h2 className="text-2xl font-black">Agregar solicitudes a la ruta</h2><p className="mt-1 text-sm font-bold text-slate-500">Las solicitudes de las ciudades actuales aparecen primero. No se muestran las que ya pertenecen a otra ruta.</p></div><button onClick={() => !addingRequests && setAddOpen(false)} className="rounded-xl border p-2 text-slate-500"><X size={20} /></button></div>
@@ -321,7 +330,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
       </div>
     </div>}
     {store?.id && <ManualPickupStopModal open={manualOpen} storeId={store.id} routeId={route.id} routeDate={route.route_date} editRequest={editingManualRequest} onClose={() => { setManualOpen(false); setEditingManualRequest(null); }} onCreated={async () => { setEditingManualRequest(null); await load(); }} />}
-    <RouteSocialPoster route={route} storeName={store?.name || "YOYO ENVÍOS"} phone={route.driver_phone || store?.whatsapp || null} logoUrl={store?.logo_url || null} />
+    <details className="rounded-3xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer font-black text-[#071d43]">Crear un cartel para compartir esta ruta</summary><RouteSocialPoster route={route} storeName={store?.name || "YOYO ENVÍOS"} phone={route.driver_phone || store?.whatsapp || null} logoUrl={store?.logo_url || null} /></details>
     <style jsx>{`.input{width:100%;border:1px solid #e2e8f0;border-radius:1rem;padding:.8rem 1rem;font-weight:700;outline:none}.input:focus{border-color:#60a5fa}`}</style>
   </div>;
 }

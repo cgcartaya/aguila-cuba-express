@@ -62,3 +62,31 @@ test('route authorization checks active store membership and rejects VIEWER',asy
  const db=database([{table:'profiles',value:{data:{active:true,role:'store_owner'}}},{table:'stores',value:{data:{is_active:true,module_pickups_enabled:true}}},{table:'store_users',value:{data:{role:'VIEWER'}}}]);db.auth={getUser:async()=>({data:{user:{id}}})};
  const {requirePickupRouteWrite}=load('lib/pickups/route-access.ts',db);const result=await requirePickupRouteWrite(new NextRequest('https://example.test',{headers:{Authorization:'Bearer fixture'}}),storeId);assert.equal(result.status,403);assert.ok(db.calls[2].methods.some(m=>m[0]==='eq'&&m[1]==='store_id'&&m[2]===storeId));
 });
+
+const version='2026-10-24T12:00:00+00:00';
+function patchRequest(overrides={}) {
+  return new NextRequest(`https://example.test/api/admin/pickups/routes/quick?store_id=${storeId}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({route_id:id,expected_updated_at:version,name:'Sábado',route_date:'2026-10-24',public_itinerary:[group],is_public:true,...overrides})});
+}
+test('editing an in-progress route changes cities while preserving its lifecycle and customers',async()=>{
+  const db=database([{table:'pickup_routes',value:{data:{id,status:'in_progress',updated_at:version}}},{table:'pickup_routes',value:{data:{id,status:'in_progress',is_public:true,updated_at:'new-version',public_itinerary:[group]}}}]);
+  const {PATCH}=load(routePath,db);const response=await PATCH(patchRequest({status:'draft',published_at:'invalid'}));assert.equal(response.status,200);assert.equal((await response.json()).route.status,'in_progress');
+  const update=db.calls[1].methods.find(m=>m[0]==='update')[1];assert.equal('status' in update,false);assert.equal('published_at' in update,false);assert.equal(update.public_itinerary.length,1);assert.equal(update.end_city,'Little River');
+  assert.ok(db.calls[1].methods.some(m=>m[0]==='eq'&&m[1]==='store_id'&&m[2]===storeId));assert.ok(db.calls[1].methods.some(m=>m[0]==='eq'&&m[1]==='updated_at'&&m[2]===version));assert.equal(db.calls.some(c=>c.table==='pickup_requests'||c.table==='pickup_route_stops'),false);
+});
+test('closed routes and stale versions cannot be edited',async()=>{
+  for(const existing of [{status:'completed',updated_at:version},{status:'cancelled',updated_at:version},{status:'in_progress',updated_at:'newer-version'}]) {
+    const db=database([{table:'pickup_routes',value:{data:existing}}]);const {PATCH}=load(routePath,db);assert.equal((await PATCH(patchRequest())).status,409);assert.equal(db.calls.length,1);
+  }
+});
+test('route removal saves an empty itinerary without deleting customer records',async()=>{
+  const db=database([{table:'pickup_routes',value:{data:{id,status:'in_progress',updated_at:version}}},{table:'pickup_routes',value:{data:{id,status:'in_progress',public_itinerary:[]}}}]);const {PATCH}=load(routePath,db);assert.equal((await PATCH(patchRequest({public_itinerary:[]}))).status,200);
+  const update=db.calls[1].methods.find(m=>m[0]==='update')[1];assert.equal(update.start_city,null);assert.equal(update.end_city,null);assert.equal(db.calls.some(c=>c.methods.some(m=>m[0]==='delete')),false);
+});
+test('route edits reject duplicates and concurrent updates instead of reporting success',async()=>{
+  let db=database([{table:'pickup_routes',value:{data:{id,status:'published',updated_at:version}}}]);let api=load(routePath,db);assert.equal((await api.PATCH(patchRequest({public_itinerary:[group,group]}))).status,400);
+  db=database([{table:'pickup_routes',value:{data:{id,status:'in_progress',updated_at:version}}},{table:'pickup_routes',value:{data:null}}]);api=load(routePath,db);assert.equal((await api.PATCH(patchRequest())).status,409);
+});
+test('clearing announced cities does not republish customer cities as a fallback',async()=>{
+  const db=database([{table:'stores',value:{data:{id:storeId,module_pickups_enabled:true}}},{table:'pickup_service_settings',value:{data:{}}},{table:'pickup_routes',value:{data:[{id,name:'Cleared',route_date:'2099-10-26',status:'in_progress',public_itinerary_managed:true,public_itinerary:[],pickup_route_stops:[{stop_order:1,pickup_requests:{city:'Conway'}}]}]}},{table:'pickup_zone_cities',value:{data:[]}}]);
+  const {GET}=load('app/api/pickups/routes/public/route.ts',db);const r=await GET(new NextRequest('https://example.test/api/pickups/routes/public?store=yoyo-envios'));assert.equal((await r.json()).routes[0].cities.length,0);
+});

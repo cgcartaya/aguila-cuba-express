@@ -403,6 +403,7 @@ export async function POST(request: NextRequest) {
         vehicle_name: route.vehicle_name,
         public_summary: route.public_summary,
         public_itinerary: route.public_itinerary || [],
+        public_itinerary_managed: Boolean(route.public_itinerary_managed || route.public_itinerary?.length),
         poster_image_url: route.poster_image_url || null,
         is_public: false,
         color: route.color,
