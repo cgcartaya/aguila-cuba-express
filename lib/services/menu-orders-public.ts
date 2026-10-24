@@ -64,6 +64,16 @@ type DbGroup = {
   menu_item_options: DbOption[];
 };
 
+type DbMenuItem = {
+  id: string;
+  name: string;
+  price: number | string;
+  stock: number | null;
+  is_active: boolean;
+  manual_unavailable?: boolean;
+  menu_item_option_groups: DbGroup[];
+};
+
 function lineTotal(
   basePrice: number,
   options: MenuCartSelectedOption[],
@@ -160,7 +170,7 @@ export async function createMenuOrder(
     };
   }
 
-  const itemsById = new Map(items.map((item: any) => [item.id, item]));
+  const itemsById = new Map<string, DbMenuItem>((items as unknown as DbMenuItem[]).map(item => [item.id, item]));
   const neededByItem = new Map<string, number>();
   const canonicalLines: {
     menu_item_id: string;
@@ -173,7 +183,7 @@ export async function createMenuOrder(
   }[] = [];
 
   for (const line of input.lines) {
-    const item: any = itemsById.get(line.menu_item_id);
+    const item = itemsById.get(line.menu_item_id);
 
     if (!item || !item.is_active || item.manual_unavailable) {
       return {
@@ -266,7 +276,7 @@ export async function createMenuOrder(
   ]);
 
   for (const [itemId, neededQty] of neededByItem) {
-    const item: any = itemsById.get(itemId)!;
+    const item = itemsById.get(itemId)!;
     const remaining = availability[itemId];
     const channels = channelAvailability[itemId];
 
@@ -481,7 +491,7 @@ export async function createMenuOrder(
   }
 
   for (const [itemId, neededQty] of neededByItem) {
-    const item: any = itemsById.get(itemId)!;
+    const item = itemsById.get(itemId)!;
     if (item.stock === null) continue;
 
     await supabaseAdmin
