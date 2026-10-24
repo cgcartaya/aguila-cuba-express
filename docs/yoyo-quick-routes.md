@@ -59,3 +59,19 @@ vacío intencionadamente de las rutas antiguas basadas en clientes: quitar la
 Prueba de interfaz: `node tests/pickup-route-editor-browser.cjs` con las mismas
 variables de prueba y Playwright que el editor rápido. Usa servicios simulados;
 no modifica rutas reales ni solicitudes.
+
+## Avance público estimado por horario
+
+La landing calcula el avance en el navegador con la fecha de la ruta y la zona IANA de `pickup_service_settings.timezone` (por defecto `America/New_York`). La API pública incluye esa zona junto a las rutas. No usa la zona horaria del visitante para escoger la parada.
+
+- Antes de empezar muestra la primera parada prevista, sin camión en una ciudad.
+- En una franja resalta todas las ciudades que comparten ese horario; no elige arbitrariamente una de ellas.
+- Entre franjas anima un camión entre los centros de las ciudades, por un segmento ilustrativo, no por una carretera calculada.
+- Después de la última franja indica que finalizó el horario, sin marcar la ruta administrativa como completada ni confirmar recogidas.
+- Si falta alguna franja o hay horas inválidas/solapadas, muestra el recorrido neutral con horarios por coordinar. Nunca supone que sigue en la primera ciudad.
+- El reloj recalcula cada 15 segundos y al regresar a la pestaña. El camión interpola suavemente entre esos cálculos; `prefers-reduced-motion` desactiva las animaciones. La actualización no reinicia el zoom del usuario.
+- Las ciudades sin coordenadas siguen visibles en el listado. No se trazan segmentos ni se coloca un camión saltando sobre ellas.
+
+El mapa y la tarjeta indican «Estimación según horario / No es ubicación GPS». Los checks significan **horario finalizado**, nunca visita confirmada. Los estados administrativos, solicitudes, reservas y notificaciones mantienen su funcionamiento anterior. No necesita GPS, OpenAI, claves nuevas ni migraciones.
+
+Verificación: `node --test tests/pickup-scheduled-progress.test.cjs tests/pickup-itinerary.test.mjs tests/pickup-route-api.test.cjs`.

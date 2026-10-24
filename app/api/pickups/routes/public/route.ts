@@ -44,5 +44,5 @@ export async function GET(request: NextRequest) {
       const zone = row.pickup_zones as unknown as { name: string; color: string } | null;
       return { ...publicCity(row.city_name.trim(), 0), zoneName: zone?.name || null, zoneColor: zone?.color || null };
     }).sort((a, b) => a.name.localeCompare(b.name, "es"));
-  return NextResponse.json({ routes, coverageCities }, { headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=15" } });
+  return NextResponse.json({ routes, coverageCities, timezone: settings?.timezone || "America/New_York" }, { headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=15" } });
 }

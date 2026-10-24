@@ -1,7 +1,8 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import PublicPickupRouteMap from "@/components/maps/PublicPickupRouteMap";
+import { getScheduledProgress, progressNames, type ScheduledProgress } from "@/lib/pickups/scheduled-progress";
 import { timeWindow } from "@/lib/pickups/itinerary";
 import {
   ArrowRight,
@@ -31,7 +32,7 @@ type PublicRoute = {
   cities: PublicCity[];
 };
 type CoverageCity = { name: string; zoneName: string | null; zoneColor: string | null };
-type PublicPayload = { routes: PublicRoute[]; coverageCities: CoverageCity[] };
+type PublicPayload = { routes: PublicRoute[]; coverageCities: CoverageCity[]; timezone?: string };
 
 
 function routeDate(value: string) {
@@ -48,8 +49,8 @@ function openPickupPlanner(city?: string, route?: PublicRoute) {
   }));
 }
 
-function RouteMap({ route }: { route: PublicRoute }) {
-  return <PublicPickupRouteMap route={route} />;
+function RouteMap({ route, progress }: { route: PublicRoute; progress: ScheduledProgress | null }) {
+  return <PublicPickupRouteMap route={route} progress={progress} />;
 }
 
 export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { storeSlug?: string }) {
@@ -58,8 +59,17 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
   const [query, setQuery] = useState("");
   const [searched, setSearched] = useState(false);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
-  const [showAllStops, setShowAllStops] = useState(false);
+  const [allStopsRouteId, setAllStopsRouteId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const tick = () => { if (!document.hidden) setNow(new Date()); };
+    tick();
+    const timer = window.setInterval(tick, 15000);
+    window.addEventListener("focus", tick);
+    document.addEventListener("visibilitychange", tick);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", tick); document.removeEventListener("visibilitychange", tick); };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,7 +77,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
       if (document.hidden) return;
       fetch(`/api/pickups/routes/public?store=${encodeURIComponent(storeSlug)}`, { signal: controller.signal })
         .then((response) => { if (!response.ok) throw new Error("routes"); return response.json(); })
-        .then((result) => { setPayload({ routes: result.routes || [], coverageCities: result.coverageCities || [] }); setLoadError(false); })
+        .then((result) => { setPayload({ routes: result.routes || [], coverageCities: result.coverageCities || [], timezone: result.timezone }); setLoadError(false); })
         .catch((error) => { if (error.name !== "AbortError") setLoadError(true); })
         .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     };
@@ -81,19 +91,13 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
   const preferredRoute = payload.routes.find((route) => route.status === "in_progress") || payload.routes[0];
   const activeRoute = payload.routes.find((route) => route.id === selectedRouteId) || preferredRoute;
 
-  useEffect(() => {
-    if (!selectedRouteId && preferredRoute?.id) setSelectedRouteId(preferredRoute.id);
-  }, [preferredRoute?.id, selectedRouteId]);
-
-  useEffect(() => { setShowAllStops(false); }, [activeRoute?.id]);
-
+  const progress = useMemo(() => activeRoute && now ? getScheduledProgress(activeRoute, now, payload.timezone) : null, [activeRoute, now, payload.timezone]);
+  const currentNames = activeRoute && progress ? progressNames(activeRoute.cities, progress.currentIndices) : "";
+  const nextNames = activeRoute && progress ? progressNames(activeRoute.cities, progress.nextIndices) : "";
+  const progressTitle = progress?.phase === "stop" ? "Parada prevista ahora" : progress?.phase === "transit" ? "Trayecto previsto hacia" : progress?.phase === "finished" ? "Horario del recorrido finalizado" : progress?.phase === "upcoming" ? "Primera parada prevista" : "Recorrido programado";
   const visibleStops = useMemo(() => {
     if (!activeRoute) return [];
-    if (activeRoute.cities.length <= 6) return activeRoute.cities.map((city, index) => ({ city, index }));
-    return [
-      ...activeRoute.cities.slice(0, 4).map((city, index) => ({ city, index })),
-      { city: activeRoute.cities[activeRoute.cities.length - 1], index: activeRoute.cities.length - 1 },
-    ];
+    return activeRoute.cities.map((city, index) => ({ city, index }));
   }, [activeRoute]);
   const match = useMemo(() => {
     if (!searched || !query.trim()) return null;
@@ -130,7 +134,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                   <button
                     key={route.id}
                     type="button"
-                    onClick={() => setSelectedRouteId(route.id)}
+                    onClick={() => { setSelectedRouteId(route.id); setAllStopsRouteId(null); }}
                     className={`min-w-[190px] shrink-0 rounded-2xl border px-4 py-4 text-left transition duration-300 sm:min-w-[220px] ${selected ? "border-[#071d43] bg-[#071d43] text-white shadow-lg" : "border-slate-200 bg-white text-slate-900 hover:border-blue-300 hover:shadow-md"}`}
                   >
                     <p className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.14em] ${selected ? "text-blue-200" : "text-slate-400"}`}><CalendarDays size={12} /> {routeDate(route.route_date)}</p>
@@ -148,7 +152,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
 
         {activeRoute ? (
           <div className="mt-7 grid min-w-0 gap-6 lg:grid-cols-[1.08fr_.92fr] lg:items-start">
-            <RouteMap route={activeRoute} />
+            <RouteMap route={activeRoute} progress={progress} />
             <article className="relative min-w-0 overflow-hidden rounded-[2rem] bg-[#071d43] p-6 text-white shadow-[0_25px_80px_rgba(7,29,67,.22)] sm:p-8">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/15" />
               <div className="relative">
@@ -160,34 +164,36 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                   <div className="rounded-2xl border border-white/10 bg-white/[.06] p-3"><p className="text-[10px] font-black uppercase tracking-[.15em] text-blue-200/70">Estado</p><p className="mt-1 text-sm font-black">{activeRoute.status === "in_progress" ? "En recorrido" : "Abierta"}</p></div>
                 </div>
 
-                <div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.06] p-4">
-                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${activeRoute.status === "in_progress" ? "bg-emerald-500" : "bg-amber-500"}`}><Truck size={22} /></span>
-                  <div className="min-w-0"><p className="font-black">{activeRoute.status === "in_progress" ? "En recorrido" : "Ruta en preparación"}</p><p className="text-sm font-semibold text-blue-100/70">{activeRoute.status === "in_progress" ? "El recorrido programado ya comenzó." : "Todavía puedes solicitar una recogida."}</p></div>
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/[.06] p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500"><Truck size={22} /></span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-blue-100/70">{progressTitle}</p>
+                      <p className="mt-1 break-words text-xl font-black">{progress?.phase === "stop" ? currentNames : progress?.phase === "transit" || progress?.phase === "upcoming" ? nextNames : progress?.phase === "finished" ? "Confirma con Yoyo la próxima ruta" : "Horarios por coordinar"}</p>
+                      {progress?.phase === "stop" && <p className="mt-1 text-sm text-blue-100">{timeWindow(activeRoute.cities[progress.currentIndices[0]]?.start_time, activeRoute.cities[progress.currentIndices[0]]?.end_time)}</p>}
+                    </div>
+                  </div>
+                  {progress?.phase === "stop" && nextNames && <p className="mt-3 border-t border-white/10 pt-3 text-sm text-blue-100/80">Próxima parada: <strong>{nextNames}</strong> · {timeWindow(activeRoute.cities[progress.nextIndices[0]]?.start_time, activeRoute.cities[progress.nextIndices[0]]?.end_time)}</p>}
+                  {progress?.phase === "transit" && <p className="mt-3 text-sm text-blue-100/80">Llegada prevista: {timeWindow(activeRoute.cities[progress.nextIndices[0]]?.start_time, activeRoute.cities[progress.nextIndices[0]]?.end_time)}</p>}
+                  <p className="mt-3 text-xs leading-5 text-blue-100/65">{progress && <>Hora local: {progress.localTime} · {progress.timezone}<br /></>}Estimación según horario · No es ubicación GPS. Los horarios pueden variar.</p>
                 </div>
 
-                <ol className="relative mt-6 space-y-0 before:absolute before:bottom-4 before:left-[15px] before:top-4 before:w-px before:bg-white/15">
-                  {visibleStops.map(({ city, index }, visibleIndex) => {
-                    const active = activeRoute.status === "in_progress" && index === 0;
+                <ol aria-label="Paradas y avance previsto" className="relative mt-6 max-h-[520px] overflow-y-auto space-y-0 before:absolute before:bottom-4 before:left-[15px] before:top-4 before:w-px before:bg-white/15">
+                  {visibleStops.map(({ city, index }) => {
+                    const active = progress?.currentIndices.includes(index);
+                    const previous = progress?.previousIndices.includes(index);
                     return (
-                      <Fragment key={`${city.name}-${index}`}>
-                        {visibleIndex === 4 && index > 4 && (
-                          <li className="relative flex items-center gap-3 py-2">
-                            <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dashed border-white/20 bg-[#102b58] text-sm font-black text-blue-100">+</span>
-                            <p className="text-sm font-black text-blue-100/70">{index - 4} paradas intermedias</p>
-                          </li>
-                        )}
-                        <li className="relative flex items-center gap-3 py-2.5">
-                          <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-black ${active ? "border-emerald-300 bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,.14)]" : "border-white/10 bg-[#102b58]"}`}>{active ? <Truck size={14} /> : index + 1}</span>
-                          <div className="min-w-0 flex-1"><p className="truncate font-black">{city.name}</p><p className="text-xs font-semibold text-blue-100/55">{timeWindow(city.start_time, city.end_time)}</p></div>
-                          <MapPin size={15} className={active ? "text-emerald-300" : "text-red-300"} />
+                        <li key={`${city.name}-${index}`} aria-current={active ? "step" : undefined} className={`relative flex items-center gap-3 rounded-xl px-1 py-3 ${active ? "bg-emerald-500/15" : ""}`}>
+                          <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-black ${active ? "border-emerald-300 bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,.14)]" : previous ? "border-emerald-300/30 bg-emerald-500/25 text-emerald-200" : "border-white/10 bg-[#102b58]"}`}>{active ? <Truck size={14} /> : previous ? <Check size={14} /> : index + 1}</span>
+                          <div className="min-w-0 flex-1"><p className="break-words font-black">{city.name}</p><p className="text-xs font-semibold text-blue-100/55">{timeWindow(city.start_time, city.end_time)}</p></div>
+                          <span className={`max-w-[90px] shrink-0 text-right text-[10px] font-bold ${active ? "text-emerald-200" : "text-blue-100/55"}`}>{active ? "Ahora, según horario" : previous ? "Horario finalizado" : <MapPin size={15} />}</span>
                         </li>
-                      </Fragment>
                     );
                   })}
                 </ol>
 
                 {activeRoute.cities.length > 6 && (
-                  <button type="button" onClick={() => setShowAllStops(true)} className="mt-3 w-full rounded-xl border border-white/10 bg-white/[.05] px-4 py-3 text-sm font-black text-blue-100 transition hover:bg-white/[.1]">
+                  <button type="button" onClick={() => setAllStopsRouteId(activeRoute.id)} className="mt-3 w-full rounded-xl border border-white/10 bg-white/[.05] px-4 py-3 text-sm font-black text-blue-100 transition hover:bg-white/[.1]">
                     Ver recorrido completo · {activeRoute.cities.length} paradas
                   </button>
                 )}
@@ -228,8 +234,8 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
       </div>
 
 
-      {showAllStops && activeRoute && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={() => setShowAllStops(false)}>
+      {activeRoute && allStopsRouteId === activeRoute.id && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-slate-950/65 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={() => setAllStopsRouteId(null)}>
           <div className="max-h-[88vh] w-full max-w-xl overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2rem]" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-200 px-5 py-5 sm:px-7">
               <div className="min-w-0">
@@ -237,7 +243,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                 <h3 className="mt-1 truncate text-2xl font-black text-slate-900">{activeRoute.name}</h3>
                 <p className="mt-1 text-sm font-semibold text-slate-500">{routeDate(activeRoute.route_date)} · {activeRoute.cities.length} paradas</p>
               </div>
-              <button type="button" onClick={() => setShowAllStops(false)} className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Cerrar"><X size={20} /></button>
+              <button type="button" onClick={() => setAllStopsRouteId(null)} className="ml-4 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200" aria-label="Cerrar"><X size={20} /></button>
             </div>
             <div className="max-h-[65vh] overflow-y-auto px-5 py-4 sm:px-7">
               <ol className="relative space-y-0 before:absolute before:bottom-5 before:left-[17px] before:top-5 before:w-px before:bg-slate-200">
@@ -251,7 +257,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
               </ol>
             </div>
             <div className="border-t border-slate-200 p-5 sm:px-7">
-              <button type="button" onClick={() => { setShowAllStops(false); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">{activeRoute.status === "in_progress" ? "Solicitar para la próxima ruta" : "Reservar recogida"} <ArrowRight size={18} /></button>
+              <button type="button" onClick={() => { setAllStopsRouteId(null); openPickupPlanner(undefined, activeRoute); }} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-4 font-black text-white hover:bg-red-500">{activeRoute.status === "in_progress" ? "Solicitar para la próxima ruta" : "Reservar recogida"} <ArrowRight size={18} /></button>
             </div>
           </div>
         </div>
