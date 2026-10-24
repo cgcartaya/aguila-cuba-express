@@ -465,6 +465,8 @@ export default function MenuPageClientHybrid({
   const { locale } = useDeParisLanguage();
   const params = useSearchParams();
   const accent = restaurantSection?.accent || store.primary_color || DEFAULT_ACCENT;
+  const secondaryColor = restaurantSection?.secondary_color || "#17100C";
+  const backgroundColor = restaurantSection?.background_color || CREAM;
 
   const categories = useMemo(
     () => sourceCategories.filter(category => !restaurantSection || category.venue_type !== "bar").map((category) => ({
@@ -698,9 +700,9 @@ export default function MenuPageClientHybrid({
   return (
     <main
       className="min-h-screen pb-28 text-[#201611]"
-      style={{ backgroundColor: CREAM }}
+      style={{ backgroundColor }}
     >
-      <header className="relative overflow-hidden bg-[#17100C] text-white">
+      <header className="relative overflow-hidden text-white" style={{ backgroundColor: secondaryColor }}>
         <div className="absolute inset-0 opacity-[.035] [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:22px_22px]" />
 
         <div className="relative mx-auto max-w-6xl px-4 pb-7 pt-4 sm:px-6">
@@ -855,7 +857,7 @@ export default function MenuPageClientHybrid({
         </div>
       </header>
 
-      <div className="border-b border-[#E9E0D4] bg-[#FBF6EC]">
+      <div className="border-b border-black/10" style={{ backgroundColor }}>
         <div className="mx-auto max-w-6xl px-4 pb-3 pt-4 sm:px-6">
           <div className="relative">
             <Search
@@ -879,14 +881,16 @@ export default function MenuPageClientHybrid({
       <div
         className={`${
           categoriesPinned ? "fixed inset-x-0 top-0" : "relative"
-        } z-50 w-full border-b border-[#E9E0D4] bg-[#FBF6EC] shadow-[0_4px_14px_rgba(32,22,17,.08)] [transform:translateZ(0)]`}
+        } z-50 w-full border-b border-black/10 shadow-[0_4px_14px_rgba(32,22,17,.08)] [transform:translateZ(0)]`}
+        style={{ backgroundColor }}
       >
         <nav className="flex w-full gap-2 overflow-x-auto overscroll-x-contain px-4 py-2.5 [-webkit-overflow-scrolling:touch] sm:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
           {visibleCategories.map((category) => (
             <a
               key={category.id}
               href={`#cat-${category.id}`}
-              className="shrink-0 scroll-ml-4 rounded-full border border-[#DDD4C8] bg-white px-3.5 py-2 text-[9px] font-black uppercase tracking-wide text-black/55 active:border-orange-300 active:bg-orange-50"
+              className="shrink-0 scroll-ml-4 rounded-full border bg-white px-3.5 py-2 text-[9px] font-black uppercase tracking-wide text-black/55"
+              style={{ borderColor: accent + "55" }}
             >
               {category.name}
             </a>
@@ -1047,7 +1051,7 @@ export default function MenuPageClientHybrid({
       )}
 
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-[#17100C] px-4 py-2.5 text-xs font-black text-white shadow-xl">
+        <div className="fixed bottom-24 left-1/2 z-[70] -translate-x-1/2 rounded-full px-4 py-2.5 text-xs font-black text-white shadow-xl" style={{ backgroundColor: secondaryColor }}>
           ✓ {toast}
         </div>
       )}
