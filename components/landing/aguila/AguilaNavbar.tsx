@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { LogIn, MessageCircle, Menu, Store, X } from "lucide-react";
+import { LogIn, MessageCircle, Menu, Share2, Store, X } from "lucide-react";
 
 import { NAV_LINKS, STORE_URL, WHATSAPP_URL } from "./constants";
 
@@ -37,6 +37,12 @@ export default function AguilaNavbar({ logoUrl }: { logoUrl?: string | null } = 
         </nav>
 
         <div className="hidden items-center gap-2.5 lg:flex">
+          <Link
+            href="/gestores"
+            className="inline-flex items-center gap-2 rounded-full px-3.5 py-2.5 text-sm font-black text-[#6252d8] transition hover:bg-[#6252d8]/10"
+          >
+            <Share2 size={16} /> ShareAPP
+          </Link>
           <Link
             href="/login"
             className="inline-flex items-center gap-2 rounded-full px-3.5 py-2.5 text-sm font-black text-[#0d1b30]/70 transition hover:text-[#0d1b30]"
@@ -86,7 +92,14 @@ export default function AguilaNavbar({ logoUrl }: { logoUrl?: string | null } = 
                 {item.label}
               </Link>
             ))}
-            <Link href="/login" onClick={() => setMenuOpen(false)} className="mt-2 inline-flex items-center justify-center gap-2 rounded-2xl border border-[#0d1b30]/15 px-4 py-3">
+            <Link
+              href="/gestores"
+              onClick={() => setMenuOpen(false)}
+              className="mt-2 inline-flex items-center justify-center gap-2 rounded-2xl border border-[#6252d8]/25 bg-[#6252d8]/10 px-4 py-3 text-[#5140c3]"
+            >
+              <Share2 size={17} /> ShareAPP · Gestores
+            </Link>
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-[#0d1b30]/15 px-4 py-3">
               <LogIn size={17} /> Iniciar sesión
             </Link>
             <a
