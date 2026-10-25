@@ -24,9 +24,16 @@ import styles from "./workspace.module.css";
 import PhotoShare from "./PhotoShare";
 import PublicationPreview from "./PublicationPreview";
 import {
+  publicationNetworkUrl,
   publicationShareData,
   publicationShareText as shareText,
+  type ShareNetwork,
 } from "@/lib/shareapp/sharing";
+
+function directShareUrl(network: string, body: string, url: string) {
+  if (!["whatsapp", "facebook", "telegram"].includes(network)) return "";
+  return publicationNetworkUrl(network as ShareNetwork, body, url);
+}
 async function share(title: string, body: string, url: string) {
   if (navigator.share) {
     try {
@@ -209,6 +216,25 @@ export default function PublicationsPanel({
                 <Copy size={15} />
                 Copiar
               </button>
+              {directShareUrl(row.network, row.body || row.title, row.url) && (
+                <a
+                  className={styles.secondary}
+                  href={directShareUrl(
+                    row.network,
+                    row.body || row.title,
+                    row.url,
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-disabled={!online || !row.active}
+                  onClick={(e) => {
+                    if (!online || !row.active) e.preventDefault();
+                  }}
+                >
+                  <Send size={15} />
+                  Abrir en {networkNames[row.network] || "red"}
+                </a>
+              )}
               <button
                 className={styles.secondary}
                 disabled={busy || !online}
@@ -533,20 +559,22 @@ function PublicationEditor({
               <Copy size={16} />
               Copiar
             </button>
-            <a
-              className={styles.secondary}
-              aria-disabled={dirty || !online || draft.active === false}
-              href={
-                dirty || !online || draft.active === false
-                  ? undefined
-                  : `https://wa.me/?text=${encodeURIComponent(shareText(body, url))}`
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Send size={16} />
-              WhatsApp
-            </a>
+            {directShareUrl(network, body, url) && (
+              <a
+                className={styles.secondary}
+                aria-disabled={dirty || !online || draft.active === false}
+                href={
+                  dirty || !online || draft.active === false
+                    ? undefined
+                    : directShareUrl(network, body, url)
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Send size={16} />
+                Abrir en {networkNames[network] || "red"}
+              </a>
+            )}
           </div>
           {(draft.kind !== "store" || draft.campaignId) && (
             <details
