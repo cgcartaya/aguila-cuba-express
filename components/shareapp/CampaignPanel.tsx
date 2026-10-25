@@ -10,6 +10,7 @@ import {
   Play,
   Plus,
   Save,
+  Send,
   Share2,
   X,
 } from "lucide-react";
@@ -47,6 +48,8 @@ export default function CampaignPanel({
     [view, setView] = useState("contenido"),
     [campaignId, setCampaignId] = useState<string | null>(null);
   async function quickShare(campaign: Campaign, network: ShareNetwork | "copy") {
+    const target =
+      network === "copy" ? null : window.open("about:blank", "_blank");
     setBusy(true);
     setError("");
     setNotice("");
@@ -69,14 +72,21 @@ export default function CampaignPanel({
         await navigator.clipboard.writeText(text);
         setNotice("Publicación creada. Texto y enlace personal copiados.");
       } else {
-        window.open(
-          publicationNetworkUrl(network, row.body || row.title, row.url),
-          "_blank",
-          "noopener,noreferrer",
+        const destination = publicationNetworkUrl(
+          network,
+          row.body || row.title,
+          row.url,
         );
+        if (target) {
+          target.opener = null;
+          target.location.href = destination;
+        } else {
+          window.location.href = destination;
+        }
         setNotice("Publicación creada con tu enlace personal.");
       }
     } catch (e) {
+      target?.close();
       setError(
         e instanceof Error ? e.message : "No se pudo preparar la publicación.",
       );
@@ -283,6 +293,13 @@ export default function CampaignPanel({
                           onClick={() => void quickShare(c, "facebook")}
                         >
                           <Share2 size={16} /> Facebook
+                        </button>
+                        <button
+                          className={s.secondary}
+                          disabled={!online || busy}
+                          onClick={() => void quickShare(c, "telegram")}
+                        >
+                          <Send size={16} /> Telegram
                         </button>
                         <button
                           className={s.secondary}
