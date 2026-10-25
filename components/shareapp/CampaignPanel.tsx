@@ -129,7 +129,7 @@ export default function CampaignPanel({
           <p>
             {admin
               ? "Prepara el contenido y mide qué gestores atraen más visitas y ventas."
-              : "Personaliza el texto y genera tu enlace personal para compartir."}
+              : "Comparte al instante con tu enlace personal o personaliza el texto antes de publicar."}
           </p>
         </div>
         {admin && (
@@ -307,6 +307,24 @@ export default function CampaignPanel({
                           onClick={() => void quickShare(c, "copy")}
                         >
                           <Copy size={16} /> Copiar
+                        </button>
+                        <button
+                          className={s.secondary}
+                          disabled={!online || busy}
+                          onClick={() =>
+                            onPrepare?.({
+                              key: crypto.randomUUID(),
+                              campaignId: c.id,
+                              kind: c.kind,
+                              itemId: c.item_id,
+                              imageUrl: c.image_url,
+                              title: c.title,
+                              body: c.body,
+                              network: "instagram",
+                            })
+                          }
+                        >
+                          <ImagePlus size={16} /> Instagram / foto
                         </button>
                       </div>
                       <button
