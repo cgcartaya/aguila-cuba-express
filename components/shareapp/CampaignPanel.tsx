@@ -3,7 +3,9 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import {
   BarChart3,
+  Copy,
   ImagePlus,
+  MessageCircle,
   Pause,
   Play,
   Plus,
@@ -13,6 +15,11 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { shareappApi, gestorApi } from "@/lib/shareapp/client";
+import {
+  publicationNetworkUrl,
+  publicationShareText,
+  type ShareNetwork,
+} from "@/lib/shareapp/sharing";
 import type { Campaign } from "@/lib/shareapp/campaign-types";
 import type { Draft } from "@/lib/shareapp/workspace-types";
 import CampaignResults from "./CampaignResults";
@@ -39,6 +46,44 @@ export default function CampaignPanel({
     [creating, setCreating] = useState(false),
     [view, setView] = useState("contenido"),
     [campaignId, setCampaignId] = useState<string | null>(null);
+  async function quickShare(campaign: Campaign, network: ShareNetwork | "copy") {
+    setBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const row = await gestorApi<{
+        url: string;
+        title: string;
+        body: string;
+      }>("links", {
+        storeId,
+        campaignId: campaign.id,
+        kind: campaign.kind,
+        itemId: campaign.item_id,
+        title: campaign.title,
+        body: campaign.body || campaign.title,
+        network: network === "copy" ? "other" : network,
+      });
+      const text = publicationShareText(row.body || row.title, row.url);
+      if (network === "copy") {
+        await navigator.clipboard.writeText(text);
+        setNotice("Publicación creada. Texto y enlace personal copiados.");
+      } else {
+        window.open(
+          publicationNetworkUrl(network, row.body || row.title, row.url),
+          "_blank",
+          "noopener,noreferrer",
+        );
+        setNotice("Publicación creada con tu enlace personal.");
+      }
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "No se pudo preparar la publicación.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   useEffect(() => {
     let current = true;
     const api = admin ? shareappApi : gestorApi;
@@ -223,24 +268,49 @@ export default function CampaignPanel({
                       </button>
                     </div>
                   ) : (
-                    <button
-                      className={s.primary}
-                      disabled={!online}
-                      onClick={() =>
-                        onPrepare?.({
-                          key: crypto.randomUUID(),
-                          campaignId: c.id,
-                          kind: c.kind,
-                          itemId: c.item_id,
-                          imageUrl: c.image_url,
-                          title: c.title,
-                          body: c.body,
-                          network: "whatsapp",
-                        })
-                      }
-                    >
-                      <Share2 size={16} /> Crear mi publicación
-                    </button>
+                    <div className={s.stack}>
+                      <div className={s.row}>
+                        <button
+                          className={s.primary}
+                          disabled={!online || busy}
+                          onClick={() => void quickShare(c, "whatsapp")}
+                        >
+                          <MessageCircle size={16} /> WhatsApp
+                        </button>
+                        <button
+                          className={s.secondary}
+                          disabled={!online || busy}
+                          onClick={() => void quickShare(c, "facebook")}
+                        >
+                          <Share2 size={16} /> Facebook
+                        </button>
+                        <button
+                          className={s.secondary}
+                          disabled={!online || busy}
+                          onClick={() => void quickShare(c, "copy")}
+                        >
+                          <Copy size={16} /> Copiar
+                        </button>
+                      </div>
+                      <button
+                        className={s.secondary}
+                        disabled={!online || busy}
+                        onClick={() =>
+                          onPrepare?.({
+                            key: crypto.randomUUID(),
+                            campaignId: c.id,
+                            kind: c.kind,
+                            itemId: c.item_id,
+                            imageUrl: c.image_url,
+                            title: c.title,
+                            body: c.body,
+                            network: "whatsapp",
+                          })
+                        }
+                      >
+                        <Share2 size={16} /> Personalizar antes de compartir
+                      </button>
+                    </div>
                   )}
                 </div>
               </article>
