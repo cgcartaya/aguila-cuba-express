@@ -15,6 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import {
+  formatBytes,
+  optimizeImageFile,
+} from "@/lib/images/optimizeImage";
 import { shareappApi, gestorApi } from "@/lib/shareapp/client";
 import {
   publicationNetworkUrl,
@@ -81,7 +85,7 @@ export default function CampaignPanel({
           target.opener = null;
           target.location.href = destination;
         } else {
-          window.location.href = destination;
+          window.location.assign(destination);
         }
         setNotice("Publicación creada con tu enlace personal.");
       }
@@ -200,7 +204,7 @@ export default function CampaignPanel({
             <p>
               {admin
                 ? "Sube un póster, escribe un texto sugerido y elige a dónde lleva el enlace."
-                : "Aquí aparecerán los pósteres que prepare tu tienda."}
+                : "Aquí aparecerán los pósteres que el dueño prepare desde Administración → Marketing → Gestores · ShareAPP."}
             </p>
           </div>
         ) : (
@@ -402,8 +406,15 @@ function CampaignCreator({
     [q, setQ] = useState(""),
     [items, setItems] = useState<{ id: string; name: string }[]>([]),
     [file, setFile] = useState<File | null>(null),
+    [preview, setPreview] = useState(""),
+    [preparedSize, setPreparedSize] = useState<number | null>(null),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
   useEffect(() => {
     if (kind === "store") return;
     let current = true;
@@ -427,18 +438,38 @@ function CampaignCreator({
     <form
       className={`${s.card} ${s.form}`}
       aria-label="Crear campaña"
+      noValidate
       onSubmit={async (e) => {
         e.preventDefault();
-        if (!file) return;
+        const cleanTitle = title.trim();
+        if (!file) {
+          setError("Selecciona el póster de la campaña.");
+          return;
+        }
+        if (!cleanTitle) {
+          setError("Escribe el título de la campaña.");
+          return;
+        }
+        if (kind !== "store" && !itemId) {
+          setError(
+            `Selecciona ${kind === "product" ? "el producto" : "el combo"} al que llevará el enlace.`,
+          );
+          return;
+        }
         setBusy(true);
         setError("");
+        setPreparedSize(null);
         try {
-          if (file.size > 3 * 1024 * 1024)
-            throw new Error("Elige una imagen de hasta 3 MB.");
+          const prepared = await optimizeImageFile(file, "banner");
+          setPreparedSize(prepared.size);
+          if (prepared.size > 3 * 1024 * 1024)
+            throw new Error(
+              "No se pudo reducir la imagen por debajo de 3 MB. Prueba con otra imagen.",
+            );
           const { data } = await supabase.auth.getSession();
           if (!data.session) throw new Error("Inicia sesión para continuar.");
           const form = new FormData();
-          form.append("poster", file);
+          form.append("poster", prepared);
           const response = await fetch(
             `/api/shareapp/campaigns/poster?storeId=${storeId}`,
             {
@@ -447,12 +478,24 @@ function CampaignCreator({
               body: form,
             },
           );
-          const uploaded = await response.json();
+          const responseText = await response.text();
+          let uploaded: { posterPath?: string; error?: string } = {};
+          try {
+            uploaded = responseText ? JSON.parse(responseText) : {};
+          } catch {
+            throw new Error(
+              response.ok
+                ? "El servidor no confirmó la subida del póster."
+                : `No se pudo subir el póster (error ${response.status}).`,
+            );
+          }
           if (!response.ok)
             throw new Error(uploaded.error || "No se pudo subir el póster.");
+          if (!uploaded.posterPath)
+            throw new Error("El servidor no devolvió el póster preparado.");
           await shareappApi("campaigns", {
             storeId,
-            title,
+            title: cleanTitle,
             body,
             kind,
             itemId: kind === "store" ? null : itemId,
@@ -477,20 +520,37 @@ function CampaignCreator({
         Póster de campaña
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp"
-          required
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
           disabled={busy}
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const selected = e.target.files?.[0] || null;
+            setFile(selected);
+            setPreview(selected ? URL.createObjectURL(selected) : "");
+            setPreparedSize(null);
+            setError("");
+          }}
         />
         <small>
-          JPG, PNG o WebP · Hasta 3 MB. El archivo se valida y optimiza al
-          guardar.
+          Puedes elegir una foto de hasta 25 MB. ShareAPP la reduce y prepara
+          antes de subirla.
         </small>
       </label>
+      {preview && (
+        <div className={s.filePreview}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="Vista previa del póster seleccionado" />
+          <div>
+            <strong>{file?.name}</strong>
+            <span>Original: {formatBytes(file?.size || 0)}</span>
+            {preparedSize !== null && (
+              <span>Preparada: {formatBytes(preparedSize)}</span>
+            )}
+          </div>
+        </div>
+      )}
       <label>
         Título de campaña
         <input
-          required
           maxLength={160}
           value={title}
           disabled={busy}
@@ -542,7 +602,6 @@ function CampaignCreator({
           <label>
             {kind === "product" ? "Producto de destino" : "Combo de destino"}
             <select
-              required
               value={itemId}
               disabled={busy}
               onChange={(e) => setItemId(e.target.value)}
