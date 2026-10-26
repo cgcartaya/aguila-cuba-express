@@ -18,7 +18,17 @@ export async function shareappApi<T>(
     ...(body ? { body: JSON.stringify(body) } : {}),
     cache: "no-store",
   });
-  const result = await response.json();
+  const text = await response.text();
+  let result: { error?: string } = {};
+  try {
+    result = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(
+      response.ok
+        ? "El servidor devolvió una respuesta incompleta. Inténtalo nuevamente."
+        : `No se pudo completar la operación (error ${response.status}).`,
+    );
+  }
   if (!response.ok)
     throw new Error(result.error || "No se pudo completar la operación.");
   return result as T;
