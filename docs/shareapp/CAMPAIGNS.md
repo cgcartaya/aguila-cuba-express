@@ -4,7 +4,7 @@
 
 En **Marketing → Gestores · ShareAPP → Campañas → Nueva campaña**:
 
-1. Sube un póster JPG, PNG o WebP de hasta 3 MB. Debe ser contenido promocional público.
+1. Selecciona una foto o póster de hasta 25 MB. El navegador la reduce antes de enviarla y el servidor la valida, limita a 1920 px y guarda como JPEG de hasta 3 MB. Debe ser contenido promocional público.
 2. Añade título y texto sugerido. Cada gestor podrá adaptar el texto de su publicación.
 3. Elige destino: toda la tienda, un producto o un combo activo de esa misma tienda. La búsqueda muestra hasta 50 coincidencias.
 4. Guarda. Los gestores activos de esa tienda verán la campaña en su portal.
