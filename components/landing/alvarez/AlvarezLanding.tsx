@@ -157,30 +157,49 @@ function Header({ menuOpen, onToggleMenu }: { menuOpen: boolean; onToggleMenu: (
 
 function Hero() {
   return (
-    <section className="relative isolate overflow-hidden bg-[#020b20] text-white">
-      <Image
-        src="/alvarez/hero-route.webp"
-        alt="Ruta visual entre Hialeah y La Habana"
-        fill
-        priority
-        sizes="100vw"
-        className="-z-20 object-cover object-[59%_center] opacity-90"
-      />
+    <section className="alvarez-hero relative isolate overflow-hidden bg-[#020b20] text-white">
+      <div className="alvarez-hero-bg absolute inset-0 -z-20">
+        <Image
+          src="/alvarez/hero-route.webp"
+          alt="Ruta visual entre Hialeah y La Habana"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-[59%_center] opacity-90"
+        />
+      </div>
+
+      <div className="pointer-events-none absolute inset-0 -z-[15] overflow-hidden" aria-hidden="true">
+        <span className="alvarez-route-glow alvarez-route-glow-blue" />
+        <span className="alvarez-route-glow alvarez-route-glow-red" />
+
+        <span className="alvarez-location-pulse alvarez-location-pulse-miami">
+          <i />
+        </span>
+        <span className="alvarez-location-pulse alvarez-location-pulse-cuba">
+          <i />
+        </span>
+
+        <span className="alvarez-plane-float">
+          <Plane size={31} strokeWidth={1.8} />
+        </span>
+      </div>
+
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#020b20_0%,rgba(2,11,32,.96)_16%,rgba(2,11,32,.76)_38%,rgba(2,11,32,.18)_64%,rgba(2,11,32,.08)_100%)]" />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-t from-[#020b20] to-transparent" />
 
       <div className="mx-auto flex min-h-[700px] max-w-[1440px] items-center px-5 pb-28 pt-16 sm:px-6 lg:px-10 lg:pb-32 lg:pt-20">
         <div className="max-w-3xl">
-          <p className="flex items-center gap-3 text-xs font-black uppercase tracking-[.24em] text-white/75 sm:text-sm">
+          <p className="alvarez-hero-enter alvarez-hero-enter-1 flex items-center gap-3 text-xs font-black uppercase tracking-[.24em] text-white/75 sm:text-sm">
             <span className="h-0.5 w-8 bg-[#ef0712]" /> Agencia de envíos y viajes · Hialeah
           </p>
-          <h1 className="mt-7 max-w-3xl text-5xl font-black leading-[.96] tracking-[-.055em] sm:text-7xl lg:text-[5.6rem]">
+          <h1 className="alvarez-hero-enter alvarez-hero-enter-2 mt-7 max-w-3xl text-5xl font-black leading-[.96] tracking-[-.055em] sm:text-7xl lg:text-[5.6rem]">
             De aquí pa&apos; Cuba, <span className="block text-[#f20b18]">sin cuento.</span>
           </h1>
-          <p className="mt-7 max-w-xl text-lg font-medium leading-8 text-white/78 sm:text-xl">
+          <p className="alvarez-hero-enter alvarez-hero-enter-3 mt-7 max-w-xl text-lg font-medium leading-8 text-white/78 sm:text-xl">
             Envíos rápidos, viajes y atención cercana para mantener a tu familia más cerca.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <div className="alvarez-hero-enter alvarez-hero-enter-4 mt-8 flex flex-col gap-3 sm:flex-row">
             <a href="#cotizar" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#ef0712] px-7 font-black shadow-xl shadow-red-950/30 transition hover:-translate-y-0.5 hover:bg-[#ff1822]">
               Cotizar mi envío <ArrowRight size={19} />
             </a>
@@ -188,13 +207,181 @@ function Hero() {
               <Search size={19} /> Rastrear paquete
             </a>
           </div>
-          <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-white/75">
+          <div className="alvarez-hero-enter alvarez-hero-enter-5 mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-white/75">
             <span className="flex items-center gap-2"><Check className="text-emerald-400" size={18} /> Atención en Hialeah</span>
             <span className="flex items-center gap-2"><Check className="text-emerald-400" size={18} /> Entrega coordinada</span>
             <span className="flex items-center gap-2"><Check className="text-emerald-400" size={18} /> Seguimiento online</span>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .alvarez-hero-bg {
+          transform: scale(1.015);
+          animation: alvarezHeroDrift 18s ease-in-out infinite alternate;
+          will-change: transform;
+        }
+
+        .alvarez-route-glow {
+          position: absolute;
+          width: 34%;
+          height: 3px;
+          border-radius: 999px;
+          opacity: 0;
+          filter: blur(.2px);
+          transform-origin: left center;
+          animation: alvarezRouteTravel 5.8s ease-in-out infinite;
+        }
+
+        .alvarez-route-glow-blue {
+          left: 58%;
+          top: 35%;
+          background: linear-gradient(90deg, transparent, rgba(80, 176, 255, .2), rgba(121, 205, 255, .95), transparent);
+          transform: rotate(11deg);
+          box-shadow: 0 0 16px rgba(45, 152, 255, .8);
+        }
+
+        .alvarez-route-glow-red {
+          left: 59%;
+          top: 38%;
+          background: linear-gradient(90deg, transparent, rgba(255, 55, 70, .15), rgba(255, 70, 82, .9), transparent);
+          transform: rotate(8deg);
+          box-shadow: 0 0 14px rgba(239, 7, 18, .7);
+          animation-delay: 1.25s;
+        }
+
+        .alvarez-location-pulse {
+          position: absolute;
+          width: 12px;
+          height: 12px;
+          border-radius: 999px;
+          background: white;
+          box-shadow: 0 0 18px rgba(255, 255, 255, .9);
+        }
+
+        .alvarez-location-pulse i {
+          position: absolute;
+          inset: -8px;
+          border: 2px solid rgba(255, 255, 255, .75);
+          border-radius: inherit;
+          animation: alvarezPulse 2.8s ease-out infinite;
+        }
+
+        .alvarez-location-pulse-miami {
+          left: 59%;
+          top: 33%;
+          background: #5bb8ff;
+          box-shadow: 0 0 20px rgba(91, 184, 255, .95);
+        }
+
+        .alvarez-location-pulse-cuba {
+          right: 15%;
+          top: 47%;
+          background: #ff3140;
+          box-shadow: 0 0 20px rgba(255, 49, 64, .95);
+        }
+
+        .alvarez-location-pulse-cuba i {
+          animation-delay: .7s;
+        }
+
+        .alvarez-plane-float {
+          position: absolute;
+          right: 26%;
+          top: 28%;
+          color: rgba(255, 255, 255, .88);
+          filter: drop-shadow(0 5px 12px rgba(0, 0, 0, .35));
+          transform: rotate(14deg);
+          animation: alvarezPlaneFloat 7s ease-in-out infinite;
+        }
+
+        .alvarez-hero-enter {
+          opacity: 0;
+          transform: translateY(14px);
+          animation: alvarezHeroEnter .75s cubic-bezier(.22,.8,.22,1) forwards;
+        }
+
+        .alvarez-hero-enter-1 { animation-delay: .08s; }
+        .alvarez-hero-enter-2 { animation-delay: .18s; }
+        .alvarez-hero-enter-3 { animation-delay: .30s; }
+        .alvarez-hero-enter-4 { animation-delay: .42s; }
+        .alvarez-hero-enter-5 { animation-delay: .54s; }
+
+        @keyframes alvarezHeroDrift {
+          0% { transform: scale(1.015) translate3d(0, 0, 0); }
+          100% { transform: scale(1.045) translate3d(-.55%, -.35%, 0); }
+        }
+
+        @keyframes alvarezRouteTravel {
+          0%, 15% { opacity: 0; clip-path: inset(0 100% 0 0); }
+          35% { opacity: .95; }
+          72% { opacity: .65; clip-path: inset(0 0 0 0); }
+          100% { opacity: 0; clip-path: inset(0 0 0 100%); }
+        }
+
+        @keyframes alvarezPulse {
+          0% { transform: scale(.45); opacity: .8; }
+          70%, 100% { transform: scale(2.15); opacity: 0; }
+        }
+
+        @keyframes alvarezPlaneFloat {
+          0%, 100% { transform: translate3d(0, 0, 0) rotate(14deg); }
+          50% { transform: translate3d(11px, -8px, 0) rotate(17deg); }
+        }
+
+        @keyframes alvarezHeroEnter {
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 767px) {
+          .alvarez-route-glow,
+          .alvarez-location-pulse,
+          .alvarez-plane-float {
+            opacity: .55;
+            transform: scale(.8);
+          }
+
+          .alvarez-route-glow-blue {
+            left: 58%;
+            top: 31%;
+          }
+
+          .alvarez-route-glow-red {
+            left: 58%;
+            top: 34%;
+          }
+
+          .alvarez-location-pulse-miami {
+            left: 61%;
+            top: 30%;
+          }
+
+          .alvarez-location-pulse-cuba {
+            right: 7%;
+            top: 43%;
+          }
+
+          .alvarez-plane-float {
+            right: 18%;
+            top: 25%;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .alvarez-hero-bg,
+          .alvarez-route-glow,
+          .alvarez-location-pulse i,
+          .alvarez-plane-float,
+          .alvarez-hero-enter {
+            animation: none !important;
+          }
+
+          .alvarez-hero-enter {
+            opacity: 1;
+            transform: none;
+          }
+        }
+      `}</style>
     </section>
   );
 }
