@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   Check,
-  ChevronDown,
   Hotel,
   MapPin,
   Menu,
@@ -51,25 +50,13 @@ function whatsappHref(message: string) {
 
 export default function AlvarezLanding() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [quoteRequest, setQuoteRequest] = useState<{ key: number; mode: string; weight: string; destination: string } | null>(null);
-
-  function openQuote(mode: string, weight: string, destination: string) {
-    const params = new URLSearchParams(window.location.search);
-    params.set("transport", mode);
-    params.set("weight", weight);
-    params.set("country", destination);
-    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}#cotizador-completo`);
-    setQuoteRequest({ key: Date.now(), mode, weight, destination });
-    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("cotizador-completo")?.scrollIntoView({ behavior: "smooth", block: "start" })));
-  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#000415] font-sans text-white">
       <Header menuOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
       <Hero />
-      <section id="solicitar-recogida" className="relative z-20 -mt-16 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] rounded-[28px] bg-white p-5 text-[#091D3D] sm:p-7"><p className="mb-2 text-xs font-black uppercase tracking-widest text-[#CA0C28]">Miami · Hialeah y alrededores</p><h2 className="mb-3 text-2xl font-black">Solicita tu recogida a domicilio</h2><p className="mb-6 text-slate-600">Indica tu dirección y los días que prefieres. Nuestro equipo confirmará la cobertura, el horario y las condiciones.</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
-      <QuickQuote onOpen={openQuote} />
-      {quoteRequest && <InlineQuote key={quoteRequest.key} onClose={() => setQuoteRequest(null)} />}
+      <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
+      <section id="cotizar" className="scroll-mt-28 px-5 pb-16 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] p-5 sm:p-8"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mb-7 mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p><div className="rounded-2xl bg-white p-2 text-[#091D3D]"><PublicQuoteCalculator embedded /></div></div></section>
       <BrandPromise />
       <Services />
       <Process />
@@ -167,32 +154,6 @@ function Hero() {
       </div>
     </section>
   );
-}
-
-function QuickQuote({ onOpen }: { onOpen: (mode: string, weight: string, destination: string) => void }) {
-  const [mode, setMode] = useState("air");
-  const [weight, setWeight] = useState("10");
-  const [destination, setDestination] = useState("Cuba");
-  function submit(e: FormEvent) { e.preventDefault(); onOpen(mode, weight, destination); }
-  return (
-    <section id="cotizar" className="relative z-20 px-5 pb-10 sm:px-7 lg:px-10">
-      <form onSubmit={submit} className="mx-auto grid max-w-[1320px] gap-4 rounded-[28px] border border-white/10 bg-[#091D3D] p-5 shadow-2xl shadow-black/35 sm:p-7 lg:grid-cols-[1.1fr_1fr_1fr_1fr_auto] lg:items-end">
-        <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#CA0C28]">Orientación de envío</p><h2 className="mt-2 text-2xl font-black uppercase">Consulta tus opciones</h2><p className="mt-1 text-sm text-[#B5BFCD]">El precio y las condiciones se confirman antes de enviar.</p></div>
-        <SelectField icon={<Plane size={19} />} label="Tipo de envío" value={mode} onChange={setMode} options={[{value:"air",label:"Aéreo"},{value:"sea",label:"Marítimo"}]} />
-        <SelectField icon={<PackageCheck size={19} />} label="Peso estimado" value={weight} onChange={setWeight} options={[{value:"10",label:"10 lb"},{value:"20",label:"20 lb"},{value:"50",label:"50 lb"},{value:"100",label:"100 lb"}]} />
-        <SelectField icon={<MapPin size={19} />} label="Destino" value={destination} onChange={setDestination} options={[{value:"Cuba",label:"Cuba"}]} />
-        <button className="flex min-h-[66px] items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-6 font-black uppercase text-white transition hover:brightness-110">Continuar <ArrowRight size={18} /></button>
-      </form>
-    </section>
-  );
-}
-
-function SelectField({ icon, label, value, onChange, options }: { icon: React.ReactNode; label: string; value: string; onChange: (v:string)=>void; options:Array<{value:string;label:string}> }) {
-  return <label className="relative flex min-h-[66px] items-center gap-3 rounded-xl border border-white/10 bg-[#000415]/55 px-4 focus-within:border-[#07409A]"><span className="text-[#B5BFCD]">{icon}</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold text-[#B5BFCD]">{label}</span><select value={value} onChange={(e)=>onChange(e.target.value)} className="w-full appearance-none bg-transparent pr-6 text-sm font-black text-white outline-none">{options.map(o=><option className="bg-[#091D3D]" key={o.value} value={o.value}>{o.label}</option>)}</select></span><ChevronDown className="pointer-events-none absolute right-4 text-[#B5BFCD]" size={16}/></label>;
-}
-
-function InlineQuote({ onClose }: { onClose:()=>void }) {
-  return <section id="cotizador-completo" className="scroll-mt-24 border-y border-white/10 bg-[#091D3D] px-5 py-14 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px]"><div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[.2em] text-[#CA0C28]">Cotización en línea</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Te explicamos las opciones disponibles.</h2><p className="mt-2 text-[#B5BFCD]">Completa los datos; el equipo confirma precio, plazo y condiciones aplicables.</p></div><button type="button" onClick={onClose} className="inline-flex min-h-11 items-center gap-2 self-start rounded-xl border border-white/15 px-5 text-sm font-black"><X size={17}/> Cerrar</button></div><div className="rounded-2xl bg-white p-2 text-[#000415]"><PublicQuoteCalculator embedded /></div></div></section>;
 }
 
 function BrandPromise() {
