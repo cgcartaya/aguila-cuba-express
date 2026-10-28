@@ -135,11 +135,22 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
         const json = await response.json();
         if (!response.ok) throw new Error(json.error || "No se pudo cargar el cotizador.");
         setConfig(json);
+        const params = new URLSearchParams(window.location.search);
+        const requestedCountry = params.get("country")?.trim().toLowerCase();
+        const requestedTransport = params.get("transport")?.trim();
+        const requestedWeight = params.get("weight")?.trim();
+        const country = requestedCountry
+          ? json.countries?.find((item: Option) => item.name.toLowerCase() === requestedCountry)
+          : null;
+        const transport = requestedTransport && json.transportModes?.includes(requestedTransport)
+          ? requestedTransport
+          : json.transportModes?.[0] || "";
         setForm((current) => ({
           ...current,
           service_type_id: json.services?.[0]?.id || "",
-          country_id: json.countries?.[0]?.id || "",
-          transport_mode: json.transportModes?.[0] || "",
+          country_id: country?.id || json.countries?.[0]?.id || "",
+          transport_mode: transport,
+          weight_lb: requestedWeight && Number(requestedWeight) > 0 ? requestedWeight : current.weight_lb,
           item_category: "miscelaneas",
         }));
       } catch (caught) {
