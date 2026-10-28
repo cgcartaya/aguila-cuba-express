@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import AlvarezLanding from "@/components/landing/alvarez/AlvarezLanding";
+import "./alvarez-brand.css";
 
 export const metadata: Metadata = {
   title: "Álvarez Travel | Tu conexión entre Estados Unidos y Cuba",
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function AlvarezTravelPreviewPage() {
-  return <AlvarezLanding />;
+  return <div className="alvarez-brand-surface"><AlvarezLanding /></div>;
 }
