@@ -22,11 +22,14 @@ import {
 } from "lucide-react";
 import {
   ALVAREZ_ADDRESS,
+  ALVAREZ_WHATSAPP_PHONE,
   ALVAREZ_WHATSAPP_URL,
 } from "@/components/landing/alvarez/constants";
+import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
 
 const navigation = [
+  { label: "Recogida", href: "#solicitar-recogida" },
   { label: "Envíos", href: "#servicios" },
   { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Viajes", href: "#viajes" },
@@ -64,6 +67,7 @@ export default function AlvarezLanding() {
     <main className="min-h-screen overflow-x-hidden bg-[#000415] font-sans text-white">
       <Header menuOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
       <Hero />
+      <section id="solicitar-recogida" className="relative z-20 -mt-16 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] rounded-[28px] bg-white p-5 text-[#091D3D] sm:p-7"><p className="mb-2 text-xs font-black uppercase tracking-widest text-[#CA0C28]">Miami · Hialeah y alrededores</p><h2 className="mb-3 text-2xl font-black">Solicita tu recogida a domicilio</h2><p className="mb-6 text-slate-600">Indica tu dirección y los días que prefieres. Nuestro equipo confirmará la cobertura, el horario y las condiciones.</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
       <QuickQuote onOpen={openQuote} />
       {quoteRequest && <InlineQuote key={quoteRequest.key} onClose={() => setQuoteRequest(null)} />}
       <BrandPromise />
@@ -171,7 +175,7 @@ function QuickQuote({ onOpen }: { onOpen: (mode: string, weight: string, destina
   const [destination, setDestination] = useState("Cuba");
   function submit(e: FormEvent) { e.preventDefault(); onOpen(mode, weight, destination); }
   return (
-    <section id="cotizar" className="relative z-20 -mt-16 px-5 pb-10 sm:px-7 lg:px-10">
+    <section id="cotizar" className="relative z-20 px-5 pb-10 sm:px-7 lg:px-10">
       <form onSubmit={submit} className="mx-auto grid max-w-[1320px] gap-4 rounded-[28px] border border-white/10 bg-[#091D3D] p-5 shadow-2xl shadow-black/35 sm:p-7 lg:grid-cols-[1.1fr_1fr_1fr_1fr_auto] lg:items-end">
         <div><p className="text-xs font-black uppercase tracking-[.18em] text-[#CA0C28]">Orientación de envío</p><h2 className="mt-2 text-2xl font-black uppercase">Consulta tus opciones</h2><p className="mt-1 text-sm text-[#B5BFCD]">El precio y las condiciones se confirman antes de enviar.</p></div>
         <SelectField icon={<Plane size={19} />} label="Tipo de envío" value={mode} onChange={setMode} options={[{value:"air",label:"Aéreo"},{value:"sea",label:"Marítimo"}]} />
