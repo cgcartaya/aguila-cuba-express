@@ -24,7 +24,7 @@ import {
   X,
 } from "lucide-react";
 
-const STORE_SLUG = "yoyo-envios";
+
 
 type AddressValidation = {
   valid: boolean;
@@ -77,7 +77,7 @@ function nextDays(count = 8) {
   return days;
 }
 
-export default function PickupPlannerHero({ variant = "card" }: { variant?: "card" | "horizontal" }) {
+export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-envios", storeName = "YOYO", whatsappPhone = WHATSAPP_PHONE }: { variant?: "card" | "horizontal"; storeSlug?: string; storeName?: string; whatsappPhone?: string }) {
   const horizontal = variant === "horizontal";
   const days = useMemo(() => nextDays(), []);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -142,7 +142,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
   useEffect(() => {
     (async () => {
       try {
-        const response = await fetch(`/api/pickups/config?store_slug=${encodeURIComponent(STORE_SLUG)}`);
+        const response = await fetch(`/api/pickups/config?store_slug=${encodeURIComponent(storeSlug)}`);
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || "No pudimos cargar la cobertura.");
         setConfig(result);
@@ -153,7 +153,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
         setConfigLoading(false);
       }
     })();
-  }, []);
+  }, [storeSlug]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -261,7 +261,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          store_slug: STORE_SLUG,
+          store_slug: storeSlug,
           address_line_1: form.address_line_1,
           city: form.city,
           region: form.region,
@@ -387,7 +387,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          store_slug: STORE_SLUG,
+          store_slug: storeSlug,
           ...form,
           preferred_dates: selectedDates,
           package_count: Number(form.package_count) || 1,
@@ -404,7 +404,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
       if (!response.ok) throw new Error(result.error || "No pudimos registrar la solicitud.");
       setSuccessCode(result.request_code);
       const message = [
-        "Hola YOYO, acabo de registrar una solicitud de recogida en la web.",
+        `Hola ${storeName}, acabo de registrar una solicitud de recogida en la web.`,
         `Código: ${result.request_code}`,
         `Nombre: ${form.customer_name.trim()}`,
         `Teléfono: ${form.phone.trim()}`,
@@ -417,7 +417,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
         form.notes.trim() ? `Notas: ${form.notes.trim()}` : "",
         "Quedo pendiente de la confirmación del día de recogida.",
       ].filter(Boolean).join("\n");
-      setSuccessWhatsappUrl(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`);
+      setSuccessWhatsappUrl(`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`);
       setStep(5);
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Ocurrió un error inesperado.");
@@ -468,7 +468,7 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
           <div className="relative flex h-full max-h-full min-h-0 w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-l-[2rem]">
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-8 sm:py-4">
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 sm:text-xs">Yoyo Envíos</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 sm:text-xs">{storeName}</p>
                 <h2 className="mt-1 text-lg font-black leading-tight text-[#061b3a] sm:text-2xl">Programa tu recogida</h2>
               </div>
               <button type="button" onClick={closePlanner} className="shrink-0 rounded-full border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Cerrar">
@@ -702,9 +702,9 @@ export default function PickupPlannerHero({ variant = "card" }: { variant?: "car
                   </div>
                   {successWhatsappUrl && <>
                     <a href={successWhatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex min-h-14 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-700">
-                      <MessageCircle size={22} /> Avisar a YOYO por WhatsApp
+                      <MessageCircle size={22} /> Avisar a {storeName} por WhatsApp
                     </a>
-                    <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">Tu solicitud ya está guardada. Este botón abre WhatsApp con el resumen; pulsa Enviar para hacérselo llegar a YOYO.</p>
+                    <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">Tu solicitud ya está guardada. Este botón abre WhatsApp con el resumen; pulsa Enviar para hacérselo llegar a {storeName}.</p>
                   </>}
                   <button type="button" onClick={() => { resetPlanner(); closePlanner(); }} className="mt-6 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 hover:bg-slate-50">Cerrar</button>
                 </div>
