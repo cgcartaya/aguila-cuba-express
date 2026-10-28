@@ -30,6 +30,7 @@ import {
   ALVAREZ_ADDRESS,
   ALVAREZ_WHATSAPP_URL,
 } from "@/components/landing/alvarez/constants";
+import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
 
 const navigation = [
   { label: "Envíos", href: "#servicios" },
@@ -72,11 +73,26 @@ function whatsappHref(message: string) {
 
 export default function AlvarezLanding() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [quoteRequest, setQuoteRequest] = useState<{ key: number; mode: string; weight: string; destination: string } | null>(null);
+
+  function openQuote(mode: string, weight: string, destination: string) {
+    const params = new URLSearchParams(window.location.search);
+    params.set("transport", mode);
+    params.set("weight", weight);
+    params.set("country", destination);
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}#cotizador-completo`);
+    setQuoteRequest({ key: Date.now(), mode, weight, destination });
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => document.getElementById("cotizador-completo")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    });
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#f8f5ef] text-[#020b20]">
       <Header menuOpen={menuOpen} onToggleMenu={() => setMenuOpen((value) => !value)} />
       <Hero />
+      <QuickQuote onOpen={openQuote} />
+      {quoteRequest && <InlineQuote key={quoteRequest.key} onClose={() => setQuoteRequest(null)} />}
       <OperationalStrip />
       <Services />
       <Process />
@@ -150,10 +166,10 @@ function Hero() {
         sizes="100vw"
         className="-z-20 object-cover object-[59%_center] opacity-90"
       />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#020b20_0%,rgba(2,11,32,.96)_15%,rgba(2,11,32,.82)_37%,rgba(2,11,32,.25)_65%,rgba(2,11,32,.38)_100%)]" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,#020b20_0%,rgba(2,11,32,.96)_16%,rgba(2,11,32,.76)_38%,rgba(2,11,32,.18)_64%,rgba(2,11,32,.08)_100%)]" />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-48 bg-gradient-to-t from-[#020b20] to-transparent" />
 
-      <div className="mx-auto grid min-h-[700px] max-w-[1440px] items-center gap-10 px-5 py-16 sm:px-6 lg:grid-cols-[minmax(0,1fr)_390px] lg:px-10 lg:py-20">
+      <div className="mx-auto flex min-h-[700px] max-w-[1440px] items-center px-5 pb-28 pt-16 sm:px-6 lg:px-10 lg:pb-32 lg:pt-20">
         <div className="max-w-3xl">
           <p className="flex items-center gap-3 text-xs font-black uppercase tracking-[.24em] text-white/75 sm:text-sm">
             <span className="h-0.5 w-8 bg-[#ef0712]" /> Agencia de envíos y viajes · Hialeah
@@ -178,41 +194,56 @@ function Hero() {
             <span className="flex items-center gap-2"><Check className="text-emerald-400" size={18} /> Seguimiento online</span>
           </div>
         </div>
-
-        <QuickQuote />
       </div>
     </section>
   );
 }
 
-function QuickQuote() {
+function QuickQuote({ onOpen }: { onOpen: (mode: string, weight: string, destination: string) => void }) {
   const [mode, setMode] = useState("air");
   const [weight, setWeight] = useState("10");
   const [destination, setDestination] = useState("Cuba");
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    const params = new URLSearchParams({ transport: mode, weight, country: destination });
-    window.location.href = `/cotizar?${params.toString()}`;
+    onOpen(mode, weight, destination);
   }
 
   return (
-    <form id="cotizar" onSubmit={submit} className="rounded-[2rem] border border-white/60 bg-[#fffdf8] p-5 text-[#020b20] shadow-2xl shadow-black/35 sm:p-7">
-      <p className="text-xs font-black uppercase tracking-[.18em] text-[#ef0712]">Estimado personalizado</p>
-      <h2 className="mt-2 text-3xl font-black tracking-tight">Cotiza en segundos</h2>
-      <p className="mt-2 text-sm font-medium leading-6 text-slate-500">Selecciona los datos básicos y continúa en el cotizador seguro.</p>
-
-      <div className="mt-6 space-y-3">
+    <section id="cotizar" className="relative z-20 -mt-16 px-5 pb-8 sm:px-6 lg:px-10">
+      <form onSubmit={submit} className="mx-auto grid max-w-[1320px] gap-4 rounded-[2rem] border border-slate-200 bg-[#fffdf8] p-5 text-[#020b20] shadow-2xl shadow-slate-950/15 sm:p-7 lg:grid-cols-[.9fr_1fr_1fr_1fr_auto] lg:items-end">
+        <div className="lg:pb-1">
+          <p className="text-xs font-black uppercase tracking-[.18em] text-[#ef0712]">Estimado personalizado</p>
+          <h2 className="mt-2 text-2xl font-black tracking-tight">Cotiza aquí mismo</h2>
+          <p className="mt-1 text-sm font-medium leading-5 text-slate-500">Sin salir de la página.</p>
+        </div>
         <SelectField icon={<Plane size={19} />} label="Tipo de envío" value={mode} onChange={setMode} options={[{ value: "air", label: "Aéreo" }, { value: "sea", label: "Marítimo" }]} />
         <SelectField icon={<PackageCheck size={19} />} label="Peso estimado" value={weight} onChange={setWeight} options={[{ value: "10", label: "10 lb" }, { value: "20", label: "20 lb" }, { value: "50", label: "50 lb" }, { value: "100", label: "100 lb" }]} />
         <SelectField icon={<MapPin size={19} />} label="Destino" value={destination} onChange={setDestination} options={[{ value: "Cuba", label: "Cuba" }]} />
-      </div>
+        <button className="flex min-h-[66px] items-center justify-center gap-2 rounded-2xl bg-[#ef0712] px-6 font-black whitespace-nowrap text-white transition hover:bg-[#ff1822]">
+          Continuar aquí <ArrowRight size={19} />
+        </button>
+      </form>
+    </section>
+  );
+}
 
-      <button className="mt-5 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#ef0712] px-5 font-black text-white transition hover:bg-[#ff1822]">
-        Obtener mi precio <ArrowRight size={19} />
-      </button>
-      <p className="mt-3 text-center text-xs font-semibold text-slate-400">Estimado sujeto a peso, destino y contenido.</p>
-    </form>
+function InlineQuote({ onClose }: { onClose: () => void }) {
+  return (
+    <section id="cotizador-completo" className="scroll-mt-24 bg-[#eef3fb] px-5 py-14 sm:px-6 lg:px-10 lg:py-20">
+      <div className="mx-auto max-w-[1320px]">
+        <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[.2em] text-blue-700">Cotización en línea</p>
+            <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Completa tu estimado sin salir de Álvarez Travel.</h2>
+          </div>
+          <button type="button" onClick={onClose} className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-full border border-slate-300 bg-white px-5 text-sm font-black text-slate-700">
+            <X size={17} /> Cerrar cotizador
+          </button>
+        </div>
+        <PublicQuoteCalculator embedded />
+      </div>
+    </section>
   );
 }
 
