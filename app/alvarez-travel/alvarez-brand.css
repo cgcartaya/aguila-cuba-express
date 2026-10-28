@@ -1,0 +1,34 @@
+.alvarez-brand-surface > main > section:first-of-type::after,
+.alvarez-brand-surface #servicios::before,
+.alvarez-brand-surface #rastreo::before,
+.alvarez-brand-surface #contacto::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url('/alvarez/brand-pattern.svg');
+  background-repeat: repeat;
+  background-size: 720px auto;
+  opacity: .16;
+  mix-blend-mode: screen;
+}
+
+.alvarez-brand-surface > main > section:first-of-type::after { opacity: .11; }
+
+.alvarez-brand-surface #servicios,
+.alvarez-brand-surface #rastreo,
+.alvarez-brand-surface #contacto { position: relative; isolation: isolate; overflow: hidden; }
+
+.alvarez-brand-surface #servicios > *,
+.alvarez-brand-surface #rastreo > *,
+.alvarez-brand-surface #contacto > * { position: relative; z-index: 1; }
+
+@media (max-width: 640px) {
+  .alvarez-brand-surface > main > section:first-of-type::after,
+  .alvarez-brand-surface #servicios::before,
+  .alvarez-brand-surface #rastreo::before,
+  .alvarez-brand-surface #contacto::before {
+    background-size: 540px auto;
+    opacity: .11;
+  }
+}
