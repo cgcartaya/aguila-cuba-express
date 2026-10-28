@@ -56,8 +56,10 @@ function resolveLanding(host: string): LandingType {
   if (
     normalizedHost === "wwwalvareztravel.com" ||
     normalizedHost === "alvareztravel.com" ||
+    normalizedHost === `alvares-travel.${PLATFORM_DOMAIN}` ||
     normalizedHost === `alvareztravel.${PLATFORM_DOMAIN}` ||
     normalizedHost === `alvarez-travel.${PLATFORM_DOMAIN}` ||
+    normalizedHost.startsWith("alvares-travel.") ||
     normalizedHost.startsWith("alvareztravel.") ||
     normalizedHost.startsWith("alvarez-travel.")
   ) {
@@ -191,8 +193,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   if (landing === "alvarez") {
-    const canonicalUrl = host ? `https://${host}` : `https://alvareztravel.${PLATFORM_DOMAIN}`;
-    const store = await resolveStoreBySlug("alvarez-travel");
+    const canonicalUrl = host ? `https://${host}` : `https://alvares-travel.${PLATFORM_DOMAIN}`;
+    const store = await resolveStoreBySlug("alvares-travel");
 
     if (store) return buildStoreMetadata(store, canonicalUrl);
 
