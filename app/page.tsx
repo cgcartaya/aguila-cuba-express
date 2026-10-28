@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 
 import Bar1820Landing from "@/components/landing/bar1820/Bar1820Landing";
+import AlvarezLanding from "@/components/landing/alvarez/AlvarezLanding";
 import AguilaLanding from "@/components/landing/AguilaLanding";
 import DeParisLanding from "@/components/landing/deparis/DeParisLanding";
 import JotaJotaLanding from "@/components/landing/jotajota/JotaJotaLanding";
@@ -22,6 +23,7 @@ const PLATFORM_DOMAIN = "perlamarketplace.com";
 
 type LandingType =
   | "aguila"
+  | "alvarez"
   | "yoyo"
   | "deparis"
   | "jotajota"
@@ -50,6 +52,17 @@ function normalizeHost(value: string | null) {
 
 function resolveLanding(host: string): LandingType {
   const normalizedHost = normalizeHost(host);
+
+  if (
+    normalizedHost === "wwwalvareztravel.com" ||
+    normalizedHost === "alvareztravel.com" ||
+    normalizedHost === `alvareztravel.${PLATFORM_DOMAIN}` ||
+    normalizedHost === `alvarez-travel.${PLATFORM_DOMAIN}` ||
+    normalizedHost.startsWith("alvareztravel.") ||
+    normalizedHost.startsWith("alvarez-travel.")
+  ) {
+    return "alvarez";
+  }
 
   if (
     normalizedHost === "aguilacubaexpress.com" ||
@@ -177,6 +190,20 @@ export async function generateMetadata(): Promise<Metadata> {
     );
   }
 
+  if (landing === "alvarez") {
+    const canonicalUrl = host ? `https://${host}` : `https://alvareztravel.${PLATFORM_DOMAIN}`;
+    const store = await resolveStoreBySlug("alvarez-travel");
+
+    if (store) return buildStoreMetadata(store, canonicalUrl);
+
+    return buildLandingFallbackMetadata(
+      "Alvarez Travel | Envíos y viajes entre Hialeah y Cuba",
+      "Envíos, remesas, viajes y atención personalizada desde Hialeah hacia Cuba.",
+      canonicalUrl,
+      "Alvarez Travel"
+    );
+  }
+
   if (landing === "yoyo") {
     const canonicalUrl = host ? `https://${host}` : `https://yoyo.${PLATFORM_DOMAIN}`;
 
@@ -243,6 +270,8 @@ export default async function HomePage() {
     const store = await resolveStoreBySlug("aguila");
     return <AguilaLanding logoUrl={store?.logo_url || null} />;
   }
+
+  if (landing === "alvarez") return <AlvarezLanding />;
 
   if (landing === "yoyo") return <YoyoLanding />;
 
