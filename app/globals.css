@@ -379,3 +379,23 @@ textarea {
     opacity: .35;
   }
 }
+
+/* Alvarez-only skin for the shared pickup entry; Yoyo keeps its styling. */
+.alvarez-pickup > div > section {
+  background: transparent;
+  border-radius: 0;
+}
+.alvarez-pickup > div > section h2 {
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  line-height: 1.15;
+}
+.alvarez-pickup > div > section button {
+  background: #CA0C28;
+  border-color: rgba(255,255,255,.15);
+  box-shadow: 0 12px 30px rgba(0,0,0,.2);
+}
+.alvarez-pickup > div > section button:hover { background: #ad0922; }
+.alvarez-pickup > div > section button span,
+.alvarez-pickup > div > section button svg { color: white; }
+.alvarez-pickup > div > section p { color: #B5BFCD; }
