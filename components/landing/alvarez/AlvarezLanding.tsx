@@ -5,7 +5,6 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import {
   ArrowRight,
-  Car,
   Check,
   ChevronDown,
   Hotel,
@@ -26,14 +25,6 @@ import {
   ALVAREZ_WHATSAPP_URL,
 } from "@/components/landing/alvarez/constants";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
-
-const C = {
-  night: "#000415",
-  navy: "#091D3D",
-  blue: "#07409A",
-  ruby: "#CA0C28",
-  silver: "#B5BFCD",
-};
 
 const navigation = [
   { label: "Envíos", href: "#servicios" },
@@ -115,21 +106,55 @@ function Header({ menuOpen, onToggle }: { menuOpen: boolean; onToggle: () => voi
 
 function Hero() {
   return (
-    <section className="relative isolate overflow-hidden bg-[#000415]">
-      <Image src="/alvarez/hero-route.webp" alt="Conexión visual entre Estados Unidos y Cuba" fill priority sizes="100vw" className="-z-30 object-cover object-[60%_center] opacity-65" />
-      <div className="absolute inset-0 -z-20 bg-[linear-gradient(90deg,#000415_0%,rgba(0,4,21,.97)_25%,rgba(0,4,21,.78)_48%,rgba(0,4,21,.25)_78%,rgba(0,4,21,.35)_100%)]" />
-      <div className="absolute inset-0 -z-10 opacity-40 [background-image:radial-gradient(circle_at_15%_20%,rgba(7,64,154,.35),transparent_28%),radial-gradient(circle_at_82%_75%,rgba(202,12,40,.18),transparent_25%)]" />
-      <div className="mx-auto flex min-h-[680px] max-w-[1440px] items-center px-5 pb-28 pt-16 sm:px-7 lg:px-10">
+    <section className="alvarez-live-map relative isolate overflow-hidden bg-[#000415]">
+      <div className="alvarez-hero-background absolute inset-0 z-0">
+        <Image src="/alvarez/hero-map-background.webp" alt="Conexión visual entre Miami y La Habana" fill priority sizes="100vw" className="object-cover object-[60%_center] opacity-65" />
+      </div>
+      <div className="alvarez-map-glow absolute inset-0 z-[1]" aria-hidden="true" />
+      <svg className="alvarez-route-layer absolute inset-0 z-[2] h-full w-full" viewBox="0 0 1680 945" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <linearGradient id="alvarezRouteAir" x1="780" y1="415" x2="1055" y2="260" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#ff2440" />
+            <stop offset=".46" stopColor="#f7f9ff" />
+            <stop offset="1" stopColor="#3b9dff" />
+          </linearGradient>
+          <linearGradient id="alvarezRouteCuba" x1="780" y1="415" x2="1097" y2="575" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#2c94ff" />
+            <stop offset=".55" stopColor="#f8fbff" />
+            <stop offset="1" stopColor="#ff2440" />
+          </linearGradient>
+          <filter id="alvarezRouteGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="7" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
+        <path className="alvarez-route-base" d="M780 415 C850 340 931 287 1055 260" stroke="url(#alvarezRouteAir)" />
+        <path className="alvarez-route-travel alvarez-route-travel-air" d="M780 415 C850 340 931 287 1055 260" stroke="url(#alvarezRouteAir)" />
+        <path className="alvarez-route-base" d="M780 415 C916 413 1032 478 1097 575" stroke="url(#alvarezRouteCuba)" />
+        <path className="alvarez-route-travel alvarez-route-travel-cuba" d="M780 415 C916 413 1032 478 1097 575" stroke="url(#alvarezRouteCuba)" />
+        <g className="alvarez-map-point alvarez-map-point-miami" transform="translate(780 415)" filter="url(#alvarezRouteGlow)">
+          <circle className="alvarez-point-wave" r="14" /><circle className="alvarez-point-core" r="8" />
+        </g>
+        <g className="alvarez-map-point alvarez-map-point-cuba" transform="translate(1097 575)" filter="url(#alvarezRouteGlow)">
+          <circle className="alvarez-point-wave" r="14" /><circle className="alvarez-point-core" r="8" />
+        </g>
+      </svg>
+      <div className="alvarez-plane-layer absolute z-[3]" aria-hidden="true">
+        <Image src="/alvarez/hero-plane.webp" alt="" fill priority sizes="(max-width: 768px) 260px, 480px" className="object-contain" />
+      </div>
+      <div className="absolute inset-0 z-[4] bg-[linear-gradient(90deg,#000415_0%,rgba(0,4,21,.97)_25%,rgba(0,4,21,.78)_48%,rgba(0,4,21,.25)_78%,rgba(0,4,21,.35)_100%)]" />
+      <div className="absolute inset-0 z-[5] opacity-40 [background-image:radial-gradient(circle_at_15%_20%,rgba(7,64,154,.35),transparent_28%),radial-gradient(circle_at_82%_75%,rgba(202,12,40,.18),transparent_25%)]" />
+      <div className="relative z-10 mx-auto flex min-h-[680px] max-w-[1440px] items-center px-5 pb-28 pt-16 sm:px-7 lg:px-10">
         <div className="max-w-[720px]">
-          <p className="flex items-center gap-3 text-xs font-black uppercase tracking-[.22em] text-[#B5BFCD]"><span className="h-[3px] w-9 bg-[#CA0C28]" /> La nueva era</p>
-          <h1 className="mt-7 text-5xl font-black uppercase leading-[.94] tracking-[-.04em] sm:text-7xl lg:text-[5.3rem]">Conectamos <span className="block text-white">dos orillas.</span></h1>
-          <p className="mt-6 max-w-xl text-xl font-semibold leading-8 text-white/82">Una conexión clara, humana y confiable entre Estados Unidos y Cuba.</p>
-          <p className="mt-3 text-lg italic text-[#B5BFCD]">De aquí pa&apos; Cuba sin cuento</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <p className="alvarez-hero-reveal flex items-center gap-3 text-xs font-black uppercase tracking-[.22em] text-[#B5BFCD] [animation-delay:80ms]"><span className="h-[3px] w-9 bg-[#CA0C28]" /> La nueva era</p>
+          <h1 className="alvarez-hero-reveal mt-7 text-5xl font-black uppercase leading-[.94] tracking-[-.04em] [animation-delay:170ms] sm:text-7xl lg:text-[5.3rem]">Conectamos <span className="block text-white">dos orillas.</span></h1>
+          <p className="alvarez-hero-reveal mt-6 max-w-xl text-xl font-semibold leading-8 text-white/82 [animation-delay:270ms]">Una conexión clara, humana y confiable entre Estados Unidos y Cuba.</p>
+          <p className="alvarez-hero-reveal mt-3 text-lg italic text-[#B5BFCD] [animation-delay:350ms]">De aquí pa&apos; Cuba sin cuento</p>
+          <div className="alvarez-hero-reveal mt-8 flex flex-col gap-3 [animation-delay:430ms] sm:flex-row">
             <a href="#cotizar" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-7 font-black uppercase tracking-wide shadow-xl shadow-black/30 transition hover:-translate-y-0.5 hover:brightness-110">Consulta tus opciones <ArrowRight size={19} /></a>
             <Link href="/tienda" className="inline-flex min-h-14 items-center justify-center gap-2 rounded-xl border border-white/25 bg-[#091D3D]/80 px-7 font-black transition hover:bg-[#091D3D]"><ShoppingBag size={19} /> Ver tienda</Link>
           </div>
-          <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-white/70">
+          <div className="alvarez-hero-reveal mt-9 flex flex-wrap gap-x-6 gap-y-3 text-sm font-bold text-white/70 [animation-delay:520ms]">
             <span className="flex items-center gap-2"><Check className="text-[#B5BFCD]" size={17} /> Información clara</span>
             <span className="flex items-center gap-2"><Check className="text-[#B5BFCD]" size={17} /> Atención cercana</span>
             <span className="flex items-center gap-2"><Check className="text-[#B5BFCD]" size={17} /> Condiciones confirmadas</span>
