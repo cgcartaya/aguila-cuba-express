@@ -1,3 +1,4 @@
+import { weightRate } from "@/lib/shipping/weight-rate";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     const billableWeight = Math.max(weight, Number(rate.minimum_weight_lb || 0));
     const shippingAmount = Math.max(
-      billableWeight * Number(rate.rate_per_lb || 0) + Number(rate.fixed_fee || 0),
+      billableWeight * weightRate(rate, weight) + Number(rate.fixed_fee || 0),
       Number(rate.minimum_charge || 0)
     );
     const pickupAmount = body.pickup_requested && ["paid", "optional"].includes(settings.pickup_mode)
