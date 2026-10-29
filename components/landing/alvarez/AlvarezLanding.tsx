@@ -96,11 +96,14 @@ function Header({ menuOpen, onToggle }: { menuOpen: boolean; onToggle: () => voi
 }
 
 function Hero() {
+  const [motionEnabled, setMotionEnabled] = useState(false);
   return (
-    <section className="alvarez-live-map relative isolate overflow-hidden bg-[#000415]">
+    <section className={`${motionEnabled ? "alvarez-motion-enabled " : ""}alvarez-live-map relative isolate overflow-hidden bg-[#000415]`}>
+      <button type="button" onClick={() => setMotionEnabled(v => !v)} aria-pressed={motionEnabled} className="absolute right-5 top-3 z-20 rounded-full border border-white/20 bg-[#000415]/70 px-3 py-2 text-xs font-bold">{motionEnabled ? "Movimiento automático" : "Activar movimiento"}</button>
       <div className="alvarez-hero-background absolute inset-0 z-0">
         <Image src="/alvarez/hero-map-background.webp" alt="Conexión visual entre Miami y La Habana" fill priority sizes="100vw" className="object-cover object-[60%_center] opacity-65" />
       </div>
+      <div className="alvarez-water-shimmer absolute inset-0 z-[1]" aria-hidden="true" />
       <div className="alvarez-map-glow absolute inset-0 z-[1]" aria-hidden="true" />
       <svg className="alvarez-route-layer absolute inset-0 z-[2] h-full w-full" viewBox="0 0 1680 945" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
