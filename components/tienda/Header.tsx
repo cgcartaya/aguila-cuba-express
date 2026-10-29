@@ -70,7 +70,7 @@ export default function Header({ cartCount }: HeaderProps) {
 
   const primaryColor = store?.primary_color || "#061b3a";
   const secondaryColor = store?.secondary_color || "#ef233c";
-  const storeName = store?.name || "Aguila Express USA";
+  const storeName = store?.name?.trim() || "esta tienda";
   const isDefaultStore = store?.slug === "aguila";
 
   const storeBaseUrl =
@@ -278,7 +278,7 @@ export default function Header({ cartCount }: HeaderProps) {
           </div>
 
           {helpPhone && <a
-            href={`https://wa.me/${helpPhone}?text=${encodeURIComponent("Hola, necesito ayuda con un pedido.")}`}
+            href={`https://wa.me/${helpPhone}?text=${encodeURIComponent(`Hola, necesito ayuda con un pedido de ${storeName}.`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-black text-green-600 transition hover:bg-green-50"

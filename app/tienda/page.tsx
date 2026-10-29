@@ -216,7 +216,7 @@ export default function TiendaPage() {
 
           {sectionEnabled(storeSettings?.show_help_card) && (
             <HelpCard
-              storeName={storeSettings?.store_name || store?.name}
+              storeName={store?.name?.trim() || storeSettings?.store_name?.trim()}
               whatsapp={
                 storeSettings?.whatsapp ||
                 storeSettings?.phone ||
