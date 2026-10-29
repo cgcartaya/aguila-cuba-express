@@ -133,6 +133,8 @@ export default function ShippingSettingsPage() {
     "air" | "sea" | "express" | "ground" | "other"
   >("air");
   const [ratePerLb, setRatePerLb] = useState(0);
+  const [weightThreshold, setWeightThreshold] = useState("");
+  const [thresholdRate, setThresholdRate] = useState("");
   const [minimumWeight, setMinimumWeight] = useState(0);
   const [maximumWeight, setMaximumWeight] = useState("");
   const [minimumCharge, setMinimumCharge] = useState(0);
@@ -480,6 +482,8 @@ export default function ShippingSettingsPage() {
           service_type_ids: selectedRateServiceIds,
           transport_mode: rateTransportMode,
           rate_per_lb: ratePerLb,
+          weight_threshold_lb: weightThreshold === "" ? null : Number(weightThreshold),
+          rate_at_or_above_threshold: thresholdRate === "" ? null : Number(thresholdRate),
           minimum_weight_lb: minimumWeight,
           maximum_weight_lb:
             maximumWeight === "" ? null : Number(maximumWeight),
@@ -1697,6 +1701,8 @@ export default function ShippingSettingsPage() {
                     className={inputClass}
                   />
                 </Field>
+                <Field label="Desde este peso (lb, opcional)"><input type="number" min="0.01" step="0.01" value={weightThreshold} onChange={e => setWeightThreshold(e.target.value)} className={inputClass} placeholder="Ej. 20" /></Field>
+                <Field label="Precio/lb desde ese peso"><input type="number" min="0" step="0.01" value={thresholdRate} onChange={e => setThresholdRate(e.target.value)} className={inputClass} placeholder="Ej. 4" /><p className="mt-1 text-xs text-slate-500">Se aplica al peso completo, incluido el umbral. Deja ambos campos vacíos para tarifa única.</p></Field>
                 <Field label="Peso mínimo facturable">
                   <input
                     type="number"
@@ -2568,6 +2574,7 @@ function CollapsibleRateList({
               <div className="flex shrink-0 items-center gap-2">
                 <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-extrabold text-emerald-700">
                   ${Number(rate.rate_per_lb).toFixed(2)}/lb
+                  {rate.weight_threshold_lb != null && <span className="block text-xs">Desde {rate.weight_threshold_lb} lb: ${Number(rate.rate_at_or_above_threshold).toFixed(2)}/lb</span>}
                 </span>
                 <button
                   type="button"
