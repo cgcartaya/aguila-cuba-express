@@ -93,7 +93,7 @@ export default function NewPickupRoutePage() {
         <Field label="Zona"><select value={zoneId} onChange={(e) => setZoneId(e.target.value)} className="input"><option value="">Todas las zonas</option>{zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}</select></Field>
         <Field label="Nombre"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Ruta Centro" className="input" /></Field>
         <Field label="Fecha"><input type="date" value={routeDate} onChange={(e) => { setRouteDate(e.target.value); setApprovedOverrides([]); }} className="input" /></Field>
-        <Field label="Conductor"><input value={driverName} onChange={(e) => setDriverName(e.target.value)} placeholder="Yoyo" className="input" /></Field>
+        <Field label="Conductor"><input value={driverName} onChange={(e) => setDriverName(e.target.value)} placeholder="Nombre del conductor" className="input" /></Field>
         <Field label="Vehículo"><input value={vehicleName} onChange={(e) => setVehicleName(e.target.value)} placeholder="Van principal" className="input" /></Field>
       </div>
       <div className="mt-5 grid grid-cols-3 gap-2 text-center"><Badge tone="green" value={counts.compatible} label="Coinciden" /><Badge tone="blue" value={counts.flexible} label="Flexibles" /><Badge tone="amber" value={counts.incompatible} label="No coinciden" /></div>
