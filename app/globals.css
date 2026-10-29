@@ -324,7 +324,7 @@ textarea {
   }
 
   .alvarez-hero-background img {
-    object-position: 60% center;
+    object-position: center;
     opacity: .95;
   }
 
@@ -425,4 +425,22 @@ textarea {
     0%,100% { transform: translate3d(0,0,0) rotate(-.35deg); }
     50% { transform: translate3d(18px,-14px,0) rotate(1.2deg); }
   }
+}
+
+/* Keep geographic routes registered with the artwork at every aspect ratio. */
+.alvarez-live-map .alvarez-hero-background {
+  transform: none;
+  animation: none;
+}
+.alvarez-live-map .alvarez-water-shimmer {
+  z-index: 3;
+  background: repeating-linear-gradient(174deg, transparent 0 10px, rgba(255,195,113,.42) 12px, rgba(109,185,255,.2) 14px, transparent 17px 29px);
+  -webkit-mask-image: linear-gradient(transparent 48%, #000 66%, transparent 98%);
+  mask-image: linear-gradient(transparent 48%, #000 66%, transparent 98%);
+  clip-path: polygon(72% 48%,100% 48%,100% 100%,72% 100%);
+  opacity: .75;
+}
+@keyframes alvarez-water {
+  from { background-position: 0 0; transform: translateY(-3px); opacity: .45; }
+  to { background-position: 28px 25px; transform: translateY(5px); opacity: .85; }
 }
