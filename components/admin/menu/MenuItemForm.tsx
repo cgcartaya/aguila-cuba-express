@@ -78,7 +78,7 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
           <h1 className="text-2xl font-black tracking-tight text-[#061b3a] sm:text-3xl">{isEditing ? "Editar platillo" : "Nuevo platillo"}</h1>
           <p className="mt-1 text-sm font-medium text-slate-500">{isEditing ? "Actualiza la información y configuración de este platillo." : "Agrega la información y configuración del nuevo platillo."}</p>
         </div>
-        <div className="hidden items-center gap-3 sm:flex">
+        <div className="flex flex-wrap items-center gap-3">
           <button type="button" onClick={cancel} className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-extrabold text-slate-700 transition hover:bg-slate-50">Cancelar</button>
           {saveButton()}
         </div>
@@ -152,9 +152,9 @@ export default function MenuItemForm({ storeId, categories, initialData }: Props
 
       {error && <p className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-600"><AlertCircle size={17} /> {error}</p>}
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur sm:px-6">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
-          <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-slate-600"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${hasChanges ? "bg-amber-400" : "bg-emerald-500"}`} /><span className="truncate">{hasChanges ? "Cambios sin guardar" : "Todos los cambios están guardados"}</span></span>
+      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm sm:px-6">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+          <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-slate-600"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${hasChanges ? "bg-amber-400" : "bg-emerald-500"}`} /><span className="truncate">{hasChanges ? "Cambios sin guardar" : isEditing ? "Todos los cambios están guardados" : "Platillo nuevo sin guardar"}</span></span>
           <div className="flex items-center gap-2 sm:gap-3"><button type="button" onClick={cancel} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-extrabold text-slate-700 hover:bg-slate-50 sm:px-5 sm:text-sm">Cancelar</button>{saveButton(true)}</div>
         </div>
       </div>
