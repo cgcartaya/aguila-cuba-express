@@ -96,12 +96,10 @@ function Header({ menuOpen, onToggle }: { menuOpen: boolean; onToggle: () => voi
 }
 
 function Hero() {
-  const [motionEnabled, setMotionEnabled] = useState(false);
   return (
-    <section className={`${motionEnabled ? "alvarez-motion-enabled " : ""}alvarez-live-map relative isolate overflow-hidden bg-[#000415]`}>
-      <button type="button" onClick={() => setMotionEnabled(v => !v)} aria-pressed={motionEnabled} className="absolute right-5 top-3 z-20 rounded-full border border-white/20 bg-[#000415]/70 px-3 py-2 text-xs font-bold">{motionEnabled ? "Movimiento automático" : "Activar movimiento"}</button>
+    <section className="alvarez-live-map relative isolate overflow-hidden bg-[#000415]">
       <div className="alvarez-hero-background absolute inset-0 z-0">
-        <Image src="/alvarez/hero-map-background.webp" alt="Conexión visual entre Miami y La Habana" fill priority sizes="100vw" className="object-cover object-[60%_center] opacity-65" />
+        <Image src="/alvarez/hero-map-background.webp" alt="Conexión visual entre Miami y La Habana" fill priority sizes="100vw" className="object-cover object-center opacity-65" />
       </div>
       <div className="alvarez-water-shimmer absolute inset-0 z-[1]" aria-hidden="true" />
       <div className="alvarez-map-glow absolute inset-0 z-[1]" aria-hidden="true" />
@@ -112,7 +110,7 @@ function Hero() {
             <stop offset=".46" stopColor="#f7f9ff" />
             <stop offset="1" stopColor="#3b9dff" />
           </linearGradient>
-          <linearGradient id="alvarezRouteCuba" x1="780" y1="415" x2="1097" y2="575" gradientUnits="userSpaceOnUse">
+          <linearGradient id="alvarezRouteCuba" x1="780" y1="415" x2="805" y2="515" gradientUnits="userSpaceOnUse">
             <stop stopColor="#2c94ff" />
             <stop offset=".55" stopColor="#f8fbff" />
             <stop offset="1" stopColor="#ff2440" />
@@ -124,12 +122,12 @@ function Hero() {
         </defs>
         <path className="alvarez-route-base" d="M780 415 C850 340 931 287 1055 260" stroke="url(#alvarezRouteAir)" />
         <path className="alvarez-route-travel alvarez-route-travel-air" d="M780 415 C850 340 931 287 1055 260" stroke="url(#alvarezRouteAir)" />
-        <path className="alvarez-route-base" d="M780 415 C916 413 1032 478 1097 575" stroke="url(#alvarezRouteCuba)" />
-        <path className="alvarez-route-travel alvarez-route-travel-cuba" d="M780 415 C916 413 1032 478 1097 575" stroke="url(#alvarezRouteCuba)" />
+        <path className="alvarez-route-base" d="M780 415 C870 438 902 490 805 515" stroke="url(#alvarezRouteCuba)" />
+        <path className="alvarez-route-travel alvarez-route-travel-cuba" d="M780 415 C870 438 902 490 805 515" stroke="url(#alvarezRouteCuba)" />
         <g className="alvarez-map-point alvarez-map-point-miami" transform="translate(780 415)" filter="url(#alvarezRouteGlow)">
           <circle className="alvarez-point-wave" r="14" /><circle className="alvarez-point-core" r="8" />
         </g>
-        <g className="alvarez-map-point alvarez-map-point-cuba" transform="translate(1097 575)" filter="url(#alvarezRouteGlow)">
+        <g className="alvarez-map-point alvarez-map-point-cuba" transform="translate(805 515)" filter="url(#alvarezRouteGlow)">
           <circle className="alvarez-point-wave" r="14" /><circle className="alvarez-point-core" r="8" />
         </g>
       </svg>
