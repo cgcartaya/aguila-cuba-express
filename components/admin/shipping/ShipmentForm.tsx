@@ -1,4 +1,5 @@
 "use client";
+import { weightRate } from "@/lib/shipping/weight-rate";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Banknote, Loader2, Package, Save } from "lucide-react";
@@ -110,7 +111,7 @@ export default function ShipmentForm(props: Props) {
           item.country_id === form.country_id
       );
     const effectiveWeight = Math.max(Number(form.weight_lb || 0), Number(rate?.minimum_weight_lb || 0));
-    const specificRate = Number(rate?.rate_per_lb || 0);
+    const specificRate = rate ? weightRate(rate, Number(form.weight_lb || 0)) : 0;
     const fallbackRate = Number(settings?.default_rate_per_lb || 0);
     const ratePerLb = form.contains_package
       ? specificRate > 0
@@ -151,7 +152,7 @@ export default function ShipmentForm(props: Props) {
       amount_paid: Number(amountPaid.toFixed(2)),
       balance_due: Number(balance.toFixed(2)),
     }));
-  }, [form.contains_package, form.contains_money, form.shipping_location_id, form.service_type_id, form.weight_lb, form.money_amount, form.money_discount, form.discount_amount, form.amount_paid, form.selected_fees.map(x => x.fee_id).join(","), locations, serviceTypes, rates, settings]);
+  }, [form.country_id, form.province_id, form.municipality_id, form.contains_package, form.contains_money, form.shipping_location_id, form.service_type_id, form.weight_lb, form.money_amount, form.money_discount, form.discount_amount, form.amount_paid, form.selected_fees.map(x => x.fee_id).join(","), locations, serviceTypes, rates, settings]);
 
   const set = <K extends keyof ShipmentInput>(key: K, value: ShipmentInput[K]) => setForm(current => ({ ...current, [key]: value }));
   const phone = (value: string) => value.replace(/\D/g, "").slice(0, settings?.phone_digits_max || 15);
