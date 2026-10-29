@@ -207,6 +207,8 @@ export async function upsertShippingRate(input: {
   rate_per_lb: number;
   minimum_weight_lb: number;
   maximum_weight_lb?: number | null;
+  weight_threshold_lb?: number | null;
+  rate_at_or_above_threshold?: number | null;
   minimum_charge: number;
   fixed_fee?: number;
   estimated_days_min?: number | null;
@@ -346,6 +348,8 @@ export async function upsertShippingRatesBulk(input: {
   rate_per_lb: number;
   minimum_weight_lb: number;
   maximum_weight_lb?: number | null;
+  weight_threshold_lb?: number | null;
+  rate_at_or_above_threshold?: number | null;
   minimum_charge: number;
   fixed_fee?: number;
   estimated_days_min?: number | null;
@@ -363,6 +367,12 @@ export async function upsertShippingRatesBulk(input: {
 
   if (!serviceTypeIds.length) {
     throw new Error("Selecciona al menos un tipo de paquete.");
+  }
+
+  const threshold = input.weight_threshold_lb;
+  const discounted = input.rate_at_or_above_threshold;
+  if ((threshold == null) !== (discounted == null) || (threshold != null && (!Number.isFinite(threshold) || threshold <= 0 || !Number.isFinite(discounted) || Number(discounted) < 0))) {
+    throw new Error("Completa ambos campos del umbral: peso mayor que cero y precio por libra no negativo.");
   }
 
   if (input.rate_per_lb < 0) {
@@ -395,6 +405,8 @@ export async function upsertShippingRatesBulk(input: {
       rate_per_lb: input.rate_per_lb,
       minimum_weight_lb: input.minimum_weight_lb,
       maximum_weight_lb: input.maximum_weight_lb ?? null,
+      weight_threshold_lb: input.weight_threshold_lb ?? null,
+      rate_at_or_above_threshold: input.rate_at_or_above_threshold ?? null,
       minimum_charge: input.minimum_charge,
       fixed_fee: input.fixed_fee ?? 0,
       estimated_days_min: input.estimated_days_min ?? null,
