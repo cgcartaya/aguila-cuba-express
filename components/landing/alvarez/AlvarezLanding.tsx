@@ -162,25 +162,14 @@ function ShippingOptions() {
   return (
     <section className="bg-[#000415] px-5 py-14 sm:px-7 lg:px-10">
       <div className="mx-auto max-w-[1320px]">
-        <SectionTitle eyebrow="Envíos a toda Cuba" title="Dos opciones para estar más cerca." text="Elige la modalidad que mejor se ajuste a tu envío. Cobertura en todas las provincias." />
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <article className="rounded-3xl border border-[#CA0C28]/50 bg-[#091D3D] p-6 sm:p-8">
-            <Plane className="text-red-400" size={28} />
-            <h3 className="mt-4 text-2xl font-black uppercase">Envío Express</h3>
-            <p className="mt-5 text-4xl font-black">$6 <span className="text-base font-normal text-[#B5BFCD]">USD/lb · menos de 20 lb</span></p>
-            <p className="mt-3 text-xl font-bold">Desde 20 lb: $4 USD/lb</p>
-            <p className="mt-2 text-sm text-[#B5BFCD]">La tarifa desde 20 lb se aplica a todo el peso del envío.</p>
-            <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-[#B5BFCD]"><p><strong className="text-white">La Habana:</strong> 24 horas</p><p><strong className="text-white">Demás provincias:</strong> 5–6 días</p></div>
-            <a href="#cotizar" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#CA0C28] px-5 font-bold">Cotizar Express <ArrowRight size={18} /></a>
-          </article>
-          <article className="rounded-3xl border border-white/15 bg-[#091D3D] p-6 sm:p-8">
-            <PackageCheck className="text-blue-300" size={28} />
-            <h3 className="mt-4 text-2xl font-black uppercase">Envío Regular</h3>
-            <p className="mt-5 text-4xl font-black">$3 <span className="text-base font-normal text-[#B5BFCD]">USD/lb · cualquier peso</span></p>
-            <p className="mt-3 text-xl font-bold">Una tarifa para toda Cuba</p>
-            <div className="mt-6 border-t border-white/10 pt-5 text-[#B5BFCD]"><p><strong className="text-white">Entrega:</strong> 7–12 días</p><p className="mt-2">Todas las provincias, incluida La Habana.</p></div>
-            <a href="#cotizar" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-white px-5 font-bold text-[#000415]">Cotizar Regular <ArrowRight size={18} /></a>
-          </article>
+        <div className="mb-8 flex justify-center">
+          <a href="#cotizar" className="inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-[#CA0C28] px-8 text-lg font-black transition hover:bg-[#a80920] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+            Cotizar mi envío <ArrowRight size={21} />
+          </a>
+        </div>
+        <div className="mx-auto grid max-w-[1100px] gap-6 md:grid-cols-2">
+          <Image src="/alvarez/shipping-express.webp" alt="Envío Express de Miami a toda Cuba: menos de 20 lb a 6 USD por libra, desde 20 lb a 4 USD por libra. La Habana: 24 horas; demás provincias: 5 a 6 días." width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 40px), 538px" className="h-auto w-full rounded-2xl" />
+          <Image src="/alvarez/shipping-regular.webp" alt="Envío Regular de Miami a toda Cuba: 3 USD por libra a cualquier peso. Entrega de 7 a 12 días en todas las provincias, incluida La Habana." width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 40px), 538px" className="h-auto w-full rounded-2xl" />
         </div>
       </div>
     </section>
