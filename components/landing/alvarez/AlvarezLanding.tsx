@@ -57,6 +57,7 @@ export default function AlvarezLanding() {
       <Hero />
       <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
       <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p></div><PublicQuoteCalculator embedded /></div></section>
+      <ShippingOptions />
       <BrandPromise />
       <Services />
       <Process />
@@ -151,6 +152,35 @@ function Hero() {
             <span className="flex items-center gap-2"><Check className="text-[#B5BFCD]" size={17} /> Atención cercana</span>
             <span className="flex items-center gap-2"><Check className="text-[#B5BFCD]" size={17} /> Condiciones confirmadas</span>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ShippingOptions() {
+  return (
+    <section className="bg-[#000415] px-5 py-14 sm:px-7 lg:px-10">
+      <div className="mx-auto max-w-[1320px]">
+        <SectionTitle eyebrow="Envíos a toda Cuba" title="Dos opciones para estar más cerca." text="Elige la modalidad que mejor se ajuste a tu envío. Cobertura en todas las provincias." />
+        <div className="mt-8 grid gap-5 md:grid-cols-2">
+          <article className="rounded-3xl border border-[#CA0C28]/50 bg-[#091D3D] p-6 sm:p-8">
+            <Plane className="text-red-400" size={28} />
+            <h3 className="mt-4 text-2xl font-black uppercase">Envío Express</h3>
+            <p className="mt-5 text-4xl font-black">$6 <span className="text-base font-normal text-[#B5BFCD]">USD/lb · menos de 20 lb</span></p>
+            <p className="mt-3 text-xl font-bold">Desde 20 lb: $4 USD/lb</p>
+            <p className="mt-2 text-sm text-[#B5BFCD]">La tarifa desde 20 lb se aplica a todo el peso del envío.</p>
+            <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-[#B5BFCD]"><p><strong className="text-white">La Habana:</strong> 24 horas</p><p><strong className="text-white">Demás provincias:</strong> 5–6 días</p></div>
+            <a href="#cotizar" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#CA0C28] px-5 font-bold">Cotizar Express <ArrowRight size={18} /></a>
+          </article>
+          <article className="rounded-3xl border border-white/15 bg-[#091D3D] p-6 sm:p-8">
+            <PackageCheck className="text-blue-300" size={28} />
+            <h3 className="mt-4 text-2xl font-black uppercase">Envío Regular</h3>
+            <p className="mt-5 text-4xl font-black">$3 <span className="text-base font-normal text-[#B5BFCD]">USD/lb · cualquier peso</span></p>
+            <p className="mt-3 text-xl font-bold">Una tarifa para toda Cuba</p>
+            <div className="mt-6 border-t border-white/10 pt-5 text-[#B5BFCD]"><p><strong className="text-white">Entrega:</strong> 7–12 días</p><p className="mt-2">Todas las provincias, incluida La Habana.</p></div>
+            <a href="#cotizar" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-white px-5 font-bold text-[#000415]">Cotizar Regular <ArrowRight size={18} /></a>
+          </article>
         </div>
       </div>
     </section>
