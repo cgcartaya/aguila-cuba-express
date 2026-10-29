@@ -218,6 +218,8 @@ export type ShippingRate = {
   rate_per_lb: number;
   minimum_weight_lb: number;
   maximum_weight_lb: number | null;
+  weight_threshold_lb?: number | null;
+  rate_at_or_above_threshold?: number | null;
   minimum_charge: number;
   fixed_fee: number;
   estimated_days_min: number | null;
