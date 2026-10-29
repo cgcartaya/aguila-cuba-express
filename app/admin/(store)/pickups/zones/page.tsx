@@ -106,6 +106,13 @@ export default function PickupZonesPage() {
   const { store: accessStore, isSuperAdmin, loading: accessLoading } = useAdminAccess();
   const store = isSuperAdmin ? selectedStore || accessStore : accessStore;
 
+  const isAlvarez = store?.slug === "alvarez-travel";
+  const miamiCities = ["Miami", "Hialeah", "Miami Gardens", "Miami Lakes", "Doral", "Homestead", "Kendall", "Coral Gables", "North Miami", "North Miami Beach", "Miami Beach", "Opa-locka", "Sweetwater", "Cutler Bay"];
+  const presets = isAlvarez ? [
+    { id: "miami-north", label: "Miami · Norte", cities: ["Hialeah", "Miami Lakes", "Miami Gardens", "North Miami", "North Miami Beach", "Opa-locka"] },
+    { id: "miami-central", label: "Miami · Centro", cities: ["Miami", "Miami Beach", "Doral", "Sweetwater", "Coral Gables"] },
+    { id: "miami-south", label: "Miami · Sur", cities: ["Kendall", "Cutler Bay", "Homestead"] },
+  ] : PRESETS;
   const [zones, setZones] = useState<PickupZone[]>([]);
   const [drafts, setDrafts] = useState<Record<string, ZoneDraft>>({});
   const [newZoneName, setNewZoneName] = useState("");
@@ -162,7 +169,7 @@ export default function PickupZonesPage() {
   }
 
   function availableCatalog(zoneId: string) {
-    return SOUTH_CAROLINA_COUNTIES.filter((city) => {
+    return (isAlvarez ? miamiCities : SOUTH_CAROLINA_COUNTIES).filter((city) => {
       const owner = ownerByCity.get(city.toLocaleLowerCase("es"));
       return !owner || owner === zoneId;
     });
@@ -186,7 +193,7 @@ export default function PickupZonesPage() {
   }
 
   function applyPreset(zoneId: string, presetId: string) {
-    const preset = PRESETS.find((item) => item.id === presetId);
+    const preset = presets.find((item) => item.id === presetId);
     if (!preset) return;
     const conflicts = preset.cities.filter((city) => {
       const owner = ownerByCity.get(city.toLocaleLowerCase("es"));
@@ -291,8 +298,8 @@ export default function PickupZonesPage() {
                     <div className="flex items-center gap-2"><MapPinned className="text-blue-600" /><div><h3 className="font-black">Ciudades y condados</h3><p className="text-sm text-slate-500">Selecciona múltiples, usa un preset o importa una lista.</p></div></div>
 
                     <div className="grid gap-3 md:grid-cols-2">
-                      <label className="space-y-1"><span className="text-xs font-black uppercase text-slate-500">Preset rápido</span><select defaultValue="" onChange={(e) => { applyPreset(zone.id, e.target.value); e.currentTarget.value = ""; }} className="h-11 w-full rounded-xl border px-3"><option value="">Seleccionar preset…</option>{PRESETS.map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</select></label>
-                      <label className="space-y-1"><span className="text-xs font-black uppercase text-slate-500">Buscar</span><div className="relative"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input value={draft.search} onChange={(e) => patch(zone.id, { search: e.target.value })} className="h-11 w-full rounded-xl border pl-10 pr-3" placeholder="Greenville, Charleston…" /></div></label>
+                      <label className="space-y-1"><span className="text-xs font-black uppercase text-slate-500">Preset rápido</span><select defaultValue="" onChange={(e) => { applyPreset(zone.id, e.target.value); e.currentTarget.value = ""; }} className="h-11 w-full rounded-xl border px-3"><option value="">Seleccionar preset…</option>{presets.map((preset) => <option key={preset.id} value={preset.id}>{preset.label}</option>)}</select></label>
+                      <label className="space-y-1"><span className="text-xs font-black uppercase text-slate-500">Buscar</span><div className="relative"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input value={draft.search} onChange={(e) => patch(zone.id, { search: e.target.value })} className="h-11 w-full rounded-xl border pl-10 pr-3" placeholder={isAlvarez ? "Miami, Hialeah, Doral…" : "Greenville, Charleston…"} /></div></label>
                     </div>
 
                     <div className="rounded-2xl border">
@@ -308,7 +315,7 @@ export default function PickupZonesPage() {
 
                     <details className="rounded-2xl border p-4">
                       <summary className="cursor-pointer font-black"><Upload className="mr-2 inline" size={18} />Importar lista personalizada</summary>
-                      <textarea value={draft.bulkText} onChange={(e) => patch(zone.id, { bulkText: e.target.value })} placeholder={"Greenville\nSpartanburg\nAnderson"} className="mt-3 min-h-32 w-full rounded-xl border p-3" />
+                      <textarea value={draft.bulkText} onChange={(e) => patch(zone.id, { bulkText: e.target.value })} placeholder={isAlvarez ? "Miami\nHialeah\nDoral" : "Greenville\nSpartanburg\nAnderson"} className="mt-3 min-h-32 w-full rounded-xl border p-3" />
                       <button onClick={() => importBulk(zone.id)} disabled={!draft.bulkText.trim()} className="mt-2 rounded-xl bg-slate-900 px-4 py-2 font-black text-white disabled:opacity-40">Importar lista</button>
                     </details>
 

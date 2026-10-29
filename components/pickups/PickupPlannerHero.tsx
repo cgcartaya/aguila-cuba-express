@@ -512,6 +512,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
 
                   <div className="mt-4 space-y-5 sm:mt-7">
                     <CityAutocomplete
+                      placeholder={config?.regionCode === "FL" ? "Ej. Miami o Hialeah" : undefined}
                       cities={config?.cities || []}
                       value={form.city}
                       onChange={(city) => update("city", city)}
@@ -526,7 +527,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                         <input
                           value={form.address_line_1}
                           onChange={(event) => update("address_line_1", event.target.value)}
-                          placeholder="Ej. 1500 Main St"
+                          placeholder={config?.regionCode === "FL" ? "Ej. 1805 E 4th Ave" : "Ej. 1500 Main St"}
                           autoComplete="street-address"
                           className="min-h-14 w-full rounded-2xl border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                         />
@@ -548,7 +549,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                         <input
                           value={form.postal_code}
                           onChange={(event) => update("postal_code", event.target.value)}
-                          placeholder="29201"
+                          placeholder={config?.regionCode === "FL" ? "33010" : "29201"}
                           autoComplete="postal-code"
                           inputMode="numeric"
                           className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
@@ -651,7 +652,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                       </div>
                       <div>
                         <label className="mb-2 block text-sm font-black text-slate-800">Teléfono / WhatsApp</label>
-                        <input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder="803 262 3676" inputMode="tel" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                        <input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder={config?.regionCode === "FL" ? "305 555 0123" : "803 262 3676"} inputMode="tel" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
                       </div>
                     </div>
 
