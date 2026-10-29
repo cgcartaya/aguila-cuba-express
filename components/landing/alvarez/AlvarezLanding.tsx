@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -56,8 +56,8 @@ export default function AlvarezLanding() {
       <Header menuOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
       <Hero />
       <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
-      <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p></div><PublicQuoteCalculator embedded /></div></section>
       <ShippingOptions />
+      <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p></div><PublicQuoteCalculator embedded /></div></section>
       <BrandPromise />
       <Services />
       <Process />
@@ -158,7 +158,34 @@ function Hero() {
   );
 }
 
+const shippingOffers = [
+  { name: "Envío Express", image: "/alvarez/shipping-express.webp", details: "Menos de 20 lb: $6 USD/lb. Desde 20 lb: $4 USD/lb para todo el peso. La Habana: 24 horas. Demás provincias: 5–6 días." },
+  { name: "Envío Regular", image: "/alvarez/shipping-regular.webp", details: "$3 USD/lb a cualquier peso. Entrega en 7–12 días en todas las provincias, incluida La Habana." },
+];
+
 function ShippingOptions() {
+  const [selected, setSelected] = useState<(typeof shippingOffers)[number] | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (!selected) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selected]);
+
+  function requestInfo() {
+    if (!selected) return;
+    const photoUrl = new URL(selected.image, window.location.origin).href;
+    const message = `Hola, quisiera información sobre esta oferta de Álvarez Travel: ${selected.name}.\n${selected.details}\nPostal de la oferta: ${photoUrl}`;
+    window.open(whatsappHref(message), "_blank", "noopener,noreferrer");
+  }
+
   return (
     <section className="bg-[#000415] px-5 py-14 sm:px-7 lg:px-10">
       <div className="mx-auto max-w-[1320px]">
@@ -168,10 +195,25 @@ function ShippingOptions() {
           </a>
         </div>
         <div className="mx-auto grid max-w-[1100px] gap-6 md:grid-cols-2">
-          <Image src="/alvarez/shipping-express.webp" alt="Envío Express de Miami a toda Cuba: menos de 20 lb a 6 USD por libra, desde 20 lb a 4 USD por libra. La Habana: 24 horas; demás provincias: 5 a 6 días." width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 40px), 538px" className="h-auto w-full rounded-2xl" />
-          <Image src="/alvarez/shipping-regular.webp" alt="Envío Regular de Miami a toda Cuba: 3 USD por libra a cualquier peso. Entrega de 7 a 12 días en todas las provincias, incluida La Habana." width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 40px), 538px" className="h-auto w-full rounded-2xl" />
+          {shippingOffers.map((offer) => (
+            <button key={offer.name} type="button" onClick={() => setSelected(offer)} aria-label={`Ampliar oferta: ${offer.name}`} className="rounded-2xl transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
+              <Image src={offer.image} alt={`${offer.name}. ${offer.details}`} width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 40px), 538px" className="h-auto w-full rounded-2xl" />
+            </button>
+          ))}
         </div>
       </div>
+      <dialog ref={dialogRef} onCancel={() => setSelected(null)} onClose={() => setSelected(null)} onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }} aria-labelledby="alvarez-offer-title" className="fixed inset-0 m-auto max-h-[95dvh] w-[calc(100%-24px)] max-w-3xl overflow-y-auto rounded-2xl border border-white/15 bg-[#091D3D] p-0 text-white shadow-2xl backdrop:bg-black/85">
+        {selected && <>
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-[#091D3D] px-4 py-3">
+            <h2 id="alvarez-offer-title" className="text-lg font-bold">{selected.name}</h2>
+            <button autoFocus type="button" onClick={() => setSelected(null)} aria-label="Cerrar oferta" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20"><X size={24} /></button>
+          </div>
+          <Image src={selected.image} alt={`${selected.name}. ${selected.details}`} width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 24px), 768px" className="h-auto w-full" />
+          <div className="sticky bottom-0 border-t border-white/10 bg-[#091D3D] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <button type="button" onClick={requestInfo} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-4 font-bold hover:bg-[#a80920]"><MessageCircle size={21} /> Pedir información sobre esta oferta</button>
+          </div>
+        </>}
+      </dialog>
     </section>
   );
 }
