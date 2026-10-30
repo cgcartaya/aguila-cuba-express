@@ -79,18 +79,18 @@ function Header({ menuOpen, onToggle }: { menuOpen: boolean; onToggle: () => voi
         <Link href="/" aria-label="Álvarez Travel - Inicio" className="relative block h-[72px] w-[168px] shrink-0 sm:w-[190px]">
           <Image src="/alvarez/logo.png" alt="Álvarez Travel" fill priority sizes="190px" className="object-contain" />
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-bold text-white/75 lg:flex">
+        <nav className="hidden items-center gap-6 text-sm font-bold text-white/75 xl:flex">
           {navigation.map((item) => <a key={item.href} href={item.href} className="transition hover:text-white">{item.label}</a>)}
         </nav>
         <div className="flex items-center gap-2">
           <a href={whatsappHref("Hola, quisiera información sobre sus servicios.")} target="_blank" rel="noreferrer" className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#CA0C28] px-5 text-sm font-black transition hover:brightness-110 sm:inline-flex">
             <MessageCircle size={18} /> Escríbenos
           </a>
-          <button type="button" onClick={onToggle} aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"} className="grid h-11 w-11 place-items-center rounded-xl border border-white/20 lg:hidden">{menuOpen ? <X /> : <Menu />}</button>
+          <button type="button" onClick={onToggle} aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"} className="grid h-11 w-11 place-items-center rounded-xl border border-white/20 xl:hidden">{menuOpen ? <X /> : <Menu />}</button>
         </div>
       </div>
       {menuOpen && (
-        <div className="border-t border-white/10 bg-[#091D3D] px-5 pb-6 pt-3 lg:hidden">
+        <div className="border-t border-white/10 bg-[#091D3D] px-5 pb-6 pt-3 xl:hidden">
           <nav className="grid gap-1">{navigation.map((item) => <a key={item.href} href={item.href} onClick={onToggle} className="rounded-xl px-4 py-3.5 font-bold text-white/90 hover:bg-white/10">{item.label}</a>)}</nav>
           <a href={whatsappHref("Hola, quisiera información sobre sus servicios.")} target="_blank" rel="noreferrer" className="mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-5 font-black"><MessageCircle size={18} /> Escríbenos</a>
         </div>
