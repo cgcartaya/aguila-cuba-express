@@ -26,10 +26,12 @@ import {
 } from "@/components/landing/alvarez/constants";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
+import RemittanceCalculator from "./RemittanceCalculator";
 
 const navigation = [
   { label: "Recogida", href: "#solicitar-recogida" },
   { label: "Envíos", href: "#servicios" },
+  { label: "Remesas", href: "#remesas" },
   { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Viajes", href: "#viajes" },
   { label: "Tienda", href: "/tienda" },
@@ -39,7 +41,7 @@ const navigation = [
 
 const services = [
   { icon: Plane, title: "Envíos a Cuba", description: "Te orientamos sobre las opciones disponibles para tus paquetes y documentos.", href: "#cotizar" },
-  { icon: WalletCards, title: "Remesas", description: "Consulta condiciones y opciones disponibles directamente con nuestro equipo.", href: ALVAREZ_WHATSAPP_URL },
+  { icon: WalletCards, title: "Remesas", description: "Calcula la comisión y el total de tu remesa con nuestras tarifas actuales.", href: "#remesas" },
   { icon: TicketCheck, title: "Viajes", description: "Orientación para pasajes y reservaciones según disponibilidad.", href: "#viajes" },
   { icon: Hotel, title: "Hoteles y autos", description: "Consulta alternativas para organizar tu estancia desde un solo lugar.", href: "#viajes" },
 ];
@@ -58,6 +60,7 @@ export default function AlvarezLanding() {
       <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
       <ShippingOptions />
       <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px] lg:max-w-[1040px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p></div><PublicQuoteCalculator embedded /></div></section>
+      <RemittanceCalculator />
       <BrandPromise />
       <Services />
       <Process />
