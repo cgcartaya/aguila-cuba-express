@@ -69,9 +69,10 @@ export async function findShippingCustomerDuplicate(
 export async function saveShippingCustomer(
   input: SaveShippingCustomerInput
 ) {
-  const { data, error } = await supabase.rpc("save_shipping_customer_v2", {
+  const { data, error } = await supabase.rpc("save_shipping_customer_v3", {
     p_store_id: input.store_id,
     p_customer_id: input.id || null,
+    p_identity_document: input.identity_document?.trim().toUpperCase() || null,
     p_name: input.name,
     p_phone: normalizeCustomerPhone(input.phone),
     p_birth_date: input.birth_date,
