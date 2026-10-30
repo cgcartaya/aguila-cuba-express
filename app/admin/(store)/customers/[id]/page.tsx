@@ -47,7 +47,7 @@ function money(value?: number) {
 }
 
 function customerCode(customer: ShippingCustomer) {
-  return customer.customer_code || `AG-${String(customer.customer_number).padStart(4, "0")}`;
+  return customer.customer_code || `Cliente ${String(customer.customer_number).padStart(4, "0")}`;
 }
 
 export default function ShippingCustomerDetailPage({

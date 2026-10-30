@@ -373,7 +373,7 @@ export default function CustomerRecipientPicker({
             <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">CRM de envíos</p>
             <h2 className="mt-1 text-xl font-extrabold text-slate-950">Buscar cliente existente</h2>
             <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
-              Busca por código AG-0000, nombre o teléfono. Al seleccionarlo se cargan sus destinatarios.
+              Busca por código de cliente, nombre o teléfono. Al seleccionarlo se cargan sus destinatarios.
             </p>
           </div>
         </div>
@@ -395,7 +395,7 @@ export default function CustomerRecipientPicker({
                 }
               }}
               className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              placeholder="Ej. AG-0043, Carlos García o 3051234567"
+              placeholder="Ej. Carlos García, teléfono o código de cliente"
             />
           </label>
           <button type="button" onClick={() => void runSearch(undefined, true)} disabled={loading} className={darkButton}>

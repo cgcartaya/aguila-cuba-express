@@ -115,7 +115,7 @@ export default function ShippingCustomersPage() {
     const digits = search.replace(/\D/g, "");
 
     return customers.filter((customer) => {
-      const code = customer.customer_code || `AG-${String(customer.customer_number).padStart(4, "0")}`;
+      const code = customer.customer_code || `Cliente ${String(customer.customer_number).padStart(4, "0")}`;
       const matchesSearch =
         !query ||
         customer.name.toLowerCase().includes(query) ||
@@ -284,7 +284,7 @@ export default function ShippingCustomersPage() {
           <div className="grid gap-3 md:grid-cols-[1fr_230px]">
             <label className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Buscar por AG-0043, nombre o teléfono..." />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Buscar por código, nombre o teléfono..." />
             </label>
 
             <select value={filter} onChange={(event) => setFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 outline-none focus:border-blue-400">
@@ -326,7 +326,7 @@ export default function ShippingCustomersPage() {
         ) : (
           <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {filtered.map((customer) => {
-              const code = customer.customer_code || `AG-${String(customer.customer_number).padStart(4, "0")}`;
+              const code = customer.customer_code || `Cliente ${String(customer.customer_number).padStart(4, "0")}`;
               const hasDebt = Number(customer.total_balance || 0) > 0;
               const archived = customer.is_active === false;
 

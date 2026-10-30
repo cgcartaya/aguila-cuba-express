@@ -66,7 +66,6 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/products/resenas", label: "Reseñas", icon: MessageSquareText },
       { href: "/admin/combos", label: "Combos", icon: Layers3 },
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
-      { href: "/admin/customers", label: "Clientes", icon: Users },
     ],
   },
   {
@@ -122,6 +121,7 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/shipping", label: "Dashboard de envíos", icon: LayoutDashboard },
       { href: "/admin/shipping/trips", label: "Viajes", icon: Route },
       { href: "/admin/shipping/shipments", label: "Todos los envíos", icon: Truck },
+      { href: "/admin/customers", label: "Clientes y destinatarios", icon: Users },
       { href: "/admin/shipping/staff", label: "Personal", icon: Users },
       { href: "/admin/shipping/settings", label: "Ajustes de envíos", icon: Wrench },
     ],
