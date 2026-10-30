@@ -7,6 +7,7 @@ export type ShippingCustomerType =
 export type ShippingCustomer = {
   id: string;
   store_id: string;
+  identity_document?: string | null;
   customer_number: number;
   customer_code: string;
   name: string;
@@ -61,6 +62,7 @@ export type CustomerWithRecipients = {
 };
 
 export type SaveShippingCustomerInput = {
+  identity_document?: string;
   id?: string;
   store_id: string;
   name: string;
