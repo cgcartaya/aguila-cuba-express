@@ -149,7 +149,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           ...current,
           service_type_id: json.services?.[0]?.id || "",
           country_id: country?.id || json.countries?.[0]?.id || "",
-          transport_mode: transport,
+          transport_mode: json.store?.id === "211dd255-7168-4045-a278-afc4164a3172" ? "air" : transport,
           weight_lb: requestedWeight && Number(requestedWeight) > 0 ? requestedWeight : current.weight_lb,
           item_category: "miscelaneas",
         }));
@@ -250,10 +250,11 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
     return <Unavailable title="La agencia está terminando de configurar el cotizador" text={`Todavía faltan: ${missing}. Puedes contactar a la agencia para recibir una cotización manual.`} />;
   }
 
+  const isAlvarez = config.store.id === "211dd255-7168-4045-a278-afc4164a3172";
   const primary = config.store.primary_color || "#071d43";
   const selectedServiceObject = config.services.find((item) => item.id === form.service_type_id);
   const selectedCategory = (form.item_category || normalizeCategory(selectedServiceObject)) as CategoryKey;
-  const selectedService = categoryOptions.find((item) => item.key === selectedCategory)?.label || categoryLabel(selectedServiceObject);
+  const selectedService = isAlvarez ? selectedServiceObject?.name || "Envío" : categoryOptions.find((item) => item.key === selectedCategory)?.label || categoryLabel(selectedServiceObject);
   const pickupFee = Number(config.settings.pickup_fee || 20);
   const airportFeeApplies = selectedCategory === "energia" && ["air", "express"].includes(form.transport_mode);
   const selectedCountry = config.countries.find((item) => item.id === form.country_id)?.name || "Destino";
@@ -275,8 +276,8 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
 
         <div className="p-5 sm:p-8">
           {step === 1 && <div className="space-y-7">
-            <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text="Primero selecciona la categoría del contenido y después la modalidad de envío." />
-            <div>
+            <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text={isAlvarez ? "Selecciona Express o Regular para consultar las tarifas de tu envío a Cuba." : "Primero selecciona la categoría del contenido y después la modalidad de envío."} />
+            {!isAlvarez && <div>
               <p className="text-sm font-black text-slate-700">Categoría del envío</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 {categoryOptions.map(({ key, label }) => {
@@ -300,8 +301,9 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
                   );
                 })}
               </div>
-            </div>
-            <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div>{airportFeeApplies && <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Esta modalidad incluye un fee aeroportuario adicional de $50 para estaciones de energía.</p>}</div>
+            </div>}
+            {isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.services.filter(service => ["EXPRESS", "REGULAR"].includes((service.code || "").toUpperCase())).map((service) => <button key={service.id} type="button" onClick={() => { setField("service_type_id", service.id); setField("transport_mode", "air"); }} className={`rounded-2xl border p-4 text-left ${form.service_type_id === service.id ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200"}`}><Plane className="text-blue-700" /><b className="mt-3 block text-slate-900">{service.name}</b><small className="mt-1 block text-slate-500">{service.code === "EXPRESS" ? "La Habana: 24 horas. Demás provincias: 5–6 días." : "Toda Cuba: 7–12 días."}</small></button>)}</div></div>}
+            {!isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div>{airportFeeApplies && <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Esta modalidad incluye un fee aeroportuario adicional de $50 para estaciones de energía.</p>}</div>}
           </div>}
 
           {step === 2 && <div className="space-y-7">
@@ -321,7 +323,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           {step === 3 && <div className="space-y-7">
             <StepTitle icon={<UserRound />} title="¿Cómo te contactamos?" text="Guardaremos la cotización y la agencia podrá ayudarte a continuar." />
             <div className="grid gap-4 sm:grid-cols-2"><Field label="Nombre"><input value={form.customer_name} onChange={(event) => setField("customer_name", event.target.value)} required /></Field><Field label="Teléfono"><input value={form.customer_phone} onChange={(event) => setField("customer_phone", event.target.value)} required inputMode="tel" /></Field><Field label="Correo (opcional)"><input type="email" value={form.customer_email} onChange={(event) => setField("customer_email", event.target.value)} /></Field><Field label="Notas (opcional)"><input value={form.notes} onChange={(event) => setField("notes", event.target.value)} placeholder="Ej.: electrodoméstico, medicina, dimensiones..." /></Field></div>
-            <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Resumen antes de calcular</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><Summary label="Categoría" value={selectedService} /><Summary label="Método" value={modeLabels[form.transport_mode] || form.transport_mode} /><Summary label="Destino" value={selectedCountry} /><Summary label="Peso" value={`${form.weight_lb} lb`} /></div></div>
+            <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs font-black uppercase tracking-wider text-slate-400">Resumen antes de calcular</p><div className="mt-3 grid gap-3 sm:grid-cols-2"><Summary label="Categoría" value={selectedService} /><Summary label="Método" value={isAlvarez ? selectedServiceObject?.name || "Envío" : modeLabels[form.transport_mode] || form.transport_mode} /><Summary label="Destino" value={selectedCountry} /><Summary label="Peso" value={`${form.weight_lb} lb`} /></div></div>
           </div>}
 
           {error && <p className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</p>}
@@ -338,7 +340,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           <Package size={42} />
           <h2 className="mt-5 text-2xl font-black">Un estimado claro y profesional</h2>
           <p className="mt-2 text-white/70">Completa los pasos y recibirás un resumen listo para compartir.</p>
-          <div className="mt-6 grid gap-3"><Info icon={<Plane />} text="Tarifas aéreas configurables" /><Info icon={<Ship />} text="Tarifas marítimas configurables" /><Info icon={<Weight />} text="Peso mínimo y cargos incluidos" /><Info icon={<Truck />} text="Recogida opcional" /></div>
+          <div className="mt-6 grid gap-3">{isAlvarez ? <><Info icon={<Plane />} text="Express: La Habana 24 horas; demás provincias 5–6 días" /><Info icon={<Package />} text="Regular: 7–12 días en toda Cuba" /></> : <><Info icon={<Plane />} text="Tarifas aéreas configurables" /><Info icon={<Ship />} text="Tarifas marítimas configurables" /></>}<Info icon={<Weight />} text="Peso mínimo y cargos incluidos" /><Info icon={<Truck />} text="Recogida opcional" /></div>
         </> : <>
           <CheckCircle2 size={46} className="text-emerald-300" />
           <p className="mt-4 text-sm font-black uppercase tracking-wider text-white/60">{result.public_code}</p>
