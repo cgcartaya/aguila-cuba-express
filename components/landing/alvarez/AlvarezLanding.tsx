@@ -26,10 +26,12 @@ import {
 } from "@/components/landing/alvarez/constants";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
+import RemittanceCalculator from "./RemittanceCalculator";
 
 const navigation = [
   { label: "Recogida", href: "#solicitar-recogida" },
   { label: "Envíos", href: "#servicios" },
+  { label: "Remesas", href: "#remesas" },
   { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Viajes", href: "#viajes" },
   { label: "Tienda", href: "/tienda" },
@@ -39,7 +41,7 @@ const navigation = [
 
 const services = [
   { icon: Plane, title: "Envíos a Cuba", description: "Te orientamos sobre las opciones disponibles para tus paquetes y documentos.", href: "#cotizar" },
-  { icon: WalletCards, title: "Remesas", description: "Consulta condiciones y opciones disponibles directamente con nuestro equipo.", href: ALVAREZ_WHATSAPP_URL },
+  { icon: WalletCards, title: "Remesas", description: "Calcula la comisión y el total de tu remesa con nuestras tarifas actuales.", href: "#remesas" },
   { icon: TicketCheck, title: "Viajes", description: "Orientación para pasajes y reservaciones según disponibilidad.", href: "#viajes" },
   { icon: Hotel, title: "Hoteles y autos", description: "Consulta alternativas para organizar tu estancia desde un solo lugar.", href: "#viajes" },
 ];
@@ -58,6 +60,7 @@ export default function AlvarezLanding() {
       <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
       <ShippingOptions />
       <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px] lg:max-w-[1040px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p></div><PublicQuoteCalculator embedded /></div></section>
+      <RemittanceCalculator />
       <BrandPromise />
       <Services />
       <Process />
@@ -76,18 +79,18 @@ function Header({ menuOpen, onToggle }: { menuOpen: boolean; onToggle: () => voi
         <Link href="/" aria-label="Álvarez Travel - Inicio" className="relative block h-[72px] w-[168px] shrink-0 sm:w-[190px]">
           <Image src="/alvarez/logo.png" alt="Álvarez Travel" fill priority sizes="190px" className="object-contain" />
         </Link>
-        <nav className="hidden items-center gap-6 text-sm font-bold text-white/75 lg:flex">
+        <nav className="hidden items-center gap-6 text-sm font-bold text-white/75 xl:flex">
           {navigation.map((item) => <a key={item.href} href={item.href} className="transition hover:text-white">{item.label}</a>)}
         </nav>
         <div className="flex items-center gap-2">
           <a href={whatsappHref("Hola, quisiera información sobre sus servicios.")} target="_blank" rel="noreferrer" className="hidden min-h-11 items-center gap-2 rounded-xl bg-[#CA0C28] px-5 text-sm font-black transition hover:brightness-110 sm:inline-flex">
             <MessageCircle size={18} /> Escríbenos
           </a>
-          <button type="button" onClick={onToggle} aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"} className="grid h-11 w-11 place-items-center rounded-xl border border-white/20 lg:hidden">{menuOpen ? <X /> : <Menu />}</button>
+          <button type="button" onClick={onToggle} aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"} className="grid h-11 w-11 place-items-center rounded-xl border border-white/20 xl:hidden">{menuOpen ? <X /> : <Menu />}</button>
         </div>
       </div>
       {menuOpen && (
-        <div className="border-t border-white/10 bg-[#091D3D] px-5 pb-6 pt-3 lg:hidden">
+        <div className="border-t border-white/10 bg-[#091D3D] px-5 pb-6 pt-3 xl:hidden">
           <nav className="grid gap-1">{navigation.map((item) => <a key={item.href} href={item.href} onClick={onToggle} className="rounded-xl px-4 py-3.5 font-bold text-white/90 hover:bg-white/10">{item.label}</a>)}</nav>
           <a href={whatsappHref("Hola, quisiera información sobre sus servicios.")} target="_blank" rel="noreferrer" className="mt-3 flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-5 font-black"><MessageCircle size={18} /> Escríbenos</a>
         </div>
