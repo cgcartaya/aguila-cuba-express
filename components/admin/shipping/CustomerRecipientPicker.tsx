@@ -83,6 +83,7 @@ export default function CustomerRecipientPicker({
   const suppressNextRealtimeSearchRef = useRef(false);
   const initialSelectionLoadedRef = useRef(false);
 
+  const [customerIdentity, setCustomerIdentity] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState(digits(initialPhone));
   const [customerBirthDate, setCustomerBirthDate] = useState("");
@@ -277,6 +278,7 @@ export default function CustomerRecipientPicker({
     const { data, error } = await saveShippingCustomer({
       store_id: storeId,
       name: customerName,
+      identity_document: customerIdentity,
       phone: normalizedPhone,
       birth_date: customerBirthDate,
       email: customerEmail,
@@ -373,7 +375,7 @@ export default function CustomerRecipientPicker({
             <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">CRM de envíos</p>
             <h2 className="mt-1 text-xl font-extrabold text-slate-950">Buscar cliente existente</h2>
             <p className="mt-1 text-sm font-medium leading-6 text-slate-500">
-              Busca por código de cliente, nombre o teléfono. Al seleccionarlo se cargan sus destinatarios.
+              Busca por ID, código de cliente, nombre o teléfono. Al seleccionarlo se cargan sus destinatarios.
             </p>
           </div>
         </div>
@@ -395,7 +397,7 @@ export default function CustomerRecipientPicker({
                 }
               }}
               className="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
-              placeholder="Ej. Carlos García, teléfono o código de cliente"
+              placeholder="Ej. ID AB123456, nombre, teléfono o código"
             />
           </label>
           <button type="button" onClick={() => void runSearch(undefined, true)} disabled={loading} className={darkButton}>
@@ -484,6 +486,7 @@ export default function CustomerRecipientPicker({
         {creatingCustomer && (
           <EditorCard title="Registrar nuevo cliente" onClose={() => setCreatingCustomer(false)}>
             <div className="grid gap-4 md:grid-cols-2">
+              <Field label="ID del cliente (opcional)"><input value={customerIdentity} maxLength={50} pattern="[A-Za-z0-9]*" onChange={(e) => setCustomerIdentity(e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase())} placeholder="Ej. AB123456" className={inputClass} /></Field>
               <Field label="Nombre completo"><input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className={inputClass} /></Field>
               <Field label="Teléfono"><input value={customerPhone} onChange={(e) => setCustomerPhone(digits(e.target.value))} className={inputClass} inputMode="numeric" /></Field>
               <Field label="Fecha de nacimiento"><input type="date" value={customerBirthDate} onChange={(e) => setCustomerBirthDate(e.target.value)} className={inputClass} /></Field>
