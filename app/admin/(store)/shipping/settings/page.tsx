@@ -896,10 +896,15 @@ export default function ShippingSettingsPage() {
                 Reglas para envío de dinero
               </h3>
               <p className="mt-1 text-sm font-semibold text-emerald-900/70">
-                Debajo del límite se usa la primera tasa. Desde el límite, todo
-                el monto usa la tasa reducida.
+                El cargo fijo se aplica por debajo de su límite. Para los demás montos se usa el porcentaje correspondiente sobre todo el dinero enviado.
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <Field label="Cargo fijo para montos menores de (USD)">
+                  <input type="number" min="0" step="0.01" value={settings.money_fixed_fee_below ?? 0} onChange={(e) => setSettings((c) => c ? { ...c, money_fixed_fee_below: Number(e.target.value) } : c)} className={inputClass} />
+                </Field>
+                <Field label="Importe del cargo fijo (USD)">
+                  <input type="number" min="0" step="0.01" value={settings.money_fixed_fee ?? 0} onChange={(e) => setSettings((c) => c ? { ...c, money_fixed_fee: Number(e.target.value) } : c)} className={inputClass} />
+                </Field>
                 <Field label="Límite para tasa reducida">
                   <input
                     type="number"
@@ -982,6 +987,10 @@ export default function ShippingSettingsPage() {
                   />
                 </Field>
               </div>
+              <label className="mt-4 flex items-center gap-3 text-sm font-bold text-emerald-950">
+                <input type="checkbox" checked={settings.money_include_principal ?? false} onChange={(e) => setSettings((c) => c ? { ...c, money_include_principal: e.target.checked } : c)} />
+                Incluir el dinero enviado en el total a cobrar
+              </label>
               <label className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-black text-emerald-950">
                 <input
                   type="checkbox"
