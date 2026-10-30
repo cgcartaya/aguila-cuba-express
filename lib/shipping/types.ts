@@ -256,6 +256,9 @@ export type ShippingSettings = {
   phone_digits_min: number;
   phone_digits_max: number;
   default_rate_per_lb: number;
+  money_fixed_fee_below?: number;
+  money_fixed_fee?: number;
+  money_include_principal?: boolean;
   money_threshold: number;
   money_rate_below_threshold: number;
   money_rate_at_or_above_threshold: number;
@@ -331,12 +334,16 @@ export function buildLegacyLocation(
 
 export function calculateMoneyCommission(
   amount: number,
-  settings: Pick<ShippingSettings, "money_threshold" | "money_rate_below_threshold" | "money_rate_at_or_above_threshold">
+  settings: Pick<ShippingSettings, "money_threshold" | "money_rate_below_threshold" | "money_rate_at_or_above_threshold" | "money_fixed_fee_below" | "money_fixed_fee">
 ) {
   const safeAmount = Math.max(Number(amount || 0), 0);
-  const rate = safeAmount >= Number(settings.money_threshold || 1000)
-    ? Number(settings.money_rate_at_or_above_threshold || 5)
-    : Number(settings.money_rate_below_threshold || 8);
+  if (safeAmount <= 0) return { rate: 0, commission: 0 };
+  if (safeAmount < Number(settings.money_fixed_fee_below ?? 0)) {
+    return { rate: 0, commission: Number(Number(settings.money_fixed_fee ?? 0).toFixed(2)) };
+  }
+  const rate = safeAmount >= Number(settings.money_threshold ?? 1000)
+    ? Number(settings.money_rate_at_or_above_threshold ?? 5)
+    : Number(settings.money_rate_below_threshold ?? 8);
   return { rate, commission: Number(((safeAmount * rate) / 100).toFixed(2)) };
 }
 
