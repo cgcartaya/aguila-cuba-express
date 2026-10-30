@@ -302,6 +302,7 @@ export default function ShippingCustomerDetailPage({
                 <h1 className="mt-1 truncate text-2xl font-black sm:text-4xl">{customer.name}</h1>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold text-blue-100">
                   <span className="inline-flex items-center gap-2"><Phone size={15} />{customer.phone}</span>
+                  {customer.identity_document && <span className="font-bold">ID: {customer.identity_document}</span>}
                   {customer.birth_date && <span className="inline-flex items-center gap-2"><CalendarDays size={15} />{customer.birth_date}</span>}
                 </div>
               </div>

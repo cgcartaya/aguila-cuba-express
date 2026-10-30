@@ -46,6 +46,7 @@ function formatDate(value?: string | null) {
 }
 
 type EditForm = {
+  identity_document: string;
   name: string;
   phone: string;
   birth_date: string;
@@ -55,6 +56,7 @@ type EditForm = {
 };
 
 const EMPTY_EDIT_FORM: EditForm = {
+  identity_document: "",
   name: "",
   phone: "",
   birth_date: "",
@@ -119,6 +121,7 @@ export default function ShippingCustomersPage() {
       const matchesSearch =
         !query ||
         customer.name.toLowerCase().includes(query) ||
+        (customer.identity_document || "").toLowerCase().includes(query) ||
         customer.phone.includes(digits || query) ||
         code.toLowerCase().includes(query) ||
         String(customer.customer_number).includes(query);
@@ -157,6 +160,7 @@ export default function ShippingCustomersPage() {
     setOpenMenuId(null);
     setEditingCustomer(customer);
     setEditForm({
+      identity_document: customer.identity_document || "",
       name: customer.name || "",
       phone: customer.phone || "",
       birth_date: customer.birth_date || "",
@@ -180,6 +184,7 @@ export default function ShippingCustomersPage() {
     const { data, error } = await saveShippingCustomer({
       id: editingCustomer.id,
       store_id: activeStore.id,
+      identity_document: editForm.identity_document,
       name: editForm.name.trim(),
       phone,
       birth_date: editForm.birth_date || null,
@@ -284,7 +289,7 @@ export default function ShippingCustomersPage() {
           <div className="grid gap-3 md:grid-cols-[1fr_230px]">
             <label className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Buscar por código, nombre o teléfono..." />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Buscar por ID, código, nombre o teléfono..." />
             </label>
 
             <select value={filter} onChange={(event) => setFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 outline-none focus:border-blue-400">
@@ -345,7 +350,7 @@ export default function ShippingCustomersPage() {
                               <p className="truncate text-lg font-black text-slate-950">{customer.name}</p>
                               {archived && <span className="rounded-full bg-slate-200 px-2 py-1 text-[10px] font-black uppercase text-slate-600">Archivado</span>}
                             </div>
-                            <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500"><Phone size={14} /> {customer.phone}</p>
+                            <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500"><Phone size={14} /> {customer.phone}</p>{customer.identity_document && <p className="mt-1 text-sm font-bold text-slate-600">ID: {customer.identity_document}</p>}
                           </div>
 
                           <div className="flex shrink-0 items-start gap-2">
@@ -402,6 +407,7 @@ export default function ShippingCustomersPage() {
             </div>
 
             <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+              <Field label="ID del cliente (opcional)" value={editForm.identity_document} onChange={(value) => setEditForm((current) => ({ ...current, identity_document: value.replace(/[^A-Za-z0-9]/g, "").slice(0, 50).toUpperCase() }))} />
               <Field label="Nombre completo *" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
               <Field label="Teléfono *" value={editForm.phone} onChange={(value) => setEditForm((current) => ({ ...current, phone: value.replace(/\D/g, "").slice(0, 15) }))} inputMode="numeric" />
               <Field label="Fecha de nacimiento" value={editForm.birth_date} onChange={(value) => setEditForm((current) => ({ ...current, birth_date: value }))} type="date" />
