@@ -114,6 +114,9 @@ export async function upsertShippingSettings(
         phone_digits_min: input.phone_digits_min ?? 8,
         phone_digits_max: input.phone_digits_max ?? 15,
         default_rate_per_lb: input.default_rate_per_lb ?? 0,
+        money_fixed_fee_below: input.money_fixed_fee_below ?? 0,
+        money_fixed_fee: input.money_fixed_fee ?? 0,
+        money_include_principal: input.money_include_principal ?? false,
         money_threshold: input.money_threshold ?? 1000,
         money_rate_below_threshold: input.money_rate_below_threshold ?? 8,
         money_rate_at_or_above_threshold:

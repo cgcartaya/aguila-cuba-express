@@ -130,7 +130,7 @@ export default function ShipmentForm(props: Props) {
     const maxDiscount = settings?.maximum_manual_discount;
     const requestedDiscount = settings?.allow_manual_discount ? Math.max(form.money_discount, 0) : 0;
     const moneyDiscount = maxDiscount == null ? requestedDiscount : Math.min(requestedDiscount, Number(maxDiscount));
-    const moneyTotal = form.contains_money ? Math.max(money.commission - moneyDiscount, 0) : 0;
+    const moneyTotal = form.contains_money ? (settings?.money_include_principal ? form.money_amount : 0) + Math.max(money.commission - moneyDiscount, 0) : 0;
     const total = Math.max(packageSubtotal + moneyTotal + feesTotal - Math.max(form.discount_amount, 0), 0);
     const amountPaid = Math.min(total, Math.max(form.amount_paid, 0));
     const balance = Math.max(total - amountPaid, 0);
@@ -274,9 +274,9 @@ export default function ShipmentForm(props: Props) {
     </Section>}
 
     {form.contains_money && <Section title="Cálculo del dinero">
-      <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={`${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>
+      <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? "Cargo fijo" : `${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>
       {settings?.allow_manual_discount && <div className="grid gap-4 md:grid-cols-2"><NumberInput label="Descuento comisión" value={form.money_discount} onChange={v=>set("money_discount",v)} /><Input label="Motivo descuento" value={form.money_discount_reason} onChange={v=>set("money_discount_reason",v)} /></div>}
-      <div className="rounded-2xl bg-emerald-50 p-4 font-bold text-emerald-900">{form.money_amount >= Number(settings?.money_threshold || 1000) ? `${settings?.money_rate_at_or_above_threshold || 5}% sobre todo el monto.` : `${settings?.money_rate_below_threshold || 8}% sobre el monto.`}</div>
+      <div className="rounded-2xl bg-emerald-50 p-4 font-bold text-emerald-900">{form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? `Cargo fijo de ${Number(settings?.money_fixed_fee ?? 0).toFixed(2)} para montos menores de ${settings?.money_fixed_fee_below}.` : form.money_amount >= Number(settings?.money_threshold ?? 1000) ? `${settings?.money_rate_at_or_above_threshold ?? 5}% sobre todo el monto.` : `${settings?.money_rate_below_threshold ?? 8}% sobre el monto.`}</div>
     </Section>}
 
     <Section title="Fees, descuentos y total">
