@@ -9,6 +9,7 @@ export type DiscountCampaign = {
   code: string;
   discount_amount: number;
   authorized_limit: number;
+  open_to_all?: boolean;
   expires_at: string;
   is_active: boolean;
   created_at: string;
@@ -62,6 +63,7 @@ export async function updateDiscountCampaign(
   input: Partial<
     Pick<
       DiscountCampaign,
+      | "open_to_all"
       | "name"
       | "code"
       | "discount_amount"
