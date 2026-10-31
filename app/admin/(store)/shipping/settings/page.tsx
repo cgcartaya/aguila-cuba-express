@@ -27,6 +27,7 @@ import {
   X,
 } from "lucide-react";
 
+import { ALVAREZ_STORE_ID, isAlvarezShippingService } from "@/lib/shipping/alvarez-policy";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
 import { invalidatePublicConfig } from "@/lib/cache/invalidate-public-config";
@@ -72,7 +73,7 @@ export default function ShippingSettingsPage() {
     [accessStore, isSuperAdmin, selectedStore],
   );
 
-  const isAlvarez = activeStore?.id === "211dd255-7168-4045-a278-afc4164a3172";
+  const isAlvarez = activeStore?.id === ALVAREZ_STORE_ID;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingRateId, setDeletingRateId] = useState<string | null>(null);
@@ -1568,9 +1569,9 @@ export default function ShippingSettingsPage() {
 
             <div className="rounded-3xl border border-slate-200 bg-white p-4">
               <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-blue-700">
-                {isAlvarez ? "2. Modalidad de envío" : "2. Método de transporte"}
+                {isAlvarez ? "2. Modalidad y contenido" : "2. Método de transporte"}
               </p>
-              {isAlvarez && <div className="mt-3 grid gap-3 sm:grid-cols-2">{serviceTypes.filter(service => service.is_active && ["EXPRESS", "REGULAR"].includes(service.code.toUpperCase())).map(service => <button type="button" key={service.id} onClick={() => { setRateTransportMode("air"); setSelectedRateServiceIds([service.id]); }} className={`rounded-2xl border p-4 text-left font-bold ${selectedRateServiceIds.includes(service.id) ? "border-blue-500 bg-blue-600 text-white" : "border-slate-200 text-slate-800"}`}>{service.name}</button>)}</div>}
+              {isAlvarez && <div className="mt-3 grid gap-3 sm:grid-cols-2">{serviceTypes.filter(service => service.is_active && isAlvarezShippingService(service.code)).map(service => <button type="button" key={service.id} onClick={() => { setRateTransportMode("air"); setSelectedRateServiceIds([service.id]); }} className={`rounded-2xl border p-4 text-left font-bold ${selectedRateServiceIds.includes(service.id) ? "border-blue-500 bg-blue-600 text-white" : "border-slate-200 text-slate-800"}`}>{service.name}</button>)}</div>}
               <div className={`mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4 ${isAlvarez ? "hidden" : ""}`}>
                 {[
                   ["air", "Aéreo", "Entrega rápida por avión"],
@@ -1647,7 +1648,7 @@ export default function ShippingSettingsPage() {
               </div>
 
               <MultiSelectPanel
-                title={isAlvarez ? "Modalidades disponibles" : "Tipos de paquete"}
+                title={isAlvarez ? "Modalidades y categorías disponibles" : "Tipos de paquete"}
                 subtitle={`${selectedRateServiceIds.length} seleccionado(s)`}
                 items={serviceTypes
                   .filter(

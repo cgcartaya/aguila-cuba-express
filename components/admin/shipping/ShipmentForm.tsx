@@ -1,4 +1,5 @@
 "use client";
+import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
 import { weightRate } from "@/lib/shipping/weight-rate";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -170,6 +171,7 @@ export default function ShipmentForm(props: Props) {
       return setError("No seleccionaste un cliente del buscador arriba (el remitente quedó escrito a mano). Búscalo y dale clic al resultado, o marca la casilla de excepción abajo si de verdad no quieres vincularlo.");
     }
     try {
+      shipmentInvoiceTotals(form);
       await onSubmit(form);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar.");
@@ -279,9 +281,22 @@ export default function ShipmentForm(props: Props) {
       <div className="rounded-2xl bg-emerald-50 p-4 font-bold text-emerald-900">{form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? `Cargo fijo de ${Number(settings?.money_fixed_fee ?? 0).toFixed(2)} para montos menores de ${settings?.money_fixed_fee_below}.` : form.money_amount >= Number(settings?.money_threshold ?? 1000) ? `${settings?.money_rate_at_or_above_threshold ?? 5}% sobre todo el monto.` : `${settings?.money_rate_below_threshold ?? 8}% sobre el monto.`}</div>
     </Section>}
 
-    <Section title="Fees, descuentos y total">
+    <Section title="Rebaja y total de la factura">
       <div className="grid gap-3 md:grid-cols-2">{extraFees.filter(x=>x.is_active).map(fee=><label key={fee.id} className="flex items-center justify-between rounded-2xl border p-4"><span className="font-bold">{fee.name}</span><input type="checkbox" checked={form.selected_fees.some(x=>x.fee_id===fee.id)} onChange={()=>toggleFee(fee)} /></label>)}</div>
-      <div className="grid gap-4 md:grid-cols-3"><Input label="Fees" value={form.extra_fees_total.toFixed(2)} readOnly /><NumberInput label="Descuento general" value={form.discount_amount} onChange={v=>set("discount_amount",v)} /><Input label="Motivo descuento" value={form.discount_reason} onChange={v=>set("discount_reason",v)} /><Input label="Total" value={form.service_price.toFixed(2)} readOnly /><NumberInput label="Pagado" value={form.amount_paid} onChange={v=>set("amount_paid",v)} /><Input label="Saldo" value={form.balance_due.toFixed(2)} readOnly /></div>
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <NumberInput label="Rebaja de la factura (USD)" value={form.discount_amount} onChange={v=>set("discount_amount",v)} />
+          <Input label="Motivo de la rebaja (opcional)" value={form.discount_reason} onChange={v=>set("discount_reason",v)} />
+        </div>
+        <p className="mt-3 text-sm text-emerald-900">Escribe el importe de la oferta acordada con el cliente. Se resta una sola vez del total y aparece en la factura. Deja 0 si no hay rebaja.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total).toFixed(2)} readOnly />
+        <Input label="Cargos adicionales (USD)" value={form.extra_fees_total.toFixed(2)} readOnly />
+        <Input label="Total final (USD)" value={form.service_price.toFixed(2)} readOnly />
+        <NumberInput label="Pagado (USD)" value={form.amount_paid} onChange={v=>set("amount_paid",v)} />
+        <Input label="Saldo (USD)" value={form.balance_due.toFixed(2)} readOnly />
+      </div>
     </Section>
 
     {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}

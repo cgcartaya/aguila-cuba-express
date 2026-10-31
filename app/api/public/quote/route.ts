@@ -1,4 +1,4 @@
-import { ALVAREZ_STORE_ID, ALVAREZ_DEPARTURES, alvarezShippingPolicy } from "@/lib/shipping/alvarez-policy";
+import { ALVAREZ_STORE_ID, ALVAREZ_DEPARTURES, alvarezShippingPolicy, alvarezContentCategory } from "@/lib/shipping/alvarez-policy";
 import { weightRate } from "@/lib/shipping/weight-rate";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       origin_label: settings.default_origin_label,
       service_type_id: serviceTypeId,
       transport_mode: transportMode,
-      item_category: clean(body.item_category) || service.code || "service",
+      item_category: isAlvarez ? alvarezContentCategory(service.code) : clean(body.item_category) || service.code || "service",
       country_id: countryId,
       province_id: provinceId,
       municipality_id: municipalityId,
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
     const formattedTotal = new Intl.NumberFormat("en-US", { style: "currency", currency: quote.currency }).format(quote.total_amount);
     const message = encodeURIComponent(
       `Hola, deseo continuar con esta cotización de ${store.name}.\n` +
-      `Código: ${quote.public_code}\nCategoría: ${clean(body.item_category) || service.name}\n` +
+      `Código: ${quote.public_code}\nCategoría: ${isAlvarez ? service.name : clean(body.item_category) || service.name}\n` +
       `Destino: ${destinationLabel || "Por confirmar"}\nPeso real: ${weight} lb\n` +
       `Peso facturable: ${billableWeight} lb\nMétodo: ${transportMode}\n` +
       `${airportFeeAmount ? "Fee aeroportuario: $50.00\n" : ""}` +

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   Check,
@@ -163,61 +163,34 @@ function Hero() {
 }
 
 const shippingOffers = [
-  { name: "Envío Express", image: "/alvarez/shipping-express.webp", details: "Menos de 20 lb: $6 USD/lb. Desde 20 lb: $4 USD/lb para todo el peso. Mínimo: 5 lb para La Habana y 10 lb para demás provincias. La Habana: 24–48 horas. Demás provincias: 5–6 días. Dos salidas por semana; plazos desde la salida. Recogida gratis." },
-  { name: "Envío Regular", image: "/alvarez/shipping-regular.webp", details: "$3 USD/lb. Mínimo: 10 lb para todas las provincias. Entrega en 7–12 días desde la salida, incluida La Habana. Dos salidas por semana. Recogida gratis." },
+  { name: "Envío Express", prices: [["Comida, medicinas y aseo", "$5"], ["Misceláneas", "$6"]], minimum: "Mínimo: 5 lb para La Habana y 10 lb para demás provincias.", delivery: "La Habana: 24–48 horas. Demás provincias: 5–6 días." },
+  { name: "Envío Regular", prices: [["Cualquier contenido", "$3"]], minimum: "Mínimo: 10 lb para todas las provincias.", delivery: "Toda Cuba: 7–12 días." },
 ];
 
 function ShippingOptions() {
-  const [selected, setSelected] = useState<(typeof shippingOffers)[number] | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    if (!selected) return;
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    dialog.showModal();
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      dialog.close();
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [selected]);
-
-  function requestInfo() {
-    if (!selected) return;
-    const photoUrl = new URL(selected.image, window.location.origin).href;
-    const message = `Hola, quisiera información sobre esta oferta de Álvarez Travel: ${selected.name}.\n${selected.details}\nPostal de la oferta: ${photoUrl}`;
-    window.open(whatsappHref(message), "_blank", "noopener,noreferrer");
-  }
-
   return (
     <section className="bg-[#000415] px-5 py-14 sm:px-7 lg:px-10">
-      <div className="mx-auto max-w-[1320px]">
-        <div className="mb-8 flex justify-center">
-          <a href="#cotizar" className="inline-flex min-h-14 items-center justify-center gap-3 rounded-xl bg-[#CA0C28] px-8 text-lg font-black transition hover:bg-[#a80920] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-            Cotizar mi envío <ArrowRight size={21} />
-          </a>
+      <div className="mx-auto max-w-[1100px]">
+        <div className="mb-8 text-center">
+          <p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Tarifas de envío</p>
+          <h2 className="mt-3 text-3xl font-black uppercase">Elige cómo enviar a Cuba</h2>
+          <p className="mt-3 text-[#B5BFCD]">{ALVAREZ_DEPARTURES}</p>
         </div>
-        <div className="mx-auto grid max-w-[1100px] gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2">
           {shippingOffers.map((offer) => (
-            <button key={offer.name} type="button" onClick={() => setSelected(offer)} aria-label={`Ampliar oferta: ${offer.name}`} className="rounded-2xl transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">
-              <Image src={offer.image} alt={`${offer.name}. ${offer.details}`} width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 40px), 538px" className="h-auto w-full rounded-2xl" />
-            </button>
+            <article key={offer.name} className="flex flex-col rounded-3xl border border-white/15 bg-[#091D3D] p-6 sm:p-8">
+              <Plane size={32} className="text-[#CA0C28]" />
+              <h3 className="mt-4 text-2xl font-black uppercase">{offer.name}</h3>
+              <div className="my-6 space-y-3">{offer.prices.map(([label, price]) => <div key={label} className="flex items-center justify-between gap-3 rounded-2xl bg-white/5 p-4"><span className="font-bold">{label}</span><span className="whitespace-nowrap"><strong className="text-3xl">{price}</strong><span className="text-sm text-[#B5BFCD]"> USD/lb</span></span></div>)}</div>
+              <p className="font-bold">{offer.minimum}</p>
+              <p className="mt-3 text-[#B5BFCD]">{offer.delivery} Desde la salida del envío.</p>
+              <p className="mb-6 mt-3 font-bold text-emerald-300">Recogida gratis</p>
+              <a href="#cotizar" className="mt-auto inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-5 font-black">Cotizar mi envío <ArrowRight size={18} /></a>
+              <a href={whatsappHref(`Hola, quisiera información sobre ${offer.name}. ${offer.prices.map(([label, price]) => `${label}: ${price} USD/lb`).join(". ")}. ${offer.minimum} ${offer.delivery} Desde la salida. Recogida gratis.`)} target="_blank" rel="noreferrer" className="mt-3 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/15 px-5 font-bold"><MessageCircle size={18} /> Pedir información</a>
+            </article>
           ))}
         </div>
       </div>
-      <dialog ref={dialogRef} onCancel={() => setSelected(null)} onClose={() => setSelected(null)} onClick={(event) => { if (event.target === event.currentTarget) setSelected(null); }} aria-labelledby="alvarez-offer-title" className="fixed inset-0 m-auto max-h-[95dvh] w-[calc(100%-24px)] max-w-3xl overflow-y-auto rounded-2xl border border-white/15 bg-[#091D3D] p-0 text-white shadow-2xl backdrop:bg-black/85">
-        {selected && <>
-          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-[#091D3D] px-4 py-3">
-            <h2 id="alvarez-offer-title" className="text-lg font-bold">{selected.name}</h2>
-            <button autoFocus type="button" onClick={() => setSelected(null)} aria-label="Cerrar oferta" className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-white/20"><X size={24} /></button>
-          </div>
-          <Image src={selected.image} alt={`${selected.name}. ${selected.details}`} width={1024} height={1536} sizes="(max-width: 767px) calc(100vw - 24px), 768px" className="h-auto w-full" />
-          <div className="sticky bottom-0 border-t border-white/10 bg-[#091D3D] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-            <button type="button" onClick={requestInfo} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-4 font-bold hover:bg-[#a80920]"><MessageCircle size={21} /> Pedir información sobre esta oferta</button>
-          </div>
-        </>}
-      </dialog>
     </section>
   );
 }
