@@ -1,3 +1,4 @@
+import { ALVAREZ_STORE_ID, ALVAREZ_DEPARTURES, alvarezShippingPolicy } from "@/lib/shipping/alvarez-policy";
 import { weightRate } from "@/lib/shipping/weight-rate";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -83,6 +84,13 @@ export async function POST(request: NextRequest) {
     if (municipalityId && (!municipalityResult.data || municipalityResult.data.province_id !== provinceId)) return NextResponse.json({ error: "El municipio no pertenece a la provincia seleccionada." }, { status: 422 });
     if (locationId && (!locationResult.data || locationResult.data.municipality_id !== municipalityId)) return NextResponse.json({ error: "El lugar no pertenece al municipio seleccionado." }, { status: 422 });
 
+    const isAlvarez = store.id === ALVAREZ_STORE_ID;
+    const alvarezPolicy = alvarezShippingPolicy(service.code, provinceResult.data?.name);
+    if (isAlvarez && !provinceId) return NextResponse.json({ error: "Selecciona la provincia de destino." }, { status: 422 });
+    if (isAlvarez && weight < alvarezPolicy.minimumWeight) {
+      return NextResponse.json({ error: `El peso mínimo para este envío es de ${alvarezPolicy.minimumWeight} lb.` }, { status: 422 });
+    }
+
     const { data: rates, error: ratesError } = await supabaseAdmin
       .from("shipping_rates")
       .select("*")
@@ -114,20 +122,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No existe una tarifa para este servicio, método y destino. Contacta a la agencia." }, { status: 422 });
     }
 
-    const billableWeight = Math.max(weight, Number(rate.minimum_weight_lb || 0));
-    const shippingAmount = Math.max(
+    const billableWeight = isAlvarez ? weight : Math.max(weight, Number(rate.minimum_weight_lb || 0));
+    const shippingAmount = isAlvarez ? weight * weightRate(rate, weight) : Math.max(
       billableWeight * weightRate(rate, weight) + Number(rate.fixed_fee || 0),
       Number(rate.minimum_charge || 0)
     );
-    const pickupAmount = body.pickup_requested && ["paid", "optional"].includes(settings.pickup_mode)
+    const pickupAmount = !isAlvarez && body.pickup_requested && ["paid", "optional"].includes(settings.pickup_mode)
       ? Number(settings.pickup_fee || 20)
       : 0;
     const categoryValue = `${service.code || ""} ${service.name || ""} ${clean(body.item_category)}`.toLowerCase();
     const isEnergyStation = /energ|power|station|bater/.test(categoryValue);
-    const airportFeeAmount = isEnergyStation && ["air", "express"].includes(transportMode) ? 50 : 0;
+    const airportFeeAmount = !isAlvarez && isEnergyStation && ["air", "express"].includes(transportMode) ? 50 : 0;
     let insuranceAmount = 0;
-    if (body.insurance_requested && settings.insurance_mode === "optional_fixed") insuranceAmount = Number(settings.insurance_value || 0);
-    if (body.insurance_requested && settings.insurance_mode === "optional_percentage") insuranceAmount = shippingAmount * Number(settings.insurance_value || 0) / 100;
+    if (!isAlvarez && body.insurance_requested && settings.insurance_mode === "optional_fixed") insuranceAmount = Number(settings.insurance_value || 0);
+    if (!isAlvarez && body.insurance_requested && settings.insurance_mode === "optional_percentage") insuranceAmount = shippingAmount * Number(settings.insurance_value || 0) / 100;
     const totalAmount = shippingAmount + airportFeeAmount + pickupAmount + insuranceAmount;
 
     const destinationLabel = [countryResult.data?.name, provinceResult.data?.name, municipalityResult.data?.name, locationResult.data?.name].filter(Boolean).join(" / ");
@@ -149,14 +157,14 @@ export async function POST(request: NextRequest) {
       quantity: Math.max(1, Number(body.quantity) || 1),
       pickup_requested: Boolean(body.pickup_requested),
       pickup_address: clean(body.pickup_address) || null,
-      insurance_requested: Boolean(body.insurance_requested),
+      insurance_requested: !isAlvarez && Boolean(body.insurance_requested),
       base_amount: shippingAmount + airportFeeAmount,
       pickup_amount: pickupAmount,
       insurance_amount: insuranceAmount,
       total_amount: totalAmount,
       currency: settings.currency || "USD",
-      estimated_days_min: rate.estimated_days_min,
-      estimated_days_max: rate.estimated_days_max,
+      estimated_days_min: isAlvarez ? alvarezPolicy.minDays : rate.estimated_days_min,
+      estimated_days_max: isAlvarez ? alvarezPolicy.maxDays : rate.estimated_days_max,
       rate_rule_id: null,
       shipping_rate_id: rate.id,
       notes: [clean(body.notes), airportFeeAmount ? "Fee aeroportuario: $50.00" : ""].filter(Boolean).join(" | ") || null,
@@ -182,15 +190,17 @@ export async function POST(request: NextRequest) {
       `Peso facturable: ${billableWeight} lb\nMétodo: ${transportMode}\n` +
       `${airportFeeAmount ? "Fee aeroportuario: $50.00\n" : ""}` +
       `${pickupAmount ? `Recogida: $${pickupAmount.toFixed(2)}\n` : ""}` +
-      `Total estimado: ${formattedTotal}`
+      `Total estimado: ${formattedTotal}` +
+      (isAlvarez ? `\nRecogida gratis. Entrega: ${alvarezPolicy.deliveryLabel} desde la salida. ${ALVAREZ_DEPARTURES}` : "")
     );
 
     return NextResponse.json({
       ...quote,
       shipping_amount: shippingAmount,
+      delivery_label: isAlvarez ? `${alvarezPolicy.deliveryLabel} desde la salida` : null,
       airport_fee_amount: airportFeeAmount,
       billable_weight_lb: billableWeight,
-      applied_rate: Number(rate.rate_per_lb),
+      applied_rate: weightRate(rate, weight),
       billing_mode: "per_lb",
       rule_name: `${service.name} · ${transportMode}`,
       destination_label: destinationLabel,

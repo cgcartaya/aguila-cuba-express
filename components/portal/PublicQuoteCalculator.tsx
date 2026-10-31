@@ -17,6 +17,8 @@ import {
   Weight,
 } from "lucide-react";
 
+import { ALVAREZ_STORE_ID, ALVAREZ_DEPARTURES, alvarezShippingPolicy } from "@/lib/shipping/alvarez-policy";
+
 type Option = { id: string; name: string };
 type Service = Option & { code?: string; billing_mode?: string };
 type Readiness = {
@@ -53,6 +55,7 @@ type PortalConfig = {
 };
 
 type QuoteResult = {
+  delivery_label?: string | null;
   public_code: string;
   total_amount: number;
   base_amount: number;
@@ -149,7 +152,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           ...current,
           service_type_id: json.services?.[0]?.id || "",
           country_id: country?.id || json.countries?.[0]?.id || "",
-          transport_mode: json.store?.id === "211dd255-7168-4045-a278-afc4164a3172" ? "air" : transport,
+          transport_mode: json.store?.id === ALVAREZ_STORE_ID ? "air" : transport,
           weight_lb: requestedWeight && Number(requestedWeight) > 0 ? requestedWeight : current.weight_lb,
           item_category: "miscelaneas",
         }));
@@ -195,6 +198,21 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
     setForm((current) => ({ ...current, [key]: value }));
   }
 
+  const isAlvarez = config?.store.id === ALVAREZ_STORE_ID;
+  const alvarezPolicy = alvarezShippingPolicy(
+    config?.services.find(item => item.id === form.service_type_id)?.code,
+    config?.provinces.find(item => item.id === form.province_id)?.name,
+  );
+  function validateAlvarezDestination() {
+    if (!isAlvarez) return true;
+    if (!form.province_id) { setError("Selecciona la provincia de destino."); return false; }
+    if (!Number.isFinite(Number(form.weight_lb)) || Number(form.weight_lb) < alvarezPolicy.minimumWeight) {
+      setError(`El peso mínimo para este envío es de ${alvarezPolicy.minimumWeight} lb.`);
+      return false;
+    }
+    return true;
+  }
+
   function nextStep() {
     if (step === 1 && (!form.service_type_id || !form.transport_mode)) {
       setError("Selecciona la categoría y la modalidad de envío.");
@@ -204,12 +222,14 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
       setError("Selecciona el país e indica un peso válido.");
       return;
     }
+    if (step === 2 && !validateAlvarezDestination()) return;
     setError("");
     setStep((current) => Math.min(3, current + 1));
   }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (!validateAlvarezDestination()) return;
     if (!form.customer_name.trim() || !form.customer_phone.trim()) {
       setError("Completa tu nombre y teléfono.");
       return;
@@ -250,7 +270,6 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
     return <Unavailable title="La agencia está terminando de configurar el cotizador" text={`Todavía faltan: ${missing}. Puedes contactar a la agencia para recibir una cotización manual.`} />;
   }
 
-  const isAlvarez = config.store.id === "211dd255-7168-4045-a278-afc4164a3172";
   const primary = config.store.primary_color || "#071d43";
   const selectedServiceObject = config.services.find((item) => item.id === form.service_type_id);
   const selectedCategory = (form.item_category || normalizeCategory(selectedServiceObject)) as CategoryKey;
@@ -302,7 +321,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
                 })}
               </div>
             </div>}
-            {isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.services.filter(service => ["EXPRESS", "REGULAR"].includes((service.code || "").toUpperCase())).map((service) => <button key={service.id} type="button" onClick={() => { setField("service_type_id", service.id); setField("transport_mode", "air"); }} className={`rounded-2xl border p-4 text-left ${form.service_type_id === service.id ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200"}`}><Plane className="text-blue-700" /><b className="mt-3 block text-slate-900">{service.name}</b><small className="mt-1 block text-slate-500">{service.code === "EXPRESS" ? "La Habana: 24 horas. Demás provincias: 5–6 días." : "Toda Cuba: 7–12 días."}</small></button>)}</div></div>}
+            {isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.services.filter(service => ["EXPRESS", "REGULAR"].includes((service.code || "").toUpperCase())).map((service) => <button key={service.id} type="button" onClick={() => { setField("service_type_id", service.id); setField("transport_mode", "air"); }} className={`rounded-2xl border p-4 text-left ${form.service_type_id === service.id ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200"}`}><Plane className="text-blue-700" /><b className="mt-3 block text-slate-900">{service.name}</b><small className="mt-1 block text-slate-500">{(service.code || "").toUpperCase() === "EXPRESS" ? "La Habana: 24–48 horas (mín. 5 lb). Demás provincias: 5–6 días (mín. 10 lb). Desde la salida." : "Toda Cuba: 7–12 días desde la salida. Mínimo: 10 lb."}</small></button>)}</div></div>}
             {!isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div>{airportFeeApplies && <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Esta modalidad incluye un fee aeroportuario adicional de $50 para estaciones de energía.</p>}</div>}
           </div>}
 
@@ -310,13 +329,14 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
             <StepTitle icon={<MapPin />} title="¿A dónde va el envío?" text="El precio puede cambiar según provincia, municipio o lugar." />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="País"><select value={form.country_id} onChange={(event) => { setField("country_id", event.target.value); setField("province_id", ""); setField("municipality_id", ""); setField("location_id", ""); }} required><option value="">Selecciona un país</option>{config.countries.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-              <Field label="Provincia"><select value={form.province_id} onChange={(event) => { setField("province_id", event.target.value); setField("municipality_id", ""); setField("location_id", ""); }}><option value="">Cualquier provincia</option>{provinces.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
+              <Field label="Provincia"><select value={form.province_id} onChange={(event) => { setField("province_id", event.target.value); setField("municipality_id", ""); setField("location_id", ""); }}><option value="">{isAlvarez ? "Selecciona una provincia" : "Cualquier provincia"}</option>{provinces.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
               <Field label="Municipio"><select value={form.municipality_id} onChange={(event) => { setField("municipality_id", event.target.value); setField("location_id", ""); }}><option value="">Cualquier municipio</option>{municipalities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
               <Field label="Lugar"><select value={form.location_id} onChange={(event) => setField("location_id", event.target.value)}><option value="">Cualquier lugar</option>{locations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></Field>
-              <Field label="Peso estimado (lb)"><input type="number" min="0.1" step="0.1" value={form.weight_lb} onChange={(event) => setField("weight_lb", event.target.value)} required /></Field>
+              <Field label="Peso estimado (lb)"><input type="number" min={isAlvarez ? alvarezPolicy.minimumWeight : 0.1} step="0.1" value={form.weight_lb} onChange={(event) => setField("weight_lb", event.target.value)} required /></Field>
               <Field label="Cantidad de bultos"><input type="number" min="1" step="1" value={form.quantity} onChange={(event) => setField("quantity", event.target.value)} required /></Field>
             </div>
-            {config.settings.pickup_mode !== "disabled" && <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${form.pickup_requested ? "border-blue-400 bg-blue-50" : "border-slate-200"}`}><input type="checkbox" checked={form.pickup_requested} onChange={(event) => setField("pickup_requested", event.target.checked)} className="mt-1" /><span><b className="text-slate-900">Solicitar recogida a domicilio</b><small className="block text-slate-500">{config.settings.pickup_mode === "free" ? "Recogida gratuita" : `Cargo fijo: $${pickupFee.toFixed(2)} USD`}</small></span></label>}
+            {isAlvarez && <p className="text-sm font-bold text-slate-600">Mínimo para el destino seleccionado: {alvarezPolicy.minimumWeight} lb. Recogida gratis. {ALVAREZ_DEPARTURES}</p>}
+            {(isAlvarez || config.settings.pickup_mode !== "disabled") && <label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 ${form.pickup_requested ? "border-blue-400 bg-blue-50" : "border-slate-200"}`}><input type="checkbox" checked={form.pickup_requested} onChange={(event) => setField("pickup_requested", event.target.checked)} className="mt-1" /><span><b className="text-slate-900">Solicitar recogida a domicilio</b><small className="block text-slate-500">{(isAlvarez || config.settings.pickup_mode === "free") ? "Recogida gratuita" : `Cargo fijo: $${pickupFee.toFixed(2)} USD`}</small></span></label>}
             {form.pickup_requested && <Field label="Dirección de recogida"><input value={form.pickup_address} onChange={(event) => setField("pickup_address", event.target.value)} required /></Field>}
           </div>}
 
@@ -340,13 +360,13 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           <Package size={42} />
           <h2 className="mt-5 text-2xl font-black">Un estimado claro y profesional</h2>
           <p className="mt-2 text-white/70">Completa los pasos y recibirás un resumen listo para compartir.</p>
-          <div className="mt-6 grid gap-3">{isAlvarez ? <><Info icon={<Plane />} text="Express: La Habana 24 horas; demás provincias 5–6 días" /><Info icon={<Package />} text="Regular: 7–12 días en toda Cuba" /></> : <><Info icon={<Plane />} text="Tarifas aéreas configurables" /><Info icon={<Ship />} text="Tarifas marítimas configurables" /></>}<Info icon={<Weight />} text="Peso mínimo y cargos incluidos" /><Info icon={<Truck />} text="Recogida opcional" /></div>
+          <div className="mt-6 grid gap-3">{isAlvarez ? <><Info icon={<Plane />} text="Express: La Habana 24–48 horas; demás provincias 5–6 días" /><Info icon={<Package />} text="Regular: 7–12 días en toda Cuba" /><Info icon={<Plane />} text={ALVAREZ_DEPARTURES} /></> : <><Info icon={<Plane />} text="Tarifas aéreas configurables" /><Info icon={<Ship />} text="Tarifas marítimas configurables" /></>}<Info icon={<Weight />} text="Peso mínimo y cargos incluidos" /><Info icon={<Truck />} text={isAlvarez ? "Recogida gratis. Solo pagas peso × tarifa por libra." : "Recogida opcional"} /></div>
         </> : <>
           <CheckCircle2 size={46} className="text-emerald-300" />
           <p className="mt-4 text-sm font-black uppercase tracking-wider text-white/60">{result.public_code}</p>
           <h2 className="mt-2 text-3xl font-black">Cotización lista</h2>
           <div className="mt-6 space-y-3 rounded-2xl bg-white/10 p-5"><ResultRow label="Envío" value={result.shipping_amount ?? result.base_amount} />{Boolean(result.airport_fee_amount) && <ResultRow label="Fee aeroportuario" value={result.airport_fee_amount || 0} />}<ResultRow label="Recogida" value={result.pickup_amount} /><ResultRow label="Seguro" value={result.insurance_amount} />{result.billable_weight_lb && <div className="flex justify-between text-sm text-white/70"><span>Peso facturable</span><b>{result.billable_weight_lb} lb</b></div>}<div className="border-t border-white/15 pt-4"><div className="flex items-end justify-between gap-3"><b>Total estimado</b><strong className="text-3xl">{new Intl.NumberFormat("en-US", { style: "currency", currency: result.currency }).format(result.total_amount)}</strong></div></div></div>
-          {(result.estimated_days_min || result.estimated_days_max) && <p className="mt-4 rounded-xl bg-white/10 p-3 text-sm font-semibold">Entrega estimada: {result.estimated_days_min ?? "?"}–{result.estimated_days_max ?? "?"} días</p>}
+          {(result.estimated_days_min || result.estimated_days_max) && <p className="mt-4 rounded-xl bg-white/10 p-3 text-sm font-semibold">Entrega estimada: {result.delivery_label || `${result.estimated_days_min ?? "?"}–${result.estimated_days_max ?? "?"} días`}</p>}
           {result.whatsapp_url && <a href={result.whatsapp_url} target="_blank" rel="noreferrer" className="mt-5 flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 p-4 font-black"><MessageCircle /> Continuar por WhatsApp</a>}
           <button type="button" onClick={() => { setResult(null); setStep(1); }} className="mt-3 w-full rounded-2xl border border-white/20 p-3 font-black text-white">Crear otra cotización</button>
           <p className="mt-5 text-sm text-white/60">{config.settings.disclaimer}</p>
