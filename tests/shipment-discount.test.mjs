@@ -10,9 +10,10 @@ function load(path, dependencies = {}) {
   vm.runInNewContext(source, { module: compiled, exports: compiled.exports, require: name => dependencies[name], crypto: webcrypto });
   return compiled.exports;
 }
+const packageModule = load('lib/shipping/package-label.ts');
 const totalsModule = load('lib/shipping/invoice-totals.ts');
 const calculate = totalsModule.shipmentInvoiceTotals;
-const input = { recipient_name: 'Prueba', recipient_address: '', recipient_phone: '5550100', sender_name: 'Prueba', sender_phone: '5550101', notes: '', contains_package: true, weight_subtotal: 60, contains_money: false, money_total: 0, extra_fees_total: 0, discount_amount: 10, discount_reason: 'Oferta al cliente', amount_paid: 20, selected_fees: [] };
+const input = { recipient_name: 'Prueba', recipient_address: '', recipient_phone: '5550100', sender_name: 'Prueba', sender_phone: '5550101', notes: '', contains_package: true, weight_subtotal: 60, contains_money: false, money_total: 0, extra_fees_total: 0, discount_amount: 10, discount_reason: 'Oferta al cliente', package_contents: [{ description: 'Paquetes de café', quantity: 4 }, { description: 'Jabones', quantity: 2 }], amount_paid: 20, selected_fees: [] };
 test('the rebate reduces the final bill once, including mixed shipments and fees', () => {
   const result = calculate({ ...input, contains_money: true, money_total: 30, extra_fees_total: 5 });
   assert.equal(result.subtotal, 95);
@@ -54,11 +55,13 @@ function database() {
 for (const action of ['createShipment', 'updateShipment']) {
   test(`${action} persists the rebate, total, balance and invoice line`, async () => {
     const db = database();
-    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule });
+    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule });
     const result = action === 'createShipment' ? await service[action]('agency', input) : await service[action]('agency', 'shipment', input);
     assert.equal(result.error, null);
     const saved = db.writes.find(row => row.table === 'shipments').update;
     assert.equal(saved.discount_amount, 10);
+    assert.equal(saved.package_contents[0].quantity, 4);
+    assert.equal(saved.package_contents[1].description, 'Jabones');
     assert.equal(saved.discount_reason, 'Oferta al cliente');
     assert.equal(saved.service_price, 50);
     assert.equal(saved.balance_due, 30);
@@ -68,7 +71,7 @@ for (const action of ['createShipment', 'updateShipment']) {
   });
   test(`${action} rejects excessive rebates before writing`, async () => {
     const db = database();
-    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule });
+    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule });
     const bad = { ...input, discount_amount: 61 };
     await assert.rejects(action === 'createShipment' ? service[action]('agency', bad) : service[action]('agency', 'shipment', bad), /rebaja/);
     assert.equal(db.writes.length, 0);

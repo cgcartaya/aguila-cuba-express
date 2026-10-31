@@ -1,3 +1,5 @@
+import type { PackageContentItem } from "@/lib/shipping/package-label";
+
 export const SHIPPING_STATUSES = [
   "received_miami",
   "preparing",
@@ -84,6 +86,8 @@ export function getShippingTripStatusLabel(status: ShippingTripStatus | string) 
 
 
 export type Shipment = {
+  package_number?: number | string | null;
+  package_contents?: PackageContentItem[];
   id: string;
   store_id: string;
   trip_id: string | null;
@@ -267,6 +271,7 @@ export type ShippingSettings = {
 };
 
 export type ShipmentInput = {
+  package_contents?: PackageContentItem[];
   trip_id?: string | null;
   customer_id: string | null;
   recipient_id: string | null;

@@ -1,5 +1,7 @@
 "use client";
 
+import { packageNumber } from "@/lib/shipping/package-label";
+import PackageContentsList from "@/components/shipping/PackageContentsList";
 import { use, useEffect, useState } from "react";
 import {
   CalendarDays,
@@ -232,7 +234,7 @@ export default function PublicInvoicePage({
                   </p>
 
                   <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
-                    Aguila Express USA
+                    {invoice.store?.name || "Agencia de envíos"}
                   </h2>
 
                   <p className="mt-1 text-sm font-medium text-blue-100">
@@ -261,7 +263,7 @@ export default function PublicInvoicePage({
                 <Summary
                   icon={<Hash size={17} />}
                   label="Rastreo"
-                  value={shipment.tracking_code}
+                  value={shipment.tracking_code || "—"}
                 />
 
                 <Summary
@@ -405,6 +407,8 @@ export default function PublicInvoicePage({
                 </div>
               </section>
 
+              {shipment.contains_package && <><p className="mt-5 text-sm font-bold text-slate-700">N.º de paquete: {packageNumber(shipment.package_number)}</p><PackageContentsList items={shipment.package_contents} /></>}
+
               <section className="invoice-avoid-break mt-5 grid items-start gap-5 md:grid-cols-[1fr_330px]">
                 <div className="rounded-3xl border border-slate-200 p-5">
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
@@ -471,7 +475,7 @@ export default function PublicInvoicePage({
                 <div className="flex flex-col justify-between gap-3 text-xs font-medium text-slate-500 sm:flex-row">
                   <div>
                     <p className="font-extrabold text-slate-950">
-                      Gracias por confiar en Aguila Express USA.
+                      Gracias por confiar en {invoice.store?.name || "nuestra agencia"}.
                     </p>
 
                     <p className="mt-1">
