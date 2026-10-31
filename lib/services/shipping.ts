@@ -1,3 +1,4 @@
+import { normalizePackageContents } from "@/lib/shipping/package-label";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
 import { supabase } from "@/lib/supabase";
 import type { Shipment, ShipmentInput, ShippingDriver } from "@/lib/shipping/types";
@@ -215,6 +216,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
   const data: Record<string, unknown> = {
     store_id: storeId,
+    ...(input.package_contents !== undefined || !input.contains_package ? { package_contents: input.contains_package ? normalizePackageContents(input.package_contents) : [] } : {}),
     customer_id: input.customer_id,
     recipient_id: input.recipient_id,
     location: input.location,

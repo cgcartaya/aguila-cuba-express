@@ -1,5 +1,7 @@
 "use client";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
+import PackageContentsEditor from "@/components/admin/shipping/PackageContentsEditor";
+import { normalizePackageContents } from "@/lib/shipping/package-label";
 import { weightRate } from "@/lib/shipping/weight-rate";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -38,6 +40,7 @@ export default function ShipmentForm(props: Props) {
   const errorRef = useRef<HTMLDivElement>(null);
   const [confirmNoCustomer, setConfirmNoCustomer] = useState(false);
   const [form, setForm] = useState<ShipmentInput>({
+    package_contents: shipment?.package_contents || [],
     customer_id: shipment?.customer_id || null,
     recipient_id: shipment?.recipient_id || null,
     recipient_identity_card: shipment?.recipient_identity_card || "",
@@ -172,7 +175,8 @@ export default function ShipmentForm(props: Props) {
     }
     try {
       shipmentInvoiceTotals(form);
-      await onSubmit(form);
+      const contents = form.contains_package ? normalizePackageContents(form.package_contents) : [];
+      await onSubmit({ ...form, package_contents: contents });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar.");
       requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
@@ -274,6 +278,8 @@ export default function ShipmentForm(props: Props) {
         </div>
       )}
     </Section>}
+
+    {form.contains_package && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
 
     {form.contains_money && <Section title="Cálculo del dinero">
       <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? "Cargo fijo" : `${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>

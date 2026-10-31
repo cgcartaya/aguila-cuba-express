@@ -1,5 +1,7 @@
 "use client";
 
+import { packageNumber } from "@/lib/shipping/package-label";
+import PackageContentsList from "@/components/shipping/PackageContentsList";
 import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -374,6 +376,8 @@ export default function ShippingInvoicePage({
                   ))}
                 </div>
               </section>
+
+              {shipment.contains_package && <><p className="mt-5 text-sm font-bold text-slate-700">N.º de paquete: {packageNumber(shipment.package_number)}</p><PackageContentsList items={shipment.package_contents} /></>}
 
               <section className="invoice-avoid-break mt-5 grid items-start gap-5 md:grid-cols-[1fr_330px]">
                 <div className="rounded-3xl border border-slate-200 p-5">

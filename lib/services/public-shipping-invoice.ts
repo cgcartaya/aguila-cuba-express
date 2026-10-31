@@ -1,8 +1,10 @@
+import type { Shipment, ShipmentItem } from "@/lib/shipping/types";
 import { supabase } from "@/lib/supabase";
 
 export type PublicShippingInvoice = {
-  shipment: Record<string, any>;
-  items: Array<Record<string, any>>;
+  store?: { name?: string; logo_url?: string | null };
+  shipment: Shipment;
+  items: ShipmentItem[];
 };
 
 export async function getPublicShippingInvoice(

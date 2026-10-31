@@ -7,6 +7,7 @@ import {
   FileDown,
   MessageCircle,
   Printer,
+  Tag,
   ShoppingBag,
   Share2,
   X,
@@ -175,6 +176,8 @@ export default function InvoiceActions({
           <Printer size={17} />
           {compact ? "Factura" : "Ver factura"}
         </a>
+
+        {shipment.contains_package && <a href={`/admin/shipping/${encodeURIComponent(shipment.id)}/label`} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 hover:bg-blue-50"><Tag size={17} /> Etiqueta / Contenido</a>}
 
         <button
           type="button"
