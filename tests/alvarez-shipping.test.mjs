@@ -19,7 +19,7 @@ function setup({ storeId = policy.ALVAREZ_STORE_ID, code = 'EXPRESS', province =
     shipping_service_types: { id: 'service', name: code, code },
     shipping_countries: { id: 'country', name: 'Cuba' },
     shipping_provinces: { id: 'province', name: province, country_id: 'country' },
-    shipping_rates: [{ id: 'rate', scope_type: 'country', country_id: 'country', rate_per_lb: code === 'EXPRESS' ? 6 : 3, weight_threshold_lb: code === 'EXPRESS' ? 20 : null, rate_at_or_above_threshold: 4, minimum_weight_lb: 15, fixed_fee: 25, minimum_charge: 200, estimated_days_min: 9, estimated_days_max: 15 }],
+    shipping_rates: [{ id: 'rate', scope_type: 'country', country_id: 'country', rate_per_lb: code === 'EXPRESS_ESSENTIALS' ? 5 : code === 'EXPRESS' ? 6 : 3, weight_threshold_lb: null, rate_at_or_above_threshold: null, minimum_weight_lb: 15, fixed_fee: 25, minimum_charge: 200, estimated_days_min: 9, estimated_days_max: 15 }],
   };
   const admin = { from(table) {
     const builder = {
@@ -41,6 +41,7 @@ function setup({ storeId = policy.ALVAREZ_STORE_ID, code = 'EXPRESS', province =
 }
 for (const [code, province, minimum, daysMin, daysMax] of [
   ['EXPRESS', 'La Habana', 5, 1, 2], ['EXPRESS', 'Mayabeque', 10, 5, 6],
+  ['EXPRESS_ESSENTIALS', 'La Habana', 5, 1, 2], ['EXPRESS_ESSENTIALS', 'Mayabeque', 10, 5, 6],
   ['REGULAR', 'La Habana', 10, 7, 12], ['REGULAR', 'Santiago de Cuba', 10, 7, 12],
 ]) {
   test(`${code} ${province}: minimum ${minimum}, free pickup, delivery ${daysMin}–${daysMax}`, async () => {
@@ -50,7 +51,7 @@ for (const [code, province, minimum, daysMin, daysMax] of [
     const response = await api.quote(minimum);
     assert.equal(response.status, 200);
     assert.equal(response.body.billable_weight_lb, minimum);
-    assert.equal(response.body.total_amount, minimum * (code === 'EXPRESS' ? 6 : 3));
+    assert.equal(response.body.total_amount, minimum * (code === 'EXPRESS_ESSENTIALS' ? 5 : code === 'EXPRESS' ? 6 : 3));
     assert.equal(response.body.pickup_amount, 0);
     assert.equal(response.body.insurance_amount, 0);
     assert.equal(api.saved().estimated_days_min, daysMin);
@@ -58,13 +59,15 @@ for (const [code, province, minimum, daysMin, daysMax] of [
     assert.match(response.body.delivery_label, /desde la salida/);
   });
 }
-test('Express applies the lower rate to all pounds starting at 20 lb', async () => {
+test('Express uses the category rate at and above 20 lb', async () => {
   const api = setup();
   assert.equal((await api.quote(19.9)).body.total_amount, 19.9 * 6);
   const atThreshold = (await api.quote(20)).body;
-  assert.equal(atThreshold.total_amount, 80);
-  assert.equal(atThreshold.applied_rate, 4);
-  assert.equal((await api.quote(25)).body.total_amount, 100);
+  assert.equal(atThreshold.total_amount, 120);
+  assert.equal(atThreshold.applied_rate, 6);
+  assert.equal((await api.quote(25)).body.total_amount, 150);
+  assert.equal((await setup({ code: 'EXPRESS_ESSENTIALS' }).quote(20)).body.total_amount, 100);
+  assert.equal((await setup({ code: 'REGULAR' }).quote(20)).body.total_amount, 60);
 });
 test('Alvarez requires a province and a finite positive weight', async () => {
   const api = setup();
@@ -80,4 +83,11 @@ test('other agencies retain their configured minimum charges and extra fees', as
   assert.equal(result.body.pickup_amount, 20);
   assert.equal(result.body.insurance_amount, 30);
   assert.equal(api.saved().estimated_days_min, 9);
+});
+
+test('Alvarez persists the category from the selected service, not the submitted label', async () => {
+  const api = setup({ code: 'EXPRESS_ESSENTIALS' });
+  const response = await api.quote(5, { item_category: 'miscelaneas' });
+  assert.equal(response.body.total_amount, 25);
+  assert.equal(api.saved().item_category, 'comida_medicinas_aseo');
 });

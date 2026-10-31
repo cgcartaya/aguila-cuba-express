@@ -17,7 +17,7 @@ import {
   Weight,
 } from "lucide-react";
 
-import { ALVAREZ_STORE_ID, ALVAREZ_DEPARTURES, alvarezShippingPolicy } from "@/lib/shipping/alvarez-policy";
+import { ALVAREZ_STORE_ID, ALVAREZ_DEPARTURES, alvarezShippingPolicy, isAlvarezExpress, isAlvarezShippingService, alvarezContentCategory } from "@/lib/shipping/alvarez-policy";
 
 type Option = { id: string; name: string };
 type Service = Option & { code?: string; billing_mode?: string };
@@ -295,7 +295,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
 
         <div className="p-5 sm:p-8">
           {step === 1 && <div className="space-y-7">
-            <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text={isAlvarez ? "Selecciona Express o Regular para consultar las tarifas de tu envío a Cuba." : "Primero selecciona la categoría del contenido y después la modalidad de envío."} />
+            <StepTitle icon={<Package />} title="¿Qué deseas enviar?" text={isAlvarez ? "Selecciona la modalidad y el contenido: Express para comida, medicinas y aseo o para misceláneas; Regular para cualquier contenido." : "Primero selecciona la categoría del contenido y después la modalidad de envío."} />
             {!isAlvarez && <div>
               <p className="text-sm font-black text-slate-700">Categoría del envío</p>
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
@@ -321,7 +321,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
                 })}
               </div>
             </div>}
-            {isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.services.filter(service => ["EXPRESS", "REGULAR"].includes((service.code || "").toUpperCase())).map((service) => <button key={service.id} type="button" onClick={() => { setField("service_type_id", service.id); setField("transport_mode", "air"); }} className={`rounded-2xl border p-4 text-left ${form.service_type_id === service.id ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200"}`}><Plane className="text-blue-700" /><b className="mt-3 block text-slate-900">{service.name}</b><small className="mt-1 block text-slate-500">{(service.code || "").toUpperCase() === "EXPRESS" ? "La Habana: 24–48 horas (mín. 5 lb). Demás provincias: 5–6 días (mín. 10 lb). Desde la salida." : "Toda Cuba: 7–12 días desde la salida. Mínimo: 10 lb."}</small></button>)}</div></div>}
+            {isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{config.services.filter(service => isAlvarezShippingService(service.code)).map((service) => <button key={service.id} type="button" onClick={() => { setField("service_type_id", service.id); setField("transport_mode", "air"); setField("item_category", alvarezContentCategory(service.code)); }} className={`rounded-2xl border p-4 text-left ${form.service_type_id === service.id ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200"}`}><Plane className="text-blue-700" /><b className="mt-3 block text-slate-900">{service.name}</b><small className="mt-1 block text-slate-500">{isAlvarezExpress(service.code) ? "La Habana: 24–48 horas (mín. 5 lb). Demás provincias: 5–6 días (mín. 10 lb). Desde la salida." : "Toda Cuba: 7–12 días desde la salida. Mínimo: 10 lb."}</small></button>)}</div></div>}
             {!isAlvarez && <div><p className="text-sm font-black text-slate-700">Modalidad de envío</p><div className="mt-3 grid gap-3 sm:grid-cols-3">{config.transportModes.map((mode) => { const Icon = modeIcons[mode as keyof typeof modeIcons] || Package; const active = form.transport_mode === mode; return <button type="button" key={mode} onClick={() => setField("transport_mode", mode)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left transition ${active ? "border-blue-500 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 hover:border-slate-300"}`}><Icon className={active ? "text-blue-700" : "text-slate-400"} /><span><b className="block text-slate-900">{modeLabels[mode] || mode}</b><small className="text-slate-500">Seleccionar modalidad</small></span></button>; })}</div>{airportFeeApplies && <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">Esta modalidad incluye un fee aeroportuario adicional de $50 para estaciones de energía.</p>}</div>}
           </div>}
 
@@ -360,7 +360,7 @@ export default function PublicQuoteCalculator({ embedded = false }: { embedded?:
           <Package size={42} />
           <h2 className="mt-5 text-2xl font-black">Un estimado claro y profesional</h2>
           <p className="mt-2 text-white/70">Completa los pasos y recibirás un resumen listo para compartir.</p>
-          <div className="mt-6 grid gap-3">{isAlvarez ? <><Info icon={<Plane />} text="Express: La Habana 24–48 horas; demás provincias 5–6 días" /><Info icon={<Package />} text="Regular: 7–12 días en toda Cuba" /><Info icon={<Plane />} text={ALVAREZ_DEPARTURES} /></> : <><Info icon={<Plane />} text="Tarifas aéreas configurables" /><Info icon={<Ship />} text="Tarifas marítimas configurables" /></>}<Info icon={<Weight />} text="Peso mínimo y cargos incluidos" /><Info icon={<Truck />} text={isAlvarez ? "Recogida gratis. Solo pagas peso × tarifa por libra." : "Recogida opcional"} /></div>
+          <div className="mt-6 grid gap-3">{isAlvarez ? <><Info icon={<Plane />} text="Express: La Habana 24–48 horas; demás provincias 5–6 días" /><Info icon={<Package />} text="Regular: 7–12 días en toda Cuba" /><Info icon={<Plane />} text={ALVAREZ_DEPARTURES} /></> : <><Info icon={<Plane />} text="Tarifas aéreas configurables" /><Info icon={<Ship />} text="Tarifas marítimas configurables" /></>}<Info icon={<Weight />} text={isAlvarez ? "Express: comida, medicinas y aseo $5/lb; misceláneas $6/lb. Regular: todo a $3/lb." : "Peso mínimo y cargos incluidos"} /><Info icon={<Truck />} text={isAlvarez ? "Recogida gratis. Solo pagas peso × tarifa por libra." : "Recogida opcional"} /></div>
         </> : <>
           <CheckCircle2 size={46} className="text-emerald-300" />
           <p className="mt-4 text-sm font-black uppercase tracking-wider text-white/60">{result.public_code}</p>

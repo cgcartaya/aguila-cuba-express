@@ -1,3 +1,4 @@
+import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
 import { supabase } from "@/lib/supabase";
 import type { Shipment, ShipmentInput, ShippingDriver } from "@/lib/shipping/types";
 
@@ -193,14 +194,11 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
-  const servicePrice = roundMoney(
-    (input.contains_package ? input.weight_subtotal : 0) +
-      (input.contains_money ? input.money_total : 0) +
-      input.extra_fees_total -
-      input.discount_amount
-  );
-  const amountPaid = roundMoney(Math.min(servicePrice, input.amount_paid));
-  const balanceDue = roundMoney(servicePrice - amountPaid);
+  const totals = shipmentInvoiceTotals(input);
+  input = { ...input, discount_amount: totals.discount };
+  const servicePrice = totals.total;
+  const amountPaid = totals.paid;
+  const balanceDue = totals.balance;
 
   // Un envío puede crearse sin viaje. El consecutivo general se asigna
   // igualmente y trip_order permanece nulo hasta que se asigne a uno.
