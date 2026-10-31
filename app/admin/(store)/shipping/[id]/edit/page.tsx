@@ -96,6 +96,7 @@ export default function EditShipmentPage({
           fee_id: fee.fee_id,
           fee_name: fee.fee_name,
           calculation_type: fee.calculation_type,
+          quantity: Number(fee.quantity ?? 1),
           configured_amount: Number(fee.configured_amount),
           calculated_amount: Number(fee.calculated_amount),
         }))

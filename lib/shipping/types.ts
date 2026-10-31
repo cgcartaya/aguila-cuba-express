@@ -244,6 +244,7 @@ export type ShippingExtraFee = {
 };
 
 export type ShipmentFeeSelection = {
+  quantity?: number;
   fee_id: string;
   fee_name: string;
   calculation_type: "fixed" | "per_lb" | "percentage";

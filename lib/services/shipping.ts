@@ -1,3 +1,4 @@
+import { extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import { normalizePackageContents } from "@/lib/shipping/package-label";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
 import { supabase } from "@/lib/supabase";
@@ -171,7 +172,7 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
   let sort = 1;
   if (input.contains_package) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
   if (input.contains_money) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "MONEY", description: input.money_total > Math.max(input.money_commission - input.money_discount, 0) + 0.005 ? "Remesa y comisión" : "Comisión por envío de dinero", quantity: 1, unit: "USD", unit_price: roundMoney(input.money_total + input.money_discount), subtotal: roundMoney(input.money_total + input.money_discount), discount_amount: input.money_discount, total: input.money_total, metadata: { discount_reason: input.money_discount_reason }, sort_order: sort++ });
-  input.selected_fees.forEach((fee) => rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "EXTRA_FEE", description: fee.fee_name, quantity: 1, unit: "fee", unit_price: fee.calculated_amount, subtotal: fee.calculated_amount, discount_amount: 0, total: fee.calculated_amount, metadata: { fee_id: fee.fee_id }, sort_order: sort++ }));
+  input.selected_fees.forEach((fee) => rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "EXTRA_FEE", description: fee.fee_name, quantity: extraFeeQuantity(fee.quantity), unit: "unidad", unit_price: fee.calculated_amount / extraFeeQuantity(fee.quantity), subtotal: fee.calculated_amount, discount_amount: 0, total: fee.calculated_amount, metadata: { fee_id: fee.fee_id }, sort_order: sort++ }));
   if (input.discount_amount > 0) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "DISCOUNT", description: input.discount_reason || "Descuento general", quantity: 1, unit: "descuento", unit_price: -input.discount_amount, subtotal: -input.discount_amount, discount_amount: input.discount_amount, total: -input.discount_amount, metadata: {}, sort_order: sort++ });
   if (rows.length) {
     const { error } = await supabase.from("shipment_items").insert(rows);
@@ -184,6 +185,7 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
       shipment_id: shipmentId,
       fee_id: fee.fee_id,
       fee_name: fee.fee_name,
+      quantity: extraFeeQuantity(fee.quantity),
       calculation_type: fee.calculation_type,
       configured_amount: roundMoney(fee.configured_amount),
       calculated_amount: roundMoney(fee.calculated_amount),
@@ -195,6 +197,12 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
+  const selectedFees = input.selected_fees.map(fee => {
+    const quantity = extraFeeQuantity(fee.quantity);
+    if (!Number.isFinite(fee.calculated_amount) || fee.calculated_amount < 0) throw new Error("El importe del cargo no es válido.");
+    return { ...fee, quantity };
+  });
+  input = { ...input, selected_fees: selectedFees, extra_fees_total: Number(selectedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0).toFixed(2)) };
   const totals = shipmentInvoiceTotals(input);
   input = { ...input, discount_amount: totals.discount };
   const servicePrice = totals.total;
