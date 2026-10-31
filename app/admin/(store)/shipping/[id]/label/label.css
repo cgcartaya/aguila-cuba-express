@@ -18,15 +18,10 @@
 .package-destination { font-size: 11pt; font-weight: 900; text-transform: uppercase; margin-bottom: 1mm !important; }
 .package-route { padding: 2.5mm 0; border-bottom: 1pt solid #000; }
 .package-route p + p { margin-top: 1mm; }
-.package-weight { display: flex; justify-content: space-between; gap: 3mm; padding: 2.5mm 0; border-bottom: 1pt solid #000; }
-.package-weight span,.package-weight b,.package-weight small { display: block; }
-.package-weight span { font-size: 7pt; }
-.package-weight b { font-size: 11pt; }
 .package-label-contents { padding-top: 2.5mm; }
 .package-label-contents ul { margin: 1mm 0; padding: 0; list-style: none; }
 .package-label-contents li { margin: .5mm 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .package-more { font-size: 7pt; font-weight: 700; }
-.package-seal-note { border-top: 1pt solid #000; margin-top: 3mm; padding-top: 2mm; font-size: 7pt; }
 .package-packing-list { box-sizing: border-box; max-width: 210mm; margin: auto; padding: 12mm; background: white; font: 11pt/1.5 Arial,sans-serif; color: #000; overflow-wrap: anywhere; }
 .package-list-header { display: flex; justify-content: space-between; gap: 16px; border-bottom: 2px solid #000; padding-bottom: 12px; }
 .package-list-header h1 { font-size: 22pt; font-weight: 900; margin: 5px 0; }
