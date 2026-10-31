@@ -122,7 +122,7 @@ export default function StaffRouteModal({ open, storeId, user, onClose }: Props)
                         <div className={`rounded-2xl border p-4 ${done ? "border-emerald-200 bg-emerald-50/60" : issue ? "border-rose-200 bg-rose-50/60" : "border-slate-200 bg-white"}`}>
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                              <div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{shipment.recipient_name || "Sin destinatario"}</p><span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${done ? "bg-emerald-100 text-emerald-700" : issue ? "bg-rose-100 text-rose-700" : "bg-blue-100 text-blue-700"}`}>{getShippingStatusLabel(shipment.status)}</span></div>
+                              <div className="flex flex-wrap items-center gap-2"><p className="font-black text-slate-900">{shipment.recipient_name || "Sin destinatario"}</p><span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${done ? "bg-emerald-100 text-emerald-700" : issue ? "bg-rose-100 text-rose-700" : "bg-blue-100 text-blue-700"}`}>{getShippingStatusLabel(shipment.status, Boolean(shipment.contains_money && !shipment.contains_package))}</span></div>
                               <p className="mt-1 text-sm font-semibold text-slate-600">{shipment.location || "Sin localidad"}</p>
                               <p className="mt-1 text-sm text-slate-500">{shipment.recipient_address || "Sin dirección"}</p>
                               {shipment.recipient_phone && <p className="mt-1 text-xs font-bold text-slate-500">Tel. {shipment.recipient_phone}</p>}

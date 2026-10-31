@@ -1,4 +1,5 @@
 "use client";
+import { operationContent, MONEY_DELIVERY_STATUSES, type ShipmentOperationType } from "@/lib/shipping/operation-mode";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
 import ShipmentExtraFees from "@/components/admin/shipping/ShipmentExtraFees";
 import { calculateExtraFee, extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
@@ -18,6 +19,7 @@ import type {
 import { buildLegacyLocation, calculateMoneyCommission, getShippingStatusLabel, SHIPPING_STATUSES } from "@/lib/shipping/types";
 
 type Props = {
+  operationType?: ShipmentOperationType;
   storeId: string;
   shipment?: Shipment | null;
   drivers: ShippingDriver[];
@@ -41,7 +43,7 @@ export default function ShipmentForm(props: Props) {
   const [error, setError] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
   const [confirmNoCustomer, setConfirmNoCustomer] = useState(false);
-  const [form, setForm] = useState<ShipmentInput>({
+  const [draft, setForm] = useState<ShipmentInput>({
     package_contents: shipment?.package_contents || [],
     customer_id: shipment?.customer_id || null,
     recipient_id: shipment?.recipient_id || null,
@@ -84,6 +86,11 @@ export default function ShipmentForm(props: Props) {
     payment_method: shipment?.payment_method || "",
     selected_fees: initialSelectedFees,
   });
+
+  const form: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: props.operationType === "money" && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
+  const moneyOnly = form.contains_money && !form.contains_package;
+  const statusOptions: ShippingStatus[] = moneyOnly ? [...MONEY_DELIVERY_STATUSES] : [...SHIPPING_STATUSES];
+  if (!statusOptions.includes(form.status)) statusOptions.push(form.status);
 
   const filteredProvinces = useMemo(() => provinces.filter(x => !form.country_id || x.country_id === form.country_id), [provinces, form.country_id]);
   const filteredMunicipalities = useMemo(() => municipalities.filter(x => !form.province_id || x.province_id === form.province_id), [municipalities, form.province_id]);
@@ -222,12 +229,12 @@ export default function ShipmentForm(props: Props) {
       }
     />
 
-    <Section title="Contenido de la operación">
+    {!props.operationType && <Section title="Contenido de la operación">
       <div className="grid gap-3 md:grid-cols-2">
         <Toggle checked={form.contains_package} onChange={v => set("contains_package", v)} icon={<Package />} title="Incluye paquete" />
         <Toggle checked={form.contains_money} onChange={v => set("contains_money", v)} icon={<Banknote />} title="Incluye dinero" />
       </div>
-    </Section>
+    </Section>}
 
     <Section title="Destino y destinatario">
       <div className="grid gap-4 md:grid-cols-3">
@@ -248,7 +255,7 @@ export default function ShipmentForm(props: Props) {
       <div className="grid gap-4 md:grid-cols-2">
         <Input label="Remitente" value={form.sender_name} onChange={v=>set("sender_name",v)} />
         <Input label="Teléfono remitente" value={form.sender_phone} onChange={v=>set("sender_phone",phone(v))} inputMode="numeric" />
-        <Select label="Estado" value={form.status} onChange={v=>set("status",v as ShippingStatus)} options={SHIPPING_STATUSES.map(x=>[x,getShippingStatusLabel(x)])} />
+        <Select label="Estado" value={form.status} onChange={v=>set("status",v as ShippingStatus)} options={statusOptions.map(x=>[x,getShippingStatusLabel(x, moneyOnly)])} />
         <Select label="Repartidor" value={form.assigned_staff_id || ""} onChange={v=>{ const d=drivers.find(x=>x.id===v); set("assigned_staff_id",d?.id||null); set("assigned_driver_id",d?.legacy_driver_id||null); set("assigned_driver_name",d?.name||null); }} options={drivers.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
       </div>
       {!form.customer_id && (

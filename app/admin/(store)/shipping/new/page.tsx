@@ -4,18 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  CalendarDays,
   CheckCircle2,
   Loader2,
-  Plane,
   Plus,
   Route,
   Settings,
-  Ship,
-  Truck,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { resolveOperationTrip, type ShipmentOperationType } from "@/lib/shipping/operation-mode";
 import ShipmentForm from "@/components/admin/shipping/ShipmentForm";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -51,11 +48,6 @@ function modeLabel(mode: ShippingTrip["transport_mode"]) {
   return { air: "Aéreo", sea: "Marítimo", ground: "Terrestre", mixed: "Mixto", other: "Otro" }[mode];
 }
 
-function ModeIcon({ mode }: { mode: ShippingTrip["transport_mode"] }) {
-  if (mode === "air") return <Plane size={20} />;
-  if (mode === "sea") return <Ship size={20} />;
-  return <Truck size={20} />;
-}
 
 export default function NewShipmentPage() {
   const router = useRouter();
@@ -76,6 +68,8 @@ export default function NewShipmentPage() {
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [extraFees, setExtraFees] = useState<ShippingExtraFee[]>([]);
   const [openTrips, setOpenTrips] = useState<ShippingTrip[]>([]);
+  const [operationType, setOperationType] = useState<ShipmentOperationType>(searchParams.get("type") === "money" ? "money" : "package");
+  const requiresTrip = operationType !== "money";
   const [selectedTripId, setSelectedTripId] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -168,23 +162,23 @@ export default function NewShipmentPage() {
 
   async function submit(input: ShipmentInput) {
     if (!activeStore?.id) throw new Error("No se pudo resolver la empresa.");
-    if (!selectedTripId) throw new Error("Selecciona el viaje al que pertenece este envío.");
+    const tripId = resolveOperationTrip(input, selectedTripId);
 
     setSubmitting(true);
     try {
       const { data, error } = await createShipment(
         activeStore.id,
-        { ...input, trip_id: selectedTripId },
+        { ...input, trip_id: tripId },
         access?.profile?.id
       );
 
       if (error) throw new Error(error.message);
       if (!data?.id) throw new Error("El envío se creó sin devolver un identificador válido.");
-      if (data.trip_id !== selectedTripId) {
+      if (data.trip_id !== tripId) {
         throw new Error("El envío se creó, pero no quedó vinculado al viaje seleccionado.");
       }
 
-      router.push(`/admin/shipping/trips/${selectedTripId}?created=${encodeURIComponent(data.id)}`);
+      router.push(tripId ? `/admin/shipping/trips/${tripId}?created=${encodeURIComponent(data.id)}` : `/admin/shipping/shipments?content=money&created=${encodeURIComponent(data.id)}`);
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -200,139 +194,39 @@ export default function NewShipmentPage() {
     );
   }
 
-  return (
-    <main className="min-h-screen bg-slate-50 p-4 pb-24 md:p-6">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <Link href={backHref} className="inline-flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 text-sm font-black">
-            <ArrowLeft size={18} /> Volver
-          </Link>
-          <Link href="/admin/shipping/settings" className="inline-flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 text-sm font-black">
-            <Settings size={18} /> Ajustes de envíos
-          </Link>
-        </div>
-
-        <div className="mb-6">
-          <p className="text-sm font-black text-blue-700">Operaciones</p>
-          <h1 className="text-3xl font-black text-[#061b3a]">Crear nuevo envío</h1>
-          <p className="mt-2 font-semibold text-slate-500">
-            {directTripMode
-              ? "El envío se añadirá directamente al viaje desde el que llegaste."
-              : "Selecciona uno de los viajes que todavía están preparando su salida."}
-          </p>
-        </div>
-
-        {tripError && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{tripError}</div>}
-
-        {openTrips.length === 0 || (directTripMode && !selectedTrip) ? (
-          <section className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm md:p-12">
-            <Route className="mx-auto text-slate-300" size={54} />
-            <h2 className="mt-4 text-2xl font-black text-slate-900">
-              {directTripMode ? "Este viaje no admite nuevos envíos" : "No hay viajes abiertos"}
-            </h2>
-            <p className="mx-auto mt-2 max-w-xl font-semibold text-slate-500">
-              {directTripMode
-                ? tripError || "Regresa al viaje y comprueba que continúe activo."
-                : "Crea un viaje en estado “Preparando salida” antes de registrar el paquete. Así nunca quedará un envío sin manifiesto."}
-            </p>
-            <Link href="/admin/shipping/trips/new" className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 font-black text-white">
-              <Plus size={19} /> Crear viaje
-            </Link>
-          </section>
-        ) : (
-          <>
-            {directTripMode && selectedTrip ? (
-              <section className="mb-6 rounded-[2rem] border border-blue-200 bg-blue-50 p-5 shadow-sm md:p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-700 text-white">
-                    <ModeIcon mode={selectedTrip.transport_mode} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[.16em] text-blue-700">Viaje asignado automáticamente</p>
-                    <h2 className="mt-1 text-xl font-black text-slate-950">Viaje {selectedTrip.trip_number} · {selectedTrip.name}</h2>
-                    <p className="mt-1 text-sm font-bold text-slate-600">
-                      {modeLabel(selectedTrip.transport_mode)} · {selectedTrip.origin || "Origen sin definir"} → {selectedTrip.destination || "Destino sin definir"}
-                    </p>
-                    <p className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500">
-                      <CalendarDays size={14} /> {formatDate(selectedTrip.departure_date)}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            ) : (
-            <section className="mb-6 rounded-[2rem] border border-blue-100 bg-white p-5 shadow-sm md:p-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[.16em] text-blue-700">Viaje del envío</p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">Selecciona el viaje que recibirá este paquete</h2>
-                  <p className="mt-1 text-sm font-semibold text-slate-500">Puedes tener varios viajes aéreos, marítimos o terrestres abiertos al mismo tiempo.</p>
-                </div>
-                <Link href="/admin/shipping/trips/new" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-black text-blue-800">
-                  <Plus size={18} /> Otro viaje
-                </Link>
-              </div>
-
-              <div className="mt-5 grid gap-3 lg:grid-cols-2">
-                {openTrips.map((trip) => {
-                  const selected = selectedTripId === trip.id;
-                  return (
-                    <button
-                      type="button"
-                      key={trip.id}
-                      onClick={() => setSelectedTripId(trip.id)}
-                      className={`relative rounded-2xl border p-4 text-left transition ${selected ? "border-blue-600 bg-blue-50 ring-4 ring-blue-100" : "border-slate-200 bg-white hover:border-blue-300"}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-blue-700 text-white" : "bg-slate-100 text-slate-600"}`}>
-                          <ModeIcon mode={trip.transport_mode} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="font-black text-slate-950">Viaje {trip.trip_number} · {trip.name}</p>
-                            {trip.is_default && <span className="rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black uppercase text-amber-800">Predeterminado</span>}
-                          </div>
-                          <p className="mt-1 text-sm font-bold text-slate-600">{modeLabel(trip.transport_mode)} · {trip.origin || "Origen sin definir"} → {trip.destination || "Destino sin definir"}</p>
-                          <p className="mt-2 flex items-center gap-2 text-xs font-bold text-slate-500"><CalendarDays size={14} /> {formatDate(trip.departure_date)}</p>
-                        </div>
-                        {selected && <CheckCircle2 className="shrink-0 text-blue-700" size={22} />}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-            )}
-
-            {selectedTrip ? (
-              <div className="mb-5 rounded-2xl bg-[#061b3a] px-5 py-4 text-white">
-                <p className="text-xs font-black uppercase tracking-[.16em] text-blue-200">Asignación confirmada</p>
-                <p className="mt-1 font-black">Este envío se guardará en Viaje {selectedTrip.trip_number}: {selectedTrip.name}</p>
-              </div>
-            ) : (
-              <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 font-black text-amber-800">Selecciona un viaje para habilitar el registro del envío.</div>
-            )}
-
-            <div className={selectedTripId ? "" : "pointer-events-none opacity-50"}>
-              <ShipmentForm
-                storeId={activeStore?.id || ""}
-                drivers={drivers}
-                settings={settings}
-                countries={countries}
-                provinces={provinces}
-                municipalities={municipalities}
-                locations={locations}
-                serviceTypes={serviceTypes}
-                rates={rates}
-                extraFees={extraFees}
-                initialCustomerId={initialCustomerId}
-                initialRecipientId={initialRecipientId}
-                submitting={submitting}
-                onSubmit={submit}
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </main>
-  );
+  return <main className="min-h-screen bg-slate-50 p-4 pb-24 md:p-6"><div className="mx-auto max-w-6xl">
+    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <Link href={backHref} className="inline-flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 text-sm font-black"><ArrowLeft size={18} /> Volver</Link>
+      <Link href="/admin/shipping/settings" className="inline-flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 text-sm font-black"><Settings size={18} /> Ajustes de envíos</Link>
+    </div>
+    <div className="mb-6"><p className="text-sm font-black text-blue-700">Operaciones</p><h1 className="text-3xl font-black text-[#061b3a]">Crear nuevo envío</h1></div>
+    <section className="mb-6 rounded-[2rem] border bg-white p-5 shadow-sm">
+      <h2 className="text-xl font-black">¿Qué deseas registrar?</h2>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">{([
+        ['package', 'Paquete', 'Requiere un viaje'],
+        ['money', 'Envío de dinero', 'Entrega local sin viaje'],
+        ['mixed', 'Paquete y dinero', 'Operación mixta con viaje'],
+      ] as const).map(([type, title, description]) => <button type="button" key={type} aria-pressed={operationType === type} onClick={() => setOperationType(type)} className={`rounded-2xl border p-4 text-left ${operationType === type ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200'}`}><b className="block">{title}</b><span className="mt-1 block text-sm text-slate-500">{description}</span></button>)}</div>
+    </section>
+    {!requiresTrip && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"><h2 className="font-black">Envío de dinero sin viaje</h2><p className="mt-1 text-sm">Registra el monto y la comisión, asigna un repartidor y gestiona la entrega. La operación tendrá su número y factura en la lista general.</p></section>}
+    {requiresTrip && <>
+      {tripError && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{tripError}</div>}
+      {openTrips.length === 0 || (directTripMode && !selectedTrip) ? <section className="mb-6 rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center">
+        <Route className="mx-auto text-slate-300" size={48} /><h2 className="mt-3 text-xl font-black">{directTripMode ? 'Este viaje no admite nuevos envíos' : 'No hay viajes abiertos'}</h2>
+        <p className="mt-2 text-slate-500">Crea un viaje abierto para registrar paquetes. Los envíos de dinero pueden registrarse sin viaje.</p>
+        <Link href="/admin/shipping/trips/new" className="mt-4 inline-flex items-center gap-2 rounded-xl border px-4 py-3 font-bold"><Plus size={18} /> Crear viaje</Link>
+      </section> : <section className="mb-6 rounded-[2rem] border bg-white p-5 shadow-sm">
+        <h2 className="text-xl font-black">Viaje del paquete</h2>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">{(directTripMode && selectedTrip ? [selectedTrip] : openTrips).map(trip => <button type="button" key={trip.id} onClick={() => setSelectedTripId(trip.id)} aria-pressed={selectedTripId === trip.id} className={`rounded-2xl border p-4 text-left ${selectedTripId === trip.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+          <div className="flex items-center justify-between gap-3"><b>Viaje {trip.trip_number} · {trip.name}</b>{selectedTripId === trip.id && <CheckCircle2 size={20} className="text-blue-700" />}</div>
+          <p className="mt-2 text-sm text-slate-600">{modeLabel(trip.transport_mode)} · {trip.origin || 'Origen sin definir'} → {trip.destination || 'Destino sin definir'}</p><p className="mt-1 text-xs text-slate-500">{formatDate(trip.departure_date)}</p>
+        </button>)}</div>
+        {!directTripMode && <Link href="/admin/shipping/trips/new" className="mt-4 inline-flex items-center gap-2 font-bold text-blue-700"><Plus size={18} /> Otro viaje</Link>}
+      </section>}
+      {!selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Selecciona un viaje para habilitar el registro del paquete.</p>}
+    </>}
+    <fieldset disabled={requiresTrip && !selectedTrip} className={requiresTrip && !selectedTrip ? 'opacity-50' : ''}>
+      <ShipmentForm operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
+    </fieldset>
+  </div></main>;
 }

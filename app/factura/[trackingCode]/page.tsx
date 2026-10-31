@@ -1,5 +1,6 @@
 "use client";
 
+import { getShippingStatusLabel } from "@/lib/shipping/types";
 import { packageNumber } from "@/lib/shipping/package-label";
 import PackageContentsList from "@/components/shipping/PackageContentsList";
 import { use, useEffect, useState } from "react";
@@ -69,19 +70,6 @@ function formatDate(value?: string | number | Date | null) {
   }).format(date);
 }
 
-function statusLabel(status?: string) {
-  const labels: Record<string, string> = {
-    received_miami: "Recibido en Miami",
-    preparing: "Preparando salida",
-    in_transit: "En tránsito hacia Cuba",
-    received_cuba: "Recibido en Cuba",
-    out_for_delivery: "En reparto",
-    delivered: "Entregado",
-    issue: "Incidencia",
-  };
-
-  return labels[status || ""] || status || "Sin especificar";
-}
 
 export default function PublicInvoicePage({
   params,
@@ -269,7 +257,7 @@ export default function PublicInvoicePage({
                 <Summary
                   icon={<CheckCircle2 size={17} />}
                   label="Estado"
-                  value={statusLabel(shipment.status)}
+                  value={getShippingStatusLabel(shipment.status, shipment.contains_money && !shipment.contains_package)}
                 />
 
                 <Summary

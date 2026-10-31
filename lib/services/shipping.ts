@@ -197,6 +197,7 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
+  if (!shipmentId && input.contains_money && !input.contains_package) input = { ...input, trip_id: null };
   const selectedFees = input.selected_fees.map(fee => {
     const quantity = extraFeeQuantity(fee.quantity);
     if (!Number.isFinite(fee.calculated_amount) || fee.calculated_amount < 0) throw new Error("El importe del cargo no es válido.");

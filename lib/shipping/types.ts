@@ -316,7 +316,8 @@ export type ShipmentInput = {
   selected_fees: ShipmentFeeSelection[];
 };
 
-export function getShippingStatusLabel(status: ShippingStatus | string) {
+export function getShippingStatusLabel(status: ShippingStatus | string, moneyOnly = false) {
+  if (moneyOnly && status === "preparing") return "Pendiente de entrega";
   const labels: Record<string, string> = {
     received_miami: "Recibido en Miami",
     preparing: "Preparando salida",
