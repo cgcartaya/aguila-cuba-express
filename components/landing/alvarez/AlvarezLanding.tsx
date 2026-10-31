@@ -26,6 +26,7 @@ import {
 } from "@/components/landing/alvarez/constants";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import PublicQuoteCalculator from "@/components/portal/PublicQuoteCalculator";
+import { ALVAREZ_DEPARTURES } from "@/lib/shipping/alvarez-policy";
 import RemittanceCalculator from "./RemittanceCalculator";
 
 const navigation = [
@@ -57,9 +58,9 @@ export default function AlvarezLanding() {
     <main className="min-h-screen overflow-x-hidden bg-[#000415] font-sans text-white">
       <Header menuOpen={menuOpen} onToggle={() => setMenuOpen((v) => !v)} />
       <Hero />
-      <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
+      <section id="solicitar-recogida" className="alvarez-pickup relative z-20 -mt-16 scroll-mt-28 px-5 pb-12 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px] overflow-hidden rounded-[28px] border border-white/10 bg-[#091D3D] shadow-2xl"><p className="px-6 pt-6 text-xs font-black uppercase tracking-widest text-[#B5BFCD] sm:px-8">Miami · Hialeah y alrededores · Recogida gratis</p><PickupPlannerHero variant="horizontal" storeSlug="alvarez-travel" storeName="Álvarez Travel" whatsappPhone={ALVAREZ_WHATSAPP_PHONE} /></div></section>
       <ShippingOptions />
-      <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px] lg:max-w-[1040px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Selecciona los datos de tu envío. Nuestro equipo confirma las tarifas y condiciones disponibles.</p></div><PublicQuoteCalculator embedded /></div></section>
+      <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px] lg:max-w-[1040px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Recogida gratis: paga solo las libras de tu envío según la tarifa. {ALVAREZ_DEPARTURES}</p></div><PublicQuoteCalculator embedded /></div></section>
       <RemittanceCalculator />
       <BrandPromise />
       <Services />
@@ -162,8 +163,8 @@ function Hero() {
 }
 
 const shippingOffers = [
-  { name: "Envío Express", image: "/alvarez/shipping-express.webp", details: "Menos de 20 lb: $6 USD/lb. Desde 20 lb: $4 USD/lb para todo el peso. La Habana: 24 horas. Demás provincias: 5–6 días." },
-  { name: "Envío Regular", image: "/alvarez/shipping-regular.webp", details: "$3 USD/lb a cualquier peso. Entrega en 7–12 días en todas las provincias, incluida La Habana." },
+  { name: "Envío Express", image: "/alvarez/shipping-express.webp", details: "Menos de 20 lb: $6 USD/lb. Desde 20 lb: $4 USD/lb para todo el peso. Mínimo: 5 lb para La Habana y 10 lb para demás provincias. La Habana: 24–48 horas. Demás provincias: 5–6 días. Dos salidas por semana; plazos desde la salida. Recogida gratis." },
+  { name: "Envío Regular", image: "/alvarez/shipping-regular.webp", details: "$3 USD/lb. Mínimo: 10 lb para todas las provincias. Entrega en 7–12 días desde la salida, incluida La Habana. Dos salidas por semana. Recogida gratis." },
 ];
 
 function ShippingOptions() {
