@@ -30,8 +30,6 @@ export default function PackageLabelDocument({ data, qr, packingList = false }: 
     <header className="package-label-header"><div><p className="package-agency">{data.agency}</p><p className="package-caption">N.º DE PAQUETE</p><h1>{packageNumber(data.packageNumber)}</h1><p className="package-tracking">{data.trackingCode}</p></div><div className="package-qr">{qr && <img src={qr} alt="Escanea para consultar la factura" width={128} height={128} />}<p>ESCANEA LA FACTURA</p></div></header>
     <section className="package-recipient"><p className="package-caption">DESTINATARIO</p><h2>{data.recipient}</h2><p className="package-address">{data.address}</p><p className="package-destination">{data.destination}</p><p><b>Tel.:</b> {data.phone}</p></section>
     <section className="package-route"><p><b>Remitente:</b> {data.sender}</p><p><b>Servicio:</b> {data.service}</p></section>
-    <div className="package-weight"><p><span>PESO</span><b>{data.weightLb.toFixed(2)} lb</b><small>{(data.weightLb * 0.45359237).toFixed(2)} kg</small></p><p><span>FECHA</span><b>{data.date}</b></p></div>
     <section className="package-label-contents"><p className="package-caption">CONTENIDO</p>{preview.length ? <ul>{preview.map((item, index) => <li key={index}><b>{item.quantity} ×</b> {item.description}</li>)}</ul> : <p>No declarado</p>}{data.contents.length > preview.length && <p className="package-more">+ {data.contents.length - preview.length} artículo(s). Lista completa en la factura.</p>}</section>
-    <footer className="package-seal-note">Si el sello está roto, revise el contenido del paquete antes de aceptarlo.</footer>
   </article>;
 }

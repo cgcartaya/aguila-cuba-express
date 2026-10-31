@@ -50,8 +50,8 @@ test('all declared items appear in invoices and packing lists, including escaped
     assert.ok(!markup.includes('<script>'));
   }
 });
-test('label includes its identifier, destination, converted weight and explicit continuation notice', () => {
+test('label includes its identifier, destination and explicit continuation notice', () => {
   const markup = renderToStaticMarkup(React.createElement(Label, { data, qr: 'data:image/png;base64,TEST' }));
-  for (const value of ['PKG-00002693', 'La Habana', '20.00 lb', '9.07 kg', 'Lista completa en la factura', 'ESCANEA LA FACTURA']) assert.ok(markup.includes(value));
+  for (const value of ['PKG-00002693', 'La Habana', 'Lista completa en la factura', 'ESCANEA LA FACTURA']) assert.ok(markup.includes(value));
   assert.ok(!markup.includes('Artículo 12'));
 });
