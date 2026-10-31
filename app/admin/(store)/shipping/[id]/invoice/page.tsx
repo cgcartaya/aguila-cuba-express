@@ -127,7 +127,7 @@ export default function ShippingInvoicePage({
   }
 
   const fallbackItems: Partial<ShipmentItem>[] = [
-    ...(shipment.contains_package
+    ...(shipment.contains_package && shipment.package_billing_mode !== "fees_only"
       ? [
           {
             id: "package",
@@ -408,7 +408,7 @@ export default function ShippingInvoicePage({
                     <TotalRow
                       label="Subtotal paquete"
                       value={currency(shipment.weight_subtotal)}
-                      hidden={!shipment.contains_package}
+                      hidden={!shipment.contains_package || shipment.package_billing_mode === "fees_only"}
                     />
 
                     <TotalRow

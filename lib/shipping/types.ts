@@ -86,6 +86,7 @@ export function getShippingTripStatusLabel(status: ShippingTripStatus | string) 
 
 
 export type Shipment = {
+  package_billing_mode?: "weight" | "fees_only";
   package_number?: number | string | null;
   package_contents?: PackageContentItem[];
   id: string;
@@ -272,6 +273,7 @@ export type ShippingSettings = {
 };
 
 export type ShipmentInput = {
+  package_billing_mode?: "weight" | "fees_only";
   package_contents?: PackageContentItem[];
   trip_id?: string | null;
   customer_id: string | null;

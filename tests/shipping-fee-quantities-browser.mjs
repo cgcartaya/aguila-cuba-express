@@ -8,9 +8,9 @@ const { chromium } = browserRequire('playwright');
 const esbuild = qaRequire('esbuild');
 const bundle = await esbuild.build({
   stdin: { contents: `import React from 'react'; import { createRoot } from 'react-dom/client'; import Form from './components/admin/shipping/ShipmentForm';
-    const shipment = { id:'demo', customer_id:'customer', contains_package:true, contains_money:false, weight_lb:10, service_type_id:'s', country_id:'c', recipient_name:'Test',recipient_phone:'5550100',sender_name:'Test',sender_phone:'5550101',status:'preparing' };
+    const shipment = { id:'demo', customer_id:'customer', contains_package:true, contains_money:false, weight_lb:10, service_type_id:'s', country_id:'c', recipient_name:'Test',recipient_phone:'5550100',sender_name:'Test',sender_phone:'5550101',status:'preparing', ...(window.initialShipment || {}) };
     const fees=[{id:'phone',name:'Teléfono',amount:20,calculation_type:'fixed',is_active:true},{id:'tablet',name:'Tablet',amount:10,calculation_type:'fixed',is_active:true}];
-    createRoot(document.getElementById('root')).render(<Form storeId="agency" shipment={shipment} drivers={[]} settings={null} countries={[{id:'c',name:'Cuba',is_active:true}]} provinces={[]} municipalities={[]} locations={[]} serviceTypes={[{id:'s',name:'Express',code:'EXPRESS',is_active:true}]} rates={[{id:'rate',service_type_id:'s',scope_type:'country',country_id:'c',rate_per_lb:6,is_active:true}]} extraFees={fees} submitting={false} onSubmit={async value=>{window.savedShipment=value;}} />);`, resolveDir: process.cwd(), loader: 'jsx' },
+    createRoot(document.getElementById('root')).render(<Form storeId="agency" shipment={shipment} drivers={[]} settings={null} countries={[{id:'c',name:'Cuba',is_active:true}]} provinces={[]} municipalities={[]} locations={[]} serviceTypes={[{id:'s',name:'Express',code:'EXPRESS',is_active:true}]} rates={[{id:'rate',service_type_id:'s',scope_type:'country',country_id:'c',rate_per_lb:6,is_active:true}]} extraFees={fees} initialSelectedFees={window.initialSelectedFees || []} submitting={false} onSubmit={async value=>{window.savedShipment=value;}} />);`, resolveDir: process.cwd(), loader: 'jsx' },
   bundle: true, write: false, format: 'iife', platform: 'browser', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' },
   plugins: [{ name: 'local-alias', setup(build) {
     build.onResolve({ filter: /^@\/components\/admin\/shipping\/CustomerRecipientPicker$/ }, () => ({ path: 'picker', namespace: 'fixture' }));
@@ -42,6 +42,17 @@ try {
   await page.getByLabel('Teléfono', { exact: true }).uncheck();
   await page.waitForFunction(() => [...document.querySelectorAll('label')].find(e => e.textContent.startsWith('Total final (USD)'))?.querySelector('input')?.value === '90.00');
   assert.equal(await page.getByLabel('Cantidad de Teléfono').count(), 0);
+  await page.getByRole('button', { name: /Solo cargos por artículo/ }).click();
+  await page.waitForFunction(() => [...document.querySelectorAll('label')].find(e => e.textContent.startsWith('Total final (USD)'))?.querySelector('input')?.value === '30.00');
+  assert.equal(await page.getByLabel('Peso (lb)', {exact:true}).count(),0);
+  await page.getByLabel('Teléfono', {exact:true}).check();
+  await page.getByLabel('Cantidad de Teléfono').fill('2');
+  await page.getByLabel('Tablet', {exact:true}).uncheck();
+  await page.waitForFunction(() => [...document.querySelectorAll('label')].find(e => e.textContent.startsWith('Total final (USD)'))?.querySelector('input')?.value === '40.00');
+  await page.getByRole('button', {name:'Guardar cambios'}).click();
+  const parcel=await page.evaluate(()=>window.savedShipment);
+  assert.equal(parcel.package_billing_mode,'fees_only');assert.equal(parcel.weight_lb,0);assert.equal(parcel.rate_per_lb,0);assert.equal(parcel.weight_subtotal,0);assert.equal(parcel.service_price,40);
+  const edit=await browser.newPage();await edit.setContent('<html><body><div id="root"></div></body></html>');await edit.evaluate(p=>{window.initialShipment=p;window.initialSelectedFees=p.selected_fees;},parcel);await edit.addScriptTag({content:bundle.outputFiles[0].text});await edit.getByLabel('Cantidad de Teléfono').waitFor();assert.equal(await edit.getByLabel('Cantidad de Teléfono').inputValue(),'2');assert.equal(await edit.getByLabel('Peso (lb)',{exact:true}).count(),0);await edit.getByLabel('Cantidad de Teléfono').fill('3');await edit.waitForFunction(()=>[...document.querySelectorAll('label')].find(e=>e.textContent.startsWith('Total final (USD)'))?.querySelector('input')?.value==='60.00');await edit.close();
   assert.deepEqual(errors, []);
-  console.log('Browser: phone ×2 + tablet ×3, saved quantities and deselection totals verified.');
+  console.log('Browser: fee quantities, fee-only mode without weight charges and restored fee-only editing verified.');
 } finally { await browser.close(); }

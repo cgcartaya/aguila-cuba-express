@@ -24,3 +24,11 @@ Para comprobar impresión con Chromium/Playwright instalado: `node tests/package
 Al seleccionar un cargo en «Rebaja y total de la factura», se muestra «Cantidad» y su subtotal. Por ejemplo, Teléfono a $20 y cantidad 2 suma $40. Las cantidades se guardan al editar y se imprimen como cantidad × precio unitario en las facturas. Los cargos anteriores sin cantidad se interpretan como una unidad. Los cargos por libra y porcentuales conservan su fórmula por unidad y se multiplican por la cantidad elegida.
 
 La lista descriptiva de contenido y las cantidades cobradas son campos independientes: escribir «2 teléfonos» en el contenido no selecciona automáticamente un cargo.
+
+## Paquetes cobrados solo por artículo
+
+En «Cálculo del paquete», elegir «Solo cargos por artículo» permite registrar teléfonos, laptops y otros artículos sin introducir peso ni elegir una tarifa por libra. Se debe seleccionar al menos un cargo fijo positivo y su cantidad. No se admiten cargos porcentuales ni por libra en esta modalidad.
+
+La factura incluye las líneas de artículos y sus cantidades; omite el subtotal por peso. La modalidad se guarda para posteriores ediciones. Se mantienen el viaje, el número de paquete, la etiqueta y el listado opcional de contenido. Las operaciones mixtas pueden combinar artículos y dinero. Para volver a cobrar libras, seleccionar «Por peso» y completar la tarifa y el peso.
+
+Aplicar `supabase/migrations/20261031201912_fee_only_packages.sql` antes del despliegue. Ya se aplicó a producción; las operaciones anteriores conservan el modo por peso.
