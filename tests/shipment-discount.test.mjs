@@ -101,3 +101,19 @@ for (const action of ['createShipment', 'updateShipment']) {
     assert.equal(storedFees[1].quantity, 3);
   });
 }
+
+test('new money-only operations ignore a trip and keep invoice, driver and principal data', async () => {
+  const db = database();
+  const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule });
+  const remittance = { ...input, contains_package: false, contains_money: true, trip_id: 'default-trip', money_amount: 100, money_commission: 10, money_total: 110, discount_amount: 0, amount_paid: 110, assigned_staff_id: 'driver', assigned_driver_name: 'Repartidor' };
+  const result = await service.createShipment('agency', remittance);
+  assert.equal(result.error, null);
+  assert.equal(result.data.trip_id, null);
+  assert.equal(result.data.order_number, 1);
+  assert.equal(result.data.assigned_staff_id, 'driver');
+  assert.equal(result.data.money_amount, 100);
+  assert.equal(result.data.service_price, 110);
+  const lines = db.writes.find(row => row.table === 'shipment_items').insert;
+  assert.equal(lines.some(row => row.item_type === 'PACKAGE'), false);
+  assert.equal(lines.find(row => row.item_type === 'MONEY').total, 110);
+});

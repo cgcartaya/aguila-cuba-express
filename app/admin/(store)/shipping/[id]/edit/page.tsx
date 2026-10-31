@@ -121,6 +121,7 @@ export default function EditShipmentPage({
       throw new Error("No se pudo resolver el envío.");
     }
 
+    if (input.contains_package && !shipment.contains_package && !shipment.trip_id) throw new Error("Para registrar un paquete, crea una operación con viaje.");
     setSubmitting(true);
     const { error } = await updateShipment(
       activeStore.id,
@@ -143,7 +144,7 @@ export default function EditShipmentPage({
     if (shipment.trip_id) {
       router.push(`/admin/shipping/trips/${shipment.trip_id}`);
     } else {
-      router.push("/admin/shipping");
+      router.push(input.contains_money && !input.contains_package ? "/admin/shipping/shipments?content=money" : "/admin/shipping/shipments");
     }
     router.refresh();
   }

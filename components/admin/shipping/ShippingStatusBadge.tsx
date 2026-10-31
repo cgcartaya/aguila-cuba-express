@@ -1,6 +1,6 @@
 import { getShippingStatusLabel } from "@/lib/shipping/types";
 
-export default function ShippingStatusBadge({ status }: { status: string }) {
+export default function ShippingStatusBadge({ status, moneyOnly = false }: { status: string; moneyOnly?: boolean }) {
   const styles: Record<string, string> = {
     received_miami: "bg-slate-100 text-slate-700",
     preparing: "bg-amber-100 text-amber-800",
@@ -11,5 +11,5 @@ export default function ShippingStatusBadge({ status }: { status: string }) {
     issue: "bg-red-100 text-red-700",
   };
 
-  return <span className={`rounded-full px-3 py-1 text-xs font-black ${styles[status] || "bg-slate-100 text-slate-700"}`}>{getShippingStatusLabel(status)}</span>;
+  return <span className={`rounded-full px-3 py-1 text-xs font-black ${styles[status] || "bg-slate-100 text-slate-700"}`}>{getShippingStatusLabel(status, moneyOnly)}</span>;
 }

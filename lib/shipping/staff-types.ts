@@ -41,6 +41,8 @@ export type StaffUserInput = {
 };
 
 export type StaffShipment = {
+  contains_money?: boolean;
+  contains_package?: boolean;
   id: string;
   order_number: number | null;
   trip_order: number | null;

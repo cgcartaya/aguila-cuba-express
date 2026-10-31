@@ -1,3 +1,4 @@
+import { getShippingStatusLabel } from "@/lib/shipping/types";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import {
@@ -9,6 +10,8 @@ const EVIDENCE_BUCKET = "delivery-photos";
 const SIGNED_URL_SECONDS = 10 * 60;
 
 type ShipmentRow = {
+  contains_money: boolean;
+  contains_package: boolean;
   id: string;
   tracking_code: string;
   location: string | null;
@@ -68,6 +71,8 @@ export async function GET(
     .select(
       [
         "id",
+        "contains_money",
+        "contains_package",
         "tracking_code",
         "location",
         "recipient_name",
@@ -144,6 +149,7 @@ export async function GET(
     }
   }
 
+  const moneyOnly = shipment.contains_money && !shipment.contains_package;
   const status =
     (shipment.status || "received_miami") as TrackingStatus;
 
@@ -153,7 +159,7 @@ export async function GET(
       location: shipment.location || "Cuba",
       status,
       statusLabel:
-        TRACKING_STATUS_LABELS[status] ||
+        (moneyOnly ? getShippingStatusLabel(status, true) : TRACKING_STATUS_LABELS[status]) ||
         "Actualización del envío",
       createdDate: shipment.created_date,
       deliveredDate: shipment.delivered_date,
@@ -161,7 +167,7 @@ export async function GET(
       recipientDisplay: maskName(shipment.recipient_name),
       events: events.map((event) => ({
         status: event.status,
-        title: event.title,
+        title: moneyOnly && event.status === "preparing" && event.title === TRACKING_STATUS_LABELS.preparing ? getShippingStatusLabel("preparing", true) : event.title,
         description: event.description,
         eventDate: event.event_date,
       })),

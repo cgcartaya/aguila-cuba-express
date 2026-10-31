@@ -14,6 +14,7 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { getShippingStatusLabel } from "@/lib/shipping/types";
 import type {
   ShippingLocation,
   ShippingMunicipality,
@@ -119,7 +120,7 @@ export default function ShippingAdvancedFilters({
           onChange={(value) => set("status", value)}
         >
           {statusOptions.map((item) => (
-            <option key={item.value} value={item.value}>{item.label}</option>
+            <option key={item.value} value={item.value}>{filters.contentType === "money" && item.value === "preparing" ? getShippingStatusLabel(item.value, true) : item.label}</option>
           ))}
         </QuickSelect>
 

@@ -273,7 +273,7 @@ export default function ShippingInvoicePage({
                 <SummaryCard
                   icon={<ClipboardCheck size={17} />}
                   label="Estado"
-                  value={getShippingStatusLabel(shipment.status)}
+                  value={getShippingStatusLabel(shipment.status, shipment.contains_money && !shipment.contains_package)}
                 />
 
                 <SummaryCard
