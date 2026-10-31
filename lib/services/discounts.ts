@@ -42,6 +42,7 @@ export async function createDiscountCampaign(
     code: string;
     discount_amount: number;
     authorized_limit: number;
+    open_to_all?: boolean;
     expires_at: string;
     is_active: boolean;
   }
