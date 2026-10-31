@@ -11,6 +11,7 @@ function load(path, dependencies = {}) {
   return compiled.exports;
 }
 const feeModule = load('lib/shipping/extra-fee-calculation.ts');
+const billingModule = load('lib/shipping/package-billing.ts', { '@/lib/shipping/extra-fee-calculation': feeModule });
 const packageModule = load('lib/shipping/package-label.ts');
 const totalsModule = load('lib/shipping/invoice-totals.ts');
 const calculate = totalsModule.shipmentInvoiceTotals;
@@ -56,7 +57,7 @@ function database() {
 for (const action of ['createShipment', 'updateShipment']) {
   test(`${action} persists the rebate, total, balance and invoice line`, async () => {
     const db = database();
-    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule });
+    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule, '@/lib/shipping/package-billing': billingModule });
     const result = action === 'createShipment' ? await service[action]('agency', input) : await service[action]('agency', 'shipment', input);
     assert.equal(result.error, null);
     const saved = db.writes.find(row => row.table === 'shipments').update;
@@ -72,7 +73,7 @@ for (const action of ['createShipment', 'updateShipment']) {
   });
   test(`${action} rejects excessive rebates before writing`, async () => {
     const db = database();
-    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule });
+    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule, '@/lib/shipping/package-billing': billingModule });
     const bad = { ...input, discount_amount: 61 };
     await assert.rejects(action === 'createShipment' ? service[action]('agency', bad) : service[action]('agency', 'shipment', bad), /rebaja/);
     assert.equal(db.writes.length, 0);
@@ -82,7 +83,7 @@ for (const action of ['createShipment', 'updateShipment']) {
 for (const action of ['createShipment', 'updateShipment']) {
   test(`${action} persists quantities and unit prices for extra fees without double charging`, async () => {
     const db = database();
-    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule });
+    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule, '@/lib/shipping/package-billing': billingModule });
     const charged = { ...input, extra_fees_total: 999, selected_fees: [
       { fee_id: 'phone', fee_name: 'Teléfono', calculation_type: 'fixed', configured_amount: 20, calculated_amount: 40, quantity: 2 },
       { fee_id: 'tablet', fee_name: 'Tablet', calculation_type: 'fixed', configured_amount: 10, calculated_amount: 30, quantity: 3 },
@@ -104,7 +105,7 @@ for (const action of ['createShipment', 'updateShipment']) {
 
 test('new money-only operations ignore a trip and keep invoice, driver and principal data', async () => {
   const db = database();
-  const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule });
+  const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule, '@/lib/shipping/package-billing': billingModule });
   const remittance = { ...input, contains_package: false, contains_money: true, trip_id: 'default-trip', money_amount: 100, money_commission: 10, money_total: 110, discount_amount: 0, amount_paid: 110, assigned_staff_id: 'driver', assigned_driver_name: 'Repartidor' };
   const result = await service.createShipment('agency', remittance);
   assert.equal(result.error, null);
@@ -117,3 +118,24 @@ test('new money-only operations ignore a trip and keep invoice, driver and princ
   assert.equal(lines.some(row => row.item_type === 'PACKAGE'), false);
   assert.equal(lines.find(row => row.item_type === 'MONEY').total, 110);
 });
+
+for (const action of ['createShipment', 'updateShipment']) {
+  test(`${action} bills fee-only parcels without stale weight charges`, async () => {
+    const db = database();
+    const service = load('lib/services/shipping.ts', { '@/lib/supabase': { supabase: db }, '@/lib/shipping/invoice-totals': totalsModule, '@/lib/shipping/package-label': packageModule, '@/lib/shipping/extra-fee-calculation': feeModule, '@/lib/shipping/package-billing': billingModule });
+    const parcel = { ...input, package_billing_mode: 'fees_only', weight_lb: 10, rate_per_lb: 6, weight_subtotal: 60, discount_amount: 0, selected_fees: [{ fee_id:'phone',fee_name:'Teléfono',calculation_type:'fixed',configured_amount:20,quantity:2,calculated_amount:999 }] };
+    const result = action === 'createShipment' ? await service[action]('agency', parcel) : await service[action]('agency', 'shipment', parcel);
+    assert.equal(result.error, null);
+    const saved = db.writes.find(row => row.table === 'shipments').update;
+    assert.equal(saved.package_billing_mode,'fees_only');
+    assert.equal(saved.contains_package,true);
+    assert.equal(saved.weight_lb,0);
+    assert.equal(saved.rate_per_lb,0);
+    assert.equal(saved.weight_subtotal,0);
+    assert.equal(saved.service_price,40);
+    const lines=db.writes.find(row=>row.table==='shipment_items').insert;
+    assert.equal(lines.some(row=>row.item_type==='PACKAGE'),false);
+    assert.equal(lines.find(row=>row.item_type==='EXTRA_FEE').quantity,2);
+    assert.equal(lines.find(row=>row.item_type==='EXTRA_FEE').unit_price,20);
+  });
+}

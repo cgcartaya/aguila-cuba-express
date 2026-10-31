@@ -1,3 +1,4 @@
+import { normalizePackageBilling } from "@/lib/shipping/package-billing";
 import { extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import { normalizePackageContents } from "@/lib/shipping/package-label";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
@@ -170,7 +171,7 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 
   const rows: Record<string, unknown>[] = [];
   let sort = 1;
-  if (input.contains_package) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
+  if (input.contains_package && input.package_billing_mode !== "fees_only") rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
   if (input.contains_money) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "MONEY", description: input.money_total > Math.max(input.money_commission - input.money_discount, 0) + 0.005 ? "Remesa y comisión" : "Comisión por envío de dinero", quantity: 1, unit: "USD", unit_price: roundMoney(input.money_total + input.money_discount), subtotal: roundMoney(input.money_total + input.money_discount), discount_amount: input.money_discount, total: input.money_total, metadata: { discount_reason: input.money_discount_reason }, sort_order: sort++ });
   input.selected_fees.forEach((fee) => rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "EXTRA_FEE", description: fee.fee_name, quantity: extraFeeQuantity(fee.quantity), unit: "unidad", unit_price: fee.calculated_amount / extraFeeQuantity(fee.quantity), subtotal: fee.calculated_amount, discount_amount: 0, total: fee.calculated_amount, metadata: { fee_id: fee.fee_id }, sort_order: sort++ }));
   if (input.discount_amount > 0) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "DISCOUNT", description: input.discount_reason || "Descuento general", quantity: 1, unit: "descuento", unit_price: -input.discount_amount, subtotal: -input.discount_amount, discount_amount: input.discount_amount, total: -input.discount_amount, metadata: {}, sort_order: sort++ });
@@ -197,6 +198,7 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 
 async function save(storeId: string, shipmentId: string | null, input: ShipmentInput, userId?: string | null) {
   const now = new Date().toISOString();
+  input = normalizePackageBilling(input);
   if (!shipmentId && input.contains_money && !input.contains_package) input = { ...input, trip_id: null };
   const selectedFees = input.selected_fees.map(fee => {
     const quantity = extraFeeQuantity(fee.quantity);
@@ -225,6 +227,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
   const data: Record<string, unknown> = {
     store_id: storeId,
+    package_billing_mode: input.package_billing_mode || "weight",
     ...(input.package_contents !== undefined || !input.contains_package ? { package_contents: input.contains_package ? normalizePackageContents(input.package_contents) : [] } : {}),
     customer_id: input.customer_id,
     recipient_id: input.recipient_id,

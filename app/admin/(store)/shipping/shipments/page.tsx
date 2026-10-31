@@ -440,7 +440,7 @@ export default function ShippingShipmentsPage() {
 
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-[11px] font-semibold text-slate-500 xl:hidden">
                       <span className="inline-flex items-center gap-1"><CalendarDays size={12} />{shipment.created_at ? new Date(shipment.created_at).toLocaleDateString("es-US") : "Sin fecha"}</span>
-                      {shipment.contains_package && <span>Paquete · {Number(shipment.weight_lb || 0).toFixed(2)} lb</span>}
+                      {shipment.contains_package && <span>{shipment.package_billing_mode === "fees_only" ? "Paquete · Por artículo" : `Paquete · ${Number(shipment.weight_lb || 0).toFixed(2)} lb`}</span>}
                       {shipment.contains_money && <span>Dinero · {money(shipment.money_amount)}</span>}
                     </div>
                   </article>
