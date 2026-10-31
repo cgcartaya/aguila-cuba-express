@@ -1,5 +1,7 @@
 "use client";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
+import ShipmentExtraFees from "@/components/admin/shipping/ShipmentExtraFees";
+import { calculateExtraFee, extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import PackageContentsEditor from "@/components/admin/shipping/PackageContentsEditor";
 import { normalizePackageContents } from "@/lib/shipping/package-label";
 import { weightRate } from "@/lib/shipping/weight-rate";
@@ -123,12 +125,10 @@ export default function ShipmentForm(props: Props) {
         : fallbackRate
       : 0;
     const packageSubtotal = form.contains_package ? Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0)) : 0;
-    const calculatedFees = form.selected_fees.map(fee => {
-      let amount = Number(fee.configured_amount || 0);
-      if (fee.calculation_type === "per_lb") amount *= effectiveWeight;
-      if (fee.calculation_type === "percentage") amount = packageSubtotal * amount / 100;
-      return { ...fee, calculated_amount: Number(amount.toFixed(2)) };
-    });
+    const calculatedFees = form.selected_fees.map(fee => calculateExtraFee(
+      { ...fee, quantity: Number.isInteger(fee.quantity ?? 1) && (fee.quantity ?? 1) >= 1 && (fee.quantity ?? 1) <= 9999 ? fee.quantity ?? 1 : 1 },
+      effectiveWeight, packageSubtotal,
+    ));
     const feesTotal = calculatedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0);
     const money = settings ? calculateMoneyCommission(form.money_amount, settings) : { rate: 0, commission: 0 };
     const maxDiscount = settings?.maximum_manual_discount;
@@ -146,7 +146,7 @@ export default function ShipmentForm(props: Props) {
       service_type_name: service?.name || current.service_type_name,
       rate_per_lb: Number(ratePerLb.toFixed(2)),
       weight_subtotal: Number(packageSubtotal.toFixed(2)),
-      selected_fees: calculatedFees,
+      selected_fees: calculatedFees.map((fee, index) => ({ ...fee, quantity: form.selected_fees[index].quantity ?? 1 })),
       extra_fees_total: Number(feesTotal.toFixed(2)),
       money_commission_rate: money.rate,
       money_commission: money.commission,
@@ -156,11 +156,11 @@ export default function ShipmentForm(props: Props) {
       amount_paid: Number(amountPaid.toFixed(2)),
       balance_due: Number(balance.toFixed(2)),
     }));
-  }, [form.country_id, form.province_id, form.municipality_id, form.contains_package, form.contains_money, form.shipping_location_id, form.service_type_id, form.weight_lb, form.money_amount, form.money_discount, form.discount_amount, form.amount_paid, form.selected_fees.map(x => x.fee_id).join(","), locations, serviceTypes, rates, settings]);
+  }, [form.country_id, form.province_id, form.municipality_id, form.contains_package, form.contains_money, form.shipping_location_id, form.service_type_id, form.weight_lb, form.money_amount, form.money_discount, form.discount_amount, form.amount_paid, form.selected_fees.map(x => `${x.fee_id}:${x.quantity ?? 1}`).join(","), locations, serviceTypes, rates, settings]);
 
   const set = <K extends keyof ShipmentInput>(key: K, value: ShipmentInput[K]) => setForm(current => ({ ...current, [key]: value }));
   const phone = (value: string) => value.replace(/\D/g, "").slice(0, settings?.phone_digits_max || 15);
-  const toggleFee = (fee: ShippingExtraFee) => set("selected_fees", form.selected_fees.some(x => x.fee_id === fee.id) ? form.selected_fees.filter(x => x.fee_id !== fee.id) : [...form.selected_fees, { fee_id: fee.id, fee_name: fee.name, calculation_type: fee.calculation_type, configured_amount: Number(fee.amount), calculated_amount: Number(fee.amount) }]);
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError("");
@@ -174,6 +174,7 @@ export default function ShipmentForm(props: Props) {
       return setError("No seleccionaste un cliente del buscador arriba (el remitente quedó escrito a mano). Búscalo y dale clic al resultado, o marca la casilla de excepción abajo si de verdad no quieres vincularlo.");
     }
     try {
+      form.selected_fees.forEach(fee => extraFeeQuantity(fee.quantity));
       shipmentInvoiceTotals(form);
       const contents = form.contains_package ? normalizePackageContents(form.package_contents) : [];
       await onSubmit({ ...form, package_contents: contents });
@@ -288,7 +289,7 @@ export default function ShipmentForm(props: Props) {
     </Section>}
 
     <Section title="Rebaja y total de la factura">
-      <div className="grid gap-3 md:grid-cols-2">{extraFees.filter(x=>x.is_active).map(fee=><label key={fee.id} className="flex items-center justify-between rounded-2xl border p-4"><span className="font-bold">{fee.name}</span><input type="checkbox" checked={form.selected_fees.some(x=>x.fee_id===fee.id)} onChange={()=>toggleFee(fee)} /></label>)}</div>
+      <ShipmentExtraFees fees={extraFees} value={form.selected_fees} onChange={value => set("selected_fees", value)} />
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
         <div className="grid gap-4 md:grid-cols-2">
           <NumberInput label="Rebaja de la factura (USD)" value={form.discount_amount} onChange={v=>set("discount_amount",v)} />

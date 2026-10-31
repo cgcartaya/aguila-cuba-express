@@ -18,3 +18,9 @@ Aplicar `supabase/migrations/20261031163951_shipping_package_labels.sql` antes d
 `node --test tests/package-label.test.mjs tests/shipment-discount.test.mjs tests/alvarez-shipping.test.mjs`
 
 Para comprobar impresión con Chromium/Playwright instalado: `node tests/package-label-browser.mjs`. Se puede indicar otro ejecutable mediante `PRINT_QA_CHROMIUM`. Los archivos de comprobación se escriben en `/tmp`.
+
+## Cantidad en cargos adicionales
+
+Al seleccionar un cargo en «Rebaja y total de la factura», se muestra «Cantidad» y su subtotal. Por ejemplo, Teléfono a $20 y cantidad 2 suma $40. Las cantidades se guardan al editar y se imprimen como cantidad × precio unitario en las facturas. Los cargos anteriores sin cantidad se interpretan como una unidad. Los cargos por libra y porcentuales conservan su fórmula por unidad y se multiplican por la cantidad elegida.
+
+La lista descriptiva de contenido y las cantidades cobradas son campos independientes: escribir «2 teléfonos» en el contenido no selecciona automáticamente un cargo.
