@@ -35,6 +35,7 @@ import {
 } from "@/lib/services/discounts";
 
 const initialCreateForm = {
+  open_to_all: true,
   name: "",
   code: "",
   discount_amount: "10",
@@ -44,6 +45,7 @@ const initialCreateForm = {
 };
 
 type CampaignEditForm = {
+  open_to_all: boolean;
   name: string;
   code: string;
   discount_amount: string;
@@ -287,6 +289,7 @@ export default function DiscountsAdminPage() {
     setSelectedCampaign(campaign);
 
     setEditForm({
+      open_to_all: campaign.open_to_all ?? false,
       name: campaign.name,
       code: campaign.code,
       discount_amount: String(
@@ -335,6 +338,7 @@ export default function DiscountsAdminPage() {
         await createDiscountCampaign(
           activeStore.id,
           {
+            open_to_all: createForm.open_to_all,
             name: createForm.name.trim(),
             code: createForm.code,
             discount_amount: Number(
@@ -363,7 +367,7 @@ export default function DiscountsAdminPage() {
       setFeedback({
         type: "success",
         message:
-          "Campaña creada. Ya puedes agregar teléfonos autorizados.",
+          "Campaña creada. Las promociones abiertas no requieren registrar teléfonos previamente.",
       });
 
       if (data?.id) {
@@ -426,6 +430,7 @@ export default function DiscountsAdminPage() {
           selectedCampaign.id,
           selectedCampaign.store_id,
           {
+            open_to_all: editForm.open_to_all,
             name: editForm.name.trim(),
             code: editForm.code,
             discount_amount: Number(
@@ -691,7 +696,7 @@ export default function DiscountsAdminPage() {
               </h1>
 
               <p className="mt-2 text-blue-100">
-                Crea campañas y administra los teléfonos autorizados de forma clara.
+                Crea promociones con un solo uso por teléfono, sin registro previo en las campañas abiertas.
               </p>
             </div>
           </div>
@@ -752,7 +757,7 @@ export default function DiscountsAdminPage() {
             />
 
             <Field
-              label="Cantidad autorizada"
+              label="Límite de usos"
               type="number"
               value={createForm.authorized_limit}
               onChange={(value) =>
@@ -791,6 +796,7 @@ export default function DiscountsAdminPage() {
             </label>
           </div>
 
+          <label className="mt-4 flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={createForm.open_to_all} onChange={event => setCreateForm(current => ({ ...current, open_to_all: event.target.checked }))} /> Abierta a cualquier teléfono · un uso por número</label>
           <button
             type="button"
             onClick={handleCreate}
@@ -1024,7 +1030,7 @@ export default function DiscountsAdminPage() {
                     />
 
                     <Field
-                      label="Cantidad autorizada"
+                      label="Límite de usos"
                       type="number"
                       value={
                         editForm.authorized_limit
@@ -1127,7 +1133,7 @@ export default function DiscountsAdminPage() {
                       </p>
 
                       <h2 className="text-xl font-black text-[#061b3a]">
-                        Clientes autorizados
+                        Teléfonos de la campaña
                       </h2>
 
                       <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -1221,7 +1227,7 @@ export default function DiscountsAdminPage() {
                       </div>
                     ) : customers.length === 0 ? (
                       <p className="rounded-2xl bg-slate-50 p-5 text-center text-sm font-bold text-slate-500">
-                        Todavía no hay teléfonos autorizados.
+                        Todavía no hay teléfonos registrados. En una campaña abierta se guardan automáticamente al usar el bono.
                       </p>
                     ) : (
                       customers.map(

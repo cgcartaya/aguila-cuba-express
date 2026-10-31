@@ -49,14 +49,14 @@ export async function POST(request: Request) {
 
     if (customerError) throw customerError;
 
-    if (!authorized) {
+    if (!authorized && !campaign.open_to_all) {
       return NextResponse.json({
         valid: false,
         message: "Este teléfono no está autorizado para esta promoción.",
       });
     }
 
-    if (authorized.status !== "available") {
+    if (authorized && authorized.status !== "available") {
       return NextResponse.json({
         valid: false,
         message:
@@ -66,6 +66,12 @@ export async function POST(request: Request) {
       });
     }
 
+    if (campaign.open_to_all) {
+      const { count, error: countError } = await supabaseAdmin.from("discount_campaign_customers")
+        .select("id", { count: "exact", head: true }).eq("campaign_id", campaign.id).eq("status", "used");
+      if (countError) throw countError;
+      if ((count || 0) >= campaign.authorized_limit) return NextResponse.json({ valid: false, message: "La promoción alcanzó su límite de usos." });
+    }
     const discountAmount = Math.min(
       Number(campaign.discount_amount || 0),
       Math.max(subtotal, 0)
