@@ -20,6 +20,14 @@ type DomainSitemap = {
 //prueba
 
 const DOMAIN_SITEMAPS: Record<string, DomainSitemap> = {
+  "alvarez-travel.com": {
+    baseUrl: "https://www.alvarez-travel.com",
+    routes: [
+      { path: "/", changeFrequency: "weekly", priority: 1 },
+      { path: "/tienda", changeFrequency: "daily", priority: 0.9 },
+      { path: "/rastrear", changeFrequency: "weekly", priority: 0.8 },
+    ],
+  },
   "aguilaexpressusa.com": {
     baseUrl: "https://aguilaexpressusa.com",
     routes: [

@@ -14,6 +14,7 @@ import { isReservasModuleEnabled } from "@/lib/services/reservas";
 import {
   buildPerlaMetadata,
   buildStoreMetadata,
+  getStorePublicBaseUrl,
   normalizeStoreHost,
   resolveStoreByHost,
   resolveStoreBySlug,
@@ -172,7 +173,10 @@ export async function generateMetadata(): Promise<Metadata> {
     const store = await resolveStoreByHost(host);
 
     if (store) {
-      return buildStoreMetadata(store, `https://${host}`);
+      return buildStoreMetadata(
+        store.slug === "alvarez-travel" ? { ...store, store_og_image_url: store.og_image_url || store.store_og_image_url } : store,
+        store.slug === "alvarez-travel" ? getStorePublicBaseUrl(store) : `https://${host}`
+      );
     }
   }
 
@@ -193,8 +197,8 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   if (landing === "alvarez") {
-    const canonicalUrl = host ? `https://${host}` : `https://alvares-travel.${PLATFORM_DOMAIN}`;
-    const store = await resolveStoreBySlug("alvares-travel");
+    const canonicalUrl = host ? `https://${host}` : `https://alvarez-travel.${PLATFORM_DOMAIN}`;
+    const store = await resolveStoreBySlug("alvarez-travel");
 
     if (store) return buildStoreMetadata(store, canonicalUrl);
 

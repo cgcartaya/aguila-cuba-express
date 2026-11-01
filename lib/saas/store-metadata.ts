@@ -154,7 +154,7 @@ export function getStorePublicBaseUrl(store: StoreMetadataRow) {
   const domain = normalizeStoreHost(store.domain || "");
 
   if (domain) {
-    return `https://${domain}`;
+    return `https://${domain === "alvarez-travel.com" ? `www.${domain}` : domain}`;
   }
 
   const subdomain = (store.subdomain || "").trim().toLowerCase();
@@ -317,6 +317,7 @@ export function buildStoreTrackingMetadata(
 
   return {
     metadataBase: new URL(canonicalUrl),
+    icons: buildStoreMetadata(store, canonicalUrl).icons,
     title,
     description,
     alternates: { canonical: canonicalUrl },
@@ -357,6 +358,7 @@ export function buildStoreShippingInvoiceMetadata(
 
   return {
     metadataBase: new URL(canonicalUrl),
+    icons: buildStoreMetadata(store, canonicalUrl).icons,
     title,
     description,
     alternates: { canonical: canonicalUrl },
