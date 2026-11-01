@@ -20,6 +20,7 @@ import {
 } from "@/lib/services/settings";
 import { getStoreBySlug } from "@/lib/services/stores";
 
+import RemittanceEntry from "@/components/remittances/RemittanceEntry";
 import RestaurantEntry from "@/components/restaurant/RestaurantEntry";
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
@@ -186,6 +187,7 @@ export default function StoreSlugTiendaPage() {
       ) : (
         <>
           <RestaurantEntry storeSlug={store?.slug} />
+          <RemittanceEntry storeSlug={store?.slug} />
           {sectionEnabled(storeSettings?.show_hero) && (
             <div className="mt-4 md:mt-5">
               {storeLoaded && storeId && (

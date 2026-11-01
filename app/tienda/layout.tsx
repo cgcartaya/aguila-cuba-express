@@ -34,6 +34,7 @@ type StoreLayoutProps = {
 const reservedTiendaRoutes = [
   "cart",
   "checkout",
+  "remesas",
   "producto",
   "productos",
   "productos-destacados",
@@ -85,8 +86,9 @@ export default function StoreLayout({ children }: StoreLayoutProps) {
   const isCheckoutPage =
     pathname.endsWith("/checkout") || pathname.includes("/checkout/");
 
-  const hideBottomNavigation = isCheckoutPage;
-  const hideFloatingCart = isCartPage || isCheckoutPage;
+  const isRemittancePage = pathname.endsWith("/remesas");
+  const hideBottomNavigation = isCheckoutPage || isRemittancePage;
+  const hideFloatingCart = isCartPage || isCheckoutPage || isRemittancePage;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
