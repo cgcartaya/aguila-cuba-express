@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, Check, MessageCircle, WalletCards } from "lucide-react";
 import { calculateMoneyCommission, type ShippingSettings } from "@/lib/shipping/types";
@@ -47,7 +48,7 @@ export default function RemittanceCalculator() {
         <div className="min-w-0">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-[#091D3D] px-4 py-2 text-xs font-bold uppercase tracking-widest text-white/80"><WalletCards size={16} /> Remesas a Cuba</span>
           <h2 id="remittance-title" className="mt-5 text-3xl font-black uppercase leading-tight tracking-tight sm:text-4xl">Más cerca de los tuyos.<br /><span className="text-[#FF2948]">Cuentas claras.</span></h2>
-          <p className="mt-4 max-w-md leading-7 text-[#B5BFCD]">Elige cuánto quieres enviar. Conoce la comisión y el total antes de hablar con nuestro equipo.</p>
+          <p className="mt-4 max-w-md leading-7 text-[#B5BFCD]">Elige cuánto quieres enviar. Conoce la comisión y el total antes de completar tu pedido.</p>
           {rates && <div className="mt-7 space-y-3">
             {[
               { label: `Menos de ${usd(Number(rates.money_fixed_fee_below))}`, value: `${usd(Number(rates.money_fixed_fee))} fijos`, active: valid && fixed },
@@ -73,8 +74,9 @@ export default function RemittanceCalculator() {
               <div className="mt-5 flex flex-wrap items-end justify-between gap-2 border-t border-slate-200 pt-4"><span className="font-bold">Total a pagar</span><strong className="text-3xl font-black tracking-tight text-[#CA0C28]">{usd(total)} <span className="text-xs">USD</span></strong></div>
             </> : <p className="text-sm text-slate-600">Introduce un monto válido para ver tu cotización.</p>}
           </div>
+          {quote && !status && <Link href={`/tienda/remesas?amount=${amount.toFixed(2)}`} className="mt-5 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-[#091D3D] px-4 text-center font-bold text-white">Continuar con mi remesa <ArrowRight size={18}/></Link>}
           <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-14 items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-4 text-center font-bold text-white transition hover:bg-[#a80920] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#07409A]"><MessageCircle size={20} className="shrink-0" /> {quote ? "Consultar esta remesa" : "Consultar por WhatsApp"} <ArrowRight size={18} className="shrink-0" /></a>
-          <p className="mt-3 text-center text-xs leading-5 text-slate-500">Cotización informativa en USD. La agencia confirma las condiciones antes de realizar la remesa.</p>
+          <p className="mt-3 text-center text-xs leading-5 text-slate-500">Importes en USD. Puedes completar el pedido y coordinar el pago con la agencia.</p>
         </div>
       </div>
     </section>
