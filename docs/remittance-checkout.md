@@ -2,7 +2,7 @@
 
 ## Cliente
 
-La tienda muestra la tarjeta **Enviar dinero a Cuba**. El cotizador de la landing tiene **Continuar con mi remesa**, que conserva el importe al abrir `/tienda/remesas?amount=200`. En el dominio central la ruta es `/tienda/alvares-travel/remesas`.
+La tienda muestra la tarjeta **Enviar dinero a Cuba**. El cotizador de la landing tiene **Continuar con mi remesa**, que conserva el importe al abrir `/tienda/remesas?amount=200`. En el dominio central la ruta es `/tienda/alvarez-travel/remesas`.
 
 El carrito de remesa es independiente del carrito físico y representa **una operación**, con un campo propio de importe. El cliente completa nombre/teléfono del remitente, nombre/teléfono/dirección/provincia/municipio del destinatario e indicaciones opcionales. Se admiten importes de 0.01 a 100,000 USD con dos decimales. El destinatario recibe el principal y el comprador paga principal + comisión.
 

@@ -6,7 +6,7 @@ import ts from 'typescript';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const {NextRequest,NextResponse}=require('next/server');
-function load(path,deps={}){const module={exports:{}};const source=ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;vm.runInNewContext(source,{module,exports:module.exports,require:name=>{if(!(name in deps))throw Error('Missing mock '+name);return deps[name];},URL,URLSearchParams});return module.exports;}
+function load(path,deps={}){const module={exports:{}};const source=ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;vm.runInNewContext(source,{module,exports:module.exports,require:name=>{if(!(name in deps))throw Error('Missing mock '+name);return deps[name];},URL,URLSearchParams});return module.exports;}
 const provinces=load('lib/checkout/cuba-provinces.ts');
 const validation=load('lib/remittances/validation.ts',{'@/lib/checkout/cuba-provinces':provinces});
 const permissions=load('lib/shipping/permissions.ts');
@@ -33,3 +33,12 @@ test('repartidor no puede confirmar pagos',async()=>{const db=database([{table:'
 test('biller confirma con agencia y actor derivados de la sesión',async()=>{const db=database([{table:'profiles',data:{active:true,role:'store_owner'}},{table:'store_users',data:{active:true,role:'BILLER',permissions:{}}},{table:'stores',data:{id:storeId}}],{shipment_id:'shipment-generated'});const {admin}=modules(db);const r=await admin.POST(request({storeId,id,action:'confirm',payment_reference:'Pago-1',actor:'attacker'},'valid'));assert.equal(r.status,200);const rpc=db.calls.find(x=>x.rpc);assert.equal(rpc.args.p_actor,actor);assert.equal(rpc.args.p_store_id,storeId);assert.equal(rpc.rpc,'confirm_remittance_checkout');});
 
 test('acepta la respuesta de fila compuesta RPC como arreglo',async()=>{const db=database([{table:'stores',data:agency}],[{id,status:'pending',amount:200,commission:16,total:216,currency:'USD'}]);const {public:route}=modules(db);const r=await route.POST(request({...payload,idempotency_key:id,expected_total:216}));assert.equal(r.status,201);assert.equal((await r.json()).order.reference,id);});
+
+test('la tarjeta comprable aparece con el slug real de Álvarez',()=>{
+ const React=require('react');const {renderToStaticMarkup}=require('react-dom/server');
+ const constants=load('components/landing/alvarez/constants.ts');
+ const {default:Entry}=load('components/remittances/RemittanceEntry.tsx',{'react/jsx-runtime':require('react/jsx-runtime'),'next/link':{default:props=>React.createElement('a',props)},'lucide-react':{ArrowRight:()=>null,WalletCards:()=>null},'@/components/landing/alvarez/constants':constants});
+ const html=renderToStaticMarkup(React.createElement(Entry,{storeSlug:'alvarez-travel'}));
+ assert.match(html,/Enviar|Envía/);assert.match(html,/href="\/tienda\/alvarez-travel\/remesas"/);
+ assert.equal(renderToStaticMarkup(React.createElement(Entry,{storeSlug:'aguila'})),'');
+});
