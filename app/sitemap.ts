@@ -21,7 +21,7 @@ type DomainSitemap = {
 
 const DOMAIN_SITEMAPS: Record<string, DomainSitemap> = {
   "alvarez-travel.com": {
-    baseUrl: "https://www.alvarez-travel.com",
+    baseUrl: "https://alvarez-travel.com",
     routes: [
       { path: "/", changeFrequency: "weekly", priority: 1 },
       { path: "/tienda", changeFrequency: "daily", priority: 0.9 },
