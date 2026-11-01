@@ -25,7 +25,9 @@ export async function POST(request:NextRequest){
    if(reference.length<3||reference.length>120)throw new RemittanceError('Indica la referencia del pago recibido.');
    const {data,error}=await supabaseAdmin.rpc('confirm_remittance_checkout',{p_store_id:storeId,p_order_id:id,p_actor:actor,p_payment_reference:reference});
    if(error)databaseFailure(error);
-   return reply({shipmentId:data.shipment_id});
+   const order=Array.isArray(data)?data[0]:data;
+   if(!order?.shipment_id)throw new RemittanceError('No se pudo recuperar el envío. Actualiza el listado antes de repetir.',503);
+   return reply({shipmentId:order.shipment_id});
   }
   if(body.action==='cancel'){
    const {data,error}=await supabaseAdmin.from('remittance_orders').update({status:'cancelled'}).eq('id',id).eq('store_id',storeId).eq('status','pending').select('id').maybeSingle();

@@ -12,7 +12,9 @@ export async function POST(request:NextRequest){
   if(!Number.isFinite(expected)||expected<=0)throw new RemittanceError('Vuelve a cotizar la remesa.');
   const {data,error}=await supabaseAdmin.rpc('create_remittance_checkout',{p_store_id:store.id,p_key:body.idempotency_key,p_payload:payload,p_expected_total:expected});
   if(error)databaseFailure(error);
-  return reply({order:{reference:data.id,status:data.status,amount:data.amount,commission:data.commission,total:data.total,currency:data.currency}},201);
+  const order=Array.isArray(data)?data[0]:data;
+  if(!order?.id)throw new RemittanceError('No se pudo recuperar el pedido. Reintenta la misma solicitud.',503);
+  return reply({order:{reference:order.id,status:order.status,amount:order.amount,commission:order.commission,total:order.total,currency:order.currency}},201);
  }catch(error){return failure(error);}
 }
 export async function GET(request:NextRequest){
