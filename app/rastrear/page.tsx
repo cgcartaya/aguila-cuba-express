@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import TrackingSearch from "@/components/tracking/TrackingSearch";
 import {
   buildStoreTrackingMetadata,
+  getStorePublicBaseUrl,
   normalizeStoreHost,
   resolveStoreByHost,
   resolveStoreBySlug,
@@ -19,7 +20,7 @@ async function getTrackingContext() {
   const store = (host ? await resolveStoreByHost(host) : null) ||
     (await resolveStoreBySlug("aguila"));
 
-  return { store, canonicalUrl: `${protocol}://${host || "aguilaexpressusa.com"}/rastrear` };
+  return { store, canonicalUrl: store?.slug === "alvarez-travel" ? `${getStorePublicBaseUrl(store)}/rastrear` : `${protocol}://${host || "aguilaexpressusa.com"}/rastrear` };
 }
 
 export async function generateMetadata(): Promise<Metadata> {

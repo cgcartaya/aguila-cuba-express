@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getStorefrontCanonicalUrl } from "@/lib/saas/store-metadata";
 import { getStoreBySlug } from "@/lib/services/stores";
 import StorePageClient from "./StorePageClient";
 
@@ -8,17 +9,6 @@ export const dynamicParams = true;
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
-
-function getBaseUrl(store: {
-  domain?: string | null;
-  slug?: string | null;
-}) {
-  if (store.domain) {
-    return `https://${store.domain.replace(/^https?:\/\//, "").replace(/^www\./, "")}`;
-  }
-
-  return "https://perlamarketplace.com";
-}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -35,15 +25,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const description =
     store.meta_description || `Descubre productos, ofertas y novedades de ${store.name}.`;
 
-  const baseUrl = getBaseUrl(store);
-  const pageUrl = store.domain
-    ? `${baseUrl}/tienda/${store.slug}`
-    : `https://perlamarketplace.com/tienda/${store.slug}`;
+  const pageUrl = getStorefrontCanonicalUrl(store);
 
   const image =
     store.store_og_image_url ||
     store.og_image_url ||
-    `${baseUrl}/og-image.jpg`;
+    "https://perlamarketplace.com/og-image.jpg";
 
   return {
     title,
