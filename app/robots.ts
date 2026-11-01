@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 export const dynamic = "force-dynamic";
 
 const DOMAIN_BASE_URLS: Record<string, string> = {
-  "alvarez-travel.com": "https://www.alvarez-travel.com",
+  "alvarez-travel.com": "https://alvarez-travel.com",
   "aguilaexpressusa.com": "https://aguilaexpressusa.com",
   "depariscienfuegos.com": "https://depariscienfuegos.com",
   "perlamarketplace.com": "https://perlamarketplace.com",

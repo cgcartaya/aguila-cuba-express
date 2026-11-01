@@ -154,7 +154,7 @@ export function getStorePublicBaseUrl(store: StoreMetadataRow) {
   const domain = normalizeStoreHost(store.domain || "");
 
   if (domain) {
-    return `https://${domain === "alvarez-travel.com" ? `www.${domain}` : domain}`;
+    return `https://${domain}`;
   }
 
   const subdomain = (store.subdomain || "").trim().toLowerCase();
