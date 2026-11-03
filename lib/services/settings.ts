@@ -500,7 +500,7 @@ export async function getBannersByStoreId(storeId: string) {
     .eq("store_id", storeId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
-    .limit(8);
+    .limit(20);
 }
 
 export async function createBannerForStore(
