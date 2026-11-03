@@ -19,6 +19,7 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import PlatformUsageCard from "@/components/admin/shipping/PlatformUsageCard";
 import DriverPerformance from "@/components/admin/shipping/dashboard/DriverPerformance";
 import OperationalMetricCard from "@/components/admin/shipping/dashboard/OperationalMetricCard";
 import RecentShipments from "@/components/admin/shipping/dashboard/RecentShipments";
@@ -93,6 +94,7 @@ export default function ShippingOperationalDashboardPage() {
   const [dashboard, setDashboard] =
     useState<ShippingDashboardData>(emptyDashboard);
 
+  const [dashboardStoreId, setDashboardStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -103,9 +105,11 @@ export default function ShippingOperationalDashboardPage() {
     );
 
   useEffect(() => {
+    let current = true;
     async function loadDashboard() {
       if (!activeStore?.id) {
         setDashboard(emptyDashboard);
+        setDashboardStoreId(null);
         setLoading(false);
         return;
       }
@@ -116,6 +120,9 @@ export default function ShippingOperationalDashboardPage() {
       const { data, error } = await getShippingDashboard(
         activeStore.id
       );
+
+      if (!current) return;
+      setDashboardStoreId(activeStore.id);
 
       if (error) {
         setErrorMessage(
@@ -133,13 +140,14 @@ export default function ShippingOperationalDashboardPage() {
     if (!accessLoading && !storeLoading) {
       void loadDashboard();
     }
+    return () => { current = false; };
   }, [
     accessLoading,
     storeLoading,
     activeStore?.id,
   ]);
 
-  if (loading || accessLoading || storeLoading) {
+  if (loading || accessLoading || storeLoading || (activeStore?.id && activeStore.id !== dashboardStoreId)) {
     return (
       <main className="min-h-screen bg-slate-50 p-6">
         <div className="mx-auto flex min-h-[60vh] max-w-7xl items-center justify-center">
@@ -236,6 +244,9 @@ export default function ShippingOperationalDashboardPage() {
             tone="emerald"
           />
         </section>
+
+        {dashboard.platform_billing_error && <p role="alert" className="mt-6 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">{dashboard.platform_billing_error}</p>}
+        {dashboard.platform_billing && <PlatformUsageCard billing={dashboard.platform_billing} />}
 
         <div className="mt-6">
           <StatusOverview statuses={dashboard.statuses} />

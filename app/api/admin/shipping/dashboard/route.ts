@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   const denied = await canReadStore(request, storeId);
   if (denied) return denied;
 
-  const [shipmentsResult, receiptsResult] = await Promise.all([
+  const [shipmentsResult, receiptsResult, billingResult] = await Promise.all([
     supabaseAdmin
       .from("shipments")
       .select("id,order_number,tracking_code,recipient_name,sender_name,location,status,assigned_staff_id,assigned_driver_id,assigned_driver_name,service_price,amount_paid,balance_due,weight_lb,contains_package,contains_money,money_amount,created_at,delivered_date")
@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
       .from("payment_receipts")
       .select("shipment_id,amount")
       .eq("store_id", storeId),
+    supabaseAdmin.rpc("get_shipping_platform_billing", { p_store_id: storeId }),
   ]);
 
   if (shipmentsResult.error || receiptsResult.error) {
@@ -158,6 +159,8 @@ export async function GET(request: NextRequest) {
   });
 
   const data: ShippingDashboardData = {
+    platform_billing: billingResult.error ? undefined : billingResult.data,
+    platform_billing_error: billingResult.error ? "No se pudo consultar la comisión del módulo. Actualiza la página para volver a intentarlo." : undefined,
     summary: {
       total_active: financialRows.length,
       created_today: financialRows.filter(isToday).length,
