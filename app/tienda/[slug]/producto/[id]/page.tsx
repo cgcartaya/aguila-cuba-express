@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cache } from "react";
+import { getItemPublicUrl } from "@/lib/storefront/item-public-url";
 
 import { buildStoreMetadata } from "@/lib/saas/store-metadata";
 import { applyPlatformFee, getPlatformFeePercent } from "@/lib/storefront/product-quantity-pricing";
@@ -39,39 +40,6 @@ const loadProductMetadata = cache(async (slug: string, id: string) => {
   return { store, product };
 });
 
-function getProductPublicUrl(
-  store: {
-    domain?: string | null;
-    subdomain?: string | null;
-    slug: string;
-    has_landing?: boolean | null;
-  },
-  productId: string
-) {
-  const cleanDomain = store.domain
-    ?.trim()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .replace(/\/$/, "");
-
-  if (cleanDomain) {
-    const path = store.has_landing
-      ? `/tienda/producto/${encodeURIComponent(productId)}`
-      : `/producto/${encodeURIComponent(productId)}`;
-    return `https://${cleanDomain}${path}`;
-  }
-
-  const subdomain = store.subdomain?.trim().toLowerCase();
-  if (subdomain) {
-    const path = store.has_landing
-      ? `/tienda/producto/${encodeURIComponent(productId)}`
-      : `/producto/${encodeURIComponent(productId)}`;
-    return `https://${subdomain}.perlamarketplace.com${path}`;
-  }
-
-  return `https://perlamarketplace.com/tienda/${encodeURIComponent(store.slug)}/producto/${encodeURIComponent(productId)}`;
-}
-
 function getProductMainImage(product: {
   image_url?: string | null;
   product_images?: ProductMetadataImage[] | null;
@@ -100,7 +68,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const { store, product } = context;
-  const canonicalUrl = getProductPublicUrl(store, id);
+  const canonicalUrl = getItemPublicUrl(store, id, "producto");
 
   if (!product) {
     return buildStoreMetadata(store, canonicalUrl, {
