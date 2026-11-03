@@ -4,13 +4,13 @@
 
 La tienda muestra la tarjeta **Enviar dinero a Cuba**. El cotizador de la landing tiene **Continuar con mi remesa**, que conserva el importe al abrir `/tienda/remesas?amount=200`. En el dominio central la ruta es `/tienda/alvarez-travel/remesas`.
 
-El carrito de remesa es independiente del carrito físico y representa **una operación**, con un campo propio de importe. El cliente completa nombre/teléfono del remitente, nombre/teléfono/dirección/provincia/municipio del destinatario e indicaciones opcionales. Se admiten importes de 0.01 a 100,000 USD con dos decimales. El destinatario recibe el principal y el comprador paga principal + comisión.
+El carrito de remesa es independiente del carrito físico y representa **una operación**, con un campo propio de importe. El cliente completa nombre/teléfono del remitente, nombre/teléfono/dirección/provincia/municipio del destinatario e indicaciones opcionales. El checkout de Álvarez solo admite La Habana y sus 15 municipios mediante un desplegable obligatorio, con validación también en servidor. El teléfono del destinatario empieza con +53 y requiere los 8 dígitos cubanos; el remitente conserva el prefijo de su país. Se admiten importes de 0.01 a 100,000 USD con dos decimales. El destinatario recibe el principal y el comprador paga principal + comisión.
 
 La cotización se obtiene del servidor, que lee `shipping_settings`: cargo fijo por debajo de `money_fixed_fee_below`, porcentaje inferior hasta menos de `money_threshold` y porcentaje superior desde ese umbral. No hay un precio de producto que mantener ni se utiliza la cantidad de unidades para representar dólares. El cálculo monetario del checkout usa numeric/round de Postgres. Los pedidos conservan su cotización al crearse; cambios posteriores de tarifas afectan nuevas compras.
 
 ## Pago manual en esta primera versión
 
-No hay cobro con Stripe ni Clover. Al confirmar el checkout se crea un pedido **pendiente de pago** y se muestra una referencia privada con el botón de coordinación por WhatsApp de Álvarez. No se afirma que se haya recibido dinero ni se genera una entrega en ese momento.
+No hay cobro con Stripe ni Clover. Al confirmar el checkout se crea un pedido **pendiente de pago** y se muestra una referencia privada con el botón de coordinación por WhatsApp de Álvarez. El pedido se guarda antes de abrir WhatsApp y aparece en Administración aunque el cliente no envíe el mensaje. No se afirma que se haya recibido dinero ni se genera una entrega en ese momento.
 
 El enlace de confirmación permite consultar el estado sin iniciar sesión, mediante referencia UUID no enumerable, limitada por agencia. Solo devuelve importes/estado y el rastreo cuando el pago está confirmado; no devuelve datos personales. Debe conservarse privado. La página no se indexa.
 
