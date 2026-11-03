@@ -24,3 +24,15 @@ Limits:
 - stores still contains publicly readable non-secret administrative/contact fields. Moving private configuration behind authorized APIs remains a follow-up.
 - Other tables/RPCs require their own tenant/role audit. Passing these tests does not certify isolation of the entire SaaS.
 - Tests use synthetic DB identities/fixtures; not a claim of complete browser E2E or live payment processing.
+
+## Applied and verified in production
+Initial commit: b1de2a950b180149f35488ff45d310b1fec06bd6; Vercel dpl_g9qZ5NRnSmc69J3eqGfdEMsKk3FS READY.
+Migration 20261103181005 recorded atomically with the permission change.
+Public REST store/product reads returned 200; secret/hash reads returned 401 with Postgres code 42501.
+Authenticated browser credential access is denied; service_role credential access remains allowed.
+No new error/fatal runtime logs in the initial observation window. This is a short observation, not an uptime guarantee.
+
+## Recipe costs follow-up
+The public restaurant_recipe_costs view ran with definer privileges. The second migration uses security_invoker and denies anonymous reads.
+An explicit superadmin menu_items read policy preserves cost reporting for inactive dishes.
+Synthetic owner/superadmin/anonymous tests and rollback/reapply were successful in staging.
