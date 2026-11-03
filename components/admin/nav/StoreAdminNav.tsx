@@ -34,7 +34,7 @@ export default function StoreAdminNav() {
   const storeName = activeStore?.name || "Tienda activa";
   const publicStoreHref = "/portal";
 
-  const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
+  const sections = getVisibleAdminSections(activeStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
   const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
   const pendingMenuOrdersCount = usePendingMenuOrdersCount(activeStore?.id);

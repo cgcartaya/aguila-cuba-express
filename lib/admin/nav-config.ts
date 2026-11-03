@@ -47,6 +47,7 @@ export type AdminLink = {
   href: string;
   label: string;
   icon: ComponentType<{ size?: number; className?: string }>;
+  storeSlugs?: readonly string[];
 };
 
 export type AdminSection = {
@@ -121,6 +122,7 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/shipping", label: "Dashboard de envíos", icon: LayoutDashboard },
       { href: "/admin/shipping/trips", label: "Viajes", icon: Route },
       { href: "/admin/shipping/shipments", label: "Todos los envíos", icon: Truck },
+      { href: "/admin/shipping/remittances", label: "Compras de remesas", icon: CircleDollarSign, storeSlugs: ["alvarez-travel"] },
       { href: "/admin/customers", label: "Clientes y destinatarios", icon: Users },
       { href: "/admin/shipping/staff", label: "Personal", icon: Users },
       { href: "/admin/shipping/settings", label: "Ajustes de envíos", icon: Wrench },
@@ -226,6 +228,7 @@ export function getVisibleAdminSections(
   store:
     | Pick<
         AccessStore,
+        | "slug"
         | "module_store_enabled"
         | "module_shipping_enabled"
         | "module_pickups_enabled"
@@ -237,7 +240,12 @@ export function getVisibleAdminSections(
     | undefined,
   isSuperAdmin: boolean,
 ): AdminSection[] {
-  return adminNavSections.filter((section) => isSuperAdmin || isModuleEnabled(store, section.module));
+  return adminNavSections
+    .filter((section) => isSuperAdmin || isModuleEnabled(store, section.module))
+    .map((section) => ({
+      ...section,
+      links: section.links.filter((link) => !link.storeSlugs || link.storeSlugs.includes(store?.slug || "")),
+    }));
 }
 
 export { Store as StoreIcon, ExternalLink };

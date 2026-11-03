@@ -101,7 +101,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
   const { profile } = useAdminProfile();
 
   const activeStore = isSuperAdmin ? store || accessStore : accessStore;
-  const sections = getVisibleAdminSections(accessStore, isSuperAdmin);
+  const sections = getVisibleAdminSections(activeStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
   const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
   const pendingMenuOrdersCount = usePendingMenuOrdersCount(activeStore?.id);
