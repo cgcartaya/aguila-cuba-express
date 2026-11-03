@@ -1,53 +1,94 @@
-'use client';
-import { useCallback,useEffect,useState } from 'react';
-import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import { useStore } from '@/hooks/useStore';
-import { useAdminAccess } from '@/hooks/useAdminAccess';
-type Order={id:string;payload:Record<string,string>;amount:number;commission:number;total:number;status:string;shipment_id:string|null;payment_reference:string|null;created_at:string};
-const usd=(value:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(value);
-export default function RemittanceOrders(){
- const {store:selected}=useStore();const {store:accessStore,isSuperAdmin}=useAdminAccess();
- const store=isSuperAdmin?(selected??accessStore):accessStore;
- const storeId=store?.id;
- const [orders,setOrders]=useState<Order[]>([]);const [status,setStatus]=useState('pending');const [page,setPage]=useState(0);
- const [busy,setBusy]=useState(false);const [loading,setLoading]=useState(true);const [error,setError]=useState('');const [success,setSuccess]=useState('');
- const [action,setAction]=useState<{order:Order;type:'confirm'|'cancel'}|null>(null);
- const [reference,setReference]=useState('');const [received,setReceived]=useState('');
- const load=useCallback(async()=>{
-  if(!storeId)return;
-  setLoading(true);setError('');
-  try{
-   const {data:{session}}=await supabase.auth.getSession();
-   const response=await fetch(`/api/admin/remittances?${new URLSearchParams({storeId,status,page:String(page)})}`,{headers:{Authorization:`Bearer ${session?.access_token??''}`},cache:'no-store'});
-   const data=await response.json();if(!response.ok)throw Error(data.error);setOrders(data.orders);
-  }catch(e){setError((e as Error).message||'No se pudieron cargar los pedidos.');}finally{setLoading(false);}
- },[storeId,status,page]);
- useEffect(()=>{const timer=setTimeout(()=>void load(),0);return()=>clearTimeout(timer);},[load]);
- async function save(){
-  if(!action||!store?.id||busy)return;
-  if(action.type==='confirm'&&Number(received.replace(',','.'))!==Number(action.order.total)){setError('El importe recibido debe coincidir con el total del pedido.');return;}
-  setBusy(true);setError('');setSuccess('');
-  try{
-   const {data:{session}}=await supabase.auth.getSession();
-   const response=await fetch('/api/admin/remittances',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session?.access_token??''}`},body:JSON.stringify({storeId:store.id,id:action.order.id,action:action.type,payment_reference:reference})});
-   const data=await response.json();if(!response.ok)throw Error(data.error);
-   setSuccess(action.type==='confirm'?'Pago confirmado. El envío de dinero ya está registrado sin viaje.':'Pedido cancelado.');setAction(null);await load();
-  }catch(e){setError((e as Error).message||'No se pudo completar la operación.');}finally{setBusy(false);}
- }
- return <main className="mx-auto max-w-6xl space-y-6 p-4 sm:p-6">
-  <Link href="/admin/shipping" className="text-sm font-bold text-blue-700">← Volver a Envíos</Link>
-  <header><h1 className="text-2xl font-black text-slate-900">Compras de remesas</h1><p className="mt-2 text-sm text-slate-500">Compras recibidas desde la tienda. Confirma únicamente pagos ya recibidos y verificados: se creará un envío de dinero sin viaje, listo para asignarlo a un repartidor.</p></header>
-  <div className="flex flex-wrap gap-3"><select aria-label="Estado del pedido" value={status} disabled={busy} onChange={e=>{setStatus(e.target.value);setPage(0);}} className="rounded-xl border bg-white p-3"><option value="pending">Pendientes de pago</option><option value="paid">Pagados</option><option value="cancelled">Cancelados</option></select><button onClick={()=>void load()} disabled={loading||busy} className="rounded-xl border bg-white px-4 font-bold">Actualizar</button></div>
-  {error&&<p role="alert" className="rounded-xl bg-red-50 p-4 text-red-700">{error}</p>}
-  {success&&<p role="status" className="rounded-xl bg-green-50 p-4 text-green-800">{success}</p>}
-  {loading?<p>Cargando pedidos…</p>:orders.length===0?<p className="rounded-2xl border bg-white p-8 text-slate-500">No hay pedidos en esta página.</p>:<div className="space-y-4">{orders.map(order=><article key={order.id} className="rounded-2xl border bg-white p-5 shadow-sm">
-   <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs text-slate-500">{new Date(order.created_at).toLocaleString()}</p><h2 className="mt-1 font-bold">{order.payload.sender_name} → {order.payload.recipient_name}</h2><p className="mt-2 break-all font-mono text-xs text-slate-500">{order.id}</p></div><div className="text-right"><p className="text-xl font-black">{usd(order.total)}</p><p className="text-sm text-slate-500">Remesa {usd(order.amount)} + comisión {usd(order.commission)}</p></div></div>
-   <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2"><p>Remitente: {order.payload.sender_phone}</p><p>Destinatario: {order.payload.recipient_phone}</p><p className="sm:col-span-2">{order.payload.recipient_address}, {order.payload.recipient_municipality}, {order.payload.recipient_province}</p>{order.payload.notes&&<p className="sm:col-span-2">Indicaciones: {order.payload.notes}</p>}</div>
-   {order.payment_reference&&<p className="mt-3 text-sm">Pago: {order.payment_reference}</p>}
-   <div className="mt-4 flex flex-wrap gap-3">{order.status==='pending'?<><button disabled={busy} onClick={()=>{setAction({order,type:'confirm'});setReference('');setReceived('');setError('');}} className="rounded-xl bg-blue-700 px-4 py-3 font-bold text-white">Confirmar pago recibido</button><button disabled={busy} onClick={()=>{setAction({order,type:'cancel'});setError('');}} className="rounded-xl border px-4 py-3 font-bold">Cancelar pedido</button></>:order.shipment_id?<Link href={`/admin/shipping/${encodeURIComponent(order.shipment_id)}`} className="font-bold text-blue-700 underline">Abrir envío de dinero</Link>:null}</div>
-  </article>)}</div>}
-  <div className="flex items-center justify-between"><button disabled={page===0||loading||busy} onClick={()=>setPage(v=>v-1)} className="rounded-xl border px-4 py-2 disabled:opacity-40">Anterior</button><span className="text-sm">Página {page+1}</span><button disabled={orders.length<50||loading||busy} onClick={()=>setPage(v=>v+1)} className="rounded-xl border px-4 py-2 disabled:opacity-40">Siguiente</button></div>
-  {action&&<div className="fixed inset-0 z-[100] grid place-items-center bg-black/50 p-4"><section role="dialog" aria-modal="true" aria-labelledby="remittance-confirm-title" className="w-full max-w-lg rounded-3xl bg-white p-6"><h2 id="remittance-confirm-title" className="text-xl font-black">{action.type==='confirm'?'Confirmar pago recibido':'Cancelar pedido'}</h2><p className="mt-3 text-sm text-slate-600">{action.type==='confirm'?`Confirma que recibiste y verificaste ${usd(action.order.total)}. Esta acción genera el envío de dinero para reparto.`:'Se cancelará el pedido pendiente. No se creará ningún envío.'}</p>{action.type==='confirm'&&<><label className="mt-4 block text-sm font-bold">Importe recibido (USD)<input autoFocus inputMode="decimal" value={received} onChange={e=>setReceived(e.target.value)} className="mt-2 w-full rounded-xl border p-3"/></label><label className="mt-4 block text-sm font-bold">Referencia o comprobante del pago<input maxLength={120} value={reference} onChange={e=>setReference(e.target.value)} className="mt-2 w-full rounded-xl border p-3"/></label></>}{error&&<p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}<div className="mt-6 flex gap-3"><button disabled={busy||action.type==='confirm'&&(reference.trim().length<3||Number(received.replace(',','.'))!==Number(action.order.total))} onClick={()=>void save()} className="rounded-xl bg-blue-700 px-5 py-3 font-bold text-white disabled:opacity-40">{busy?'Procesando…':'Confirmar'}</button><button disabled={busy} onClick={()=>setAction(null)} className="rounded-xl border px-5 py-3">Volver</button></div></section></div>}
- </main>;
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { useStore } from "@/hooks/useStore";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
+import RemittanceInbox, { type RemittanceOrder, type RemittanceStatus } from "@/components/admin/remittances/RemittanceInbox";
+import RemittanceActionDialog, { receivedAmountMatches, type RemittanceAction } from "@/components/admin/remittances/RemittanceActionDialog";
+
+type LoadedOrders = { storeId: string; status: RemittanceStatus; page: number; orders: RemittanceOrder[] };
+type Success = { storeId: string; text: string; shipmentId?: string };
+
+export default function RemittanceOrders() {
+  const { store: selected, loading: storeLoading } = useStore();
+  const { store: accessStore, isSuperAdmin, loading: accessLoading } = useAdminAccess();
+  const store = isSuperAdmin ? selected ?? accessStore : accessStore;
+  const storeId = store?.id;
+  const [loaded, setLoaded] = useState<LoadedOrders | null>(null);
+  const [status, setStatus] = useState<RemittanceStatus>("pending");
+  const [page, setPage] = useState(0);
+  const [refresh, setRefresh] = useState(0);
+  const [search, setSearch] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<{ storeId: string; message: string } | null>(null);
+  const [success, setSuccess] = useState<Success | null>(null);
+  const [action, setAction] = useState<RemittanceAction | null>(null);
+  const requestRef = useRef<AbortController | null>(null);
+  const savingRef = useRef(false);
+
+  const load = useCallback(async () => {
+    requestRef.current?.abort();
+    if (!storeId) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (controller.signal.aborted) return;
+      const response = await fetch(`/api/admin/remittances?${new URLSearchParams({ storeId, status, page: String(page) })}`, { headers: { Authorization: `Bearer ${session?.access_token ?? ""}` }, cache: "no-store", signal: controller.signal });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudieron cargar las órdenes.");
+      if (!controller.signal.aborted) setLoaded({ storeId, status, page, orders: data.orders || [] });
+    } catch (cause) {
+      if (!controller.signal.aborted) setError({ storeId, message: cause instanceof Error ? cause.message : "No se pudieron cargar las órdenes." });
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, [storeId, status, page]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { void load(); }, 0);
+    return () => { clearTimeout(timer); requestRef.current?.abort(); };
+  }, [load, refresh]);
+
+  async function save(reference: string, received: string) {
+    if (!action || !storeId || action.storeId !== storeId || savingRef.current) return;
+    if (action.type === "confirm" && (!receivedAmountMatches(received, action.order.total) || reference.trim().length < 3 || reference.trim().length > 120)) {
+      setError({ storeId, message: "Verifica el importe recibido y la referencia del pago." });
+      return;
+    }
+    savingRef.current = true;
+    setBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch("/api/admin/remittances", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` }, body: JSON.stringify({ storeId, id: action.order.id, action: action.type, payment_reference: reference }) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "No se pudo completar la operación.");
+      setSuccess({ storeId, text: action.type === "confirm" ? "Pago confirmado. Tu envío de dinero está listo." : "Solicitud cancelada.", shipmentId: action.type === "confirm" ? data.shipmentId : undefined });
+      setAction(null);
+      setLoaded(null);
+      setRefresh(value => value + 1);
+    } catch (cause) {
+      setError({ storeId, message: cause instanceof Error ? cause.message : "No se pudo completar la operación." });
+    } finally {
+      savingRef.current = false;
+      setBusy(false);
+    }
+  }
+
+  const current = loaded && loaded.storeId === storeId && loaded.status === status && loaded.page === page ? loaded : null;
+  const currentAction = action?.storeId === storeId ? action : null;
+  const currentError = error && error.storeId === storeId ? error.message : "";
+
+  return <>
+    <RemittanceInbox storeName={store?.name || ""} orders={current?.orders || []} status={status} page={page} search={search} busy={busy} loading={accessLoading || storeLoading || Boolean(storeId) && (loading || !current && !currentError)} error={currentAction ? "" : currentError || (!storeId && !accessLoading && !storeLoading ? "Selecciona una tienda para consultar sus órdenes." : "")} success={success?.storeId === storeId ? success : null}
+      onStatus={value => { setStatus(value); setPage(0); setSearch(""); setSuccess(null); }} onSearch={setSearch} onRefresh={() => { void load(); }} onPage={value => { setPage(value); setSearch(""); }}
+      onConfirm={order => { if (storeId) { setAction({ order, type: "confirm", storeId }); setError(null); } }} onCancel={order => { if (storeId) { setAction({ order, type: "cancel", storeId }); setError(null); } }} />
+    {currentAction && <RemittanceActionDialog key={`${currentAction.storeId}:${currentAction.order.id}:${currentAction.type}`} action={currentAction} busy={busy} error={currentError} onClose={() => { if (!busy) { setAction(null); setError(null); } }} onSubmit={(reference, received) => { void save(reference, received); }} />}
+  </>;
 }
