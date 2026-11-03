@@ -3,14 +3,14 @@ import { useEffect,useRef,useState } from 'react';
 import { useParams,useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft,ArrowRight,CheckCircle2,Loader2,ShoppingBag,WalletCards } from 'lucide-react';
-import { CUBA_PROVINCES } from '@/lib/checkout/cuba-provinces';
+import { HAVANA_MUNICIPALITIES } from '@/lib/checkout/cuba-provinces';
 import { remittanceAmount } from '@/lib/remittances/validation';
 import { ALVAREZ_WHATSAPP_URL } from '@/components/landing/alvarez/constants';
 type Quote={amount:number;commission:number;rate:number;total:number;currency:string};
 type Order={reference:string;status:string;amount:number;commission:number;total:number;trackingCode?:string|null};
 const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
 const inputClass='mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-100';
-const empty={sender_name:'',sender_phone:'',recipient_name:'',recipient_phone:'',recipient_address:'',recipient_province:'La Habana',recipient_municipality:'',notes:''};
+const empty={sender_name:'',sender_phone:'',recipient_name:'',recipient_phone:'+53 ',recipient_address:'',recipient_province:'La Habana',recipient_municipality:'',notes:''};
 export default function RemittanceShop(){
  const params=useParams<{slug?:string}>();const search=useSearchParams();const slug=params.slug??'';
  const [amount,setAmount]=useState(search.get('amount')??'100');
@@ -67,7 +67,7 @@ export default function RemittanceShop(){
   {step==='done'?<section className="mt-7 rounded-3xl border border-blue-100 bg-white p-6 shadow-sm sm:p-8">
    {!order?<p>{loading?'Cargando pedido…':'Consulta la referencia con la agencia.'}</p>:<>
     <CheckCircle2 className="text-blue-700" size={36}/><h2 className="mt-4 text-2xl font-black">{order.status==='paid'?'Pago confirmado':order.status==='cancelled'?'Pedido cancelado':'Pedido recibido · Pago pendiente'}</h2>
-    <p className="mt-3 text-sm text-slate-600">{order.status==='paid'?'Tu envío de dinero ya está registrado para organizar la entrega.':order.status==='cancelled'?'La agencia canceló este pedido. Puedes crear una nueva remesa desde la tienda.':'Contacta con la agencia para recibir las instrucciones de pago. La remesa se registra para reparto únicamente cuando la agencia confirma haber recibido el pago.'}</p>
+    <p className="mt-3 text-sm text-slate-600">{order.status==='paid'?'Tu envío de dinero ya está registrado para organizar la entrega.':order.status==='cancelled'?'La agencia canceló este pedido. Puedes crear una nueva remesa desde la tienda.':'Tu pedido ya está guardado en la agencia, aunque no envíes el WhatsApp. Contacta para coordinar el pago. La entrega se organiza cuando la agencia confirma haberlo recibido.'}</p>
     <p className="mt-5 break-all rounded-xl bg-slate-50 p-4 font-mono text-sm">Referencia: {order.reference}</p>
     <p className="mt-4 text-xl font-bold">Total: {money(order.total)} USD</p>
     <p className="mt-1 text-sm text-slate-600">Destinatario recibe {money(order.amount)} · Comisión {money(order.commission)}</p>
@@ -89,8 +89,10 @@ export default function RemittanceShop(){
      <h2 className="text-lg font-bold">Datos del remitente</h2>
      {(['sender_name','sender_phone'] as const).map(field=><label key={field} className="block text-sm font-semibold">{field==='sender_name'?'Nombre y apellidos':'Teléfono con prefijo del país'}<input required type={field==='sender_phone'?'tel':'text'} autoComplete={field==='sender_phone'?'tel':'name'} maxLength={field==='sender_phone'?30:120} value={details[field]} onChange={e=>setDetails({...details,[field]:e.target.value})} className={inputClass}/></label>)}
      <h2 className="border-t pt-5 text-lg font-bold">Destinatario en Cuba</h2>
-     {(['recipient_name','recipient_phone','recipient_address','recipient_municipality'] as const).map(field=><label key={field} className="block text-sm font-semibold">{{recipient_name:'Nombre y apellidos',recipient_phone:'Teléfono con prefijo +53',recipient_address:'Dirección completa',recipient_municipality:'Municipio'}[field]}<input required type={field==='recipient_phone'?'tel':'text'} maxLength={field==='recipient_address'?400:field==='recipient_phone'?30:120} value={details[field]} onChange={e=>setDetails({...details,[field]:e.target.value})} className={inputClass}/></label>)}
-     <label className="block text-sm font-semibold">Provincia<select value={details.recipient_province} onChange={e=>setDetails({...details,recipient_province:e.target.value})} className={inputClass}>{CUBA_PROVINCES.map(p=><option key={p}>{p}</option>)}</select></label>
+     {(['recipient_name','recipient_phone','recipient_address'] as const).map(field=><label key={field} className="block text-sm font-semibold">{{recipient_name:'Nombre y apellidos',recipient_phone:'Teléfono con prefijo +53',recipient_address:'Dirección completa'}[field]}<input required type={field==='recipient_phone'?'tel':'text'} maxLength={field==='recipient_address'?400:field==='recipient_phone'?30:120} value={details[field]} onChange={e=>setDetails({...details,[field]:e.target.value})} className={inputClass}/></label>)}
+     <label className="block text-sm font-semibold">Provincia<select aria-label="Provincia" value={details.recipient_province} className={inputClass} disabled><option value="La Habana">La Habana</option></select></label>
+     <p className="text-sm text-slate-500">Este servicio de remesas está disponible únicamente en La Habana.</p>
+     <label className="block text-sm font-semibold">Municipio<select aria-label="Municipio" required value={details.recipient_municipality} onChange={e=>setDetails({...details,recipient_municipality:e.target.value})} className={inputClass}><option value="">Selecciona un municipio</option>{HAVANA_MUNICIPALITIES.map(m=><option key={m} value={m}>{m}</option>)}</select></label>
      <label className="block text-sm font-semibold">Indicaciones de entrega (opcional)<textarea maxLength={500} value={details.notes} onChange={e=>setDetails({...details,notes:e.target.value})} className={inputClass}/></label>
      <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6"><strong>Pago coordinado con la agencia</strong><p>Al confirmar el pedido recibirás tu referencia y podrás contactar con la agencia para conocer cómo pagar. No se realizará ningún cargo automático.</p></div>
      <label className="flex items-start gap-3 text-sm"><input required type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)} className="mt-1"/>Confirmo el importe y los datos del destinatario. Entiendo que el pago debe ser recibido y confirmado por la agencia antes de organizar la entrega.</label>

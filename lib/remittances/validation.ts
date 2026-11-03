@@ -1,4 +1,4 @@
-import { CUBA_PROVINCES } from '@/lib/checkout/cuba-provinces';
+import { HAVANA_MUNICIPALITIES } from '@/lib/checkout/cuba-provinces';
 export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function remittanceAmount(value: unknown) {
   const text=String(value??'').trim().replace(',','.');
@@ -19,12 +19,16 @@ export function remittancePayload(input: Record<string,unknown>) {
     return value;
   };
   const province=text('recipient_province',2,80);
-  if(!(CUBA_PROVINCES as readonly string[]).includes(province))throw new Error('Selecciona una provincia de Cuba.');
+  if(province!=='La Habana')throw new Error('El servicio de remesas está disponible únicamente en La Habana.');
+  const municipality=text('recipient_municipality',2,100);
+  if(!(HAVANA_MUNICIPALITIES as readonly string[]).includes(municipality))throw new Error('Selecciona un municipio de La Habana.');
+  const recipientPhone=phone('recipient_phone');
+  if(!/^\+53\d{8}$/.test(recipientPhone))throw new Error('El teléfono del destinatario debe tener el prefijo +53 y 8 dígitos.');
   return {
     amount:remittanceAmount(input.amount).toFixed(2),
     sender_name:text('sender_name',2,120),sender_phone:phone('sender_phone'),
-    recipient_name:text('recipient_name',2,120),recipient_phone:phone('recipient_phone'),
+    recipient_name:text('recipient_name',2,120),recipient_phone:recipientPhone,
     recipient_address:text('recipient_address',5,400),recipient_province:province,
-    recipient_municipality:text('recipient_municipality',2,100),notes:text('notes',0,500),
+    recipient_municipality:municipality,notes:text('notes',0,500),
   };
 }

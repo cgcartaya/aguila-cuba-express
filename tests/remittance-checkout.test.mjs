@@ -12,7 +12,7 @@ const validation=load('lib/remittances/validation.ts',{'@/lib/checkout/cuba-prov
 const permissions=load('lib/shipping/permissions.ts');
 const storeId='211dd255-7168-4045-a278-afc4164a3172';const id='10000000-0000-4000-8000-000000000001';const actor='20000000-0000-4000-8000-000000000001';
 const agency={id:storeId,name:'Alvarez Travel',slug:'alvares-travel',subdomain:'alvarez-travel'};
-const payload={amount:'200',sender_name:'Cliente de prueba',sender_phone:'+1 (305) 555-0123',recipient_name:'Destinatario de prueba',recipient_phone:'+53 55550123',recipient_address:'Direccion de prueba 123',recipient_province:'La Habana',recipient_municipality:'Plaza',notes:''};
+const payload={amount:'200',sender_name:'Cliente de prueba',sender_phone:'+1 (305) 555-0123',recipient_name:'Destinatario de prueba',recipient_phone:'+53 55550123',recipient_address:'Direccion de prueba 123',recipient_province:'La Habana',recipient_municipality:'Plaza de la Revolución',notes:''};
 function database(rows=[],rpcData={id,status:'pending',amount:200,commission:16,total:216,currency:'USD'}){
  const calls=[];let pending=[...rows];
  return{calls,auth:{async getUser(token){calls.push({auth:token});return{data:{user:token==='valid'?{id:actor}:null}};}},async rpc(name,args){calls.push({rpc:name,args});return{data:rpcData,error:null};},from(table){const row=pending.shift();assert.equal(row?.table,table);const call={table,filters:[],update:null};calls.push(call);const result={data:row.data,error:row.error??null};const b={select(){return b;},eq(k,v){call.filters.push([k,v]);return b;},is(k,v){call.filters.push([k,v]);return b;},order(){return b;},range(){return b;},update(value){call.update=value;return b;},async maybeSingle(){return result;},then(resolve,reject){return Promise.resolve(result).then(resolve,reject);}};return b;}};
@@ -41,4 +41,9 @@ test('la tarjeta comprable aparece con el slug real de Álvarez',()=>{
  const html=renderToStaticMarkup(React.createElement(Entry,{storeSlug:'alvarez-travel'}));
  assert.match(html,/Enviar|Envía/);assert.match(html,/href="\/tienda\/alvarez-travel\/remesas"/);
  assert.equal(renderToStaticMarkup(React.createElement(Entry,{storeSlug:'aguila'})),'');
+});
+
+test('remesas de Álvarez solo admite La Habana y municipios habilitados',()=>{
+ for(const municipality of provinces.HAVANA_MUNICIPALITIES)assert.equal(validation.remittancePayload({...payload,recipient_municipality:municipality}).recipient_municipality,municipality);
+ for(const change of [{recipient_province:'Matanzas'},{recipient_municipality:'Varadero'},{recipient_phone:'+53'},{recipient_phone:'+13055550123'}])assert.throws(()=>validation.remittancePayload({...payload,...change}));
 });
