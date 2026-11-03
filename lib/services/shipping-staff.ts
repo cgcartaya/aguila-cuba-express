@@ -11,6 +11,14 @@ import type {
 
 const STAFF_PHOTOS_BUCKET = "staff-photos";
 
+// Password hashes are write-only for browser clients. Login RPCs validate them
+// server-side and return only identity fields.
+const STAFF_PUBLIC_FIELDS = `
+  id, store_id, username, role, status, first_name, last_name,
+  phone, whatsapp, email, photo_url, vehicle_type, vehicle_plate,
+  notes, last_login, last_sync, created_at, updated_at, legacy_app_user_id
+`;
+
 
 async function hashPassword(password: string) {
   const bytes = new TextEncoder().encode(password);
@@ -109,7 +117,7 @@ export async function getStaffShipments(
 export async function getShippingStaff(storeId: string) {
   const { data, error } = await supabase
     .from("staff_users")
-    .select("*")
+    .select(STAFF_PUBLIC_FIELDS)
     .eq("store_id", storeId)
     .order("first_name", { ascending: true })
     .order("last_name", { ascending: true });
@@ -161,7 +169,7 @@ export async function createShippingStaff(input: StaffUserInput) {
       vehicle_plate: normalize(input.vehicle_plate)?.toUpperCase() || null,
       notes: normalize(input.notes),
     })
-    .select("*")
+    .select(STAFF_PUBLIC_FIELDS)
     .single();
 
   return { data: data as StaffUser | null, error };
@@ -195,7 +203,7 @@ export async function updateShippingStaff(
     .from("staff_users")
     .update(payload)
     .eq("id", id)
-    .select("*")
+    .select(STAFF_PUBLIC_FIELDS)
     .single();
 
   return { data: data as StaffUser | null, error };

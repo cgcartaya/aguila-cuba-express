@@ -149,7 +149,7 @@ export async function createStore(store: {
       ...store,
       is_active: true,
     })
-    .select()
+    .select(STORE_PUBLIC_FIELDS)
     .single()
 
   return result
@@ -199,7 +199,7 @@ export async function updateStore(
     .from("stores")
     .update(store)
     .eq("id", id)
-    .select()
+    .select(STORE_PUBLIC_FIELDS)
     .single()
 
   return result
