@@ -224,7 +224,7 @@ export default function PublicReceiptPage({
                   </div>
                   <div className="sm:text-right">
                     <p className="font-extrabold text-slate-950">{receipt.folio}</p>
-                    <p className="mt-1">www.aguilaexpressusa.com</p>
+                    <p className="mt-1">{payload.brand.website}</p>
                   </div>
                 </div>
               </footer>

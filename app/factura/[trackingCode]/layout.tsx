@@ -6,7 +6,6 @@ import {
   buildStoreShippingInvoiceMetadata,
   normalizeStoreHost,
   resolveStoreByHost,
-  resolveStoreBySlug,
   type StoreMetadataRow,
 } from "@/lib/saas/store-metadata";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -54,13 +53,12 @@ export async function generateMetadata({ params }: LayoutProps): Promise<Metadat
     requestHeaders.get("x-forwarded-proto") ||
     (host.includes("localhost") ? "http" : "https");
   const canonicalUrl = `${protocol}://${
-    host || "aguilaexpressusa.com"
+    host || "perlamarketplace.com"
   }/factura/${encodeURIComponent(trackingCode)}`;
   const shipmentStore = await resolveShipmentStore(trackingCode);
   const store =
     shipmentStore ||
-    (host ? await resolveStoreByHost(host) : null) ||
-    (await resolveStoreBySlug("aguila"));
+    (host ? await resolveStoreByHost(host) : null);
 
   if (!store) {
     return {

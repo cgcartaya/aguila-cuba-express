@@ -1,3 +1,4 @@
+import type { StoreBranding } from "@/lib/saas/store-branding";
 export type TrackingStatus =
   | "received_miami"
   | "preparing"
@@ -15,6 +16,7 @@ export interface PublicTrackingEvent {
 }
 
 export interface PublicTrackingResult {
+  brand: StoreBranding;
   trackingCode: string;
   location: string;
   status: TrackingStatus;

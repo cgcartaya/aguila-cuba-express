@@ -1,4 +1,9 @@
-export default function ServiciosPage() {
+import { headers } from "next/headers";
+import { resolveStoreByHost } from "@/lib/saas/store-metadata";
+
+export default async function ServiciosPage() {
+  const requestHeaders = await headers();
+  const store = await resolveStoreByHost(requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "");
   return (
     <main className="min-h-screen bg-white px-6 py-16 text-slate-900">
       <section className="mx-auto max-w-6xl">
@@ -7,7 +12,7 @@ export default function ServiciosPage() {
         </h1>
 
         <p className="mt-4 max-w-2xl text-lg text-slate-600">
-          En Aguila Express USA ofrecemos soluciones rápidas, seguras y confiables
+          En {store?.name || "nuestra agencia"} ofrecemos soluciones rápidas, seguras y confiables
           para enviar paquetes, compras y carga hacia Cuba.
         </p>
 

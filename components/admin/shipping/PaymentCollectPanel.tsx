@@ -13,6 +13,7 @@ import {
   Tablet,
 } from "lucide-react";
 
+import { useStoreBranding } from "@/hooks/useStoreBranding";
 import { supabase } from "@/lib/supabase";
 import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 import { CARD_PAYMENTS_ENABLED } from "@/lib/config/features";
@@ -24,6 +25,7 @@ export type PaymentCollectShipment = {
   trackingCode: string;
   servicePrice: number;
   customerPhone?: string;
+  storeId: string;
 };
 
 async function authHeaders() {
@@ -46,6 +48,7 @@ export default function PaymentCollectPanel({
   shipment: PaymentCollectShipment;
   onPaid: (folio: string | null) => void;
 }) {
+  const brand = useStoreBranding({ id: shipment.storeId });
   const [payError, setPayError] = useState("");
   const [payBusy, setPayBusy] = useState<"cash" | "card" | null>(null);
   const [cardMode, setCardMode] = useState<CardMode>(null);
@@ -154,7 +157,7 @@ export default function PaymentCollectPanel({
       openWhatsAppMessage({
         app: "personal",
         phone: shipment.customerPhone,
-        message: `Hola! Para completar el pago de tu envío ${shipment.trackingCode} (${currency(shipment.servicePrice)}) con Aguila Express USA, paga aquí con tu tarjeta: ${cardCheckoutUrl}`,
+        message: `Hola! Para completar el pago de tu envío ${shipment.trackingCode} (${currency(shipment.servicePrice)}) con ${brand.name}, paga aquí con tu tarjeta: ${cardCheckoutUrl}`,
       });
     } catch (e) {
       setPayError((e as Error).message);

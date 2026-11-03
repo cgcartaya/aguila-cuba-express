@@ -1,7 +1,10 @@
+import { getPublicStoreBranding } from "@/lib/services/store-branding";
+import type { StoreBranding } from "@/lib/saas/store-branding";
 import type { Shipment, ShipmentItem } from "@/lib/shipping/types";
 import { supabase } from "@/lib/supabase";
 
 export type PublicShippingInvoice = {
+  brand: StoreBranding;
   store?: { name?: string; logo_url?: string | null };
   shipment: Shipment;
   items: ShipmentItem[];
@@ -24,8 +27,9 @@ export async function getPublicShippingInvoice(
     };
   }
 
+  const brand = await getPublicStoreBranding(data?.shipment?.store_id);
   return {
-    data: (data || null) as PublicShippingInvoice | null,
+    data: data ? { ...data, brand } as PublicShippingInvoice : null,
     error: null,
   };
 }

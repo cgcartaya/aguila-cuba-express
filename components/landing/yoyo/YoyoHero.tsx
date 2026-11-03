@@ -1,3 +1,4 @@
+import { WHATSAPP_PHONE } from "@/components/landing/yoyo/constants";
 import Image from "next/image";
 import { ArrowRight, Headphones, MapPin, MessageCircle, ShieldCheck, ShoppingCart, Truck } from "lucide-react";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
@@ -52,7 +53,7 @@ export default function YoyoHero() {
             </div>
           ))}
         </div>
-        <div id="solicitar-recogida" className="scroll-mt-28"><PickupPlannerHero variant="horizontal" /></div>
+        <div id="solicitar-recogida" className="scroll-mt-28"><PickupPlannerHero variant="horizontal" storeSlug="yoyo-envios" storeName="YOYO" whatsappPhone={WHATSAPP_PHONE} /></div>
       </div>
     </section>
   );

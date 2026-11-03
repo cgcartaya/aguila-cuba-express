@@ -417,9 +417,7 @@ function drawBrandedVan(
 
   ctx.fillStyle = navy;
   ctx.font = "900 13px Arial";
-  ctx.fillText("YOYO", 4, 15);
-  ctx.fillStyle = red;
-  ctx.fillText("ENVÍOS", 42, 15);
+  ctx.fillText("ENVÍOS", 4, 15);
 
   ctx.fillStyle = "#101820";
   ctx.beginPath();
@@ -512,7 +510,7 @@ function drawLogo(
   ctx.fillStyle = navy;
   ctx.font = `900 ${Math.round(size * 0.24)}px Arial`;
   ctx.textAlign = "center";
-  ctx.fillText(storeName.split(" ")[0]?.toUpperCase() || "YOYO", x + size / 2, y + size * 0.34);
+  ctx.fillText(storeName.split(" ")[0]?.toUpperCase() || "ENVÍOS", x + size / 2, y + size * 0.34);
   ctx.fillStyle = red;
   ctx.font = `900 ${Math.round(size * 0.17)}px Arial`;
   ctx.fillText("ENVÍOS", x + size / 2, y + size * 0.58);
@@ -615,7 +613,7 @@ function drawMetricCard(
 
 export default function RouteSocialPoster({
   route,
-  storeName = "YOYO ENVÍOS",
+  storeName = "Agencia de envíos",
   phone,
   logoUrl,
 }: Props) {
@@ -674,7 +672,7 @@ export default function RouteSocialPoster({
 
       let logo: HTMLImageElement | null = null;
       try {
-        logo = await loadImage(logoUrl || "/yoyo/logo-yoyo.jpg");
+        logo = logoUrl ? await loadImage(logoUrl) : null;
       } catch {
         logo = null;
       }

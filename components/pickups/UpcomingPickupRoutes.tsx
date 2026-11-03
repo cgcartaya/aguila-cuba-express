@@ -53,7 +53,7 @@ function RouteMap({ route, progress }: { route: PublicRoute; progress: Scheduled
   return <PublicPickupRouteMap route={route} progress={progress} />;
 }
 
-export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { storeSlug?: string }) {
+export default function UpcomingPickupRoutes({ storeSlug }: { storeSlug: string }) {
   const [payload, setPayload] = useState<PublicPayload>({ routes: [], coverageCities: [] });
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -169,7 +169,7 @@ export default function UpcomingPickupRoutes({ storeSlug = "yoyo-envios" }: { st
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500"><Truck size={22} /></span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-wide text-blue-100/70">{progressTitle}</p>
-                      <p className="mt-1 break-words text-xl font-black">{progress?.phase === "stop" ? currentNames : progress?.phase === "transit" || progress?.phase === "upcoming" ? nextNames : progress?.phase === "finished" ? "Confirma con Yoyo la próxima ruta" : "Horarios por coordinar"}</p>
+                      <p className="mt-1 break-words text-xl font-black">{progress?.phase === "stop" ? currentNames : progress?.phase === "transit" || progress?.phase === "upcoming" ? nextNames : progress?.phase === "finished" ? "Consulta la próxima ruta con tu agencia" : "Horarios por coordinar"}</p>
                       {progress?.phase === "stop" && <p className="mt-1 text-sm text-blue-100">{timeWindow(activeRoute.cities[progress.currentIndices[0]]?.start_time, activeRoute.cities[progress.currentIndices[0]]?.end_time)}</p>}
                     </div>
                   </div>

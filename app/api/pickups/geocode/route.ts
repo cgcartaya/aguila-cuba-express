@@ -24,7 +24,7 @@ async function geocodeWithNominatim(addressLine1: string, city: string, region: 
 
   const response = await fetch(url, {
     headers: {
-      "User-Agent": "PerlaMarketplace-YoyoEnvios/18.6",
+      "User-Agent": "PerlaMarketplace-Pickups/1.0",
       "Accept-Language": "es,en;q=0.8",
     },
     cache: "no-store",
@@ -44,7 +44,7 @@ async function geocodeWithNominatim(addressLine1: string, city: string, region: 
     fallbackUrl.searchParams.set("addressdetails", "1");
     fallbackUrl.searchParams.set("countrycodes", countryCode.toLowerCase());
     const fallbackResponse = await fetch(fallbackUrl, {
-      headers: { "User-Agent": "PerlaMarketplace-YoyoEnvios/18.6", "Accept-Language": "es,en;q=0.8" },
+      headers: { "User-Agent": "PerlaMarketplace-Pickups/1.0", "Accept-Language": "es,en;q=0.8" },
       cache: "no-store",
     });
     if (fallbackResponse.ok) {

@@ -7,6 +7,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useStore } from "@/hooks/useStore";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -39,12 +40,18 @@ const statusStyles: Record<DepartureStatus, string> = {
 };
 
 export default function StoreDeparturesPage() {
+  const { store, loading: storeLoading } = useStore();
   const [departures, setDepartures] = useState<Departure[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let current = true;
     async function loadDepartures() {
+      if (storeLoading) return;
+      // The legacy departures table has no store_id and belongs to the original agency.
+      // Other agencies manage their own departures through shipping_trips.
+      if (store?.slug !== "aguila") { setDepartures([]); setLoading(false); return; }
       try {
         setLoading(true);
 
@@ -52,17 +59,18 @@ export default function StoreDeparturesPage() {
 
         if (error) throw error;
 
-        setDepartures(data || []);
+        if (current) setDepartures(data || []);
       } catch (err: any) {
         console.error("ERROR CARGANDO SALIDAS:", err);
         setError("No se pudieron cargar las próximas salidas.");
       } finally {
-        setLoading(false);
+        if (current) setLoading(false);
       }
     }
 
     loadDepartures();
-  }, []);
+    return () => { current = false; };
+  }, [store?.slug, storeLoading]);
 
   const nextDeparture = useMemo(() => {
     return departures.find((departure) => departure.status === "scheduled");
@@ -98,7 +106,7 @@ export default function StoreDeparturesPage() {
         <section className="relative min-h-[245px] overflow-hidden rounded-[1.75rem] bg-sky-100 shadow-sm sm:min-h-[330px] md:min-h-[420px]">
           <Image
             src="/departures/departures-hero.png"
-            alt="Próximas salidas de Aguila Express USA"
+            alt={`Próximas salidas de ${store?.name || "tu agencia"}`}
             fill
             priority
             sizes="(max-width: 768px) 100vw, 1024px"

@@ -22,6 +22,7 @@ import {
 import InvoiceActions from "@/components/admin/shipping/InvoiceActions";
 import PrintInvoiceButton from "@/components/admin/shipping/PrintInvoiceButton";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { useStoreBranding } from "@/hooks/useStoreBranding";
 import { useStore } from "@/hooks/useStore";
 import {
   getShipmentById,
@@ -70,12 +71,15 @@ export default function ShippingInvoicePage({
     [accessStore, isSuperAdmin, selectedStore]
   );
 
+  const brand = useStoreBranding(activeStore);
+
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [items, setItems] = useState<ShipmentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
+    let current = true;
     async function loadInvoice() {
       if (!activeStore?.id) {
         setLoading(false);
@@ -89,6 +93,8 @@ export default function ShippingInvoicePage({
         getShipmentById(activeStore.id, id),
         getShipmentItems(activeStore.id, id),
       ]);
+
+      if (!current) return;
 
       if (shipmentResult.error || !shipmentResult.data) {
         setErrorMessage(
@@ -107,6 +113,7 @@ export default function ShippingInvoicePage({
     if (!accessLoading && !storeLoading) {
       void loadInvoice();
     }
+    return () => { current = false; };
   }, [accessLoading, storeLoading, activeStore?.id, id]);
 
   if (loading || accessLoading || storeLoading) {
@@ -118,7 +125,7 @@ export default function ShippingInvoicePage({
     );
   }
 
-  if (!shipment || errorMessage) {
+  if (!shipment || errorMessage || shipment.store_id !== activeStore?.id) {
     return (
       <main className="p-10 text-center font-bold text-red-700">
         {errorMessage || "No se encontró la factura."}
@@ -237,8 +244,9 @@ export default function ShippingInvoicePage({
                     Factura de servicios
                   </p>
 
+                  {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="mt-3 h-14 max-w-40 object-contain" />}
                   <h1 className="mt-2 text-2xl font-black tracking-tight">
-                    Aguila Express USA
+                    {brand.name}
                   </h1>
 
                   <p className="mt-1 text-sm font-semibold text-blue-100">
@@ -466,7 +474,7 @@ export default function ShippingInvoicePage({
                 <div className="flex flex-col justify-between gap-3 text-xs font-semibold text-slate-500 sm:flex-row">
                   <div>
                     <p className="font-black text-[#061b3a]">
-                      Gracias por confiar en Aguila Express USA.
+                      Gracias por confiar en {brand.name}.
                     </p>
                     <p className="mt-1">
                       Conserve esta factura y el código de rastreo para
@@ -483,7 +491,7 @@ export default function ShippingInvoicePage({
                     </p>
 
                     <p className="mt-1">
-                      www.aguilaexpressusa.com
+                      {brand.website}
                     </p>
                   </div>
                 </div>

@@ -222,7 +222,7 @@ export default function PublicInvoicePage({
                   </p>
 
                   <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
-                    {invoice.store?.name || "Agencia de envíos"}
+                    {invoice.brand.name}
                   </h2>
 
                   <p className="mt-1 text-sm font-medium text-blue-100">
@@ -463,7 +463,7 @@ export default function PublicInvoicePage({
                 <div className="flex flex-col justify-between gap-3 text-xs font-medium text-slate-500 sm:flex-row">
                   <div>
                     <p className="font-extrabold text-slate-950">
-                      Gracias por confiar en {invoice.store?.name || "nuestra agencia"}.
+                      Gracias por confiar en {invoice.brand.name}.
                     </p>
 
                     <p className="mt-1">
@@ -477,7 +477,7 @@ export default function PublicInvoicePage({
                     </p>
 
                     <p className="mt-1">
-                      www.aguilaexpressusa.com
+                      {invoice.brand.website}
                     </p>
                   </div>
                 </div>
