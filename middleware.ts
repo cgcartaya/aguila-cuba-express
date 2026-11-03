@@ -134,9 +134,10 @@ function getLandingStoreRewritePath(pathname: string, slug: string) {
    * Sin esto, un dominio propio con landing (ej. Águila) recibía
    * un 404 al entrar a /tienda/combos o /tienda/productos-destacados.
    */
-  const noSlugEquivalent = ["/tienda/combos", "/tienda/productos-destacados"];
+  const noSlugEquivalent = ["/tienda/productos-destacados"];
 
   if (
+    pathname === "/tienda/combos" ||
     noSlugEquivalent.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     )
