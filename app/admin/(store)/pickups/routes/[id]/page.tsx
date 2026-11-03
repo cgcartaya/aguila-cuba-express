@@ -330,7 +330,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
       </div>
     </div>}
     {store?.id && <ManualPickupStopModal open={manualOpen} storeId={store.id} routeId={route.id} routeDate={route.route_date} editRequest={editingManualRequest} onClose={() => { setManualOpen(false); setEditingManualRequest(null); }} onCreated={async () => { setEditingManualRequest(null); await load(); }} />}
-    <details className="rounded-3xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer font-black text-[#071d43]">Crear un cartel para compartir esta ruta</summary><RouteSocialPoster route={route} storeName={store?.name || "YOYO ENVÍOS"} phone={route.driver_phone || store?.whatsapp || null} logoUrl={store?.logo_url || null} /></details>
+    <details className="rounded-3xl border border-slate-200 bg-white p-5"><summary className="cursor-pointer font-black text-[#071d43]">Crear un cartel para compartir esta ruta</summary><RouteSocialPoster route={route} storeName={store?.name || "Agencia de envíos"} phone={route.driver_phone || store?.whatsapp || null} logoUrl={store?.logo_url || null} /></details>
     <style jsx>{`.input{width:100%;border:1px solid #e2e8f0;border-radius:1rem;padding:.8rem 1rem;font-weight:700;outline:none}.input:focus{border-color:#60a5fa}`}</style>
   </div>;
 }

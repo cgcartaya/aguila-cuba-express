@@ -1,5 +1,5 @@
+import { resolvePublicStore } from "@/lib/saas/public-store-resolution";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 export const dynamic = "force-dynamic";
@@ -32,17 +32,9 @@ export async function POST(request: NextRequest) {
 
   // Resolver la tienda igual que el portal comercial (slug, subdominio o
   // dominio propio), para que este endpoint funcione en cualquier tienda.
-  const anon = createClient(url, key, { auth: { persistSession: false } });
   const host = normalizeHost(request.headers.get("x-forwarded-host") || request.headers.get("host") || "");
-  const subdomain = host.endsWith(".perlamarketplace.com") ? host.replace(".perlamarketplace.com", "") : null;
-
-  let storeQuery = anon.from("stores").select("id,name").eq("is_active", true);
-  if (requestedSlug) storeQuery = storeQuery.eq("slug", requestedSlug);
-  else if (subdomain) storeQuery = storeQuery.eq("subdomain", subdomain);
-  else storeQuery = storeQuery.or(`domain.eq.${host},slug.eq.aguila`);
-
-  const { data: store, error: storeError } = await storeQuery.limit(1).maybeSingle();
-  if (storeError || !store) return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
+  const store = await resolvePublicStore(requestedSlug, host);
+  if (!store) return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
 
   // Bypass de RLS a propósito: igual que el rastreo público, "conocer tu
   // teléfono + tu código de cliente" es la credencial. Se valida contra AMBOS

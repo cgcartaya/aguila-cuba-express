@@ -1,3 +1,4 @@
+import { resolvePublicStore } from "@/lib/saas/public-store-resolution";
 import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
@@ -15,18 +16,11 @@ const getCachedCommercialPortalConfig = unstable_cache(
     if (!url || !key) return { status: 500, body: { error: "Supabase no configurado" } };
 
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    const subdomain = host.endsWith(".perlamarketplace.com") ? host.replace(".perlamarketplace.com", "") : null;
-
-    let storeQuery = supabase
-      .from("stores")
+    const resolved = await resolvePublicStore(requestedSlug, host);
+    if (!resolved) return { status: 404, body: { error: "Empresa no encontrada" } };
+    const { data: store, error: storeError } = await supabase.from("stores")
       .select("id,name,slug,logo_url,primary_color,secondary_color,subdomain,domain,module_store_enabled")
-      .eq("is_active", true);
-
-    if (requestedSlug) storeQuery = storeQuery.eq("slug", requestedSlug);
-    else if (subdomain) storeQuery = storeQuery.eq("subdomain", subdomain);
-    else storeQuery = storeQuery.or(`domain.eq.${host},slug.eq.aguila`);
-
-    const { data: store, error: storeError } = await storeQuery.limit(1).maybeSingle();
+      .eq("id", resolved.id).eq("is_active", true).maybeSingle();
     if (storeError || !store) return { status: 404, body: { error: "Empresa no encontrada" } };
 
     const [settings, services, promotions, faqs, testimonials, quoteSettings] = await Promise.all([
@@ -51,7 +45,7 @@ const getCachedCommercialPortalConfig = unstable_cache(
       },
     };
   },
-  ["commercial-portal-config-v2"],
+  ["commercial-portal-config-v3"],
   { revalidate: 300, tags: ["commercial-portal-config"] },
 );
 

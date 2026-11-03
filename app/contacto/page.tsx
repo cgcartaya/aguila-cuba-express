@@ -1,6 +1,22 @@
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
+import { resolveStoreByHost } from "@/lib/saas/store-metadata";
+import { getPublicStoreBranding } from "@/lib/services/store-branding";
 import Image from "next/image";
 
-export default function ContactoPage() {
+export default async function ContactoPage() {
+  const requestHeaders = await headers();
+  const store = await resolveStoreByHost(requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "");
+  if (!store) notFound();
+  if (store.slug !== "aguila") {
+    const brand = await getPublicStoreBranding(store.id);
+    return <main className="min-h-screen bg-slate-50 px-6 py-16 text-slate-900"><section className="mx-auto max-w-3xl rounded-3xl bg-white p-8 shadow-sm">
+      {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="mb-6 h-24 max-w-56 object-contain" />}
+      <h1 className="text-3xl font-black">Contacto · {brand.name}</h1>
+      <p className="mt-4 text-slate-600">Contacta con nuestro equipo para consultar disponibilidad, servicios y condiciones.</p>
+      {brand.whatsappUrl && <a href={brand.whatsappUrl} target="_blank" rel="noreferrer" className="mt-6 inline-block rounded-xl bg-green-600 px-6 py-3 font-bold text-white">Escribir por WhatsApp</a>}
+    </section></main>;
+  }
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <section className="bg-[#062446] px-6 py-16 text-white">

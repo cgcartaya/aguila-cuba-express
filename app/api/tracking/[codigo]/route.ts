@@ -1,3 +1,4 @@
+import { getPublicStoreBranding } from "@/lib/services/store-branding";
 import { getShippingStatusLabel } from "@/lib/shipping/types";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -10,6 +11,7 @@ const EVIDENCE_BUCKET = "delivery-photos";
 const SIGNED_URL_SECONDS = 10 * 60;
 
 type ShipmentRow = {
+  store_id: string;
   contains_money: boolean;
   contains_package: boolean;
   id: string;
@@ -71,6 +73,7 @@ export async function GET(
     .select(
       [
         "id",
+        "store_id",
         "contains_money",
         "contains_package",
         "tracking_code",
@@ -114,6 +117,8 @@ export async function GET(
     );
   }
 
+  const brand = await getPublicStoreBranding(shipment.store_id, supabaseAdmin);
+
   const eventsQuery = await supabaseAdmin
     .from("shipment_tracking_events")
     .select("status, title, description, event_date")
@@ -155,6 +160,7 @@ export async function GET(
 
   return NextResponse.json(
     {
+      brand,
       trackingCode: shipment.tracking_code,
       location: shipment.location || "Cuba",
       status,

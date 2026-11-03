@@ -5,8 +5,7 @@ import TrackingSearch from "./TrackingSearch";
 import TrackingProductsCarousel from "./TrackingProductsCarousel";
 import type { PublicTrackingResult } from "@/lib/tracking/types";
 
-const STORE_URL = "/tienda";
-const WHATSAPP_URL = "https://wa.me/13054974891";
+import { storeBranding, type StoreBranding } from "@/lib/saas/store-branding";
 
 function formatDate(value: string | null) {
   if (!value) return "No disponible";
@@ -32,6 +31,7 @@ export default function TrackingView({ code }: { code: string }) {
     async function load() {
       setLoading(true);
       setError("");
+      setData(null);
 
       try {
         const response = await fetch(
@@ -56,7 +56,7 @@ export default function TrackingView({ code }: { code: string }) {
           setError((requestError as Error).message);
         }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
@@ -69,12 +69,14 @@ export default function TrackingView({ code }: { code: string }) {
     [data]
   );
 
+  const brand = data?.brand || storeBranding();
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-white px-3 py-7 text-slate-900 sm:px-6 sm:py-14">
       <section className="mx-auto max-w-4xl">
         <header className="text-center">
           <span className="inline-flex rounded-full bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700 sm:px-4 sm:py-2 sm:text-sm">
-            Aguila Express USA
+            {brand.name}
           </span>
 
           <h1 className="mt-3 text-3xl font-black text-[#062446] sm:mt-5 sm:text-5xl">
@@ -260,9 +262,9 @@ export default function TrackingView({ code }: { code: string }) {
               </p>
             </section>
 
-            <TrackingProductsCarousel />
+            {brand.storefrontUrl && <TrackingProductsCarousel brand={brand} />}
 
-            <StoreBenefits />
+            <StoreBenefits brand={brand} />
 
             <p className="px-4 text-center text-xs leading-5 text-slate-500">
               Por seguridad, esta página no muestra teléfonos, dirección
@@ -275,7 +277,7 @@ export default function TrackingView({ code }: { code: string }) {
   );
 }
 
-function StoreBenefits() {
+function StoreBenefits({ brand }: { brand: StoreBranding }) {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
       <div className="grid gap-4 sm:grid-cols-3">
@@ -291,26 +293,26 @@ function StoreBenefits() {
 
         <Benefit
           title="Atención directa"
-          text="Habla con el equipo de Águila si necesitas ayuda."
+          text={`Habla con el equipo de ${brand.name} si necesitas ayuda.`}
         />
       </div>
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <a
-          href={STORE_URL}
+        {brand.storefrontUrl && <a
+          href={brand.storefrontUrl}
           className="inline-flex min-h-12 items-center justify-center rounded-2xl bg-[#062446] px-5 font-bold text-white transition hover:bg-[#0A3764]"
         >
           Ver productos disponibles
-        </a>
+        </a>}
 
-        <a
-          href={WHATSAPP_URL}
+        {brand.whatsappUrl && <a
+          href={brand.whatsappUrl}
           target="_blank"
           rel="noreferrer"
           className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-green-600 px-5 font-bold text-green-700 transition hover:bg-green-50"
         >
           Contactar por WhatsApp
-        </a>
+        </a>}
       </div>
     </section>
   );

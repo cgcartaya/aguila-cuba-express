@@ -5,6 +5,8 @@
 ========================== */
 
 import Image from "next/image";
+import { useStore } from "@/hooks/useStore";
+import { useStoreBranding } from "@/hooks/useStoreBranding";
 import Link from "next/link";
 import { ArrowLeft, ShoppingCart } from "lucide-react";
 
@@ -23,29 +25,32 @@ type ProductHeaderProps = {
 export default function ProductHeader({
   cartCount,
 }: ProductHeaderProps) {
+  const { store } = useStore();
+  const brand = useStoreBranding(store);
+  const shopPath = store?.slug ? `/tienda/${encodeURIComponent(store.slug)}` : "/tienda";
   return (
     <header className="sticky top-0 z-50 bg-white px-4 py-3 shadow-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between">
         <Link
-          href="/tienda"
+          href={shopPath}
           className="flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-bold text-[#061b3a]"
         >
           <ArrowLeft size={18} />
           <span className="hidden sm:inline">Volver</span>
         </Link>
 
-        <Link href="/tienda" className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="Aguila Express USA"
+        <Link href={shopPath} className="flex items-center gap-2">
+          {brand.logoUrl && <Image
+            src={brand.logoUrl}
+            alt={brand.name}
             width={42}
             height={42}
             className="rounded-full"
-          />
+          />}
 
           <div className="hidden leading-tight sm:block">
             <p className="text-sm font-black uppercase">
-              Aguila Express USA
+              {brand.name}
             </p>
             <p className="text-xs font-bold text-slate-500">
               Tienda online
@@ -54,7 +59,7 @@ export default function ProductHeader({
         </Link>
 
         <Link
-          href="/cart"
+          href={`${shopPath}/cart`}
           className="relative rounded-full border p-2 text-[#061b3a]"
         >
           <ShoppingCart size={22} />

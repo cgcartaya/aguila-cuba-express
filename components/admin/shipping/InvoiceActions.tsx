@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 
+import { publicStoreOrigin } from "@/lib/saas/store-branding";
 import type { Shipment } from "@/lib/shipping/types";
 
 type MessageKind = "invoice" | "promotion";
@@ -34,20 +35,8 @@ function currency(value: number) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
-function getPublicBaseUrl() {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
-
-  if (configured) return configured;
-
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-
-  return "";
-}
-
-function buildInvoiceMessage(shipment: Shipment, storeName: string) {
-  const baseUrl = getPublicBaseUrl();
+function buildInvoiceMessage(shipment: Shipment, storeName: string, store?: PromotionStore | null) {
+  const baseUrl = publicStoreOrigin(store) || (typeof window !== "undefined" ? window.location.origin : "");
   const trackingCode = shipment.tracking_code || shipment.id;
 
   const invoiceUrl =
@@ -158,11 +147,11 @@ export default function InvoiceActions({
   const trackingCode = shipment.tracking_code || shipment.id;
   const publicInvoiceUrl =
     `/factura/${encodeURIComponent(trackingCode)}`;
-  const storeName = store?.name || "Aguila Express USA";
+  const storeName = store?.name || "Agencia de envíos";
   const message =
     messageKind === "promotion" && store
       ? buildStorePromotionMessage(store)
-      : buildInvoiceMessage(shipment, storeName);
+      : buildInvoiceMessage(shipment, storeName, store);
 
   return (
     <>

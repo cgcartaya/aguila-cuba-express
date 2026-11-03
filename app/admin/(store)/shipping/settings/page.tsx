@@ -1028,8 +1028,8 @@ export default function ShippingSettingsPage() {
             className="order-2 xl:col-span-2"
           >
             <p className={helpText}>
-              Crea un país solamente si todavía no existe. Para Águila debe
-              aparecer Cuba en la lista.
+              Crea un país solamente si todavía no existe y añade los destinos
+              que atiende tu agencia.
             </p>
 
             <div className="grid grid-cols-[minmax(0,1fr)_88px_48px] gap-2">

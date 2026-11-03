@@ -7,7 +7,6 @@ import {
   buildStoreTrackingMetadata,
   normalizeStoreHost,
   resolveStoreByHost,
-  resolveStoreBySlug,
   type StoreMetadataRow,
 } from "@/lib/saas/store-metadata";
 
@@ -47,7 +46,7 @@ async function getRequestUrl(code: string) {
 
   return {
     host,
-    url: `${protocol}://${host || "aguilaexpressusa.com"}/rastrear/${encodeURIComponent(code)}`,
+    url: `${protocol}://${host || "perlamarketplace.com"}/rastrear/${encodeURIComponent(code)}`,
   };
 }
 
@@ -58,8 +57,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     loadTrackingStore(codigo),
   ]);
   const store = shipmentStore ||
-    (host ? await resolveStoreByHost(host) : null) ||
-    (await resolveStoreBySlug("aguila"));
+    (host ? await resolveStoreByHost(host) : null);
 
   if (!store) {
     return {

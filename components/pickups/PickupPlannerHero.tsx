@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
 import LocationPickerMap from "@/components/maps/LocationPickerMap";
-import { WHATSAPP_PHONE } from "@/components/landing/yoyo/constants";
 import {
   ArrowLeft,
   ArrowRight,
@@ -77,7 +76,7 @@ function nextDays(count = 8) {
   return days;
 }
 
-export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-envios", storeName = "YOYO", whatsappPhone = WHATSAPP_PHONE }: { variant?: "card" | "horizontal"; storeSlug?: string; storeName?: string; whatsappPhone?: string }) {
+export default function PickupPlannerHero({ variant = "card", storeSlug, storeName, whatsappPhone }: { variant?: "card" | "horizontal"; storeSlug: string; storeName: string; whatsappPhone: string }) {
   const horizontal = variant === "horizontal";
   const days = useMemo(() => nextDays(), []);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -597,7 +596,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                   </div>
                   <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
                     <p className="font-black text-[#082b5c]">{addressResult?.formattedAddress || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", ")}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-600">Este punto será el que verá Yoyo al organizar la ruta.</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-600">Este punto será el que verá {storeName} al organizar la ruta.</p>
                   </div>
                 </div>
               )}
@@ -608,7 +607,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                     <ArrowLeft size={18} /> Cambiar punto
                   </button>
                   <h3 className="text-2xl font-black text-slate-950">¿Qué días te convienen?</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. Yoyo confirmará el día definitivo.`}</p>
+                  <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. ${storeName} confirmará el día definitivo.`}</p>
 
                   <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {days.map((item) => {
@@ -642,7 +641,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                     <ArrowLeft size={18} /> Cambiar fechas
                   </button>
                   <h3 className="text-2xl font-black text-slate-950">Cuéntanos sobre la recogida</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">Con estos datos Yoyo podrá contactarte y organizar la ruta.</p>
+                  <p className="mt-2 text-base font-medium text-slate-500">Con estos datos {storeName} podrá contactarte y organizar la ruta.</p>
 
                   <div className="mt-7 space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -696,7 +695,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug = "yoyo-
                     <CheckCircle2 size={46} />
                   </div>
                   <h3 className="mt-6 text-3xl font-black text-[#061b3a]">¡Solicitud recibida!</h3>
-                  <p className="mt-3 max-w-md text-base font-semibold leading-7 text-slate-600">Yoyo organizará la ruta y te confirmará el día definitivo por WhatsApp.</p>
+                  <p className="mt-3 max-w-md text-base font-semibold leading-7 text-slate-600">{storeName} organizará la ruta y te confirmará el día definitivo por WhatsApp.</p>
                   <div className="mt-6 w-full max-w-sm rounded-2xl bg-slate-950 px-5 py-5 text-white">
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-200">Código de solicitud</p>
                     <p className="mt-2 text-3xl font-black">{successCode}</p>

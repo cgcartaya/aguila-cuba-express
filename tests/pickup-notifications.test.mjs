@@ -67,6 +67,7 @@ function routeHarness(datesFail = false) {
   const route = load('app/api/pickups/route.ts', {
     'next/server': { after: (work) => scheduled.push(work), NextResponse: { json: (body, options) => ({ body, status: options?.status || 200 }) } },
     '@/lib/supabase-admin': { supabaseAdmin: db },
+    '@/lib/pickups/itinerary': load('lib/pickups/itinerary.ts', {}),
     '@/lib/notifications/pickup-notification': { sendPickupNotification: async (data) => notifications.push(data) },
     '@/lib/pickups/address-validation': { validatePickupAddress: async () => ({ valid: true, verified: true, formattedAddress: 'Validated address', latitude: null, longitude: null }) },
   });

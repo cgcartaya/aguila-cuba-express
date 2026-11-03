@@ -5,9 +5,9 @@ import Link from "next/link";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 
 import { getStoreProductsByStoreId } from "@/lib/services/products";
-import { useStore } from "@/hooks/useStore";
+
 import type { Product } from "@/types/cart";
-import type { Store } from "@/lib/saas/store-types";
+import type { StoreBranding } from "@/lib/saas/store-branding";
 
 type ProductImage = {
   image_url: string;
@@ -36,20 +36,13 @@ function getMainImage(product: StoreProduct) {
   );
 }
 
-function getProductUrl(store: Store | null, productId: string | number) {
-  const slug = store?.slug?.trim();
-
-  if (!slug || slug === "aguila" || slug === "aguila-cuba-express") {
-    return `/tienda/producto/${productId}`;
-  }
-
-  return `/tienda/${slug}/producto/${productId}`;
+function getProductUrl(brand: StoreBranding, productId: string | number) {
+  return `${brand.origin ? `${brand.origin}/tienda` : `https://perlamarketplace.com/tienda/${encodeURIComponent(brand.slug)}`}/producto/${encodeURIComponent(productId)}`;
 }
 
-export default function TrackingProductsCarousel() {
+export default function TrackingProductsCarousel({ brand }: { brand: StoreBranding }) {
   const [products, setProducts] = useState<StoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const { store, loading: storeLoading } = useStore();
 
   useEffect(() => {
     let mounted = true;
@@ -57,12 +50,11 @@ export default function TrackingProductsCarousel() {
     async function loadProducts() {
       try {
         setLoading(true);
+        setProducts([]);
 
-        if (storeLoading) return;
+        const currentStoreId = brand.id;
 
-        const currentStore = store;
-
-        if (!mounted || !currentStore) {
+        if (!mounted || !currentStoreId) {
           if (mounted) {
             setProducts([]);
           }
@@ -70,7 +62,7 @@ export default function TrackingProductsCarousel() {
         }
 
         const { data, error } = await getStoreProductsByStoreId(
-          currentStore.id
+          currentStoreId
         );
 
         if (error) {
@@ -104,7 +96,7 @@ export default function TrackingProductsCarousel() {
     return () => {
       mounted = false;
     };
-  }, [store?.id, storeLoading]);
+  }, [brand.id]);
 
   const featuredProducts = useMemo(() => {
     const available = products.filter(
@@ -134,12 +126,12 @@ export default function TrackingProductsCarousel() {
 
          <p className="mt-2 text-sm leading-6 text-slate-600">
   Estos productos son reales y se actualizan directamente desde la tienda de{" "}
-  <strong>{store?.name}</strong>.
+  <strong>{brand.name}</strong>.
 </p>
         </div>
 
         <Link
-          href="/tienda"
+          href={brand.storefrontUrl || "#"}
           className="hidden items-center gap-2 text-sm font-black text-[#062446] sm:inline-flex"
         >
           Ver todos
@@ -161,7 +153,7 @@ export default function TrackingProductsCarousel() {
           {featuredProducts.map((product) => {
             const imageUrl = getMainImage(product);
             const outOfStock = Number(product.stock || 0) <= 0;
-            const productUrl = getProductUrl(store, product.id);
+            const productUrl = getProductUrl(brand, product.id);
 
             return (
               <article
@@ -219,7 +211,7 @@ export default function TrackingProductsCarousel() {
       )}
 
       <Link
-        href="/tienda"
+        href={brand.storefrontUrl || "#"}
         className="mt-5 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 font-black text-white transition hover:bg-red-700 sm:hidden"
       >
         Ver todos los productos

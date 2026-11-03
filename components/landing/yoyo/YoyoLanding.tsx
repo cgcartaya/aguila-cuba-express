@@ -8,5 +8,5 @@ import { FinalSections, PickupSection, QuoteSection } from "@/components/landing
 import YoyoFooter from "@/components/landing/yoyo/YoyoFooter";
 
 export default function YoyoLanding() {
-  return <main className="min-h-screen bg-[#f6f8fc] text-slate-950"><YoyoNavbar/><YoyoHero/><YoyoPromotions/><UpcomingPickupRoutes/><QuoteSection/><PickupSection/><FinalSections/><YoyoFooter/></main>;
+  return <main className="min-h-screen bg-[#f6f8fc] text-slate-950"><YoyoNavbar/><YoyoHero/><YoyoPromotions/><UpcomingPickupRoutes storeSlug="yoyo-envios"/><QuoteSection/><PickupSection/><FinalSections/><YoyoFooter/></main>;
 }

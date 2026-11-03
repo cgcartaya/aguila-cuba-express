@@ -46,6 +46,7 @@ export default function PaymentCollectButton({
             <PaymentCollectPanel
               shipment={{
                 id: shipment.id,
+                storeId: shipment.store_id,
                 trackingCode: shipment.tracking_code || shipment.id,
                 servicePrice: Number(shipment.service_price || 0),
                 customerPhone: shipment.sender_phone || "",

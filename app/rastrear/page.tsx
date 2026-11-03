@@ -6,7 +6,6 @@ import {
   getStorePublicBaseUrl,
   normalizeStoreHost,
   resolveStoreByHost,
-  resolveStoreBySlug,
 } from "@/lib/saas/store-metadata";
 
 async function getTrackingContext() {
@@ -17,10 +16,9 @@ async function getTrackingContext() {
   const protocol =
     requestHeaders.get("x-forwarded-proto") ||
     (host.includes("localhost") ? "http" : "https");
-  const store = (host ? await resolveStoreByHost(host) : null) ||
-    (await resolveStoreBySlug("aguila"));
+  const store = (host ? await resolveStoreByHost(host) : null);
 
-  return { store, canonicalUrl: store?.slug === "alvarez-travel" ? `${getStorePublicBaseUrl(store)}/rastrear` : `${protocol}://${host || "aguilaexpressusa.com"}/rastrear` };
+  return { store, canonicalUrl: store ? `${getStorePublicBaseUrl(store)}/rastrear` : `${protocol}://${host || "perlamarketplace.com"}/rastrear` };
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (!store) {
     return {
-      title: "Rastrea tu envío | Águila Express USA",
+      title: "Rastrea tu envío",
       description: "Consulta el estado y las actualizaciones de tu envío.",
     };
   }

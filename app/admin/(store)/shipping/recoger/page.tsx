@@ -237,7 +237,7 @@ export default function PickupShipmentPage() {
         {step === "payment" && shipment && (
           <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:p-10">
             <PaymentCollectPanel
-              shipment={shipment}
+              shipment={{ ...shipment, storeId: activeStore!.id }}
               onPaid={(receivedFolio) => {
                 setFolio(receivedFolio);
                 setStep("done");
