@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import ShippingBillingSettings from "@/components/admin/saas/ShippingBillingSettings"
 import PhoneCountryField from "@/components/checkout/PhoneCountryField"
 import {
   ArrowLeft,
@@ -1003,6 +1004,8 @@ export default function EditStorePage() {
                       <input type="date" className={inputClass} value={form.next_payment_date} onChange={(e) => setValue("next_payment_date", e.target.value)} />
                     </div>
                   </div>
+
+                  <ShippingBillingSettings key={storeId} storeId={storeId} />
 
                   <div className="mt-7 rounded-2xl border border-slate-200 p-5">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

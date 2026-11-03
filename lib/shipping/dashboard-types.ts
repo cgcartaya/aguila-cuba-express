@@ -1,3 +1,4 @@
+import type { ShippingPlatformBilling } from "./platform-billing";
 export type ShippingDashboardStatusMetric = {
   status: string;
   label: string;
@@ -71,6 +72,8 @@ export type ShippingDashboardSummary = {
 };
 
 export type ShippingDashboardData = {
+  platform_billing?: ShippingPlatformBilling;
+  platform_billing_error?: string;
   summary: ShippingDashboardSummary;
   statuses: ShippingDashboardStatusMetric[];
   last_7_days: ShippingDashboardDayMetric[];
