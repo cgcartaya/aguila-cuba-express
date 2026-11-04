@@ -138,12 +138,31 @@
   position: relative;
   overflow: hidden;
 }
+.heroStage {
+  display: grid;
+}
+.heroSlide {
+  grid-area: 1 / 1;
+  width: 100%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.45s ease,
+    visibility 0.45s;
+}
+.heroSlideActive {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
 .heroGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 530px;
   max-width: 1600px;
-  margin: auto;
+  margin: 0 auto;
+  align-self: stretch;
 }
 .heroCopy {
   padding: 65px 35px 65px max(5vw, 30px);
@@ -222,13 +241,6 @@
 }
 .cover {
   object-fit: cover;
-}
-.poster {
-  background: radial-gradient(ellipse at center, #143b70, #071e52);
-  margin: 20px 35px 55px 0;
-}
-.contain {
-  object-fit: contain;
 }
 .sliderControls {
   position: absolute;
@@ -826,7 +838,9 @@
   }
   .heroGrid {
     grid-template-columns: 1fr;
+    grid-template-rows: 1fr 270px;
     min-height: 0;
+    padding-bottom: 54px;
   }
   .heroCopy {
     padding: 36px 23px 25px;
@@ -851,12 +865,8 @@
   .heroImage {
     height: 270px;
     min-height: 270px;
-    margin: 0 0 54px;
+    margin: 0;
     clip-path: none;
-  }
-  .poster {
-    height: 375px;
-    min-height: 375px;
   }
   .heroCopy .actions {
     gap: 10px;

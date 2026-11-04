@@ -20,7 +20,6 @@ export default function PromotionSlider() {
     }, 7000);
     return () => clearInterval(timer);
   }, [paused, hover]);
-  const slide = slides[active];
   return (
     <section
       id="inicio"
@@ -31,35 +30,44 @@ export default function PromotionSlider() {
       onMouseLeave={() => setHover(false)}
       onFocusCapture={() => setPaused(true)}
     >
-      <div className={s.heroGrid}>
-        <div className={s.heroCopy}>
-          <p className={s.eyebrow}>{slide.tag}</p>
-          <h1>{slide.title}</h1>
-          <p>{slide.description}</p>
-          <div className={s.actions}>
-            <a className={s.button} href={slide.href}>
-              {slide.label}
-              <ArrowRight size={19} />
-            </a>
-            <a className={s.outline} href="#recogida">
-              Solicitar recogida
-            </a>
+      <div className={s.heroStage}>
+        {slides.map((item, index) => (
+          <div
+            key={item.image}
+            className={`${s.heroGrid} ${s.heroSlide} ${index === active ? s.heroSlideActive : ""}`}
+            aria-hidden={index !== active}
+            inert={index !== active}
+          >
+            <div className={s.heroCopy}>
+              <p className={s.eyebrow}>{item.tag}</p>
+              <h1>{item.title}</h1>
+              <p>{item.description}</p>
+              <div className={s.actions}>
+                <a className={s.button} href={item.href}>
+                  {item.label}
+                  <ArrowRight size={19} />
+                </a>
+                <a className={s.outline} href="#recogida">
+                  Solicitar recogida
+                </a>
+              </div>
+              <span className={s.heroNote}>
+                Dos sucursales · Atención personalizada
+              </span>
+            </div>
+            <div className={`${s.heroImage} ${s.photo}`}>
+              <Image
+                src={item.image}
+                alt={item.alt}
+                fill
+                sizes="(max-width: 760px) 100vw, 52vw"
+                className={s.cover}
+                preload={index === 0}
+                loading={index === 0 ? undefined : "eager"}
+              />
+            </div>
           </div>
-          <span className={s.heroNote}>
-            Dos sucursales · Atención personalizada
-          </span>
-        </div>
-        <div className={`${s.heroImage} ${slide.photo ? s.photo : s.poster}`}>
-          <Image
-            key={slide.image}
-            src={slide.image}
-            alt={slide.alt}
-            fill
-            sizes="(max-width: 760px) 100vw, 52vw"
-            className={slide.photo ? s.cover : s.contain}
-            preload={active === 0}
-          />
-        </div>
+        ))}
       </div>
       <div className={s.sliderControls}>
         <div className={s.dots}>
