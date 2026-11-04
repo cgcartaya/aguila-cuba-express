@@ -43,7 +43,7 @@ export async function createCloverCheckout(settings: NonNullable<Awaited<ReturnT
     method: "POST", signal: AbortSignal.timeout(20000),
     headers: { Authorization: `Bearer ${settings.private_token}`, "X-Clover-Merchant-Id": settings.merchant_id,
       "Content-Type": "application/json", Accept: "application/json", "User-Agent": "PerlaMarketplace/1.0" },
-    body: JSON.stringify({ customer: params.customer || {}, tips: { enabled: false },
+    body: JSON.stringify({ ...(settings.page_config_uuid ? { pageConfigUuid: settings.page_config_uuid } : {}), customer: params.customer || {}, tips: { enabled: false },
       redirectUrls: { success: returnUrl.toString(), failure: params.failureUrl },
       shoppingCart: { lineItems: [ { name: params.name, price: amountCents, unitQty: 1 },
         ...(surcharge > 0 ? [{ name: "Recargo por pago con tarjeta", price: surcharge, unitQty: 1 }] : []) ] },

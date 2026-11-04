@@ -25,11 +25,11 @@ export async function GET(request: NextRequest) {
  const storeId=clean(request.nextUrl.searchParams.get("store_id"),64);
  if(!storeId) return fail("Falta la tienda.");
  const {denied}=await access(request,storeId); if(denied) return denied;
- const {data,error}=await supabaseAdmin.from("store_clover_settings").select("enabled,environment,merchant_id,private_token,webhook_secret").eq("store_id",storeId).maybeSingle();
+ const {data,error}=await supabaseAdmin.from("store_clover_settings").select("enabled,environment,merchant_id,private_token,webhook_secret,page_config_uuid").eq("store_id",storeId).maybeSingle();
  if(error) return fail("No se pudo consultar Clover.",500);
  const {data:reviews,error:reviewError}=await supabaseAdmin.from("clover_payment_sessions").select("id,target_type,target_id,created_at,total_cents,payment_id").eq("store_id",storeId).eq("status","review").order("created_at",{ascending:false}).limit(20);
  if(reviewError) return fail("No se pudieron consultar los cobros por revisar.",500);
- return NextResponse.json({ok:true,reviews:reviews||[],enabled:Boolean(data?.enabled),environment:data?.environment||"production",merchantId:data?.merchant_id||"",configured:Boolean(data?.private_token&&data?.webhook_secret),webhookPath:`/api/webhooks/clover/${storeId}`}, {headers:{"Cache-Control":"no-store"}});
+ return NextResponse.json({ok:true,reviews:reviews||[],enabled:Boolean(data?.enabled),environment:data?.environment||"production",merchantId:data?.merchant_id||"",pageConfigUuid:data?.page_config_uuid||"",configured:Boolean(data?.private_token&&data?.webhook_secret),webhookPath:`/api/webhooks/clover/${storeId}`}, {headers:{"Cache-Control":"no-store"}});
 }
 export async function POST(request: NextRequest) {
  const body=await request.json().catch(()=>({})); const storeId=clean(body.store_id,64);
@@ -40,6 +40,8 @@ export async function POST(request: NextRequest) {
  const merchantId=clean(body.merchantId||current?.merchant_id,64);
  const privateToken=clean(body.privateToken||current?.private_token,1000);
  const webhookSecret=clean(body.webhookSecret||current?.webhook_secret,1000);
+ const pageConfigUuid=body.pageConfigUuid===undefined?(current?.page_config_uuid||null):(clean(body.pageConfigUuid,64)||null);
+ if(pageConfigUuid&&!/^[A-Za-z0-9]{8,64}$/.test(pageConfigUuid)) return fail("ID de página Clover inválido.");
  const environment=body.environment===undefined?(current?.environment||"production"):body.environment;
  if(!["sandbox","production"].includes(environment)) return fail("Entorno inválido.");
  if(!/^[A-Za-z0-9]{8,64}$/.test(merchantId)||!privateToken||!webhookSecret) return fail("Completa Merchant ID, token privado y secreto del webhook.");
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
   const {count,error}=await supabaseAdmin.from("clover_payment_sessions").select("id",{count:"exact",head:true}).eq("store_id",storeId).in("status",["creating","pending"]);
   if(error||count) return fail("Hay cobros pendientes. Resuélvelos antes de cambiar el comercio, entorno o secreto.",409);
  }
- const {error}=await supabaseAdmin.from("store_clover_settings").upsert({store_id:storeId,merchant_id:merchantId,private_token:privateToken,webhook_secret:webhookSecret,environment,enabled:typeof body.enabled==="boolean"?body.enabled:Boolean(current?.enabled),updated_at:new Date().toISOString()});
+ const {error}=await supabaseAdmin.from("store_clover_settings").upsert({store_id:storeId,merchant_id:merchantId,page_config_uuid:pageConfigUuid,private_token:privateToken,webhook_secret:webhookSecret,environment,enabled:typeof body.enabled==="boolean"?body.enabled:Boolean(current?.enabled),updated_at:new Date().toISOString()});
  if(error) return fail("No se pudo guardar Clover.",500);
  revalidateTag("payment-availability",{expire:0});
  return NextResponse.json({ok:true});

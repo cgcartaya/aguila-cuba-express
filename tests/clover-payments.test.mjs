@@ -44,3 +44,8 @@ test('dashboard reachability probes succeed without configuring or settling a pa
   assert.equal(response.status,200);assert.equal(called,false);
  }
 });
+
+test('checkout uses the exact configured page and leaves legacy defaults unchanged',async()=>{
+ const specific=harness();await specific.api.createCloverCheckout({...settings,page_config_uuid:'2Q52E9BYZXMPT'},params);assert.equal(specific.sent.body.pageConfigUuid,'2Q52E9BYZXMPT');
+ const legacy=harness();await legacy.api.createCloverCheckout(settings,params);assert.equal(Object.hasOwn(legacy.sent.body,'pageConfigUuid'),false);
+});
