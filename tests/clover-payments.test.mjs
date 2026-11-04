@@ -6,7 +6,7 @@ import ts from 'typescript';
 import {createRequire} from 'node:module';
 import {createHmac} from 'node:crypto';
 const require=createRequire(import.meta.url);
-function load(path,mocks={}){const module={exports:{}};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module,exports:module.exports,require:n=>mocks[n]||require(n),Buffer,Date,URL,AbortSignal,fetch:mocks.fetch});return module.exports;}
+function load(path,mocks={}){const module={exports:{}};vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{module,exports:module.exports,require:n=>mocks[n]||require(n),Buffer,Date,URL,AbortSignal,console:{info(){},warn(){},error(){}},fetch:mocks.fetch});return module.exports;}
 const {verifyCloverSignature}=load('lib/payments/clover-signature.ts');
 test('Clover signatures validate raw bytes and reject replay, tampering and malformed signatures',()=>{
  const now=1700000000000,raw='{"type":"PAYMENT","status":"APPROVED"}',secret='test-only';
@@ -30,4 +30,14 @@ test('webhook only settles signed approved payments for the configured merchant'
  assert.equal((await send({...event,status:'DECLINED'})).status,200);assert.equal(calls.length,0);
  assert.equal((await send({...event,type:'REFUND'})).status,200);assert.equal(calls.length,0);
  assert.equal((await send(event)).status,200);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].args)),{p_store_id:'store',p_session_id:'session',p_merchant_id:'merchant',p_payment_id:'payment'});
+});
+
+test('dashboard reachability probes succeed without configuring or settling a payment',async()=>{
+ let called=false;
+ const api=load('app/api/webhooks/clover/[storeId]/route.ts',{'@/lib/supabase-admin':{supabaseAdmin:{rpc:async()=>{called=true;throw Error('Must not settle')}}},'@/lib/services/clover-admin':{getCloverSettings:async()=>{called=true;throw Error('Must not read secrets')}},'@/lib/payments/clover-signature':{verifyCloverSignature}});
+ assert.equal((await api.GET()).status,200);
+ for(const raw of ['', '{}','{"verificationCode":"dashboard-test"}']){
+  const response=await api.POST({text:async()=>raw,headers:{get:()=>null}},{params:Promise.resolve({storeId:'store'})});
+  assert.equal(response.status,200);assert.equal(called,false);
+ }
 });
