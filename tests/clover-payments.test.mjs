@@ -25,6 +25,9 @@ test('webhook only settles signed approved payments for the configured merchant'
  const api=load('app/api/webhooks/clover/[storeId]/route.ts',{'@/lib/supabase-admin':{supabaseAdmin:{rpc:async(name,args)=>{calls.push({name,args});return {data:'paid',error:null}}}},'@/lib/services/clover-admin':{getCloverSettings:async()=>({merchant_id:'merchant',webhook_secret:secret,enabled:false})},'@/lib/payments/clover-signature':{verifyCloverSignature}});
  const send=async(event,valid=true)=>{const raw=JSON.stringify(event),t=Math.floor(Date.now()/1000);const sig=createHmac('sha256',secret).update(`${t}.${raw}`).digest('hex');return api.POST({text:async()=>raw,headers:{get:()=>valid?`t=${t},v1=${sig}`:'invalid'}},{params:Promise.resolve({storeId:'store'})});};
  const event={type:'PAYMENT',status:'APPROVED',merchantId:'merchant',data:'session',id:'payment'};
+ assert.equal((await send({test:true})).status,200);assert.equal(calls.length,0);
+ assert.equal((await send({test:true},false)).status,401);assert.equal(calls.length,0);
+ assert.equal((await send({...event,test:true,merchantId:'other'})).status,400);assert.equal(calls.length,0);
  assert.equal((await send(event,false)).status,401);assert.equal(calls.length,0);
  assert.equal((await send({...event,merchantId:'other'})).status,400);assert.equal(calls.length,0);
  assert.equal((await send({...event,status:'DECLINED'})).status,200);assert.equal(calls.length,0);

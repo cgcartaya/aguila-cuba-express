@@ -29,6 +29,12 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{storeId
    console.warn("Clover webhook",{storeId,outcome:"invalid_signature",hasSignature:Boolean(signature),keys:keys.slice(0,15)});
    return NextResponse.json({error:"Invalid signature"},{status:401});
   }
+  // Clover Dashboard TEST URL sends a signed {test: ...} probe, not a payment.
+  // Signature is verified above; acknowledge only the isolated test envelope.
+  if(keys.length===1&&keys[0]==="test") {
+   console.info("Clover webhook",{storeId,outcome:"signed_test_probe"});
+   return NextResponse.json({ok:true});
+  }
   if(event.merchantId!==settings.merchant_id) {
    console.warn("Clover webhook",{storeId,outcome:"merchant_mismatch",keys:keys.slice(0,15)});
    return NextResponse.json({error:"Merchant mismatch"},{status:400});
