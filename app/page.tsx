@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
+import WfCargoLanding from "@/components/landing/wfcargo/WfCargoLanding";
 import Bar1820Landing from "@/components/landing/bar1820/Bar1820Landing";
 import AlvarezLanding from "@/components/landing/alvarez/AlvarezLanding";
 import AguilaLanding from "@/components/landing/AguilaLanding";
@@ -23,6 +24,7 @@ import {
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 
 type LandingType =
+  | "wfcargo"
   | "aguila"
   | "alvarez"
   | "yoyo"
@@ -53,6 +55,8 @@ function normalizeHost(value: string | null) {
 
 function resolveLanding(host: string): LandingType {
   const normalizedHost = normalizeHost(host);
+
+  if (normalizedHost === `wf-cargo.${PLATFORM_DOMAIN}`) return "wfcargo";
 
   if (
     normalizedHost === "wwwalvareztravel.com" ||
@@ -182,6 +186,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const landing = resolveLanding(host);
 
+  if (landing === "wfcargo") {
+    return buildLandingFallbackMetadata("WF Cargo Envíos | Envíos y multiservicios en Port St. Lucie", "Envíos a Cuba, República Dominicana y Colombia. Remesas, pasaportes cubanos, notaría, recogidas y renta de autos. Dos sucursales en Port St. Lucie.", `https://wf-cargo.${PLATFORM_DOMAIN}`, "WF Cargo Envíos");
+  }
+
   if (landing === "aguila") {
     const canonicalUrl = host ? `https://${host}` : "https://aguilacubaexpress.com";
     const store = await resolveStoreBySlug("aguila");
@@ -258,6 +266,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function HomePage() {
   const landing = await getCurrentLanding();
+
+  if (landing === "wfcargo") return <WfCargoLanding />;
 
   if (landing === "tumercadolajero") {
     const store = await resolveStoreBySlug("tumercadolajero");
