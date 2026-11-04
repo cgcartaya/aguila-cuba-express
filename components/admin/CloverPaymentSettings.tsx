@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 export default function CloverPaymentSettings({storeId}:{storeId:string}) {
+ const [pageConfigUuid,setPageConfigUuid]=useState("");
  const [merchantId,setMerchantId]=useState("");
  const [privateToken,setPrivateToken]=useState("");
  const [webhookSecret,setWebhookSecret]=useState("");
@@ -23,7 +24,7 @@ export default function CloverPaymentSettings({storeId}:{storeId:string}) {
     const body=await response.json();
     if(cancelled) return;
     if(!response.ok) throw new Error(body.error||"No se pudo consultar Clover.");
-    setMerchantId(body.merchantId);setEnvironment(body.environment);setEnabled(body.enabled);setConfigured(body.configured);setReviews(body.reviews||[]);
+    setMerchantId(body.merchantId);setPageConfigUuid(body.pageConfigUuid||"");setEnvironment(body.environment);setEnabled(body.enabled);setConfigured(body.configured);setReviews(body.reviews||[]);
    }catch(error){if(!cancelled)setMessage(error instanceof Error?error.message:"No se pudo consultar Clover.");}
    finally{if(!cancelled)setBusy(false);}
   })();
@@ -33,7 +34,7 @@ export default function CloverPaymentSettings({storeId}:{storeId:string}) {
   setBusy(true);setMessage("");
   try {
    const {data}=await supabase.auth.getSession();
-   const response=await fetch("/api/admin/shipping-settings/clover",{method:"POST",headers:{Authorization:`Bearer ${data.session?.access_token||""}`,"Content-Type":"application/json"},body:JSON.stringify({store_id:storeId,merchantId,privateToken,webhookSecret,environment,enabled})});
+   const response=await fetch("/api/admin/shipping-settings/clover",{method:"POST",headers:{Authorization:`Bearer ${data.session?.access_token||""}`,"Content-Type":"application/json"},body:JSON.stringify({store_id:storeId,merchantId,pageConfigUuid,privateToken,webhookSecret,environment,enabled})});
    const body=await response.json();if(!response.ok)throw new Error(body.error||"No se pudo guardar.");
    setPrivateToken("");setWebhookSecret("");setConfigured(true);setMessage("Configuración guardada.");
   }catch(error){setMessage(error instanceof Error?error.message:"No se pudo guardar Clover.");}
@@ -47,6 +48,7 @@ export default function CloverPaymentSettings({storeId}:{storeId:string}) {
   <div className="mt-4 space-y-3">
    <label className="block text-sm font-bold">Entorno<select className={input} value={environment} disabled={busy} onChange={e=>setEnvironment(e.target.value)}><option value="production">Producción — dinero real</option><option value="sandbox">Sandbox — pruebas</option></select></label>
    <label className="block text-sm font-bold">Merchant ID<input className={input} value={merchantId} disabled={busy} autoComplete="off" onChange={e=>setMerchantId(e.target.value)}/></label>
+   <label className="block text-sm font-bold">ID de la página Hosted Checkout (opcional)<input className={input} value={pageConfigUuid} disabled={busy} autoComplete="off" placeholder="Vacío: página predeterminada" onChange={e=>setPageConfigUuid(e.target.value)}/><span className="mt-1 block text-xs font-normal text-slate-500">Debe ser la misma página de Clover donde guardaste el webhook. El ID aparece al final de la dirección de edición, después de /configs/.</span></label>
    <label className="block text-sm font-bold">Token privado<input type="password" className={input} value={privateToken} disabled={busy} autoComplete="new-password" placeholder={configured?"Guardado; deja vacío para conservarlo":"Private token de Hosted Checkout"} onChange={e=>setPrivateToken(e.target.value)}/></label>
    <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-600"><p>En Clover: Settings → Ecommerce → Hosted Checkout → Webhook URL. Pega esta dirección, genera el Signing Secret y guarda los cambios:</p><code className="mt-2 block break-all select-all">{origin}/api/webhooks/clover/{storeId}</code><p className="mt-2">Deja vacías las Redirect URLs en Clover para utilizar el regreso correspondiente a cada pedido o envío. Usa las credenciales del entorno seleccionado.</p></div>
    <label className="block text-sm font-bold">Signing Secret del webhook<input type="password" className={input} value={webhookSecret} disabled={busy} autoComplete="new-password" placeholder={configured?"Guardado; deja vacío para conservarlo":"Secreto generado en Hosted Checkout"} onChange={e=>setWebhookSecret(e.target.value)}/></label>

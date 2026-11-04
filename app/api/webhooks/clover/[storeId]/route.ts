@@ -35,6 +35,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{storeId
    console.info("Clover webhook",{storeId,outcome:"signed_test_probe"});
    return NextResponse.json({ok:true});
   }
+  console.info("Clover webhook",{storeId,outcome:"verified_event",type:typeof event.type==="string"?event.type.slice(0,40):null,status:typeof event.status==="string"?event.status.slice(0,40):null,keys:keys.slice(0,15)});
   if(event.merchantId!==settings.merchant_id) {
    console.warn("Clover webhook",{storeId,outcome:"merchant_mismatch",keys:keys.slice(0,15)});
    return NextResponse.json({error:"Merchant mismatch"},{status:400});
