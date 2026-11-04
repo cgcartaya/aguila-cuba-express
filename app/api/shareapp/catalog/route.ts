@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       )
       .eq("store_id", storeId)
       .eq("is_active", true)
+      .eq(kind === "combo" ? "is_active" : "combo_only", kind === "combo")
       .is("deleted_at", null)
       .order("name")
       .order("id")

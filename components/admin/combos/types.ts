@@ -29,6 +29,7 @@ export type ComboProduct = {
   name: string;
   description?: string | null;
   price: number;
+  combo_only?: boolean;
   stock?: number | null;
   category?: string | null;
   image_url?: string | null;

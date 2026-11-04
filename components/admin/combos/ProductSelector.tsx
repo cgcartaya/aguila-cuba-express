@@ -157,7 +157,7 @@ export default function ProductSelector({
                 </h3>
 
                 <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Stock: {product.stock} · ${Number(product.price).toFixed(2)}
+                  Stock: {product.stock} · {product.combo_only ? "Solo combos" : `$${Number(product.price).toFixed(2)}`}
                 </p>
 
                 {product.category && (

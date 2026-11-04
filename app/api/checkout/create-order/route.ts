@@ -385,7 +385,7 @@ export async function POST(request: Request) {
         ? await supabaseAdmin
             .from("products")
             .select(
-              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, is_active, deleted_at"
+              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, is_active, deleted_at, combo_only"
             )
             .eq("store_id", storeId)
             .eq("is_active", true)
@@ -416,7 +416,7 @@ export async function POST(request: Request) {
         const productId = clean(rawItem.product_id, 64);
         const product = productMap.get(productId);
 
-        if (!product) {
+        if (!product || product.combo_only) {
           return fail("Uno de los productos ya no está disponible.", 409);
         }
 

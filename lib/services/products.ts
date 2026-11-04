@@ -19,6 +19,7 @@ const PRODUCT_PUBLIC_SELECT = `
   stock,
   image_url,
   is_active,
+  combo_only,
   created_at,
   category_sort_order,
   is_category_featured,
@@ -64,6 +65,7 @@ const PRODUCT_INVENTORY_SELECT = `
   stock,
   sku,
   is_active,
+  combo_only,
   category_sort_order,
   is_category_featured,
   is_home_featured,
@@ -126,6 +128,7 @@ export async function getProductByIdWithImage(id: string, storeId: string) {
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("id", id)
     .eq("store_id", storeId)
+    .eq("combo_only", false)
     .single();
 
   if (error || !data) {
@@ -161,6 +164,7 @@ export async function getActiveProducts(storeId?: string) {
     .from("products")
     .select("*")
     .eq("store_id", storeId)
+    .eq("combo_only", false)
     .eq("is_active", true)
     .is("deleted_at", null)
     .order("category", { ascending: true })
@@ -286,6 +290,7 @@ export async function getStoreProductsByStoreId(storeId: string) {
       .from("products")
       .select(PRODUCT_PUBLIC_SELECT)
       .eq("store_id", storeId)
+    .eq("combo_only", false)
       .eq("is_active", true)
       .is("deleted_at", null)
       .order("category", { ascending: true })
@@ -327,6 +332,7 @@ export async function getStoreProductById(
     .select(PRODUCT_DETAIL_SELECT)
     .eq("id", id)
     .eq("store_id", storeId)
+    .eq("combo_only", false)
     .eq("is_active", true)
     .is("deleted_at", null)
     .single();
@@ -349,6 +355,7 @@ export async function getRelatedProducts(
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", storeId)
+    .eq("combo_only", false)
     .eq("is_active", true)
     .is("deleted_at", null)
     .eq("category", category)
@@ -402,6 +409,7 @@ export async function getHomeFeaturedProductsByStoreId(storeId: string) {
     .from("products")
     .select(PRODUCT_PUBLIC_SELECT)
     .eq("store_id", storeId)
+    .eq("combo_only", false)
     .eq("is_active", true)
     .eq("is_home_featured", true)
     .is("deleted_at", null)
@@ -734,6 +742,7 @@ export async function getTrashProductsByStoreId(storeId: string) {
       stock,
       sku,
       is_active,
+  combo_only,
       deleted_at,
       product_images (
         image_url,

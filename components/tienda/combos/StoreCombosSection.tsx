@@ -59,6 +59,7 @@ export default function StoreCombosSection({
                   id: String(relatedProduct.id),
                   name: relatedProduct.name,
                   price: Number(relatedProduct.price || 0),
+                  combo_only: relatedProduct.combo_only,
                 }
               : null,
           };

@@ -64,6 +64,7 @@ export default function EditProductPage() {
     stock: "",
     tag: "",
     is_active: true,
+    combo_only: false,
     minimum_order_exempt: null as boolean | null,
     delivery_included: null as boolean | null,
     max_quantity_per_order: "",
@@ -123,6 +124,7 @@ export default function EditProductPage() {
         stock: String(product.stock || ""),
         tag: product.tag || "",
         is_active: product.is_active ?? true,
+        combo_only: product.combo_only ?? false,
         minimum_order_exempt: product.minimum_order_exempt ?? null,
         delivery_included: product.delivery_included ?? null,
         max_quantity_per_order:
@@ -185,12 +187,12 @@ export default function EditProductPage() {
       return;
     }
 
-    if (!form.name || !form.category || !form.price || !form.stock) {
+    if (!form.name || !form.category || (!form.combo_only && !form.price) || !form.stock) {
       setError("Completa nombre, categoría, precio y stock.");
       return;
     }
 
-    const price = Number(form.price);
+    const price = form.combo_only ? 0 : Number(form.price);
     const stock = Number(form.stock);
     const maxQuantityPerOrder = form.max_quantity_per_order.trim()
       ? Number(form.max_quantity_per_order)
@@ -218,7 +220,7 @@ export default function EditProductPage() {
     }
 
     const normalizedTiers = normalizePriceTierDrafts(
-      priceTiers,
+      form.combo_only ? [] : priceTiers,
       price
     );
 
@@ -237,6 +239,7 @@ export default function EditProductPage() {
           category: form.category,
           description: form.description,
           price,
+          combo_only: form.combo_only,
           // El stock ya no se manda desde esta pantalla — se maneja
           // en Inventario para que cada cambio quede auditado en
           // inventory_movements con motivo y quién lo hizo.
@@ -326,14 +329,15 @@ export default function EditProductPage() {
               onChange={handleCategoryChange}
             />
 
-            <Input
+            {(activeStore?.slug === "alvarez-travel" || form.combo_only) && <label className="col-span-full flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm"><input type="checkbox" className="mt-1 h-5 w-5" checked={form.combo_only} onChange={e=>setForm(current=>({...current,combo_only:e.target.checked}))}/><span><strong>Este producto está solo disponible para combos</strong><span className="mt-1 block text-slate-600">No se mostrará por separado en la tienda ni requiere precio individual. El precio de venta se configura en el combo.</span></span></label>}
+            {!form.combo_only && <Input
               name="price"
               label="Precio *"
               type="number"
               value={form.price}
               onChange={handleChange}
               placeholder="0.00"
-            />
+            />}
 
             <div>
               <Input
@@ -378,7 +382,7 @@ export default function EditProductPage() {
               />
             </div>
 
-            <ProductPurchaseRulesEditor
+            {!form.combo_only && (<ProductPurchaseRulesEditor
               basePrice={form.price}
               maxQuantityPerOrder={form.max_quantity_per_order}
               onMaxQuantityChange={(value) =>
@@ -389,7 +393,7 @@ export default function EditProductPage() {
               }
               tiers={priceTiers}
               onTiersChange={setPriceTiers}
-            />
+            />)}
 
             <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 md:col-span-2 md:grid-cols-2">
               <RuleOverride label="Mínimo de compra" value={form.minimum_order_exempt} onChange={(value) => setForm((prev) => ({ ...prev, minimum_order_exempt: value }))} trueLabel="Exento" falseLabel="Aplicar mínimo" />

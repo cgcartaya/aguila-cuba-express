@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         .select("id,name")
         .eq("store_id", storeId)
         .eq("is_active", true)
+      .eq(target === "combo" ? "is_active" : "combo_only", target === "combo")
         .is("deleted_at", null);
       const q = (request.nextUrl.searchParams.get("q") || "")
         .trim()

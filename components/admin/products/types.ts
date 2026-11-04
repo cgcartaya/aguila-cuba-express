@@ -9,6 +9,7 @@ export type Product = {
   image_url?: string | null;
   tag?: string | null;
   is_active: boolean;
+  combo_only?: boolean;
   created_at?: string;
   category_sort_order?: number | null;
   is_category_featured?: boolean | null;

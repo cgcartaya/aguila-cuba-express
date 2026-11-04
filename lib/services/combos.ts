@@ -27,6 +27,7 @@ const COMBO_PUBLIC_SELECT = `
       stock,
       category,
       is_active,
+      combo_only,
       store_id
     )
   )
