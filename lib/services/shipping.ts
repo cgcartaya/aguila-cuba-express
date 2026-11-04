@@ -71,7 +71,8 @@ export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters)
     );
   }
 
-  if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
+  if (filters.status === "pending_active") query = query.not("status", "in", "(delivered,issue,cancelled)");
+  else if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
 
   if (filters.tripId && filters.tripId !== "all") {
     query = filters.tripId === "unassigned" ? query.is("trip_id", null) : query.eq("trip_id", filters.tripId);
@@ -84,7 +85,7 @@ export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters)
   if (filters.paymentStatus && filters.paymentStatus !== "all") query = query.eq("payment_status", filters.paymentStatus);
 
   if (filters.assignment === "assigned") query = query.or("assigned_staff_id.not.is.null,assigned_driver_id.not.is.null,assigned_driver_name.not.is.null");
-  if (filters.assignment === "unassigned") query = query.is("assigned_staff_id", null).is("assigned_driver_id", null).is("assigned_driver_name", null);
+  if (filters.assignment === "unassigned") query = query.is("assigned_staff_id", null).is("assigned_driver_id", null).or("assigned_driver_name.is.null,assigned_driver_name.eq.").not("status", "in", "(delivered,cancelled)");
 
   if (filters.contentType === "package") query = query.eq("contains_package", true).eq("contains_money", false);
   if (filters.contentType === "money") query = query.eq("contains_money", true).eq("contains_package", false);
