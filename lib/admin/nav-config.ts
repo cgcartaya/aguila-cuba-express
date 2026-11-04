@@ -58,7 +58,7 @@ export type AdminSection = {
 
 export const adminNavSections: AdminSection[] = [
   {
-    title: "Marketplace",
+    title: "Tienda",
     module: "store",
     links: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -240,12 +240,29 @@ export function getVisibleAdminSections(
     | undefined,
   isSuperAdmin: boolean,
 ): AdminSection[] {
-  return adminNavSections
+  const visible = adminNavSections
     .filter((section) => isSuperAdmin || isModuleEnabled(store, section.module))
     .map((section) => ({
       ...section,
       links: section.links.filter((link) => !link.storeSlugs || link.storeSlugs.includes(store?.slug || "")),
     }));
+  // Group only after filtering: each commercial tool keeps its module gate.
+  const groups: AdminSection[] = [];
+  for (const section of visible) {
+    if (!section.links.length) continue;
+    const title = section.title === "Analítica" || section.title === "Reportes" ? "Analíticas"
+      : section.title.startsWith("Marketing") ? "Marketing" : section.title;
+    const existing = groups.find(group => group.title === title);
+    if (existing) existing.links.push(...section.links);
+    else groups.push({...section, title, links: [...section.links]});
+  }
+  return groups;
+}
+
+/** Only the most specific link is active (e.g. reviews, not products too). */
+export function activeAdminHref(links: AdminLink[], pathname: string) {
+  return links.filter(link => link.href === "/admin" ? pathname === link.href : pathname === link.href || pathname.startsWith(link.href + "/"))
+    .sort((a,b) => b.href.length - a.href.length)[0]?.href || null;
 }
 
 export { Store as StoreIcon, ExternalLink };
