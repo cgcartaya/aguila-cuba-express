@@ -15,6 +15,13 @@ export async function GET(req:NextRequest) {
     const page=Math.max(0,Math.min(100000,Math.floor(Number(url.searchParams.get('page'))||0)));
     const {data,error}=await assigned(scope).order('id').range(page*50,page*50+50);
     if(error) throw error;
+    const ids=Array.from(new Set((data||[]).slice(0,50).map(row=>row.trip_id).filter(Boolean)));
+    const labels=new Map<string,string>();
+    if(ids.length){
+      const {data:trips,error:tripError}=await db.from('shipping_trips').select('id,trip_number,departure_date').eq('store_id',scope.storeId).in('id',ids);
+      if(tripError)throw tripError;
+      for(const trip of trips||[])labels.set(trip.id,`Viaje ${trip.trip_number??'sin número'}${trip.departure_date?' · '+String(trip.departure_date).slice(0,10):''}`);
+    }
     const rows=await Promise.all((data||[]).slice(0,50).map(async row=>{
       let photoUrl:string|null=null;
       // Only issue a short-lived URL after checking the parent shipment assignment.
@@ -22,7 +29,7 @@ export async function GET(req:NextRequest) {
         const {data}=await db.storage.from('delivery-photos').createSignedUrl(row.delivery_photo_url,600);
         photoUrl=data?.signedUrl||null;
       }
-      return {...row,delivery_photo_url:undefined,assigned_staff_id:undefined,assigned_driver_id:undefined,photoUrl};
+      return {...row,tripLabel:row.trip_id?(labels.get(row.trip_id)||'Viaje no disponible'):null,delivery_photo_url:undefined,assigned_staff_id:undefined,assigned_driver_id:undefined,photoUrl};
     }));
     return Response.json({rows,hasMore:(data?.length||0)>50},{headers});
   }catch(e){return fail(e);}
