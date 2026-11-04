@@ -19,7 +19,8 @@ export default function MetaPixel() {
           var isAdmin = window.location.pathname === '/admin' || window.location.pathname.indexOf('/admin/') === 0;
 
           var isGestor = window.location.pathname === '/gestores' || window.location.pathname.indexOf('/gestores/') === 0;
-          if (!isAguilaDomain || isAdmin || isGestor) return;
+          var isDriver = /^\\/repartidores(?:\\/|$)/.test(window.location.pathname);
+          if (!isAguilaDomain || isAdmin || isGestor || isDriver) return;
           if (window.fbq) return;
 
           !function(f,b,e,v,n,t,s)

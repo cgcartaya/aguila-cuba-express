@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Edit3, Loader2, MapPinned, Plus, Search, ShieldCheck, Truck, UserRound, Users } from "lucide-react";
+import DeliveryPortalLink from "@/components/delivery/DeliveryPortalLink";
 import StaffAnalyticsDashboard from "@/components/admin/shipping/staff/StaffAnalyticsDashboard";
 import StaffFormModal from "@/components/admin/shipping/staff/StaffFormModal";
 import StaffRouteModal from "@/components/admin/shipping/staff/StaffRouteModal";
@@ -88,6 +89,8 @@ export default function ShippingStaffPage() {
             <button onClick={()=>{setEditing(null);setModalOpen(true)}} disabled={!activeStore?.id} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 font-black text-[#061b3a] shadow-lg disabled:opacity-50"><Plus size={19}/> Nuevo usuario</button>
           </div>
         </header>
+
+        {activeStore && <DeliveryPortalLink store={activeStore}/>}
 
         <section className="grid gap-4 sm:grid-cols-3">
           <Metric icon={<Users/>} label="Total" value={users.length}/><Metric icon={<ShieldCheck/>} label="Activos" value={activeCount}/><Metric icon={<Truck/>} label="Repartidores" value={drivers}/>
