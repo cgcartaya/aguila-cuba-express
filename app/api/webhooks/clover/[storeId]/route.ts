@@ -41,8 +41,11 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{storeId
    return NextResponse.json({error:"Merchant mismatch"},{status:400});
   }
   if(event.type!=="PAYMENT"||event.status!=="APPROVED") return NextResponse.json({ok:true});
-  if(typeof event.data!=="string"||typeof event.id!=="string") return NextResponse.json({error:"Invalid payment"},{status:400});
-  const {data,error}=await supabaseAdmin.rpc("settle_clover_payment",{p_store_id:storeId,p_session_id:event.data,p_merchant_id:event.merchantId,p_payment_id:event.id});
+  const checkoutSessionId=typeof event.checkoutSessionId==="string"?event.checkoutSessionId:typeof event.data==="string"?event.data:null;
+  if(typeof event.checkoutSessionId==="string"&&typeof event.data==="string"&&event.checkoutSessionId!==event.data) return NextResponse.json({error:"Conflicting checkout references"},{status:400});
+  if(!checkoutSessionId||typeof event.id!=="string"||!event.id) return NextResponse.json({error:"Invalid payment"},{status:400});
+  console.info("Clover webhook",{storeId,outcome:"approved_payment",checkoutSessionId,paymentId:event.id});
+  const {data,error}=await supabaseAdmin.rpc("settle_clover_payment",{p_store_id:storeId,p_session_id:checkoutSessionId,p_merchant_id:event.merchantId,p_payment_id:event.id});
   if(error) {
    console.error("Clover webhook",{storeId,outcome:"settlement_failed",code:error.code});
    return NextResponse.json({error:"Payment could not be recorded"},{status:500});

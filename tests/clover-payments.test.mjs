@@ -32,6 +32,8 @@ test('webhook only settles signed approved payments for the configured merchant'
  assert.equal((await send({...event,merchantId:'other'})).status,400);assert.equal(calls.length,0);
  assert.equal((await send({...event,status:'DECLINED'})).status,200);assert.equal(calls.length,0);
  assert.equal((await send({...event,type:'REFUND'})).status,200);assert.equal(calls.length,0);
+ assert.equal((await send({...event,data:undefined,checkoutSessionId:'session'})).status,200);
+ assert.equal((await send({...event,checkoutSessionId:'different'})).status,400);assert.equal(calls.length,1);
  assert.equal((await send(event)).status,200);assert.deepEqual(JSON.parse(JSON.stringify(calls[0].args)),{p_store_id:'store',p_session_id:'session',p_merchant_id:'merchant',p_payment_id:'payment'});
 });
 
