@@ -4,7 +4,7 @@ import { COOKIE, checkOrigin, fail, login, PortalError, session, sha } from '@/l
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest) {
-  try { const {name,store}=await session(req);return NextResponse.json({name,store},{headers:{'Cache-Control':'no-store'}}); } catch(e){return fail(e);}
+  try { const {name,store,photoUrl}=await session(req);return NextResponse.json({name,store,photoUrl},{headers:{'Cache-Control':'no-store'}}); } catch(e){return fail(e);}
 }
 export async function POST(req:NextRequest) {
   try {

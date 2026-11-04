@@ -22,11 +22,12 @@ export async function storeFor(id: string) {
   if (!data?.is_active || !data.module_shipping_enabled) throw new PortalError('La agencia no tiene disponible el módulo de envíos.',403);
   return { id:data.id, name:data.name, slug:data.slug, logoUrl:data.logo_url };
 }
-const staffFields='id,store_id,username,password_hash,role,status,first_name,last_name,legacy_app_user_id';
+const staffFields='id,store_id,username,password_hash,role,status,first_name,last_name,photo_url,legacy_app_user_id';
 const legacyFields='id,store_id,username,password_hash,role,is_active,name';
-type Account = { id:string; store_id:string|null; username:string; password_hash:string; role:string; status?:string; is_active?:boolean; first_name?:string; last_name?:string; legacy_app_user_id?:string|null; name?:string };
+type Account = { id:string; store_id:string|null; username:string; password_hash:string; role:string; status?:string; is_active?:boolean; first_name?:string; last_name?:string; legacy_app_user_id?:string|null; name?:string; photo_url?:string|null };
 export async function identity(source: string, account: Account, storeId: string) {
   const scope: DriverScope = { storeId, staffId: null, legacyId: null };
+  let photoUrl=account.photo_url||null;
   if (source === 'staff') {
     if (account.store_id !== storeId || account.status !== 'ACTIVE' || account.role !== 'DELIVERY') throw new PortalError('Cuenta de repartidor no disponible.',401);
     scope.staffId=account.id; scope.legacyId=account.legacy_app_user_id || null;
@@ -37,7 +38,7 @@ export async function identity(source: string, account: Account, storeId: string
     if(linked && linked.length > 1) throw new PortalError('Revisa la vinculación de esta cuenta con la agencia.',403);
     if(linked?.[0]) {
       if(linked[0].status !== 'ACTIVE' || linked[0].role !== 'DELIVERY') throw new PortalError('Cuenta de repartidor no disponible.',401);
-      scope.staffId=linked[0].id;
+      scope.staffId=linked[0].id; photoUrl=linked[0].photo_url||null;
     }
     scope.legacyId=account.id;
     if (!account.store_id) {
@@ -46,7 +47,7 @@ export async function identity(source: string, account: Account, storeId: string
       if(!data?.length) throw new PortalError('Esta cuenta no está vinculada a la agencia indicada.',401);
     }
   }
-  return { scope, name: account.name || [account.first_name,account.last_name].filter(Boolean).join(' ') || account.username };
+  return { scope, photoUrl, name: account.name || [account.first_name,account.last_name].filter(Boolean).join(' ') || account.username };
 }
 export async function login(storeSlug: string, username: string, password: string) {
   const key=fingerprint('login:'+storeSlug+':'+username);
