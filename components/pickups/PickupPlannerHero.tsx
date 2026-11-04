@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { preparePickupPrefill, type PickupPlannerPrefill } from "@/lib/pickups/planner-prefill";
 import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
 import LocationPickerMap from "@/components/maps/LocationPickerMap";
@@ -76,7 +77,7 @@ function nextDays(count = 8) {
   return days;
 }
 
-export default function PickupPlannerHero({ variant = "card", storeSlug, storeName, whatsappPhone }: { variant?: "card" | "horizontal"; storeSlug: string; storeName: string; whatsappPhone: string }) {
+export default function PickupPlannerHero({ variant = "card", storeSlug, storeName, whatsappPhone, renderTrigger }: { variant?: "card" | "horizontal"; storeSlug: string; storeName: string; whatsappPhone: string; renderTrigger?: (open: (prefill?: PickupPlannerPrefill) => void) => ReactNode }) {
   const horizontal = variant === "horizontal";
   const days = useMemo(() => nextDays(), []);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -216,8 +217,19 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
     }
   }
 
-  function openPlanner() {
+  function openPlanner(prefill?: PickupPlannerPrefill) {
     setError("");
+    if (prefill) {
+      const prepared = preparePickupPrefill(prefill);
+      setForm(current => ({ ...current, ...prepared.form, city: config?.cities.length === 1 ? config.cities[0] : current.city }));
+      setSelectedDates(prepared.selectedDates);
+      setAddressResult(null);
+      setPin({ latitude: null, longitude: null });
+      setRequestedRoute(null);
+      setSuccessCode("");
+      setSuccessWhatsappUrl("");
+      setStep(1);
+    }
     setDrawerOpen(true);
   }
 
@@ -429,7 +441,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
 
   return (
     <>
-      <section className={horizontal ? "rounded-[1.75rem] bg-[#0757bb] p-6 text-white sm:p-8" : "relative overflow-hidden rounded-[2rem] border border-white/15 bg-gradient-to-br from-white via-blue-50 to-blue-100 p-6 text-slate-950 shadow-xl sm:p-8"}>
+      {renderTrigger ? renderTrigger(openPlanner) : <section className={horizontal ? "rounded-[1.75rem] bg-[#0757bb] p-6 text-white sm:p-8" : "relative overflow-hidden rounded-[2rem] border border-white/15 bg-gradient-to-br from-white via-blue-50 to-blue-100 p-6 text-slate-950 shadow-xl sm:p-8"}>
         <div className={horizontal ? "grid items-center gap-6 lg:grid-cols-[1fr_1.1fr] lg:gap-10" : "relative z-10"}>
           <div>
             <div className={`flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] ${horizontal ? "text-blue-100" : "text-red-600"}`}><Truck size={20} /> Recogida a domicilio</div>
@@ -437,7 +449,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
             <p className={`mt-3 max-w-xl text-sm leading-6 sm:text-base ${horizontal ? "text-blue-50" : "text-slate-600"}`}>Dinos dónde estás y qué días te convienen. Nosotros organizamos la ruta y confirmamos por WhatsApp.</p>
           </div>
           <div>
-            <button type="button" onClick={openPlanner} className={`${horizontal ? "" : "mt-7"} flex min-h-20 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:bg-blue-50 sm:p-5`}>
+            <button type="button" onClick={() => openPlanner()} className={`${horizontal ? "" : "mt-7"} flex min-h-20 w-full items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-blue-300 hover:bg-blue-50 sm:p-5`}>
               <span className="flex min-w-0 items-center gap-3">
                 <MapPin size={28} className="shrink-0 text-red-600" />
                 <span className="min-w-0"><span className="block text-xs font-bold text-red-600">Comienza aquí</span><span className="mt-1 block text-base font-black leading-snug text-[#061b3a] sm:text-lg">Escribe tu ciudad y dirección</span></span>
@@ -452,7 +464,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
             </div>
           </div>
         </div>
-      </section>
+      </section>}
 
       {mounted && drawerOpen && createPortal(
         <div
@@ -610,7 +622,10 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                   <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. ${storeName} confirmará el día definitivo.`}</p>
 
                   <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    {days.map((item) => {
+                    {[...days, ...selectedDates.filter(iso => !days.some(day => day.iso === iso)).map(iso => {
+                      const date = new Date(`${iso}T12:00:00`);
+                      return { iso, weekday: new Intl.DateTimeFormat("es-US", { weekday: "short" }).format(date), day: String(date.getDate()), month: new Intl.DateTimeFormat("es-US", { month: "short" }).format(date) };
+                    })].map((item) => {
                       const selected = selectedDates.includes(item.iso);
                       return (
                         <button
