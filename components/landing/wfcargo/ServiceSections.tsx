@@ -85,30 +85,68 @@ export function ProcedureSection() {
         <FileText />
         <div>
           <span>TRÁMITES SIN FRONTERAS</span>
-          <h2>Pasaportes y documentos</h2>
+          <h2>Pasaportes y trámites cubanos</h2>
         </div>
       </div>
       <div className={s.toolBody}>
-        <p className={s.muted}>
-          Gestiona tus trámites cubanos con atención personalizada en nuestra
-          sucursal de US 1.
-        </p>
-        <div className={s.procedureList}>
-          {procedures.map((p) => (
+        <div className={s.passportLayout}>
+          <Image
+            src="/wfcargo/pasaporte.webp"
+            alt="Pasaporte cubano de cubierta azul y letras doradas"
+            width={300}
+            height={330}
+            className={s.passportImage}
+          />
+          <div className={s.passportActions}>
+            {[
+              "Pasaporte · Mayores de 16 años",
+              "Pasaporte · Menores de 16 años",
+              "Otros trámites",
+            ].map((name) => (
+              <a
+                key={name}
+                className={s.passportOption}
+                href={whatsapp(
+                  `Hola, quisiera consultar los requisitos de ${name}.`,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>{name}</span>
+                <ArrowRight size={17} />
+              </a>
+            ))}
             <a
-              key={p.name}
+              className={s.button}
               href={whatsapp(
-                `Hola, quisiera conocer los requisitos y confirmar la tarifa de ${p.name}.`,
+                "Hola, quisiera consultar los requisitos para tramitar un pasaporte cubano.",
               )}
               target="_blank"
               rel="noopener noreferrer"
             >
-              <span>{p.name}</span>
-              <strong>${p.price}</strong>
-              <ArrowRight size={15} />
+              Consultar requisitos
             </a>
-          ))}
+          </div>
         </div>
+        <details className={s.procedureDetails}>
+          <summary>Ver tarifas y otros trámites</summary>
+          <div className={s.procedureList}>
+            {procedures.map((p) => (
+              <a
+                key={p.name}
+                href={whatsapp(
+                  `Hola, quisiera conocer los requisitos y confirmar la tarifa de ${p.name}.`,
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span>{p.name}</span>
+                <strong>${p.price}</strong>
+                <ArrowRight size={15} />
+              </a>
+            ))}
+          </div>
+        </details>
         <p className={s.small}>
           Tarifas publicadas por WF Cargo. Confirma requisitos, vigencia y
           condiciones antes de iniciar tu trámite.
