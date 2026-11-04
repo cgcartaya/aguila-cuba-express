@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { getCloverSettings } from "@/lib/services/clover-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
 
 const getCachedPaymentAvailability = unstable_cache(
@@ -12,9 +13,10 @@ const getCachedPaymentAvailability = unstable_cache(
       .maybeSingle();
 
     if (!store) return false;
-    return Boolean(getStoreStripeContext(store));
+    const clover = await getCloverSettings(storeId);
+    return Boolean(clover?.enabled && clover.private_token && clover.webhook_secret) || Boolean(getStoreStripeContext(store));
   },
-  ["payment-availability-v2"],
+  ["payment-availability-v3"],
   { revalidate: 60, tags: ["payment-availability"] },
 );
 

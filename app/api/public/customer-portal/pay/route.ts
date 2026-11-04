@@ -1,3 +1,4 @@
+import { getCloverSettings, createCloverCheckout } from "@/lib/services/clover-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
@@ -10,7 +11,7 @@ export async function POST(request: NextRequest) {
 
   const { data: shipment, error } = await supabaseAdmin
     .from("shipments")
-    .select("id, store_id, tracking_code, balance_due, payment_status")
+    .select("id, store_id, tracking_code, balance_due, payment_status, sender_name")
     .eq("id", shipmentId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -27,6 +28,19 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (storeError || !store) return NextResponse.json({ error: "Tienda no encontrada." }, { status: 404 });
+
+  try {
+    const clover = await getCloverSettings(store.id);
+    if (clover?.enabled) {
+      const origin = request.nextUrl.origin;
+      const url = await createCloverCheckout(clover, { storeId:store.id, targetType:"shipment", targetId:shipment.id,
+        customer: { firstName: shipment.sender_name || "Cliente" },
+        amountCents:Math.round(Number(shipment.balance_due)*100), name:`Envío ${shipment.tracking_code || shipment.id.slice(0,8)}`,
+        successUrl: `${origin}/portal/pago-exitoso?tracking=${encodeURIComponent(shipment.tracking_code || "")}`,
+        failureUrl:`${origin}/portal/pago-cancelado` });
+      return NextResponse.json({ url });
+    }
+  } catch(error) { return NextResponse.json({error:error instanceof Error ? error.message : "No se pudo iniciar Clover."},{status:503}); }
 
   const stripeCtx = getStoreStripeContext(store);
   if (!stripeCtx) {

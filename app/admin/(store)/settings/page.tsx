@@ -20,9 +20,9 @@ import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 
 const settingsCards = [
   {
-    title: "Pagos y Stripe",
+    title: "Plataformas de pago",
     description:
-      "Conecta Stripe y administra la cuenta de cobro de tu tienda para compras y envíos.",
+      "Configura Stripe o Clover para cobrar compras y envíos en tu tienda.",
     href: "/admin/settings/payments",
     icon: WalletCards,
     iconBox: "bg-violet-50 text-violet-700",
