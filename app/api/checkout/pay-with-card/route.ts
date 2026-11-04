@@ -1,3 +1,4 @@
+import { getCloverSettings, createCloverCheckout } from "@/lib/services/clover-admin";
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getStoreStripeContext } from "@/lib/services/stripe-admin";
@@ -20,7 +21,7 @@ export async function POST(request: NextRequest) {
 
   const { data: order, error } = await supabaseAdmin
     .from("orders")
-    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount")
+    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount, customer_name")
     .eq("id", orderId)
     .eq("store_id", storeId)
     .is("deleted_at", null)
@@ -47,6 +48,19 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (storeError || !store) return fail("Tienda no encontrada.", 404);
+
+  try {
+    const clover = await getCloverSettings(storeId);
+    if (clover?.enabled) {
+      const origin = request.nextUrl.origin;
+      const url = await createCloverCheckout(clover, { storeId, targetType: "order", targetId: order.id,
+        customer: { firstName: order.customer_name || "Cliente" },
+        amountCents: Math.round(Number(order.total)*100), name: `Pedido ${order.order_number || order.id.slice(0,8)}`,
+        successUrl: `${origin}/tienda/pago-exitoso?order=${encodeURIComponent(order.order_number || order.id)}`,
+        failureUrl: `${origin}/tienda/pago-cancelado?order=${encodeURIComponent(order.order_number || order.id)}` });
+      return NextResponse.json({ success:true, url });
+    }
+  } catch (error) { return fail(error instanceof Error ? error.message : "No se pudo iniciar Clover.",503); }
 
   const stripeCtx = getStoreStripeContext(store);
   if (!stripeCtx) {

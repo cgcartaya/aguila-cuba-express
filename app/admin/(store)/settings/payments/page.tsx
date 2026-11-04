@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, CircleAlert, Loader2, WalletCards } from "lucide-react";
 
+import CloverPaymentSettings from "@/components/admin/CloverPaymentSettings";
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -150,11 +151,13 @@ export default function StripeConnectSettingsPage() {
 
         <h1 className="mt-4 flex items-center gap-2 text-2xl font-black text-[#061b3a]">
           <WalletCards />
-          Pagos y Stripe
+          Plataformas de pago
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Administra la cuenta de Stripe de tu tienda para los cobros en línea de compras y envíos.
+          Configura Stripe o Clover para los cobros en línea de compras y envíos.
         </p>
+
+        {activeStore?.id && <CloverPaymentSettings key={activeStore.id} storeId={activeStore.id} />}
 
         {/* --- Selector de modo --- */}
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">
