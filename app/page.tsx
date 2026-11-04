@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
+import { buildWfCargoMetadata } from "@/components/landing/wfcargo/metadata";
 import WfCargoLanding from "@/components/landing/wfcargo/WfCargoLanding";
 import Bar1820Landing from "@/components/landing/bar1820/Bar1820Landing";
 import AlvarezLanding from "@/components/landing/alvarez/AlvarezLanding";
@@ -167,6 +168,14 @@ function buildLandingFallbackMetadata(
 export async function generateMetadata(): Promise<Metadata> {
   const host = await getCurrentHost();
 
+  if (resolveLanding(host) === "wfcargo") {
+    // This existing tenant was registered with the legacy slug "wf-cago".
+    // Read its editable SEO settings without renaming any tenant identifiers.
+    const store = await resolveStoreByHost(host) || await resolveStoreBySlug("wf-cago");
+    return buildWfCargoMetadata(store);
+  }
+
+
   if (
     host &&
     host !== PLATFORM_DOMAIN &&
@@ -185,10 +194,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 
   const landing = resolveLanding(host);
-
-  if (landing === "wfcargo") {
-    return buildLandingFallbackMetadata("WF Cargo Envíos | Envíos y multiservicios en Port St. Lucie", "Envíos a Cuba, República Dominicana y Colombia. Remesas, pasaportes cubanos, notaría, recogidas y renta de autos. Dos sucursales en Port St. Lucie.", `https://wf-cargo.${PLATFORM_DOMAIN}`, "WF Cargo Envíos");
-  }
 
   if (landing === "aguila") {
     const canonicalUrl = host ? `https://${host}` : "https://aguilacubaexpress.com";
