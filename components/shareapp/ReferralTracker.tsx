@@ -7,7 +7,7 @@ export default function ReferralTracker() {
   const pathname = usePathname();
   const { store, loading } = useStore();
   useEffect(() => {
-    if (loading || !store?.id || /^\/(admin|gestores|api)(\/|$)/.test(pathname))
+    if (loading || !store?.id || /^\/(admin|gestores|repartidores|api)(\/|$)/.test(pathname))
       return;
     const storeId = store.id;
     // Context may still contain the previous tenant for one render during navigation.
