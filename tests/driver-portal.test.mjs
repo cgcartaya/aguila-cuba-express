@@ -96,3 +96,18 @@ test('both Android evidence formats are readable only for the owned shipment',()
  assert.equal(policy.ownedEvidencePath('ENV-123/entrega.jpg',scope,'shipment-1','ENV-123'),true);
  for(const path of ['OTHER/entrega.jpg',`${storeId}/other-shipment/photo.jpg`,'https://other.example/photo.jpg',`${storeId}/shipment-1/../other/photo.jpg`])assert.equal(policy.ownedEvidencePath(path,scope,'shipment-1','ENV-123'),false);
 });
+test('successful logins store only a hash of a unique revocable session token scoped to the agency',async()=>{
+ const password='unit-test-only-password';
+ const h=backend({stores:{id:storeId,name:'Test agency',slug:'agency',is_active:true,module_shipping_enabled:true},staff_users:{id:staffId,store_id:storeId,username:'driver',password_hash:require('node:crypto').createHash('sha256').update(password).digest('hex'),status:'ACTIVE',role:'DELIVERY'}});
+ const s=server(h);const a=await s.login('agency','driver',password),b=await s.login('agency','driver',password);
+ assert.notEqual(a,b);assert.equal(a.length,64);
+ const saved=h.writes[0][1];assert.equal(saved.token_hash,s.sha(a));assert.notEqual(saved.token_hash,a);assert.equal(saved.store_id,storeId);assert.equal(saved.account_id,staffId);assert.equal(saved.account_source,'staff');assert.ok(Date.parse(saved.expires_at)>Date.now());assert.equal(JSON.stringify(saved).includes(password),false);
+ const staffQuery=h.calls.find(([table])=>table==='staff_users');assert.ok(staffQuery[1].some(v=>v[0]==='eq'&&v[1]==='store_id'&&v[2]===storeId));
+});
+test('durable throttle rejects excess attempts before looking up accounts or writing sessions',async()=>{
+ const h=backend();h.db.rpc=async()=>({data:11});await assert.rejects(server(h).login('agency','driver','password'),e=>e.status===429);assert.equal(h.calls.length,0);assert.equal(h.writes.length,0);
+});
+test('staff account in another store and disabled shipping module cannot open a session',async()=>{
+ const h=backend();await assert.rejects(server(h).identity('staff',{id:staffId,store_id:legacyId,status:'ACTIVE',role:'DELIVERY'},storeId),e=>e.status===401);
+ const disabled=backend({stores:{id:storeId,is_active:true,module_shipping_enabled:false}});await assert.rejects(server(disabled).storeFor(storeId),e=>e.status===403);
+});

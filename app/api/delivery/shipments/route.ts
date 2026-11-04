@@ -12,7 +12,7 @@ export async function GET(req:NextRequest) {
   try {
     const {scope}=await session(req);
     const url=new URL(req.url);
-    const page=Math.max(0,Math.min(100000,Number(url.searchParams.get('page'))||0));
+    const page=Math.max(0,Math.min(100000,Math.floor(Number(url.searchParams.get('page'))||0)));
     const {data,error}=await assigned(scope).order('updated_at',{ascending:false}).order('id').range(page*50,page*50+50);
     if(error) throw error;
     const rows=await Promise.all((data||[]).slice(0,50).map(async row=>{
