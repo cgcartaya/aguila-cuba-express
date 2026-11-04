@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { ShippingDashboardData } from "@/lib/shipping/dashboard-types";
 
+import { readDashboardPages } from "@/lib/shipping/dashboard-pagination";
+import { needsAssignment } from "@/lib/shipping/dashboard-priorities";
+
 const fail = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 const money = (value: unknown) => Number(Number(value || 0).toFixed(2));
 
@@ -67,16 +70,16 @@ export async function GET(request: NextRequest) {
   if (denied) return denied;
 
   const [shipmentsResult, receiptsResult, billingResult] = await Promise.all([
-    supabaseAdmin
+    readDashboardPages((start,end)=>supabaseAdmin
       .from("shipments")
       .select("id,order_number,tracking_code,recipient_name,sender_name,location,status,assigned_staff_id,assigned_driver_id,assigned_driver_name,service_price,amount_paid,balance_due,weight_lb,contains_package,contains_money,money_amount,created_at,delivered_date")
       .eq("store_id", storeId)
       .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    supabaseAdmin
+      .order("created_at", { ascending: false }).order("id").range(start,end)),
+    readDashboardPages((start,end)=>supabaseAdmin
       .from("payment_receipts")
       .select("shipment_id,amount")
-      .eq("store_id", storeId),
+      .eq("store_id", storeId).order("id").range(start,end)),
     supabaseAdmin.rpc("get_shipping_platform_billing", { p_store_id: storeId }),
   ]);
 
@@ -114,6 +117,7 @@ export async function GET(request: NextRequest) {
     out_for_delivery: "En reparto",
     delivered: "Entregado",
     issue: "Incidencia",
+    cancelled: "Cancelado",
   };
 
   const statuses = Object.entries(statusLabels).map(([status, label]) => ({
@@ -168,14 +172,14 @@ export async function GET(request: NextRequest) {
         const created = new Date(shipment.created_at).getTime();
         return created >= now.getTime() - 7 * 86_400_000;
       }).length,
-      pending_total: financialRows.filter((shipment) => !["delivered", "issue"].includes(shipment.status)).length,
+      pending_total: financialRows.filter((shipment) => !["delivered", "issue", "cancelled"].includes(shipment.status)).length,
       delivered_total: financialRows.filter((shipment) => shipment.status === "delivered").length,
       delivered_today: financialRows.filter((shipment) => dateKey(shipment.delivered_date) === today).length,
       issues_total: financialRows.filter((shipment) => shipment.status === "issue").length,
       in_transit_total: financialRows.filter((shipment) => shipment.status === "in_transit").length,
       received_cuba_total: financialRows.filter((shipment) => shipment.status === "received_cuba").length,
       out_for_delivery_total: financialRows.filter((shipment) => shipment.status === "out_for_delivery").length,
-      unassigned_total: financialRows.filter((shipment) => !shipment.assigned_staff_id && !shipment.assigned_driver_id && !shipment.assigned_driver_name).length,
+      unassigned_total: financialRows.filter((shipment) => needsAssignment(shipment)).length,
       billed_today: sum(financialRows.filter(isToday), (shipment) => shipment.billed),
       billed_this_month: sum(financialRows.filter(isMonth), (shipment) => shipment.billed),
       outstanding_total: sum(financialRows, (shipment) => shipment.outstanding),
@@ -189,6 +193,23 @@ export async function GET(request: NextRequest) {
     last_7_days: last7Days,
     top_destinations: Array.from(destinationMap.values()).map((item) => ({ ...item, weight_lb: Number(item.weight_lb.toFixed(2)), total_amount: money(item.total_amount) })).sort((a, b) => b.count - a.count).slice(0, 6),
     drivers: Array.from(driverMap.values()).sort((a, b) => b.assigned - a.assigned),
+    attention_shipments: financialRows.filter(row=>needsAssignment(row)||["received_cuba","issue"].includes(row.status)).map((shipment) => ({
+      needs_assignment: needsAssignment(shipment),
+      id: shipment.id,
+      order_number: shipment.order_number,
+      tracking_code: shipment.tracking_code,
+      recipient_name: shipment.recipient_name,
+      sender_name: shipment.sender_name,
+      location: shipment.location || "",
+      status: shipment.status,
+      assigned_driver_name: shipment.assigned_driver_name,
+      service_price: shipment.billed,
+      balance_due: shipment.outstanding,
+      weight_lb: Number(shipment.weight_lb || 0),
+      contains_package: shipment.contains_package,
+      contains_money: shipment.contains_money,
+      created_at: shipment.created_at,
+    })),
     recent_shipments: financialRows.slice(0, 8).map((shipment) => ({
       id: shipment.id,
       order_number: shipment.order_number,

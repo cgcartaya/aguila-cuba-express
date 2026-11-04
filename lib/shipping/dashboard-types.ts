@@ -72,6 +72,7 @@ export type ShippingDashboardSummary = {
 };
 
 export type ShippingDashboardData = {
+  attention_shipments?: (ShippingDashboardRecentShipment & {needs_assignment:boolean})[];
   platform_billing?: ShippingPlatformBilling;
   platform_billing_error?: string;
   summary: ShippingDashboardSummary;

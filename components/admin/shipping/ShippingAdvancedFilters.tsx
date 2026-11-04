@@ -39,6 +39,7 @@ export type ShippingListFilters = {
 
 const statusOptions: Array<{ value: string; label: string }> = [
   { value: "all", label: "Todos los estados" },
+  { value: "pending_active", label: "Pendientes activos" },
   { value: "received_miami", label: "Recibido en Miami" },
   { value: "preparing", label: "Pendiente de salida" },
   { value: "in_transit", label: "En tránsito hacia Cuba" },

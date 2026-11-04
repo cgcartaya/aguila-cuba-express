@@ -92,6 +92,8 @@ export default function ShippingShipmentsPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ShippingListFilters>({
     ...defaultFilters,
+    assignment: searchParams.get("assignment") === "unassigned" ? "unassigned" : "all",
+    paymentStatus: ["pending","partial","paid"].includes(searchParams.get("payment")||"") ? searchParams.get("payment") as ShippingListFilters["paymentStatus"] : "all",
     status: searchParams.get("status") || "all",
     tripId: searchParams.get("trip") || "all",
     contentType: searchParams.get("content") === "money" ? "money" : "all",
