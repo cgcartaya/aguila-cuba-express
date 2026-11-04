@@ -111,3 +111,15 @@ test('staff account in another store and disabled shipping module cannot open a 
  const h=backend();await assert.rejects(server(h).identity('staff',{id:staffId,store_id:legacyId,status:'ACTIVE',role:'DELIVERY'},storeId),e=>e.status===401);
  const disabled=backend({stores:{id:storeId,is_active:true,module_shipping_enabled:false}});await assert.rejects(server(disabled).storeFor(storeId),e=>e.status===403);
 });
+
+test('filters and totals receive every assigned page, not just the first 50',async()=>{
+ const {loadDriverPages}=load('lib/delivery/pages.ts');const pages=[];
+ const rows=await loadDriverPages(async page=>{pages.push(page);return {rows:page===0?Array.from({length:50},(_,i)=>({id:String(i)})):[{id:'50'},{id:'51'}],hasMore:page===0};});
+ assert.equal(rows.length,52);assert.deepEqual(pages,[0,1]);
+ await assert.rejects(loadDriverPages(async()=>({rows:[],hasMore:true})),/Listado incompleto/);
+});
+test('photo of a linked staff driver is returned for the legacy APK identity',async()=>{
+ const h=backend({staff_users:[{id:staffId,status:'ACTIVE',role:'DELIVERY',photo_url:'https://example.com/driver.jpg'}]});
+ const result=await server(h).identity('legacy',{id:legacyId,store_id:storeId,is_active:true,role:'DRIVER'},storeId);
+ assert.equal(result.photoUrl,'https://example.com/driver.jpg');assert.equal(result.scope.staffId,staffId);
+});
