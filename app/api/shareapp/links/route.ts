@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
         .eq("id", itemId)
         .eq("store_id", promoter.store_id)
         .eq("is_active", true)
+      .eq(kind === "combo" ? "is_active" : "combo_only", kind === "combo")
         .is("deleted_at", null)
         .maybeSingle();
       if (error) throw error;

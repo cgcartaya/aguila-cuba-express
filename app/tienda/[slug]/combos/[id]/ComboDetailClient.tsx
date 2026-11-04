@@ -31,6 +31,7 @@ type ComboProduct = {
   id: string;
   name: string;
   price: number;
+  combo_only?: boolean;
   image_url?: string | null;
   stock?: number | null;
   category?: string | null;
@@ -175,6 +176,7 @@ export default function ComboDetailPage() {
 
   const regularPrice = applyPlatformFee(regularBasePrice, feePercent);
   const comboPrice = applyPlatformFee(Number(combo?.price || 0), feePercent);
+  const canCompare = !(combo?.combo_items||[]).some(item=>item.products.combo_only);
   const savings = regularPrice - comboPrice;
 
   if (loading) {
@@ -253,7 +255,7 @@ export default function ComboDetailPage() {
                 </span>
 
                 <span className="text-sm font-black text-slate-400 line-through">
-                  <Price usd={regularPrice} />
+                  {canCompare ? <Price usd={regularPrice} /> : "No aplica"}
                 </span>
               </div>
 
@@ -267,7 +269,7 @@ export default function ComboDetailPage() {
                 </span>
               </div>
 
-              {savings > 0 && (
+              {canCompare && savings > 0 && (
                 <p className="mt-2 text-sm font-black text-green-600">
                   Ahorras {format(savings)}
                 </p>
@@ -322,7 +324,7 @@ export default function ComboDetailPage() {
                   </p>
 
                   <p className="mt-1 text-sm font-black text-red-600">
-                    <Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)} />
+                    {item.products.combo_only ? <span className="text-xs font-semibold text-slate-500">Incluido en el combo</span> : <Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)} />}
                   </p>
                 </div>
               </article>

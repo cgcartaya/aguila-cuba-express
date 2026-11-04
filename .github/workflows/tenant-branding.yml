@@ -15,4 +15,4 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node --test tests/tenant-branding.test.mjs tests/store-domain-metadata.test.mjs tests/alvarez-shipping.test.mjs tests/package-label.test.mjs tests/shipment-discount.test.mjs tests/remittance-checkout.test.mjs tests/remittance-inbox.test.mjs tests/shipping-platform-billing.test.mjs tests/driver-portal.test.mjs tests/admin-nav-accordion.test.mjs tests/shipping-operations-dashboard.test.mjs
+      - run: node --test tests/tenant-branding.test.mjs tests/store-domain-metadata.test.mjs tests/alvarez-shipping.test.mjs tests/package-label.test.mjs tests/shipment-discount.test.mjs tests/remittance-checkout.test.mjs tests/remittance-inbox.test.mjs tests/shipping-platform-billing.test.mjs tests/driver-portal.test.mjs tests/admin-nav-accordion.test.mjs tests/shipping-operations-dashboard.test.mjs tests/combo-only-products.test.mjs

@@ -32,6 +32,7 @@ export default function ProductCard({
         }
       `}
     >
+      {product.combo_only && <p className="mb-2 text-xs font-bold text-blue-700">Solo disponible en combos</p>}
       {/* BADGE AGOTADO */}
 
       {isOutOfStock && (
@@ -106,7 +107,7 @@ export default function ProductCard({
             </span>
 
             <span className="rounded-full bg-blue-50 px-2 py-1 font-semibold text-blue-700">
-              ${Number(product.price).toFixed(2)}
+              {product.combo_only ? "Sin precio individual" : `$${Number(product.price).toFixed(2)}`}
             </span>
 
             {/* STOCK */}

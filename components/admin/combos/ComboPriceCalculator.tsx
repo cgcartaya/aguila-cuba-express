@@ -45,6 +45,7 @@ export default function ComboPriceCalculator({
      Negativa = el combo cuesta más que separado
   ========================================================= */
 
+  const canCompare = !selectedProducts.some(item=>item.product.combo_only);
   const difference = regularPrice - comboPrice;
 
   return (
@@ -73,7 +74,7 @@ export default function ComboPriceCalculator({
           </span>
 
           <span className="font-black text-slate-400 line-through">
-            ${regularPrice.toFixed(2)}
+            {canCompare ? `$${regularPrice.toFixed(2)}` : "Sin precio individual"}
           </span>
         </div>
 
@@ -105,7 +106,7 @@ export default function ComboPriceCalculator({
             <p className="text-sm font-semibold text-slate-400">
               Agrega productos para calcular el precio normal.
             </p>
-          ) : difference > 0 ? (
+          ) : !canCompare ? (<p className="text-sm text-slate-500">Incluye productos exclusivos de combos. Define el precio final sin comparar con precios individuales.</p>) : difference > 0 ? (
             <div className="flex items-center gap-2 rounded-xl bg-green-50 px-3 py-2 text-sm font-black text-green-600">
               <TrendingDown size={18} />
               El cliente ahorra ${difference.toFixed(2)}
@@ -123,7 +124,7 @@ export default function ComboPriceCalculator({
         </div>
 
         {/* BOTÓN RÁPIDO */}
-        {selectedProducts.length > 0 && (
+        {canCompare && selectedProducts.length > 0 && (
           <button
             type="button"
             onClick={() =>

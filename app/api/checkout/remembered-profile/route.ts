@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     productIds.length > 0
       ? await supabaseAdmin
           .from("products")
-          .select("id, name, price, image_url, stock, is_active")
+          .select("id, name, price, image_url, stock, is_active, combo_only")
           .in("id", productIds)
       : { data: [] as any[] };
 
@@ -120,6 +120,7 @@ export async function GET(request: NextRequest) {
           item.item_type === "product" &&
           Boolean(current) &&
           current?.is_active !== false &&
+          !current?.combo_only &&
           Number(current?.stock || 0) > 0,
       };
     }),

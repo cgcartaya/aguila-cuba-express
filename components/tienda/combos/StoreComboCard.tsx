@@ -20,6 +20,7 @@ type ComboItem = {
     id: string;
     name: string;
     price: number;
+    combo_only?: boolean;
   } | null;
 };
 
@@ -58,7 +59,8 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
   const comboBasePrice = Number(combo.price || 0);
   const normalPriceWithFee = applyPlatformFee(normalPrice, feePercent);
   const comboPrice = applyPlatformFee(comboBasePrice, feePercent);
-  const savings = Math.max(normalPriceWithFee - comboPrice, 0);
+  const canCompare = !(combo.combo_items||[]).some(item=>item.products?.combo_only);
+  const savings = canCompare ? Math.max(normalPriceWithFee - comboPrice, 0) : 0;
   const comboImageUrl = getSafeImageUrl(combo.image_url);
 
   const comboHref = storeSlug
@@ -148,7 +150,7 @@ export default function StoreComboCard({ combo, storeSlug }: Props) {
       </div>
 
       <div className="mt-auto pt-4">
-        {normalPriceWithFee > comboPrice && (
+        {canCompare && normalPriceWithFee > comboPrice && (
           <p className="text-xs font-semibold text-slate-400 line-through">
             <Price usd={normalPriceWithFee} />
           </p>

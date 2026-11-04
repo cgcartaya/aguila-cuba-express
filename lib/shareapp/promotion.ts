@@ -73,6 +73,7 @@ export async function promotion(code: string) {
       .eq("id", link.item_id)
       .eq("store_id", store.id)
       .eq("is_active", true)
+      .eq(kind === "combo" ? "is_active" : "combo_only", kind === "combo")
       .is("deleted_at", null)
       .maybeSingle();
     if (error) throw error;

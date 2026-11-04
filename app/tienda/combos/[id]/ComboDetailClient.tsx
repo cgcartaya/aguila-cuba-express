@@ -18,6 +18,7 @@ type ComboProduct = {
   id: string;
   name: string;
   price: number;
+  combo_only?: boolean;
   image_url?: string | null;
   stock?: number | null;
   category?: string | null;
@@ -121,6 +122,7 @@ export default function ComboDetailPage({ params }: PageProps) {
   const regularBasePrice = combo.combo_items.reduce((total, item) => total + Number(item.products.price || 0) * Number(item.quantity || 1), 0);
   const regularPrice = applyPlatformFee(regularBasePrice, feePercent);
   const comboPrice = applyPlatformFee(Number(combo.price || 0), feePercent);
+  const canCompare = !(combo?.combo_items||[]).some(item=>item.products.combo_only);
   const savings = regularPrice - comboPrice;
 
   return <main className="pb-6 text-[#061b3a]">
@@ -132,9 +134,9 @@ export default function ComboDetailPage({ params }: PageProps) {
         <h1 className="text-3xl font-black md:text-4xl">{combo.name}</h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">{combo.description || "Combo de productos seleccionados."}</p>
         <div className="mt-5 rounded-3xl bg-slate-50 p-4">
-          <div className="flex items-center justify-between"><span className="text-sm font-bold text-slate-500">Precio normal</span><span className="text-sm font-black text-slate-400 line-through"><Price usd={regularPrice}/></span></div>
+          <div className="flex items-center justify-between"><span className="text-sm font-bold text-slate-500">Precio normal</span><span className="text-sm font-black text-slate-400 line-through">{canCompare ? <Price usd={regularPrice}/> : "No aplica"}</span></div>
           <div className="mt-2 flex items-center justify-between"><span className="text-sm font-bold text-slate-500">Precio combo</span><span className="text-3xl font-black text-red-600"><Price usd={comboPrice}/></span></div>
-          {savings > 0 && <p className="mt-2 text-sm font-black text-green-600">Ahorras {format(savings)}</p>}
+          {canCompare && savings > 0 && <p className="mt-2 text-sm font-black text-green-600">Ahorras {format(savings)}</p>}
         </div>
         <button type="button" className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-5 py-3 text-sm font-black text-white"><ShoppingCart size={18}/>Agregar combo al carrito</button>
         <ProductShareButton productName={combo.name} priceUsd={comboPrice} storeName={store?.name} itemType="combo"/>
@@ -142,7 +144,7 @@ export default function ComboDetailPage({ params }: PageProps) {
     </section>
     <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm md:p-6">
       <h2 className="text-xl font-black">Productos incluidos</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{combo.combo_items.map(item => <article key={item.id} className="flex gap-3 rounded-2xl bg-slate-50 p-3"><div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">{item.products.image_url ? <img src={item.products.image_url} alt={item.products.name} className="h-full w-full object-cover"/> : <Package size={24} className="text-slate-400"/>}</div><div><h3 className="line-clamp-1 text-sm font-black">{item.products.name}</h3><p className="mt-1 text-xs font-bold text-slate-500">Cantidad: {item.quantity}</p><p className="mt-1 text-sm font-black text-red-600"><Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)}/></p></div></article>)}</div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{combo.combo_items.map(item => <article key={item.id} className="flex gap-3 rounded-2xl bg-slate-50 p-3"><div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">{item.products.image_url ? <img src={item.products.image_url} alt={item.products.name} className="h-full w-full object-cover"/> : <Package size={24} className="text-slate-400"/>}</div><div><h3 className="line-clamp-1 text-sm font-black">{item.products.name}</h3><p className="mt-1 text-xs font-bold text-slate-500">Cantidad: {item.quantity}</p><p className="mt-1 text-sm font-black text-red-600">{item.products.combo_only ? "Incluido en el combo" : <Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)}/>}</p></div></article>)}</div>
     </section>
   </main>;
 }
