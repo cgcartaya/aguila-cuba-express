@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+import sharp from 'sharp';
+const module={exports:{}};
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('components/landing/wfcargo/metadata.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module,exports:module.exports,URL});
+const {buildWfCargoMetadata}=module.exports;
+test('WF Cargo publishes an absolute JPEG URL and image dimensions even without settings',()=>{const m=buildWfCargoMetadata(null);const image=m.openGraph.images[0];assert.equal(image.url,'https://wf-cargo.perlamarketplace.com/wfcargo/og-wfcargo-v1.jpg');assert.equal(image.secureUrl,image.url);assert.equal(image.width,1200);assert.equal(image.height,630);assert.equal(image.type,'image/jpeg');assert.equal(m.twitter.card,'summary_large_image');assert.equal(m.twitter.images[0].url,image.url)});
+test('SEO settings remain editable and override the default image, title and description',()=>{const m=buildWfCargoMetadata({meta_title:'Título configurado',meta_description:'Descripción configurada',og_image_url:'https://assets.example/new.png',store_og_image_url:'https://assets.example/store.jpg'});assert.equal(m.openGraph.images[0].url,'https://assets.example/new.png');assert.equal(m.title,'Título configurado');assert.equal(m.description,'Descripción configurada');assert.equal(m.openGraph.images[0].type,undefined)});
+test('sharing asset is baseline RGB JPEG at 1200 × 630, without alpha and under 300 KB',async()=>{const path='public/wfcargo/og-wfcargo-v1.jpg';const m=await sharp(path).metadata();assert.equal(m.format,'jpeg');assert.equal(m.width,1200);assert.equal(m.height,630);assert.equal(m.space,'srgb');assert.equal(m.hasAlpha,false);assert.equal(m.isProgressive,false);assert.ok(fs.statSync(path).size<300000)});
