@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Plus, Rocket, Store, UserRound } from "lucide-react";
+import { Plus, Rocket, Store, UserRound } from "lucide-react";
 
+import { AdminNavAccordion, AdminNavAccordionSection } from "./AdminNavAccordion";
 import RestaurantAdminNav from "./RestaurantAdminNav";
 import LogoutButton from "@/components/admin/LogoutButton";
 import { useStore } from "@/hooks/useStore";
@@ -12,13 +13,8 @@ import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
 import { usePendingMenuOrdersCount } from "@/hooks/usePendingMenuOrdersCount";
 import { useAdminProfile } from "@/hooks/useAdminProfile";
-import { getVisibleAdminSections } from "@/lib/admin/nav-config";
+import { activeAdminHref, getVisibleAdminSections } from "@/lib/admin/nav-config";
 import { getStoreTheme, withAlpha } from "@/lib/admin/theme";
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 export default function StoreAdminNav() {
   const pathname = usePathname();
@@ -32,7 +28,6 @@ export default function StoreAdminNav() {
   const textColor = theme.textOnSecondary;
   const accentColor = theme.primary;
   const storeName = activeStore?.name || "Tienda activa";
-  const publicStoreHref = "/portal";
 
   const sections = getVisibleAdminSections(activeStore, isSuperAdmin);
   const lowStockCount = useLowStockCount(activeStore?.id);
@@ -110,23 +105,18 @@ export default function StoreAdminNav() {
       </Link>
 
       <nav
-        className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain pr-2 pb-4 [scrollbar-width:thin]"
+        data-admin-scroll
+        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-2 pb-4 [scrollbar-width:thin]"
         style={{ scrollbarColor: `${withAlpha(textColor, 0.28)} transparent` }}
       >
-        {sections.map((section) => activeStore?.slug === "aguila" && section.module === "menu" ? (
-          <RestaurantAdminNav key={`${activeStore.id}-restaurant`} pathname={pathname} pendingOrders={pendingMenuOrdersCount} textColor={textColor} accentColor={accentColor} />
-        ) : (
-          <section key={section.title}>
-            <p
-              className="mb-2 px-4 text-[11px] font-black uppercase tracking-[0.18em]"
-              style={{ color: withAlpha(textColor, 0.5) }}
-            >
-              {section.title}
-            </p>
+        <AdminNavAccordion key={`${activeStore?.id}:${pathname}`} sections={sections} pathname={pathname}>
+        {sections.map((section) => (
+          <AdminNavAccordionSection key={section.title} title={section.title}>
+          {activeStore?.slug === "aguila" && section.module === "menu" ? <RestaurantAdminNav pathname={pathname} pendingOrders={pendingMenuOrdersCount} textColor={textColor} accentColor={accentColor}/> : (
             <div className="space-y-1.5">
               {section.links.map((link) => {
                 const Icon = link.icon;
-                const active = isActivePath(pathname, link.href);
+                const active = activeAdminHref(sections.flatMap(group=>group.links), pathname) === link.href;
 
                 return (
                   <Link
@@ -171,8 +161,10 @@ export default function StoreAdminNav() {
                 );
               })}
             </div>
-          </section>
+          )}
+          </AdminNavAccordionSection>
         ))}
+        </AdminNavAccordion>
       </nav>
 
       <div className="shrink-0 border-t pt-4" style={{ borderColor: withAlpha(textColor, 0.2) }}>
@@ -187,15 +179,7 @@ export default function StoreAdminNav() {
           Mi perfil
         </Link>
 
-        <Link
-          href={publicStoreHref}
-          target="_blank"
-          className="mt-1 flex items-center gap-3 rounded-2xl px-4 py-3 font-semibold transition hover:opacity-80"
-          style={{ color: textColor }}
-        >
-          <ExternalLink size={20} />
-          Ver experiencia pública
-        </Link>
+
       </div>
 
       <div className="mt-3 shrink-0">

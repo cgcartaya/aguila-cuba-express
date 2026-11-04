@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ExternalLink, Rocket, UserRound, X } from "lucide-react";
+import { Building2, Rocket, UserRound, X } from "lucide-react";
 
+import { AdminNavAccordion, AdminNavAccordionSection } from "./AdminNavAccordion";
 import RestaurantAdminNav from "./RestaurantAdminNav";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useStore } from "@/hooks/useStore";
@@ -12,7 +13,7 @@ import { useLowStockCount } from "@/hooks/useLowStockCount";
 import { usePendingReservationsCount } from "@/hooks/usePendingReservationsCount";
 import { usePendingMenuOrdersCount } from "@/hooks/usePendingMenuOrdersCount";
 import { useAdminProfile } from "@/hooks/useAdminProfile";
-import { getVisibleAdminSections, type AdminLink } from "@/lib/admin/nav-config";
+import { activeAdminHref, getVisibleAdminSections, type AdminLink } from "@/lib/admin/nav-config";
 
 type AdminMobileMenuProps = {
   open: boolean;
@@ -23,11 +24,6 @@ const saasLinks: AdminLink[] = [
   { label: "Dashboard SaaS", href: "/admin/saas", icon: Rocket },
   { label: "Tiendas", href: "/admin/stores", icon: Building2 },
 ];
-
-function isActivePath(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin";
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 function MenuSection({
   title,
@@ -50,13 +46,11 @@ function MenuSection({
 
   return (
     <div className="space-y-2">
-      <p className="px-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">
-        {title}
-      </p>
+      {title && <p className="px-4 text-[11px] font-black uppercase tracking-[0.18em] text-slate-400">{title}</p>}
 
       {links.map((item) => {
         const Icon = item.icon;
-        const isActive = isActivePath(pathname, item.href);
+        const isActive = activeAdminHref(links, pathname) === item.href;
 
         return (
           <Link
@@ -119,7 +113,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
     <div className="fixed inset-0 z-[100] xl:hidden">
       <button type="button" aria-label="Cerrar menú" onClick={onClose} className="absolute inset-0 bg-black/45" />
 
-      <aside className="relative h-full w-[84%] max-w-sm overflow-y-auto bg-white shadow-2xl">
+      <aside data-admin-scroll className="relative h-full w-[84%] max-w-sm overflow-y-auto bg-white shadow-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-5">
           <div className="flex min-w-0 items-center gap-3">
             <Link href="/admin/account" onClick={onClose} className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#061b3a] text-sm font-black text-white shadow-sm">
@@ -161,20 +155,11 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
             />
           )}
 
-          {sections.map((section) => activeStore?.slug === "aguila" && section.module === "menu" ? (
-            <RestaurantAdminNav key={`${activeStore.id}-restaurant`} pathname={pathname} pendingOrders={pendingMenuOrdersCount} mobile onNavigate={onClose} />
-          ) : (
-            <MenuSection
-              key={section.title}
-              title={section.title}
-              links={section.links}
-              pathname={pathname}
-              onClose={onClose}
-              lowStockCount={lowStockCount}
-              pendingReservationsCount={pendingReservationsCount}
-              pendingMenuOrdersCount={pendingMenuOrdersCount}
-            />
-          ))}
+          <AdminNavAccordion key={`${activeStore?.id}:${pathname}`} sections={sections} pathname={pathname}>
+          {sections.map(section=><AdminNavAccordionSection key={section.title} title={section.title}>
+            {activeStore?.slug === "aguila" && section.module === "menu" ? <RestaurantAdminNav pathname={pathname} pendingOrders={pendingMenuOrdersCount} mobile onNavigate={onClose}/> : <MenuSection title="" links={section.links} pathname={pathname} onClose={onClose} lowStockCount={lowStockCount} pendingReservationsCount={pendingReservationsCount} pendingMenuOrdersCount={pendingMenuOrdersCount}/>}
+          </AdminNavAccordionSection>)}
+          </AdminNavAccordion>
 
           <MenuSection
             title="Cuenta"
@@ -186,15 +171,7 @@ export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuP
             pendingMenuOrdersCount={pendingMenuOrdersCount}
           />
 
-          <MenuSection
-            title="Tienda"
-            links={[{ label: "Ver tienda pública", href: "/tienda", icon: ExternalLink }]}
-            pathname={pathname}
-            onClose={onClose}
-            lowStockCount={lowStockCount}
-            pendingReservationsCount={pendingReservationsCount}
-            pendingMenuOrdersCount={pendingMenuOrdersCount}
-          />
+
         </nav>
       </aside>
     </div>
