@@ -60,6 +60,7 @@ test('products-only shipments create a single sale, stock reservation and WhatsA
       foreign key(customer_id) references public.shipping_customers(id);
   `);
   await db.exec(fs.readFileSync('supabase/migrations/20261105190640_fix_linked_shipping_order_customer_fk.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261105193304_shipping_products_base_price.sql','utf8'));
   await db.exec(fs.readFileSync('tests/products-only-operations.sql','utf8'));
  } finally { await db.close(); }
 });
