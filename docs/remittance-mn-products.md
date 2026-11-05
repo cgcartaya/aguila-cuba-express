@@ -16,7 +16,7 @@ Este cambio incorpora MN y productos en el registro administrativo de Envíos. E
 
 La creación con estos detalles usa un RPC que conserva numeración y comprobación de acceso y guarda la operación dentro de una transacción. El trigger solo se ejecuta para remesas nuevas/anteriores con CUP o productos; los envíos USD habituales no ejecutan esta lógica. Se bloquean los productos en orden de ID para serializar reservas. Repetir el guardado no vuelve a descontar stock; cancelar o quitar productos restituye sus existencias; restaurar una operación comprueba disponibilidad. Eliminar una entrega ya realizada no repone mercancía entregada. Los precios históricos se conservan.
 
-La migración **no está aplicada en producción**. La revisión automática rechazó su aplicación por modificar inventario y totales de envíos. Se verificó en Postgres local aislado con pruebas de tasa, stock, atomicidad, autorización y cursores. Aplicar en producción requiere autorización explícita y después publicar la aplicación. No desplegar el código antes de la migración.
+La migración base de MN y productos se aplicó en producción con autorización del usuario. La evolución de entrega mixta y creación de órdenes vinculadas se documenta en `docs/mixed-remittance-product-orders.md`; su migración se aplica antes de publicar esa evolución.
 
 ## Prueba después de publicar
 

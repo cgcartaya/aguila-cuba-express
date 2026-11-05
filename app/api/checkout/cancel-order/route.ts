@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   const { data: order, error: fetchError } = await supabaseAdmin
     .from("orders")
-    .select("id, store_id, status, payment_status, created_at")
+    .select("id, store_id, status, payment_status, created_at, source_shipment_id")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     return fail("Orden no encontrada.", 404);
   }
 
+  if (order.source_shipment_id) return fail("Esta orden se gestiona desde la remesa vinculada.", 409);
   if (order.status !== "pending" || order.payment_status !== "pending") {
     return fail("Esta orden ya no se puede cancelar automáticamente.", 409);
   }

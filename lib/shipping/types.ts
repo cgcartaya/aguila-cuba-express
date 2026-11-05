@@ -132,7 +132,8 @@ export type Shipment = {
   extra_fees_total: number;
   contains_package: boolean;
   contains_money: boolean;
-  money_delivery_currency?: 'USD' | 'CUP';
+  money_delivery_currency?: 'USD' | 'CUP' | 'MIXED';
+  money_usd_to_cup?: number;
   money_exchange_rate?: number | null;
   money_delivery_amount?: number;
   store_products?: RemittanceProduct[];
@@ -309,7 +310,8 @@ export type ShipmentInput = {
   extra_fees_total: number;
   contains_package: boolean;
   contains_money: boolean;
-  money_delivery_currency?: 'USD' | 'CUP';
+  money_delivery_currency?: 'USD' | 'CUP' | 'MIXED';
+  money_usd_to_cup?: number;
   money_exchange_rate?: number | null;
   money_delivery_amount?: number;
   store_products?: RemittanceProduct[];

@@ -129,6 +129,7 @@ export async function GET(request: NextRequest) {
   const { data: unpaidOrders, error: ordersError } = await supabaseAdmin
     .from("orders")
     .select("id, order_number, store_id, customer_id, total, created_at")
+    .is("source_shipment_id", null)
     .eq("payment_status", "pending")
     .is("deleted_at", null)
     .is("email_reminded_at", null)

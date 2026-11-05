@@ -12,6 +12,7 @@ import { useStore } from "@/hooks/useStore";
 const ORDERS_SELECT = `
   id,
   order_number,
+  source_shipment_id,
   total,
   subtotal,
   delivery_fee,

@@ -339,6 +339,7 @@ export default function OrdersManager({
   }, [currentOrders, filter, search]);
 
   async function updateStatus(order: any, status: string) {
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
     const previousStatus = order.status;
 
     if (previousStatus === status) return;
@@ -394,6 +395,7 @@ export default function OrdersManager({
   }
 
   async function sendOrderToTrash(order: any) {
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
     const ok = confirm(
       "¿Seguro que deseas enviar esta orden a la papelera?\n\nEl inventario de los productos de esta orden será restaurado automáticamente."
     );
@@ -446,6 +448,7 @@ export default function OrdersManager({
   }
 
   async function restoreOrderFromTrash(order: any) {
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
     const ok = confirm(
       "¿Quieres restaurar esta orden?\n\nEl inventario volverá a descontarse. Si no hay stock suficiente, la restauración se cancelará."
     );
@@ -494,6 +497,7 @@ export default function OrdersManager({
   }
 
   async function deleteOrderPermanently(order: any) {
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
     if (!isSuperAdmin) {
       alert(
         "Solo el Super Admin puede eliminar una orden definitivamente de la papelera."
@@ -802,7 +806,7 @@ export default function OrdersManager({
                         {getStatusLabel(order.status)}
                       </span>
 
-                      {order.payment_method === "card" ? (
+                      {order.source_shipment_id ? <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-800">Pago desde Envíos</span> : order.payment_method === "card" ? (
                         order.payment_status === "paid" ? (
                           <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">
                             💳 Tarjeta pagada
@@ -822,11 +826,12 @@ export default function OrdersManager({
                         </span>
                       )}
 
+                      {order.source_shipment_id && <a href={order.deleted_at ? "/admin/shipping/shipments/trash" : `/admin/shipping/${encodeURIComponent(order.source_shipment_id)}/edit`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">Incluida en remesa · Gestionar envío</a>}
                       {view === "active" && (
                         <select
                           value={order.status}
                           onChange={(e) => updateStatus(order, e.target.value)}
-                          disabled={isActionLoading}
+                          disabled={isActionLoading || Boolean(order.source_shipment_id)}
                           className="rounded-xl border border-slate-300 bg-white p-2 text-sm font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {!ORDER_STATUS_OPTIONS.some(
@@ -863,7 +868,7 @@ export default function OrdersManager({
                         <button
                           type="button"
                           onClick={() => sendOrderToTrash(order)}
-                          disabled={isActionLoading}
+                          disabled={isActionLoading || Boolean(order.source_shipment_id)}
                           className="rounded-xl bg-red-50 p-3 text-red-600 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                           aria-label="Enviar orden a la papelera"
                           title="Enviar a papelera y restaurar stock"
@@ -875,7 +880,7 @@ export default function OrdersManager({
                           <button
                             type="button"
                             onClick={() => restoreOrderFromTrash(order)}
-                            disabled={isActionLoading}
+                            disabled={isActionLoading || Boolean(order.source_shipment_id)}
                             className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-3 py-3 text-xs font-black text-green-700 transition hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
                             title="Restaurar orden y descontar stock"
                           >
@@ -887,7 +892,7 @@ export default function OrdersManager({
                             <button
                               type="button"
                               onClick={() => deleteOrderPermanently(order)}
-                              disabled={isActionLoading}
+                              disabled={isActionLoading || Boolean(order.source_shipment_id)}
                               className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-3 py-3 text-xs font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                               title="Eliminar definitivamente"
                             >
@@ -1009,7 +1014,7 @@ export default function OrdersManager({
                             : "Pendiente"
                       }
                       {order.payment_method && (
-                        <> · {order.payment_method === "card" ? "Tarjeta" : "WhatsApp"}</>
+                        <> · {order.source_shipment_id ? "Factura de remesa" : order.payment_method === "card" ? "Tarjeta" : "WhatsApp"}</>
                       )}
                     </p>
                   </section>
