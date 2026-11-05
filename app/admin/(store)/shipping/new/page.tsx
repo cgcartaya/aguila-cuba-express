@@ -68,8 +68,8 @@ export default function NewShipmentPage() {
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [extraFees, setExtraFees] = useState<ShippingExtraFee[]>([]);
   const [openTrips, setOpenTrips] = useState<ShippingTrip[]>([]);
-  const [operationType, setOperationType] = useState<ShipmentOperationType>(searchParams.get("type") === "money" ? "money" : "package");
-  const requiresTrip = operationType !== "money";
+  const [operationType, setOperationType] = useState<ShipmentOperationType>(searchParams.get("type") === "products" ? "products" : searchParams.get("type") === "money" ? "money" : "package");
+  const requiresTrip = operationType === "package" || operationType === "mixed";
   const [selectedTripId, setSelectedTripId] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -178,7 +178,7 @@ export default function NewShipmentPage() {
         throw new Error("El envío se creó, pero no quedó vinculado al viaje seleccionado.");
       }
 
-      router.push(tripId ? `/admin/shipping/trips/${tripId}?created=${encodeURIComponent(data.id)}` : `/admin/shipping/shipments?content=money&created=${encodeURIComponent(data.id)}`);
+      router.push(tripId ? `/admin/shipping/trips/${tripId}?created=${encodeURIComponent(data.id)}` : `/admin/shipping/shipments?${input.products_only ? "" : "content=money&"}created=${encodeURIComponent(data.id)}`);
       router.refresh();
     } finally {
       setSubmitting(false);
@@ -202,13 +202,14 @@ export default function NewShipmentPage() {
     <div className="mb-6"><p className="text-sm font-black text-blue-700">Operaciones</p><h1 className="text-3xl font-black text-[#061b3a]">Crear nuevo envío</h1></div>
     <section className="mb-6 rounded-[2rem] border bg-white p-5 shadow-sm">
       <h2 className="text-xl font-black">¿Qué deseas registrar?</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">{([
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{([
         ['package', 'Paquete', 'Requiere un viaje'],
         ['money', 'Envío de dinero', 'Entrega local sin viaje'],
         ['mixed', 'Paquete y dinero', 'Operación mixta con viaje'],
+        ...(activeStore?.slug === 'alvarez-travel' ? [['products', 'Solo productos de la tienda', 'Sin remesa, peso ni viaje']] as const : []),
       ] as const).map(([type, title, description]) => <button type="button" key={type} aria-pressed={operationType === type} onClick={() => setOperationType(type)} className={`rounded-2xl border p-4 text-left ${operationType === type ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200'}`}><b className="block">{title}</b><span className="mt-1 block text-sm text-slate-500">{description}</span></button>)}</div>
     </section>
-    {!requiresTrip && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"><h2 className="font-black">Envío de dinero sin viaje</h2><p className="mt-1 text-sm">Registra el monto y la comisión, asigna un repartidor y gestiona la entrega. La operación tendrá su número y factura en la lista general.</p></section>}
+    {!requiresTrip && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"><h2 className="font-black">{operationType === "products" ? "Entrega de productos de la tienda" : "Envío de dinero sin viaje"}</h2><p className="mt-1 text-sm">{operationType === "products" ? "Añade los productos, asigna el destinatario y un repartidor. No hace falta enviar dinero. Se genera factura y una orden de tienda con su comisión." : "Registra el monto y la comisión, asigna un repartidor y gestiona la entrega. La operación tendrá su número y factura en la lista general."}</p></section>}
     {requiresTrip && <>
       {tripError && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{tripError}</div>}
       {openTrips.length === 0 || (directTripMode && !selectedTrip) ? <section className="mb-6 rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center">

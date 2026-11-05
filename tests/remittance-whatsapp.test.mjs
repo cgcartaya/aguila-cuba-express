@@ -17,9 +17,9 @@ test('recipient gets principal only, no payment instructions, sanitized data and
  assert.match(message,/Ana Injected/);assert.match(message,/Remitente: No informado/);
  assert.throws(()=>formatter.remittanceWhatsappMessage('x',{},NaN,true));
 });
-function harness({env={},chat={},postStatus=200,postBody={status:'ok',data:{message_uid:'uid'}},network=false,source=null,jobs=true}={}) {
+function harness({env={},chat={},postStatus=200,postBody={status:'ok',data:{message_uid:'uid'}},network=false,source=null,jobs=true,sourceKind='order'}={}) {
  const calls=[],updates=[];
- const job={id:'job',store_id:'alvarez',source_kind:'order',source_id:'order',claim_token:'claim'};
+ const job={id:'job',store_id:'alvarez',source_kind:sourceKind,source_id:'order',claim_token:'claim'};
  const db={rpc:async()=>({data:jobs?[job]:[],error:null}),from(table){
   const filters=[];let patch;
   const q={select(){return q;},eq(k,v){filters.push([k,v]);return q;},update(v){patch=v;return q;},
@@ -50,4 +50,11 @@ test('429 is a recorded failure and cancelled sources never send',async()=>{
  let h=harness({postStatus:429});await h.api.drainRemittanceWhatsapp();assert.equal(h.updates[0].patch.state,'failed');
  h=harness({source:{status:'cancelled'}});await h.api.drainRemittanceWhatsapp();assert.equal(h.updates[0].patch.state,'cancelled');assert.equal(h.calls.length,1);
  h=harness({jobs:false});await h.api.drainRemittanceWhatsapp();assert.equal(h.calls.length,1);
+});
+
+test('a products-only shipment is dispatched without requiring a cash amount',async()=>{
+ const h=harness({sourceKind:'shipment',source:{contains_money:false,money_amount:0,status:'preparing',store_products:[{name:'Pollo',quantity:1}]}});
+ await h.api.drainRemittanceWhatsapp();
+ assert.equal(h.updates[0].patch.state,'accepted');
+ const message=JSON.parse(h.calls[1].options.body).text;assert.match(message,/Nuevo envío de productos/);assert.doesNotMatch(message,/Origen|Remesa a entregar/);
 });

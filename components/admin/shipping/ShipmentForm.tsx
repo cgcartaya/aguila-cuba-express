@@ -71,6 +71,7 @@ export default function ShipmentForm(props: Props) {
     assigned_driver_id: shipment?.assigned_driver_id || null,
     assigned_driver_name: shipment?.assigned_driver_name || null,
     public_tracking_enabled: shipment?.public_tracking_enabled ?? true,
+    products_only: shipment?.products_only ?? false,
     contains_package: shipment?.contains_package ?? true,
     contains_money: shipment?.contains_money ?? false,
     weight_lb: Number(shipment?.weight_lb || 0),
@@ -97,9 +98,9 @@ export default function ShipmentForm(props: Props) {
     selected_fees: initialSelectedFees,
   });
 
-  const baseForm: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: props.operationType === "money" && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
+  const baseForm: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: (props.operationType === "money" || props.operationType === "products") && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
   const feesOnly = baseForm.contains_package && baseForm.package_billing_mode === "fees_only";
-  const moneyOnly = baseForm.contains_money && !baseForm.contains_package;
+  const moneyOnly = !!baseForm.products_only || baseForm.contains_money && !baseForm.contains_package;
   const form: ShipmentInput = (() => {
     const location = locations.find(x => x.id === baseForm.shipping_location_id);
     const service = serviceTypes.find(x => x.id === baseForm.service_type_id);
@@ -127,15 +128,15 @@ export default function ShipmentForm(props: Props) {
           item.scope_type === "country" &&
           item.country_id === baseForm.country_id
       );
-    const effectiveWeight = feesOnly ? 0 : Math.max(Number(baseForm.weight_lb || 0), Number(rate?.minimum_weight_lb || 0));
+    const effectiveWeight = feesOnly || baseForm.products_only ? 0 : Math.max(Number(baseForm.weight_lb || 0), Number(rate?.minimum_weight_lb || 0));
     const specificRate = rate ? weightRate(rate, Number(baseForm.weight_lb || 0)) : 0;
     const fallbackRate = Number(settings?.default_rate_per_lb || 0);
-    const ratePerLb = baseForm.contains_package && !feesOnly
+    const ratePerLb = baseForm.contains_package && !baseForm.products_only && !feesOnly
       ? specificRate > 0
         ? specificRate
         : fallbackRate
       : 0;
-    const packageSubtotal = baseForm.contains_package && !feesOnly ? Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0)) : 0;
+    const packageSubtotal = baseForm.contains_package && !baseForm.products_only && !feesOnly ? Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0)) : 0;
     const calculatedFees = baseForm.selected_fees.map(fee => calculateExtraFee(
       { ...fee, quantity: Number.isInteger(fee.quantity ?? 1) && (fee.quantity ?? 1) >= 1 && (fee.quantity ?? 1) <= 9999 ? fee.quantity ?? 1 : 1 },
       effectiveWeight, packageSubtotal,
@@ -146,16 +147,16 @@ export default function ShipmentForm(props: Props) {
     const requestedDiscount = settings?.allow_manual_discount ? Math.max(baseForm.money_discount, 0) : 0;
     const moneyDiscount = maxDiscount == null ? requestedDiscount : Math.min(requestedDiscount, Number(maxDiscount));
     const moneyTotal = baseForm.contains_money ? (settings?.money_include_principal ? baseForm.money_amount : 0) + Math.max(money.commission - moneyDiscount, 0) : 0;
-    const productSubtotal = productsTotal(baseForm.contains_money ? baseForm.store_products : []);
+    const productSubtotal = productsTotal(baseForm.store_products);
     const total = Math.max(packageSubtotal + moneyTotal + productSubtotal + feesTotal - Math.max(baseForm.discount_amount, 0), 0);
     const amountPaid = Math.min(total, Math.max(baseForm.amount_paid, 0));
     const balance = Math.max(total - amountPaid, 0);
-    const legacy = location ? buildLegacyLocation(location.legacy_code, baseForm.contains_package ? (service?.legacy_prefix || "") : "") : baseForm.location;
+    const legacy = location ? buildLegacyLocation(location.legacy_code, baseForm.contains_package && !baseForm.products_only ? (service?.legacy_prefix || "") : "") : baseForm.location;
 
     return {
       ...baseForm,
       location: legacy,
-      service_type_name: feesOnly ? "Por artículo" : service?.name || baseForm.service_type_name,
+      service_type_name: baseForm.products_only ? "Productos de la tienda" : feesOnly ? "Por artículo" : service?.name || baseForm.service_type_name,
       rate_per_lb: Number(ratePerLb.toFixed(2)),
       weight_subtotal: Number(packageSubtotal.toFixed(2)),
       selected_fees: calculatedFees.map((fee, index) => ({ ...fee, quantity: baseForm.selected_fees[index].quantity ?? 1 })),
@@ -185,13 +186,14 @@ export default function ShipmentForm(props: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError("");
     if (!form.contains_package && !form.contains_money) return setError("Selecciona paquete, dinero o ambos.");
-    if (form.contains_package && !feesOnly && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
+    if (form.contains_package && !form.products_only && !feesOnly && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
+    if (form.products_only && !form.store_products?.length) return setError('Añade al menos un producto de la tienda.');
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (form.contains_money) {
       try { deliveryParts(form); }
       catch (cause) { return setError((cause as Error).message); }
-      if ((form.store_products || []).some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
     }
+    if ((form.store_products || []).some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
     if (form.recipient_phone.length < (settings?.phone_digits_min || 1)) return setError("El teléfono del destinatario no es válido.");
     if (!form.customer_id && !confirmNoCustomer) {
@@ -202,7 +204,7 @@ export default function ShipmentForm(props: Props) {
       form.selected_fees.forEach(fee => extraFeeQuantity(fee.quantity));
       const normalized = normalizePackageBilling(form);
       shipmentInvoiceTotals(normalized);
-      const contents = form.contains_package ? normalizePackageContents(form.package_contents) : [];
+      const contents = normalized.contains_package && !normalized.products_only ? normalizePackageContents(normalized.package_contents) : [];
       await onSubmit({ ...normalized, package_contents: contents });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar.");
@@ -250,8 +252,9 @@ export default function ShipmentForm(props: Props) {
 
     {!props.operationType && <Section title="Contenido de la operación">
       <div className="grid gap-3 md:grid-cols-2">
-        <Toggle checked={form.contains_package} onChange={v => set("contains_package", v)} icon={<Package />} title="Incluye paquete" />
-        <Toggle checked={form.contains_money} onChange={v => set("contains_money", v)} icon={<Banknote />} title="Incluye dinero" />
+        {props.allowRemittanceExtras && <Toggle checked={!!form.products_only} onChange={value => setForm(current => ({ ...current, products_only: value, contains_package: true, contains_money: value ? false : current.contains_money }))} icon={<Package />} title="Solo productos de la tienda" />}
+        <Toggle checked={form.contains_package} onChange={v => setForm(current => ({ ...current, contains_package: v, products_only: false }))} icon={<Package />} title="Incluye paquete" />
+        <Toggle checked={form.contains_money} onChange={v => setForm(current => ({ ...current, contains_money: v, products_only: v ? false : current.products_only }))} icon={<Banknote />} title="Incluye dinero" />
       </div>
     </Section>}
 
@@ -261,7 +264,7 @@ export default function ShipmentForm(props: Props) {
         <Select label="Provincia" value={form.province_id || ""} onChange={v => { set("province_id", v || null); set("municipality_id", null); set("shipping_location_id", null); }} options={filteredProvinces.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         <Select label="Municipio" value={form.municipality_id || ""} onChange={v => { set("municipality_id", v || null); set("shipping_location_id", null); }} options={filteredMunicipalities.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         <Select label="Lugar (opcional)" value={form.shipping_location_id || ""} onChange={v => set("shipping_location_id", v || null)} options={filteredLocations.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
-        {form.contains_package && !feesOnly && <Select label="Tipo de paquete" value={form.service_type_id || ""} onChange={v => set("service_type_id", v || null)} options={serviceTypes.filter(x=>x.is_active && x.code.toLowerCase() !== "money").map(x=>[x.id,x.name])} />}
+        {form.contains_package && !form.products_only && !feesOnly && <Select label="Tipo de paquete" value={form.service_type_id || ""} onChange={v => set("service_type_id", v || null)} options={serviceTypes.filter(x=>x.is_active && x.code.toLowerCase() !== "money").map(x=>[x.id,x.name])} />}
         <Input label="Código APK" value={form.location} readOnly />
         <Input label="Destinatario" value={form.recipient_name} onChange={v=>set("recipient_name",v)} />
         <Input label="Teléfono destinatario" value={form.recipient_phone} onChange={v=>set("recipient_phone",phone(v))} inputMode="numeric" />
@@ -293,7 +296,7 @@ export default function ShipmentForm(props: Props) {
       )}
     </Section>
 
-    {form.contains_package && <Section title="Cálculo del paquete">
+    {form.contains_package && !form.products_only && <Section title="Cálculo del paquete">
       <div className="grid gap-3 sm:grid-cols-2">{([
         ['weight', 'Por peso', 'Libras × tarifa, más los cargos seleccionados'],
         ['fees_only', 'Solo cargos por artículo', 'Teléfonos, laptops u otros artículos con fee fijo'],
@@ -304,14 +307,14 @@ export default function ShipmentForm(props: Props) {
       </>}
     </Section>}
 
-    {form.contains_package && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
+    {form.contains_package && !form.products_only && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
 
+    {props.allowRemittanceExtras && <Section title="Productos de la tienda"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}
     {form.contains_money && <Section title="Cálculo del dinero">
       {props.allowRemittanceExtras && <div className="mb-4 space-y-4">
         <label className="block text-sm font-bold">Moneda de entrega<select value={form.money_delivery_currency || 'USD'} onChange={event => set('money_delivery_currency', event.target.value as 'USD' | 'CUP' | 'MIXED')} className="mt-2 w-full rounded-xl border bg-white p-3"><option value="USD">Dólares estadounidenses (USD)</option><option value="CUP">Moneda nacional de Cuba (CUP / MN)</option><option value="MIXED">Mixta: efectivo USD + moneda nacional</option></select></label>
         {form.money_delivery_currency === 'MIXED' && <NumberInput label="De la remesa, USD que se convierten a MN" value={Number(form.money_usd_to_cup || 0)} onChange={value => set('money_usd_to_cup', value)} />}
         {(form.money_delivery_currency === 'CUP' || form.money_delivery_currency === 'MIXED') && <><NumberInput label="Cambio manual: CUP por cada 1 USD" value={Number(form.money_exchange_rate || 0)} onChange={value => set('money_exchange_rate', value)} /><p className="rounded-xl bg-emerald-50 p-4 font-bold text-emerald-900">{deliveryPreview?.convertedUsd.toFixed(2) ?? '—'} USD × {Number(form.money_exchange_rate || 0)} = {deliveryPreview?.cup.toLocaleString('en-US', { minimumFractionDigits: 2 }) ?? '—'} CUP a entregar{form.money_delivery_currency === 'MIXED' && <> + {deliveryPreview?.usd.toFixed(2) ?? '—'} USD en efectivo</>}</p><p className="text-sm text-slate-600">Tasa escrita por la agencia para esta operación. No se consulta ningún cambio automático. La comisión y los productos se cobran en USD.</p></>}
-        <RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} />
       </div>}
       <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado (USD)" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? "Cargo fijo" : `${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>
       {settings?.allow_manual_discount && <div className="grid gap-4 md:grid-cols-2"><NumberInput label="Descuento comisión" value={form.money_discount} onChange={v=>set("money_discount",v)} /><Input label="Motivo descuento" value={form.money_discount_reason} onChange={v=>set("money_discount_reason",v)} /></div>}

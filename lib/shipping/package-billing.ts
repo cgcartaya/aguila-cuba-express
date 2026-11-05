@@ -3,6 +3,7 @@ import type { ShipmentInput } from '@/lib/shipping/types';
 
 /** A fee-only physical parcel is billed by fixed item charges, never by weight. */
 export function normalizePackageBilling<T extends ShipmentInput>(input: T) {
+  if (input.products_only) return { ...input, contains_package: true, contains_money: false, package_contents: [], package_billing_mode: 'weight' as const, weight_lb: 0, rate_per_lb: 0, weight_subtotal: 0, service_type_id: null, service_type_name: 'Productos de la tienda', money_amount: 0, money_total: 0, money_commission: 0, money_commission_rate: 0, money_discount: 0 };
   if (!input.contains_package) return { ...input, package_billing_mode: 'weight' as const };
   if (input.package_billing_mode !== 'fees_only') return input;
   if (!input.selected_fees.length || input.selected_fees.some(fee => fee.calculation_type !== 'fixed')) {

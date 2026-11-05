@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (error || !order) return fail("Orden no encontrada.", 404);
-  if (order.source_shipment_id) return fail("Estos productos están incluidos en la factura de la remesa. El pago se gestiona desde Envíos.", 409);
+  if (order.source_shipment_id) return fail("Estos productos están incluidos en la factura del envío. El pago se gestiona desde Envíos.", 409);
   if (order.payment_status === "paid") return fail("Esta orden ya está pagada.");
 
   // El cliente está retomando el pago de una orden que ya había vencido

@@ -41,3 +41,16 @@ test('delivery updates do not create historical product sales or re-price old in
   end$$;`);
  } finally { await db.close(); }
 });
+
+test('products-only shipments create a single sale, stock reservation and WhatsApp notice without cash',async()=>{
+ const db=new PGlite();
+ try {
+  await db.exec(fs.readFileSync('tests/helpers/remittance-test-db.sql','utf8'));
+  await db.exec('create table public.remittance_orders(id uuid primary key default gen_random_uuid(),store_id uuid,shipment_id text);');
+  await db.exec(fs.readFileSync('supabase/migrations/20261105152646_alvarez_remittance_whatsapp_outbox.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261105162233_remittance_manual_delivery_and_products.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261105165935_mixed_remittance_product_orders.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261105172653_products_only_shipping_operations.sql','utf8'));
+  await db.exec(fs.readFileSync('tests/products-only-operations.sql','utf8'));
+ } finally { await db.close(); }
+});

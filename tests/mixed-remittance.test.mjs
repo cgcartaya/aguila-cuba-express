@@ -41,7 +41,7 @@ test('linked product orders cannot start an additional card charge',async()=>{
   '@/lib/config/features':{},'@/lib/services/order-stock-admin':{reactivateExpiredOrder:()=>{providerCalls++;}},
  });
  const response=await api.POST({json:async()=>({orderId:'order',storeId:'store'})});
- assert.equal(response.status,409);assert.equal(providerCalls,0);assert.match(response.body.message,/factura de la remesa/);
+ assert.equal(response.status,409);assert.equal(providerCalls,0);assert.match(response.body.message,/factura del envío/);
 });
 test('administrative catalog uses the same configured customer price as the store',async()=>{
  const pricing=load('lib/storefront/product-quantity-pricing.ts');
