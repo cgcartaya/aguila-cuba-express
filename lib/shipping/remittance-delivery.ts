@@ -1,4 +1,7 @@
-export type RemittanceProduct = { product_id: string; name: string; quantity: number; unit_price: number; base_price?: number; platform_fee_percent?: number; platform_fee_amount?: number };
+export type RemittanceProduct = ({ product_id: string; combo_id?: never } | { combo_id: string; product_id?: never }) & { name: string; quantity: number; unit_price: number; base_price?: number; platform_fee_percent?: number; platform_fee_amount?: number };
+export function remittanceItemKey(item: RemittanceProduct) {
+ return item.combo_id ? `combo:${item.combo_id}` : `product:${item.product_id}`;
+}
 export type RemittanceDelivery = {
  contains_money?: boolean; products_only?: boolean;
  money_amount?: number; money_delivery_currency?: 'USD' | 'CUP' | 'MIXED'; money_exchange_rate?: number | null;
