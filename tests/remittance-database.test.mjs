@@ -51,6 +51,15 @@ test('products-only shipments create a single sale, stock reservation and WhatsA
   await db.exec(fs.readFileSync('supabase/migrations/20261105162233_remittance_manual_delivery_and_products.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/20261105165935_mixed_remittance_product_orders.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/20261105172653_products_only_shipping_operations.sql','utf8'));
+  await db.exec(`
+    create table public.customers(id uuid primary key);
+    create table public.shipping_customers(id uuid primary key);
+    alter table public.orders add constraint orders_customer_id_fkey
+      foreign key(customer_id) references public.customers(id);
+    alter table public.shipments add constraint shipments_customer_id_fkey
+      foreign key(customer_id) references public.shipping_customers(id);
+  `);
+  await db.exec(fs.readFileSync('supabase/migrations/20261105190640_fix_linked_shipping_order_customer_fk.sql','utf8'));
   await db.exec(fs.readFileSync('tests/products-only-operations.sql','utf8'));
  } finally { await db.close(); }
 });

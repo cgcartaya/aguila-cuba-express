@@ -1,7 +1,7 @@
 -- Isolated test database only. All business fixtures are rolled back.
 begin;
 do $$
-declare sid uuid:=gen_random_uuid();actor uuid:=gen_random_uuid();pid uuid:=gen_random_uuid();result jsonb;oid uuid;
+declare sid uuid:=gen_random_uuid();actor uuid:=gen_random_uuid();pid uuid:=gen_random_uuid();result jsonb;oid uuid;shipping_customer uuid:=gen_random_uuid();
 begin
  insert into public.stores(id,subdomain,is_active,module_shipping_enabled,platform_fee_enabled,platform_fee_percent) values(sid,'alvarez-travel',true,true,true,2.5);
  insert into public.profiles(id,active,role) values(actor,true,'super_admin');
@@ -14,7 +14,14 @@ begin
  if (select stock from public.products where id=pid)<>9 then raise exception 'Products-only stock not reserved once'; end if;
  set constraints shipment_remittance_whatsapp_queue immediate;
  if (select count(*) from public.alvarez_remittance_notifications where source_id='products-only')<>1 then raise exception 'Products-only WhatsApp notice missing'; end if;
- update public.shipments set store_products=store_products,status='out_for_delivery' where id='products-only';
+ insert into public.shipping_customers(id) values(shipping_customer);
+ update public.shipments set customer_id=shipping_customer,sender_name='Cliente de envíos',
+  sender_phone='+13055550123',status='out_for_delivery' where id='products-only';
+ if not exists(select 1 from public.shipments where id='products-only' and customer_id=shipping_customer)
+  or not exists(select 1 from public.orders where id=oid and customer_id is null
+   and customer_name='Cliente de envíos' and customer_phone='+13055550123') then
+  raise exception 'Shipping customer or order contact was lost';
+ end if;
  if (select stock from public.products where id=pid)<>9 or (select count(*) from public.orders where source_shipment_id='products-only')<>1 or (select count(*) from public.alvarez_remittance_notifications where source_id='products-only')<>1 then raise exception 'Repeated save duplicated inventory, sale or notification'; end if;
  begin
   update public.shipments set store_products='[]' where id='products-only';
