@@ -372,7 +372,7 @@ export function PublicOrderClient({
             </span>
           </div>
 
-          {order.source_shipment_id && <p className="my-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">Productos incluidos en la factura de tu remesa: no es un cobro adicional. Gestiona el pago con la agencia desde Envíos.</p>}
+          {order.source_shipment_id && <p className="my-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">Productos incluidos en la factura de tu envío: no es un cobro adicional. Gestiona el pago con la agencia desde Envíos.</p>}
           {!order.source_shipment_id && order.payment_method === "card" && order.payment_status !== "paid" && (
             <>
               <p className="mt-4 text-sm text-white/70">
@@ -443,7 +443,7 @@ export function PublicOrderClient({
             {order.payment_method === "card" && (
               <div className="flex justify-between text-blue-700"><span>Recargo por tarjeta ({(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)</span><strong>+${cardSurcharge.toFixed(2)}</strong></div>
             )}
-            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">{order.source_shipment_id ? "Productos incluidos en la remesa" : order.payment_status === "paid" ? "Total pagado" : "Total a pagar"}</span><span className="font-black">${displayedTotal.toFixed(2)}</span></div>
+            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">{order.source_shipment_id ? "Productos incluidos en el envío" : order.payment_status === "paid" ? "Total pagado" : "Total a pagar"}</span><span className="font-black">${displayedTotal.toFixed(2)}</span></div>
           </div>
         </section>
 

@@ -360,7 +360,7 @@ export default function ShippingShipmentsPage() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <p className="break-words text-sm font-extrabold text-slate-900 sm:truncate">{shipment.sender_name || "Sin cliente"}</p>
-                          <ShippingStatusBadge status={shipment.status} moneyOnly={shipment.contains_money && !shipment.contains_package} />
+                          <ShippingStatusBadge status={shipment.status} moneyOnly={!!shipment.products_only || shipment.contains_money && !shipment.contains_package} />
                         </div>
                         <p className="mt-0.5 break-all text-xs font-bold text-blue-700 sm:truncate">{shipment.tracking_code || shipment.id.slice(0, 8)}</p>
                         <p className="mt-0.5 break-words text-[11px] text-slate-500 sm:truncate">{shipment.sender_phone || "Sin teléfono"}</p>
@@ -381,7 +381,7 @@ export default function ShippingShipmentsPage() {
                             <Route size={13} />
                             <span className="truncate">Viaje {trip.trip_number}</span>
                           </Link>
-                        ) : shipment.contains_money && !shipment.contains_package ? <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-extrabold text-emerald-700">Entrega de dinero · Sin viaje</span> : (
+                        ) : shipment.products_only ? <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700">Entrega de productos · Sin viaje</span> : shipment.contains_money && !shipment.contains_package ? <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-extrabold text-emerald-700">Entrega de dinero · Sin viaje</span> : (
                           <div className="space-y-1.5">
                             <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700">Sin viaje</span>
                             <div className="grid w-full min-w-0 gap-1 min-[380px]:grid-cols-[minmax(0,1fr)_auto]">

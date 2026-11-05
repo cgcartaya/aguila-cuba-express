@@ -339,7 +339,7 @@ export default function OrdersManager({
   }, [currentOrders, filter, search]);
 
   async function updateStatus(order: any, status: string) {
-    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde el envío vinculado; así no se duplica el inventario ni el cobro."); return; }
     const previousStatus = order.status;
 
     if (previousStatus === status) return;
@@ -395,7 +395,7 @@ export default function OrdersManager({
   }
 
   async function sendOrderToTrash(order: any) {
-    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde el envío vinculado; así no se duplica el inventario ni el cobro."); return; }
     const ok = confirm(
       "¿Seguro que deseas enviar esta orden a la papelera?\n\nEl inventario de los productos de esta orden será restaurado automáticamente."
     );
@@ -448,7 +448,7 @@ export default function OrdersManager({
   }
 
   async function restoreOrderFromTrash(order: any) {
-    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde el envío vinculado; así no se duplica el inventario ni el cobro."); return; }
     const ok = confirm(
       "¿Quieres restaurar esta orden?\n\nEl inventario volverá a descontarse. Si no hay stock suficiente, la restauración se cancelará."
     );
@@ -497,7 +497,7 @@ export default function OrdersManager({
   }
 
   async function deleteOrderPermanently(order: any) {
-    if (order.source_shipment_id) { alert("Gestiona esta orden desde la remesa vinculada; así no se duplica el inventario ni el cobro."); return; }
+    if (order.source_shipment_id) { alert("Gestiona esta orden desde el envío vinculado; así no se duplica el inventario ni el cobro."); return; }
     if (!isSuperAdmin) {
       alert(
         "Solo el Super Admin puede eliminar una orden definitivamente de la papelera."
@@ -826,7 +826,7 @@ export default function OrdersManager({
                         </span>
                       )}
 
-                      {order.source_shipment_id && <a href={order.deleted_at ? "/admin/shipping/shipments/trash" : `/admin/shipping/${encodeURIComponent(order.source_shipment_id)}/edit`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">Incluida en remesa · Gestionar envío</a>}
+                      {order.source_shipment_id && <a href={order.deleted_at ? "/admin/shipping/shipments/trash" : `/admin/shipping/${encodeURIComponent(order.source_shipment_id)}/edit`} className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800">Incluida en envío · Gestionar envío</a>}
                       {view === "active" && (
                         <select
                           value={order.status}
@@ -1014,7 +1014,7 @@ export default function OrdersManager({
                             : "Pendiente"
                       }
                       {order.payment_method && (
-                        <> · {order.source_shipment_id ? "Factura de remesa" : order.payment_method === "card" ? "Tarjeta" : "WhatsApp"}</>
+                        <> · {order.source_shipment_id ? "Factura de envío" : order.payment_method === "card" ? "Tarjeta" : "WhatsApp"}</>
                       )}
                     </p>
                   </section>

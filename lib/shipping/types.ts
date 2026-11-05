@@ -131,6 +131,7 @@ export type Shipment = {
   weight_subtotal: number;
   extra_fees_total: number;
   contains_package: boolean;
+  products_only?: boolean;
   contains_money: boolean;
   money_delivery_currency?: 'USD' | 'CUP' | 'MIXED';
   money_usd_to_cup?: number;
@@ -309,6 +310,7 @@ export type ShipmentInput = {
   weight_subtotal: number;
   extra_fees_total: number;
   contains_package: boolean;
+  products_only?: boolean;
   contains_money: boolean;
   money_delivery_currency?: 'USD' | 'CUP' | 'MIXED';
   money_usd_to_cup?: number;

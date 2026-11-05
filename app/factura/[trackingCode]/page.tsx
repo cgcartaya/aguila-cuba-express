@@ -258,7 +258,7 @@ export default function PublicInvoicePage({
                 <Summary
                   icon={<CheckCircle2 size={17} />}
                   label="Estado"
-                  value={getShippingStatusLabel(shipment.status, shipment.contains_money && !shipment.contains_package)}
+                  value={getShippingStatusLabel(shipment.status, !!shipment.products_only || shipment.contains_money && !shipment.contains_package)}
                 />
 
                 <Summary
@@ -396,7 +396,7 @@ export default function PublicInvoicePage({
                 </div>
               </section>
 
-              {shipment.contains_money && <RemittanceDeliveryDetails value={shipment} />}
+              {(shipment.contains_money || !!shipment.store_products?.length) && <RemittanceDeliveryDetails value={shipment} />}
               {shipment.contains_package && <><p className="mt-5 text-sm font-bold text-slate-700">N.º de paquete: {packageNumber(shipment.package_number)}</p><PackageContentsList items={shipment.package_contents} /></>}
 
               <section className="invoice-avoid-break mt-5 grid items-start gap-5 md:grid-cols-[1fr_330px]">

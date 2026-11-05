@@ -172,7 +172,7 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
 
   const rows: Record<string, unknown>[] = [];
   let sort = 1;
-  if (input.contains_package && input.package_billing_mode !== "fees_only") rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
+  if (input.contains_package && !input.products_only && input.package_billing_mode !== "fees_only") rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
   if (input.contains_money) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "MONEY", description: input.money_total > Math.max(input.money_commission - input.money_discount, 0) + 0.005 ? "Remesa y comisión" : "Comisión por envío de dinero", quantity: 1, unit: "USD", unit_price: roundMoney(input.money_total + input.money_discount), subtotal: roundMoney(input.money_total + input.money_discount), discount_amount: input.money_discount, total: input.money_total, metadata: { discount_reason: input.money_discount_reason }, sort_order: sort++ });
   input.selected_fees.forEach((fee) => rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "EXTRA_FEE", description: fee.fee_name, quantity: extraFeeQuantity(fee.quantity), unit: "unidad", unit_price: fee.calculated_amount / extraFeeQuantity(fee.quantity), subtotal: fee.calculated_amount, discount_amount: 0, total: fee.calculated_amount, metadata: { fee_id: fee.fee_id }, sort_order: sort++ }));
   if (input.discount_amount > 0) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "DISCOUNT", description: input.discount_reason || "Descuento general", quantity: 1, unit: "descuento", unit_price: -input.discount_amount, subtotal: -input.discount_amount, discount_amount: input.discount_amount, total: -input.discount_amount, metadata: {}, sort_order: sort++ });
@@ -259,6 +259,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     assigned_staff_id: input.assigned_staff_id,
     assigned_driver_id: input.assigned_driver_id,
     assigned_driver_name: input.assigned_driver_name,
+    products_only: input.products_only ?? false,
     contains_package: input.contains_package,
     contains_money: input.contains_money,
     weight_lb: input.contains_package ? input.weight_lb : 0,
@@ -267,7 +268,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     money_delivery_currency: input.contains_money ? input.money_delivery_currency || 'USD' : 'USD',
     money_usd_to_cup: input.contains_money && input.money_delivery_currency === 'MIXED' ? input.money_usd_to_cup : input.money_delivery_currency === 'CUP' ? input.money_amount : 0,
     money_exchange_rate: input.contains_money && input.money_delivery_currency !== 'USD' ? input.money_exchange_rate : null,
-    store_products: input.contains_money ? input.store_products || [] : [],
+    store_products: input.store_products || [],
     money_amount: input.contains_money ? input.money_amount : 0,
     money_commission_rate: input.contains_money ? input.money_commission_rate : 0,
     money_commission: input.contains_money ? input.money_commission : 0,
@@ -291,7 +292,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
     // V21: Supabase asigna order_number una sola vez y, cuando hay viaje,
     // asigna trip_order independientemente.
-    const result = await supabase.rpc(input.contains_money && ((input.money_delivery_currency === "CUP" || input.money_delivery_currency === "MIXED") || input.store_products?.length) ? "create_remittance_numbered_shipment" : "create_numbered_shipment", {
+    const result = await supabase.rpc((input.products_only || !!input.store_products?.length || input.contains_money && (input.money_delivery_currency === "CUP" || input.money_delivery_currency === "MIXED")) ? "create_remittance_numbered_shipment" : "create_numbered_shipment", {
       p_store_id: storeId,
       p_id: ids.id,
       p_tracking_code: ids.trackingCode,

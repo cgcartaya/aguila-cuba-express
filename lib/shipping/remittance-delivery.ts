@@ -1,5 +1,6 @@
 export type RemittanceProduct = { product_id: string; name: string; quantity: number; unit_price: number; base_price?: number; platform_fee_percent?: number; platform_fee_amount?: number };
 export type RemittanceDelivery = {
+ contains_money?: boolean; products_only?: boolean;
  money_amount?: number; money_delivery_currency?: 'USD' | 'CUP' | 'MIXED'; money_exchange_rate?: number | null;
  money_usd_to_cup?: number; money_delivery_amount?: number; store_products?: RemittanceProduct[]; store_products_total?: number;
 };
