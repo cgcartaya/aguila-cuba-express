@@ -1,5 +1,5 @@
 import { packageNumber } from "@/lib/shipping/package-label";
-import { deliveryLabel } from "@/lib/shipping/remittance-delivery";
+import { deliveryLabel, remittanceItemKey } from "@/lib/shipping/remittance-delivery";
 import type { Shipment, ShipmentItem } from "@/lib/shipping/types";
 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
@@ -119,7 +119,7 @@ export default function AlvarezInvoice({ shipment, items, name, date, website }:
           <td className="number">{amount(item.item_type === "MONEY" ? item.total : item.unit_price)}</td>
           <td className="number">{amount(item.total)}</td>
         </tr>)}
-        {shipment.store_products?.map(item => <tr key={item.product_id}>
+        {shipment.store_products?.map(item => <tr key={remittanceItemKey(item)}>
           <td>{item.quantity}</td><td>{item.name}</td>
           <td className="number">{amount(item.unit_price)}</td>
           <td className="number">{amount(item.quantity * item.unit_price)}</td>

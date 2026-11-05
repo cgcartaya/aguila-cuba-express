@@ -50,3 +50,31 @@ test('shipping catalog returns the base price without the storefront markup',asy
  const response=await api.GET({nextUrl:new URL('https://example.test?storeId=store')});
  assert.equal(response.products[0].price,100);
 });
+
+test('shipping catalog filters combos and calculates stock from their components',async()=>{
+ const calls=[];
+ const admin={from:table=>{
+  const rows=table==='products'?[{id:'product',name:'Producto',price:10,stock:5}]:[
+   {id:'combo',name:'Combo familiar',price:17,combo_items:[
+    {product_id:'product',quantity:2,products:{store_id:'store',stock:5,is_active:true}},
+    {product_id:'product',quantity:1,products:{store_id:'store',stock:5,is_active:true}},
+   ]},
+   {id:'empty',name:'Combo sin componentes',price:20,combo_items:[]},
+  ];
+  const q={select(){return q},eq(){return q},is(){return q},gt(){return q},order(){return q},limit(){return q},
+   ilike(_field,pattern){calls.push([table,pattern]);return q},
+   then(resolve){calls.push(table);return Promise.resolve({data:rows,error:null}).then(resolve)}};
+  return q;
+ }};
+ const api=load('app/api/admin/remittances/products/route.ts',{
+  'next/server':{},'@/lib/supabase-admin':{supabaseAdmin:admin},
+  '@/lib/remittances/server':{adminAccess:async()=>{},reply:value=>value,failure:error=>{throw error;}},
+ });
+ const result=await api.GET({nextUrl:new URL('https://example.test?storeId=store&kind=combo&search=combo')});
+ assert.ok(!calls.includes('products'));
+ assert.ok(calls.some(call=>Array.isArray(call)&&call[0]==='combos'&&call[1]==='%combo%'));
+ assert.equal(result.products[0].kind,'combo');
+ assert.equal(result.products[0].price,17);
+ assert.equal(result.products[0].stock,1);
+ assert.equal(result.products[1].stock,0);
+});
