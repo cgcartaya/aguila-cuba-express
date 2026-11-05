@@ -9,8 +9,10 @@ export async function GET(request:NextRequest){
   await adminAccess(request,storeId);
   const page=Number(request.nextUrl.searchParams.get('page')??0);
   const status=request.nextUrl.searchParams.get('status')??'pending';
-  if(!Number.isInteger(page)||page<0||page>10000||!['pending','paid','cancelled'].includes(status))throw new RemittanceError('Filtro inválido.');
-  const {data,error}=await supabaseAdmin.from('remittance_orders').select('id,payload,amount,commission,total,status,shipment_id,payment_reference,created_at').eq('store_id',storeId).eq('status',status).order('created_at',{ascending:false}).range(page*50,page*50+49);
+  if(!Number.isInteger(page)||page<0||page>10000||!['all','pending','paid','cancelled'].includes(status))throw new RemittanceError('Filtro inválido.');
+  let query=supabaseAdmin.from('remittance_orders').select('id,payload,amount,commission,total,status,shipment_id,payment_reference,created_at').eq('store_id',storeId);
+  if(status!=='all')query=query.eq('status',status);
+  const {data,error}=await query.order('created_at',{ascending:false}).range(page*50,page*50+49);
   if(error)throw new RemittanceError('No se pudieron cargar los pedidos.',503);
   return reply({orders:data});
  }catch(error){return failure(error);}

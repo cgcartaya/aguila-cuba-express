@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, FileText, Inbox, Loader2, MapPin, RefreshCw, Search, ShieldCheck, WalletCards, XCircle } from "lucide-react";
 
+export type RemittanceFilter = RemittanceStatus | "all";
 export type RemittanceStatus = "pending" | "paid" | "cancelled";
 export type RemittanceOrder = {
   id: string;
@@ -18,6 +19,7 @@ export type RemittanceOrder = {
 
 export const usd = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 const statuses = {
+  all: { label: "Todas", tab: "Todas las compras", style: "border-blue-200 bg-blue-50 text-blue-800", icon: Inbox },
   pending: { label: "Pendiente de pago", tab: "Pendientes de pago", style: "border-amber-200 bg-amber-50 text-amber-800", icon: Clock3 },
   paid: { label: "Pago confirmado", tab: "Pagadas", style: "border-emerald-200 bg-emerald-50 text-emerald-800", icon: CheckCircle2 },
   cancelled: { label: "Cancelada", tab: "Canceladas", style: "border-slate-200 bg-slate-100 text-slate-500", icon: XCircle },
@@ -77,14 +79,14 @@ export function RemittanceOrderCard({ order, busy, onConfirm, onCancel }: {
 type Props = {
   storeName: string;
   orders: RemittanceOrder[];
-  status: RemittanceStatus;
+  status: RemittanceFilter;
   page: number;
   search: string;
   loading: boolean;
   busy: boolean;
   error: string;
   success: { text: string; shipmentId?: string } | null;
-  onStatus: (status: RemittanceStatus) => void;
+  onStatus: (status: RemittanceFilter) => void;
   onSearch: (value: string) => void;
   onRefresh: () => void;
   onPage: (page: number) => void;
@@ -123,7 +125,7 @@ export default function RemittanceInbox(props: Props) {
       {props.error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{props.error}</div>}
       <section aria-label="Listado de órdenes" className="space-y-4">
         <div className="flex flex-col justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-2 lg:flex-row lg:items-center">
-          <div role="group" aria-label="Filtrar por estado" className="grid grid-cols-3 gap-1">{(Object.keys(statuses) as RemittanceStatus[]).map(value => <button key={value} type="button" aria-pressed={status === value} disabled={busy} onClick={() => props.onStatus(value)} className={`min-h-11 rounded-xl px-2.5 py-2 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 sm:px-4 ${status === value ? "bg-blue-50 text-blue-800" : "text-slate-500 hover:bg-slate-50"}`}>{statuses[value].tab}</button>)}</div>
+          <div role="group" aria-label="Filtrar por estado" className="grid grid-cols-2 gap-1 sm:grid-cols-4">{(Object.keys(statuses) as RemittanceFilter[]).map(value => <button key={value} type="button" aria-pressed={status === value} disabled={busy} onClick={() => props.onStatus(value)} className={`min-h-11 rounded-xl px-2.5 py-2 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-blue-600 disabled:opacity-50 sm:px-4 ${status === value ? "bg-blue-50 text-blue-800" : "text-slate-500 hover:bg-slate-50"}`}>{statuses[value].tab}</button>)}</div>
           <div className="flex min-w-0 gap-2"><label className="relative min-w-0 flex-1"><span className="sr-only">Buscar en esta página</span><Search size={15} className="pointer-events-none absolute left-3 top-3.5 text-slate-400" /><input type="search" value={search} onChange={event => props.onSearch(event.target.value)} placeholder="Buscar en esta página…" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 lg:w-56" /></label><button type="button" onClick={props.onRefresh} disabled={loading || busy} aria-label="Actualizar órdenes" title="Actualizar órdenes" className={`${button} border border-slate-200 bg-white px-3 text-slate-500 hover:bg-slate-50`}><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button></div>
         </div>
         <div className="flex flex-wrap justify-between gap-1 px-1 text-[11px] text-slate-400"><span>{loading ? "Cargando solicitudes…" : `${visible.length} ${visible.length === 1 ? "solicitud" : "solicitudes"}${query ? ` de ${orders.length} en esta página` : " en esta página"}`}</span><span>Resumen de la página actual · USD</span></div>

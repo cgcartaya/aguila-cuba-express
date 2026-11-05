@@ -2,6 +2,7 @@
 
 import { getShippingStatusLabel } from "@/lib/shipping/types";
 import { packageNumber } from "@/lib/shipping/package-label";
+import RemittanceDeliveryDetails from "@/components/shipping/RemittanceDeliveryDetails";
 import PackageContentsList from "@/components/shipping/PackageContentsList";
 import { use, useEffect, useState } from "react";
 import {
@@ -395,6 +396,7 @@ export default function PublicInvoicePage({
                 </div>
               </section>
 
+              {shipment.contains_money && <RemittanceDeliveryDetails value={shipment} />}
               {shipment.contains_package && <><p className="mt-5 text-sm font-bold text-slate-700">N.º de paquete: {packageNumber(shipment.package_number)}</p><PackageContentsList items={shipment.package_contents} /></>}
 
               <section className="invoice-avoid-break mt-5 grid items-start gap-5 md:grid-cols-[1fr_330px]">
@@ -417,12 +419,8 @@ export default function PublicInvoicePage({
                   </div>
 
                   <div className="space-y-3 p-5">
-                    {shipment.extra_fees_total > 0 && (
-                      <Total
-                        label="Fees adicionales"
-                        value={currency(shipment.extra_fees_total)}
-                      />
-                    )}
+                    {!!shipment.store_products_total && <Total label="Productos de la tienda" value={currency(shipment.store_products_total || 0)} />}
+                    {shipment.extra_fees_total > 0 && <Total label="Fees adicionales" value={currency(shipment.extra_fees_total)} />}
 
                     {shipment.discount_amount > 0 && (
                       <Total

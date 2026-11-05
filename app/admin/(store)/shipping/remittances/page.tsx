@@ -4,12 +4,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useStore } from "@/hooks/useStore";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
-import RemittanceInbox, { type RemittanceOrder, type RemittanceStatus } from "@/components/admin/remittances/RemittanceInbox";
+import RemittanceInbox, { type RemittanceOrder, type RemittanceFilter } from "@/components/admin/remittances/RemittanceInbox";
 import RemittanceActionDialog, { receivedAmountMatches, type RemittanceAction } from "@/components/admin/remittances/RemittanceActionDialog";
 
 import RemittanceWhatsappStatus from "@/components/admin/remittances/RemittanceWhatsappStatus";
 
-type LoadedOrders = { storeId: string; status: RemittanceStatus; page: number; orders: RemittanceOrder[] };
+type LoadedOrders = { storeId: string; status: RemittanceFilter; page: number; orders: RemittanceOrder[] };
 type Success = { storeId: string; text: string; shipmentId?: string };
 
 export default function RemittanceOrders() {
@@ -18,7 +18,7 @@ export default function RemittanceOrders() {
   const store = isSuperAdmin ? selected ?? accessStore : accessStore;
   const storeId = store?.id;
   const [loaded, setLoaded] = useState<LoadedOrders | null>(null);
-  const [status, setStatus] = useState<RemittanceStatus>("pending");
+  const [status, setStatus] = useState<RemittanceFilter>("all");
   const [page, setPage] = useState(0);
   const [refresh, setRefresh] = useState(0);
   const [search, setSearch] = useState("");

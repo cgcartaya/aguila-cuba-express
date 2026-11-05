@@ -92,7 +92,7 @@ export async function session(req: NextRequest) {
   const driver=await identity(s.account_source,account as unknown as Account,s.store_id);
   return { ...driver, store };
 }
-export const shipmentFields='id,store_id,tracking_code,package_number,recipient_name,recipient_phone,recipient_address,location,notes,contains_package,contains_money,money_amount,status,delivered,delivered_date,delivery_photo_url,trip_id,trip_order,updated_at,assigned_staff_id,assigned_driver_id';
+export const shipmentFields='id,store_id,tracking_code,package_number,recipient_name,recipient_phone,recipient_address,location,notes,contains_package,contains_money,money_amount,money_delivery_currency,money_exchange_rate,money_delivery_amount,store_products,status,delivered,delivered_date,delivery_photo_url,trip_id,trip_order,updated_at,assigned_staff_id,assigned_driver_id';
 export function assigned(scope: DriverScope) {
   return db.from('shipments').select(shipmentFields).eq('store_id',scope.storeId).is('deleted_at',null).or(assignmentFilter(scope));
 }

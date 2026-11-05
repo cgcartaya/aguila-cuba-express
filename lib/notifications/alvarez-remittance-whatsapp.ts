@@ -43,7 +43,7 @@ async function dispatch(job: Job, token: string) {
   if (settingsError || settings?.currency !== 'USD') { await finish(job, 'failed', 'currency_unavailable'); return; }
   const order = job.source_kind === 'order';
   const { data: source, error } = await supabaseAdmin.from(order ? 'remittance_orders' : 'shipments')
-    .select(order ? 'id,payload,amount,status' : 'id,sender_name,recipient_name,recipient_phone,recipient_address,notes,money_amount,payment_status,contains_money,deleted_at,status')
+    .select(order ? 'id,payload,amount,status' : 'id,sender_name,recipient_name,recipient_phone,recipient_address,notes,money_amount,money_delivery_currency,money_exchange_rate,money_delivery_amount,store_products,payment_status,contains_money,deleted_at,status')
     .eq('store_id', job.store_id).eq('id', job.source_id).maybeSingle<Source>();
   if (error) { await finish(job, 'failed', 'source_unavailable'); return; }
   if (!source || source.status === 'cancelled' || (!order && (source.deleted_at || !source.contains_money))) {
@@ -52,7 +52,7 @@ async function dispatch(job: Job, token: string) {
   let message: string;
   try {
     message = remittanceWhatsappMessage(job.source_id, order ? source.payload : source,
-      order ? source.amount : source.money_amount, (order ? source.status : source.payment_status) === 'paid');
+      order ? source.amount : source.money_amount);
   } catch { await finish(job, 'failed', 'invalid_source'); return; }
   // Once a POST starts, transport failures are ambiguous: require a human check.
   try {
