@@ -43,11 +43,10 @@ test('linked product orders cannot start an additional card charge',async()=>{
  const response=await api.POST({json:async()=>({orderId:'order',storeId:'store'})});
  assert.equal(response.status,409);assert.equal(providerCalls,0);assert.match(response.body.message,/factura del envío/);
 });
-test('administrative catalog uses the same configured customer price as the store',async()=>{
- const pricing=load('lib/storefront/product-quantity-pricing.ts');
+test('shipping catalog returns the base price without the storefront markup',async()=>{
  const admin={from:table=>{const q={select(){return q},eq(){return q},is(){return q},gt(){return q},order(){return q},limit(){return q},single:async()=>({data:{platform_fee_enabled:true,platform_fee_percent:2.5},error:null}),then(resolve){return Promise.resolve({data:[{id:'product',name:'Product',price:100,stock:5}],error:null}).then(resolve)}};return q;}};
- const api=load('app/api/admin/remittances/products/route.ts',{'next/server':{},'@/lib/supabase-admin':{supabaseAdmin:admin},'@/lib/storefront/product-quantity-pricing':pricing,
+ const api=load('app/api/admin/remittances/products/route.ts',{'next/server':{},'@/lib/supabase-admin':{supabaseAdmin:admin},
   '@/lib/remittances/server':{adminAccess:async()=>{},reply:value=>value,failure:error=>{throw error;}}});
  const response=await api.GET({nextUrl:new URL('https://example.test?storeId=store')});
- assert.equal(response.products[0].price,102.50);assert.equal(response.products[0].base_price,100);
+ assert.equal(response.products[0].price,100);
 });

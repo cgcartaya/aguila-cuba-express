@@ -7,10 +7,22 @@ begin
  insert into public.profiles(id,active,role) values(actor,true,'super_admin');
  perform set_config('request.jwt.claims',jsonb_build_object('role','authenticated','sub',actor)::text,true);
  insert into public.products(id,store_id,name,price,stock) values(pid,sid,'Pollo',100,10);
- result:=public.create_remittance_numbered_shipment(sid,'products-only','PRODUCTS',jsonb_build_object('products_only',true,'contains_package',true,'contains_money',false,'money_amount',0,'money_total',0,'amount_paid',102.50,'store_products',jsonb_build_array(jsonb_build_object('product_id',pid,'quantity',1,'unit_price',102.50))));
- if not (result->>'products_only')::boolean or (result->>'contains_money')::boolean or (result->>'money_amount')::numeric<>0 or (result->>'money_total')::numeric<>0 or (result->>'weight_subtotal')::numeric<>0 or result->>'trip_id' is not null or (result->>'service_price')::numeric<>102.50 then raise exception 'Products-only invoice includes unwanted remittance/weight/trip'; end if;
+ begin
+  perform public.create_remittance_numbered_shipment(sid,'inflated-price','INFLATED',
+   jsonb_build_object('products_only',true,'contains_package',true,'contains_money',false,
+    'store_products',jsonb_build_array(jsonb_build_object('product_id',pid,'quantity',1,'unit_price',102.50))));
+  raise exception 'The storefront markup was accepted';
+ exception when raise_exception then
+  if sqlerrm not like 'El precio no coincide%' then raise; end if;
+ end;
+ if exists(select 1 from public.shipments where id='inflated-price')
+  or (select stock from public.products where id=pid)<>10 then
+  raise exception 'Rejected product price left a partial shipment or stock reservation';
+ end if;
+ result:=public.create_remittance_numbered_shipment(sid,'products-only','PRODUCTS',jsonb_build_object('products_only',true,'contains_package',true,'contains_money',false,'money_amount',0,'money_total',0,'amount_paid',100,'store_products',jsonb_build_array(jsonb_build_object('product_id',pid,'quantity',1,'unit_price',100))));
+ if not (result->>'products_only')::boolean or (result->>'contains_money')::boolean or (result->>'money_amount')::numeric<>0 or (result->>'money_total')::numeric<>0 or (result->>'weight_subtotal')::numeric<>0 or result->>'trip_id' is not null or (result->>'service_price')::numeric<>100 then raise exception 'Products-only invoice includes unwanted remittance/weight/trip'; end if;
  select id into oid from public.orders where source_shipment_id='products-only';
- if oid is null or not exists(select 1 from public.orders where id=oid and total=102.50 and platform_fee_amount=2.80 and payment_status='paid') then raise exception 'Linked order commission failed'; end if;
+ if oid is null or not exists(select 1 from public.orders where id=oid and total=100 and platform_fee_amount=0.30 and payment_status='paid') then raise exception 'Linked order commission failed'; end if;
  if (select stock from public.products where id=pid)<>9 then raise exception 'Products-only stock not reserved once'; end if;
  set constraints shipment_remittance_whatsapp_queue immediate;
  if (select count(*) from public.alvarez_remittance_notifications where source_id='products-only')<>1 then raise exception 'Products-only WhatsApp notice missing'; end if;
@@ -31,12 +43,18 @@ begin
   update public.shipments set trip_id=gen_random_uuid() where id='products-only';
   raise exception 'Products-only trip accepted';
  exception when raise_exception then if sqlerrm='Products-only trip accepted' then raise; end if; end;
+ update public.shipments set status='cancelled' where id='products-only';
+ if (select stock from public.products where id=pid)<>10
+  or not exists(select 1 from public.orders where id=oid and status='cancelled' and platform_fee_amount=0) then
+  raise exception 'Cancellation left the linked order active';
+ end if;
+ update public.shipments set status='preparing' where id='products-only';
  update public.shipments set deleted_at=now() where id='products-only';
  if (select stock from public.products where id=pid)<>10 or (select platform_fee_amount from public.orders where id=oid)<>0 then raise exception 'Trash did not reverse stock and commission'; end if;
  update public.shipments set deleted_at=null where id='products-only';
- if (select stock from public.products where id=pid)<>9 or (select platform_fee_amount from public.orders where id=oid)<>2.80 then raise exception 'Restore duplicated stock or commission'; end if;
+ if (select stock from public.products where id=pid)<>9 or (select platform_fee_amount from public.orders where id=oid)<>0.30 then raise exception 'Restore duplicated stock or commission'; end if;
  -- Selecting products must not force a money amount, even with stale money in a draft.
  update public.shipments set money_amount=100,money_total=110,money_commission=10 where id='products-only';
- if exists(select 1 from public.shipments where id='products-only' and (money_amount<>0 or money_total<>0 or money_commission<>0 or service_price<>102.50)) then raise exception 'Stale cash draft was billed'; end if;
+ if exists(select 1 from public.shipments where id='products-only' and (money_amount<>0 or money_total<>0 or money_commission<>0 or service_price<>100)) then raise exception 'Stale cash draft was billed'; end if;
 end $$;
 rollback;
