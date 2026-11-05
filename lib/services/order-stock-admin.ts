@@ -31,13 +31,13 @@ export async function restoreOrderStockServerSide(orderId: string) {
   const [{ data: order, error: orderError }, needs] = await Promise.all([
     supabaseAdmin
       .from("orders")
-      .select("store_id")
+      .select("store_id,source_shipment_id")
       .eq("id", orderId)
       .maybeSingle(),
     collectProductNeeds(orderId),
   ]);
 
-  if (orderError || !order || needs.size === 0) return;
+  if (orderError || !order || order.source_shipment_id || needs.size === 0) return;
 
   const { error } = await supabaseAdmin.rpc("restore_product_inventory", {
     p_store_id: order.store_id,

@@ -3,7 +3,7 @@ import { operationContent, MONEY_DELIVERY_STATUSES, type ShipmentOperationType }
 import { normalizePackageBilling } from "@/lib/shipping/package-billing";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
 import RemittanceProductsEditor from "./RemittanceProductsEditor";
-import { deliveryAmount, productsTotal } from "@/lib/shipping/remittance-delivery";
+import { deliveryParts, productsTotal } from "@/lib/shipping/remittance-delivery";
 import ShipmentExtraFees from "@/components/admin/shipping/ShipmentExtraFees";
 import { calculateExtraFee, extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import PackageContentsEditor from "@/components/admin/shipping/PackageContentsEditor";
@@ -77,6 +77,7 @@ export default function ShipmentForm(props: Props) {
     rate_per_lb: Number(shipment?.rate_per_lb || 0),
     weight_subtotal: Number(shipment?.weight_subtotal || 0),
     money_delivery_currency: shipment?.money_delivery_currency || 'USD',
+    money_usd_to_cup: shipment?.money_usd_to_cup ?? 0,
     money_exchange_rate: shipment?.money_exchange_rate ?? null,
     store_products: shipment?.store_products || [],
     store_products_total: Number(shipment?.store_products_total || 0),
@@ -169,8 +170,8 @@ export default function ShipmentForm(props: Props) {
       balance_due: Number(balance.toFixed(2)),
     };
   })();
-  let deliveryPreview: number | null = null;
-  try { deliveryPreview = deliveryAmount(form.money_amount, form.money_delivery_currency || 'USD', form.money_exchange_rate); } catch { /* Incomplete manual rate is validated on submit. */ }
+  let deliveryPreview: ReturnType<typeof deliveryParts> | null = null;
+  try { deliveryPreview = deliveryParts(form); } catch { /* Incomplete manual rate is validated on submit. */ }
   const statusOptions: ShippingStatus[] = moneyOnly ? [...MONEY_DELIVERY_STATUSES] : [...SHIPPING_STATUSES];
   if (!statusOptions.includes(form.status)) statusOptions.push(form.status);
   const filteredProvinces = provinces.filter(x => !form.country_id || x.country_id === form.country_id);
@@ -187,7 +188,7 @@ export default function ShipmentForm(props: Props) {
     if (form.contains_package && !feesOnly && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (form.contains_money) {
-      try { deliveryAmount(form.money_amount, form.money_delivery_currency || 'USD', form.money_exchange_rate); }
+      try { deliveryParts(form); }
       catch (cause) { return setError((cause as Error).message); }
       if ((form.store_products || []).some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
     }
@@ -307,8 +308,9 @@ export default function ShipmentForm(props: Props) {
 
     {form.contains_money && <Section title="Cálculo del dinero">
       {props.allowRemittanceExtras && <div className="mb-4 space-y-4">
-        <label className="block text-sm font-bold">Moneda de entrega<select value={form.money_delivery_currency || 'USD'} onChange={event => set('money_delivery_currency', event.target.value as 'USD' | 'CUP')} className="mt-2 w-full rounded-xl border bg-white p-3"><option value="USD">Dólares estadounidenses (USD)</option><option value="CUP">Moneda nacional de Cuba (CUP / MN)</option></select></label>
-        {form.money_delivery_currency === 'CUP' && <><NumberInput label="Cambio manual: CUP por cada 1 USD" value={Number(form.money_exchange_rate || 0)} onChange={value => set('money_exchange_rate', value)} /><p className="rounded-xl bg-emerald-50 p-4 font-bold text-emerald-900">{form.money_amount.toFixed(2)} USD × {Number(form.money_exchange_rate || 0)} = {deliveryPreview?.toLocaleString('en-US', { minimumFractionDigits: 2 }) ?? '—'} CUP a entregar</p><p className="text-sm text-slate-600">Tasa escrita por la agencia para esta operación. No se consulta ningún cambio automático. La comisión y los productos se cobran en USD.</p></>}
+        <label className="block text-sm font-bold">Moneda de entrega<select value={form.money_delivery_currency || 'USD'} onChange={event => set('money_delivery_currency', event.target.value as 'USD' | 'CUP' | 'MIXED')} className="mt-2 w-full rounded-xl border bg-white p-3"><option value="USD">Dólares estadounidenses (USD)</option><option value="CUP">Moneda nacional de Cuba (CUP / MN)</option><option value="MIXED">Mixta: efectivo USD + moneda nacional</option></select></label>
+        {form.money_delivery_currency === 'MIXED' && <NumberInput label="De la remesa, USD que se convierten a MN" value={Number(form.money_usd_to_cup || 0)} onChange={value => set('money_usd_to_cup', value)} />}
+        {(form.money_delivery_currency === 'CUP' || form.money_delivery_currency === 'MIXED') && <><NumberInput label="Cambio manual: CUP por cada 1 USD" value={Number(form.money_exchange_rate || 0)} onChange={value => set('money_exchange_rate', value)} /><p className="rounded-xl bg-emerald-50 p-4 font-bold text-emerald-900">{deliveryPreview?.convertedUsd.toFixed(2) ?? '—'} USD × {Number(form.money_exchange_rate || 0)} = {deliveryPreview?.cup.toLocaleString('en-US', { minimumFractionDigits: 2 }) ?? '—'} CUP a entregar{form.money_delivery_currency === 'MIXED' && <> + {deliveryPreview?.usd.toFixed(2) ?? '—'} USD en efectivo</>}</p><p className="text-sm text-slate-600">Tasa escrita por la agencia para esta operación. No se consulta ningún cambio automático. La comisión y los productos se cobran en USD.</p></>}
         <RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} />
       </div>}
       <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado (USD)" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? "Cargo fijo" : `${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>

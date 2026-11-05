@@ -21,13 +21,14 @@ export async function POST(request: NextRequest) {
 
   const { data: order, error } = await supabaseAdmin
     .from("orders")
-    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount, customer_name")
+    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount, customer_name, source_shipment_id")
     .eq("id", orderId)
     .eq("store_id", storeId)
     .is("deleted_at", null)
     .maybeSingle();
 
   if (error || !order) return fail("Orden no encontrada.", 404);
+  if (order.source_shipment_id) return fail("Estos productos están incluidos en la factura de la remesa. El pago se gestiona desde Envíos.", 409);
   if (order.payment_status === "paid") return fail("Esta orden ya está pagada.");
 
   // El cliente está retomando el pago de una orden que ya había vencido
