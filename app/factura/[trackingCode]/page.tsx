@@ -1,5 +1,6 @@
 "use client";
 
+import AlvarezInvoice from "@/components/shipping/AlvarezInvoice";
 import { packageNumber } from "@/lib/shipping/package-label";
 import RemittanceDeliveryDetails from "@/components/shipping/RemittanceDeliveryDetails";
 import PackageContentsList from "@/components/shipping/PackageContentsList";
@@ -131,8 +132,7 @@ export default function PublicInvoicePage({
   }
 
   const shipment = invoice.shipment;
-  const useInkSavingLogo = invoice.brand.slug === "alvarez-travel";
-  const invoiceLogoUrl = useInkSavingLogo ? "/alvarez/invoice-logo.jpg" : invoice.brand.logoUrl;
+  const useCompactInvoice = invoice.brand.slug === "alvarez-travel";
   const rows = invoice.items || [];
 
   return (
@@ -211,16 +211,16 @@ export default function PublicInvoicePage({
             <PublicInvoiceButtons />
           </div>
 
-          <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
-            <header className={`bg-slate-950 px-7 py-6 text-white ${useInkSavingLogo ? "print:bg-white print:text-black print:[&_p]:text-black" : ""}`}>
+          {useCompactInvoice ? <AlvarezInvoice shipment={shipment} items={rows} name={invoice.brand.name} date={formatDate(shipment.created_at)} website={invoice.brand.website} /> : <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
+            <header className="bg-slate-950 px-7 py-6 text-white">
               <div className="flex items-start justify-between gap-6">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-200">
                     Factura de servicios
                   </p>
 
-                  {invoiceLogoUrl && (
-                    <img src={invoiceLogoUrl} alt={invoice.brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />
+                  {invoice.brand.logoUrl && (
+                    <img src={invoice.brand.logoUrl} alt={invoice.brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />
                   )}
 
                   <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
@@ -442,7 +442,7 @@ export default function PublicInvoicePage({
                 </div>
               </footer>
             </div>
-          </article>
+          </article>}
         </div>
       </main>
     </>

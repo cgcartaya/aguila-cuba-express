@@ -1,5 +1,6 @@
 "use client";
 
+import AlvarezInvoice from "@/components/shipping/AlvarezInvoice";
 import { packageNumber } from "@/lib/shipping/package-label";
 import RemittanceDeliveryDetails from "@/components/shipping/RemittanceDeliveryDetails";
 import PackageContentsList from "@/components/shipping/PackageContentsList";
@@ -164,8 +165,7 @@ export default function ShippingInvoicePage({
       : []),
   ];
 
-  const useInkSavingLogo = brand.slug === "alvarez-travel";
-  const invoiceLogoUrl = useInkSavingLogo ? "/alvarez/invoice-logo.jpg" : brand.logoUrl;
+  const useCompactInvoice = brand.slug === "alvarez-travel";
   const rows = items.length ? items : fallbackItems;
 
   return (
@@ -234,15 +234,15 @@ export default function ShippingInvoicePage({
             </div>
           </div>
 
-          <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
-            <header className={`bg-[#061b3a] px-7 py-6 text-white ${useInkSavingLogo ? "print:bg-white print:text-black print:[&_p]:text-black" : ""}`}>
+          {useCompactInvoice ? <AlvarezInvoice shipment={shipment} items={items} name={brand.name} date={formatDate(shipment.created_at)} website={brand.website} /> : <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
+            <header className="bg-[#061b3a] px-7 py-6 text-white">
               <div className="flex items-start justify-between gap-6">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-200">
                     Factura de servicios
                   </p>
 
-                  {invoiceLogoUrl && <img src={invoiceLogoUrl} alt={brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />}
+                  {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />}
                   <h1 className="mt-2 text-2xl font-black tracking-tight">
                     {brand.name}
                   </h1>
@@ -454,7 +454,7 @@ export default function ShippingInvoicePage({
                 </div>
               </footer>
             </div>
-          </article>
+          </article>}
         </div>
       </main>
     </>
