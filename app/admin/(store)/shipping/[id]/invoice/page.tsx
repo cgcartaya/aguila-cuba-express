@@ -7,10 +7,6 @@ import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  CalendarDays,
-  CircleDollarSign,
-  ClipboardCheck,
-  Hash,
   Loader2,
   MapPin,
   Package,
@@ -30,7 +26,6 @@ import {
   getShipmentItems,
 } from "@/lib/services/shipping";
 import {
-  getShippingStatusLabel,
   type Shipment,
   type ShipmentItem,
 } from "@/lib/shipping/types";
@@ -245,7 +240,7 @@ export default function ShippingInvoicePage({
                     Factura de servicios
                   </p>
 
-                  {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="mt-3 h-14 max-w-40 object-contain" />}
+                  {brand.logoUrl && <img src={brand.logoUrl} alt={brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />}
                   <h1 className="mt-2 text-2xl font-black tracking-tight">
                     {brand.name}
                   </h1>
@@ -272,29 +267,7 @@ export default function ShippingInvoicePage({
             </header>
 
             <div className="p-6 md:p-7">
-              <section className="invoice-avoid-break grid gap-4 md:grid-cols-3">
-                <SummaryCard
-                  icon={<Hash size={17} />}
-                  label="Rastreo"
-                  value={shipment.tracking_code || shipment.id}
-                />
-
-                <SummaryCard
-                  icon={<ClipboardCheck size={17} />}
-                  label="Estado"
-                  value={getShippingStatusLabel(shipment.status, !!shipment.products_only || shipment.contains_money && !shipment.contains_package)}
-                />
-
-                <SummaryCard
-                  icon={<CalendarDays size={17} />}
-                  label="Fecha"
-                  value={formatDate(
-                    shipment.created_date || shipment.created_at
-                  )}
-                />
-              </section>
-
-              <section className="invoice-avoid-break mt-5 grid gap-4 md:grid-cols-2">
+              <section className="invoice-avoid-break grid gap-4 md:grid-cols-2">
                 <PartyCard
                   title="Datos del remitente"
                   icon={<UserRound size={20} />}
@@ -313,7 +286,7 @@ export default function ShippingInvoicePage({
               </section>
 
               <section className="invoice-avoid-break mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <MiniInfo
                     icon={<MapPin size={17} />}
                     label="Destino operativo"
@@ -329,24 +302,6 @@ export default function ShippingInvoicePage({
                         : shipment.contains_money
                           ? "Envío de dinero"
                           : shipment.service_type_name || "Paquete"
-                    }
-                  />
-
-                  <MiniInfo
-                    icon={<Truck size={17} />}
-                    label="Repartidor"
-                    value={
-                      shipment.assigned_driver_name || "Sin asignar"
-                    }
-                  />
-
-                  <MiniInfo
-                    icon={<CircleDollarSign size={17} />}
-                    label="Forma de pago"
-                    value={
-                      shipment.payment_method
-                        ? paymentMethodLabel(shipment.payment_method)
-                        : "Sin especificar"
                     }
                   />
                 </div>
@@ -491,13 +446,6 @@ export default function ShippingInvoicePage({
 
                   <div className="sm:text-right">
                     <p>
-                      Rastreo:
-                      <span className="ml-1 font-black text-[#061b3a]">
-                        {shipment.tracking_code || shipment.id}
-                      </span>
-                    </p>
-
-                    <p className="mt-1">
                       {brand.website}
                     </p>
                   </div>
@@ -508,31 +456,6 @@ export default function ShippingInvoicePage({
         </div>
       </main>
     </>
-  );
-}
-
-function SummaryCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-2 text-blue-700">
-        {icon}
-        <p className="text-[10px] font-black uppercase tracking-[0.14em]">
-          {label}
-        </p>
-      </div>
-
-      <p className="mt-2 truncate text-sm font-black text-[#061b3a]">
-        {value}
-      </p>
-    </div>
   );
 }
 
@@ -726,16 +649,4 @@ function TotalRow({
       </span>
     </div>
   );
-}
-
-function paymentMethodLabel(method: string) {
-  const labels: Record<string, string> = {
-    cash: "Efectivo",
-    zelle: "Zelle",
-    card: "Tarjeta",
-    transfer: "Transferencia",
-    other: "Otro",
-  };
-
-  return labels[method] || method;
 }

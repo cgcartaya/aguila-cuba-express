@@ -1,15 +1,10 @@
 "use client";
 
-import { getShippingStatusLabel } from "@/lib/shipping/types";
 import { packageNumber } from "@/lib/shipping/package-label";
 import RemittanceDeliveryDetails from "@/components/shipping/RemittanceDeliveryDetails";
 import PackageContentsList from "@/components/shipping/PackageContentsList";
 import { use, useEffect, useState } from "react";
 import {
-  CalendarDays,
-  CheckCircle2,
-  CircleDollarSign,
-  Hash,
   Loader2,
   MapPin,
   Package,
@@ -222,6 +217,10 @@ export default function PublicInvoicePage({
                     Factura de servicios
                   </p>
 
+                  {invoice.brand.logoUrl && (
+                    <img src={invoice.brand.logoUrl} alt={invoice.brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />
+                  )}
+
                   <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
                     {invoice.brand.name}
                   </h2>
@@ -248,29 +247,7 @@ export default function PublicInvoicePage({
             </header>
 
             <div className="p-6 md:p-7">
-              <section className="invoice-avoid-break grid gap-4 md:grid-cols-3">
-                <Summary
-                  icon={<Hash size={17} />}
-                  label="Rastreo"
-                  value={shipment.tracking_code || "—"}
-                />
-
-                <Summary
-                  icon={<CheckCircle2 size={17} />}
-                  label="Estado"
-                  value={getShippingStatusLabel(shipment.status, !!shipment.products_only || shipment.contains_money && !shipment.contains_package)}
-                />
-
-                <Summary
-                  icon={<CalendarDays size={17} />}
-                  label="Fecha"
-                  value={formatDate(
-                    shipment.created_date || shipment.created_at
-                  )}
-                />
-              </section>
-
-              <section className="invoice-avoid-break mt-5 grid gap-4 md:grid-cols-2">
+              <section className="invoice-avoid-break grid gap-4 md:grid-cols-2">
                 <Party
                   title="Datos del remitente"
                   icon={<UserRound size={20} />}
@@ -289,7 +266,7 @@ export default function PublicInvoicePage({
               </section>
 
               <section className="invoice-avoid-break mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <MiniInfo
                     icon={<MapPin size={17} />}
                     label="Destino"
@@ -307,20 +284,6 @@ export default function PublicInvoicePage({
                           ? "Envío de dinero"
                           : shipment.service_type_name || "Paquete"
                     }
-                  />
-
-                  <MiniInfo
-                    icon={<Truck size={17} />}
-                    label="Repartidor"
-                    value={
-                      shipment.assigned_driver_name || "Sin asignar"
-                    }
-                  />
-
-                  <MiniInfo
-                    icon={<CircleDollarSign size={17} />}
-                    label="Forma de pago"
-                    value={shipment.payment_method || "Sin especificar"}
                   />
                 </div>
               </section>
@@ -470,11 +433,7 @@ export default function PublicInvoicePage({
                   </div>
 
                   <div className="sm:text-right">
-                    <p className="font-extrabold text-slate-950">
-                      {shipment.tracking_code}
-                    </p>
-
-                    <p className="mt-1">
+                    <p>
                       {invoice.brand.website}
                     </p>
                   </div>
@@ -485,31 +444,6 @@ export default function PublicInvoicePage({
         </div>
       </main>
     </>
-  );
-}
-
-function Summary({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-      <div className="flex items-center gap-2 text-blue-700">
-        {icon}
-        <p className="text-[10px] font-extrabold uppercase tracking-[0.12em]">
-          {label}
-        </p>
-      </div>
-
-      <p className="mt-2 truncate text-sm font-extrabold text-slate-950">
-        {value}
-      </p>
-    </div>
   );
 }
 
