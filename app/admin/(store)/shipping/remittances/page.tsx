@@ -7,6 +7,8 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import RemittanceInbox, { type RemittanceOrder, type RemittanceStatus } from "@/components/admin/remittances/RemittanceInbox";
 import RemittanceActionDialog, { receivedAmountMatches, type RemittanceAction } from "@/components/admin/remittances/RemittanceActionDialog";
 
+import RemittanceWhatsappStatus from "@/components/admin/remittances/RemittanceWhatsappStatus";
+
 type LoadedOrders = { storeId: string; status: RemittanceStatus; page: number; orders: RemittanceOrder[] };
 type Success = { storeId: string; text: string; shipmentId?: string };
 
@@ -86,6 +88,7 @@ export default function RemittanceOrders() {
   const currentError = error && error.storeId === storeId ? error.message : "";
 
   return <>
+    {storeId && store?.slug === "alvarez-travel" && <RemittanceWhatsappStatus key={storeId} storeId={storeId} />}
     <RemittanceInbox storeName={store?.name || ""} orders={current?.orders || []} status={status} page={page} search={search} busy={busy} loading={accessLoading || storeLoading || Boolean(storeId) && (loading || !current && !currentError)} error={currentAction ? "" : currentError || (!storeId && !accessLoading && !storeLoading ? "Selecciona una tienda para consultar sus órdenes." : "")} success={success?.storeId === storeId ? success : null}
       onStatus={value => { setStatus(value); setPage(0); setSearch(""); setSuccess(null); }} onSearch={setSearch} onRefresh={() => { void load(); }} onPage={value => { setPage(value); setSearch(""); }}
       onConfirm={order => { if (storeId) { setAction({ order, type: "confirm", storeId }); setError(null); } }} onCancel={order => { if (storeId) { setAction({ order, type: "cancel", storeId }); setError(null); } }} />

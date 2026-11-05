@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/eltoque-rate",
       "schedule": "15 12 * * *"
+    },
+    {
+      "path": "/api/cron/alvarez-remittances-whatsapp",
+      "schedule": "* * * * *"
     }
   ]
 }
