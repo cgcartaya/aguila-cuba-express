@@ -131,6 +131,8 @@ export default function PublicInvoicePage({
   }
 
   const shipment = invoice.shipment;
+  const useInkSavingLogo = invoice.brand.slug === "alvarez-travel";
+  const invoiceLogoUrl = useInkSavingLogo ? "/alvarez/invoice-logo.jpg" : invoice.brand.logoUrl;
   const rows = invoice.items || [];
 
   return (
@@ -210,15 +212,15 @@ export default function PublicInvoicePage({
           </div>
 
           <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
-            <header className="bg-slate-950 px-7 py-6 text-white">
+            <header className={`bg-slate-950 px-7 py-6 text-white ${useInkSavingLogo ? "print:bg-white print:text-black print:[&_p]:text-black" : ""}`}>
               <div className="flex items-start justify-between gap-6">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-blue-200">
                     Factura de servicios
                   </p>
 
-                  {invoice.brand.logoUrl && (
-                    <img src={invoice.brand.logoUrl} alt={invoice.brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />
+                  {invoiceLogoUrl && (
+                    <img src={invoiceLogoUrl} alt={invoice.brand.name} className="mt-3 h-14 max-w-40 object-contain grayscale" />
                   )}
 
                   <h2 className="mt-2 text-2xl font-extrabold tracking-tight">
