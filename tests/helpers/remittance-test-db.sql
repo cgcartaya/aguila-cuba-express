@@ -1,0 +1,13 @@
+-- Minimal existing-schema fixture for isolated PGlite tests. Never production.
+
+ create role anon; create role authenticated; create role service_role bypassrls;
+ create schema auth; create schema private;
+ create function auth.jwt() returns jsonb language sql as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
+ create function auth.uid() returns uuid language sql as $$select (auth.jwt()->>'sub')::uuid$$;
+ create table public.profiles(id uuid primary key,active boolean,role text);
+ create table public.stores(id uuid primary key,subdomain text,is_active boolean,module_shipping_enabled boolean);
+ create table public.store_users(store_id uuid,user_id uuid,active boolean);
+ create table public.products(id uuid primary key default gen_random_uuid(),store_id uuid,name text,price numeric,stock integer,is_active boolean default true,combo_only boolean default false,deleted_at timestamptz);
+ create table public.shipments(id text primary key,store_id uuid,tracking_code text,contains_money boolean default true,contains_package boolean default false,money_amount numeric default 0,money_total numeric default 0,weight_subtotal numeric default 0,extra_fees_total numeric default 0,discount_amount numeric default 0,amount_paid numeric default 0,service_price numeric default 0,balance_due numeric default 0,payment_status text default 'pending',status text default 'preparing',delivered boolean default false,deleted_at timestamptz);
+ create function public.has_store_access(p_store_id uuid) returns boolean language sql as $$select exists(select 1 from public.profiles where id=auth.uid() and active and role='super_admin')$$;
+ create function public.create_numbered_shipment(p_store_id uuid,p_id text,p_tracking_code text,p_payload jsonb) returns jsonb language plpgsql as $$declare s public.shipments;begin insert into public.shipments(id,store_id,tracking_code,money_amount,money_total,amount_paid) values(p_id,p_store_id,p_tracking_code,(p_payload->>'money_amount')::numeric,(p_payload->>'money_total')::numeric,coalesce((p_payload->>'amount_paid')::numeric,0)) returning * into s;return to_jsonb(s);end$$;

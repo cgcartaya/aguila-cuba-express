@@ -9,10 +9,11 @@ function load(path, mocks = {}, globals = {}) {
   {module,exports:module.exports,require:name=>{if(name in mocks)return mocks[name];throw Error(name);},AbortSignal,Date,...globals});
  return module.exports;
 }
-const formatter=load('lib/notifications/remittance-whatsapp-message.ts');
-test('recipient gets principal only, payment warning, sanitized data and honest missing fields',()=>{
+const delivery=load('lib/shipping/remittance-delivery.ts');
+const formatter=load('lib/notifications/remittance-whatsapp-message.ts',{'@/lib/shipping/remittance-delivery':delivery});
+test('recipient gets principal only, no payment instructions, sanitized data and honest missing fields',()=>{
  const message=formatter.remittanceWhatsappMessage('REF',{recipient_name:'Ana\nInjected',total:110,commission:10},100,false);
- assert.match(message,/USD: 100\.00/);assert.doesNotMatch(message,/110\.00/);assert.match(message,/Pendiente de pago/);
+ assert.match(message,/100\.00 USD/);assert.doesNotMatch(message,/110\.00/);assert.doesNotMatch(message,/Estado del pago|Pendiente de pago|Pago registrado/);
  assert.match(message,/Ana Injected/);assert.match(message,/Remitente: No informado/);
  assert.throws(()=>formatter.remittanceWhatsappMessage('x',{},NaN,true));
 });
@@ -38,7 +39,7 @@ test('preview, missing credentials and wrong destination cannot send',async()=>{
 test('accepted notification stores provider reference and guarded claim ownership',async()=>{
  const h=harness();await h.api.drainRemittanceWhatsapp();assert.equal(h.updates[0].patch.state,'accepted');assert.equal(h.updates[0].patch.provider_message_id,'uid');
  assert.ok(h.updates[0].filters.some(([k,v])=>k==='claim_token'&&v==='claim'));
- assert.match(JSON.parse(h.calls[1].options.body).text,/USD: 100\.00/);
+ assert.match(JSON.parse(h.calls[1].options.body).text,/100\.00 USD/);
 });
 test('transport errors, 5xx and missing receipt never auto-retry',async()=>{
  for(const options of [{network:true},{postStatus:503},{postBody:{status:'ok',data:{}}}]){

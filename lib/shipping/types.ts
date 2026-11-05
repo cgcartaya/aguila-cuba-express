@@ -1,3 +1,4 @@
+import type { RemittanceProduct } from "./remittance-delivery";
 import type { PackageContentItem } from "@/lib/shipping/package-label";
 
 export const SHIPPING_STATUSES = [
@@ -131,6 +132,11 @@ export type Shipment = {
   extra_fees_total: number;
   contains_package: boolean;
   contains_money: boolean;
+  money_delivery_currency?: 'USD' | 'CUP';
+  money_exchange_rate?: number | null;
+  money_delivery_amount?: number;
+  store_products?: RemittanceProduct[];
+  store_products_total?: number;
   money_amount: number;
   money_commission_rate: number;
   money_commission: number;
@@ -303,6 +309,11 @@ export type ShipmentInput = {
   extra_fees_total: number;
   contains_package: boolean;
   contains_money: boolean;
+  money_delivery_currency?: 'USD' | 'CUP';
+  money_exchange_rate?: number | null;
+  money_delivery_amount?: number;
+  store_products?: RemittanceProduct[];
+  store_products_total?: number;
   money_amount: number;
   money_commission_rate: number;
   money_commission: number;

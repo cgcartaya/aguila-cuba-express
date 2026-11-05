@@ -10,10 +10,12 @@ const require = createRequire(import.meta.url);
 function load(path, dependencies = {}, globals = {}) {
   const module = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(code, { module, exports: module.exports, console, URL, process, ...globals, require: name => name in dependencies ? dependencies[name] : require(name) });
+  vm.runInNewContext(code, { module, exports: module.exports, console, URL, process, ...globals, require: name => name in dependencies ? dependencies[name] : name === '@/components/shipping/RemittanceDeliveryDetails' ? deliveryDetails : require(name) });
   return module.exports;
 }
 const branding = load('lib/saas/store-branding.ts');
+const delivery = load('lib/shipping/remittance-delivery.ts');
+const deliveryDetails = load('components/shipping/RemittanceDeliveryDetails.tsx', { '@/lib/shipping/remittance-delivery': delivery });
 const stores = [
   { id: 'alvarez', name: 'Álvarez Travel', slug: 'alvarez-travel', domain: 'alvarez-travel.com', has_landing: true },
   { id: 'aguila', name: 'Aguila Express USA', slug: 'aguila', domain: 'aguilaexpressusa.com', has_landing: true },

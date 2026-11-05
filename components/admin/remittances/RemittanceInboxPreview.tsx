@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import RemittanceInbox, { type RemittanceOrder, type RemittanceStatus } from "./RemittanceInbox";
+import RemittanceInbox, { type RemittanceOrder, type RemittanceFilter } from "./RemittanceInbox";
 import RemittanceActionDialog, { type RemittanceAction } from "./RemittanceActionDialog";
 
 const examples: RemittanceOrder[] = [
@@ -12,7 +12,7 @@ const examples: RemittanceOrder[] = [
 /** Preview-only UI fixtures. Never calls payment, order or shipment APIs. */
 export default function RemittanceInboxPreview() {
   const [orders, setOrders] = useState(examples);
-  const [status, setStatus] = useState<RemittanceStatus>("pending");
+  const [status, setStatus] = useState<RemittanceFilter>("pending");
   const [search, setSearch] = useState("");
   const [action, setAction] = useState<RemittanceAction | null>(null);
   const [success, setSuccess] = useState<{ text: string; shipmentId?: string } | null>(null);
@@ -24,7 +24,7 @@ export default function RemittanceInboxPreview() {
     }
   }}>
     <div className="bg-amber-50 px-4 py-2 text-center text-xs font-medium text-amber-900">Vista de diseño · Datos ficticios · No registra pagos ni envíos reales</div>
-    <RemittanceInbox storeName="Álvarez Travel" orders={orders.filter(order => order.status === status)} status={status} page={0} search={search} loading={false} busy={false} error="" success={success} onStatus={value => { setStatus(value); setSuccess(null); }} onSearch={setSearch} onRefresh={() => {}} onPage={() => {}} onConfirm={order => setAction({ order, type: "confirm", storeId: "demo" })} onCancel={order => setAction({ order, type: "cancel", storeId: "demo" })} />
+    <RemittanceInbox storeName="Álvarez Travel" orders={orders.filter(order => status === "all" || order.status === status)} status={status} page={0} search={search} loading={false} busy={false} error="" success={success} onStatus={value => { setStatus(value); setSuccess(null); }} onSearch={setSearch} onRefresh={() => {}} onPage={() => {}} onConfirm={order => setAction({ order, type: "confirm", storeId: "demo" })} onCancel={order => setAction({ order, type: "cancel", storeId: "demo" })} />
     {action && <RemittanceActionDialog key={action.order.id + action.type} action={action} busy={false} error="" onClose={() => setAction(null)} onSubmit={reference => {
       setOrders(values => values.map(order => order.id !== action.order.id ? order : { ...order, status: action.type === "confirm" ? "paid" : "cancelled", shipment_id: action.type === "confirm" ? "demo-shipment" : null, payment_reference: action.type === "confirm" ? reference : null }));
       setSuccess({ text: action.type === "confirm" ? "Demostración: pago confirmado y envío creado." : "Demostración: solicitud cancelada.", shipmentId: action.type === "confirm" ? "demo-shipment" : undefined });

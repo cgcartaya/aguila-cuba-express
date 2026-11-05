@@ -2,13 +2,15 @@
 import { operationContent, MONEY_DELIVERY_STATUSES, type ShipmentOperationType } from "@/lib/shipping/operation-mode";
 import { normalizePackageBilling } from "@/lib/shipping/package-billing";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
+import RemittanceProductsEditor from "./RemittanceProductsEditor";
+import { deliveryAmount, productsTotal } from "@/lib/shipping/remittance-delivery";
 import ShipmentExtraFees from "@/components/admin/shipping/ShipmentExtraFees";
 import { calculateExtraFee, extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import PackageContentsEditor from "@/components/admin/shipping/PackageContentsEditor";
 import { normalizePackageContents } from "@/lib/shipping/package-label";
 import { weightRate } from "@/lib/shipping/weight-rate";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Banknote, Loader2, Package, Save } from "lucide-react";
 import CustomerRecipientPicker from "@/components/admin/shipping/CustomerRecipientPicker";
 import type {
@@ -20,6 +22,7 @@ import type {
 import { buildLegacyLocation, calculateMoneyCommission, getShippingStatusLabel, SHIPPING_STATUSES } from "@/lib/shipping/types";
 
 type Props = {
+  allowRemittanceExtras?: boolean;
   operationType?: ShipmentOperationType;
   storeId: string;
   shipment?: Shipment | null;
@@ -73,6 +76,10 @@ export default function ShipmentForm(props: Props) {
     weight_lb: Number(shipment?.weight_lb || 0),
     rate_per_lb: Number(shipment?.rate_per_lb || 0),
     weight_subtotal: Number(shipment?.weight_subtotal || 0),
+    money_delivery_currency: shipment?.money_delivery_currency || 'USD',
+    money_exchange_rate: shipment?.money_exchange_rate ?? null,
+    store_products: shipment?.store_products || [],
+    store_products_total: Number(shipment?.store_products_total || 0),
     money_amount: Number(shipment?.money_amount || 0),
     money_commission_rate: Number(shipment?.money_commission_rate || 0),
     money_commission: Number(shipment?.money_commission || 0),
@@ -89,19 +96,12 @@ export default function ShipmentForm(props: Props) {
     selected_fees: initialSelectedFees,
   });
 
-  const form: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: props.operationType === "money" && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
-  const feesOnly = form.contains_package && form.package_billing_mode === "fees_only";
-  const moneyOnly = form.contains_money && !form.contains_package;
-  const statusOptions: ShippingStatus[] = moneyOnly ? [...MONEY_DELIVERY_STATUSES] : [...SHIPPING_STATUSES];
-  if (!statusOptions.includes(form.status)) statusOptions.push(form.status);
-
-  const filteredProvinces = useMemo(() => provinces.filter(x => !form.country_id || x.country_id === form.country_id), [provinces, form.country_id]);
-  const filteredMunicipalities = useMemo(() => municipalities.filter(x => !form.province_id || x.province_id === form.province_id), [municipalities, form.province_id]);
-  const filteredLocations = useMemo(() => locations.filter(x => !form.municipality_id || x.municipality_id === form.municipality_id), [locations, form.municipality_id]);
-
-  useEffect(() => {
-    const location = locations.find(x => x.id === form.shipping_location_id);
-    const service = serviceTypes.find(x => x.id === form.service_type_id);
+  const baseForm: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: props.operationType === "money" && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
+  const feesOnly = baseForm.contains_package && baseForm.package_billing_mode === "fees_only";
+  const moneyOnly = baseForm.contains_money && !baseForm.contains_package;
+  const form: ShipmentInput = (() => {
+    const location = locations.find(x => x.id === baseForm.shipping_location_id);
+    const service = serviceTypes.find(x => x.id === baseForm.service_type_id);
     const matchingRates = rates.filter(
       (item) => item.service_type_id === service?.id && item.is_active
     );
@@ -109,64 +109,73 @@ export default function ShipmentForm(props: Props) {
       matchingRates.find(
         (item) =>
           item.scope_type === "location" &&
-          item.location_id === form.shipping_location_id
+          item.location_id === baseForm.shipping_location_id
       ) ||
       matchingRates.find(
         (item) =>
           item.scope_type === "municipality" &&
-          item.municipality_id === form.municipality_id
+          item.municipality_id === baseForm.municipality_id
       ) ||
       matchingRates.find(
         (item) =>
           item.scope_type === "province" &&
-          item.province_id === form.province_id
+          item.province_id === baseForm.province_id
       ) ||
       matchingRates.find(
         (item) =>
           item.scope_type === "country" &&
-          item.country_id === form.country_id
+          item.country_id === baseForm.country_id
       );
-    const effectiveWeight = feesOnly ? 0 : Math.max(Number(form.weight_lb || 0), Number(rate?.minimum_weight_lb || 0));
-    const specificRate = rate ? weightRate(rate, Number(form.weight_lb || 0)) : 0;
+    const effectiveWeight = feesOnly ? 0 : Math.max(Number(baseForm.weight_lb || 0), Number(rate?.minimum_weight_lb || 0));
+    const specificRate = rate ? weightRate(rate, Number(baseForm.weight_lb || 0)) : 0;
     const fallbackRate = Number(settings?.default_rate_per_lb || 0);
-    const ratePerLb = form.contains_package && !feesOnly
+    const ratePerLb = baseForm.contains_package && !feesOnly
       ? specificRate > 0
         ? specificRate
         : fallbackRate
       : 0;
-    const packageSubtotal = form.contains_package && !feesOnly ? Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0)) : 0;
-    const calculatedFees = form.selected_fees.map(fee => calculateExtraFee(
+    const packageSubtotal = baseForm.contains_package && !feesOnly ? Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0)) : 0;
+    const calculatedFees = baseForm.selected_fees.map(fee => calculateExtraFee(
       { ...fee, quantity: Number.isInteger(fee.quantity ?? 1) && (fee.quantity ?? 1) >= 1 && (fee.quantity ?? 1) <= 9999 ? fee.quantity ?? 1 : 1 },
       effectiveWeight, packageSubtotal,
     ));
     const feesTotal = calculatedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0);
-    const money = settings ? calculateMoneyCommission(form.money_amount, settings) : { rate: 0, commission: 0 };
+    const money = settings ? calculateMoneyCommission(baseForm.money_amount, settings) : { rate: 0, commission: 0 };
     const maxDiscount = settings?.maximum_manual_discount;
-    const requestedDiscount = settings?.allow_manual_discount ? Math.max(form.money_discount, 0) : 0;
+    const requestedDiscount = settings?.allow_manual_discount ? Math.max(baseForm.money_discount, 0) : 0;
     const moneyDiscount = maxDiscount == null ? requestedDiscount : Math.min(requestedDiscount, Number(maxDiscount));
-    const moneyTotal = form.contains_money ? (settings?.money_include_principal ? form.money_amount : 0) + Math.max(money.commission - moneyDiscount, 0) : 0;
-    const total = Math.max(packageSubtotal + moneyTotal + feesTotal - Math.max(form.discount_amount, 0), 0);
-    const amountPaid = Math.min(total, Math.max(form.amount_paid, 0));
+    const moneyTotal = baseForm.contains_money ? (settings?.money_include_principal ? baseForm.money_amount : 0) + Math.max(money.commission - moneyDiscount, 0) : 0;
+    const productSubtotal = productsTotal(baseForm.contains_money ? baseForm.store_products : []);
+    const total = Math.max(packageSubtotal + moneyTotal + productSubtotal + feesTotal - Math.max(baseForm.discount_amount, 0), 0);
+    const amountPaid = Math.min(total, Math.max(baseForm.amount_paid, 0));
     const balance = Math.max(total - amountPaid, 0);
-    const legacy = location ? buildLegacyLocation(location.legacy_code, form.contains_package ? (service?.legacy_prefix || "") : "") : form.location;
+    const legacy = location ? buildLegacyLocation(location.legacy_code, baseForm.contains_package ? (service?.legacy_prefix || "") : "") : baseForm.location;
 
-    setForm(current => ({
-      ...current,
+    return {
+      ...baseForm,
       location: legacy,
-      service_type_name: feesOnly ? "Por artículo" : service?.name || current.service_type_name,
+      service_type_name: feesOnly ? "Por artículo" : service?.name || baseForm.service_type_name,
       rate_per_lb: Number(ratePerLb.toFixed(2)),
       weight_subtotal: Number(packageSubtotal.toFixed(2)),
-      selected_fees: calculatedFees.map((fee, index) => ({ ...fee, quantity: form.selected_fees[index].quantity ?? 1 })),
+      selected_fees: calculatedFees.map((fee, index) => ({ ...fee, quantity: baseForm.selected_fees[index].quantity ?? 1 })),
       extra_fees_total: Number(feesTotal.toFixed(2)),
       money_commission_rate: money.rate,
       money_commission: money.commission,
       money_discount: Number(moneyDiscount.toFixed(2)),
       money_total: Number(moneyTotal.toFixed(2)),
+      store_products_total: productSubtotal,
       service_price: Number(total.toFixed(2)),
       amount_paid: Number(amountPaid.toFixed(2)),
       balance_due: Number(balance.toFixed(2)),
-    }));
-  }, [feesOnly, form.country_id, form.province_id, form.municipality_id, form.contains_package, form.contains_money, form.shipping_location_id, form.service_type_id, form.weight_lb, form.money_amount, form.money_discount, form.discount_amount, form.amount_paid, form.selected_fees.map(x => `${x.fee_id}:${x.quantity ?? 1}`).join(","), locations, serviceTypes, rates, settings]);
+    };
+  })();
+  let deliveryPreview: number | null = null;
+  try { deliveryPreview = deliveryAmount(form.money_amount, form.money_delivery_currency || 'USD', form.money_exchange_rate); } catch { /* Incomplete manual rate is validated on submit. */ }
+  const statusOptions: ShippingStatus[] = moneyOnly ? [...MONEY_DELIVERY_STATUSES] : [...SHIPPING_STATUSES];
+  if (!statusOptions.includes(form.status)) statusOptions.push(form.status);
+  const filteredProvinces = provinces.filter(x => !form.country_id || x.country_id === form.country_id);
+  const filteredMunicipalities = municipalities.filter(x => !form.province_id || x.province_id === form.province_id);
+  const filteredLocations = locations.filter(x => !form.municipality_id || x.municipality_id === form.municipality_id);
 
   const set = <K extends keyof ShipmentInput>(key: K, value: ShipmentInput[K]) => setForm(current => ({ ...current, [key]: value }));
   const phone = (value: string) => value.replace(/\D/g, "").slice(0, settings?.phone_digits_max || 15);
@@ -177,6 +186,11 @@ export default function ShipmentForm(props: Props) {
     if (!form.contains_package && !form.contains_money) return setError("Selecciona paquete, dinero o ambos.");
     if (form.contains_package && !feesOnly && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
+    if (form.contains_money) {
+      try { deliveryAmount(form.money_amount, form.money_delivery_currency || 'USD', form.money_exchange_rate); }
+      catch (cause) { return setError((cause as Error).message); }
+      if ((form.store_products || []).some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
+    }
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
     if (form.recipient_phone.length < (settings?.phone_digits_min || 1)) return setError("El teléfono del destinatario no es válido.");
     if (!form.customer_id && !confirmNoCustomer) {
@@ -292,7 +306,12 @@ export default function ShipmentForm(props: Props) {
     {form.contains_package && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
 
     {form.contains_money && <Section title="Cálculo del dinero">
-      <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? "Cargo fijo" : `${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>
+      {props.allowRemittanceExtras && <div className="mb-4 space-y-4">
+        <label className="block text-sm font-bold">Moneda de entrega<select value={form.money_delivery_currency || 'USD'} onChange={event => set('money_delivery_currency', event.target.value as 'USD' | 'CUP')} className="mt-2 w-full rounded-xl border bg-white p-3"><option value="USD">Dólares estadounidenses (USD)</option><option value="CUP">Moneda nacional de Cuba (CUP / MN)</option></select></label>
+        {form.money_delivery_currency === 'CUP' && <><NumberInput label="Cambio manual: CUP por cada 1 USD" value={Number(form.money_exchange_rate || 0)} onChange={value => set('money_exchange_rate', value)} /><p className="rounded-xl bg-emerald-50 p-4 font-bold text-emerald-900">{form.money_amount.toFixed(2)} USD × {Number(form.money_exchange_rate || 0)} = {deliveryPreview?.toLocaleString('en-US', { minimumFractionDigits: 2 }) ?? '—'} CUP a entregar</p><p className="text-sm text-slate-600">Tasa escrita por la agencia para esta operación. No se consulta ningún cambio automático. La comisión y los productos se cobran en USD.</p></>}
+        <RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} />
+      </div>}
+      <div className="grid gap-4 md:grid-cols-4"><NumberInput label="Monto enviado (USD)" value={form.money_amount} onChange={v=>set("money_amount",v)} /><Input label="Porcentaje" value={form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? "Cargo fijo" : `${form.money_commission_rate.toFixed(2)}%`} readOnly /><Input label="Comisión" value={form.money_commission.toFixed(2)} readOnly /><Input label="Total dinero" value={form.money_total.toFixed(2)} readOnly /></div>
       {settings?.allow_manual_discount && <div className="grid gap-4 md:grid-cols-2"><NumberInput label="Descuento comisión" value={form.money_discount} onChange={v=>set("money_discount",v)} /><Input label="Motivo descuento" value={form.money_discount_reason} onChange={v=>set("money_discount_reason",v)} /></div>}
       <div className="rounded-2xl bg-emerald-50 p-4 font-bold text-emerald-900">{form.money_amount > 0 && form.money_amount < Number(settings?.money_fixed_fee_below ?? 0) ? `Cargo fijo de ${Number(settings?.money_fixed_fee ?? 0).toFixed(2)} para montos menores de ${settings?.money_fixed_fee_below}.` : form.money_amount >= Number(settings?.money_threshold ?? 1000) ? `${settings?.money_rate_at_or_above_threshold ?? 5}% sobre todo el monto.` : `${settings?.money_rate_below_threshold ?? 8}% sobre el monto.`}</div>
     </Section>}
@@ -307,7 +326,7 @@ export default function ShipmentForm(props: Props) {
         <p className="mt-3 text-sm text-emerald-900">Escribe el importe de la oferta acordada con el cliente. Se resta una sola vez del total y aparece en la factura. Deja 0 si no hay rebaja.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total).toFixed(2)} readOnly />
+        <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total + (form.store_products_total || 0)).toFixed(2)} readOnly />
         <Input label="Cargos adicionales (USD)" value={form.extra_fees_total.toFixed(2)} readOnly />
         <Input label="Total final (USD)" value={form.service_price.toFixed(2)} readOnly />
         <NumberInput label="Pagado (USD)" value={form.amount_paid} onChange={v=>set("amount_paid",v)} />

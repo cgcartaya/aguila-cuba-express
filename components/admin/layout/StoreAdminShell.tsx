@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Menu, Rocket, Store } from "lucide-react";
 
+import RemittanceNotifications from "@/components/admin/remittances/RemittanceNotifications";
 import StoreAdminNav from "@/components/admin/nav/StoreAdminNav";
 import StoreAdminMobileMenu from "@/components/admin/nav/StoreAdminMobileMenu";
 import MobileAdminBottomNav from "@/components/admin/MobileAdminBottomNav";
@@ -124,6 +125,7 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
         )}
 
         <div className="pb-[calc(6rem+env(safe-area-inset-bottom,0px))] xl:pb-0">
+          {!accessLoading && activeStore?.slug === "alvarez-travel" && <RemittanceNotifications key={activeStore.id} storeId={activeStore.id} />}
           {children}
         </div>
       </div>
