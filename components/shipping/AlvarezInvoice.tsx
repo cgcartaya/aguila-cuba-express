@@ -124,6 +124,11 @@ export default function AlvarezInvoice({ shipment, items, name, date, website }:
           <td className="number">{amount(item.unit_price)}</td>
           <td className="number">{amount(item.quantity * item.unit_price)}</td>
         </tr>)}
+        {shipment.physical_products?.map(item => <tr key={`physical:${item.product_id}`}>
+          <td>{item.quantity}</td><td>{item.name} · Tienda física Hialeah</td>
+          <td className="number">{amount(item.unit_price)}</td>
+          <td className="number">{amount(item.quantity * item.unit_price)}</td>
+        </tr>)}
         {shipment.contains_package && !!shipment.package_contents?.length && <>
           <tr><th colSpan={4}>Contenido declarado del paquete</th></tr>
           {shipment.package_contents.map((item, index) => <tr key={index}><td>{item.quantity}</td><td colSpan={3}>{item.description}</td></tr>)}

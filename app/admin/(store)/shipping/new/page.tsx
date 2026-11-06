@@ -227,7 +227,7 @@ export default function NewShipmentPage() {
       {!selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Selecciona un viaje para habilitar el registro del paquete.</p>}
     </>}
     <fieldset disabled={requiresTrip && !selectedTrip} className={requiresTrip && !selectedTrip ? 'opacity-50' : ''}>
-      <ShipmentForm allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
+      <ShipmentForm hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
     </fieldset>
   </div></main>;
 }

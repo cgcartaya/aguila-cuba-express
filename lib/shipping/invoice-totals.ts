@@ -5,13 +5,14 @@ export function shipmentInvoiceTotals(input: {
   contains_money: boolean;
   money_total: number;
   store_products_total?: number;
+  physical_products_total?: number;
   extra_fees_total: number;
   discount_amount: number;
   amount_paid: number;
 }) {
   const cents = (value: number) => Math.round(Number(value || 0) * 100);
   const subtotalCents = cents(input.contains_package ? input.weight_subtotal : 0)
-    + cents(input.contains_money ? input.money_total : 0) + cents(input.extra_fees_total) + cents(input.store_products_total ?? 0);
+    + cents(input.contains_money ? input.money_total : 0) + cents(input.extra_fees_total) + cents(input.store_products_total ?? 0) + cents(input.physical_products_total ?? 0);
   if (!Number.isFinite(input.discount_amount) || input.discount_amount < 0) {
     throw new Error("La rebaja debe ser un importe válido mayor o igual a cero.");
   }

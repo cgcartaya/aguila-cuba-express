@@ -269,6 +269,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     money_usd_to_cup: input.contains_money && input.money_delivery_currency === 'MIXED' ? input.money_usd_to_cup : input.money_delivery_currency === 'CUP' ? input.money_amount : 0,
     money_exchange_rate: input.contains_money && input.money_delivery_currency !== 'USD' ? input.money_exchange_rate : null,
     store_products: input.store_products || [],
+    ...(input.physical_products !== undefined ? { physical_products: input.physical_products } : {}),
     money_amount: input.contains_money ? input.money_amount : 0,
     money_commission_rate: input.contains_money ? input.money_commission_rate : 0,
     money_commission: input.contains_money ? input.money_commission : 0,
@@ -292,7 +293,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
 
     // V21: Supabase asigna order_number una sola vez y, cuando hay viaje,
     // asigna trip_order independientemente.
-    const result = await supabase.rpc((input.products_only || !!input.store_products?.length || input.contains_money && (input.money_delivery_currency === "CUP" || input.money_delivery_currency === "MIXED")) ? "create_remittance_numbered_shipment" : "create_numbered_shipment", {
+    const result = await supabase.rpc((input.products_only || !!input.store_products?.length || !!input.physical_products?.length || input.contains_money && (input.money_delivery_currency === "CUP" || input.money_delivery_currency === "MIXED")) ? "create_remittance_numbered_shipment" : "create_numbered_shipment", {
       p_store_id: storeId,
       p_id: ids.id,
       p_tracking_code: ids.trackingCode,

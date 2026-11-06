@@ -361,6 +361,11 @@ export default function PublicInvoicePage({
                 </div>
               </section>
 
+              {!!shipment.physical_products?.length && <section className="my-4 rounded-xl border p-4 text-sm">
+                <h3 className="font-bold">Productos tienda física · Hialeah</h3>
+                <ul>{shipment.physical_products.map(item => <li key={item.product_id}>{item.quantity} × {item.name} · {currency(item.quantity * item.unit_price)}</li>)}</ul>
+                <p className="mt-2 font-semibold">Subtotal: {currency(shipment.physical_products_total || 0)}</p>
+              </section>}
               {(shipment.contains_money || !!shipment.store_products?.length) && <RemittanceDeliveryDetails value={shipment} />}
               {shipment.contains_package && <><p className="mt-5 text-sm font-bold text-slate-700">N.º de paquete: {packageNumber(shipment.package_number)}</p><PackageContentsList items={shipment.package_contents} /></>}
 
