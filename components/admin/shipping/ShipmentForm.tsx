@@ -65,6 +65,7 @@ export default function ShipmentForm(props: Props) {
     recipient_name: shipment?.recipient_name || "",
     recipient_address: shipment?.recipient_address || "",
     recipient_phone: shipment?.recipient_phone || "",
+    recipient_phone_alt: shipment?.recipient_phone_alt || "",
     sender_name: shipment?.sender_name || "",
     sender_phone: shipment?.sender_phone || "",
     notes: shipment?.notes || "",
@@ -201,6 +202,7 @@ export default function ShipmentForm(props: Props) {
     if (form.physical_products?.length && (!props.hasTrip || !form.contains_package || form.products_only)) return setError("Quita los productos de Hialeah antes de cambiar a una operación sin paquete con viaje.");
     if ([...(form.store_products || []), ...(form.physical_products || [])].some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
+    if (form.recipient_phone_alt && form.recipient_phone_alt.length < (settings?.phone_digits_min || 1)) return setError("El teléfono alternativo del destinatario no es válido.");
     if (form.recipient_phone.length < (settings?.phone_digits_min || 1)) return setError("El teléfono del destinatario no es válido.");
     if (!form.customer_id && !confirmNoCustomer) {
       requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
@@ -239,6 +241,8 @@ export default function ShipmentForm(props: Props) {
           sender_phone: selection.sender_phone,
           recipient_name: selection.recipient_name || current.recipient_name,
           recipient_phone: selection.recipient_phone || current.recipient_phone,
+          recipient_phone_alt: selection.recipient_id && selection.recipient_id !== current.recipient_id
+            ? "" : current.recipient_phone_alt,
           recipient_address:
             selection.recipient_address || current.recipient_address,
           recipient_identity_card:
@@ -274,6 +278,7 @@ export default function ShipmentForm(props: Props) {
         <Input label="Código APK" value={form.location} readOnly />
         <Input label="Destinatario" value={form.recipient_name} onChange={v=>set("recipient_name",v)} />
         <Input label="Teléfono destinatario" value={form.recipient_phone} onChange={v=>set("recipient_phone",phone(v))} inputMode="numeric" />
+        <Input label="Teléfono alternativo (opcional)" value={form.recipient_phone_alt || ""} onChange={v=>set("recipient_phone_alt",phone(v))} inputMode="numeric" />
         <Input label="Dirección" value={form.recipient_address} onChange={v=>set("recipient_address",v)} />
       </div>
       <label className="block"><span className="mb-2 block text-sm font-black">Notas</span><textarea className={inputClass+" min-h-24"} value={form.notes} onChange={e=>set("notes",e.target.value)} /></label>

@@ -108,6 +108,7 @@ export type Shipment = {
   recipient_name: string | null;
   recipient_address: string | null;
   recipient_phone: string | null;
+  recipient_phone_alt?: string | null;
   sender_name: string | null;
   sender_phone: string | null;
   notes: string | null;
@@ -299,6 +300,7 @@ export type ShipmentInput = {
   recipient_name: string;
   recipient_address: string;
   recipient_phone: string;
+  recipient_phone_alt?: string | null;
   sender_name: string;
   sender_phone: string;
   notes: string;

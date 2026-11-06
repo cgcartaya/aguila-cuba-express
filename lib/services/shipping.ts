@@ -248,6 +248,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     recipient_name: input.recipient_name.trim(),
     recipient_address: input.recipient_address.trim(),
     recipient_phone: input.recipient_phone.trim(),
+    ...(input.recipient_phone_alt !== undefined ? { recipient_phone_alt: input.recipient_phone_alt?.trim() || null } : {}),
     recipient_identity_card: input.recipient_identity_card?.trim() || null,
     sender_name: input.sender_name.trim(),
     sender_phone: input.sender_phone.trim(),
