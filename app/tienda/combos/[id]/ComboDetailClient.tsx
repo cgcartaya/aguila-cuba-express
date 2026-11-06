@@ -144,7 +144,7 @@ export default function ComboDetailPage({ params }: PageProps) {
     </section>
     <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm md:p-6">
       <h2 className="text-xl font-black">Productos incluidos</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{combo.combo_items.map(item => <article key={item.id} className="flex gap-3 rounded-2xl bg-slate-50 p-3"><div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">{item.products.image_url ? <img src={item.products.image_url} alt={item.products.name} className="h-full w-full object-cover"/> : <Package size={24} className="text-slate-400"/>}</div><div><h3 className="line-clamp-1 text-sm font-black">{item.products.name}</h3><p className="mt-1 text-xs font-bold text-slate-500">Cantidad: {item.quantity}</p><p className="mt-1 text-sm font-black text-red-600">{item.products.combo_only ? "Incluido en el combo" : <Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)}/>}</p></div></article>)}</div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{combo.combo_items.map(item => <article key={item.id} className="flex gap-3 rounded-2xl bg-slate-50 p-3"><div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white">{item.products.image_url ? <img src={item.products.image_url} alt={item.products.name} className="h-full w-full object-cover"/> : <Package size={24} className="text-slate-400"/>}</div><div><h3 className="line-clamp-1 text-sm font-black">{item.products.name}</h3><p className="mt-1 text-xs font-bold text-slate-500">Cantidad: {item.quantity}</p></div></article>)}</div>
     </section>
   </main>;
 }

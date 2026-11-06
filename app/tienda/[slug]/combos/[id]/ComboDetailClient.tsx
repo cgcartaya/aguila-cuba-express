@@ -322,10 +322,6 @@ export default function ComboDetailPage() {
                   <p className="mt-1 text-xs font-bold text-slate-500">
                     Cantidad: {item.quantity}
                   </p>
-
-                  <p className="mt-1 text-sm font-black text-red-600">
-                    {item.products.combo_only ? <span className="text-xs font-semibold text-slate-500">Incluido en el combo</span> : <Price usd={applyPlatformFee(Number(item.products.price || 0), feePercent)} />}
-                  </p>
                 </div>
               </article>
             ))}
