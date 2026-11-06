@@ -13,6 +13,7 @@ export function remittanceWhatsappMessage(reference: string, fields: Fields, amo
     `Remitente: ${text(fields.sender_name)}`,
     `Destinatario: ${text(fields.recipient_name)}`,
     `Número de destinatario: ${text(fields.recipient_phone)}`,
+    ...(text(fields.recipient_phone_alt, "") ? [`Teléfono alternativo: ${text(fields.recipient_phone_alt)}`] : []),
     `Dirección: ${text(fields.recipient_address)}`,
     '', 'DETALLE DE LA ORDEN:',
     ...(hasMoney ? [`💵 Remesa a entregar: ${deliveryLabel({ ...fields, money_amount: money } as RemittanceDelivery)}`] : []),

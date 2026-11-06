@@ -50,6 +50,10 @@ export type CustomerSelection = {
   location: string;
 };
 
+function normalizeRecipientName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export default function CustomerRecipientPicker({
   storeId,
   countries,
@@ -90,6 +94,7 @@ export default function CustomerRecipientPicker({
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
 
+  const [recipientSearch, setRecipientSearch] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [recipientAddress, setRecipientAddress] = useState("");
@@ -136,6 +141,7 @@ export default function CustomerRecipientPicker({
 
       setCustomer(data.customer);
       setRecipients(data.recipients || []);
+      setRecipientSearch("");
       setResults([]);
       setCreatingCustomer(false);
       setCreatingRecipient(false);
@@ -220,6 +226,7 @@ export default function CustomerRecipientPicker({
 
     setCustomer(data.customer);
     setRecipients(data.recipients || []);
+    setRecipientSearch("");
     setResults([]);
     setCreatingCustomer(false);
     setCreatingRecipient(false);
@@ -364,6 +371,11 @@ export default function CustomerRecipientPicker({
     applyRecipient(data);
   }
 
+  const recipientQuery = normalizeRecipientName(recipientSearch.trim());
+  const matchingRecipients = recipients
+    .filter(item => item.is_active && normalizeRecipientName(item.name).includes(recipientQuery))
+    .sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite));
+
   return (
     <section className="overflow-hidden rounded-[2rem] border border-blue-100 bg-white shadow-sm">
       <div className="border-b border-blue-100 bg-gradient-to-r from-blue-50 via-white to-indigo-50 p-5 md:p-6">
@@ -389,6 +401,7 @@ export default function CustomerRecipientPicker({
                 setSearch(event.target.value);
                 setCustomer(null);
                 setRecipients([]);
+                setRecipientSearch("");
               }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
@@ -464,8 +477,11 @@ export default function CustomerRecipientPicker({
           <div>
             <h3 className="font-extrabold text-slate-950">Destinatarios guardados</h3>
             <p className="mb-3 text-sm font-medium text-slate-500">El mismo destinatario puede estar asociado con diferentes clientes.</p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {recipients.filter((item) => item.is_active).sort((a, b) => Number(b.is_favorite) - Number(a.is_favorite)).map((recipient) => (
+            <input type="search" aria-label="Buscar destinatarios por nombre" placeholder="Buscar destinatario por nombre"
+              value={recipientSearch} onChange={event => setRecipientSearch(event.target.value)} className={inputClass + " mb-3"} />
+            {!matchingRecipients.length && <p className="text-sm text-slate-500">No hay destinatarios que coincidan.</p>}
+            <div className="grid auto-rows-[7rem] max-h-[22.5rem] gap-3 overflow-y-auto overscroll-contain pr-1 md:grid-cols-2">
+              {matchingRecipients.map((recipient) => (
                 <button type="button" key={recipient.id} onClick={() => applyRecipient(recipient)} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition hover:border-blue-300 hover:bg-blue-50">
                   <div className="flex items-start gap-3">
                     <GripVertical size={18} className="mt-1 text-slate-300" />

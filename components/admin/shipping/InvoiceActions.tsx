@@ -52,6 +52,7 @@ function buildInvoiceMessage(shipment: Shipment, storeName: string, store?: Prom
     "",
     `Código de rastreo: *${trackingCode}*`,
     `Destinatario: ${shipment.recipient_name || "Sin especificar"}`,
+    ...(shipment.recipient_phone_alt ? [`Teléfono alternativo: ${shipment.recipient_phone_alt}`] : []),
     `Total de la factura: *${currency(shipment.service_price)}*`,
     `Saldo pendiente: *${currency(shipment.balance_due)}*`,
     "",
