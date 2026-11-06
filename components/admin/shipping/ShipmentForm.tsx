@@ -320,7 +320,7 @@ export default function ShipmentForm(props: Props) {
         <PhysicalProductsEditor key={storeId} storeId={storeId} value={form.physical_products || []} onChange={value => set("physical_products", value)} />
       </Section>}
 
-    {props.allowRemittanceExtras && <Section title="Productos de la tienda"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}
+    {props.allowRemittanceExtras && <Section title="Productos de la tienda virtual"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}
     {form.contains_money && <Section title="Cálculo del dinero">
       {props.allowRemittanceExtras && <div className="mb-4 space-y-4">
         <label className="block text-sm font-bold">Moneda de entrega<select value={form.money_delivery_currency || 'USD'} onChange={event => set('money_delivery_currency', event.target.value as 'USD' | 'CUP' | 'MIXED')} className="mt-2 w-full rounded-xl border bg-white p-3"><option value="USD">Dólares estadounidenses (USD)</option><option value="CUP">Moneda nacional de Cuba (CUP / MN)</option><option value="MIXED">Mixta: efectivo USD + moneda nacional</option></select></label>
