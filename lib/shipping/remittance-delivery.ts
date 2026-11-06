@@ -1,3 +1,9 @@
+export type PhysicalProductLine = {
+ product_id: string;
+ name: string;
+ quantity: number;
+ unit_price: number;
+};
 export type RemittanceProduct = ({ product_id: string; combo_id?: never } | { combo_id: string; product_id?: never }) & { name: string; quantity: number; unit_price: number; base_price?: number; platform_fee_percent?: number; platform_fee_amount?: number };
 export function remittanceItemKey(item: RemittanceProduct) {
  return item.combo_id ? `combo:${item.combo_id}` : `product:${item.product_id}`;
@@ -32,6 +38,6 @@ export function deliveryLabel(value: RemittanceDelivery) {
  if (value.money_delivery_currency === 'MIXED') return `${format(parts.usd)} USD + ${format(parts.cup)} CUP (MN)`;
  return `${format(parts.usd)} USD`;
 }
-export function productsTotal(items: RemittanceProduct[] = []) {
+export function productsTotal(items: Pick<RemittanceProduct, "unit_price" | "quantity">[] = []) {
  return Math.round(items.reduce((sum, item) => sum + Math.round(item.unit_price * 100) * item.quantity, 0)) / 100;
 }

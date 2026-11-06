@@ -2,6 +2,7 @@
 import { operationContent, MONEY_DELIVERY_STATUSES, type ShipmentOperationType } from "@/lib/shipping/operation-mode";
 import { normalizePackageBilling } from "@/lib/shipping/package-billing";
 import { shipmentInvoiceTotals } from "@/lib/shipping/invoice-totals";
+import PhysicalProductsEditor from "./PhysicalProductsEditor";
 import RemittanceProductsEditor from "./RemittanceProductsEditor";
 import { deliveryParts, productsTotal } from "@/lib/shipping/remittance-delivery";
 import ShipmentExtraFees from "@/components/admin/shipping/ShipmentExtraFees";
@@ -23,6 +24,7 @@ import { buildLegacyLocation, calculateMoneyCommission, getShippingStatusLabel, 
 
 type Props = {
   allowRemittanceExtras?: boolean;
+  hasTrip?: boolean;
   operationType?: ShipmentOperationType;
   storeId: string;
   shipment?: Shipment | null;
@@ -80,6 +82,7 @@ export default function ShipmentForm(props: Props) {
     money_delivery_currency: shipment?.money_delivery_currency || 'USD',
     money_usd_to_cup: shipment?.money_usd_to_cup ?? 0,
     money_exchange_rate: shipment?.money_exchange_rate ?? null,
+    physical_products: shipment?.physical_products,
     store_products: shipment?.store_products || [],
     store_products_total: Number(shipment?.store_products_total || 0),
     money_amount: Number(shipment?.money_amount || 0),
@@ -148,7 +151,8 @@ export default function ShipmentForm(props: Props) {
     const moneyDiscount = maxDiscount == null ? requestedDiscount : Math.min(requestedDiscount, Number(maxDiscount));
     const moneyTotal = baseForm.contains_money ? (settings?.money_include_principal ? baseForm.money_amount : 0) + Math.max(money.commission - moneyDiscount, 0) : 0;
     const productSubtotal = productsTotal(baseForm.store_products);
-    const total = Math.max(packageSubtotal + moneyTotal + productSubtotal + feesTotal - Math.max(baseForm.discount_amount, 0), 0);
+    const physicalSubtotal = productsTotal(baseForm.physical_products);
+    const total = Math.max(packageSubtotal + moneyTotal + productSubtotal + physicalSubtotal + feesTotal - Math.max(baseForm.discount_amount, 0), 0);
     const amountPaid = Math.min(total, Math.max(baseForm.amount_paid, 0));
     const balance = Math.max(total - amountPaid, 0);
     const legacy = location ? buildLegacyLocation(location.legacy_code, baseForm.contains_package && !baseForm.products_only ? (service?.legacy_prefix || "") : "") : baseForm.location;
@@ -165,6 +169,7 @@ export default function ShipmentForm(props: Props) {
       money_commission: money.commission,
       money_discount: Number(moneyDiscount.toFixed(2)),
       money_total: Number(moneyTotal.toFixed(2)),
+      physical_products_total: physicalSubtotal,
       store_products_total: productSubtotal,
       service_price: Number(total.toFixed(2)),
       amount_paid: Number(amountPaid.toFixed(2)),
@@ -193,7 +198,8 @@ export default function ShipmentForm(props: Props) {
       try { deliveryParts(form); }
       catch (cause) { return setError((cause as Error).message); }
     }
-    if ((form.store_products || []).some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
+    if (form.physical_products?.length && (!props.hasTrip || !form.contains_package || form.products_only)) return setError("Quita los productos de Hialeah antes de cambiar a una operación sin paquete con viaje.");
+    if ([...(form.store_products || []), ...(form.physical_products || [])].some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
     if (form.recipient_phone.length < (settings?.phone_digits_min || 1)) return setError("El teléfono del destinatario no es válido.");
     if (!form.customer_id && !confirmNoCustomer) {
@@ -309,6 +315,11 @@ export default function ShipmentForm(props: Props) {
 
     {form.contains_package && !form.products_only && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
 
+    {props.allowRemittanceExtras && ((props.hasTrip && form.contains_package && !form.products_only) || !!form.physical_products?.length) &&
+      <Section title="Productos tienda física">
+        <PhysicalProductsEditor key={storeId} storeId={storeId} value={form.physical_products || []} onChange={value => set("physical_products", value)} />
+      </Section>}
+
     {props.allowRemittanceExtras && <Section title="Productos de la tienda"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}
     {form.contains_money && <Section title="Cálculo del dinero">
       {props.allowRemittanceExtras && <div className="mb-4 space-y-4">
@@ -331,7 +342,7 @@ export default function ShipmentForm(props: Props) {
         <p className="mt-3 text-sm text-emerald-900">Escribe el importe de la oferta acordada con el cliente. Se resta una sola vez del total y aparece en la factura. Deja 0 si no hay rebaja.</p>
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total + (form.store_products_total || 0)).toFixed(2)} readOnly />
+        <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total + (form.store_products_total || 0) + (form.physical_products_total || 0)).toFixed(2)} readOnly />
         <Input label="Cargos adicionales (USD)" value={form.extra_fees_total.toFixed(2)} readOnly />
         <Input label="Total final (USD)" value={form.service_price.toFixed(2)} readOnly />
         <NumberInput label="Pagado (USD)" value={form.amount_paid} onChange={v=>set("amount_paid",v)} />

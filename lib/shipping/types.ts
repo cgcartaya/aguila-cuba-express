@@ -1,4 +1,4 @@
-import type { RemittanceProduct } from "./remittance-delivery";
+import type { PhysicalProductLine, RemittanceProduct } from "./remittance-delivery";
 import type { PackageContentItem } from "@/lib/shipping/package-label";
 
 export const SHIPPING_STATUSES = [
@@ -137,6 +137,8 @@ export type Shipment = {
   money_usd_to_cup?: number;
   money_exchange_rate?: number | null;
   money_delivery_amount?: number;
+  physical_products?: PhysicalProductLine[];
+  physical_products_total?: number;
   store_products?: RemittanceProduct[];
   store_products_total?: number;
   money_amount: number;
@@ -316,6 +318,8 @@ export type ShipmentInput = {
   money_usd_to_cup?: number;
   money_exchange_rate?: number | null;
   money_delivery_amount?: number;
+  physical_products?: PhysicalProductLine[];
+  physical_products_total?: number;
   store_products?: RemittanceProduct[];
   store_products_total?: number;
   money_amount: number;
