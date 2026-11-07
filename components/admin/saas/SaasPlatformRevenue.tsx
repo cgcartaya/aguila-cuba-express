@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { DollarSign, Loader2, TrendingUp } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { getShippingPlatformRevenue } from "@/lib/services/shipping-platform-revenue";
 
 type StoreRef = { id: string; name: string };
-type BreakdownRow = { storeId: string; storeName: string; amount: number; orders: number };
+type BreakdownRow = { storeId: string; storeName: string; amount: number; orders: number; shipments: number; shippingAmount: number };
 
 export default function SaasPlatformRevenue({
   subscriptions,
@@ -38,25 +39,35 @@ export default function SaasPlatformRevenue({
         const from = new Date(now.getFullYear(), now.getMonth(), 1);
         const to = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-        const { data, error } = await supabase
+        const [{ data, error }, shippingCharges] = await Promise.all([supabase
           .from("orders")
           .select("store_id,platform_fee_amount,status,deleted_at")
           .gte("created_at", from.toISOString())
           .lt("created_at", to.toISOString())
-          .gt("platform_fee_amount", 0);
+          .gt("platform_fee_amount", 0),
+          getShippingPlatformRevenue(from.toISOString(), to.toISOString()),
+        ]);
 
         if (error) throw error;
 
-        const grouped = new Map<string, { amount: number; orders: number }>();
+        const grouped = new Map<string, { amount: number; orders: number; shipments: number; shippingAmount: number }>();
 
         for (const row of data || []) {
           const storeId = String(row.store_id || "");
           if (!storeId) continue;
 
-          const current = grouped.get(storeId) || { amount: 0, orders: 0 };
+          const current = grouped.get(storeId) || { amount: 0, orders: 0, shipments: 0, shippingAmount: 0 };
           current.amount += Number(row.platform_fee_amount || 0);
           current.orders += 1;
           grouped.set(storeId, current);
+        }
+
+        for (const charge of shippingCharges) {
+          const current = grouped.get(charge.store_id) || { amount: 0, orders: 0, shipments: 0, shippingAmount: 0 };
+          current.shippingAmount += Number(charge.amount);
+          current.amount += Number(charge.amount);
+          current.shipments += 1;
+          grouped.set(charge.store_id, current);
         }
 
         const rows = Array.from(grouped.entries())
@@ -65,6 +76,8 @@ export default function SaasPlatformRevenue({
             storeName: storeNames.get(storeId) || "Tienda",
             amount: value.amount,
             orders: value.orders,
+            shipments: value.shipments,
+            shippingAmount: value.shippingAmount,
           }))
           .sort((a, b) => b.amount - a.amount);
 
@@ -112,6 +125,8 @@ export default function SaasPlatformRevenue({
           <div className="mt-2 flex h-9 items-center">
             <Loader2 className="animate-spin text-violet-600" size={20} />
           </div>
+        ) : failed ? (
+          <p className="mt-2 text-sm font-semibold text-rose-600">No se pudieron cargar los ingresos del mes.</p>
         ) : (
           <p className="mt-1 text-3xl font-black tracking-tight text-[#071a3d]">
             ${total.toFixed(2)}
@@ -122,6 +137,7 @@ export default function SaasPlatformRevenue({
           ${subscriptions.toFixed(2)} suscripciones
           {!loading && !failed ? ` + $${commissionTotal.toFixed(2)} comisiones` : ""}
         </p>
+        {!loading && !failed && <p className="mt-1 text-xs text-slate-400">Comisiones de ventas y uso de envíos.</p>}
       </article>
     );
   }
@@ -133,6 +149,8 @@ export default function SaasPlatformRevenue({
       <div className="mt-1 flex flex-wrap items-center gap-2">
         {loading ? (
           <Loader2 className="animate-spin text-blue-600" size={24} />
+        ) : failed ? (
+          <p className="text-sm font-semibold text-rose-600">Ingresos no disponibles</p>
         ) : (
           <p className="text-3xl font-black tracking-tight text-[#071a3d]">
             ${total.toFixed(2)}
@@ -151,9 +169,9 @@ export default function SaasPlatformRevenue({
         <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700">
           Suscripciones ${subscriptions.toFixed(2)}
         </span>
-        <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700">
+        {!loading && !failed && <span className="rounded-full bg-violet-50 px-3 py-1.5 text-xs font-black text-violet-700">
           Comisiones ${commissionTotal.toFixed(2)}
-        </span>
+        </span>}
       </div>
 
       {!loading && !failed && breakdown.length > 0 && (
@@ -162,11 +180,15 @@ export default function SaasPlatformRevenue({
             <span key={row.storeId}>
               {row.storeName}: <strong className="text-slate-700">${row.amount.toFixed(2)}</strong>
               {" · "}
-              {row.orders} {row.orders === 1 ? "orden" : "órdenes"}
+              {row.orders > 0 && <>Ventas: ${(row.amount - row.shippingAmount).toFixed(2)} ({row.orders} {row.orders === 1 ? "orden" : "órdenes"})</>}
+              {row.orders > 0 && row.shipments > 0 && " · "}
+              {row.shipments > 0 && <>Envíos: ${row.shippingAmount.toFixed(2)} ({row.shipments} {row.shipments === 1 ? "factura" : "facturas"})</>}
             </span>
           ))}
         </div>
       )}
+
+      {!loading && !failed && <p className="mt-2 text-xs text-slate-400">Importes generados este mes, pendientes de confirmar su cobro.</p>}
 
       {failed && (
         <p className="mt-2 text-xs font-semibold text-rose-500">
