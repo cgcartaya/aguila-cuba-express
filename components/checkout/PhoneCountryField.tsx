@@ -61,7 +61,13 @@ export default function PhoneCountryField({
   }
 
   function handleNumberChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const parsed = splitPhone(event.target.value, country);
+    const input = event.target.value.trim();
+    const digits = input.replace(/\D/g, "");
+    // A national number may start with another country's dial code.
+    // Only infer a bare pasted prefix when it exceeds the selected national length.
+    const parsed = input.startsWith("+") || input.startsWith("00") || digits.length > country.digits
+      ? splitPhone(input, country)
+      : { country, nationalNumber: digits };
     setCountry(parsed.country);
     emit(parsed.country, parsed.nationalNumber);
   }
