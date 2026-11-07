@@ -20,9 +20,10 @@
    string plano), solo cambia cómo se arma.
 ========================================================= */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { DEFAULT_PHONE_COUNTRY, PHONE_COUNTRIES, findPhoneCountry, type PhoneCountry } from "@/lib/constants/phone-countries";
+import { splitPhone } from "@/lib/utils/store-whatsapp";
 import FlagIcon from "@/components/tienda/FlagIcon";
 
 type PhoneCountryFieldProps = {
@@ -34,18 +35,6 @@ type PhoneCountryFieldProps = {
   required?: boolean;
 };
 
-function splitPhone(fullValue: string): { country: PhoneCountry; nationalNumber: string } {
-  const trimmed = fullValue.trim();
-
-  const match = [...PHONE_COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length).find((c) => trimmed.startsWith(c.dialCode) || trimmed.startsWith(`00${c.dialCode.slice(1)}`));
-  if (match) {
-    const normalized = trimmed.startsWith("00") ? `+${trimmed.slice(2)}` : trimmed;
-    return { country: match, nationalNumber: normalized.slice(match.dialCode.length).trim() };
-  }
-
-  return { country: DEFAULT_PHONE_COUNTRY, nationalNumber: trimmed };
-}
-
 export default function PhoneCountryField({
   name,
   value,
@@ -54,16 +43,11 @@ export default function PhoneCountryField({
   className,
   required,
 }: PhoneCountryFieldProps) {
-  const [country, setCountry] = useState<PhoneCountry>(DEFAULT_PHONE_COUNTRY);
-  const [nationalNumber, setNationalNumber] = useState("");
+  const [preferredCountry, setCountry] = useState<PhoneCountry>(DEFAULT_PHONE_COUNTRY);
   const [touched, setTouched] = useState(false);
-
-  // Sincronizar cuando llegan los ajustes guardados de forma asíncrona.
-  useEffect(() => {
-    const { country: parsedCountry, nationalNumber: parsedNumber } = splitPhone(value || "");
-    setCountry(parsedCountry);
-    setNationalNumber(parsedNumber);
-  }, [value]);
+  // Derive the visible national number from the controlled form value.
+  // Country state only remembers the user's selection, including empty fields.
+  const { country, nationalNumber } = splitPhone(value || "", preferredCountry);
 
   function emit(nextCountry: PhoneCountry, nextNumber: string) {
     const combined = nextNumber ? `${nextCountry.dialCode} ${nextNumber}` : "";
@@ -77,9 +61,9 @@ export default function PhoneCountryField({
   }
 
   function handleNumberChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const digitsOnly = event.target.value.replace(/[^\d\s-]/g, "");
-    setNationalNumber(digitsOnly);
-    emit(country, digitsOnly);
+    const parsed = splitPhone(event.target.value, country);
+    setCountry(parsed.country);
+    emit(parsed.country, parsed.nationalNumber);
   }
 
   const rawDigitCount = nationalNumber.replace(/\D/g, "").length;
