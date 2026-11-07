@@ -47,7 +47,7 @@ test('the form renders a products-only operation without forcing cash or parcel 
  const empty=()=>null;
  const Component=load('components/admin/shipping/ShipmentForm.tsx',{
   '@/lib/shipping/operation-mode':modes,'@/lib/shipping/package-billing':billing,'@/lib/shipping/invoice-totals':totals,
-  './RemittanceProductsEditor':{default:empty},'@/lib/shipping/remittance-delivery':delivery,
+  './RemittanceProductsEditor':{default:empty},'./PhysicalProductsEditor':{default:empty},'@/lib/shipping/remittance-delivery':delivery,
   '@/components/admin/shipping/ShipmentExtraFees':{default:empty},'@/lib/shipping/extra-fee-calculation':fees,
   '@/components/admin/shipping/PackageContentsEditor':{default:empty},'@/lib/shipping/package-label':load('lib/shipping/package-label.ts'),
   '@/lib/shipping/weight-rate':load('lib/shipping/weight-rate.ts'),'@/components/admin/shipping/CustomerRecipientPicker':{default:empty},

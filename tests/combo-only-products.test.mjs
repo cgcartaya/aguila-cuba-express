@@ -8,6 +8,6 @@ test('both editors offer the requested checkbox without requiring a standalone p
 
 test('public combo views carry component visibility and suppress misleading individual comparisons',()=>{
  const selector=fs.readFileSync('lib/services/combos.ts','utf8');assert.match(selector,/combo_only/);
- for(const path of ['app/tienda/combos/[id]/ComboDetailClient.tsx','app/tienda/[slug]/combos/[id]/ComboDetailClient.tsx']){const source=fs.readFileSync(path,'utf8');assert.match(source,/Incluido en el combo/);assert.match(source,/canCompare && savings/);}
+ for(const path of ['app/tienda/combos/[id]/ComboDetailClient.tsx','app/tienda/[slug]/combos/[id]/ComboDetailClient.tsx']){const source=fs.readFileSync(path,'utf8');assert.match(source,/Cantidad: \{item.quantity\}/);assert.doesNotMatch(source,/<Price usd=\{applyPlatformFee\(Number\(item.products.price/);assert.match(source,/canCompare && savings/);}
  for(const path of ['app/tienda/combos/page.tsx','app/tienda/[slug]/combos/page.tsx','components/tienda/combos/StoreCombosSection.tsx'])assert.match(fs.readFileSync(path,'utf8'),/combo_only: relatedProduct.combo_only/);
 });

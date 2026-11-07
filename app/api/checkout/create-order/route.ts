@@ -46,6 +46,7 @@ import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
+import { saveCheckoutCustomer } from "@/lib/checkout/customer";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
@@ -718,21 +719,17 @@ export async function POST(request: Request) {
     // Sin teléfono del comprador no creamos un cliente ficticio ni
     // vinculamos el pedido al teléfono del destinatario.
     if (customerPhone) {
-      const { data: upsertedCustomer, error: customerError } = await supabaseAdmin
-        .from("customers")
-        .upsert(
-          {
-            store_id: storeId,
-            phone: customerPhone,
-            name: customerName || "Cliente sin nombre",
-            email: email || null,
-            city: city || null,
-            device_token: resolvedDeviceToken,
-          },
-          { onConflict: "store_id,phone" }
-        )
-        .select("id")
-        .single();
+      const { data: upsertedCustomer, error: customerError } = await saveCheckoutCustomer(
+        supabaseAdmin,
+        {
+          store_id: storeId,
+          phone: customerPhone,
+          name: customerName || "Cliente sin nombre",
+          email: email || null,
+          city: city || null,
+          device_token: resolvedDeviceToken,
+        }
+      );
   
       if (customerError) {
         // No debe pasar casi nunca ahora (era el caso que causaba
@@ -740,8 +737,8 @@ export async function POST(request: Request) {
         // pierde: el nombre/teléfono ya quedan guardados directo en la
         // orden más abajo (customer_name / customer_phone), así que se ve
         // bien en el admin aunque el enlace a customers haya fallado.
-        console.error("UPSERT CUSTOMER ERROR:", customerError);
-      } else {
+        console.error("UPSERT CUSTOMER ERROR:", { code: customerError.code });
+      } else if (upsertedCustomer) {
         customerId = upsertedCustomer.id;
       }
   
