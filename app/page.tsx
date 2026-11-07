@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LuxuryLanding from "@/components/landing/luxury/LuxuryLanding";
+import { buildLuxuryMetadata } from "@/components/landing/luxury/metadata";
 import { headers } from "next/headers";
 
 import { buildWfCargoMetadata } from "@/components/landing/wfcargo/metadata";
@@ -173,24 +174,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = await getCurrentHost();
 
   if (resolveLanding(host) === "luxury") {
-    const origin = `https://luxury-travel-point.${PLATFORM_DOMAIN}`;
-    return {
-      ...buildLandingFallbackMetadata(
-        "Luxury Travel Point | Viajes, cruceros y experiencias a tu medida",
-        "Descubre destinos, viajes en grupo y privados, cruceros y escapadas al Caribe. Asesoría personalizada desde Lehigh Acres. También envíos a Cuba y multiservicios.",
-        origin,
-        "Luxury Travel Point"
-      ),
-      title: { absolute: "Luxury Travel Point | Viajes, cruceros y experiencias a tu medida" },
-      openGraph: {
-        title: "Luxury Travel Point · El mundo te espera",
-        description: "Tu próximo viaje empieza contigo. Destinos, cruceros y atención personalizada desde Lehigh Acres, Florida.",
-        url: origin, siteName: "Luxury Travel Point", locale: "es_US", type: "website",
-        images: [{ url: `${origin}/luxury/hero.webp`, width: 1920, height: 2560, alt: "Descubre el mundo con Luxury Travel Point" }],
-      },
-      twitter: { card: "summary_large_image", title: "Luxury Travel Point · El mundo te espera", images: [`${origin}/luxury/hero.webp`] },
-      icons: { icon: "/luxury/airplane.webp", apple: "/luxury/logo.webp" },
-    };
+    const store = await resolveStoreByHost(host);
+    return buildLuxuryMetadata(store);
   }
 
   if (resolveLanding(host) === "wfcargo") {
