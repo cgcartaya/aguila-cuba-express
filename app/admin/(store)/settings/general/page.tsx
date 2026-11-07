@@ -55,7 +55,6 @@ export default function AdminGeneralSettingsPage() {
   }, [accessStore, isSuperAdmin, selectedStore]);
 
   const [form, setForm] = useState(emptyForm);
-  const [savedWhatsapp, setSavedWhatsapp] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,7 +79,6 @@ export default function AdminGeneralSettingsPage() {
 
         if (!activeStore?.id) {
           setForm(emptyForm);
-          setSavedWhatsapp("");
           setError(
             "No se encontró la tienda activa. Vuelve al SaaS y selecciona una tienda."
           );
@@ -93,7 +91,6 @@ export default function AdminGeneralSettingsPage() {
 
         if (settingsError) throw settingsError;
 
-        setSavedWhatsapp(data?.whatsapp || "");
         setForm({
           store_name: data?.store_name || activeStore.name || "",
           slogan: data?.slogan || "",
@@ -138,8 +135,7 @@ export default function AdminGeneralSettingsPage() {
     }
 
     const normalizedWhatsapp = normalizeStoreWhatsapp(form.whatsapp);
-    const whatsappChanged = form.whatsapp !== savedWhatsapp;
-    if (whatsappChanged && form.whatsapp.trim() && !normalizedWhatsapp) {
+    if (form.whatsapp.trim() && !normalizedWhatsapp) {
       setError("Selecciona el país del WhatsApp y escribe un número nacional válido. No se guardaron los cambios.");
       return;
     }
@@ -152,9 +148,7 @@ export default function AdminGeneralSettingsPage() {
       const { error: saveError } = await saveStoreSettings(
         {
           ...form,
-          // Preserve an unchanged legacy number when saving unrelated settings.
-          // Any edited number must pass international phone validation above.
-          whatsapp: form.whatsapp.trim() ? (normalizedWhatsapp ? `+${normalizedWhatsapp}` : savedWhatsapp) : "",
+          whatsapp: normalizedWhatsapp ? `+${normalizedWhatsapp}` : "",
           updated_at: new Date().toISOString(),
         },
         activeStore.id
@@ -162,7 +156,7 @@ export default function AdminGeneralSettingsPage() {
 
       if (saveError) throw saveError;
 
-      setSavedWhatsapp(form.whatsapp);
+      setForm((current) => ({ ...current, whatsapp: normalizedWhatsapp ? `+${normalizedWhatsapp}` : "" }));
       setSuccess("Ajustes guardados correctamente.");
     } catch (err: any) {
       console.error("ERROR GUARDANDO AJUSTES GENERALES:", err);
