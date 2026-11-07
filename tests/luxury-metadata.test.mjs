@@ -1,0 +1,35 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import ts from 'typescript';
+const module = { exports: {} };
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('components/landing/luxury/metadata.ts','utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module,exports:module.exports,URL});
+const build = module.exports.buildLuxuryMetadata;
+const settings = { og_image_url:'https://assets.example/seo/landing.png?v=42', store_og_image_url:'https://assets.example/seo/store.jpg', meta_title:'Viajes de Luxury', meta_description:'Viajes a tu medida', favicon_url:'https://assets.example/icon.png' };
+test('Luxury homepage reads saved admin settings and keeps the page URL separate from the image',async()=>{
+ const source=fs.readFileSync('app/page.tsx','utf8');
+ const ast=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+ const fn=ast.statements.find(n=>ts.isFunctionDeclaration(n)&&n.name?.text==='generateMetadata');
+ const calls=[];
+ const ctx={URL,buildLuxuryMetadata:build,getCurrentHost:async()=> 'luxury-travel-point.perlamarketplace.com',resolveLanding:()=> 'luxury',resolveStoreByHost:async host=>{calls.push(host);return settings;}};
+ vm.createContext(ctx);
+ vm.runInContext(ts.transpileModule(fn.getText(ast).replace('export ',''),{compilerOptions:{target:ts.ScriptTarget.ES2020,module:ts.ModuleKind.None}}).outputText,ctx);
+ const m=await ctx.generateMetadata();
+ assert.deepEqual(calls,['luxury-travel-point.perlamarketplace.com']);
+ assert.equal(m.openGraph.images[0].url,settings.og_image_url);
+ assert.equal(m.openGraph.images[0].secureUrl,settings.og_image_url);
+ assert.equal(m.openGraph.images[0].type,'image/png');
+ assert.equal(m.openGraph.images[0].height,undefined);
+ assert.equal(m.twitter.images[0],settings.og_image_url);
+ assert.equal(m.title.absolute,settings.meta_title);
+ assert.equal(m.description,settings.meta_description);
+ assert.equal(m.icons.icon[0].url,settings.favicon_url);
+ assert.equal(m.openGraph.url,'https://luxury-travel-point.perlamarketplace.com');
+ assert.equal(m.alternates.canonical,m.openGraph.url);
+});
+test('Luxury accepts a storefront fallback but future landing uploads immediately take precedence',()=>{
+ assert.equal(build({...settings,og_image_url:null}).openGraph.images[0].url,settings.store_og_image_url);
+ assert.equal(build({...settings,og_image_url:'https://assets.example/new.png?v=99'}).openGraph.images[0].url,'https://assets.example/new.png?v=99');
+ const m=build(null);assert.equal(m.openGraph.images[0].url,'https://luxury-travel-point.perlamarketplace.com/luxury/hero.webp');assert.equal(m.openGraph.images[0].height,2560);assert.match(m.title.absolute,/Luxury Travel Point/);
+});
