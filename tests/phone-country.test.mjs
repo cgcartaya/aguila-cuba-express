@@ -63,6 +63,9 @@ test('controlled field loads, edits, clears and pastes without duplicating prefi
     visit(root); return found;
   }
   assert.equal(render().input.value, '8032623676');
+  render().input.onChange({ target: { value: '5358731040' } });
+  assert.equal(value, '+1 5358731040');
+  assert.equal(render().select.value, 'us');
   render().input.onChange({ target: { value: '8032623677' } });
   assert.equal(value, '+1 8032623677');
   render().input.onChange({ target: { value: '' } });
