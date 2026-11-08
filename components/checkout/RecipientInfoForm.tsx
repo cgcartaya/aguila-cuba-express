@@ -2,18 +2,19 @@ import { Phone } from "lucide-react";
 import type { CheckoutForm } from "./types";
 
 type Props = {
+  title?: string;
   form: CheckoutForm;
   onChange: (
     e: React.ChangeEvent<HTMLInputElement>
   ) => void;
 };
 
-export function RecipientInfoForm({ form, onChange }: Props) {
+export function RecipientInfoForm({ form, onChange, title = "Persona que recibe en Cuba" }: Props) {
   return (
     <div className="min-w-0 overflow-hidden rounded-3xl border border-slate-200/80 bg-white p-5 shadow-[0_10px_35px_rgba(15,23,42,0.06)] sm:p-6">
       <h2 className="mb-4 flex min-w-0 items-start gap-2 text-lg font-bold leading-tight text-gray-900">
         <Phone className="mt-0.5 shrink-0" size={20} />
-        <span className="min-w-0">Persona que recibe en Cuba</span>
+        <span className="min-w-0">{title}</span>
       </h2>
 
       <div className="grid gap-4 md:grid-cols-2">

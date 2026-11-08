@@ -6,6 +6,10 @@ export type Product = {
   id: string | number;
   name: string;
   price: number;
+  weight?: number | null;
+  weight_unit?: "g" | "lb" | "kg" | null;
+  platform_fee_exempt?: boolean | null;
+
   image_url?: string | null;
   category?: string | null;
   description?: string | null;
@@ -45,6 +49,7 @@ export type Combo = {
   id: string;
   name: string;
   price: number;
+
   image_url?: string | null;
 };
 
@@ -60,6 +65,10 @@ export type CartItem = {
    * Precio unitario efectivo para la cantidad actual.
    */
   price: number;
+  weight?: number | null;
+  weight_unit?: "g" | "lb" | "kg" | null;
+  platform_fee_exempt?: boolean | null;
+
 
   /**
    * Precio normal antes de aplicar una escala por cantidad.

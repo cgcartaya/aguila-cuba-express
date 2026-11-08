@@ -5,6 +5,10 @@ export type Product = {
   category: string;
   description?: string | null;
   price: number;
+  weight?: number | null;
+  weight_unit?: "g" | "lb" | "kg" | null;
+  platform_fee_exempt?: boolean | null;
+
   stock: number;
   image_url?: string | null;
   tag?: string | null;

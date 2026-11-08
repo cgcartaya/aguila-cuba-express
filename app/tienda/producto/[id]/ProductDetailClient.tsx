@@ -178,6 +178,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           />
 
           <ProductInfo
+            platformFeeExempt={product.platform_fee_exempt}
             name={product.name}
             price={Number(product.price)}
             description={product.description}

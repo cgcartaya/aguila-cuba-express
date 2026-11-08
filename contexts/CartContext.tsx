@@ -104,7 +104,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             basePrice,
             item.quantity,
             tiers,
-            feePercent
+            item.platform_fee_exempt ? 0 : feePercent
           ),
         };
       });
@@ -188,10 +188,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     void supabase
       .from("products")
-      .select("id, stock")
+      .select("id, stock, price, platform_fee_exempt, product_price_tiers(min_quantity,unit_price)")
       .eq("store_id", store.id)
       .in("id", productIds)
       .then(({ data }) => {
+        setCart(current => current.map(item => {
+          const product = data?.find(p => `product-${p.id}` === item.id);
+          if (!product) return item;
+          return { ...item, base_price: Number(product.price), platform_fee_exempt: product.platform_fee_exempt, product_price_tiers: product.product_price_tiers || [], price: getUnitPriceForQuantity(Number(product.price), item.quantity, product.product_price_tiers, product.platform_fee_exempt ? 0 : feePercent) };
+        }));
         syncInventory(
           (data || []).map((product) => ({
             productId: String(product.id),
@@ -201,7 +206,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
     // Se ejecuta cuando termina de cargar el carrito de esta tienda.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cartLoaded, cartStorageKey, store?.id, syncInventory]);
+  }, [cartLoaded, cartStorageKey, store?.id, syncInventory, feePercent]);
 
   // Actualización visual en tiempo real. No reserva productos: solo refleja
   // cambios ya confirmados en la base de datos. La autoridad final sigue
@@ -265,11 +270,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       0,
       Math.min(maxAllowed, currentQuantity + quantityToAdd) - currentQuantity
     );
+    const productFeePercent = product.platform_fee_exempt ? 0 : feePercent;
     const trackedUnitPrice = getUnitPriceForQuantity(
       basePrice,
       currentQuantity + trackedQuantity,
       tiers,
-      feePercent
+      productFeePercent
     );
 
     if (trackedQuantity > 0) {
@@ -317,7 +323,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           basePrice,
           newQuantity,
           tiers,
-          feePercent
+          productFeePercent
         );
 
       if (existing) {
@@ -327,6 +333,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
                 ...item,
                 quantity: newQuantity,
                 base_price: basePrice,
+                platform_fee_exempt: product.platform_fee_exempt ?? false,
                 price: effectivePrice,
                 stock:
                   product.stock == null
@@ -351,6 +358,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           name: product.name,
           price: effectivePrice,
           base_price: basePrice,
+          platform_fee_exempt: product.platform_fee_exempt ?? false,
           image_url:
             product.image_url ||
             "/placeholder-product.png",
@@ -473,7 +481,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               basePrice,
               newQuantity,
               item.product_price_tiers,
-              feePercent
+              item.platform_fee_exempt ? 0 : feePercent
             ),
           };
         }
@@ -529,7 +537,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
               basePrice,
               newQuantity,
               item.product_price_tiers,
-              feePercent
+              item.platform_fee_exempt ? 0 : feePercent
             ),
           };
         })

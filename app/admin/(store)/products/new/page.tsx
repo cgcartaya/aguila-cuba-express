@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Images, Loader2, Save } from "lucide-react"
 
+import ProductShippingFields from "@/components/admin/products/ProductShippingFields";
 import ProductPurchaseRulesEditor from "@/components/admin/products/ProductPurchaseRulesEditor"
 import {
   normalizePriceTierDrafts,
@@ -33,6 +34,9 @@ export default function NewProductPage() {
     category: "",
     description: "",
     price: "",
+    weight: "",
+    weight_unit: "lb" as "g" | "lb" | "kg",
+    platform_fee_exempt: false,
     stock: "",
     tag: "",
     is_active: true,
@@ -108,6 +112,7 @@ export default function NewProductPage() {
     }
 
     const price = form.combo_only ? 0 : Number(form.price)
+    if (form.weight.trim() && (!Number.isFinite(Number(form.weight)) || Number(form.weight) <= 0)) { setError("El peso debe ser mayor que cero."); return; }
     const stock = Number(form.stock)
     const maxQuantityPerOrder = form.max_quantity_per_order.trim()
       ? Number(form.max_quantity_per_order)
@@ -156,6 +161,9 @@ export default function NewProductPage() {
           stock,
           tag: form.tag,
           is_active: form.is_active,
+          weight: form.weight.trim() ? Number(form.weight) : null,
+          weight_unit: form.weight_unit,
+          platform_fee_exempt: form.platform_fee_exempt,
           minimum_order_exempt: form.minimum_order_exempt,
           delivery_included: form.delivery_included,
           max_quantity_per_order: maxQuantityPerOrder,
@@ -289,6 +297,7 @@ export default function NewProductPage() {
               />
             </div>
 
+            <ProductShippingFields value={form} onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))} />
             {!form.combo_only && (<ProductPurchaseRulesEditor
               basePrice={form.price}
               maxQuantityPerOrder={form.max_quantity_per_order}

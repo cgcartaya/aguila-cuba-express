@@ -38,7 +38,7 @@ export async function GET(
       const price = item
         ? applyPlatformFee(
             Number(item.price),
-            getPlatformFeePercent(store),
+            kind === "product" && item.platform_fee_exempt ? 0 : getPlatformFeePercent(store),
           ).toFixed(2)
         : null;
       const photo = image;
