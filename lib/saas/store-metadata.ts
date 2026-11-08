@@ -150,7 +150,7 @@ export async function resolveStoreBySlug(
   return fetchStore("slug", slug.trim().toLowerCase());
 }
 
-export function getStorePublicBaseUrl(store: StoreMetadataRow) {
+export function getStorePublicBaseUrl(store: Pick<StoreMetadataRow, "domain" | "subdomain" | "slug">) {
   const domain = normalizeStoreHost(store.domain || "");
 
   if (domain) {
@@ -186,9 +186,9 @@ export function getStorefrontCanonicalUrl(store: StoreMetadataRow) {
 }
 
 export function buildPerlaMetadata(): Metadata {
-  const title = "Perla Marketplace | Tu tienda online lista para vender";
+  const title = "Perla Marketplace | Tiendas, restaurantes y envíos conectados";
   const description =
-    "Plataforma SaaS multiempresa para crear, administrar y hacer crecer tiendas online.";
+    "Conecta tu tienda online, restaurante o agencia de envíos con Perla Marketplace. Explora módulos, demos y soluciones para administrar tu negocio.";
 
   return {
     metadataBase: new URL("https://perlamarketplace.com"),
