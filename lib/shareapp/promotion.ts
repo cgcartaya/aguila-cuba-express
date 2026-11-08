@@ -4,6 +4,7 @@ import { AccessError, db, settings } from "./server";
 export type PromotionItem = {
   name: string;
   price: number;
+  platform_fee_exempt?: boolean;
   description?: string | null;
   image_url: string | null;
   product_images?: { image_url: string; is_main: boolean; position?: number }[];
@@ -68,7 +69,7 @@ export async function promotion(code: string) {
       .select(
         kind === "combo"
           ? "name,description,price,image_url"
-          : "name,description,price,image_url,product_images(image_url,is_main,position)",
+          : "name,description,price,platform_fee_exempt,image_url,product_images(image_url,is_main,position)",
       )
       .eq("id", link.item_id)
       .eq("store_id", store.id)

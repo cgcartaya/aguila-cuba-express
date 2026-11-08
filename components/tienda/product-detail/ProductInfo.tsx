@@ -15,6 +15,7 @@ import Price from "@/components/tienda/Price";
 import ProductShareButton from "@/components/tienda/product-detail/ProductShareButton";
 
 type ProductInfoProps = {
+  platformFeeExempt?: boolean | null;
   name: string;
   price: number;
   description?: string | null;
@@ -31,6 +32,7 @@ type ProductInfoProps = {
 };
 
 export default function ProductInfo({
+  platformFeeExempt,
   name,
   price,
   description,
@@ -43,7 +45,7 @@ export default function ProductInfo({
   onAddToCart,
 }: ProductInfoProps) {
   const { store } = useStore();
-  const feePercent = getPlatformFeePercent(store);
+  const feePercent = platformFeeExempt ? 0 : getPlatformFeePercent(store);
 
   const hasStock = Number(stock) > 0;
   const tiers = normalizeQuantityPriceTiers(priceTiers);

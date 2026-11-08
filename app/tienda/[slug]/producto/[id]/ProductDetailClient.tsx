@@ -227,6 +227,7 @@ export default function ProductDetailClient({
           />
 
           <ProductInfo
+            platformFeeExempt={product.platform_fee_exempt}
             name={product.name}
             price={Number(product.price)}
             description={

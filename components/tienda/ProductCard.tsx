@@ -44,7 +44,7 @@ export default function ProductCard({
 
   const { store } = useStore();
 
-  const feePercent = getPlatformFeePercent(store);
+  const feePercent = product.platform_fee_exempt ? 0 : getPlatformFeePercent(store);
 
   const isDefaultStore = store?.slug === "aguila";
 

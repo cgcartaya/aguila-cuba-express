@@ -47,6 +47,7 @@ import { randomUUID } from "crypto";
 import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
+import { quoteCartShipping, type CartShippingSelection } from "@/lib/shipping/cart-shipping";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
@@ -78,6 +79,7 @@ type OrderItemInput = {
 };
 
 type CreateOrderBody = {
+  productShipping?: CartShippingSelection | null;
   storeId?: string;
   method?: "delivery" | "cuba";
   isLocalDelivery?: boolean;
@@ -245,7 +247,7 @@ export async function POST(request: Request) {
       return fail("Faltan datos obligatorios del cliente.");
     }
     const isYoyo = store.slug === YOYO_SLUG;
-    const isLocalDelivery = Boolean(body.isLocalDelivery);
+    const isLocalDelivery = !body.productShipping && Boolean(body.isLocalDelivery);
 
     // Fee de plataforma (Perla): se calcula SIEMPRE en el servidor a
     // partir de la configuración real de la tienda, nunca confiando en
@@ -386,7 +388,7 @@ export async function POST(request: Request) {
         ? await supabaseAdmin
             .from("products")
             .select(
-              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, is_active, deleted_at, combo_only"
+              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, platform_fee_exempt, is_active, deleted_at, combo_only"
             )
             .eq("store_id", storeId)
             .eq("is_active", true)
@@ -432,7 +434,7 @@ export async function POST(request: Request) {
 
         // Precio que realmente paga el cliente (base + fee de
         // plataforma, si la tienda lo tiene activado).
-        const price = applyPlatformFee(baseUnitPrice, platformFeePercent);
+        const price = applyPlatformFee(baseUnitPrice, product.platform_fee_exempt ? 0 : platformFeePercent);
         const unitFeeAmount = money(price - baseUnitPrice);
 
         const categoryRule = categoryRuleMap.get(
@@ -551,9 +553,16 @@ export async function POST(request: Request) {
       .eq("store_id", storeId)
       .maybeSingle();
     const isDistanceDelivery =
-      body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
+      !body.productShipping && body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
 
-    if (isDistanceDelivery) {
+    let productShippingQuote: Awaited<ReturnType<typeof quoteCartShipping>> | null = null;
+    if (body.productShipping) {
+      if (!clean(form.recipient_name, 150) || !clean(form.recipient_phone, 40) || !clean(form.exact_address, 300)) return fail("Completa destinatario, teléfono y dirección para el envío.");
+      try { productShippingQuote = await quoteCartShipping(storeId, requestedItems.map(item => ({ ...item, item_type: item.item_type || "product", quantity: Number(item.quantity) })), body.productShipping); }
+      catch (error) { return fail(error instanceof Error ? error.message : "No se pudo calcular el envío.", 422); }
+      deliveryFee = productShippingQuote.amount;
+      zoneName = productShippingQuote.destination;
+    } else if (isDistanceDelivery) {
       const settings = normalizeDistanceSettings(checkoutDeliverySettings as Record<string, unknown>);
       deliveryLatitude = validCoordinate(form.delivery_latitude, -90, 90);
       deliveryLongitude = validCoordinate(form.delivery_longitude, -180, 180);
@@ -630,8 +639,8 @@ export async function POST(request: Request) {
     }
 
     if (
-      deliveryIncludedForAllItems ||
-      (deliveryZoneId && zoneFreeDeliveryFrom > 0 && subtotal >= zoneFreeDeliveryFrom)
+      !productShippingQuote && (deliveryIncludedForAllItems ||
+      (deliveryZoneId && zoneFreeDeliveryFrom > 0 && subtotal >= zoneFreeDeliveryFrom))
     ) {
       deliveryFee = 0;
     }
@@ -758,6 +767,7 @@ export async function POST(request: Request) {
       payment_status: "pending",
       payment_method: intendedPaymentMethod,
       subtotal,
+      shipping_details: productShippingQuote,
       delivery_fee: deliveryFee,
       platform_fee_amount: platformFeeAmount,
       platform_fixed_fee_amount: platformFixedFee,
@@ -765,9 +775,9 @@ export async function POST(request: Request) {
       discount_code: discountCode,
       discount_amount: discountAmount,
       total,
-      country: isLocalDelivery ? "Estados Unidos" : "Cuba",
-      state: isLocalDelivery ? null : clean(form.province || "Cienfuegos", 120),
-      municipality: city,
+      country: productShippingQuote?.country || (isLocalDelivery ? "Estados Unidos" : "Cuba"),
+      state: productShippingQuote ? productShippingQuote.province : isLocalDelivery ? null : clean(form.province || "Cienfuegos", 120),
+      municipality: productShippingQuote?.municipality || city,
       delivery_zone_id: deliveryZoneId,
       zone_name: zoneName,
       delivery_latitude: deliveryLatitude,
@@ -791,6 +801,7 @@ export async function POST(request: Request) {
       notes: [
         form.reference ? `Referencia: ${clean(form.reference, 200)}` : "",
         clean(form.notes, 500),
+        productShippingQuote ? `Envío: ${productShippingQuote.service_name} / ${productShippingQuote.transport_mode} / ${productShippingQuote.destination}. Peso: ${productShippingQuote.weight_lb} lb. Envío: $${productShippingQuote.amount.toFixed(2)}` : "",
       ]
         .filter(Boolean)
         .join("\n"),
@@ -1029,6 +1040,7 @@ export async function POST(request: Request) {
       order: {
         id: order.id,
         order_number: publicOrderNumber,
+        shipping_details: productShippingQuote,
         subtotal,
         delivery_fee: deliveryFee,
         platform_fee_amount: platformFeeAmount,

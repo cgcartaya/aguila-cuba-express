@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .select(
         kind === "combo"
           ? "id,name,description,price,image_url,combo_items(quantity,products(id,stock,is_active,store_id,deleted_at))"
-          : "id,name,description,price,image_url,stock,category,product_images(image_url,is_main,position)",
+          : "id,name,description,price,platform_fee_exempt,image_url,stock,category,product_images(image_url,is_main,position)",
       )
       .eq("store_id", storeId)
       .eq("is_active", true)
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         ...item,
         price: applyPlatformFee(
           Number(item.price),
-          getPlatformFeePercent(promoter.store),
+          item.platform_fee_exempt ? 0 : getPlatformFeePercent(promoter.store),
         ),
       })),
       kind,

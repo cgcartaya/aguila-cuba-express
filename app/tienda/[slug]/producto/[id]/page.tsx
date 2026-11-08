@@ -77,7 +77,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     });
   }
 
-  const price = applyPlatformFee(Number(product.price), getPlatformFeePercent(store));
+  const price = applyPlatformFee(Number(product.price), product.platform_fee_exempt ? 0 : getPlatformFeePercent(store));
   const priceLabel = Number.isFinite(price) ? `${price.toFixed(2)} USD` : null;
   const title = `${product.name}${priceLabel ? ` | ${priceLabel}` : ""} | ${store.name}`;
   const productDescription = String(product.description || "").replace(/\s+/g, " ").trim();
