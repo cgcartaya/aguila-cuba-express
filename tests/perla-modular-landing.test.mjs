@@ -70,6 +70,7 @@ test('database policies hide inactive and unpublished clients and deny direct pu
 });
 test('landing renders modules, customer logos, original Perla branding and noncommittal prices', () => {
   const deps = {
+    './HeroShowcase': { __esModule: true, default: () => React.createElement('div', { 'data-testid': 'animated-hero' }) },
     'next/image': { __esModule: true, default: ({ unoptimized, priority, ...props }) => React.createElement('img', props) },
     '@/components/perla/PerlaLogo': { __esModule: true, default: () => React.createElement('img', { src: '/perla/perla-shell.png', alt: 'Perla' }) },
     '@/components/perla/links': { CONTACT_EMAIL: 'contact@example.com', buildWhatsAppUrl: text => `https://wa.me/17862031226?text=${encodeURIComponent(text)}` },
