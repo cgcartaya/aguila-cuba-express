@@ -30,7 +30,7 @@
 .metrics { display: grid; grid-template-columns: 1.3fr .85fr .9fr; gap: 8px; margin-top: 15px; }
 .metrics > div { background: white; border: 1px solid #e4eaf5; border-radius: 9px; padding: 11px 10px; min-width: 0; }
 .metrics small { font-size: 7px; color: #7184a0; font-weight: 700; display: block; margin-bottom: 7px; }
-.metrics strong { font-size: clamp(13px, 1.5vw, 20px); font-weight: 800; letter-spacing: -.045em; display: block; }
+.metrics strong { font-size: clamp(13px, 1.5vw, 20px); font-weight: 800; letter-spacing: -.045em; display: block; line-height: 1; }
 .metrics > div > span { font-size: 6px; color: #96a4b8; display: block; margin-top: 6px; white-space: nowrap; }
 .metrics > div > .positive { color: #099e86; }
 .number { display: inline-flex; font-variant-numeric: tabular-nums; vertical-align: middle; line-height: 1; }
@@ -153,7 +153,7 @@
   .shipmentRow em { font-size: 5px; }
 }
 @media (max-width: 800px) {
-  .stage { max-width: 600px; aspect-ratio: 1.13; margin: 0 auto; }
+  .stage { max-width: 600px; aspect-ratio: 1.03; margin: 0 auto; }
   .tablet { height: 81%; left: 25px; }
   .workspace { padding: 17px 18px 10px; }
   .heading h2 { font-size: 22px !important; }
@@ -179,7 +179,7 @@
   .shipmentRow em { font-size: 6px; }
 }
 @media (max-width: 580px) {
-  .stage { aspect-ratio: .98; }
+  .stage { aspect-ratio: auto; height: 440px; }
   .tablet { left: 13px; height: 81%; border-radius: 14px; box-shadow: 0 22px 40px -20px #14365c50, 0 0 0 4px #e8effb; }
   .window { height: 29px; font-size: 5px; padding: 0 10px; }
   .window > span:first-child { gap: 3px; }
@@ -194,12 +194,12 @@
   .workspace { padding: 13px 11px 9px; }
   .heading > p { font-size: 5px; margin-bottom: 5px; }
   .heading h2 { font-size: 16px !important; }
-  .heading > span { font-size: 6px; }
+  .heading > span { display: none; }
   .metrics { margin-top: 12px; gap: 5px; }
   .metrics > div { padding: 8px 6px; border-radius: 6px; }
   .metrics small { font-size: 6px; margin-bottom: 6px; }
   .metrics strong { font-size: 15px; }
-  .metrics > div > span { font-size: 4px; margin-top: 5px; }
+  .metrics > div > span { display: none; }
   .sceneTabs { gap: 2px; margin: 9px 0 8px; }
   .sceneTabs button { font-size: 6px; gap: 3px; padding: 5px 3px; min-height: 28px; }
   .sceneTabs svg { width: 10px; height: 10px; }
@@ -261,7 +261,7 @@
   .controls .reduced { font-size: 5px; }
 }
 @media (max-width: 360px) {
-  .stage { aspect-ratio: .91; }
+  .stage { height: 410px; }
   .heading h2 { font-size: 13px !important; }
   .heading > span { font-size: 5px; }
   .workspace { padding: 11px 8px 7px; }
