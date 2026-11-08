@@ -68,7 +68,7 @@ test('database policies hide inactive and unpublished clients and deny direct pu
   assert.equal((await db.query('select count(*)::int as n from public.perla_client_showcase')).rows[0].n, 1);
   await db.close();
 });
-test('landing renders modules, customer logos, original Perla branding and noncommittal prices', () => {
+test('landing renders reference sections, original Perla branding and undefined prices', () => {
   const deps = {
     './HeroShowcase': { __esModule: true, default: () => React.createElement('div', { 'data-testid': 'animated-hero' }) },
     'next/image': { __esModule: true, default: ({ unoptimized, priority, ...props }) => React.createElement('img', props) },
@@ -76,12 +76,31 @@ test('landing renders modules, customer logos, original Perla branding and nonco
     '@/components/perla/links': { CONTACT_EMAIL: 'contact@example.com', buildWhatsAppUrl: text => `https://wa.me/17862031226?text=${encodeURIComponent(text)}` },
     './modular.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
   };
+  deps['./ReferenceSections'] = load('components/landing/perla/ReferenceSections.tsx', {
+    ...deps,
+    './client-layout': load('components/landing/perla/client-layout.ts'),
+    './reference-sections.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
+  });
   const Component = load('components/landing/perla/ModularLanding.tsx', deps).default;
   const html = renderToStaticMarkup(React.createElement(Component, { clients: [{ id: 'a', name: 'Cliente real', logo: 'https://example.com/logo.png', url: 'https://example.com', modules: ['Envíos'] }] }));
   assert.match(html, /Tu negocio<br\/>conectado/); assert.match(html, /\/perla\/perla-shell.png/);
-  assert.match(html, /Cliente real/); assert.match(html, /example.com\/logo.png/);
+  assert.match(html, /Cliente real/); assert.match(html, /class="clientStrip"/);
   assert.equal((html.match(/class="moduleCard /g) || []).length, 6);
   assert.equal((html.match(/class="planPrice"/g) || []).length, 3);
-  assert.match(html, /A consultar/); assert.doesNotMatch(html, /Sin comisión|Desde \$20/);
+  assert.match(html, /Por definir/); assert.doesNotMatch(html, /Sin comisión|Desde \$20/);
   assert.match(html, /Solicitar demo guiada/); assert.match(html, /aria-label="Navegación de Perla"/);
+});
+
+test('featured layout preserves SaaS visibility and keeps all other customers once', () => {
+  const { layoutClients } = load('components/landing/perla/client-layout.ts');
+  const slugs = ['deparis', 'yoyo-envios', 'alvarez-travel', 'aguila', 'tumercadolajero', 'new-client'];
+  const clients = slugs.map(slug => ({ id: slug, slug, name: slug, url: `https://${slug}.example`, logo: null, modules: [] }));
+  const layout = layoutClients(clients);
+  assert.equal(layout.featured.length, 4); assert.equal(layout.remaining.length, 2);
+  assert.equal(layout.featured[0].slug, 'aguila'); assert.equal(layout.featured[1].slug, 'alvarez-travel');
+  assert.equal(layout.featured[2].slug, 'yoyo-envios'); assert.equal(layout.featured[3].slug, 'deparis');
+  assert.equal(new Set([...layout.featured, ...layout.remaining].map(row => row.id)).size, clients.length);
+  const hidden = layoutClients(clients.filter(client => client.slug !== 'alvarez-travel'));
+  assert.equal(hidden.featured.length, 3); assert.ok(!hidden.featured.some(row => row.slug === 'alvarez-travel'));
+  for (const row of layout.featured) assert.ok(fs.existsSync(`public${row.screenshot}`));
 });

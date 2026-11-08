@@ -1,7 +1,7 @@
 import { publicSupabase } from "@/lib/supabase-public";
 import { getStorePublicBaseUrl } from "@/lib/saas/store-metadata";
 
-export type PerlaClient = { id: string; name: string; url: string; logo: string | null; modules: string[] };
+export type PerlaClient = { id: string; slug?: string; name: string; url: string; logo: string | null; modules: string[] };
 
 export async function getPerlaShowcase(): Promise<PerlaClient[]> {
   const { data: visible, error: visibilityError } = await publicSupabase
@@ -13,7 +13,7 @@ export async function getPerlaShowcase(): Promise<PerlaClient[]> {
     .eq("is_active", true).in("id", visible.map(row => row.store_id)).order("name");
   if (error) { console.error("Perla showcase clients unavailable", error); return []; }
   return (data || []).map(store => ({
-    id: store.id, name: store.name, url: getStorePublicBaseUrl(store), logo: store.logo_url,
+    id: store.id, slug: store.slug, name: store.name, url: getStorePublicBaseUrl(store), logo: store.logo_url,
     modules: [store.module_store_enabled && "Tienda online", store.module_menu_enabled && "Menú digital", store.module_shipping_enabled && "Envíos"].filter(Boolean) as string[],
   }));
 }
