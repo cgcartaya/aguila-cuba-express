@@ -7,6 +7,7 @@ import type { PerlaClient } from "@/lib/services/perla-showcase";
 import PerlaLogo from "@/components/perla/PerlaLogo";
 import { CONTACT_EMAIL, buildWhatsAppUrl } from "@/components/perla/links";
 import s from "./modular.module.css";
+import HeroShowcase from "./HeroShowcase";
 
 const modules = [
   { id: "tienda", title: "Tienda online", category: "Comercio", icon: ShoppingBag, tone: "blue", description: "Un catálogo que convierte visitas en pedidos.", features: ["Productos, categorías y combos", "Carrito, checkout y reglas de entrega", "Inventario conectado con tus ventas"], preview: "Catálogo de productos", demo: "https://tumercadolajero.com/tienda", demoLabel: "Explorar tienda", items: ["Catálogo", "Pedidos", "Inventario"], detail: "Publica tu catálogo, configura precios y existencias, organiza combos y recibe pedidos desde el móvil o la computadora. Gestiona zonas de entrega y medios de pago según tu operación." },
@@ -59,9 +60,7 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
     </header>
     <main id="contenido-perla">
       <section className={s.hero}><div className={s.heroInner}><div className={s.heroCopy}><p className={s.eyebrow}><span /> TIENDAS · RESTAURANTES · ENVÍOS</p><h1>Tu negocio<br />conectado.<br /><span>Todo en Perla.</span></h1><p className={s.heroDescription}>Vende online, organiza tus envíos y administra tu negocio desde una sola plataforma.</p><div className={s.heroButtons}><a href="#modulos" className={s.primary}>Explorar módulos <ArrowRight size={18} /></a><a href="#demos" className={s.outline}><Play size={17} /> Ver demos</a></div><div className={s.heroNotes}><span><Check />Tu marca y dominio</span><span><Check />Soporte cercano</span></div></div>
-      <div className={s.heroVisual}><div className={s.visualHalo} /><div className={s.dashboard}><div className={s.windowBar}><span><i /><i /><i /></span><small>Tu centro de operaciones</small><span className={s.demoBadge}>Vista de demostración</span></div><div className={s.dashboardIntro}><span className={s.eyebrow}>BIENVENIDO A PERLA</span><h2>Un panel. Más posibilidades.</h2><p>Lo que necesitas, conectado a tu negocio.</p></div><div className={s.appTiles}>{modules.slice(0, 3).map(m => <div key={m.id}><m.icon /><span>{m.title}</span></div>)}</div><Preview kind="tienda" large /><div className={s.dashboardBottom}><span><span className={s.liveDot} /> Tu operación, organizada</span><Layers3 size={17} /></div></div>
-      <div className={s.phone}><div className={s.phoneNotch} /><div className={s.phoneTop}><Image src="/perla/perla-shell.png" alt="" width={24} height={24} /><strong>Tu tienda</strong><ShoppingBag size={14} /></div><div className={s.phoneBanner}>Tu negocio,<br /><strong>siempre abierto.</strong><span>Descubre el catálogo →</span></div><div className={s.phoneProducts}><span><ShoppingBag /></span><span><PackageCheck /></span></div><small>Una experiencia hecha para móviles</small></div>
-      <div className={s.floatingTracking}><span className={s.floatingIcon}><Truck /></span><div><strong>Seguimiento de envío</strong><small>Recibido → En tránsito → Entregado</small><div className={s.trackingDots}><i /><b /><i /><b /><i /></div></div></div></div></div></section>
+      <HeroShowcase /></div></section>
 
       {clients.length > 0 && <section className={s.trust}><div className={s.container}><p>NEGOCIOS QUE YA TRABAJAN CON PERLA</p><div>{clients.slice(0, 5).map(client => <a key={client.id} href={client.url} target="_blank" rel="noopener noreferrer">{client.name}</a>)}</div></div></section>}
 
