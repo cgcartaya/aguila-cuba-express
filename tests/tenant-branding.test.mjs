@@ -10,9 +10,10 @@ const require = createRequire(import.meta.url);
 function load(path, dependencies = {}, globals = {}) {
   const module = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText;
-  vm.runInNewContext(code, { module, exports: module.exports, console, URL, process, ...globals, require: name => name in dependencies ? dependencies[name] : name === '@/components/shipping/RemittanceDeliveryDetails' ? deliveryDetails : name === '@/components/shipping/AlvarezInvoice' ? compactInvoice : require(name) });
+  vm.runInNewContext(code, { module, exports: module.exports, console, URL, process, ...globals, require: name => name in dependencies ? dependencies[name] : name === '@/lib/shipping/print-branding' ? printBranding : name === '@/components/shipping/RemittanceDeliveryDetails' ? deliveryDetails : name === '@/components/shipping/AlvarezInvoice' ? compactInvoice : require(name) });
   return module.exports;
 }
+const printBranding = load('lib/shipping/print-branding.ts');
 const branding = load('lib/saas/store-branding.ts');
 const delivery = load('lib/shipping/remittance-delivery.ts');
 const deliveryDetails = load('components/shipping/RemittanceDeliveryDetails.tsx', { '@/lib/shipping/remittance-delivery': delivery });
@@ -120,6 +121,15 @@ for (const store of stores) test(`invoice rendering prints ${store.name} without
   assert.ok(html.includes(store.name)); assert.ok(html.includes(brand.website));
   for (const other of stores.filter(s => s.id !== store.id)) { assert.ok(!html.includes(other.name)); if (other.domain) assert.ok(!html.includes(other.domain)); }
   assert.ok(html.includes('110.00'));
+  if (store.id === 'aguila') {
+    assert.ok(html.includes('/aguila/invoice-logo.jpg'));
+    assert.ok(html.includes('alvarez-invoice'));
+    assert.doesNotMatch(html, /1805 E 4th Ave|33010|\/alvarez\/invoice-logo/);
+  }
+  if (store.id === 'alvarez') {
+    assert.ok(html.includes('/alvarez/invoice-logo.jpg'));
+    assert.ok(html.includes('1805 E 4th Ave'));
+  }
 });
 test('public invoice and receipt rendering use the document brand', () => {
   const brand = branding.storeBranding(stores[0]);
