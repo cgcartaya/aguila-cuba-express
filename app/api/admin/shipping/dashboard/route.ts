@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import type { ShippingDashboardData } from "@/lib/shipping/dashboard-types";
 
 import { readDashboardPages } from "@/lib/shipping/dashboard-pagination";
+import { remittanceEarnings } from "@/lib/shipping/remittance-earnings";
 import { needsAssignment } from "@/lib/shipping/dashboard-priorities";
 
 const fail = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
@@ -54,6 +55,9 @@ type FinancialShipment = {
   contains_package: boolean;
   contains_money: boolean;
   money_amount: number;
+  money_commission: number;
+  money_discount: number;
+  discount_amount: number;
   created_at: string;
   delivered_date: string | null;
 };
@@ -69,10 +73,10 @@ export async function GET(request: NextRequest) {
   const denied = await canReadStore(request, storeId);
   if (denied) return denied;
 
-  const [shipmentsResult, receiptsResult, billingResult] = await Promise.all([
+  const [shipmentsResult, receiptsResult, billingResult, chargesResult] = await Promise.all([
     readDashboardPages((start,end)=>supabaseAdmin
       .from("shipments")
-      .select("id,order_number,tracking_code,recipient_name,sender_name,location,status,assigned_staff_id,assigned_driver_id,assigned_driver_name,service_price,amount_paid,balance_due,weight_lb,contains_package,contains_money,money_amount,created_at,delivered_date")
+      .select("id,order_number,tracking_code,recipient_name,sender_name,location,status,assigned_staff_id,assigned_driver_id,assigned_driver_name,service_price,amount_paid,balance_due,weight_lb,contains_package,contains_money,money_amount,money_commission,money_discount,discount_amount,created_at,delivered_date")
       .eq("store_id", storeId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }).order("id").range(start,end)),
@@ -81,6 +85,8 @@ export async function GET(request: NextRequest) {
       .select("shipment_id,amount")
       .eq("store_id", storeId).order("id").range(start,end)),
     supabaseAdmin.rpc("get_shipping_platform_billing", { p_store_id: storeId }),
+    readDashboardPages((start, end) => supabaseAdmin.from("shipping_platform_charges")
+      .select("shipment_id,amount").eq("store_id", storeId).order("shipment_id").range(start, end)),
   ]);
 
   if (shipmentsResult.error || receiptsResult.error) {
@@ -163,6 +169,8 @@ export async function GET(request: NextRequest) {
   });
 
   const data: ShippingDashboardData = {
+    remittance_earnings: chargesResult.error ? undefined : remittanceEarnings(financialRows, chargesResult.data || []),
+    remittance_earnings_error: chargesResult.error ? "No se pudo calcular el ingreso de remesas. Actualiza para reintentar." : undefined,
     platform_billing: billingResult.error ? undefined : billingResult.data,
     platform_billing_error: billingResult.error ? "No se pudo consultar la comisión del módulo. Actualiza la página para volver a intentarlo." : undefined,
     summary: {
