@@ -55,6 +55,10 @@ type FinancialShipment = {
   contains_package: boolean;
   contains_money: boolean;
   money_amount: number;
+  weight_subtotal: number;
+  store_products_total: number;
+  physical_products_total: number;
+  extra_fees_total: number;
   money_commission: number;
   money_discount: number;
   discount_amount: number;
@@ -76,7 +80,7 @@ export async function GET(request: NextRequest) {
   const [shipmentsResult, receiptsResult, billingResult, chargesResult] = await Promise.all([
     readDashboardPages((start,end)=>supabaseAdmin
       .from("shipments")
-      .select("id,order_number,tracking_code,recipient_name,sender_name,location,status,assigned_staff_id,assigned_driver_id,assigned_driver_name,service_price,amount_paid,balance_due,weight_lb,contains_package,contains_money,money_amount,money_commission,money_discount,discount_amount,created_at,delivered_date")
+      .select("id,order_number,tracking_code,recipient_name,sender_name,location,status,assigned_staff_id,assigned_driver_id,assigned_driver_name,service_price,amount_paid,balance_due,weight_lb,contains_package,contains_money,money_amount,weight_subtotal,store_products_total,physical_products_total,extra_fees_total,money_commission,money_discount,discount_amount,created_at,delivered_date")
       .eq("store_id", storeId)
       .is("deleted_at", null)
       .order("created_at", { ascending: false }).order("id").range(start,end)),
