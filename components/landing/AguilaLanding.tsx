@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Banknote,
   Check,
-  Home,
   MapPin,
   Menu,
   MessageCircle,
@@ -28,7 +27,7 @@ import {
 } from "./aguila/constants";
 import { AGUILA_RATES } from "./aguila/rates";
 import AguilaShippingTools from "./aguila/AguilaShippingTools";
-import s from "./aguila/fresh.module.css";
+import s from "./aguila/elegant.module.css";
 
 const nav = [
   ["Inicio", "#inicio"],
@@ -71,7 +70,7 @@ export default function AguilaLanding({
             <Image src={logo} alt="" width={76} height={76} preload />
             <span>
               ÁGUILA<strong>EXPRESS USA</strong>
-              <i />
+              <small>ENVÍOS DE MIAMI A CUBA</small>
             </span>
           </Link>
           <nav className={s.desktopNav} aria-label="Navegación principal">
@@ -110,8 +109,8 @@ export default function AguilaLanding({
         </div>
       </header>
       <main id="contenido">
-        <section className={`${s.container} ${s.hero}`}>
-          <div className={s.heroCopy}>
+        <section className={s.hero}>
+          <div className={`${s.container} ${s.heroCopy}`}>
             <p className={s.eyebrow}>MIAMI → CUBA · POR AIRE Y POR MAR</p>
             <h1>
               Más cerca
@@ -122,9 +121,9 @@ export default function AguilaLanding({
               <br className={s.desktopBreak} /> de Miami a toda Cuba.
             </p>
             <div className={s.actions}>
-              <a href="#tarifas" className={s.primary}>
-                <Package size={21} aria-hidden="true" /> Ver tarifas
-              </a>
+              <Link href={STORE_URL} className={s.primary}>
+                Entrar a la tienda <ArrowRight size={20} aria-hidden="true" />
+              </Link>
               <Link href={TRACKING_URL} className={s.secondary}>
                 <Search size={20} aria-hidden="true" /> Rastrear envío
               </Link>
@@ -132,10 +131,10 @@ export default function AguilaLanding({
           </div>
           <div className={s.heroPhoto}>
             <Image
-              src="/aguila/landing/hero-v1.webp"
-              alt="Avión sobre la costa de La Habana y barco de contenedores en el Caribe"
+              src="/aguila/landing/hero-elegant-v1.webp"
+              alt="El Malecón de La Habana, el mar Caribe y un avión en el cielo"
               fill
-              sizes="(max-width: 760px) 100vw, 55vw"
+              sizes="100vw"
               preload
             />
           </div>
@@ -145,25 +144,14 @@ export default function AguilaLanding({
           className={`${s.container} ${s.rates}`}
           aria-labelledby="aguila-rates-title"
         >
-          <div className={s.sectionHeading}>
-            <div>
-              <p className={s.eyebrow}>TÚ ELIGES CÓMO ENVIAR</p>
-              <h2 id="aguila-rates-title">
-                Una tarifa clara. Más cerca de casa.
-              </h2>
-            </div>
-            <a href="#cotizar">
-              Calcula tu envío <ArrowRight size={17} aria-hidden="true" />
-            </a>
-          </div>
+          <h2 id="aguila-rates-title" className={s.srOnly}>
+            Tarifas de envíos a Cuba
+          </h2>
           <div className={s.rateGrid}>
             {AGUILA_RATES.map((rate, index) => {
               const Icon = index === 0 ? Ship : Plane;
               return (
-                <article
-                  key={rate.id}
-                  className={`${s.rateCard} ${index === 1 ? s.featured : ""}`}
-                >
+                <article key={rate.id} className={s.rateCard}>
                   <div className={s.rateTitle}>
                     <Icon aria-hidden="true" />
                     <h3>{rate.title}</h3>
@@ -199,16 +187,17 @@ export default function AguilaLanding({
             por avión.
           </p>
         </section>
-        <div className={`${s.container} ${s.sections}`}>
+        <div className={s.sections}>
           <section className={`${s.banner} ${s.pickup}`} id="recogida">
-            <Image
-              src="/aguila/landing/pickup-v1.webp"
-              alt="Furgoneta de recogida junto a la costa de Miami"
-              fill
-              sizes="(max-width: 760px) 100vw, 1200px"
-            />
+            <div className={s.pickupPhoto}>
+              <Image
+                src="/aguila/landing/pickup-elegant-v1.webp"
+                alt="Repartidor con un paquete frente a una casa en Miami"
+                fill
+                sizes="(max-width: 760px) 100vw, 50vw"
+              />
+            </div>
             <div className={s.bannerCopy}>
-              <Home aria-hidden="true" className={s.bannerIcon} />
               <div>
                 <h2>
                   Recogemos tus paquetes
@@ -227,7 +216,7 @@ export default function AguilaLanding({
               </div>
             </div>
           </section>
-          <AguilaShippingTools />
+          <AguilaShippingTools section="tracking" />
           <section className={`${s.banner} ${s.store}`}>
             <Image
               src="/aguila/landing/store-v1.webp"
@@ -254,6 +243,7 @@ export default function AguilaLanding({
               </div>
             </div>
           </section>
+          <AguilaShippingTools section="quote" />
           <section id="servicios" className={s.services}>
             <div>
               <Banknote size={30} aria-hidden="true" />
