@@ -67,6 +67,7 @@ export default function AguilaShippingTools({
       {section !== "tracking" && (
         <section
           id="cotizar"
+          data-reveal
           className={s.quote}
           aria-labelledby="aguila-quote-title"
         >
@@ -116,7 +117,9 @@ export default function AguilaShippingTools({
             </label>
             <div className={s.estimate}>
               <small>Estimado por peso</small>
-              <strong>${total.toFixed(2)}</strong>
+              <strong aria-live="polite" aria-atomic="true">
+                ${total.toFixed(2)}
+              </strong>
             </div>
             <button className={s.primary} type="submit" disabled={!validWeight}>
               <Calculator size={18} aria-hidden="true" /> Cotizar{" "}

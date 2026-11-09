@@ -28,6 +28,7 @@ import {
 import { AGUILA_RATES } from "./aguila/rates";
 import AguilaShippingTools from "./aguila/AguilaShippingTools";
 import s from "./aguila/elegant.module.css";
+import AguilaMotion from "./aguila/AguilaMotion";
 
 const nav = [
   ["Inicio", "#inicio"],
@@ -43,7 +44,7 @@ export default function AguilaLanding({
 }: { logoUrl?: string | null } = {}) {
   const logo = logoUrl || "/aguila/invoice-logo.jpg";
   return (
-    <div className={s.root} id="inicio">
+    <AguilaMotion>
       <a className={s.skip} href="#contenido">
         Saltar al contenido
       </a>
@@ -128,6 +129,9 @@ export default function AguilaLanding({
                 <Search size={20} aria-hidden="true" /> Rastrear envío
               </Link>
             </div>
+            <a className={s.heroRatesLink} href="#tarifas">
+              Ver tarifas de envío <ArrowRight size={18} aria-hidden="true" />
+            </a>
           </div>
           <div className={s.heroPhoto}>
             <Image
@@ -151,7 +155,12 @@ export default function AguilaLanding({
             {AGUILA_RATES.map((rate, index) => {
               const Icon = index === 0 ? Ship : Plane;
               return (
-                <article key={rate.id} className={s.rateCard}>
+                <article
+                  key={rate.id}
+                  className={s.rateCard}
+                  data-reveal
+                  aria-label={rate.title}
+                >
                   <div className={s.rateTitle}>
                     <Icon aria-hidden="true" />
                     <h3>{rate.title}</h3>
@@ -171,11 +180,12 @@ export default function AguilaLanding({
                     </li>
                   </ul>
                   <a
+                    aria-label={`Consultar servicio ${rate.title} por WhatsApp`}
                     href={`${WHATSAPP_URL}?text=${encodeURIComponent(`Hola, me interesa un envío ${rate.title} a $${rate.rate} por libra.`)}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Consultar este servicio{" "}
+                    Consultar servicio{" "}
                     <ArrowRight size={16} aria-hidden="true" />
                   </a>
                 </article>
@@ -188,7 +198,11 @@ export default function AguilaLanding({
           </p>
         </section>
         <div className={s.sections}>
-          <section className={`${s.banner} ${s.pickup}`} id="recogida">
+          <section
+            className={`${s.banner} ${s.pickup}`}
+            id="recogida"
+            data-reveal
+          >
             <div className={s.pickupPhoto}>
               <Image
                 src="/aguila/landing/pickup-elegant-v1.webp"
@@ -217,7 +231,7 @@ export default function AguilaLanding({
             </div>
           </section>
           <AguilaShippingTools section="tracking" />
-          <section className={`${s.banner} ${s.store}`}>
+          <section className={`${s.banner} ${s.store}`} data-reveal>
             <Image
               src="/aguila/landing/store-v1.webp"
               alt="Caja con alimentos, productos de aseo y artículos para el hogar"
@@ -244,7 +258,7 @@ export default function AguilaLanding({
             </div>
           </section>
           <AguilaShippingTools section="quote" />
-          <section id="servicios" className={s.services}>
+          <section id="servicios" className={s.services} data-reveal>
             <div>
               <Banknote size={30} aria-hidden="true" />
               <h3>Envío de dinero</h3>
@@ -284,7 +298,7 @@ export default function AguilaLanding({
               </a>
             </div>
           </section>
-          <section id="proceso" className={s.process}>
+          <section id="proceso" className={s.process} data-reveal>
             <div>
               <p className={s.eyebrow}>ASÍ DE SENCILLO</p>
               <h2>De Miami a los tuyos.</h2>
@@ -391,6 +405,6 @@ export default function AguilaLanding({
       >
         <MessageCircle size={31} />
       </a>
-    </div>
+    </AguilaMotion>
   );
 }
