@@ -41,3 +41,18 @@ test('rebates exceeding commission cannot turn principal into negative agency in
  assert.equal(result.earned,0);
  assert.equal(result.discounts,10);
 });
+test('all invoice components reconcile without duplicating linked store orders',()=>{
+ const result=remittanceEarnings([
+  {...row,money_amount:100,money_commission:10,billed:110,paid:110},
+  {...row,id:'goods',contains_money:false,money_amount:0,money_commission:0,weight_subtotal:30,store_products_total:50,physical_products_total:20,extra_fees_total:5,discount_amount:5,billed:100,paid:80},
+ ],[]);
+ assert.equal(result.weightSales,30);
+ assert.equal(result.virtualSales,50);
+ assert.equal(result.physicalSales,20);
+ assert.equal(result.extraFees,5);
+ assert.equal(result.invoiceRebates,5);
+ assert.equal(result.otherSalesBeforeRebates,105);
+ assert.equal(result.incomeExcludingPrincipal,110);
+ assert.equal(result.billed,210);
+ assert.equal(result.paid,190);
+});

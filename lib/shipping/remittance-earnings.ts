@@ -8,6 +8,11 @@ export type RemittanceEarningsRow = {
   discount_amount: number;
   billed: number;
   paid: number;
+  weight_subtotal?: number;
+  store_products_total?: number;
+  physical_products_total?: number;
+  extra_fees_total?: number;
+  money_total?: number;
 };
 
 const cents = (amount: number) => Math.round(Number(amount || 0) * 100);
@@ -17,8 +22,14 @@ export function remittanceEarnings(rows: RemittanceEarningsRow[], platformCharge
   const charges = new Map(platformCharges.map(row => [row.shipment_id, cents(row.amount)]));
   let count = 0, principal = 0, gross = 0, discounts = 0, earned = 0;
   let collected = 0, platform = 0, withoutCharge = 0, billed = 0, paid = 0;
+  let weightSales = 0, virtualSales = 0, physicalSales = 0, extraFees = 0, invoiceRebates = 0;
   for (const row of rows) {
     if (row.status === "cancelled") continue;
+    weightSales += cents(row.weight_subtotal || 0);
+    virtualSales += cents(row.store_products_total || 0);
+    physicalSales += cents(row.physical_products_total || 0);
+    extraFees += cents(row.extra_fees_total || 0);
+    invoiceRebates += cents(row.discount_amount || 0);
     billed += cents(row.billed);
     paid += cents(row.paid);
     if (!row.contains_money) continue;
@@ -39,6 +50,11 @@ export function remittanceEarnings(rows: RemittanceEarningsRow[], platformCharge
     count, withoutCharge, billed: billed / 100, paid: paid / 100,
     principal: principal / 100, gross: gross / 100, discounts: discounts / 100,
     earned: earned / 100, collected: collected / 100, platform: platform / 100,
+    weightSales: weightSales / 100, virtualSales: virtualSales / 100,
+    physicalSales: physicalSales / 100, extraFees: extraFees / 100,
+    invoiceRebates: invoiceRebates / 100,
+    otherSalesBeforeRebates: (weightSales + virtualSales + physicalSales + extraFees) / 100,
+    incomeExcludingPrincipal: (billed - principal) / 100,
     afterPlatform: (earned - platform) / 100,
   };
 }
