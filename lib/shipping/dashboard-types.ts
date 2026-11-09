@@ -72,6 +72,8 @@ export type ShippingDashboardSummary = {
 };
 
 export type ShippingDashboardData = {
+  remittance_earnings?: import("./remittance-earnings").RemittanceEarnings;
+  remittance_earnings_error?: string;
   attention_shipments?: (ShippingDashboardRecentShipment & {needs_assignment:boolean})[];
   platform_billing?: ShippingPlatformBilling;
   platform_billing_error?: string;
