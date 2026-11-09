@@ -11,9 +11,11 @@ type Props = {
   name: string;
   date: string;
   website: string | null;
+  logoUrl: string | null;
+  addressLines: string[];
 };
 
-export default function AlvarezInvoice({ shipment, items, name, date, website }: Props) {
+export default function AlvarezInvoice({ shipment, items, name, date, website, logoUrl, addressLines }: Props) {
   const hasWeightedPackage = shipment.contains_package && !shipment.products_only &&
     shipment.package_billing_mode !== "fees_only";
   const operation = shipment.products_only ? "Entrega de productos" :
@@ -44,7 +46,7 @@ export default function AlvarezInvoice({ shipment, items, name, date, website }:
       .alvarez-invoice header, .alvarez-invoice .invoice-parties, .alvarez-invoice .invoice-summary, .alvarez-invoice footer { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
       .alvarez-invoice header { grid-template-columns: minmax(0, 1fr) auto; align-items: start; padding-bottom: 9px; border-bottom: 2px solid #222; }
       .alvarez-invoice .invoice-brand { display: flex; align-items: center; gap: 12px; }
-      .alvarez-invoice .invoice-brand img { width: 120px; max-width: 35%; height: auto; }
+      .alvarez-invoice .invoice-brand img { width: 120px; max-width: 35%; height: 90px; object-fit: contain; }
       .alvarez-invoice h1 { font-size: 1.35em; }
       .alvarez-invoice h2 { font-size: .86em; text-transform: uppercase; letter-spacing: .05em; }
       .alvarez-invoice .invoice-reference { text-align: right; }
@@ -77,13 +79,12 @@ export default function AlvarezInvoice({ shipment, items, name, date, website }:
 
     <header>
       <div className="invoice-brand">
-        {/* A local print-specific logo is shared by both invoice views. */}
+        {/* Local print assets bypass image optimization for reliable printing. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/alvarez/invoice-logo.jpg" alt="" width={120} height={68} />
+        {logoUrl && <img src={logoUrl} alt={`Logo de ${name}`} width={120} height={90} />}
         <div>
           <h1>{name}</h1>
-          <p>1805 E 4th Ave</p>
-          <p>Hialeah, FL 33010</p>
+          {addressLines.map(line => <p key={line}>{line}</p>)}
         </div>
       </div>
       <div className="invoice-reference">

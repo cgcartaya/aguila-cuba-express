@@ -3,6 +3,7 @@ import { packageNumber, type PackageContentItem } from '@/lib/shipping/package-l
 
 export type PackageLabelData = {
   agency: string;
+  logoUrl?: string | null;
   packageNumber: number | string;
   trackingCode: string;
   recipient: string;
@@ -28,7 +29,7 @@ export default function PackageLabelDocument({ data, qr, packingList = false }: 
 
   const preview = data.contents.slice(0, 4);
   return <article className="package-label">
-    <header className="package-label-header"><div><p className="package-agency">{data.agency}</p><p className="package-caption">N.º DE PAQUETE</p><h1>{packageNumber(data.packageNumber)}</h1><p className="package-tracking">{data.trackingCode}</p></div><div className="package-qr">{qr && <img src={qr} alt="Escanea para consultar la factura" width={128} height={128} />}<p>ESCANEA LA FACTURA</p></div></header>
+    <header className="package-label-header"><div>{data.logoUrl && <img className="package-agency-logo" src={data.logoUrl} alt={`Logo de ${data.agency}`} />}<p className="package-agency">{data.agency}</p><p className="package-caption">N.º DE PAQUETE</p><h1>{packageNumber(data.packageNumber)}</h1><p className="package-tracking">{data.trackingCode}</p></div><div className="package-qr">{qr && <img src={qr} alt="Escanea para consultar la factura" width={128} height={128} />}<p>ESCANEA LA FACTURA</p></div></header>
     <section className="package-recipient"><p className="package-caption">DESTINATARIO</p><h2>{data.recipient}</h2><p className="package-address">{data.address}</p><p className="package-destination">{data.destination}</p><p><b>Tel.:</b> {data.phone}</p></section>
     <section className="package-route"><p><b>Remitente:</b> {data.sender}</p><p><b>Servicio:</b> {data.service}</p></section>
     <section className="package-label-contents"><p className="package-caption">CONTENIDO</p>{preview.length ? <ul>{preview.map((item, index) => <li key={index}><b>{item.quantity} ×</b> {item.description}</li>)}</ul> : <p>No declarado</p>}{data.contents.length > preview.length && <p className="package-more">+ {data.contents.length - preview.length} artículo(s). Lista completa en la factura.</p>}</section>

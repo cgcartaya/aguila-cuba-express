@@ -55,3 +55,14 @@ test('label includes its identifier, destination and explicit continuation notic
   for (const value of ['PKG-00002693', 'La Habana', 'Lista completa en la factura', 'ESCANEA LA FACTURA']) assert.ok(markup.includes(value));
   assert.ok(!markup.includes('Artículo 12'));
 });
+
+test('label displays only the supplied agency logo and preserves the QR', () => {
+  for (const agency of ['alvarez', 'aguila']) {
+    const logoUrl = `/${agency}/invoice-logo.jpg`;
+    const markup = renderToStaticMarkup(React.createElement(Label, { data: { ...data, logoUrl }, qr: 'data:image/png;base64,TEST' }));
+    assert.ok(markup.includes(logoUrl));
+    assert.ok(markup.includes('data:image/png;base64,TEST'));
+    assert.ok(markup.includes('PKG-00002693'));
+    assert.ok(!markup.includes(`/${agency === 'aguila' ? 'alvarez' : 'aguila'}/invoice-logo.jpg`));
+  }
+});

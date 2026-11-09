@@ -1,5 +1,6 @@
 "use client";
 
+import { shippingPrintBrand } from "@/lib/shipping/print-branding";
 import AlvarezInvoice from "@/components/shipping/AlvarezInvoice";
 import { packageNumber } from "@/lib/shipping/package-label";
 import RemittanceDeliveryDetails from "@/components/shipping/RemittanceDeliveryDetails";
@@ -132,7 +133,8 @@ export default function PublicInvoicePage({
   }
 
   const shipment = invoice.shipment;
-  const useCompactInvoice = invoice.brand.slug === "alvarez-travel";
+  const printBrand = shippingPrintBrand(invoice.brand.slug, invoice.brand.logoUrl);
+  const useCompactInvoice = printBrand.compact;
   const rows = invoice.items || [];
 
   return (
@@ -211,7 +213,7 @@ export default function PublicInvoicePage({
             <PublicInvoiceButtons />
           </div>
 
-          {useCompactInvoice ? <AlvarezInvoice shipment={shipment} items={rows} name={invoice.brand.name} date={formatDate(shipment.created_at)} website={invoice.brand.website} /> : <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
+          {useCompactInvoice ? <AlvarezInvoice shipment={shipment} items={rows} name={invoice.brand.name} date={formatDate(shipment.created_at)} website={invoice.brand.website} logoUrl={printBrand.logoUrl} addressLines={printBrand.addressLines} /> : <article className="invoice-document overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-xl">
             <header className="bg-slate-950 px-7 py-6 text-white">
               <div className="flex items-start justify-between gap-6">
                 <div>
