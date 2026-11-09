@@ -17,3 +17,14 @@ test('remittance earnings state the period and distinguish principal from agency
  assert.match(html,/Antes de gastos operativos/);
  assert.match(html,/9.60/);
 });
+
+test('platform fee breakdown reconciles all invoices with the remittance subset',()=>{
+ const earnings={count:119,withoutCharge:1,billed:23764.74,paid:22420.24,principal:16685.43,gross:1792.5,discounts:.03,earned:1792.47,collected:1792.47,platform:47.2,afterPlatform:1745.27};
+ const billing={total_amount:64,total_count:160};
+ const html=render({canOnlinePayments:true,dashboard:{summary,statuses:[],attention_shipments:[],remittance_earnings:earnings,platform_billing:billing}});
+ assert.match(html,/64.00/);
+ assert.match(html,/47.20/);
+ assert.match(html,/16.80/);
+ assert.match(html,/118 facturas con cargo/);
+ assert.match(html,/42 facturas con cargo/);
+});

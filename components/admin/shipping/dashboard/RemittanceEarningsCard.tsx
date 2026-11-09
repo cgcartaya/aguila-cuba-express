@@ -1,20 +1,31 @@
 import type { RemittanceEarnings } from "@/lib/shipping/remittance-earnings";
 
+import type { ShippingPlatformBilling } from "@/lib/shipping/platform-billing";
+
 const usd = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
 
-export default function RemittanceEarningsCard({ earnings: e }: { earnings: RemittanceEarnings }) {
+export default function RemittanceEarningsCard({ earnings: e, billing }: { earnings: RemittanceEarnings; billing?: ShippingPlatformBilling }) {
   const metrics = [
     ["Facturado total", e.billed, "Todas las operaciones vigentes"],
     ["Cobrado total", e.paid, "Pagos y recibos registrados"],
     ["Principal de remesas", e.principal, "Dinero destinado a los beneficiarios"],
     ["Comisión de la agencia", e.earned, e.count + " remesas · después de rebajas"],
     ["Comisión de facturas pagadas", e.collected, "Remesas con la factura completamente pagada"],
-    ["Plataforma de esas remesas", e.platform, "Cargos históricos registrados"],
+    ["Plataforma descontada aquí", e.platform, "Solo remesas vigentes de este bloque"],
   ] as const;
 
   return <section className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
     <h2 className="text-xl font-black">Ingresos de la agencia · Remesas</h2>
     <p className="mt-1 text-sm text-slate-500">Acumulado histórico en USD. Excluye cancelados y papelera.</p>
+    {billing && <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 p-4">
+      <h3 className="font-bold">Cómo se divide la comisión de Perla</h3>
+      <dl className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div><dt className="text-xs">Total de la plataforma</dt><dd className="mt-1 text-xl font-black">{usd(billing.total_amount)}</dd><p className="text-xs">{billing.total_count} facturas con cargo</p></div>
+        <div><dt className="text-xs">De estas remesas vigentes</dt><dd className="mt-1 text-xl font-black">{usd(e.platform)}</dd><p className="text-xs">{e.count - e.withoutCharge} facturas con cargo</p></div>
+        <div><dt className="text-xs">Resto de facturas registradas</dt><dd className="mt-1 text-xl font-black">{usd(billing.total_amount - e.platform)}</dd><p className="text-xs">{billing.total_count - e.count + e.withoutCharge} facturas con cargo</p></div>
+      </dl>
+      <p className="mt-3 text-xs text-slate-600">El total incluye todos los cargos históricos. Para calcular el ingreso de remesas se descuenta solo su parte. El resto incluye paquetería, productos y cargos de operaciones canceladas o eliminadas.</p>
+    </div>}
     <dl className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {metrics.map(([label, amount, detail]) => <div key={label} className="rounded-xl bg-slate-50 p-4">
         <dt className="text-sm font-semibold">{label}</dt>

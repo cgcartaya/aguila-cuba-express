@@ -104,6 +104,8 @@ export default function ShipmentForm(props: Props) {
 
   const baseForm: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: (props.operationType === "money" || props.operationType === "products") && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
   const feesOnly = baseForm.contains_package && baseForm.package_billing_mode === "fees_only";
+  const [paymentReceived, setPaymentReceived] = useState(true);
+  const prepaidRemittance = !shipment && props.allowRemittanceExtras && baseForm.contains_money && !baseForm.contains_package && paymentReceived;
   const moneyOnly = !!baseForm.products_only || baseForm.contains_money && !baseForm.contains_package;
   const form: ShipmentInput = (() => {
     const location = locations.find(x => x.id === baseForm.shipping_location_id);
@@ -154,7 +156,7 @@ export default function ShipmentForm(props: Props) {
     const productSubtotal = productsTotal(baseForm.store_products);
     const physicalSubtotal = productsTotal(baseForm.physical_products);
     const total = Math.max(packageSubtotal + moneyTotal + productSubtotal + physicalSubtotal + feesTotal - Math.max(baseForm.discount_amount, 0), 0);
-    const amountPaid = Math.min(total, Math.max(baseForm.amount_paid, 0));
+    const amountPaid = prepaidRemittance ? total : Math.min(total, Math.max(baseForm.amount_paid, 0));
     const balance = Math.max(total - amountPaid, 0);
     const legacy = location ? buildLegacyLocation(location.legacy_code, baseForm.contains_package && !baseForm.products_only ? (service?.legacy_prefix || "") : "") : baseForm.location;
 
@@ -350,7 +352,13 @@ export default function ShipmentForm(props: Props) {
         <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total + (form.store_products_total || 0) + (form.physical_products_total || 0)).toFixed(2)} readOnly />
         <Input label="Cargos adicionales (USD)" value={form.extra_fees_total.toFixed(2)} readOnly />
         <Input label="Total final (USD)" value={form.service_price.toFixed(2)} readOnly />
-        <NumberInput label="Pagado (USD)" value={form.amount_paid} onChange={v=>set("amount_paid",v)} />
+        {!shipment && props.allowRemittanceExtras && form.contains_money && !form.contains_package && <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 md:col-span-2">
+          <input type="checkbox" checked={paymentReceived} onChange={event => setPaymentReceived(event.target.checked)} className="mt-1" />
+          <span><strong>Pago recibido antes de registrar la remesa</strong><span className="mt-1 block">Se guardará pagada por el total de la factura, con saldo cero. Desmarca si necesitas registrar un pago parcial o pendiente.</span></span>
+        </label>}
+        {prepaidRemittance
+          ? <Input label="Pagado (USD)" value={form.amount_paid.toFixed(2)} readOnly />
+          : <NumberInput label="Pagado (USD)" value={form.amount_paid} onChange={v=>set("amount_paid",v)} />}
         <Input label="Saldo (USD)" value={form.balance_due.toFixed(2)} readOnly />
       </div>
     </Section>
