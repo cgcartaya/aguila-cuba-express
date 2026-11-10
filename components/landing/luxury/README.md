@@ -1,10 +1,14 @@
 # Luxury Travel Point
 
-Travel-first agency landing, selected **only** by the exact host `luxury-travel-point.perlamarketplace.com` in `app/page.tsx`. Other tenants keep their existing landing and metadata. The registered store already has `has_landing=true`; no database mutations are required.
+Travel-first agency landing, selected **only** by the exact host `luxury-travel-point.perlamarketplace.com` in `app/page.tsx`. Other tenants keep their existing landing and metadata. The registered store has `has_landing=true`. Tourism content is managed through `/admin/travel` after the `luxury_managed_packages` migration.
 
 - `LuxuryLanding.tsx`: server-rendered marketing sections, services, shipping rates, pickup, FAQs, contact, JSON-LD and November eligibility by America/New_York calendar month.
 - `TravelExplorer.tsx`: client island with regional filters, accessible native inquiry dialog, month/traveler planning and a review step before opening WhatsApp. It does not send messages, create bookings, take payment or claim live availability.
-- `content.ts`: destinations, contact, box prices, services and FAQs.
+- `content.ts`: contact, box prices, services and FAQs.
+- `/admin/travel`: package, departure and PDF management. OWNER/ADMIN members of Luxury and active superadministrators have write access.
+- `travel_packages`: authoritative catalogue. The migration preserves all 30 groups and seven permanent destination/cruise offers. Packages and departures save atomically, with optimistic version checks.
+- `lib/travel/import-pdf.ts`: browser-side PDF text and photograph extraction. Documents up to 30 MB / 40 pages import as drafts for review. Scanned pages require manual entry. Uploaded assets use immutable Storage paths.
+- `/viajes/[id]`: tenant-scoped programme pages with dated, occupancy-based fares and WhatsApp enquiries. Closed departures disappear by the America/New_York calendar. Permanent programmes remain consultable without reusing expired fares.
 - `luxury.module.css`: scoped styles, responsive layouts and reduced-motion behavior.
 - `/design-preview/luxury`: noindex design review route; the production homepage uses the exact tenant host.
 
@@ -37,6 +41,10 @@ Promotional flyers are content references only and are not shipped as page image
 `node --test tests/wfcargo-landing.test.mjs tests/tenant-branding.test.mjs`
 
 Browser QA should cover desktop/mobile, region filters, traveler/month prefill, dialog validation/review/edit/Escape/focus restoration, shipping accordions, contact targets and exact-host isolation.
+
+## Historical catalogue import — 10 November 2026
+
+The managed catalogue supersedes the static groups and manual PDF instructions below. Editing, pausing or deleting a record is reflected in the landing without redeploying code; the old snapshot is retained only as a migration fixture. New or revised content remains in its original language unless translated in the catalogue or local dictionary.
 
 ## Client revisions — 10 November 2026
 

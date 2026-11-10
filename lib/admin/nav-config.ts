@@ -57,6 +57,7 @@ export type AdminSection = {
 };
 
 export const adminNavSections: AdminSection[] = [
+  { title: "Turismo", links: [{ href: "/admin/travel", label: "Paquetes y salidas", icon: Globe2, storeSlugs: ["luxury-travel-point"] }] },
   {
     title: "Tienda",
     module: "store",

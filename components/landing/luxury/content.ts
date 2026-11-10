@@ -4,15 +4,6 @@ export const contact = {
   maps: 'https://www.google.com/maps/search/?api=1&query=3418+51st+St+W+Lehigh+Acres+FL+33971',
 };
 export const whatsapp = (message: string) => `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(message)}`;
-export const destinations = [
-  { id: 'caribe', name: 'El Caribe', region: 'Caribe', tag: 'SOL · PLAYA · DESCANSO', image: '/luxury/caribe.webp', alt: 'Playa de arena blanca, palmeras y mar turquesa', text: 'Punta Cana, Cancún y Bahamas. Encuentra tu próxima escapada al sol.', details: ['Opciones de hoteles todo incluido', 'Consulta vuelos y traslados', 'Escapadas en pareja, familia o grupo'] },
-  { id: 'italia', name: 'Italia', region: 'Europa', tag: 'CULTURA · GASTRONOMÍA', image: '/luxury/europa.webp', alt: 'Casas de colores sobre la costa de Cinque Terre, Italia', text: 'Ciudades con historia, sabores que enamoran y la belleza del Mediterráneo.', details: ['Consulta circuitos y recorridos', 'Opciones privadas o en grupo', 'Itinerario según tus fechas'] },
-  { id: 'grecia', name: 'Grecia', region: 'Europa', tag: 'ISLAS · MEDITERRÁNEO', image: '/luxury/hero.webp', alt: 'Arquitectura blanca y cúpulas azules frente al mar en Santorini', text: 'El azul del Egeo y pueblos que parecen una postal. Déjate inspirar.', details: ['Consulta recorridos por las islas', 'Estancias y experiencias a medida', 'Opciones según temporada'] },
-  { id: 'francia', name: 'Francia', region: 'Europa', tag: 'ROMANCE · ARTE · HISTORIA', image: '/luxury/paris.webp', alt: 'Torre Eiffel y paisaje urbano de París', text: 'París y mucho más. Un viaje para disfrutar cada pequeño detalle.', details: ['Consulta estancias y circuitos', 'Viajes en pareja o en grupo', 'Planificación personalizada'] },
-  { id: 'cuba', name: 'Cuba', region: 'Cuba', tag: 'REENCUENTROS · VACACIONES', image: '/luxury/cuba.webp', alt: 'Automóvil clásico rosa en una calle de La Habana', text: 'Vuelve a los tuyos o redescubre la isla. Vuelos, hoteles y renta de autos.', details: ['Salidas a consultar desde Fort Myers, Miami y Tampa', 'Hoteles en Cuba', 'Renta de autos mecánicos y automáticos'] },
-  { id: 'puertorico', name: 'Puerto Rico', region: 'Caribe', tag: 'MAR · CULTURA · AVENTURA', image: '/luxury/puertorico.webp', alt: 'Olas del océano llegando a una playa', text: 'Días de playa, cultura y nuevas experiencias en el Caribe.', details: ['Consulta vuelos y hoteles', 'Opciones para familias y parejas', 'Experiencias según disponibilidad'] },
-];
-export type Destination = (typeof destinations)[number];
 export const boxes = [
   { size: '12 × 12 × 12', weight: '100 lb', first: 45, repeat: 40 },
   { size: '15 × 15 × 15', weight: '100 lb', first: 70, repeat: 65 },

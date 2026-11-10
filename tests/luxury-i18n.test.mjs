@@ -6,6 +6,7 @@ import ts from 'typescript';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createRequire } from 'node:module';
+import { travelTypes, legacyPackages } from './helpers/luxury-fixtures.mjs';
 const require=createRequire(import.meta.url);
 const base='components/landing/luxury/';
 function load(name,deps={}) {
@@ -16,9 +17,9 @@ function load(name,deps={}) {
 const i18n=load('i18n.tsx');
 const css=new Proxy({},{get:(_,key)=>String(key)});
 function localizedPage(language){
- const deps={'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
- for(const name of ['LanguageSelector','HeroGallery','GroupExplorer','TravelExplorer'])deps['./'+name]=load(name+'.tsx',deps);
- return renderToStaticMarkup(React.createElement(load('LuxuryLanding.tsx',deps).default));
+ const deps={'@/lib/travel/types':travelTypes,'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
+ for(const name of ['LanguageSelector','HeroGallery','PackageDetail','GroupExplorer','TravelExplorer'])deps['./'+name]=load(name+'.tsx',deps);
+ return renderToStaticMarkup(React.createElement(load('LuxuryLanding.tsx',deps).default,{packages:legacyPackages}));
 }
 test('English and French render locally without scripts or external translation requests',()=>{
  const en=localizedPage('en'),fr=localizedPage('fr');
