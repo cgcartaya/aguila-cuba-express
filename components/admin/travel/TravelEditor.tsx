@@ -11,8 +11,7 @@ const button = 'inline-flex items-center justify-center gap-2 rounded-xl border 
 function Field({ label, children }: { label: string; children: ReactNode }) { return <label className="grid gap-2 text-sm font-semibold text-slate-700">{label}{children}</label>; }
 function Lines({ label, value, onChange }: { label: string; value: string[]; onChange: (value: string[]) => void }) {
   // Keep blank trailing lines while editing so the operator can add the next item.
-  const [text, setText] = useState(value.join('\n'));
-  return <Field label={label}><textarea className={input} rows={5} value={text} onChange={event => { setText(event.target.value); onChange(event.target.value.split('\n')); }}/></Field>;
+  return <Field label={label}><textarea className={input} rows={5} value={value.join('\n')} onChange={event => onChange(event.target.value.split('\n'))}/></Field>;
 }
 export default function TravelEditor({ storeId, initial, initialStatus, warnings, onClose, onSave }: {
   storeId: string; initial: TravelContent; initialStatus: TravelPackage['status']; warnings: string[];
@@ -62,7 +61,7 @@ export default function TravelEditor({ storeId, initial, initialStatus, warnings
       const importedDeparture = { ...result.content.departures[0], pdf };
       const sameDate = content.departures.find(item => item.start && item.start === importedDeparture.start);
       const departures = sameDate ? content.departures.map(item => item.id === sameDate.id ? { ...importedDeparture, id: item.id, deadline: item.deadline, origin: item.origin, status: item.status } : item) : [...content.departures, importedDeparture];
-      setContent(previous => ({ ...previous, includes: result.content.includes.length ? result.content.includes : previous.includes, excludes: result.content.excludes.length ? result.content.excludes : previous.excludes, itinerary: result.content.itinerary, conditions: result.content.conditions || previous.conditions, source_text: result.content.source_text, pdf, image: previous.image || photos[0] || '', gallery: [...previous.gallery, ...photos].slice(0, 30), departures, review_notes: result.warnings }));
+      setContent(previous => ({ ...previous, title: previous.title || result.content.title, description: previous.description || result.content.description, countries: previous.countries.length ? previous.countries : result.content.countries, days: previous.days ?? result.content.days, nights: previous.nights ?? result.content.nights, includes: result.content.includes.length ? result.content.includes : previous.includes, excludes: result.content.excludes.length ? result.content.excludes : previous.excludes, itinerary: result.content.itinerary, conditions: result.content.conditions || previous.conditions, source_text: result.content.source_text, pdf, image: previous.image || photos[0] || '', gallery: [...previous.gallery, ...photos].slice(0, 30), departures, review_notes: result.warnings }));
       setDirty(true);
     } catch (cause) { setError((cause as Error).message || 'No se pudo leer el PDF.'); }
     finally { setUploading(false); }
