@@ -2,12 +2,14 @@
 
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, Compass, MapPin, MessageCircle, Users, X } from 'lucide-react';
-import { destinations, whatsapp } from './content';
+import { whatsapp } from './content';
+import type { TravelPackage } from '@/lib/travel/types';
 import s from './luxury.module.css';
 import { useLuxuryLanguage, translateTree } from './i18n';
 
 
-export default function TravelExplorer({ minMonth }: { minMonth: string }) {
+export default function TravelExplorer({ minMonth, packages = [] }: { minMonth: string; packages?: TravelPackage[] }) {
+  const destinations = packages.map(pkg => ({ id: pkg.id, name: pkg.content.title, details: pkg.content.includes }));
   const {language}=useLuxuryLanguage();
   const [destination, setDestination] = useState('');
   const [month, setMonth] = useState('');

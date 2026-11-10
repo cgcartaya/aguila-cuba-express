@@ -6,6 +6,7 @@ import ts from 'typescript';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createRequire } from 'node:module';
+import { travelTypes, legacyPackages } from './helpers/luxury-fixtures.mjs';
 const require=createRequire(import.meta.url);
 const base='components/landing/luxury/';
 function load(name,deps={}) {
@@ -16,9 +17,9 @@ function load(name,deps={}) {
 const i18n=load('i18n.tsx');
 const css=new Proxy({},{get:(_,key)=>String(key)});
 function localizedPage(language){
- const deps={'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
- for(const name of ['LanguageSelector','HeroGallery','GroupExplorer','TravelExplorer'])deps['./'+name]=load(name+'.tsx',deps);
- return renderToStaticMarkup(React.createElement(load('LuxuryLanding.tsx',deps).default));
+ const deps={'@/lib/travel/types':travelTypes,'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
+ for(const name of ['LanguageSelector','HeroGallery','PackageDetail','GroupExplorer','TravelExplorer'])deps['./'+name]=load(name+'.tsx',deps);
+ return renderToStaticMarkup(React.createElement(load('LuxuryLanding.tsx',deps).default,{packages:legacyPackages}));
 }
 test('English and French render locally without scripts or external translation requests',()=>{
  const en=localizedPage('en'),fr=localizedPage('fr');
@@ -42,4 +43,11 @@ test('Spanish stays unchanged, mixed country lists translate and travel facts re
  assert.equal(i18n.translateText('6 o más personas','en'),'6 or more people');
  assert.match(i18n.translateText('Visado a China: USD 150 por persona.','fr'),/150 USD/);
  assert.equal(i18n.translateText('An unknown proper name','en'),'An unknown proper name');
+});
+
+test('language switching preserves child keys so catalogue controls keep their state',()=>{
+ const tree=[React.createElement('select',{key:'country',value:'Japón'}),React.createElement('section',{key:'catalog'})];
+ const translated=i18n.translateTree(tree,'en');
+ assert.equal(translated[0].key,tree[0].key);assert.equal(translated[1].key,tree[1].key);
+ assert.equal(i18n.translateText(' viajes encontrados','en'),' trips found');
 });

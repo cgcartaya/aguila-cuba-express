@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getPublicTravelPackages } from "@/lib/services/travel-public";
 import LuxuryLanding from "@/components/landing/luxury/LuxuryLanding";
 import { buildLuxuryMetadata } from "@/components/landing/luxury/metadata";
 import { headers } from "next/headers";
@@ -282,7 +283,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const landing = await getCurrentLanding();
 
-  if (landing === "luxury") return <LuxuryLanding />;
+  if (landing === "luxury") {
+    try { return <LuxuryLanding packages={await getPublicTravelPackages()}/>; }
+    catch { return <LuxuryLanding catalogError/>; }
+  }
 
   if (landing === "wfcargo") return <WfCargoLanding />;
 

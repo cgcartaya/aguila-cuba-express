@@ -1,6 +1,6 @@
 'use client';
 
-import { Children, cloneElement, createContext, isValidElement, useContext, useEffect, useState, type ReactNode, type ReactElement } from 'react';
+import { cloneElement, createContext, isValidElement, useContext, useEffect, useState, type ReactNode, type ReactElement } from 'react';
 import translations from './translations.json';
 
 export type LuxuryLanguage = 'es' | 'en' | 'fr';
@@ -31,7 +31,7 @@ export function translateText(text:string,language:LuxuryLanguage):string {
 export function translateTree(node:ReactNode,language:LuxuryLanguage):ReactNode {
   if(language==='es')return node;
   if(typeof node==='string')return translateText(node,language);
-  if(Array.isArray(node))return Children.map(node,child=>translateTree(child,language));
+  if(Array.isArray(node))return node.map(child=>translateTree(child,language));
   if(!isValidElement(node))return node;
   const element=node as ReactElement<Record<string,unknown>>;
   if(element.type==='script'||element.type==='style'||element.type==='input'||element.type==='textarea') {
