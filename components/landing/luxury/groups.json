@@ -1,0 +1,713 @@
+[
+  {
+    "id": "a185146d-f308-463a-8f5d-0e1938001da5",
+    "title": "Japón, Corea del Sur & China",
+    "date": "2027-06-03",
+    "days": 20,
+    "nights": 17,
+    "price": 6865,
+    "route": "Tokio, Kioto, Osaka, Seúl, Busan, Beijing, Xi’an, Shanghai",
+    "countries": [
+      "Japón",
+      "China",
+      "Corea del Sur"
+    ],
+    "image": "/luxury/groups/1.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "17 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-corea-del-sur-china-jun2027"
+  },
+  {
+    "id": "16039ae7-8eb7-47e8-94ff-b3fdbefb7a60",
+    "title": "Japón con Monte Fuji & Hiroshima",
+    "date": "2027-03-18",
+    "days": 12,
+    "nights": 9,
+    "price": 5279,
+    "route": "Tokio, Kawaguchiko, Kioto, Osaka, Okayama, Hiroshima, Nara",
+    "countries": [
+      "Japón"
+    ],
+    "image": "/luxury/groups/2.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "9 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-monte-fuji-hiroshima-2Mar2027"
+  },
+  {
+    "id": "de10e1be-392c-4477-b438-5d979023ee40",
+    "title": "ITALIA CON LA COSTA AZUL & ESPAÑA",
+    "date": "2027-05-13",
+    "days": 10,
+    "nights": 8,
+    "price": 2926,
+    "route": "Roma, Florencia, Pisa, Sestri Levante, Montecarlo, Niza, Arles, Barcelona, Madrid",
+    "countries": [
+      "Italia",
+      "España",
+      "Francia"
+    ],
+    "image": "/luxury/groups/3.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "8 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-con-la-costa-azul-y-espana-may2027"
+  },
+  {
+    "id": "f36b444d-d0c4-4729-ae88-963193c9abb1",
+    "title": "Alquimia en Turquía \"Solo Mujeres\"",
+    "date": "2027-10-15",
+    "days": 9,
+    "nights": 7,
+    "price": 3385,
+    "route": "Estambul, Capadocia",
+    "countries": [
+      "Turquía"
+    ],
+    "image": "/luxury/groups/4.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "7 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/alquimia-en-turquia-solo-mujeres-oct2027"
+  },
+  {
+    "id": "657f1b15-9a1e-4fbc-a1e9-6472a1b80a82",
+    "title": "GRECIA CON ESTANCIA EN ISLAS",
+    "date": "2027-06-07",
+    "days": 9,
+    "nights": 7,
+    "price": 3795,
+    "route": "Atenas, Mykonos, Santorini",
+    "countries": [
+      "Grecia"
+    ],
+    "image": "/luxury/groups/5.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "7 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/grecia-con-estancia-en-islas-Jun2027"
+  },
+  {
+    "id": "d86ceda2-23d5-466b-a869-6da79a9e2b48",
+    "title": "ESPAÑA CON TOLEDO & ANDALUCÍA – GRUPO ESPECIAL",
+    "date": "2026-12-26",
+    "days": 8,
+    "nights": 6,
+    "price": 2797,
+    "route": "Madrid, Toledo, Granada, Nerja, Málaga, Ronda, Sevilla, Córdoba, Consuegra",
+    "countries": [
+      "España"
+    ],
+    "image": "/luxury/groups/6.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/espana-con-toledo-y-andalucia-grupo-especial-findeano2026"
+  },
+  {
+    "id": "4ae2b97d-2e29-423b-88b9-5981d0565b74",
+    "title": "Portugal con España & Francia",
+    "date": "2027-02-10",
+    "days": 10,
+    "nights": 8,
+    "price": 2679,
+    "route": "Lisboa, Caceres, Madrid, San Sebastián, Burdeos, París",
+    "countries": [
+      "España",
+      "Francia",
+      "Portugal"
+    ],
+    "image": "/luxury/groups/7.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "8 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/portugal-con-espana-y-francia-FEB2027"
+  },
+  {
+    "id": "fb929196-9449-4476-b984-0ee9c4eddfbf",
+    "title": "JAPÓN CON MONTE FUJI & HIROSHIMA",
+    "date": "2027-03-19",
+    "days": 11,
+    "nights": 9,
+    "price": 5315,
+    "route": "Tokio, Kawaguchiko, Kioto, Osaka, Okayama, Hiroshima",
+    "countries": [
+      "Japón"
+    ],
+    "image": "/luxury/groups/8.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "9 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-monte-fuji-y-hiroshima-Marzo2027"
+  },
+  {
+    "id": "e2d6b9fb-8c9f-43b0-829e-efe4b69e046c",
+    "title": "DUBÁI CON ABU DHABI EN SPRING BREAK – GRUPO",
+    "date": "2027-03-22",
+    "days": 7,
+    "nights": 5,
+    "price": 2149,
+    "route": "Dubái, Abu Dhabi",
+    "countries": [
+      "Emiratos Árabes Unidos"
+    ],
+    "image": "/luxury/groups/9.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "5 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/dubai-con-abu-dhabi-en-spring-break-grupo"
+  },
+  {
+    "id": "56a03b61-767d-44e8-b7ff-d2cf956867ef",
+    "title": "DUBÁI CON ABU DHABI – GRUPO",
+    "date": "2027-02-19",
+    "days": 7,
+    "nights": 5,
+    "price": 1996,
+    "route": "Dubái, Abu Dhabi",
+    "countries": [
+      "Emiratos Árabes Unidos"
+    ],
+    "image": "/luxury/groups/10.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "5 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/dubai-con-abu-dhabi-grupoFEB2027"
+  },
+  {
+    "id": "6767f3c0-cc1b-480c-a5d6-602207f68069",
+    "title": "ITALIA CON SUIZA & PARÍS",
+    "date": "2027-03-11",
+    "days": 9,
+    "nights": 7,
+    "price": 2567,
+    "route": "Roma, Pisa, Turín, Ginebra, París",
+    "countries": [
+      "Italia",
+      "Francia",
+      "Suiza"
+    ],
+    "image": "/luxury/groups/11.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "7 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-con-suiza-y-paris-mar2027"
+  },
+  {
+    "id": "f91b279d-f08b-4c2b-a58e-711bf9d7a7bb",
+    "title": "Portugal en Fin de Año - Grupo Especial",
+    "date": "2026-12-25",
+    "days": 9,
+    "nights": 7,
+    "price": 2997,
+    "route": "Oporto, Guimarães, Braga, Fatima, Coimbra, Obidos, Lisboa",
+    "countries": [
+      "Portugal"
+    ],
+    "image": "/luxury/groups/12.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "7 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/portugal-en-fin-de-ano-grupo-especial"
+  },
+  {
+    "id": "52df9c46-0e58-46a9-a967-0b45bf8c040b",
+    "title": "TURQUÍA EN SPRING BREAK – GRUPO ESPECIAL",
+    "date": "2027-03-17",
+    "days": 10,
+    "nights": 8,
+    "price": 2397,
+    "route": "Estambul, Ankara, Capadocia, Pamukkale, Efeso, Kusadasi, Bursa",
+    "countries": [
+      "Turquía"
+    ],
+    "image": "/luxury/groups/13.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "8 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-en-spring-break-grupo-2027mar"
+  },
+  {
+    "id": "51e3bda3-176b-44f3-9b87-c2a6ce48c10d",
+    "title": "GRECIA CON ESTANCIA EN ISLAS",
+    "date": "2027-04-12",
+    "days": 9,
+    "nights": 7,
+    "price": 2879,
+    "route": "Atenas, Mykonos, Santorini",
+    "countries": [
+      "Grecia"
+    ],
+    "image": "/luxury/groups/14.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "7 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/grecia-con-estancia-en-islas-Apr2027"
+  },
+  {
+    "id": "61ce56fd-6893-4238-b339-bbf3b35b1dc5",
+    "title": "ITALIA CLÁSICA CON VENECIA – GRUPO",
+    "date": "2027-04-10",
+    "days": 8,
+    "nights": 6,
+    "price": 2798,
+    "route": "Roma, Florencia, Venecia, Rávena, Asís",
+    "countries": [
+      "Italia"
+    ],
+    "image": "/luxury/groups/15.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-clasica-con-venecia-grupo-APR2027"
+  },
+  {
+    "id": "408f49fa-2f7d-426c-a238-965a16196e5f",
+    "title": "JAPÓN CON TOKIO & MONTE FUJI – GRUPO FIJO",
+    "date": "2027-05-20",
+    "days": 8,
+    "nights": 6,
+    "price": 4389,
+    "route": "Tokio, Monte Fuji, Kawaguchiko, Iyashi No Sato Nenba, Toyota, Kioto, Tsumago, Matsumoto",
+    "countries": [
+      "Japón"
+    ],
+    "image": "/luxury/groups/16.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-tokio-y-monte-fuji-grupo-fijo-May2027"
+  },
+  {
+    "id": "58ee6d53-0633-4cd8-99d1-1ccf69fa340c",
+    "title": "Sur de España con Portugal",
+    "date": "2027-05-13",
+    "days": 10,
+    "nights": 8,
+    "price": 2986,
+    "route": "Valencia, Alicante, Guadix, Granada, Nerja, Málaga, Ronda, Sevilla, Mérida, Évora, Lisboa",
+    "countries": [
+      "España",
+      "Portugal"
+    ],
+    "image": "/luxury/groups/17.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "8 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/sur-de-espana-con-portugal-may2027"
+  },
+  {
+    "id": "2255e3b7-6da5-438b-89b7-869add582d4c",
+    "title": "Turquía & Dubai con Abu Dhabi",
+    "date": "2027-04-12",
+    "days": 11,
+    "nights": 9,
+    "price": 2997,
+    "route": "Estambul, Capadocia, Dubái, Abu Dhabi",
+    "countries": [
+      "Emiratos Árabes Unidos",
+      "Turquía"
+    ],
+    "image": "/luxury/groups/18.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "9 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-y-dubai-con-abu-dhabi-ABRIL2027"
+  },
+  {
+    "id": "683d5ee6-f9ac-4ba0-b587-2ef672682a73",
+    "title": "Londres & Norte de Francia con Paris",
+    "date": "2027-05-11",
+    "days": 8,
+    "nights": 6,
+    "price": 2986,
+    "route": "Londres, Calais, Amiens, Paris",
+    "countries": [
+      "Francia",
+      "Reino Unido"
+    ],
+    "image": "/luxury/groups/19.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/londres-y-norte-de-francia-con-paris-May2027"
+  },
+  {
+    "id": "d6ea487d-7dfc-461d-a6cc-36b842d281cd",
+    "title": "EXPLORANDO SUDAFRICA",
+    "date": "2027-03-25",
+    "days": 13,
+    "nights": 10,
+    "price": 7985,
+    "route": "Ciudad del Cabo, Stellenbosch, Franschhoek, Johannesburgo, Pilanesberg, Cataratas Victoria",
+    "countries": [
+      "Sudáfrica"
+    ],
+    "image": "/luxury/groups/20.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "10 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/sudafrica-platinum-experience-MAR2027"
+  },
+  {
+    "id": "ce35b91f-293d-45e0-b6e0-019af65eccfb",
+    "title": "Japón con Tokio & Monte Fuji",
+    "date": "2027-04-08",
+    "days": 9,
+    "nights": 6,
+    "price": 3997,
+    "route": "Tokio, Kawaguchiko, Iyashi no Sato Nenba, Toyota, Kioto, Tsumago, Matsumoto",
+    "countries": [
+      "Japón"
+    ],
+    "image": "/luxury/groups/21.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-tokio-y-monte-fuji-ABRIL2027"
+  },
+  {
+    "id": "b1b9fac2-7182-46d3-9b76-015467e3e4f5",
+    "title": "MADRID CON LO MEJOR DE  ANDALUCIA",
+    "date": "2027-03-19",
+    "days": 8,
+    "nights": 6,
+    "price": 2387,
+    "route": "Madrid, Toledo, Granada, Nerja, Malaga, Ronda, Sevilla, Cordoba y Consuegra",
+    "countries": [
+      "España"
+    ],
+    "image": "/luxury/groups/22.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/madrid-con-lo-mejor-de-andalucia-Marzo-2027"
+  },
+  {
+    "id": "2100934c-032b-48f9-b126-7ab4d280a07a",
+    "title": "Turquía Esencial – Grupo Especial",
+    "date": "2027-05-10",
+    "days": 10,
+    "nights": 8,
+    "price": 2397,
+    "route": "Estambul, Ankara, Capadocia, Pamukkale, Éfeso, Kusadasi, Bursa",
+    "countries": [
+      "Turquía"
+    ],
+    "image": "/luxury/groups/23.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "8 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-esencial-grupo-especial-Mayo2027"
+  },
+  {
+    "id": "5c1aa4bc-fc5a-4947-a5f7-d7dff5e47591",
+    "title": "Lisboa con Madrid & Barcelona",
+    "date": "2027-04-18",
+    "days": 9,
+    "nights": 6,
+    "price": 2597,
+    "route": "Lisboa, Caceres, Madrid, Zaragoza, Barcelona",
+    "countries": [
+      "España",
+      "Portugal"
+    ],
+    "image": "/luxury/groups/24.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/lisboa-con-madrid-y-barcelona-ABRIL2027"
+  },
+  {
+    "id": "32e4843a-9151-49a6-98db-13fed948edd4",
+    "title": "Quinceañeras por Europa",
+    "date": "2027-06-15",
+    "days": 15,
+    "nights": 13,
+    "price": 3987,
+    "route": "Madrid, Barcelona, Niza, Venecia, Florencia, Roma, Pisa, Turín, Ginebra, París, Toledo, Zaragoza, Mónaco",
+    "countries": [
+      "Italia",
+      "España",
+      "Francia",
+      "Suiza"
+    ],
+    "image": "/luxury/groups/25.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "13 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/quinceaneras-por-europa-jun2027"
+  },
+  {
+    "id": "795bc2bf-7262-4026-b6f4-6fad3bd94697",
+    "title": "VIENA CON BUDAPEST & PRAGA",
+    "date": "2027-06-10",
+    "days": 7,
+    "nights": 5,
+    "price": 2687,
+    "route": "Viena, Budapest, Bratislava, Praga",
+    "countries": [
+      "República Checa",
+      "Austria",
+      "Hungría"
+    ],
+    "image": "/luxury/groups/26.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "5 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/viena-con-budapest-y-praga-Jun2027"
+  },
+  {
+    "id": "f3ce8620-d6bb-4075-9e38-2420e766a5a7",
+    "title": "China con Hong Kong – Grupo Fijo",
+    "date": "2027-05-13",
+    "days": 15,
+    "nights": 12,
+    "price": 4397,
+    "route": "Beijing, Xi’an, Shanghai, Guilin, Yangshuo, Longji, Hong Kong",
+    "countries": [
+      "China"
+    ],
+    "image": "/luxury/groups/27.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "12 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/china-con-hong-kong-grupo-fijo-May2027"
+  },
+  {
+    "id": "2795146e-cdc6-456c-8285-f19124254fa0",
+    "title": "TAILANDIA CON PHUKET – GRUPO FIJO",
+    "date": "2027-04-19",
+    "days": 12,
+    "nights": 9,
+    "price": 4297,
+    "route": "Bangkok, Ratchaburi, Chiang Rai, Chiang Mai, Phuket",
+    "countries": [
+      "Tailandia"
+    ],
+    "image": "/luxury/groups/28.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "9 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/tailandia-con-phuket-grupo-fijo-Apr2027"
+  },
+  {
+    "id": "076ae6bf-4c11-40a1-8d9a-a004f4bd0474",
+    "title": "LONDRES CON BÉLGICA & AMSTERDAM – GRUPO ESPECIAL",
+    "date": "2026-12-29",
+    "days": 8,
+    "nights": 6,
+    "price": 2997,
+    "route": "Londres, Calais, Brujas, Gante, La Haya, Amsterdam",
+    "countries": [
+      "Reino Unido",
+      "Francia",
+      "Bélgica",
+      "Países Bajos"
+    ],
+    "image": "/luxury/groups/29.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/londres-con-belgica-y-amsterdam-grupo-especial-findeano2026"
+  },
+  {
+    "id": "1252d1a8-682e-400c-9835-bca5eaf294f2",
+    "title": "VIENA CON BUDAPEST & PRAGA",
+    "date": "2027-03-18",
+    "days": 7,
+    "nights": 6,
+    "price": 2167,
+    "route": "Viena, Budapest, Bratislava, Praga",
+    "countries": [
+      "República Checa",
+      "Austria",
+      "Eslovaquia",
+      "Hungría"
+    ],
+    "image": "/luxury/groups/30.webp",
+    "includes": [
+      "Vuelo y sus impuestos, según programa.",
+      "6 noches de alojamiento; categoría según programa.",
+      "Desayunos incluidos.",
+      "Traslados indicados en el programa.",
+      "Servicios de guía en español según itinerario.",
+      "Visitas y entradas especificadas en el circuito."
+    ],
+    "pdf": null,
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/viena-con-budapest-praga-MAR2027"
+  }
+]

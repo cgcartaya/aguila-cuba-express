@@ -1,15 +1,12 @@
 'use client';
 
-import Image from 'next/image';
 import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, Compass, MapPin, MessageCircle, Users, X } from 'lucide-react';
 import { destinations, whatsapp } from './content';
 import s from './luxury.module.css';
 
-const regions = ['Todos', 'Caribe', 'Europa', 'Cuba'];
 
 export default function TravelExplorer({ minMonth }: { minMonth: string }) {
-  const [region, setRegion] = useState('Todos');
   const [destination, setDestination] = useState('');
   const [month, setMonth] = useState('');
   const [travelers, setTravelers] = useState('2');
@@ -39,14 +36,6 @@ export default function TravelExplorer({ minMonth }: { minMonth: string }) {
         <label><span><Users size={14} /> Viajeros</span><select value={travelers} onChange={e => setTravelers(e.target.value)}>{['1', '2', '3', '4', '5', '6 o más'].map(v => <option key={v} value={v}>{v} {v === '1' ? 'persona' : 'personas'}</option>)}</select></label>
         <button className={s.goldButton} type="submit">Diseñar mi viaje <ArrowUpRight size={18} /></button>
       </form>
-    </section>
-    <section id="destinos" className={s.destinations}>
-      <div className={s.sectionHeading}><div><p className={s.eyebrow}>ELIGE TU PRÓXIMO RECUERDO</p><h2>Hay un mundo<br />por <em>descubrir.</em></h2></div><div className={s.headingAside}><p>Desde una escapada al Caribe hasta un recorrido por Europa. Tú sueñas el viaje; nosotros te ayudamos a darle forma.</p><div className={s.filters} aria-label="Filtrar destinos">{regions.map(r => <button key={r} type="button" aria-pressed={r === region} onClick={() => setRegion(r)}>{r}</button>)}</div></div></div>
-      <div className={s.destinationGrid} aria-live="polite">{destinations.filter(d => region === 'Todos' || d.region === region).map(d => <article className={s.destinationCard} key={d.id}>
-        <button type="button" className={s.cardImage} onClick={() => openInquiry(d.name)} aria-label={`Consultar viaje a ${d.name}`}><Image src={d.image} alt={d.alt} fill sizes="(max-width: 600px) 100vw, (max-width: 950px) 50vw, 33vw" /><span className={s.cardRegion}>{d.region}</span><span className={s.imageArrow}><ArrowUpRight size={22} /></span><span className={s.cardNumber}>0{destinations.findIndex(item => item.id === d.id) + 1}</span></button>
-        <div className={s.cardText}><p className={s.eyebrow}>{d.tag}</p><h3>{d.name}</h3><p>{d.text}</p><button type="button" className={s.textButton} onClick={() => openInquiry(d.name)}>Explorar mi viaje <ArrowUpRight size={17} /></button></div>
-      </article>)}</div>
-      <p className={s.catalogNote}>Destinos para inspirarte. Solicita tu propuesta con fechas, itinerario, precio e inclusiones confirmados por la agencia.</p>
     </section>
     <dialog ref={dialog} className={s.dialog} aria-labelledby="luxury-inquiry-title" onClose={() => setPrepared(false)} onClick={e => { if (e.target === e.currentTarget) dialog.current?.close(); }}>
       <div className={s.dialogBody}><button className={s.closeButton} type="button" aria-label="Cerrar consulta" onClick={() => dialog.current?.close()}><X size={22} /></button><p className={s.eyebrow}>UN VIAJE HECHO PARA TI</p><h2 id="luxury-inquiry-title">{prepared ? 'Tu viaje empieza aquí.' : 'Cuéntanos qué sueñas.'}</h2>
