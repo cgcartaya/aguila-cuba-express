@@ -1,7 +1,9 @@
 import { travelDraftFromText } from './import-text';
 
+type DecodedPdfImage = { width: number; height: number; kind: number; bitmap?: ImageBitmap; data?: Uint8Array | Uint8ClampedArray };
+
 export async function extractTravelPdf(file: File, progress: (message: string) => void) {
-  if (file.size > 30 * 1024 * 1024) throw new Error('El PDF supera los 30 MB.');
+  if (file.size > 50 * 1024 * 1024) throw new Error('El PDF supera los 50 MB.');
   const buffer = await file.arrayBuffer();
   if (!new TextDecoder().decode(buffer.slice(0, 1024)).includes('%PDF-')) throw new Error('El archivo no es un PDF válido.');
   const pdfjs = await import('pdfjs-dist');
@@ -28,11 +30,6 @@ export async function extractTravelPdf(file: File, progress: (message: string) =
       }
       pages.push([...rows.entries()].sort(([a], [b]) => b - a).map(([, row]) => row.sort((a, b) => a.x - b.x).map(item => item.text).join(' ')).join('\n'));
       if (images.length < 12) {
-        const viewport = page.getViewport({ scale: Math.min(1, 900 / page.getViewport({ scale: 1 }).width) });
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
-        // Rendering resolves compressed embedded images into decoded pixel data.
-        await page.render({ canvas, viewport }).promise;
         const ops = await page.getOperatorList();
         for (let i = 0; i < ops.fnArray.length && images.length < 12; i++) {
           if (ops.fnArray[i] !== pdfjs.OPS.paintImageXObject) continue;
@@ -40,7 +37,8 @@ export async function extractTravelPdf(file: File, progress: (message: string) =
           if (imageIds.has(id)) continue;
           imageIds.add(id);
           try {
-            const image = page.objs.has(id) ? page.objs.get(id) : page.commonObjs.get(id);
+            const objects = id.startsWith('g_') ? page.commonObjs : page.objs;
+            const image = await new Promise<DecodedPdfImage | null>(resolve => objects.get(id, resolve));
             if (!image || image.width < 240 || image.height < 140 || image.width * image.height > 16000000) continue;
             const photo = document.createElement('canvas');
             photo.width = image.width; photo.height = image.height;
@@ -62,7 +60,6 @@ export async function extractTravelPdf(file: File, progress: (message: string) =
             photo.width = photo.height = thumbnail.width = thumbnail.height = 0;
           } catch { /* A decorative image can be unsupported without losing the document. */ }
         }
-        canvas.width = canvas.height = 0;
       }
       page.cleanup();
     }

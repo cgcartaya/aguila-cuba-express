@@ -62,8 +62,9 @@ export function travelDraftFromText(text: string, filename: string): TravelImpor
   content.itinerary = dayRows.sort((a, b) => a.number - b.number).map(({ title, description }) => ({ title, description }));
   // Only assign amounts explicitly adjacent to their occupancy label.
   // Other amounts can refer to children, supplements, tips or deposits.
-  const labeledRates = [...clean.matchAll(/(?:^|\n)\s*(TRIPLE|DOBLE|SIMPLE|SENCILLA|INDIVIDUAL)[ \t]*\$[ \t]*([\d,]+(?:\.\d{2})?)/gi)];
+  const labeledRates = [...clean.matchAll(/(?:^|\n)\s*(TRIPLE|DOBLE|SIMPLE|SENCILLA|INDIVIDUAL)[ \t]*(?:\n[ \t]*)?\$[ \t]*([\d,]+(?:\.\d{2})?)/gi)];
   departure.rates = labeledRates.map(match => ({ label: /^simple|sencilla|individual$/i.test(match[1]) ? 'Individual' : /^doble$/i.test(match[1]) ? 'Doble' : 'Triple', amount: Number(match[2].replace(/,/g, '')) }));
+  if (departure.rates.length && /\bDOBLE\b/i.test(clean) && !departure.rates.some(rate => rate.label === 'Doble')) warnings.push('No se reconoció la tarifa doble. Comprueba las ocupaciones en el PDF.');
   if (!departure.rates.length) warnings.push('Las tarifas no se asignaron automáticamente. Confirma los importes y su ocupación.');
   content.departures = [departure];
   content.review_notes = warnings;

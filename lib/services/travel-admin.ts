@@ -25,8 +25,8 @@ export async function deleteTravelPackage(pkg: TravelPackage) {
   if (!data?.length) throw new Error('El paquete cambió. Recarga el catálogo antes de eliminarlo.');
 }
 export async function uploadTravelAsset(storeId: string, file: File | Blob, kind: 'pdf' | 'image') {
-  const limit = kind === 'pdf' ? 30 * 1024 * 1024 : 8 * 1024 * 1024;
-  if (file.size > limit) throw new Error(kind === 'pdf' ? 'El PDF supera los 30 MB.' : 'La imagen supera los 8 MB.');
+  const limit = kind === 'pdf' ? 50 * 1024 * 1024 : 8 * 1024 * 1024;
+  if (file.size > limit) throw new Error(kind === 'pdf' ? 'El PDF supera los 50 MB.' : 'La imagen supera los 8 MB.');
   const allowed = kind === 'pdf' ? ['application/pdf'] : ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowed.includes(file.type)) throw new Error('Formato de archivo no admitido.');
   const extension = kind === 'pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpg' : 'webp';

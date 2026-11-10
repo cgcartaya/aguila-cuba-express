@@ -35,7 +35,7 @@ export default function TravelManager({ storeId }: { storeId: string }) {
       const { extractTravelPdf } = await import('@/lib/travel/import-pdf');
       for (const file of files) {
         try {
-          if (file.size > 30 * 1024 * 1024) throw new Error('El PDF supera los 30 MB.');
+          if (file.size > 50 * 1024 * 1024) throw new Error('El PDF supera los 50 MB.');
           const hashBytes = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
           const hash = Array.from(new Uint8Array(hashBytes), byte => byte.toString(16).padStart(2, '0')).join('');
           const existing = rows.find(pkg => pkg.content.source_hash === hash);
@@ -75,7 +75,7 @@ export default function TravelManager({ storeId }: { storeId: string }) {
   }
   const visible = packages.filter(pkg => (!search || `${pkg.content.title} ${pkg.content.countries.join(' ')}`.toLocaleLowerCase('es').includes(search.toLocaleLowerCase('es'))) && (filter === 'all' || filter === 'expired' && pkg.status === 'published' && !isPackageVisible(pkg) || pkg.status === filter));
   return <div className="mx-auto max-w-7xl space-y-6 pb-20">
-    <header className="rounded-3xl bg-[#0c2639] p-6 text-white sm:p-8"><p className="mb-2 text-xs font-bold uppercase tracking-[.2em] text-amber-200">Luxury Travel Point</p><h1 className="text-3xl font-bold">Paquetes y salidas</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">Administra cada viaje, sus grupos y tarifas. Importa un PDF, revisa el programa y publica la oferta en tu web.</p><div className="mt-6 flex flex-wrap gap-3"><button type="button" className={button} disabled={busy} onClick={() => setEditing({ content: emptyTravelContent() })}><Plus size={18}/>Crear paquete</button><label className={`${button} cursor-pointer`}><Upload size={18}/>Importar PDF<input type="file" multiple accept="application/pdf" disabled={busy} className="sr-only" onChange={importPdf}/></label></div><p className="mt-3 text-xs text-slate-300">Hasta 10 PDF por lote, de 30 MB y 40 páginas cada uno. Las importaciones se guardan como borrador.</p></header>
+    <header className="rounded-3xl bg-[#0c2639] p-6 text-white sm:p-8"><p className="mb-2 text-xs font-bold uppercase tracking-[.2em] text-amber-200">Luxury Travel Point</p><h1 className="text-3xl font-bold">Paquetes y salidas</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200">Administra cada viaje, sus grupos y tarifas. Importa un PDF, revisa el programa y publica la oferta en tu web.</p><div className="mt-6 flex flex-wrap gap-3"><button type="button" className={button} disabled={busy} onClick={() => setEditing({ content: emptyTravelContent() })}><Plus size={18}/>Crear paquete</button><label className={`${button} cursor-pointer`}><Upload size={18}/>Importar PDF<input type="file" multiple accept="application/pdf" disabled={busy} className="sr-only" onChange={importPdf}/></label></div><p className="mt-3 text-xs text-slate-300">Hasta 10 PDF por lote, de 50 MB y 40 páginas cada uno. Las importaciones se guardan como borrador.</p></header>
     {progress && <p role="status" className="rounded-xl bg-blue-50 p-4 text-blue-900">{progress}</p>}
     {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
     {notice && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">{notice}</p>}

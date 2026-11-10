@@ -36,6 +36,9 @@ test('migration preserves 37 current offers, enforces tenant writes, hides draft
  try {
   await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema private;create schema storage;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table public.stores(id uuid primary key,slug text,is_active boolean);create table public.profiles(id uuid,active boolean);create table public.test_members(user_id uuid,store_id uuid,role text);create function public.has_store_role(tenant uuid,roles text[]) returns boolean language sql security definer as $$select exists(select 1 from public.test_members where store_id=tenant and user_id=auth.uid() and role=any(roles))$$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid,bucket_id text,name text);create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;grant usage on schema public,auth,storage to anon,authenticated;grant select on public.stores,public.profiles to anon,authenticated;insert into public.stores values('57f60bbe-35a7-46f2-99a6-484414a3b893','luxury-travel-point',true),('00000000-0000-0000-0000-000000000002','other',true);insert into public.profiles values('00000000-0000-0000-0000-000000000001',true);insert into public.test_members values('00000000-0000-0000-0000-000000000001','57f60bbe-35a7-46f2-99a6-484414a3b893','OWNER');`);
   await db.exec(fs.readFileSync('supabase/migrations/20261110223706_luxury_managed_packages.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261110225833_travel_pdf_size_limit.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261110230040_travel_public_catalog_policy.sql','utf8'));
+  await db.exec('revoke execute on function public.has_store_role(uuid,text[]) from public,anon;grant execute on function public.has_store_role(uuid,text[]) to authenticated');
   assert.equal((await db.query('select count(*)::integer n from travel_packages')).rows[0].n,37);
   const pkg=(await db.query('select * from travel_packages limit 1')).rows[0];
   await db.exec(`set role authenticated;select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',false)`);
@@ -46,6 +49,7 @@ test('migration preserves 37 current offers, enforces tenant writes, hides draft
   await assert.rejects(db.query('insert into travel_packages(store_id,content) values($1,$2)',['00000000-0000-0000-0000-000000000002',pkg.content]));
   await db.exec("reset role;select set_config('request.jwt.claim.sub','',false);set role anon");
   assert.equal((await db.query('select id from travel_packages where id=$1',[pkg.id])).rows.length,0);
+  assert.equal((await db.query('select count(*)::integer n from travel_packages')).rows[0].n,36);
   await assert.rejects(db.query("insert into travel_packages(store_id,content) values($1,$2)",[pkg.store_id,pkg.content]));
   await db.exec('reset role');
   assert.equal((await db.query('select count(*)::integer n from travel_packages')).rows[0].n,37);

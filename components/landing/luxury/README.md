@@ -7,7 +7,7 @@ Travel-first agency landing, selected **only** by the exact host `luxury-travel-
 - `content.ts`: contact, box prices, services and FAQs.
 - `/admin/travel`: package, departure and PDF management. OWNER/ADMIN members of Luxury and active superadministrators have write access.
 - `travel_packages`: authoritative catalogue. The migration preserves all 30 groups and seven permanent destination/cruise offers. Packages and departures save atomically, with optimistic version checks.
-- `lib/travel/import-pdf.ts`: browser-side PDF text and photograph extraction. Documents up to 30 MB / 40 pages import as drafts for review. Scanned pages require manual entry. Uploaded assets use immutable Storage paths.
+- `lib/travel/import-pdf.ts`: browser-side PDF text and photograph extraction. Documents up to 50 MB / 40 pages import as drafts for review. Scanned pages require manual entry. Uploaded assets use immutable Storage paths.
 - `/viajes/[id]`: tenant-scoped programme pages with dated, occupancy-based fares and WhatsApp enquiries. Closed departures disappear by the America/New_York calendar. Permanent programmes remain consultable without reusing expired fares.
 - `luxury.module.css`: scoped styles, responsive layouts and reduced-motion behavior.
 - `/design-preview/luxury`: noindex design review route; the production homepage uses the exact tenant host.
