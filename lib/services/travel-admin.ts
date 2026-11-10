@@ -32,6 +32,6 @@ export async function uploadTravelAsset(storeId: string, file: File | Blob, kind
   const extension = kind === 'pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpg' : 'webp';
   const path = `${storeId}/${crypto.randomUUID()}.${extension}`;
   const { error } = await supabase.storage.from(TRAVEL_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
-  if (error) throw new Error('No se pudo subir el archivo. Puedes volver a intentarlo.');
+  if (error) throw new Error(`No se pudo subir el archivo. ${error.message || 'Puedes volver a intentarlo.'}`);
   return supabase.storage.from(TRAVEL_BUCKET).getPublicUrl(path).data.publicUrl;
 }
