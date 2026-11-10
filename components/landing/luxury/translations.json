@@ -475,7 +475,8 @@
     "Consultar el programa completo del documento": "Read the complete programme from the document",
     "Descargar programa PDF": "Download programme PDF",
     "Consultar este viaje": "Ask about this trip",
-    "Volver a intentar": "Try again"
+    "Volver a intentar": "Try again",
+    "viajes encontrados": "trips found"
   },
   "fr": {
     "Todo coordinado": "Tout est coordonné",
@@ -953,6 +954,7 @@
     "Consultar el programa completo del documento": "Lire le programme complet du document",
     "Descargar programa PDF": "Télécharger le programme PDF",
     "Consultar este viaje": "Se renseigner sur ce voyage",
-    "Volver a intentar": "Réessayer"
+    "Volver a intentar": "Réessayer",
+    "viajes encontrados": "voyages trouvés"
   }
 }

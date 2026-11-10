@@ -44,3 +44,10 @@ test('Spanish stays unchanged, mixed country lists translate and travel facts re
  assert.match(i18n.translateText('Visado a China: USD 150 por persona.','fr'),/150 USD/);
  assert.equal(i18n.translateText('An unknown proper name','en'),'An unknown proper name');
 });
+
+test('language switching preserves child keys so catalogue controls keep their state',()=>{
+ const tree=[React.createElement('select',{key:'country',value:'Japón'}),React.createElement('section',{key:'catalog'})];
+ const translated=i18n.translateTree(tree,'en');
+ assert.equal(translated[0].key,tree[0].key);assert.equal(translated[1].key,tree[1].key);
+ assert.equal(i18n.translateText(' viajes encontrados','en'),' trips found');
+});
