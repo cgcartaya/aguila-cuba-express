@@ -14,15 +14,21 @@
     ],
     "image": "/luxury/groups/1.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "17 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "17 noches y desayunos; hoteles de 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-corea-del-sur-china-jun2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-corea-del-sur-china-jun2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Visado a China: USD 150 por persona."
+    ]
   },
   {
     "id": "16039ae7-8eb7-47e8-94ff-b3fdbefb7a60",
@@ -37,15 +43,21 @@
     ],
     "image": "/luxury/groups/2.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "9 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "9 noches, desayuno buffet; hotel 3 y 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-monte-fuji-hiroshima-2Mar2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-monte-fuji-hiroshima-2Mar2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "de10e1be-392c-4477-b438-5d979023ee40",
@@ -62,15 +74,21 @@
     ],
     "image": "/luxury/groups/3.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "8 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "8 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-con-la-costa-azul-y-espana-may2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-con-la-costa-azul-y-espana-may2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "f36b444d-d0c4-4729-ae88-963193c9abb1",
@@ -85,15 +103,20 @@
     ],
     "image": "/luxury/groups/4.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "7 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "Asistencia de guía en español durante el circuito.",
+      "5 noches con desayuno en Estambul.",
+      "2 noches con media pensión en Capadocia.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/alquimia-en-turquia-solo-mujeres-oct2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/alquimia-en-turquia-solo-mujeres-oct2027",
+    "excludes": [
+      "Excursiones opcionales o gastos personales.",
+      "Cualquier servicio no mencionado como incluido.",
+      "Suplemento traslado SAW en caso de que el vuelo internacional llegue al aeropuerto asiático."
+    ]
   },
   {
     "id": "657f1b15-9a1e-4fbc-a1e9-6472a1b80a82",
@@ -108,15 +131,22 @@
     ],
     "image": "/luxury/groups/5.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "7 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "7 noches, desayuno buffet; hoteles 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/grecia-con-estancia-en-islas-Jun2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/grecia-con-estancia-en-islas-Jun2027",
+    "excludes": [
+      "Traslados adicionales.",
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas y excursiones.",
+      "Cenas y almuerzos no especificados.",
+      "City Tax – Aprox. 10–15 € por habitación por noche en Atenas (debe ser abonado por el cliente directamente en destino).",
+      "Tanto las ciudades, como ruta del crucero y el orden de las visitas pueden variar sin previo aviso para mejor desarrollo del tour."
+    ]
   },
   {
     "id": "d86ceda2-23d5-466b-a869-6da79a9e2b48",
@@ -131,15 +161,22 @@
     ],
     "image": "/luxury/groups/6.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Cena en restaurante para Fin de Año.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/espana-con-toledo-y-andalucia-grupo-especial-findeano2026"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/espana-con-toledo-y-andalucia-grupo-especial-findeano2026",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "4ae2b97d-2e29-423b-88b9-5981d0565b74",
@@ -156,15 +193,21 @@
     ],
     "image": "/luxury/groups/7.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "8 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "Traslados del itinerario.",
+      "8 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Asistencia de guía en español durante el circuito.",
+      "Entradas y visitas previstas en el itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/portugal-con-espana-y-francia-FEB2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/portugal-con-espana-y-francia-FEB2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "fb929196-9449-4476-b984-0ee9c4eddfbf",
@@ -179,15 +222,21 @@
     ],
     "image": "/luxury/groups/8.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "9 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "9 noches, desayuno buffet; hotel 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-monte-fuji-y-hiroshima-Marzo2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-monte-fuji-y-hiroshima-Marzo2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "e2d6b9fb-8c9f-43b0-829e-efe4b69e046c",
@@ -202,15 +251,22 @@
     ],
     "image": "/luxury/groups/9.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "5 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "5 noches, desayuno buffet; hotel 5 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/dubai-con-abu-dhabi-en-spring-break-grupo"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/dubai-con-abu-dhabi-en-spring-break-grupo",
+    "excludes": [
+      "Propinas obligatorias: USD 25 (excluye las del guía).",
+      "Maleteros.",
+      "Bebidas, excepto agua en jarra durante las cenas.",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "56a03b61-767d-44e8-b7ff-d2cf956867ef",
@@ -225,15 +281,22 @@
     ],
     "image": "/luxury/groups/10.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "5 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "5 noches, desayuno buffet; hotel 5 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/dubai-con-abu-dhabi-grupoFEB2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/dubai-con-abu-dhabi-grupoFEB2027",
+    "excludes": [
+      "Propinas obligatorias: USD 25 (excluye las del guía).",
+      "Maleteros.",
+      "Bebidas, excepto agua en jarra durante las cenas.",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "6767f3c0-cc1b-480c-a5d6-602207f68069",
@@ -250,15 +313,21 @@
     ],
     "image": "/luxury/groups/11.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "7 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "7 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-con-suiza-y-paris-mar2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-con-suiza-y-paris-mar2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "f91b279d-f08b-4c2b-a58e-711bf9d7a7bb",
@@ -273,15 +342,22 @@
     ],
     "image": "/luxury/groups/12.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "7 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "7 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Cena de celebración de Fin de Año en Lisboa.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/portugal-en-fin-de-ano-grupo-especial"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/portugal-en-fin-de-ano-grupo-especial",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "52df9c46-0e58-46a9-a967-0b45bf8c040b",
@@ -296,15 +372,21 @@
     ],
     "image": "/luxury/groups/13.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "8 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "8 noches, desayuno buffet; hoteles 4 y 5 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-en-spring-break-grupo-2027mar"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-en-spring-break-grupo-2027mar",
+    "excludes": [
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales y traslados adicionales.",
+      "Tasa Hotelera en Turquia $15.",
+      "Propinas oblogatorios de Turquia $45 (excluye las del guía)."
+    ]
   },
   {
     "id": "51e3bda3-176b-44f3-9b87-c2a6ce48c10d",
@@ -319,15 +401,21 @@
     ],
     "image": "/luxury/groups/14.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "7 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "7 noches, desayuno buffet; hoteles 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/grecia-con-estancia-en-islas-Apr2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/grecia-con-estancia-en-islas-Apr2027",
+    "excludes": [
+      "Traslados adicionales.",
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas y excursiones.",
+      "Cenas y almuerzos no especificados.",
+      "City Tax – Aprox. €10/15 por habitación por noche en Atenas."
+    ]
   },
   {
     "id": "61ce56fd-6893-4238-b339-bbf3b35b1dc5",
@@ -342,15 +430,21 @@
     ],
     "image": "/luxury/groups/15.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-clasica-con-venecia-grupo-APR2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/italia-clasica-con-venecia-grupo-APR2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "408f49fa-2f7d-426c-a238-965a16196e5f",
@@ -365,15 +459,22 @@
     ],
     "image": "/luxury/groups/16.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-tokio-y-monte-fuji-grupo-fijo-May2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-tokio-y-monte-fuji-grupo-fijo-May2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros.",
+      "Bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "58ee6d53-0633-4cd8-99d1-1ccf69fa340c",
@@ -389,15 +490,21 @@
     ],
     "image": "/luxury/groups/17.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "8 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "8 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/sur-de-espana-con-portugal-may2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/sur-de-espana-con-portugal-may2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "2255e3b7-6da5-438b-89b7-869add582d4c",
@@ -413,15 +520,22 @@
     ],
     "image": "/luxury/groups/18.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "9 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "9 noches, desayuno buffet; hoteles 4 y 5 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-y-dubai-con-abu-dhabi-ABRIL2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-y-dubai-con-abu-dhabi-ABRIL2027",
+    "excludes": [
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales y traslados adicionales.",
+      "Tasa Hotelera en Turquia $15.",
+      "Propinas oblogitarios de Turquia $30 (excluye las del guía).",
+      "Propinas obligatorias de Dubai $25 (excluye las del guía)."
+    ]
   },
   {
     "id": "683d5ee6-f9ac-4ba0-b587-2ef672682a73",
@@ -437,15 +551,21 @@
     ],
     "image": "/luxury/groups/19.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Entradas y visitas previstas en el itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/londres-y-norte-de-francia-con-paris-May2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/londres-y-norte-de-francia-con-paris-May2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "d6ea487d-7dfc-461d-a6cc-36b842d281cd",
@@ -460,13 +580,22 @@
     ],
     "image": "/luxury/groups/20.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "10 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa."
+      "Vuelos internacionales.",
+      "10 noches de estancia.",
+      "Desayunos durante la estancia.",
+      "Transporte del circuito en autocar privado.",
+      "Asistencia de guía en español durante el circuito.",
+      "Comidas indicadas; bebidas y agua aparte.",
+      "Navegación en el Malachite."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/sudafrica-platinum-experience-MAR2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/sudafrica-platinum-experience-MAR2027",
+    "excludes": [
+      "Comidas no especificadas como incluidas en el itinerario.",
+      "Transporte y/o actividades que no estén específicamente etiquetadas como incluidas y/o “opcionales” según lo indicado en el itinerario, incluyendo las tarifas de entrada a parques y/o tasas de conservación correspondientes.",
+      "Seguro de viaje y/o visado requerido.",
+      "Gastos personales, llamadas telefónicas, compras en tiendas de souvenirs o propinas, etc."
+    ]
   },
   {
     "id": "ce35b91f-293d-45e0-b6e0-019af65eccfb",
@@ -481,15 +610,21 @@
     ],
     "image": "/luxury/groups/21.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Traslados del itinerario.",
+      "6 noches, desayuno buffet; hotel 3 y 4 estrellas.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-tokio-y-monte-fuji-ABRIL2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/japon-con-tokio-y-monte-fuji-ABRIL2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "b1b9fac2-7182-46d3-9b76-015467e3e4f5",
@@ -504,15 +639,24 @@
     ],
     "image": "/luxury/groups/22.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "Asistencia de guía en español durante el circuito.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Servicios de visitas y entradas.",
+      "Traslados del itinerario.",
+      "Recorridos panorámicos de Madrid, Sevilla y Córdoba.",
+      "Transporte por la noche a la Plaza Mayor de Madrid.",
+      "Excursión a Toledo y almuerzo en Granada.",
+      "Acceso a la Alhambra y a los jardines del Generalife.",
+      "Acceso a la Mezquita-Catedral de Córdoba.",
+      "Acceso a la Antigua Sinagoga de Córdoba.",
+      "Recorrido por el Molino Rucio, Consuegra.",
+      "Navegación por el Guadalquivir en Sevilla.",
+      "Una cena en Sevilla."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/madrid-con-lo-mejor-de-andalucia-Marzo-2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/madrid-con-lo-mejor-de-andalucia-Marzo-2027",
+    "excludes": []
   },
   {
     "id": "2100934c-032b-48f9-b126-7ab4d280a07a",
@@ -527,15 +671,23 @@
     ],
     "image": "/luxury/groups/23.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "8 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "8 noches, desayuno buffet; hoteles de 4 y 5 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-esencial-grupo-especial-Mayo2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/turquia-esencial-grupo-especial-Mayo2027",
+    "excludes": [
+      "Maleteros.",
+      "Bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales.",
+      "Tasa hotelera en Turquía: USD 15.",
+      "Propinas obligatorias en Turquía: USD 45 (no incluye las del guía)."
+    ]
   },
   {
     "id": "5c1aa4bc-fc5a-4947-a5f7-d7dff5e47591",
@@ -551,15 +703,21 @@
     ],
     "image": "/luxury/groups/24.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "Asistencia de guía en español durante el circuito.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Traslados del itinerario.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/lisboa-con-madrid-y-barcelona-ABRIL2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/lisboa-con-madrid-y-barcelona-ABRIL2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "32e4843a-9151-49a6-98db-13fed948edd4",
@@ -577,15 +735,21 @@
     ],
     "image": "/luxury/groups/25.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "13 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "13 noches y desayunos; hoteles de 3 y 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/quinceaneras-por-europa-jun2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/quinceaneras-por-europa-jun2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "795bc2bf-7262-4026-b6f4-6fad3bd94697",
@@ -602,15 +766,21 @@
     ],
     "image": "/luxury/groups/26.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "5 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "5 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/viena-con-budapest-y-praga-Jun2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/viena-con-budapest-y-praga-Jun2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "f3ce8620-d6bb-4075-9e38-2420e766a5a7",
@@ -625,15 +795,23 @@
     ],
     "image": "/luxury/groups/27.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "12 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "12 noches y desayunos; hoteles 4 y 5 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/china-con-hong-kong-grupo-fijo-May2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/china-con-hong-kong-grupo-fijo-May2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros.",
+      "Bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales.",
+      "Visado a China: USD 150 por persona."
+    ]
   },
   {
     "id": "2795146e-cdc6-456c-8285-f19124254fa0",
@@ -648,15 +826,23 @@
     ],
     "image": "/luxury/groups/28.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "9 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "9 noches, desayuno buffet; hoteles 4 estrellas.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito.",
+      "Traslados del itinerario."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/tailandia-con-phuket-grupo-fijo-Apr2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/tailandia-con-phuket-grupo-fijo-Apr2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros.",
+      "Bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Exceso de equipaje en vuelos internos.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "076ae6bf-4c11-40a1-8d9a-a004f4bd0474",
@@ -674,15 +860,22 @@
     ],
     "image": "/luxury/groups/29.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Cena para celebrar Fin de Año.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/londres-con-belgica-y-amsterdam-grupo-especial-findeano2026"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/londres-con-belgica-y-amsterdam-grupo-especial-findeano2026",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   },
   {
     "id": "1252d1a8-682e-400c-9835-bca5eaf294f2",
@@ -700,14 +893,20 @@
     ],
     "image": "/luxury/groups/30.webp",
     "includes": [
-      "Vuelo y sus impuestos, según programa.",
-      "6 noches de alojamiento; categoría según programa.",
-      "Desayunos incluidos.",
-      "Traslados indicados en el programa.",
-      "Servicios de guía en español según itinerario.",
-      "Visitas y entradas especificadas en el circuito."
+      "Vuelo con impuestos incluidos.",
+      "6 noches, desayuno buffet; hoteles de 3 y 4 estrellas.",
+      "Traslados del itinerario.",
+      "Entradas y visitas previstas en el itinerario.",
+      "Asistencia de guía en español durante el circuito."
     ],
     "pdf": null,
-    "source": "https://www.pjrtravel.com/gruposconboletoaereo/viena-con-budapest-praga-MAR2027"
+    "source": "https://www.pjrtravel.com/gruposconboletoaereo/viena-con-budapest-praga-MAR2027",
+    "excludes": [
+      "Propinas para guía y chófer.",
+      "Maleteros, bebidas (excepto agua en jarra durante las cenas).",
+      "Cenas y almuerzos no especificados.",
+      "Gastos personales.",
+      "Traslados adicionales."
+    ]
   }
 ]
