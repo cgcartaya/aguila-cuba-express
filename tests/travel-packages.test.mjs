@@ -35,7 +35,7 @@ test('migration preserves 37 current offers, enforces tenant writes, hides draft
  const db=new PGlite();
  try {
   await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema private;create schema storage;create function auth.uid() returns uuid language sql as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;create table public.stores(id uuid primary key,slug text,is_active boolean);create table public.profiles(id uuid,active boolean);create table public.test_members(user_id uuid,store_id uuid,role text);create function public.has_store_role(tenant uuid,roles text[]) returns boolean language sql security definer as $$select exists(select 1 from public.test_members where store_id=tenant and user_id=auth.uid() and role=any(roles))$$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);create table storage.objects(id uuid,bucket_id text,name text);create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;grant usage on schema public,auth,storage to anon,authenticated;grant select on public.stores,public.profiles to anon,authenticated;insert into public.stores values('57f60bbe-35a7-46f2-99a6-484414a3b893','luxury-travel-point',true),('00000000-0000-0000-0000-000000000002','other',true);insert into public.profiles values('00000000-0000-0000-0000-000000000001',true);insert into public.test_members values('00000000-0000-0000-0000-000000000001','57f60bbe-35a7-46f2-99a6-484414a3b893','OWNER');`);
-  await db.exec("alter table public.stores add column name text not null default 'Luxury Travel Point';alter table storage.objects enable row level security;grant insert on storage.objects to authenticated");
+  await db.exec("alter table public.stores add column name text not null default 'Luxury Travel Point';alter table storage.objects enable row level security;grant insert,select on storage.objects to authenticated");
   await db.exec(fs.readFileSync('supabase/migrations/20261110223706_luxury_managed_packages.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/20261110225833_travel_pdf_size_limit.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/20261110230040_travel_public_catalog_policy.sql','utf8'));
@@ -46,8 +46,10 @@ test('migration preserves 37 current offers, enforces tenant writes, hides draft
   await assert.rejects(db.query("insert into storage.objects(id,bucket_id,name) values(gen_random_uuid(),'travel-assets',$1)",[pkg.store_id+'/before-fix.pdf']));
   await db.exec('reset role');
   await db.exec(fs.readFileSync('supabase/migrations/20261110233210_travel_storage_tenant_path.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261110233545_travel_storage_metadata_read.sql','utf8'));
   await db.exec('set role authenticated');
-  await db.query("insert into storage.objects(id,bucket_id,name) values(gen_random_uuid(),'travel-assets',$1)",[pkg.store_id+'/programme.pdf']);
+  const uploaded = await db.query("insert into storage.objects(id,bucket_id,name) values(gen_random_uuid(),'travel-assets',$1) returning id",[pkg.store_id+'/programme.pdf']);
+  assert.equal(uploaded.rows.length,1);
   await assert.rejects(db.query("insert into storage.objects(id,bucket_id,name) values(gen_random_uuid(),'travel-assets',$1)",['00000000-0000-0000-0000-000000000002/other.pdf']));
   const saved=await db.query("update travel_packages set status='draft' where id=$1 and version=1 returning version",[pkg.id]);
   assert.equal(saved.rows[0].version,2);
