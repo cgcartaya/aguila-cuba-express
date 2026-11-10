@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const rows = JSON.parse(fs.readFileSync('components/landing/luxury/groups.json','utf8'));
 const mod = {exports:{}};
 const source=fs.readFileSync('components/landing/luxury/GroupExplorer.tsx','utf8');
-vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,{module:mod,exports:mod.exports,Intl,Date,require:name=>name==='./groups.json'?rows:name==='./content'?{whatsapp:message=>'https://wa.me/12392657294?text='+encodeURIComponent(message)}:name.endsWith('.css')?new Proxy({},{get:(_,k)=>String(k)}):require(name)});
+vm.runInNewContext(ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText,{module:mod,exports:mod.exports,Intl,Date,require:name=>name==='./i18n'?{useLuxuryLanguage:()=>({language:'es'}),translateTree:node=>node}:name==='./groups.json'?rows:name==='./content'?{whatsapp:message=>'https://wa.me/12392657294?text='+encodeURIComponent(message)}:name.endsWith('.css')?new Proxy({},{get:(_,k)=>String(k)}):require(name)});
 const filter=mod.exports.filterGroups;
 test('combined country/month/year/from-date filters only return matching departures',()=>{
  const sample=rows.find(g=>g.countries.includes('Japón'));

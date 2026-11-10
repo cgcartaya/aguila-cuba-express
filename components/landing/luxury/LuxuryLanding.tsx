@@ -1,9 +1,12 @@
+'use client';
+
 import Image from 'next/image';
 import { ArrowUpRight, BadgeCheck, BriefcaseBusiness, Car, Check, CircleDollarSign, Clock3, Compass, FileText, FolderHeart, Globe2, HeartHandshake, MapPin, MessageCircle, Package, Phone, Plane, Ship, Truck, Users } from 'lucide-react';
 import TravelExplorer from './TravelExplorer';
 import HeroGallery from './HeroGallery';
 import GroupExplorer from './GroupExplorer';
 import LanguageSelector from './LanguageSelector';
+import { LuxuryLanguageProvider, useLuxuryLanguage, translateTree } from './i18n';
 import { boxes, contact, faqs, services, whatsapp } from './content';
 import s from './luxury.module.css';
 
@@ -11,13 +14,16 @@ const icons = { plane: Plane, car: Car, family: Users, passport: Globe2, money: 
 const consult = (subject: string) => whatsapp(`Hola, Luxury Travel Point. Quisiera información sobre ${subject}.`);
 const external = { target: '_blank', rel: 'noopener noreferrer' } as const;
 
-export default function LuxuryLanding() {
+export default function LuxuryLanding() { return <LuxuryLanguageProvider><LuxuryContent /></LuxuryLanguageProvider>; }
+
+function LuxuryContent() {
+  const {language}=useLuxuryLanguage();
   const now = new Date();
   const month = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit' }).formatToParts(now);
   const minMonth = `${month.find(p => p.type === 'year')?.value}-${month.find(p => p.type === 'month')?.value}`;
   const november = minMonth === '2026-11';
   const structuredData = { '@context': 'https://schema.org', '@type': 'TravelAgency', name: 'Luxury Travel Point', url: 'https://luxury-travel-point.perlamarketplace.com', telephone: contact.tel, email: contact.email, image: 'https://luxury-travel-point.perlamarketplace.com/luxury/logo.webp', address: { '@type': 'PostalAddress', streetAddress: '3418 51st St W', addressLocality: 'Lehigh Acres', addressRegion: 'FL', postalCode: '33971', addressCountry: 'US' }, openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '10:00', closes: '18:00' }, { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Sunday', opens: '10:00', closes: '16:00' }] };
-  return <div className={s.root} id="inicio">
+  return translateTree(<div className={s.root} id="inicio">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
     <a href="#contenido" className={s.skip}>Saltar al contenido</a>
     <div className={s.topbar}><span>DMC EN ESTADOS UNIDOS Y CUBA · AGENCIA RECEPTIVA Y EMISORA</span><a href={`tel:${contact.tel}`}><Phone size={12} /> {contact.phone}<span> · Atención a distancia 24/7</span></a></div>
@@ -41,5 +47,5 @@ export default function LuxuryLanding() {
     </main>
     <footer className={s.footer}><div className={s.container}><a className={s.footerBrand} href="#inicio"><Image src="/luxury/airplane.webp" alt="" width={85} height={52}/><span>LUXURY<small>Travel Point</small></span></a><p>Your starting point<br/>to a luxury experience.</p><div><a href="https://www.facebook.com/share/1EjE5oAU7L/" {...external}>Facebook <ArrowUpRight size={14}/></a><a href="https://www.instagram.com/luxurytravelpoint/" {...external}>Instagram <ArrowUpRight size={14}/></a><a href="https://www.tiktok.com/@luxurytravelpoint" {...external}>TikTok <ArrowUpRight size={14}/></a></div></div><div className={`${s.container} ${s.footerBottom}`}><span>© {now.getFullYear()} Luxury Travel Point</span><span>Lehigh Acres, Florida · Viajes y multiservicios</span><a href="/login">Iniciar sesión <ArrowUpRight size={13}/></a></div></footer>
     <a className={s.floatingWhatsapp} href={consult('sus viajes y servicios')} {...external} aria-label="Contactar a Luxury Travel Point por WhatsApp"><MessageCircle size={25}/><span>¿Planeamos tu viaje?</span></a>
-  </div>;
+  </div>,language);
 }

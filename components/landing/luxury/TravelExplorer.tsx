@@ -4,9 +4,11 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ArrowUpRight, CalendarDays, Check, Compass, MapPin, MessageCircle, Users, X } from 'lucide-react';
 import { destinations, whatsapp } from './content';
 import s from './luxury.module.css';
+import { useLuxuryLanguage, translateTree } from './i18n';
 
 
 export default function TravelExplorer({ minMonth }: { minMonth: string }) {
+  const {language}=useLuxuryLanguage();
   const [destination, setDestination] = useState('');
   const [month, setMonth] = useState('');
   const [travelers, setTravelers] = useState('2');
@@ -27,7 +29,7 @@ export default function TravelExplorer({ minMonth }: { minMonth: string }) {
   }
   const message = `Hola, Luxury Travel Point. Quisiera una cotización de viaje.\nNombre: ${name.trim()}\nDestino o experiencia: ${destination || 'Quisiera asesoría para elegir'}\nMes: ${month || 'Fechas flexibles'}\nViajeros: ${travelers}\nDetalles: ${notes.trim() || 'Quisiera conocer las opciones, inclusiones y disponibilidad.'}`;
 
-  return <>
+  return translateTree(<>
     <section className={s.planner} aria-label="Planifica tu viaje">
       <div className={s.plannerIntro}><Compass size={27} /><span>TU PRÓXIMA HISTORIA<small>Empieza por un destino.</small></span></div>
       <form onSubmit={event => { event.preventDefault(); openInquiry(); }}>
@@ -45,5 +47,5 @@ export default function TravelExplorer({ minMonth }: { minMonth: string }) {
         </>}
       </div>
     </dialog>
-  </>;
+  </>,language);
 }
