@@ -84,3 +84,23 @@
   .goldenBox { grid-template-columns: 1fr; }
   .goldenPhoto { min-height: 13rem; }
 }
+
+.root .topbar { display: flex; justify-content: flex-end; }
+.root .brand { min-width: 0; gap: 12px; }
+.root .brand img, .root .footerBrand img { width: auto; height: 64px; object-fit: contain; border-radius: 4px; }
+.dmc { font-size: .86rem; letter-spacing: .12em; }
+@media (max-width: 600px) {
+  .root .brand img { height: 52px; }
+}
+
+.quoter { margin-block: 2rem; padding: clamp(1.2rem, 4vw, 2.6rem); background: white; border: 1px solid #e0d7c5; border-radius: 1rem; }
+.quoter h3 { display: flex; align-items: center; gap: .65rem; font-size: clamp(1.5rem, 3vw, 2rem); }
+.quoteModes { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: 1rem; }
+.quoteModes button { padding: .55rem 1rem; border: 1px solid #d8cfbe; border-radius: .55rem; background: white; color: var(--ink); }
+.quoteModes button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: white; }
+.quoteFields { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 1rem; }
+.quoteFields :is(select,input) { width: 100%; margin-top: .3rem; padding: .6rem; border: 1px solid #d8cfbe; border-radius: .4rem; background: white; }
+.quoteDetails { margin-top: .85rem; }
+.quoteTotal { margin-top: 1rem; display: flex; align-items: center; gap: .75rem; }
+.quoteTotal strong { color: #753b27; font-size: 1.5rem; }
+@media (max-width: 600px) { .quoteFields { grid-template-columns: 1fr; } }
