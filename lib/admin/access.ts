@@ -10,7 +10,8 @@ export type StoreUserRole =
   | "DISPATCHER"
   | "DRIVER"
   | "VIEWER"
-  | "ASSIGNER";
+  | "ASSIGNER"
+  | "SHIPPING_CATALOG";
 
 export type StorePermissions = Record<string, boolean>;
 
@@ -61,12 +62,18 @@ export type AdminAccess = {
   store: AccessStore | null;
 };
 
-export const STORE_USER_ROLES: StoreUserRole[] = ["OWNER", "ADMIN", "OPERATIONS", "BILLER", "DISPATCHER", "DRIVER", "VIEWER", "ASSIGNER"];
+export const STORE_USER_ROLES: StoreUserRole[] = ["OWNER", "ADMIN", "OPERATIONS", "BILLER", "DISPATCHER", "DRIVER", "VIEWER", "ASSIGNER", "SHIPPING_CATALOG"];
 
 export function isAssignmentOnlyAccess(access: AdminAccess | null) {
-  return !!access && !access.isSuperAdmin && access.storeMembership?.role === "ASSIGNER";
+  return !!access && !access.isSuperAdmin && ["ASSIGNER", "SHIPPING_CATALOG"].includes(access.storeMembership?.role || "");
 }
 
-export function isAssignmentOnlyPath(pathname: string) {
+export function isAssignmentOnlyPath(pathname: string, role?: StoreUserRole) {
+  if (role === "SHIPPING_CATALOG") {
+    const path = pathname.replace(/\/$/, "");
+    if (["/admin/inventory", "/admin/products", "/admin/products/new"].includes(path)) return true;
+    if (/^\/admin\/products\/[^/]+\/edit$/.test(path)) return true;
+    if (/^\/admin\/shipping\/[^/]+\/(invoice|label)$/.test(path)) return true;
+  }
   return ["/admin/shipping/shipments", "/admin/account", "/admin/account/password"].includes(pathname.replace(/\/$/, ""));
 }

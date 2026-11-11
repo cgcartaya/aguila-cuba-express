@@ -17,7 +17,7 @@ async function access(request: NextRequest, storeId: string) {
   if (profile.role === "super_admin") return { denied: null, userId: data.user.id };
   const { data: membership } = await supabaseAdmin.from("store_users").select("active,role").eq("store_id", storeId).eq("user_id", data.user.id).eq("active", true).maybeSingle();
   if (!membership) return { denied: fail("No tienes acceso a esta tienda.", 403), userId: null };
-  if (membership.role === "ASSIGNER") return { denied: fail("Tu rol solo permite asignar repartidores.", 403), userId: null };
+  if (["ASSIGNER", "SHIPPING_CATALOG"].includes(membership.role)) return { denied: fail("Tu rol solo permite asignar repartidores.", 403), userId: null };
   return { denied: null, userId: data.user.id };
 }
 

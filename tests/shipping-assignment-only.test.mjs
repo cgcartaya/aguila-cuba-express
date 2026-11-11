@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 
 const migration = readFileSync(new URL('../supabase/migrations/20261111001558_shipping_assignment_only_role.sql', import.meta.url), 'utf8');
 const textIdMigration = readFileSync(new URL('../supabase/migrations/20261111002108_shipping_assignment_text_shipment_id.sql', import.meta.url), 'utf8');
+const catalogMigration = readFileSync(new URL('../supabase/migrations/20261111200200_shipping_catalog_role.sql', import.meta.url), 'utf8');
 const uid = '10000000-0000-0000-0000-000000000001';
 const store = '20000000-0000-0000-0000-000000000001';
 const otherStore = '20000000-0000-0000-0000-000000000002';
@@ -21,15 +22,31 @@ test('assignment-only role enforces tenant, column and write restrictions', asyn
  create schema auth; create schema private;
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create table public.profiles(id uuid primary key, role text, active boolean);
- create table public.stores(id uuid primary key, is_active boolean, module_shipping_enabled boolean);
+ create table public.stores(id uuid primary key, is_active boolean, module_shipping_enabled boolean, module_store_enabled boolean default true);
  create table public.store_users(id uuid,store_id uuid,user_id uuid,role text,active boolean,permissions jsonb,
  constraint store_users_role_check check(role in ('OWNER','VIEWER')));
  create table public.staff_users(id uuid primary key,store_id uuid,first_name text,last_name text,username text,role text,status text,legacy_app_user_id uuid);
  create table public.shipments(id text primary key,store_id uuid,assigned_staff_id uuid,assigned_driver_id uuid,assigned_driver_name text,updated_at timestamptz,
  deleted_at timestamptz,service_price numeric default 100,status text default 'preparing',trip_id uuid);
+ create schema storage;
+ create function storage.foldername(text) returns text[] language sql immutable as $$select string_to_array($1,'/')$$;
+ create table storage.objects(name text,bucket_id text);
+ alter table storage.objects enable row level security;
+ create table public.products(id text primary key,store_id uuid,stock int,deleted_at timestamptz);
+ create table public.product_price_tiers(product_id text,store_id uuid);
+ alter table product_price_tiers enable row level security;
+ create policy open_tiers on product_price_tiers for all using(true) with check(true);
+ create table public.product_images(product_id text);
+ create table public.inventory_movements(product_id text,store_id uuid);
+ alter table products enable row level security;
+ alter table product_images enable row level security;
+ alter table inventory_movements enable row level security;
+ create policy open_products on products for all using(true) with check(true);
+ create policy open_images on product_images for all using(true) with check(true);
+ create policy open_movements on inventory_movements for all using(true) with check(true);
  create table public.shipment_items(id int,store_id uuid,description text);
  insert into profiles values('${uid}','store_owner',true);
- insert into stores values('${store}',true,true),('${otherStore}',true,true);
+ insert into stores(id,is_active,module_shipping_enabled) values('${store}',true,true),('${otherStore}',true,true);
  insert into store_users values(gen_random_uuid(),'${store}','${uid}','VIEWER',true,'{}');
  insert into staff_users values('${driver}','${store}','Ana','Pérez','ana','DELIVERY','ACTIVE',null),
  ('${inactive}','${store}','No','Activo','inactive','DELIVERY','INACTIVE',null),
@@ -48,6 +65,7 @@ test('assignment-only role enforces tenant, column and write restrictions', asyn
  `);
  await db.exec(migration);
  await db.exec(textIdMigration);
+ await db.exec(catalogMigration);
  // Production grants only safe staff columns, never password_hash.
  await db.exec("revoke select on staff_users from authenticated; grant select(id,store_id,first_name,last_name,username,role,status,legacy_app_user_id) on staff_users to authenticated;");
  await db.exec(`update store_users set role='ASSIGNER'; set role authenticated; set request.jwt.claim.sub='${uid}';`);
@@ -95,6 +113,24 @@ test('assignment-only role enforces tenant, column and write restrictions', asyn
    await db.exec("reset role; update store_users set role='OWNER'; set role authenticated;");
    await rpc(driver); await db.exec(`update shipments set service_price=125 where id='${shipment}'`);
    assert.equal((await db.query(`select service_price from shipments where id='${shipment}'`)).rows[0].service_price,'125');
+ });
+ await t.test('catalog role edits only its catalog and can assign drivers', async () => {
+   await db.exec(`reset role; update store_users set role='SHIPPING_CATALOG';
+     insert into products values ('foreign','${otherStore}',1,null);
+     set role authenticated;`);
+   await rpc(driver);
+   await assert.rejects(db.exec(`update shipments set service_price=1 where id='${shipment}'`), /Solo puedes cambiar/);
+   await db.exec(`insert into products values ('own','${store}',2,null);
+     update products set stock=3;
+     insert into product_images values ('own');
+     insert into product_price_tiers values ('own','${store}');
+     delete from product_price_tiers where product_id='own';
+     insert into inventory_movements values ('own','${store}');`);
+   assert.deepEqual((await db.query('select id,stock from products order by id')).rows,
+     [{id:'foreign',stock:1},{id:'own',stock:3}]);
+   await assert.rejects(db.exec("insert into product_images values ('foreign')"));
+   await assert.rejects(db.exec(`insert into inventory_movements values ('foreign','${store}')`));
+   await assert.rejects(db.exec("update products set deleted_at=now() where id='own'"));
  });
  await db.close();
 });
