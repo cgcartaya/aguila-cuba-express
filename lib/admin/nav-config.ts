@@ -58,7 +58,10 @@ export type AdminSection = {
 
 export const adminNavSections: AdminSection[] = [
   { title: "Trámites", links: [{ href: "/admin/tramites", label: "Gestión de trámites", icon: ClipboardCheck, storeSlugs: ["wf-cago"] }] },
-  { title: "Turismo", links: [{ href: "/admin/travel", label: "Paquetes y salidas", icon: Globe2, storeSlugs: ["luxury-travel-point"] }] },
+  { title: "Turismo", links: [
+    { href: "/admin/travel", label: "Paquetes y salidas", icon: Globe2, storeSlugs: ["luxury-travel-point"] },
+    { href: "/admin/luxury-shipping", label: "Tarifas y promociones", icon: Megaphone, storeSlugs: ["luxury-travel-point"] },
+  ] },
   {
     title: "Tienda",
     module: "store",
