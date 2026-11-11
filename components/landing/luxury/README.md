@@ -57,3 +57,11 @@ The managed catalogue supersedes the static groups and manual PDF instructions b
 - `i18n.tsx` translates React-owned text/labels from local dictionaries, preserves canonical country/form values, URLs and event handlers, persists the selected language when storage is available, and updates the document language. There are no runtime translation-service requests or DOM text mutations. `translations.json` covers navigation, hero, filters, circuit inclusions/exclusions, services, terms, FAQ and contact. Route city names remain as supplied by the operator.
 - Office hours and TravelAgency JSON-LD: Monday–Saturday 10:00–18:00, Sunday 10:00–16:00, online attention 24 hours; out-of-hours physical reception by prior consultation. Pickup service hours are independent and retain existing confirmed terms.
 - DMC positioning: inbound and outbound agency in the United States and Cuba. Existing administration metadata, favicon, contact details and other tenants remain intact.
+
+## Envíos y promociones
+
+- **Administración → Turismo → Tarifas y promociones** (`/admin/luxury-shipping`). Usa los mismos roles de agencia que el catálogo turístico.
+- La migración `20261111162000_luxury_shipping_catalog.sql` debe estar aplicada en el entorno antes de activar la nueva landing. Agrega el catálogo informativo de Luxury y carga sus datos iniciales. No modifica pedidos ni tarifas transaccionales.
+- Las promociones de noviembre de 2026 vencen al comenzar el 1 de diciembre en `America/New_York`. Las promociones por día solo se publican en los días seleccionados. Los registros permanecen en el panel.
+- El enlace de Tienda online se configura en su ficha. El botón para abrir la tienda aparece al guardar una URL HTTPS. El contacto usa el WhatsApp de los ajustes de Luxury, con el contacto público existente de la agencia como respaldo.
+- Verificación posterior a la migración y despliegue: abrir la landing de Luxury, confirmar las tarifas y el idioma seleccionado, comprobar el acceso al panel con un usuario autorizado y confirmar el estado de los portales externos.

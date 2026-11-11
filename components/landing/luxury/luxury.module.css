@@ -44,3 +44,43 @@
 .root .pickup button.goldButton{border:0;cursor:pointer}
 .root .pickupCities{margin-top:8px;font-weight:600}
 @media(max-width:600px){.root .pickup button.goldButton{width:100%;margin-left:0;white-space:normal}}
+
+.goldenBox {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: #351621;
+  color: #fff8ee;
+}
+.goldenBox > div:last-child { padding: clamp(1.5rem, 4vw, 3.5rem); }
+.goldenBox h3 { font-size: clamp(1.8rem, 4vw, 3rem); }
+.goldenPhoto { position: relative; min-height: 17rem; }
+.goldenPhoto img { object-fit: cover; }
+.goldenBox .textButton, .goldenBox .commercialPrice { color: #f3d695; }
+.commercialGroup { margin-block: 2rem; scroll-margin-top: 6rem; }
+.commercialGroup > h3 { margin-bottom: 1rem; }
+.commercialGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 1rem;
+}
+.commercialCard {
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  background: #fffaf4;
+  color: #351621;
+  border: 1px solid #e6d7c1;
+  border-radius: .8rem;
+}
+.commercialCard :is(h3, h4) { margin: 0 0 .5rem; font-size: 1.25rem; }
+.commercialCard .textButton { align-self: flex-start; }
+.commercialOffers .commercialCard { background: #f8ead0; border-color: #d5b678; }
+.commercialPrice { color: #753b27; font-size: clamp(1.25rem, 2.4vw, 2rem); font-weight: 700; }
+.commercialTerms { font-size: .95rem; }
+@media (max-width: 680px) {
+  .goldenBox { grid-template-columns: 1fr; }
+  .goldenPhoto { min-height: 13rem; }
+}
