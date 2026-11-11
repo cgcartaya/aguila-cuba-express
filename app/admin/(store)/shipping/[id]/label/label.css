@@ -45,3 +45,7 @@
   .package-label,.package-packing-list { box-shadow: none; margin: 0; }
   .package-packing-list { width: 100%; max-width: none; padding: 0; }
 }
+
+.package-customs-charges li { display: flex; justify-content: space-between; gap: 2mm; break-inside: avoid; }
+.package-customs-charges li span { overflow: hidden; text-overflow: ellipsis; }
+.package-customs-charges li b { flex-shrink: 0; }

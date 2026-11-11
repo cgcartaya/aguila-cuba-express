@@ -1,3 +1,4 @@
+import { customsChargesTotal, normalizeCustomsCharges } from "@/lib/shipping/customs-charges";
 import { normalizePackageBilling } from "@/lib/shipping/package-billing";
 import { extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import { normalizePackageContents } from "@/lib/shipping/package-label";
@@ -175,6 +176,9 @@ async function replaceItems(storeId: string, shipmentId: string, input: Shipment
   if (input.contains_package && !input.products_only && input.package_billing_mode !== "fees_only") rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "PACKAGE", description: input.service_type_name || "Paquete", quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb, subtotal: input.weight_subtotal, discount_amount: 0, total: input.weight_subtotal, metadata: { legacy_location: input.location }, sort_order: sort++ });
   if (input.contains_money) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "MONEY", description: input.money_total > Math.max(input.money_commission - input.money_discount, 0) + 0.005 ? "Remesa y comisión" : "Comisión por envío de dinero", quantity: 1, unit: "USD", unit_price: roundMoney(input.money_total + input.money_discount), subtotal: roundMoney(input.money_total + input.money_discount), discount_amount: input.money_discount, total: input.money_total, metadata: { discount_reason: input.money_discount_reason }, sort_order: sort++ });
   input.selected_fees.forEach((fee) => rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "EXTRA_FEE", description: fee.fee_name, quantity: extraFeeQuantity(fee.quantity), unit: "unidad", unit_price: fee.calculated_amount / extraFeeQuantity(fee.quantity), subtotal: fee.calculated_amount, discount_amount: 0, total: fee.calculated_amount, metadata: { fee_id: fee.fee_id }, sort_order: sort++ }));
+  for (const charge of input.customs_charges || []) {
+    rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "EXTRA_FEE", description: `Aduana · ${charge.description}`, quantity: 1, unit: "unidad", unit_price: charge.amount, subtotal: charge.amount, discount_amount: 0, total: charge.amount, metadata: { customs: true }, sort_order: sort++ });
+  }
   if (input.discount_amount > 0) rows.push({ store_id: storeId, shipment_id: shipmentId, item_type: "DISCOUNT", description: input.discount_reason || "Descuento general", quantity: 1, unit: "descuento", unit_price: -input.discount_amount, subtotal: -input.discount_amount, discount_amount: input.discount_amount, total: -input.discount_amount, metadata: {}, sort_order: sort++ });
   if (rows.length) {
     const { error } = await supabase.from("shipment_items").insert(rows);
@@ -206,7 +210,11 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     if (!Number.isFinite(fee.calculated_amount) || fee.calculated_amount < 0) throw new Error("El importe del cargo no es válido.");
     return { ...fee, quantity };
   });
-  input = { ...input, selected_fees: selectedFees, extra_fees_total: Number(selectedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0).toFixed(2)) };
+  const customsCharges = input.contains_package && !input.products_only && input.package_billing_mode !== "fees_only"
+    ? normalizeCustomsCharges(input.customs_charges)
+    : [];
+  const configuredFeesTotal = selectedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0);
+  input = { ...input, selected_fees: selectedFees, customs_charges: customsCharges, extra_fees_total: roundMoney(configuredFeesTotal + customsChargesTotal(customsCharges)) };
   const totals = shipmentInvoiceTotals(input);
   input = { ...input, discount_amount: totals.discount };
   const servicePrice = totals.total;
@@ -278,6 +286,7 @@ async function save(storeId: string, shipmentId: string | null, input: ShipmentI
     money_discount_reason: input.contains_money ? input.money_discount_reason || null : null,
     money_total: input.contains_money ? input.money_total : 0,
     extra_fees_total: input.extra_fees_total,
+    customs_charges: input.customs_charges,
     discount_amount: input.discount_amount,
     discount_reason: input.discount_reason || null,
     service_price: servicePrice,

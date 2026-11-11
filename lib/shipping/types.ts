@@ -1,3 +1,4 @@
+import type { CustomsCharge } from "./customs-charges";
 import type { PhysicalProductLine, RemittanceProduct } from "./remittance-delivery";
 import type { PackageContentItem } from "@/lib/shipping/package-label";
 
@@ -90,6 +91,7 @@ export type Shipment = {
   package_billing_mode?: "weight" | "fees_only";
   package_number?: number | string | null;
   package_contents?: PackageContentItem[];
+  customs_charges?: CustomsCharge[];
   id: string;
   store_id: string;
   trip_id: string | null;
@@ -286,6 +288,7 @@ export type ShippingSettings = {
 export type ShipmentInput = {
   package_billing_mode?: "weight" | "fees_only";
   package_contents?: PackageContentItem[];
+  customs_charges?: CustomsCharge[];
   trip_id?: string | null;
   customer_id: string | null;
   recipient_id: string | null;

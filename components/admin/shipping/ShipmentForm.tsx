@@ -6,6 +6,7 @@ import PhysicalProductsEditor from "./PhysicalProductsEditor";
 import RemittanceProductsEditor from "./RemittanceProductsEditor";
 import { deliveryParts, productsTotal } from "@/lib/shipping/remittance-delivery";
 import ShipmentExtraFees from "@/components/admin/shipping/ShipmentExtraFees";
+import { customsChargesTotal, normalizeCustomsCharges } from "@/lib/shipping/customs-charges";
 import { calculateExtraFee, extraFeeQuantity } from "@/lib/shipping/extra-fee-calculation";
 import PackageContentsEditor from "@/components/admin/shipping/PackageContentsEditor";
 import { normalizePackageContents } from "@/lib/shipping/package-label";
@@ -24,6 +25,7 @@ import { buildLegacyLocation, calculateMoneyCommission, getShippingStatusLabel, 
 
 type Props = {
   allowRemittanceExtras?: boolean;
+  allowMoneyDeliveryOptions?: boolean;
   hasTrip?: boolean;
   operationType?: ShipmentOperationType;
   storeId: string;
@@ -100,12 +102,15 @@ export default function ShipmentForm(props: Props) {
     balance_due: Number(shipment?.balance_due || 0),
     payment_method: shipment?.payment_method || "",
     selected_fees: initialSelectedFees,
+    customs_charges: shipment?.customs_charges || [],
   });
 
   const baseForm: ShipmentInput = props.operationType ? { ...draft, ...operationContent(props.operationType), status: (props.operationType === "money" || props.operationType === "products") && !(MONEY_DELIVERY_STATUSES as readonly string[]).includes(draft.status) ? "preparing" : draft.status } : draft;
+  const showCustomsCharges = baseForm.contains_package && !baseForm.products_only && baseForm.package_billing_mode !== "fees_only";
+  const customsCharges = baseForm.customs_charges || [];
   const feesOnly = baseForm.contains_package && baseForm.package_billing_mode === "fees_only";
   const [paymentReceived, setPaymentReceived] = useState(true);
-  const prepaidRemittance = !shipment && props.allowRemittanceExtras && baseForm.contains_money && !baseForm.contains_package && paymentReceived;
+  const prepaidRemittance = !shipment && props.allowMoneyDeliveryOptions && baseForm.contains_money && !baseForm.contains_package && paymentReceived;
   const moneyOnly = !!baseForm.products_only || baseForm.contains_money && !baseForm.contains_package;
   const form: ShipmentInput = (() => {
     const location = locations.find(x => x.id === baseForm.shipping_location_id);
@@ -147,7 +152,7 @@ export default function ShipmentForm(props: Props) {
       { ...fee, quantity: Number.isInteger(fee.quantity ?? 1) && (fee.quantity ?? 1) >= 1 && (fee.quantity ?? 1) <= 9999 ? fee.quantity ?? 1 : 1 },
       effectiveWeight, packageSubtotal,
     ));
-    const feesTotal = calculatedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0);
+    const feesTotal = calculatedFees.reduce((sum, fee) => sum + fee.calculated_amount, 0) + (showCustomsCharges ? customsChargesTotal(customsCharges) : 0);
     const money = settings ? calculateMoneyCommission(baseForm.money_amount, settings) : { rate: 0, commission: 0 };
     const maxDiscount = settings?.maximum_manual_discount;
     const requestedDiscount = settings?.allow_manual_discount ? Math.max(baseForm.money_discount, 0) : 0;
@@ -215,7 +220,8 @@ export default function ShipmentForm(props: Props) {
       const normalized = normalizePackageBilling(form);
       shipmentInvoiceTotals(normalized);
       const contents = normalized.contains_package && !normalized.products_only ? normalizePackageContents(normalized.package_contents) : [];
-      await onSubmit({ ...normalized, package_contents: contents });
+      const charges = showCustomsCharges ? normalizeCustomsCharges(customsCharges) : [];
+      await onSubmit({ ...normalized, package_contents: contents, customs_charges: charges });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo guardar.");
       requestAnimationFrame(() => errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
@@ -320,6 +326,17 @@ export default function ShipmentForm(props: Props) {
       </>}
     </Section>}
 
+    {showCustomsCharges && <Section title="Cargos aduanales">
+      {customsCharges.map((charge, index) => (
+        <div key={index} className="grid items-end gap-3 sm:grid-cols-[1fr_10rem_auto]">
+          <Input label="Artículo" value={charge.description} onChange={description => set("customs_charges", customsCharges.map((item, i) => i === index ? { ...item, description } : item))} />
+          <NumberInput label="Cargo (USD)" value={charge.amount} onChange={amount => set("customs_charges", customsCharges.map((item, i) => i === index ? { ...item, amount } : item))} />
+          <button type="button" aria-label={`Quitar cargo ${index + 1}`} className="rounded-xl border px-3 py-2 text-sm font-bold" onClick={() => set("customs_charges", customsCharges.filter((_, i) => i !== index))}>Quitar</button>
+        </div>
+      ))}
+      <button type="button" disabled={customsCharges.length >= 100} className="rounded-xl border px-3 py-2 text-sm font-bold" onClick={() => set("customs_charges", [...customsCharges, { description: "", amount: 0 }])}>Añadir cargo aduanal</button>
+    </Section>}
+
     {form.contains_package && !form.products_only && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
 
     {props.allowRemittanceExtras && ((props.hasTrip && form.contains_package && !form.products_only) || !!form.physical_products?.length) &&
@@ -329,7 +346,7 @@ export default function ShipmentForm(props: Props) {
 
     {props.allowRemittanceExtras && <Section title="Productos de la tienda virtual"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}
     {form.contains_money && <Section title="Cálculo del dinero">
-      {props.allowRemittanceExtras && <div className="mb-4 space-y-4">
+      {props.allowMoneyDeliveryOptions && <div className="mb-4 space-y-4">
         <label className="block text-sm font-bold">Moneda de entrega<select value={form.money_delivery_currency || 'USD'} onChange={event => set('money_delivery_currency', event.target.value as 'USD' | 'CUP' | 'MIXED')} className="mt-2 w-full rounded-xl border bg-white p-3"><option value="USD">Dólares estadounidenses (USD)</option><option value="CUP">Moneda nacional de Cuba (CUP / MN)</option><option value="MIXED">Mixta: efectivo USD + moneda nacional</option></select></label>
         {form.money_delivery_currency === 'MIXED' && <NumberInput label="De la remesa, USD que se convierten a MN" value={Number(form.money_usd_to_cup || 0)} onChange={value => set('money_usd_to_cup', value)} />}
         {(form.money_delivery_currency === 'CUP' || form.money_delivery_currency === 'MIXED') && <><NumberInput label="Cambio manual: CUP por cada 1 USD" value={Number(form.money_exchange_rate || 0)} onChange={value => set('money_exchange_rate', value)} /><p className="rounded-xl bg-emerald-50 p-4 font-bold text-emerald-900">{deliveryPreview?.convertedUsd.toFixed(2) ?? '—'} USD × {Number(form.money_exchange_rate || 0)} = {deliveryPreview?.cup.toLocaleString('en-US', { minimumFractionDigits: 2 }) ?? '—'} CUP a entregar{form.money_delivery_currency === 'MIXED' && <> + {deliveryPreview?.usd.toFixed(2) ?? '—'} USD en efectivo</>}</p><p className="text-sm text-slate-600">Tasa escrita por la agencia para esta operación. No se consulta ningún cambio automático. La comisión y los productos se cobran en USD.</p></>}
@@ -352,7 +369,7 @@ export default function ShipmentForm(props: Props) {
         <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total + (form.store_products_total || 0) + (form.physical_products_total || 0)).toFixed(2)} readOnly />
         <Input label="Cargos adicionales (USD)" value={form.extra_fees_total.toFixed(2)} readOnly />
         <Input label="Total final (USD)" value={form.service_price.toFixed(2)} readOnly />
-        {!shipment && props.allowRemittanceExtras && form.contains_money && !form.contains_package && <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 md:col-span-2">
+        {!shipment && props.allowMoneyDeliveryOptions && form.contains_money && !form.contains_package && <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 md:col-span-2">
           <input type="checkbox" checked={paymentReceived} onChange={event => setPaymentReceived(event.target.checked)} className="mt-1" />
           <span><strong>Pago recibido antes de registrar la remesa</strong><span className="mt-1 block">Se guardará pagada por el total de la factura, con saldo cero. Desmarca si necesitas registrar un pago parcial o pendiente.</span></span>
         </label>}
