@@ -62,7 +62,12 @@ export default function PickupSettingsPage() {
 
   const countries = useMemo(() => getCountryOptions(), []);
   const states = useMemo(() => getStateOptions(form.country_code || ""), [form.country_code]);
-  const cities = useMemo(() => getCityOptions(form.country_code || "", form.region_code || ""), [form.country_code, form.region_code]);
+  const cities = useMemo(() => {
+    const catalog = getCityOptions(form.country_code || "", form.region_code || "");
+    if (!isLuxury || form.country_code !== "US" || form.region_code !== "FL") return catalog;
+    const names = new Set(catalog.map(item => item.label.toLowerCase()));
+    return [...catalog, ...LUXURY_PICKUP_CITIES.filter(name => !names.has(name.toLowerCase())).map(name => ({ value: name, label: name }))].sort((a, b) => a.label.localeCompare(b.label));
+  }, [form.country_code, form.region_code, isLuxury]);
   const filteredCities = useMemo(() => {
     const query = citySearch.trim().toLocaleLowerCase();
     return query ? cities.filter((city) => city.label.toLocaleLowerCase().includes(query)) : cities;
