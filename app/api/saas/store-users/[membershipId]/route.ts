@@ -1,7 +1,9 @@
+import { STORE_USER_ROLES, type StoreUserRole } from "@/lib/admin/access";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
 type UpdateStoreUserBody = {
+  role?: StoreUserRole;
   active?: boolean;
   full_name?: string;
   password?: string;
@@ -28,16 +30,7 @@ function getBearerToken(request: Request) {
 }
 
 async function requireSuperAdmin(request: Request) {
-  const { authHeader, token } = getBearerToken(request);
-
-  console.log("========== STORE USERS AUTH PATCH ==========");
-  console.log("Route:", new URL(request.url).pathname);
-  console.log("Method:", request.method);
-  console.log("Authorization header:", authHeader ? "PRESENTE" : "AUSENTE");
-  console.log("Token length:", token.length);
-  console.log("Token preview:", token ? `${token.substring(0, 20)}...` : "SIN TOKEN");
-  console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "PRESENTE" : "AUSENTE");
-  console.log("Service Role:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "PRESENTE" : "AUSENTE");
+  const { token } = getBearerToken(request);
 
   if (!token) {
     return {
@@ -46,15 +39,8 @@ async function requireSuperAdmin(request: Request) {
     };
   }
 
-  console.log("Validando usuario con Supabase...");
-
   const { data: callerData, error: callerError } =
     await supabaseAdmin.auth.getUser(token);
-
-  console.log("Resultado getUser:");
-  console.log("Error:", callerError);
-  console.log("User ID:", callerData?.user?.id ?? "NULL");
-  console.log("Email:", callerData?.user?.email ?? "NULL");
 
   if (callerError || !callerData.user) {
     return {
@@ -68,10 +54,6 @@ async function requireSuperAdmin(request: Request) {
     .select("id,role,active")
     .eq("id", callerData.user.id)
     .maybeSingle();
-
-  console.log("Perfil encontrado:");
-  console.log(callerProfile);
-  console.log("Error perfil:", profileError);
 
   if (profileError) {
     return {
@@ -115,6 +97,8 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const body = (await request.json()) as UpdateStoreUserBody;
 
+  if (body.role !== undefined && !STORE_USER_ROLES.includes(body.role)) return jsonError("Rol no válido.");
+
   const { data: membership, error: membershipError } = await supabaseAdmin
     .from("store_users")
     .select("id,user_id,store_id,active")
@@ -132,6 +116,11 @@ export async function PATCH(request: Request, context: RouteContext) {
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
+
+  if (body.role !== undefined) {
+    updates.role = body.role;
+    updates.permissions = {};
+  }
 
   if (typeof body.active === "boolean") {
     updates.active = body.active;

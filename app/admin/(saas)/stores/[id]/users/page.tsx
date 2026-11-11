@@ -10,6 +10,8 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
+import { STORE_USER_ROLES, type StoreUserRole } from "@/lib/admin/access";
+import { getRoleLabel } from "@/lib/shipping/permissions";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,6 +59,7 @@ export default function StoreUsersPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [form, setForm] = useState({
+    role: "OWNER" as StoreUserRole,
     full_name: "",
     email: "",
     password: generateTemporaryPassword(),
@@ -105,6 +108,7 @@ export default function StoreUsersPage() {
       email: form.email.trim().toLowerCase(),
       password: form.password.trim(),
       full_name: form.full_name.trim(),
+      role: form.role,
     });
 
     setSaving(false);
@@ -117,6 +121,7 @@ export default function StoreUsersPage() {
     alert("Usuario creado y asignado a la tienda correctamente.");
 
     setForm({
+      role: "OWNER" as StoreUserRole,
       full_name: "",
       email: "",
       password: generateTemporaryPassword(),
@@ -242,8 +247,8 @@ export default function StoreUsersPage() {
               </div>
 
               <div>
-                <p className="text-sm text-slate-500">Rol permitido</p>
-                <p className="text-2xl font-black text-slate-900">Owner</p>
+                <p className="text-sm text-slate-500">Acceso por usuario</p>
+                <p className="text-2xl font-black text-slate-900">Roles</p>
               </div>
             </div>
           </div>
@@ -252,7 +257,7 @@ export default function StoreUsersPage() {
         {showCreateForm && (
           <section className="rounded-3xl bg-white p-5 shadow-sm">
             <h2 className="text-lg font-black text-[#061b3a]">
-              Crear administrador de tienda
+              Crear usuario de tienda
             </h2>
 
             <form
@@ -297,6 +302,13 @@ export default function StoreUsersPage() {
                 />
               </div>
 
+              <div className="md:col-span-2">
+                <label htmlFor="new-user-role" className="mb-2 block text-sm font-bold text-slate-700">Rol del usuario</label>
+                <select id="new-user-role" value={form.role} onChange={e => setForm({ ...form, role: e.target.value as StoreUserRole })} className="w-full rounded-2xl border p-3">
+                  {STORE_USER_ROLES.map(role => <option key={role} value={role}>{getRoleLabel(role)}</option>)}
+                </select>
+                <p className="mt-2 text-sm text-slate-500">Solo asignar repartidores: entra directamente a Envíos y únicamente puede cambiar el repartidor.</p>
+              </div>
               <div className="md:col-span-2">
                 <label className="mb-2 block text-sm font-bold text-slate-700">
                   Contraseña temporal
@@ -405,9 +417,17 @@ export default function StoreUsersPage() {
                     </p>
 
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
-                        {user.role}
-                      </span>
+                      <select aria-label={`Rol de ${user.profile?.email || "usuario"}`} value={user.role} disabled={saving} onChange={async e => {
+                        const role = e.target.value as StoreUserRole;
+                        if (!confirm(`¿Cambiar el rol a ${getRoleLabel(role)}?`)) return;
+                        setSaving(true);
+                        const result = await updateStoreUser(user.id, { role });
+                        if (result.error) alert(result.error);
+                        await loadUsers();
+                        setSaving(false);
+                      }} className="max-w-full rounded-xl border bg-slate-50 px-3 py-2 text-xs font-bold">
+                        {STORE_USER_ROLES.map(role => <option key={role} value={role}>{getRoleLabel(role)}</option>)}
+                      </select>
 
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-black ${

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { STORE_USER_ROLES, type StoreUserRole } from "@/lib/admin/access";
 import type { User } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
@@ -7,7 +8,7 @@ type CreateStoreUserBody = {
   email?: string;
   password?: string;
   full_name?: string;
-  role?: "owner";
+  role?: StoreUserRole;
 };
 
 function jsonError(message: string, status = 400) {
@@ -189,9 +190,7 @@ export async function POST(request: Request) {
     return jsonError("store_id, email y password son obligatorios.");
   }
 
-  if (role !== "OWNER") {
-  return jsonError("Por ahora solo se permite el rol OWNER.");
-}
+  if (!STORE_USER_ROLES.includes(role)) return jsonError("Rol no válido.");
 
   if (password.length < 8) {
     return jsonError("La contraseña debe tener al menos 8 caracteres.");
@@ -303,6 +302,7 @@ export async function POST(request: Request) {
         store_id: storeId,
         user_id: userId,
         role,
+        permissions: {},
         active: true,
         updated_at: now,
       },

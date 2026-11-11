@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Menu, Rocket, Store } from "lucide-react";
 
+import { isAssignmentOnlyAccess } from "@/lib/admin/access";
+import LogoutButton from "@/components/admin/LogoutButton";
 import RemittanceNotifications from "@/components/admin/remittances/RemittanceNotifications";
 import StoreAdminNav from "@/components/admin/nav/StoreAdminNav";
 import StoreAdminMobileMenu from "@/components/admin/nav/StoreAdminMobileMenu";
@@ -17,7 +19,7 @@ import { getStoreTheme } from "@/lib/admin/theme";
 export default function StoreAdminShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
 
-  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+  const { access, loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
 
   const { store: selectedStore, clearCurrentStore } = useStore();
@@ -43,6 +45,10 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
     (isSuperAdmin ? "Administración General" : "Tienda activa");
 
   const theme = getStoreTheme(activeStore);
+
+  if (isAssignmentOnlyAccess(access)) {
+    return <div className="min-h-screen bg-slate-50"><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-4 py-4 sm:px-6"><div><p className="font-black text-[#061b3a]">{storeName}</p><p className="text-xs text-slate-500">Solo asignar repartidores</p></div><nav className="flex flex-wrap items-center gap-4 text-sm font-bold"><Link href="/admin/shipping/shipments">Envíos</Link><Link href="/admin/account">Mi cuenta</Link><LogoutButton /></nav></header>{children}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

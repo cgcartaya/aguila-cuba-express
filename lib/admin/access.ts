@@ -9,7 +9,8 @@ export type StoreUserRole =
   | "BILLER"
   | "DISPATCHER"
   | "DRIVER"
-  | "VIEWER";
+  | "VIEWER"
+  | "ASSIGNER";
 
 export type StorePermissions = Record<string, boolean>;
 
@@ -59,3 +60,13 @@ export type AdminAccess = {
   storeMembership: StoreMembership | null;
   store: AccessStore | null;
 };
+
+export const STORE_USER_ROLES: StoreUserRole[] = ["OWNER", "ADMIN", "OPERATIONS", "BILLER", "DISPATCHER", "DRIVER", "VIEWER", "ASSIGNER"];
+
+export function isAssignmentOnlyAccess(access: AdminAccess | null) {
+  return !!access && !access.isSuperAdmin && access.storeMembership?.role === "ASSIGNER";
+}
+
+export function isAssignmentOnlyPath(pathname: string) {
+  return ["/admin/shipping/shipments", "/admin/account", "/admin/account/password"].includes(pathname.replace(/\/$/, ""));
+}

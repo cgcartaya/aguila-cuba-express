@@ -77,6 +77,7 @@ const ROLE_PERMISSIONS: Record<StoreUserRole, ShippingPermission[]> = {
     "shipping.view",
     "shipping.change_status",
   ],
+  ASSIGNER: ["shipping.view", "shipping.assign"],
   VIEWER: [
     "shipping.view",
   ],
@@ -87,6 +88,8 @@ export function hasShippingPermission(
   permission: ShippingPermission
 ) {
   if (!membership?.active) return false;
+
+  if (membership.role === "ASSIGNER") return ROLE_PERMISSIONS.ASSIGNER.includes(permission);
 
   const overrides = (membership.permissions || {}) as StorePermissions;
 
@@ -112,6 +115,7 @@ export function getRoleLabel(role?: StoreUserRole | null) {
     DISPATCHER: "Despachador",
     DRIVER: "Repartidor",
     VIEWER: "Solo lectura",
+    ASSIGNER: "Solo asignar repartidores",
   };
 
   return role ? labels[role] : "Super Admin";

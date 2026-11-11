@@ -16,8 +16,9 @@ async function access(request: NextRequest, storeId: string) {
   const { data: profile } = await supabaseAdmin.from("profiles").select("role,active").eq("id", data.user.id).maybeSingle();
   if (!profile?.active) return fail("Usuario inactivo.", 403);
   if (profile.role === "super_admin") return null;
-  const { data: membership } = await supabaseAdmin.from("store_users").select("active").eq("store_id", storeId).eq("user_id", data.user.id).eq("active", true).maybeSingle();
+  const { data: membership } = await supabaseAdmin.from("store_users").select("active,role").eq("store_id", storeId).eq("user_id", data.user.id).eq("active", true).maybeSingle();
   if (!membership) return fail("No tienes acceso a esta tienda.", 403);
+  if (membership.role === "ASSIGNER") return fail("Tu rol solo permite asignar repartidores.", 403);
   return null;
 }
 

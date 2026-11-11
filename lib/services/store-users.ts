@@ -1,5 +1,6 @@
 "use client";
 
+import type { StoreUserRole } from "@/lib/admin/access";
 import { supabase } from "@/lib/supabase";
 
 export type StoreUserProfile = {
@@ -14,7 +15,7 @@ export type StoreUserMembership = {
   id: string;
   store_id: string;
   user_id: string;
-  role: "OWNER";
+  role: StoreUserRole;
   active: boolean;
   created_at?: string | null;
   updated_at?: string | null;
@@ -25,11 +26,13 @@ export type CreateStoreUserInput = {
   store_id: string;
   email: string;
   password: string;
+  role?: StoreUserRole;
   full_name?: string;
 };
 
 export type UpdateStoreUserInput = {
   active?: boolean;
+  role?: StoreUserRole;
   full_name?: string;
   password?: string;
 };
@@ -100,7 +103,7 @@ export async function createStoreUser(input: CreateStoreUserInput) {
       },
       body: JSON.stringify({
         ...input,
-        role: "OWNER",
+        role: input.role || "OWNER",
       }),
     });
 
