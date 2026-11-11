@@ -67,6 +67,7 @@ export default function AlvarezLanding() {
       <Process />
       <Tracking />
       <TravelAndStore />
+      <RefundPolicy />
       <Contact />
       <Footer />
     </main>
@@ -214,6 +215,29 @@ function Tracking() {
 
 function TravelAndStore() {
   return <section id="viajes" className="bg-[#000415] px-5 py-20 sm:px-7 lg:px-10"><div className="mx-auto grid max-w-[1320px] gap-5 lg:grid-cols-2"><div className="relative min-h-[430px] overflow-hidden rounded-3xl border border-white/10"><Image src="/alvarez/interior.jpg" alt="Productos en la tienda de Álvarez Travel" fill sizes="(max-width:1024px) 100vw,50vw" className="object-cover opacity-55"/><div className="absolute inset-0 bg-gradient-to-t from-[#000415] via-[#000415]/45 to-transparent"/><div className="absolute inset-x-0 bottom-0 p-7 sm:p-9"><p className="text-xs font-black uppercase tracking-[.18em] text-[#CA0C28]">Tu tienda, más cerca</p><h2 className="mt-3 text-3xl font-black uppercase">Lo que necesitas para los tuyos.</h2><p className="mt-3 max-w-lg text-[#B5BFCD]">Descubre alimentos, artículos de aseo y productos para el hogar. Nuestro equipo te ayuda a elegir y resolver tus dudas antes de comprar.</p><a href={whatsappHref("Hola, quisiera información sobre los productos y combos de la tienda de Álvarez Travel.")} target="_blank" rel="noreferrer" className="mt-6 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#CA0C28] px-6 font-black"><MessageCircle size={18}/> Consultar productos</a></div></div><div className="flex min-h-[430px] flex-col justify-between rounded-3xl border border-white/10 bg-[#091D3D] p-7 sm:p-9"><div><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#07409A]/25"><ShoppingBag className="text-[#B5BFCD]"/></span><p className="mt-8 text-xs font-black uppercase tracking-[.18em] text-[#CA0C28]">Tienda Álvarez</p><h2 className="mt-3 text-3xl font-black uppercase">Productos y combos en línea.</h2><p className="mt-4 leading-7 text-[#B5BFCD]">Explora nuestros productos y combos, consulta sus precios y prepara tu pedido desde donde estés. Todo en la tienda online de Álvarez Travel.</p></div><Link href="/tienda" className="mt-8 inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-white px-6 font-black uppercase text-[#000415]">Entrar a la tienda <ArrowRight size={18}/></Link></div></div></section>;
+}
+
+function RefundPolicy() {
+  return (
+    <section id="politica-de-devolucion" aria-labelledby="refund-policy-title" className="scroll-mt-28 border-y border-white/10 bg-[#091D3D] px-5 py-14 sm:px-7 lg:px-10">
+      <div className="mx-auto max-w-[1320px]">
+        <p className="text-xs font-black uppercase tracking-widest text-[#B5BFCD]">Información para nuestros clientes</p>
+        <h2 id="refund-policy-title" className="mt-3 text-3xl font-black uppercase">Política de devolución</h2>
+        <div className="mt-7 grid gap-5 md:grid-cols-2">
+          <article className="rounded-2xl border border-white/15 bg-[#000415] p-6">
+            <ShoppingBag size={25} className="text-[#B5BFCD]" aria-hidden="true" />
+            <h3 className="mt-4 text-xl font-black">Productos de la tienda virtual</h3>
+            <p className="mt-3 leading-7 text-[#B5BFCD]">Los productos comprados en la tienda virtual no tienen devolución del dinero.</p>
+          </article>
+          <article className="rounded-2xl border border-white/15 bg-[#000415] p-6">
+            <PackageCheck size={25} className="text-[#B5BFCD]" aria-hidden="true" />
+            <h3 className="mt-4 text-xl font-black">Envíos Express y Regular</h3>
+            <p className="mt-3 leading-7 text-[#B5BFCD]">Se devuelve el dinero del envío si el paquete acumula una demora de 10 días por encima del plazo máximo del rango de entrega correspondiente a la modalidad contratada: Envío Express o Envío Regular.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function Contact() {
