@@ -436,9 +436,9 @@ export default function ShippingShipmentsPage() {
                         </span>
                       </div>
 
-                      {!assignmentOnly && <div className="shipping-actions-panel min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
-                        <InvoiceActions shipment={shipment} store={activeStore} compact />
-                        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
+                      {(!assignmentOnly || membership?.role === "SHIPPING_CATALOG") && <div className="shipping-actions-panel min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
+                        <InvoiceActions shipment={shipment} store={activeStore} compact readOnly={assignmentOnly} />
+                        {!assignmentOnly && <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
                           <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
                           {canEdit && <Link
                             href={`/admin/shipping/${shipment.id}/edit`}
@@ -454,7 +454,7 @@ export default function ShippingShipmentsPage() {
                           >
                             <Trash2 size={16} />
                           </button>}
-                        </div>
+                        </div>}
                       </div>}
                     </div>
 

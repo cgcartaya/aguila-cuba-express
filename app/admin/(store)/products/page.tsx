@@ -51,8 +51,10 @@ export default function AdminProductsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { loading: accessLoading, isSuperAdmin, store: accessStore } =
+  const { access, loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
+
+  const catalogRole = !isSuperAdmin && access?.storeMembership?.role === "SHIPPING_CATALOG";
 
   const { store: selectedStore, loading: storeLoading } = useStore();
 
@@ -364,7 +366,7 @@ export default function AdminProductsPage() {
           description={`Gestiona el catálogo de ${activeStore?.name || "la tienda activa"}.`}
         />
 
-        <ProductSectionTabs />
+        {!catalogRole && <ProductSectionTabs />}
 
         {errorMessage && (
           <div className="mb-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
@@ -393,7 +395,7 @@ export default function AdminProductsPage() {
           activeFilters={activeFilters}
         />
 
-        <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        {!catalogRole && <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <button
             type="button"
             onClick={toggleHideProductsWithoutImages}
@@ -427,9 +429,10 @@ export default function AdminProductsPage() {
               />
             </span>
           </button>
-        </div>
+        </div>}
 
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {!catalogRole && <>
           <Link
             href="/admin/products/import"
             className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm"
@@ -451,6 +454,7 @@ export default function AdminProductsPage() {
             )}
           </Link>
 
+          </>}
           <Link
             href="/admin/products/new"
             className="flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm"
@@ -477,14 +481,14 @@ export default function AdminProductsPage() {
                   returnTo
                 )}`}
               >
-                <ProductActionsMenu
+                {!catalogRole && <ProductActionsMenu
                   product={product}
                   openMenuId={openMenuId}
                   setOpenMenuId={setOpenMenuId}
                   onToggleStatus={toggleProductStatus}
                   onMoveToTrash={moveProductToTrash}
                   disabled={movingToTrashId === product.id}
-                />
+                />}
               </ProductCard>
             ))}
           </div>

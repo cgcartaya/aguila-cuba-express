@@ -73,7 +73,7 @@ export default function AdminAccessGuard({ children, area }: AdminAccessGuardPro
       }
 
       setAccess(result.data);
-      if (area === "store" && isAssignmentOnlyAccess(result.data) && !isAssignmentOnlyPath(pathname)) {
+      if (area === "store" && isAssignmentOnlyAccess(result.data) && !isAssignmentOnlyPath(pathname, result.data.storeMembership?.role)) {
         setState("checking");
         router.replace("/admin/shipping/shipments");
         return;
@@ -84,7 +84,7 @@ export default function AdminAccessGuard({ children, area }: AdminAccessGuardPro
     checkAccess();
   }, [area, router, pathname]);
 
-  if (state === "checking" || (area === "store" && isAssignmentOnlyAccess(access) && !isAssignmentOnlyPath(pathname))) {
+  if (state === "checking" || (area === "store" && isAssignmentOnlyAccess(access) && !isAssignmentOnlyPath(pathname, access?.storeMembership?.role))) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="flex items-center gap-3 rounded-3xl border bg-white px-5 py-4 text-sm font-bold text-slate-600 shadow-sm">

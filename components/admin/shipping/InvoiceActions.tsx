@@ -137,10 +137,12 @@ export default function InvoiceActions({
   shipment,
   store,
   compact = false,
+  readOnly = false,
 }: {
   shipment: Shipment;
   store?: PromotionStore | null;
   compact?: boolean;
+  readOnly?: boolean;
 }) {
   const [messageKind, setMessageKind] = useState<MessageKind | null>(null);
 
@@ -169,16 +171,16 @@ export default function InvoiceActions({
 
         {shipment.contains_package && <a href={`/admin/shipping/${encodeURIComponent(shipment.id)}/label`} target="_blank" rel="noopener noreferrer" className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 hover:bg-blue-50"><Tag size={17} /> Etiqueta / Contenido</a>}
 
-        <button
+        {!readOnly && <button
           type="button"
           onClick={() => setMessageKind("invoice")}
           className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 sm:px-4"
         >
           <Share2 size={17} />
           {compact ? "WhatsApp" : "Compartir factura"}
-        </button>
+        </button>}
 
-        {store && store.module_store_enabled !== false && (
+        {!readOnly && store && store.module_store_enabled !== false && (
           <button
             type="button"
             onClick={() => setMessageKind("promotion")}
