@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getCityOptions } from "@/lib/geo/location-catalog";
+import { LUXURY_PICKUP_CITIES, LUXURY_PICKUP_STORE_SLUG, luxuryPickupZipMatchesCity } from "@/lib/pickups/luxury-coverage";
 
 export type PickupCoverageSettings = {
   id: string;
@@ -255,7 +256,8 @@ export async function validatePickupAddress(input: AddressValidationInput): Prom
 
   const { store, settings } = resolved;
   const catalogCities = getCityOptions(settings.country_code, settings.region_code || "").map((item) => item.label);
-  const cityBelongsToRegion = catalogCities.some((catalogCity) => sameLoose(catalogCity, city));
+  const isLuxuryPickup = storeSlug === LUXURY_PICKUP_STORE_SLUG;
+  const cityBelongsToRegion = (isLuxuryPickup && settings.region_code === "FL" && LUXURY_PICKUP_CITIES.some(name => name.toLowerCase() === city.toLowerCase())) || catalogCities.some((catalogCity) => sameLoose(catalogCity, city));
   if (!cityBelongsToRegion) {
     return {
       valid: false, verified: false, inCoverage: false,
@@ -266,6 +268,15 @@ export async function validatePickupAddress(input: AddressValidationInput): Prom
     };
   }
 
+  if (isLuxuryPickup && !luxuryPickupZipMatchesCity(city, postalCode)) {
+    return {
+      valid: false, verified: false, inCoverage: false,
+      message: "El ZIP no corresponde a la ciudad seleccionada o está fuera de la cobertura de Luxury Travel Point.",
+      provider: "catalog", formattedAddress: "", addressLine1, city, region, regionCode: settings.region_code || region,
+      postalCode, countryCode, county: null, latitude: null, longitude: null, placeId: null,
+      suggestedZoneId: null, suggestedZoneName: null,
+    };
+  }
   let normalized: any = null;
   let provider = "manual";
 
@@ -288,7 +299,7 @@ export async function validatePickupAddress(input: AddressValidationInput): Prom
   }
 
   const inputMatches = provider === "manual" || (sameLoose(input.city, normalized.city) && (sameLoose(input.region, normalized.region) || sameLoose(input.region, normalized.regionCode)) && norm(input.postalCode).startsWith(norm(normalized.postalCode).slice(0, 5)));
-  const inCoverage = evaluateCoverage(settings, normalized);
+  const inCoverage = evaluateCoverage(settings, normalized) && (!isLuxuryPickup || luxuryPickupZipMatchesCity(city, postalCode));
   const zone = await findSuggestedZone(store.id, normalized.city, normalized.postalCode, normalized.county);
   const verified = provider !== "manual" && inputMatches;
 

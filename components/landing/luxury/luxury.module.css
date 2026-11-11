@@ -37,3 +37,10 @@
 .preserveLines,.packageItinerary p {white-space:pre-line;overflow-wrap:anywhere}
 .packageBack {display:inline-flex;gap:10px;margin:30px 24px;color:#142f3e;font-weight:600}
 @media(max-width:600px){.packageColumns{grid-template-columns:1fr;gap:0}.packageDetail{padding:24px 18px}.packageGallery img{width:95%}.departurePanel{padding:18px}}
+
+/* Luxury display typography: Minion Pro requires an Adobe web-font license; Georgia fallback. */
+.root{--luxury-heading-font:"Minion Pro","minion-pro",Georgia,"Times New Roman",serif}
+.root h1,.root h2,.root .galleryCopy h1,.root .galleryCopy h2,.root .pickup h3{font-family:var(--luxury-heading-font)}
+.root .pickup button.goldButton{border:0;cursor:pointer}
+.root .pickupCities{margin-top:8px;font-weight:600}
+@media(max-width:600px){.root .pickup button.goldButton{width:100%;margin-left:0;white-space:normal}}
