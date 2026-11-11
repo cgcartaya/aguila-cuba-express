@@ -1179,3 +1179,16 @@
 .tools:has(> :only-child) {
   grid-template-columns: minmax(0, 1fr);
 }
+
+.procedureConsent {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.procedureConsent input[type="checkbox"] {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  margin: .1rem 0 0;
+}
