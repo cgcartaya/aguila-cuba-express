@@ -21,6 +21,9 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { isAssignmentOnlyAccess } from "@/lib/admin/access";
+import { hasShippingPermission } from "@/lib/shipping/permissions";
+import ShipmentDriverSelect from "@/components/admin/shipping/ShipmentDriverSelect";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
 import InvoiceActions from "@/components/admin/shipping/InvoiceActions";
 import PaymentCollectButton from "@/components/admin/shipping/PaymentCollectButton";
@@ -41,6 +44,7 @@ import { getShippingConfiguration } from "@/lib/services/shipping-settings";
 import { getShippingTripsByStoreId } from "@/lib/services/shipping-trips";
 import type {
   Shipment,
+  ShippingDriver,
   ShippingLocation,
   ShippingMunicipality,
   ShippingProvince,
@@ -84,6 +88,7 @@ export default function ShippingShipmentsPage() {
   const [provinces, setProvinces] = useState<ShippingProvince[]>([]);
   const [municipalities, setMunicipalities] = useState<ShippingMunicipality[]>([]);
   const [locations, setLocations] = useState<ShippingLocation[]>([]);
+  const [drivers, setDrivers] = useState<ShippingDriver[]>([]);
   const [driverNames, setDriverNames] = useState<string[]>([]);
   const [summary, setSummary] = useState({ total: 0, pending: 0, unassigned: 0 });
   const [loading, setLoading] = useState(true);
@@ -134,7 +139,13 @@ export default function ShippingShipmentsPage() {
       setTrips(tripResult.data || []);
     }
 
-    if (!driversResult.error) setDriverNames((driversResult.data || []).map((driver) => driver.name).sort());
+    if (!driversResult.error) {
+      setDrivers(driversResult.data || []);
+      setDriverNames((driversResult.data || []).map((driver) => driver.name).sort());
+    } else {
+      setDrivers([]);
+      setErrorMessage(current => current || "No se pudieron cargar los repartidores. Recarga para volver a intentarlo.");
+    }
     if (!summaryResult.error) setSummary(summaryResult);
 
     setProvinces(configResult.provinces || []);
@@ -252,8 +263,12 @@ export default function ShippingShipmentsPage() {
     setTotalCount((current) => Math.max(0, current - 1));
   }
 
-  const canCreate =
-    access?.isSuperAdmin || ["OWNER", "ADMIN", "OPERATIONS"].includes(access?.storeMembership?.role || "");
+  const assignmentOnly = isAssignmentOnlyAccess(access);
+  const membership = access?.storeMembership || null;
+  const canCreate = access?.isSuperAdmin || hasShippingPermission(membership, "shipping.create");
+  const canAssign = access?.isSuperAdmin || hasShippingPermission(membership, "shipping.assign");
+  const canEdit = access?.isSuperAdmin || hasShippingPermission(membership, "shipping.edit");
+  const canDelete = access?.isSuperAdmin || hasShippingPermission(membership, "shipping.delete");
 
   return (
     <main className="min-h-screen min-w-0 overflow-x-hidden bg-[#f5f7fb] px-3 pb-24 pt-3 sm:p-4 sm:pb-24 md:p-6 md:pb-24">
@@ -261,13 +276,13 @@ export default function ShippingShipmentsPage() {
         <AdminPageHeader
           eyebrow="Centro operativo"
           title="Todos los envíos"
-          description="Buscador global de paquetes de todos los viajes, con una vista compacta y filtros operativos."
+          description={assignmentOnly ? "Selecciona el repartidor de cada envío. Se guarda automáticamente; los demás datos son de solo lectura." : "Buscador global de paquetes de todos los viajes, con una vista compacta y filtros operativos."}
           storeName={activeStore?.name}
           breadcrumbs={[
             { label: "Envíos", href: "/admin/shipping" },
             { label: "Todos los envíos" },
           ]}
-          actions={
+          actions={!assignmentOnly &&
             <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
               <Link href="/admin/shipping/trips" className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-3 text-sm font-extrabold text-white backdrop-blur transition hover:bg-white/15 sm:px-5">
                 <Route size={17} />
@@ -376,7 +391,7 @@ export default function ShippingShipmentsPage() {
 
                       <div className="min-w-0">
                         <p className="text-[10px] font-extrabold uppercase text-slate-400 xl:hidden">Viaje</p>
-                        {trip ? (
+                        {trip ? (assignmentOnly ? <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700">Viaje {trip.trip_number}</span> :
                           <Link href={`/admin/shipping/trips/${trip.id}`} className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700 hover:bg-blue-100">
                             <Route size={13} />
                             <span className="truncate">Viaje {trip.trip_number}</span>
@@ -384,7 +399,7 @@ export default function ShippingShipmentsPage() {
                         ) : shipment.products_only ? <span className="inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold text-blue-700">Entrega de productos · Sin viaje</span> : shipment.contains_money && !shipment.contains_package ? <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-extrabold text-emerald-700">Entrega de dinero · Sin viaje</span> : (
                           <div className="space-y-1.5">
                             <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-extrabold text-amber-700">Sin viaje</span>
-                            <div className="grid w-full min-w-0 gap-1 min-[380px]:grid-cols-[minmax(0,1fr)_auto]">
+                            {canEdit && <div className="grid w-full min-w-0 gap-1 min-[380px]:grid-cols-[minmax(0,1fr)_auto]">
                               <select
                                 value={tripSelections[shipment.id] || ""}
                                 onChange={(event) => setTripSelections((current) => ({ ...current, [shipment.id]: event.target.value }))}
@@ -404,10 +419,13 @@ export default function ShippingShipmentsPage() {
                               >
                                 {assigningShipmentId === shipment.id ? "…" : "Asignar"}
                               </button>
-                            </div>
+                            </div>}
                           </div>
                         )}
-                        <p className="mt-1 truncate text-[11px] text-slate-500">{shipment.assigned_driver_name || "Sin repartidor"}</p>
+                        {canAssign ? <ShipmentDriverSelect shipment={shipment} drivers={drivers} onAssigned={assignment => {
+                          setShipments(current => current.map(item => item.id === assignment.id ? { ...item, ...assignment } : item));
+                          if (activeStore?.id) void getShipmentsSummaryCounts(activeStore.id).then(result => { if (!result.error) setSummary(result); });
+                        }} /> : <p className="mt-1 truncate text-[11px] text-slate-500">{shipment.assigned_driver_name || "Sin repartidor"}</p>}
                       </div>
 
                       <div>
@@ -418,26 +436,26 @@ export default function ShippingShipmentsPage() {
                         </span>
                       </div>
 
-                      <div className="shipping-actions-panel min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
+                      {!assignmentOnly && <div className="shipping-actions-panel min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
                         <InvoiceActions shipment={shipment} store={activeStore} compact />
                         <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
                           <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
-                          <Link
+                          {canEdit && <Link
                             href={`/admin/shipping/${shipment.id}/edit`}
                             title="Editar envío"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-blue-300 hover:bg-white hover:text-blue-700"
                           >
                             <Edit3 size={16} />
-                          </Link>
-                          <button
+                          </Link>}
+                          {canDelete && <button
                             onClick={() => void trash(shipment)}
                             title="Mover a papelera"
                             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 text-red-600 transition hover:bg-red-50"
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </button>}
                         </div>
-                      </div>
+                      </div>}
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-2 text-[11px] font-semibold text-slate-500">

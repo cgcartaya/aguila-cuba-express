@@ -14,6 +14,7 @@ const VALID_STORE_ROLES: StoreUserRole[] = [
   "DISPATCHER",
   "DRIVER",
   "VIEWER",
+  "ASSIGNER",
 ];
 
 function normalizeStoreRole(value: unknown): StoreUserRole {

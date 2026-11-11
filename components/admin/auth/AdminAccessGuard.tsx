@@ -3,10 +3,10 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, ShieldCheck } from "lucide-react";
 
-import type { AdminAccess, AdminArea } from "@/lib/admin/access";
+import { isAssignmentOnlyAccess, isAssignmentOnlyPath, type AdminAccess, type AdminArea } from "@/lib/admin/access";
 import { getCurrentAdminAccess } from "@/lib/admin/access-service";
 
 type GuardState = "checking" | "allowed" | "forbidden";
@@ -38,6 +38,7 @@ function getErrorMessage(error: string | null) {
 
 export default function AdminAccessGuard({ children, area }: AdminAccessGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState<GuardState>("checking");
   const [access, setAccess] = useState<AdminAccess | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +73,18 @@ export default function AdminAccessGuard({ children, area }: AdminAccessGuardPro
       }
 
       setAccess(result.data);
+      if (area === "store" && isAssignmentOnlyAccess(result.data) && !isAssignmentOnlyPath(pathname)) {
+        setState("checking");
+        router.replace("/admin/shipping/shipments");
+        return;
+      }
       setState("allowed");
     };
 
     checkAccess();
-  }, [area, router]);
+  }, [area, router, pathname]);
 
-  if (state === "checking") {
+  if (state === "checking" || (area === "store" && isAssignmentOnlyAccess(access) && !isAssignmentOnlyPath(pathname))) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="flex items-center gap-3 rounded-3xl border bg-white px-5 py-4 text-sm font-bold text-slate-600 shadow-sm">
