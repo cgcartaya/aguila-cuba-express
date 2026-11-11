@@ -1129,3 +1129,45 @@
     margin: auto;
   }
 }
+
+.procedureCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+.procedureCard {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: .65rem;
+  padding: 1.25rem;
+  border: 1px solid #dce4ec;
+  border-radius: 1rem;
+}
+.procedureCard ul { padding-inline-start: 1.25rem; }
+.procedureForm {
+  margin-top: 1.5rem;
+  max-width: 46rem;
+  scroll-margin-top: 7rem;
+  overflow-wrap: anywhere;
+}
+.procedureForm form, .procedureForm fieldset {
+  display: grid;
+  gap: .8rem;
+}
+.procedureForm fieldset {
+  min-width: 0;
+  border: 1px solid #dce4ec;
+  border-radius: .75rem;
+  padding: 1rem;
+}
+.procedureForm input:not([type=checkbox]), .procedureForm select {
+  display: block;
+  width: 100%;
+  margin-top: .25rem;
+  padding: .55rem;
+  background: white;
+  color: #182838;
+  border: 1px solid #a9bac8;
+  border-radius: .5rem;
+}

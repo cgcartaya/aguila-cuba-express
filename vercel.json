@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/alvarez-remittances-whatsapp",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/procedures",
+      "schedule": "30 8 * * *"
     }
   ]
 }

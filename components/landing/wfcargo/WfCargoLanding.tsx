@@ -2,6 +2,7 @@ import Image from "next/image";
 import { MessageCircle, Phone, ArrowUpRight } from "lucide-react";
 import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
+import ManagedProcedures from "./ManagedProcedures";
 import PickupForm from "./PickupForm";
 import {
   ServiceGrid,
@@ -72,8 +73,8 @@ export default function WfCargoLanding() {
         <ServiceGrid />
         <div className={s.tools}>
           <ShippingCalculator />
-          <ProcedureSection />
         </div>
+        <ManagedProcedures fallback={<ProcedureSection />} />
         <Benefits />
         <PickupForm />
         <FeaturedServices />
