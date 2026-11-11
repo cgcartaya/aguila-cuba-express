@@ -6,8 +6,9 @@ import ts from 'typescript';
 function load(path) { const compiled = { exports: {} }; vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { module: compiled, exports: compiled.exports }); return compiled.exports; }
 const { resolveOperationTrip, operationContent } = load('lib/shipping/operation-mode.ts');
 const { getShippingStatusLabel, getShippingTripStatusLabel } = load('lib/shipping/types.ts');
-test('money has no trip even if a default or requested trip was selected', () => {
-  for (const trip of [null, undefined, '', 'default-trip', 'requested-trip']) assert.equal(resolveOperationTrip(operationContent('money'), trip), null);
+test('money can be saved with or without a selected trip', () => {
+  for (const trip of [null, undefined, '']) assert.equal(resolveOperationTrip(operationContent('money'), trip), null);
+  assert.equal(resolveOperationTrip(operationContent('money'), 'selected-trip'), 'selected-trip');
 });
 test('packages and mixed operations require their selected trip', () => {
   for (const mode of ['package', 'mixed']) {

@@ -68,8 +68,11 @@ export default function NewShipmentPage() {
   const [rates, setRates] = useState<ShippingRate[]>([]);
   const [extraFees, setExtraFees] = useState<ShippingExtraFee[]>([]);
   const [openTrips, setOpenTrips] = useState<ShippingTrip[]>([]);
-  const [operationType, setOperationType] = useState<ShipmentOperationType>(searchParams.get("type") === "products" ? "products" : searchParams.get("type") === "money" ? "money" : "package");
-  const requiresTrip = operationType === "package" || operationType === "mixed";
+  const [requestedOperationType, setOperationType] = useState<ShipmentOperationType>(searchParams.get("type") === "products" ? "products" : searchParams.get("type") === "money" ? "money" : "package");
+  const directTripMode = Boolean(requestedTripId);
+  const operationType = directTripMode && requestedOperationType === "products" ? "package" : requestedOperationType;
+  const requiresTrip = directTripMode || operationType === "package" || operationType === "mixed";
+  const [moneyTripId, setMoneyTripId] = useState("");
   const [selectedTripId, setSelectedTripId] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -80,11 +83,11 @@ export default function NewShipmentPage() {
     [accessStore, isSuperAdmin, selectedStore]
   );
 
-  const directTripMode = Boolean(requestedTripId);
-
+  const chooseOptionalTrip = operationType === "money" && !directTripMode;
+  const effectiveTripId = directTripMode ? requestedTripId : chooseOptionalTrip ? moneyTripId : selectedTripId;
   const selectedTrip = useMemo(
-    () => openTrips.find((trip) => trip.id === selectedTripId) || null,
-    [openTrips, selectedTripId]
+    () => openTrips.find((trip) => trip.id === effectiveTripId) || null,
+    [openTrips, effectiveTripId]
   );
 
   const backHref = directTripMode
@@ -100,6 +103,7 @@ export default function NewShipmentPage() {
 
       setLoadingConfig(true);
       setTripError("");
+      setMoneyTripId("");
 
       const [driversResult, config, tripsResult, requestedTripResult] = await Promise.all([
         getShippingDriversByStoreId(activeStore.id),
@@ -162,7 +166,8 @@ export default function NewShipmentPage() {
 
   async function submit(input: ShipmentInput) {
     if (!activeStore?.id) throw new Error("No se pudo resolver la empresa.");
-    const tripId = resolveOperationTrip(input, selectedTripId);
+    if (directTripMode && !selectedTrip) throw new Error("Este viaje no admite nuevos envíos.");
+    const tripId = resolveOperationTrip(input, selectedTrip?.id);
 
     setSubmitting(true);
     try {
@@ -204,27 +209,29 @@ export default function NewShipmentPage() {
       <h2 className="text-xl font-black">¿Qué deseas registrar?</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{([
         ['package', 'Paquete', 'Requiere un viaje'],
-        ['money', 'Envío de dinero', 'Entrega local sin viaje'],
+        ['money', 'Envío de dinero', directTripMode ? 'Se agrega a este viaje' : 'Con viaje opcional'],
         ['mixed', 'Paquete y dinero', 'Incluye dinero en el paquete y requiere un viaje'],
-        ...(activeStore?.slug === 'alvarez-travel' ? [['products', 'Solo productos de la tienda', 'Sin remesa, peso ni viaje']] as const : []),
+        ...(!directTripMode && activeStore?.slug === 'alvarez-travel' ? [['products', 'Solo productos de la tienda', 'Sin remesa, peso ni viaje']] as const : []),
       ] as const).map(([type, title, description]) => <button type="button" key={type} aria-pressed={operationType === type} onClick={() => setOperationType(type)} className={`rounded-2xl border p-4 text-left ${operationType === type ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200'}`}><b className="block">{title}</b><span className="mt-1 block text-sm text-slate-500">{description}</span></button>)}</div>
     </section>
-    {!requiresTrip && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"><h2 className="font-black">{operationType === "products" ? "Entrega de productos de la tienda" : "Envío de dinero sin viaje"}</h2><p className="mt-1 text-sm">{operationType === "products" ? "Añade los productos, asigna el destinatario y un repartidor. No hace falta enviar dinero. Se genera factura y una orden de tienda con su comisión." : "Registra el monto y la comisión, asigna un repartidor y gestiona la entrega. La operación tendrá su número y factura en la lista general."}</p></section>}
-    {requiresTrip && <>
+    {!requiresTrip && <section className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-900"><h2 className="font-black">{operationType === "products" ? "Entrega de productos de la tienda" : "Envío de dinero"}</h2><p className="mt-1 text-sm">{operationType === "products" ? "Añade los productos, asigna el destinatario y un repartidor. No hace falta enviar dinero. Se genera factura y una orden de tienda con su comisión." : "Registra el monto y la comisión, asigna un repartidor y gestiona la entrega. La operación tendrá su número y factura en la lista general."}</p></section>}
+    {(requiresTrip || chooseOptionalTrip) && <>
       {tripError && <div className="mb-5 rounded-2xl border border-rose-200 bg-rose-50 p-4 font-bold text-rose-700">{tripError}</div>}
       {openTrips.length === 0 || (directTripMode && !selectedTrip) ? <section className="mb-6 rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center">
         <Route className="mx-auto text-slate-300" size={48} /><h2 className="mt-3 text-xl font-black">{directTripMode ? 'Este viaje no admite nuevos envíos' : 'No hay viajes abiertos'}</h2>
         <p className="mt-2 text-slate-500">Crea un viaje abierto para registrar paquetes. Los envíos de dinero pueden registrarse sin viaje.</p>
         <Link href="/admin/shipping/trips/new" className="mt-4 inline-flex items-center gap-2 rounded-xl border px-4 py-3 font-bold"><Plus size={18} /> Crear viaje</Link>
       </section> : <section className="mb-6 rounded-[2rem] border bg-white p-5 shadow-sm">
-        <h2 className="text-xl font-black">Viaje del paquete</h2>
-        <div className="mt-4 grid gap-3 lg:grid-cols-2">{(directTripMode && selectedTrip ? [selectedTrip] : openTrips).map(trip => <button type="button" key={trip.id} onClick={() => setSelectedTripId(trip.id)} aria-pressed={selectedTripId === trip.id} className={`rounded-2xl border p-4 text-left ${selectedTripId === trip.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
-          <div className="flex items-center justify-between gap-3"><b>Viaje {trip.trip_number} · {trip.name}</b>{selectedTripId === trip.id && <CheckCircle2 size={20} className="text-blue-700" />}</div>
+        <h2 className="text-xl font-black">{chooseOptionalTrip ? "Viaje de la remesa (opcional)" : "Viaje del envío"}</h2>
+        <div className="mt-4 grid gap-3 lg:grid-cols-2">
+          {chooseOptionalTrip && <button type="button" aria-pressed={!selectedTrip} onClick={() => setMoneyTripId("")} className={`rounded-2xl border p-4 text-left font-bold ${!selectedTrip ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200'}`}>Sin viaje</button>}
+          {(directTripMode && selectedTrip ? [selectedTrip] : openTrips).map(trip => <button type="button" key={trip.id} onClick={() => chooseOptionalTrip ? setMoneyTripId(trip.id) : setSelectedTripId(trip.id)} aria-pressed={selectedTrip?.id === trip.id} className={`rounded-2xl border p-4 text-left ${selectedTrip?.id === trip.id ? 'border-blue-600 bg-blue-50' : 'border-slate-200'}`}>
+          <div className="flex items-center justify-between gap-3"><b>Viaje {trip.trip_number} · {trip.name}</b>{selectedTrip?.id === trip.id && <CheckCircle2 size={20} className="text-blue-700" />}</div>
           <p className="mt-2 text-sm text-slate-600">{modeLabel(trip.transport_mode)} · {trip.origin || 'Origen sin definir'} → {trip.destination || 'Destino sin definir'}</p><p className="mt-1 text-xs text-slate-500">{formatDate(trip.departure_date)}</p>
         </button>)}</div>
         {!directTripMode && <Link href="/admin/shipping/trips/new" className="mt-4 inline-flex items-center gap-2 font-bold text-blue-700"><Plus size={18} /> Otro viaje</Link>}
       </section>}
-      {!selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Selecciona un viaje para habilitar el registro del paquete.</p>}
+      {requiresTrip && !selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Selecciona un viaje para habilitar el registro del envío.</p>}
     </>}
     <fieldset disabled={requiresTrip && !selectedTrip} className={requiresTrip && !selectedTrip ? 'opacity-50' : ''}>
       <ShipmentForm hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
