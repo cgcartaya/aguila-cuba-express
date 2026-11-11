@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { getCityOptions } from "@/lib/geo/location-catalog";
+import { LUXURY_PICKUP_CITY_ZIPS, LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
 
 function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.map((item) => String(item || "").trim()).filter(Boolean) : [];
@@ -38,6 +39,7 @@ const getCachedPickupConfig = unstable_cache(
         coverageMode: settings.coverage_mode,
         maxPreferredDates: settings.max_preferred_dates || 3,
         cities,
+        ...(storeSlug === LUXURY_PICKUP_STORE_SLUG ? { postalCodesByCity: LUXURY_PICKUP_CITY_ZIPS } : {}),
       },
     };
   },
