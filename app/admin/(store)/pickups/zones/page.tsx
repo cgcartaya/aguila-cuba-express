@@ -24,6 +24,7 @@ import {
   updatePickupZone,
 } from "@/lib/services/pickups";
 import type { PickupZone } from "@/lib/pickups/types";
+import { LUXURY_PICKUP_CITIES, LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
 
 const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const COLORS = ["#ef4444", "#2563eb", "#16a34a", "#f59e0b", "#7c3aed", "#0f766e"];
@@ -107,8 +108,14 @@ export default function PickupZonesPage() {
   const store = isSuperAdmin ? selectedStore || accessStore : accessStore;
 
   const isAlvarez = store?.slug === "alvarez-travel";
+  const isLuxury = store?.slug === LUXURY_PICKUP_STORE_SLUG;
   const miamiCities = ["Miami", "Hialeah", "Miami Gardens", "Miami Lakes", "Doral", "Homestead", "Kendall", "Coral Gables", "North Miami", "North Miami Beach", "Miami Beach", "Opa-locka", "Sweetwater", "Cutler Bay"];
-  const presets = isAlvarez ? [
+  const presets = isLuxury ? [
+    { id: "luxury-lehigh", label: "Luxury · Lehigh Acres", cities: ["Lehigh Acres"] },
+    { id: "luxury-myers", label: "Luxury · Fort Myers", cities: ["Fort Myers", "North Fort Myers"] },
+    { id: "luxury-coast", label: "Luxury · Cape Coral y Costa", cities: ["Cape Coral", "Bonita Springs", "Estero"] },
+    { id: "luxury-labelle", label: "Luxury · LaBelle", cities: ["LaBelle"] },
+  ] : isAlvarez ? [
     { id: "miami-north", label: "Miami · Norte", cities: ["Hialeah", "Miami Lakes", "Miami Gardens", "North Miami", "North Miami Beach", "Opa-locka"] },
     { id: "miami-central", label: "Miami · Centro", cities: ["Miami", "Miami Beach", "Doral", "Sweetwater", "Coral Gables"] },
     { id: "miami-south", label: "Miami · Sur", cities: ["Kendall", "Cutler Bay", "Homestead"] },
@@ -169,7 +176,7 @@ export default function PickupZonesPage() {
   }
 
   function availableCatalog(zoneId: string) {
-    return (isAlvarez ? miamiCities : SOUTH_CAROLINA_COUNTIES).filter((city) => {
+    return (isLuxury ? LUXURY_PICKUP_CITIES : isAlvarez ? miamiCities : SOUTH_CAROLINA_COUNTIES).filter((city) => {
       const owner = ownerByCity.get(city.toLocaleLowerCase("es"));
       return !owner || owner === zoneId;
     });
