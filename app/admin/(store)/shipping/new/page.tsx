@@ -205,7 +205,7 @@ export default function NewShipmentPage() {
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{([
         ['package', 'Paquete', 'Requiere un viaje'],
         ['money', 'Envío de dinero', 'Entrega local sin viaje'],
-        ['mixed', 'Paquete y dinero', 'Operación mixta con viaje'],
+        ['mixed', 'Paquete y dinero', 'Incluye dinero en el paquete y requiere un viaje'],
         ...(activeStore?.slug === 'alvarez-travel' ? [['products', 'Solo productos de la tienda', 'Sin remesa, peso ni viaje']] as const : []),
       ] as const).map(([type, title, description]) => <button type="button" key={type} aria-pressed={operationType === type} onClick={() => setOperationType(type)} className={`rounded-2xl border p-4 text-left ${operationType === type ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-100' : 'border-slate-200'}`}><b className="block">{title}</b><span className="mt-1 block text-sm text-slate-500">{description}</span></button>)}</div>
     </section>
@@ -227,7 +227,7 @@ export default function NewShipmentPage() {
       {!selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Selecciona un viaje para habilitar el registro del paquete.</p>}
     </>}
     <fieldset disabled={requiresTrip && !selectedTrip} className={requiresTrip && !selectedTrip ? 'opacity-50' : ''}>
-      <ShipmentForm hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
+      <ShipmentForm hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
     </fieldset>
   </div></main>;
 }
