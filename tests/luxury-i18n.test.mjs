@@ -20,6 +20,9 @@ function localizedPage(language){
  const deps={'@/lib/travel/types':travelTypes,'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
  deps['./LuxuryPickup']={default:()=>null,__esModule:true};
  deps['@/lib/luxury/shipping']=load('shipping.ts',{},'lib/luxury/');
+ deps['@/lib/shipping/weight-rate']=load('weight-rate.ts',{},'lib/shipping/');
+ deps['./commercial-copy']=load('commercial-copy.ts',deps);
+ deps['./ShippingQuoters']=load('ShippingQuoters.tsx',deps);
  deps['./LuxuryShipping']=load('LuxuryShipping.tsx',deps);
  for(const name of ['LanguageSelector','HeroGallery','PackageDetail','GroupExplorer','TravelExplorer'])deps['./'+name]=load(name+'.tsx',deps);
  const seed=fs.readFileSync('supabase/migrations/20261111162000_luxury_shipping_catalog.sql','utf8').split('$seed$')[1];
@@ -29,12 +32,12 @@ function localizedPage(language){
 test('English and French render locally without scripts or external translation requests',()=>{
  const en=localizedPage('en'),fr=localizedPage('fr');
  assert.match(en,/The world awaits/);assert.match(en,/All countries/);assert.match(en,/Frequently asked questions/);assert.match(en,/Monday–Saturday: 10 a.m.–6 p.m./);
- assert.match(en,/15 × 15 × 15 gold box/);assert.match(en,/Track with SolveBigTech/);
+ assert.match(en,/15 × 15 × 15 gold box/);assert.match(en,/Track with SolveBigTech/);assert.match(en,/Estimate your shipment/);
  assert.match(fr,/Boîte dorée 15 × 15 × 15/);assert.match(fr,/Suivre avec YoY MultiServices/);
  for (const html of [en,fr]) {
   assert.match(html,/wa\.me\/12395550100\?text=/);
   assert.match(html,/https:\/\/billetera\.cc\/cobertura/);
-  assert.doesNotMatch(html,/Cajas completas|3\.49|javascript:/);
+  assert.doesNotMatch(html,/Cajas completas|3\.49|javascript:|We are by your side|Your way to travel|DMC IN THE UNITED STATES/);
  }
  assert.match(fr,/Le monde vous attend/);assert.match(fr,/Tous les pays/);assert.match(fr,/Questions fréquentes/);assert.match(fr,/Du lundi au samedi : 10 h–18 h/);
  for(const html of [en,fr]){assert.doesNotMatch(html,/translate\.google|translate_a|luxuryTranslateInit/);assert.match(html,/value="Japón"/);assert.match(html,/value="2027"/);assert.match(html,/sales@luxurytravelpoint.com/);}

@@ -2,27 +2,11 @@
 
 import Image from 'next/image';
 import { ArrowUpRight, MessageCircle, Package } from 'lucide-react';
-import { useLuxuryLanguage } from './i18n';
 import { contact } from './content';
 import { secureUrl, shippingStatus, type ShippingEntry } from '@/lib/luxury/shipping';
 import s from './luxury.module.css';
-
-export type ShippingCatalog = { entries: ShippingEntry[]; whatsapp: string };
-export const external = { target: '_blank', rel: 'noopener noreferrer' } as const;
-
-export function useCommercialCopy(catalog?: ShippingCatalog) {
-  const { language } = useLuxuryLanguage();
-  const tr = (es: string, en: string, fr: string) => ({ es, en, fr })[language];
-  const whatsapp = (subject: string, message?: string) => {
-    const text = message || tr(
-      `Hola, Luxury Travel Point. Quisiera información sobre ${subject}.`,
-      `Hello, Luxury Travel Point. I’d like information about ${subject}.`,
-      `Bonjour, Luxury Travel Point. Je souhaiterais des renseignements sur ${subject}.`,
-    );
-    return `${catalog?.whatsapp || `https://wa.me/${contact.whatsapp}`}?text=${encodeURIComponent(text)}`;
-  };
-  return { language, tr, whatsapp };
-}
+import { ShippingQuoters } from './ShippingQuoters';
+import { external, useCommercialCopy, type ShippingCatalog } from './commercial-copy';
 
 export default function LuxuryShipping({ catalog }: { catalog?: ShippingCatalog }) {
   const { language, tr, whatsapp } = useCommercialCopy(catalog);
@@ -59,14 +43,7 @@ export default function LuxuryShipping({ catalog }: { catalog?: ShippingCatalog 
     </div>
     {!catalog && <p><a className={s.textButton} href={whatsapp(tr('envíos a Cuba', 'shipping to Cuba', 'les envois vers Cuba'))} {...external}>{tr('Consulta tarifas con Luxury', 'Ask Luxury for rates', 'Demandez les tarifs à Luxury')} <MessageCircle size={16}/></a></p>}
     {entries.filter(row => row.section === 'hero').map(card)}
-    {rates.length > 0 && <div className={s.commercialGroup}>
-      <h3>{tr('Tarifas generales', 'General rates', 'Tarifs généraux')}</h3>
-      <div className={s.commercialGrid}>{rates.map(card)}</div>
-    </div>}
-    {promotions.length > 0 && <div className={s.commercialGroup}>
-      <h3>{tr('Promociones vigentes', 'Current offers', 'Offres en cours')}</h3>
-      <div className={`${s.commercialGrid} ${s.commercialOffers}`}>{promotions.map(card)}</div>
-    </div>}
+    <ShippingQuoters catalog={catalog} offers={promotions}/>
     <div className={`${s.commercialGroup} ${s.commercialGrid}`}>{services.map(card)}</div>
     <section id="rastreo" className={s.commercialGroup}>
       <h3><Package size={22}/> {tr('Consultar mi envío', 'Track my shipment', 'Suivre mon envoi')}</h3>
