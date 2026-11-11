@@ -2,7 +2,7 @@
 
 import type { Configuration } from "@/lib/procedures/catalog";
 
-const input = "block w-full rounded border border-slate-300 bg-white px-3 py-2";
+const input = "block w-full min-w-0 rounded border border-slate-300 bg-white px-3 py-2";
 
 export default function CatalogEditor({ value, change }: { value: Configuration; change: (value: Configuration) => void }) {
   function updateVariant(index: number, variant: Configuration["variants"][number]) {
@@ -15,11 +15,12 @@ export default function CatalogEditor({ value, change }: { value: Configuration;
       onChange={event => change({ ...value, description: event.target.value })} /></label>
     <label>Honorarios de WF Cargo en USD <input className={input} type="number" min="0" max="100000" step="0.01" value={value.agencyFee ?? ""}
       onChange={event => change({ ...value, agencyFee: event.target.value ? Number(event.target.value) : null })} /></label>
-    <fieldset className="grid gap-2 rounded border p-3">
-      <legend>Tarifas de terceros</legend>
+    <details className="min-w-0 rounded-lg border border-slate-200 p-3">
+      <summary className="cursor-pointer font-medium">Tarifas de terceros</summary>
+      <div className="mt-3 grid gap-3">
       {value.fees.map((fee, index) => {
         const setFee = (next: typeof fee) => change({ ...value, fees: value.fees.map((item, i) => i === index ? next : item) });
-        return <div className="grid items-end gap-2 sm:grid-cols-4" key={index}>
+        return <div className="grid items-end gap-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto]" key={index}>
           <label>Concepto <input className={input} required value={fee.label} onChange={event => setFee({ ...fee, label: event.target.value })} /></label>
           <label>Importe USD <input className={input} type="number" min="0" max="100000" step="0.01" required value={fee.amount} onChange={event => setFee({ ...fee, amount: Number(event.target.value) })} /></label>
           <label>Unidad <input className={input} required value={fee.unit} onChange={event => setFee({ ...fee, unit: event.target.value })} /></label>
@@ -28,12 +29,14 @@ export default function CatalogEditor({ value, change }: { value: Configuration;
       })}
       <button className="justify-self-start underline" type="button" disabled={value.fees.length >= 20}
         onClick={() => change({ ...value, fees: [...value.fees, { label: "", amount: 0, unit: "por trámite" }] })}>Agregar tarifa</button>
-    </fieldset>
-    {value.variants.map((variant, index) => <fieldset className="grid gap-2 rounded border p-3" key={variant.id}>
-      <legend>Variante {index + 1}</legend>
+      </div>
+    </details>
+    {value.variants.map((variant, index) => <details open className="min-w-0 rounded-lg border border-slate-200 p-3" key={variant.id}>
+      <summary className="cursor-pointer font-medium">{variant.title || `Variante ${index + 1}`}</summary>
+      <div className="mt-3 grid gap-3">
       <label>Nombre <input className={input} required maxLength={240} value={variant.title}
         onChange={event => updateVariant(index, { ...variant, title: event.target.value })} /></label>
-      {variant.requirements.map((item, position) => <div className="grid items-end gap-2 md:grid-cols-[2fr_1fr_auto]" key={item.id}>
+      {variant.requirements.map((item, position) => <div className="grid items-end gap-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto]" key={item.id}>
         <label>Requisito <input className={input} required maxLength={240} value={item.label}
           onChange={event => updateVariant(index, { ...variant, requirements: variant.requirements.map((row, i) =>
             i === position ? { ...row, label: event.target.value } : row) })} /></label>
@@ -48,7 +51,8 @@ export default function CatalogEditor({ value, change }: { value: Configuration;
           { id: crypto.randomUUID(), label: "", optional: false }] })}>Agregar requisito</button>
       <button className="justify-self-start underline" type="button" disabled={value.variants.length === 1}
         onClick={() => change({ ...value, variants: value.variants.filter((_, i) => i !== index) })}>Quitar variante</button>
-    </fieldset>)}
+      </div>
+    </details>)}
     <button className="justify-self-start underline" type="button" disabled={value.variants.length >= 12}
       onClick={() => change({ ...value, variants: [...value.variants, { id: crypto.randomUUID(), title: "",
         requirements: [{ id: crypto.randomUUID(), label: "", optional: false }] }] })}>Agregar variante</button>

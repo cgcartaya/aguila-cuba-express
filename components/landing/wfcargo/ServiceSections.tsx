@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   HeartHandshake,
 } from "lucide-react";
-import { branches, procedures, faqs, whatsapp } from "./content";
+import { branches, faqs, whatsapp } from "./content";
 import s from "./wfcargo.module.css";
 const services = [
   {
@@ -30,7 +30,7 @@ const services = [
   },
   {
     icon: FileText,
-    name: "Trámites cubanos",
+    name: "Trámites",
     text: "Pasaportes, visas y documentos",
     href: "#tramites",
   },
@@ -44,7 +44,7 @@ const services = [
     icon: Car,
     name: "Renta de autos",
     text: "Planea tu próxima visita a Cuba",
-    href: "#viajes",
+    href: "#tramites",
   },
   {
     icon: Grid2X2,
@@ -74,86 +74,6 @@ export function ServiceGrid() {
             <ArrowRight size={19} />
           </a>
         ))}
-      </div>
-    </section>
-  );
-}
-export function ProcedureSection() {
-  return (
-    <section id="tramites" className={s.tool}>
-      <div className={s.toolHeading}>
-        <FileText />
-        <div>
-          <span>TRÁMITES SIN FRONTERAS</span>
-          <h2>Pasaportes y trámites cubanos</h2>
-        </div>
-      </div>
-      <div className={s.toolBody}>
-        <div className={s.passportLayout}>
-          <Image
-            src="/wfcargo/pasaporte.webp"
-            alt="Pasaporte cubano de cubierta azul y letras doradas"
-            width={300}
-            height={330}
-            className={s.passportImage}
-          />
-          <div className={s.passportActions}>
-            {[
-              "Pasaporte · Mayores de 16 años",
-              "Pasaporte · Menores de 16 años",
-              "Otros trámites",
-            ].map((name) => (
-              <a
-                key={name}
-                className={s.passportOption}
-                href={whatsapp(
-                  `Hola, quisiera consultar los requisitos de ${name}.`,
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>{name}</span>
-                <ArrowRight size={17} />
-              </a>
-            ))}
-            <a
-              className={s.button}
-              href={whatsapp(
-                "Hola, quisiera consultar los requisitos para tramitar un pasaporte cubano.",
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Consultar requisitos
-            </a>
-          </div>
-        </div>
-        <details className={s.procedureDetails}>
-          <summary>Ver tarifas y otros trámites</summary>
-          <div className={s.procedureList}>
-            {procedures.map((p) => (
-              <a
-                key={p.name}
-                href={whatsapp(
-                  `Hola, quisiera conocer los requisitos y confirmar la tarifa de ${p.name}.`,
-                )}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span>{p.name}</span>
-                <strong>${p.price}</strong>
-                <ArrowRight size={15} />
-              </a>
-            ))}
-          </div>
-        </details>
-        <p className={s.small}>
-          Tarifas publicadas por WF Cargo. Confirma requisitos, vigencia y
-          condiciones antes de iniciar tu trámite.
-        </p>
-        <p className={s.comingSoon}>
-          Ciudadanía / renuncia cubana · Próximamente, diciembre de 2026
-        </p>
       </div>
     </section>
   );
@@ -245,15 +165,13 @@ export function FeaturedServices() {
           </p>
           <a
             className={s.button}
-            href={whatsapp(
-              "Hola, quisiera consultar disponibilidad de renta de autos y hoteles en Cuba.",
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#tramites"
           >
-            Planear mi viaje
+            Consultar renta de autos
             <ArrowRight size={18} />
           </a>
+          <p><a href={whatsapp("Hola, quisiera consultar disponibilidad de hoteles en Cuba.")}
+            target="_blank" rel="noopener noreferrer">Consultar hoteles por WhatsApp</a></p>
         </div>
       </article>
     </section>
@@ -269,7 +187,8 @@ export function OtherServices() {
       <div className={s.otherGrid}>
         {[
           "Notaría pública",
-          "Apostillas y traducciones",
+          "Apostillas",
+          "Traducciones",
           "Preparación de impuestos",
           "Llenado de formularios",
           "Recargas a Latinoamérica",
@@ -277,9 +196,9 @@ export function OtherServices() {
         ].map((name) => (
           <a
             key={name}
-            href={whatsapp(`Hola, quisiera información sobre ${name}.`)}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={name === "Notaría pública" || name === "Apostillas"
+              ? "#tramites"
+              : whatsapp(`Hola, quisiera información sobre ${name}.`)}
           >
             <FileText size={21} />
             {name}
