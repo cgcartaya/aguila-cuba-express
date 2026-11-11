@@ -9,6 +9,7 @@ import { getPickupServiceSettings, upsertPickupServiceSettings } from "@/lib/ser
 import { invalidatePublicConfig } from "@/lib/cache/invalidate-public-config";
 import { getCityOptions, getCountryName, getCountryOptions, getStateName, getStateOptions } from "@/lib/geo/location-catalog";
 import type { PickupServiceSettings } from "@/lib/pickups/types";
+import { LUXURY_PICKUP_CITIES, LUXURY_PICKUP_STORE_SLUG, LUXURY_PICKUP_ZIPS } from "@/lib/pickups/luxury-coverage";
 
 const defaults: Partial<PickupServiceSettings> = {
   is_enabled: true,
@@ -35,6 +36,7 @@ export default function PickupSettingsPage() {
   const { store: selectedStore, loading: storeLoading } = useStore() as any;
   const { store: accessStore, isSuperAdmin, loading: accessLoading } = useAdminAccess();
   const store = isSuperAdmin ? selectedStore || accessStore : accessStore;
+  const isLuxury = store?.slug === LUXURY_PICKUP_STORE_SLUG;
   const [form, setForm] = useState<Partial<PickupServiceSettings>>(defaults);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,7 +50,12 @@ export default function PickupSettingsPage() {
       setLoading(true);
       const result = await getPickupServiceSettings(store.id);
       if (result.error) setError(result.error.message);
-      setForm(result.data ? { ...defaults, ...result.data } : defaults);
+      const initial: Partial<PickupServiceSettings> = store.slug === LUXURY_PICKUP_STORE_SLUG ? {
+        ...defaults, region_name: "Florida", region_code: "FL", base_city: "Lehigh Acres",
+        coverage_mode: "cities", city_selection_mode: "selected", allowed_cities: LUXURY_PICKUP_CITIES,
+        allowed_postal_codes: LUXURY_PICKUP_ZIPS,
+      } : defaults;
+      setForm(result.data ? { ...initial, ...result.data } : initial);
       setLoading(false);
     })();
   }, [store?.id]);
@@ -110,6 +117,7 @@ export default function PickupSettingsPage() {
       region_name: getStateName(form.country_code, form.region_code),
       coverage_mode: selectedMode === "selected" ? "cities" : "region",
       allowed_cities: selectedMode === "selected" ? form.allowed_cities || [] : [],
+      ...(isLuxury ? { allowed_postal_codes: LUXURY_PICKUP_ZIPS } : {}),
       pickup_fee: Number(form.pickup_fee) || 0,
       max_preferred_dates: Math.max(1, Math.min(7, Number(form.max_preferred_dates) || 3)),
       require_verified_address: false,
@@ -135,6 +143,7 @@ export default function PickupSettingsPage() {
 
     <section className="grid gap-5 xl:grid-cols-[.8fr_1.2fr]">
       <div className="space-y-5">
+        {isLuxury && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">Luxury: Lehigh Acres sin cargo. Fort Myers, North Fort Myers, Cape Coral, LaBelle, Bonita Springs y Estero: $25. El cargo se confirma con la agencia.</div>}
         <div className="rounded-[1.8rem] border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3"><Globe2 className="text-blue-700"/><div><h2 className="text-xl font-black">Ubicación del servicio</h2><p className="text-sm font-semibold text-slate-500">Catálogo internacional sin Google Maps.</p></div></div>
           <div className="mt-5 space-y-4">
