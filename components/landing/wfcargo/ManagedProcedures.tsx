@@ -40,7 +40,7 @@ export default function ManagedProcedures() {
         body: JSON.stringify({
           service, variant, version: entry.version,
           name: fields.get("name"), email: fields.get("email"),
-          phone: String(fields.get("phone")).replace(/[ ()-]/g, "").replace(/^(\d{10})$/, "+1$1"),
+          phone: fields.get("phone"),
           whatsapp: fields.has("whatsapp"),
           checklist: Object.fromEntries(option.requirements.map(item => [item.id, fields.get(item.id)])),
         }),
@@ -106,7 +106,7 @@ export default function ManagedProcedures() {
               </label>)}
             </fieldset>
             <p>WF Cargo usará tus datos para gestionar la solicitud y retirará el contacto a los 90 días de cerrarla. Trae los documentos cuando WF te indique. Evita compartir documentos o sus números por WhatsApp.</p>
-            <label><input name="whatsapp" type="checkbox" disabled={busy} /> Acepto que WF Cargo me contacte por WhatsApp sobre esta solicitud.</label>
+            <label className={styles.procedureConsent}><input name="whatsapp" type="checkbox" disabled={busy} /> Acepto que WF Cargo me contacte por WhatsApp sobre esta solicitud.</label>
             {error && <p role="alert">{error}</p>}
             <button type="submit" className={styles.button} disabled={busy}>{busy ? "Enviando…" : "Enviar solicitud"}</button>
           </form>}

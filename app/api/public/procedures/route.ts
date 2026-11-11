@@ -1,3 +1,4 @@
+import { normalizeProcedurePhone } from "@/lib/procedures/phone";
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { answers, key } from "@/lib/procedures/catalog";
@@ -6,7 +7,7 @@ import { catalog, publicStore, response } from "@/lib/procedures/server";
 const submission = z.object({
   service: key, variant: key, version: z.number().int().positive(),
   name: z.string().trim().min(1).max(120).regex(/^[\p{L}\p{M} .'’-]+$/u),
-  phone: z.string().regex(/^\+[1-9][0-9]{7,14}$/),
+  phone: z.string().max(30).transform(normalizeProcedurePhone).pipe(z.string().regex(/^\+[1-9][0-9]{7,14}$/)),
   email: z.string().trim().email().max(254),
   whatsapp: z.boolean(), checklist: z.record(key, answers),
 }).strict();
@@ -28,7 +29,12 @@ export async function POST(request: Request) {
     return response({ error: "Formato de solicitud inválido." }, 415);
   }
   const parsed = submission.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return response({ error: "Revisa los datos de contacto y los requisitos." }, 400);
+  if (!parsed.success) {
+    const invalidPhone = parsed.error.issues.some(issue => issue.path[0] === "phone");
+    return response({ error: invalidPhone
+      ? "Ingresa un teléfono válido. Para EE. UU. puedes usar 10 dígitos o incluir el 1 inicial."
+      : "Revisa los datos de contacto y los requisitos." }, 400);
+  }
   const input = parsed.data;
   try {
     const entry = (await catalog(store.id, true)).find(row => row.service === input.service);
