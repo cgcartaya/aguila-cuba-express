@@ -1171,3 +1171,11 @@
   border: 1px solid #a9bac8;
   border-radius: .5rem;
 }
+
+.procedureSection {
+  width: min(calc(100% - 40px), 1220px);
+  margin: 24px auto 0;
+}
+.tools:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}

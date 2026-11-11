@@ -5,8 +5,10 @@ import type { CatalogEntry } from "@/lib/procedures/catalog";
 import { whatsapp } from "./content";
 import styles from "./wfcargo.module.css";
 
-export default function ManagedProcedures({ fallback }: { fallback: React.ReactNode }) {
+export default function ManagedProcedures() {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const [service, setService] = useState("");
   const [variant, setVariant] = useState("");
   const [result, setResult] = useState("");
@@ -15,8 +17,12 @@ export default function ManagedProcedures({ fallback }: { fallback: React.ReactN
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/public/procedures", { signal: controller.signal })
-      .then(async response => { if (response.ok) setCatalog(await response.json()); })
-      .catch(() => undefined);
+      .then(async response => {
+        if (!response.ok) throw new Error("Catálogo no disponible");
+        setCatalog(await response.json());
+      })
+      .catch(() => { if (!controller.signal.aborted) setCatalogUnavailable(true); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);
   const entry = catalog.find(item => item.service === service);
@@ -49,11 +55,13 @@ export default function ManagedProcedures({ fallback }: { fallback: React.ReactN
     }
   }
 
-  if (!catalog.length) return fallback;
   return (
-    <section id="tramites" className={styles.tool}>
+    <section id="tramites" className={`${styles.tool} ${styles.procedureSection}`}>
       <div className={styles.toolHeading}><h2>Trámites de WF Cargo</h2></div>
       <div className={styles.toolBody}>
+        {!catalog.length && <p role="status">{loading ? "Cargando trámites…" : catalogUnavailable
+          ? "No pudimos cargar los trámites. Inténtalo de nuevo en unos minutos."
+          : "Las solicitudes en línea estarán disponibles cuando WF Cargo publique sus trámites."}</p>}
         <div className={styles.procedureCards}>
           {catalog.map(item => (
             <article className={styles.procedureCard} key={item.service}>
@@ -64,13 +72,14 @@ export default function ManagedProcedures({ fallback }: { fallback: React.ReactN
                 <ul>{item.configuration.fees.map((fee, index) => <li key={index}>{fee.label} · ${fee.amount.toFixed(2)} {fee.unit}</li>)}</ul>
               </details>}
               {item.configuration.agencyFee !== null && <p>Gestión WF Cargo · ${item.configuration.agencyFee.toFixed(2)}</p>}
-              <a className={styles.button} href="#solicitud-tramite" onClick={() => {
+              <button type="button" className={styles.button} onClick={() => {
                 setService(item.service); setVariant(item.configuration.variants[0].id); setResult(""); setError("");
-              }}>Solicitar trámite</a>
+                requestAnimationFrame(() => document.getElementById("solicitud-tramite")?.focus());
+              }}>Solicitar trámite</button>
             </article>
           ))}
         </div>
-        {entry && option && <div id="solicitud-tramite" className={styles.procedureForm}>
+        {entry && option && <div id="solicitud-tramite" tabIndex={-1} className={styles.procedureForm}>
           <h3>{entry.configuration.title}</h3>
           {result ? <div role="status">
             <p>Solicitud recibida. Guarda tu referencia <strong>{result}</strong>.</p>

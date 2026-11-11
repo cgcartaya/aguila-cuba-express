@@ -6,7 +6,6 @@ import ManagedProcedures from "./ManagedProcedures";
 import PickupForm from "./PickupForm";
 import {
   ServiceGrid,
-  ProcedureSection,
   Benefits,
   FeaturedServices,
   OtherServices,
@@ -74,7 +73,7 @@ export default function WfCargoLanding() {
         <div className={s.tools}>
           <ShippingCalculator />
         </div>
-        <ManagedProcedures fallback={<ProcedureSection />} />
+        <ManagedProcedures />
         <Benefits />
         <PickupForm />
         <FeaturedServices />
