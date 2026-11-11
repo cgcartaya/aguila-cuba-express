@@ -53,6 +53,7 @@ type PickupPublicConfig = {
   coverageMode: string;
   maxPreferredDates: number;
   cities: string[];
+  postalCodesByCity?: Record<string, string[]>;
 };
 
 function nextDays(count = 8) {
@@ -523,7 +524,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
 
                   <div className="mt-4 space-y-5 sm:mt-7">
                     <CityAutocomplete
-                      placeholder={config?.regionCode === "FL" ? "Ej. Miami o Hialeah" : undefined}
+                      placeholder={storeSlug === "luxury-travel-point" ? "Ej. Lehigh Acres o Cape Coral" : config?.regionCode === "FL" ? "Ej. Miami o Hialeah" : undefined}
                       cities={config?.cities || []}
                       value={form.city}
                       onChange={(city) => update("city", city)}
@@ -560,11 +561,13 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                         <input
                           value={form.postal_code}
                           onChange={(event) => update("postal_code", event.target.value)}
-                          placeholder={config?.regionCode === "FL" ? "33010" : "29201"}
+                          placeholder={config?.postalCodesByCity?.[form.city]?.[0] || (config?.regionCode === "FL" ? "33010" : "29201")}
+                          list={config?.postalCodesByCity?.[form.city]?.length ? "luxury-pickup-zip-options" : undefined}
                           autoComplete="postal-code"
                           inputMode="numeric"
                           className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                         />
+                        {config?.postalCodesByCity?.[form.city]?.length ? <><datalist id="luxury-pickup-zip-options">{config.postalCodesByCity[form.city].map(zip => <option key={zip} value={zip} />)}</datalist><p className="mt-1 text-xs text-slate-500">ZIP de referencia: {config.postalCodesByCity[form.city].join(", ")}</p></> : null}
                       </div>
                     </div>
 
