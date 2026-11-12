@@ -48,29 +48,12 @@ export type ShipmentsPageFilters = {
 // completa y filtrar en el navegador. Devuelve también el conteo total
 // que cumple los filtros (para pintar "página X de Y").
 export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters) {
-  let query = supabase
-    .from("shipments")
-    .select("*", { count: "exact" })
-    .eq("store_id", storeId)
-    .is("deleted_at", null);
-
   const search = filters.search?.trim();
-  if (search) {
-    const like = `%${search}%`;
-    query = query.or(
-      [
-        `order_number::text.ilike.${like}`,
-        `tracking_code.ilike.${like}`,
-        `recipient_name.ilike.${like}`,
-        `recipient_phone.ilike.${like}`,
-        `sender_name.ilike.${like}`,
-        `sender_phone.ilike.${like}`,
-        `recipient_identity_card.ilike.${like}`,
-        `recipient_address.ilike.${like}`,
-        `location.ilike.${like}`,
-      ].join(",")
-    );
-  }
+  const shipments = search
+    ? supabase.rpc("search_store_shipments", { p_store_id: storeId, p_search: search }, { count: "exact" })
+    : supabase.from("shipments").select("*", { count: "exact" });
+
+  let query = shipments.eq("store_id", storeId).is("deleted_at", null);
 
   if (filters.status === "pending_active") query = query.not("status", "in", "(delivered,issue,cancelled)");
   else if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
