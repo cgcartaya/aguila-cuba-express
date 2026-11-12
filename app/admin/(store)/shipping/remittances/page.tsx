@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useStore } from "@/hooks/useStore";
+import { hasShippingPermission } from "@/lib/shipping/permissions";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import RemittanceInbox, { type RemittanceOrder, type RemittanceFilter } from "@/components/admin/remittances/RemittanceInbox";
 import RemittanceActionDialog, { receivedAmountMatches, type RemittanceAction } from "@/components/admin/remittances/RemittanceActionDialog";
@@ -14,7 +15,7 @@ type Success = { storeId: string; text: string; shipmentId?: string };
 
 export default function RemittanceOrders() {
   const { store: selected, loading: storeLoading } = useStore();
-  const { store: accessStore, isSuperAdmin, loading: accessLoading } = useAdminAccess();
+  const { access, store: accessStore, isSuperAdmin, loading: accessLoading } = useAdminAccess();
   const store = isSuperAdmin ? selected ?? accessStore : accessStore;
   const storeId = store?.id;
   const [loaded, setLoaded] = useState<LoadedOrders | null>(null);
@@ -89,7 +90,7 @@ export default function RemittanceOrders() {
 
   return <>
     {storeId && store?.slug === "alvarez-travel" && <RemittanceWhatsappStatus key={storeId} storeId={storeId} />}
-    <RemittanceInbox storeName={store?.name || ""} orders={current?.orders || []} status={status} page={page} search={search} busy={busy} loading={accessLoading || storeLoading || Boolean(storeId) && (loading || !current && !currentError)} error={currentAction ? "" : currentError || (!storeId && !accessLoading && !storeLoading ? "Selecciona una tienda para consultar sus órdenes." : "")} success={success?.storeId === storeId ? success : null}
+    <RemittanceInbox whatsappStoreId={store?.slug === "alvarez-travel" && (isSuperAdmin || hasShippingPermission(access?.storeMembership ?? null, "shipping.billing")) ? storeId : undefined} storeName={store?.name || ""} orders={current?.orders || []} status={status} page={page} search={search} busy={busy} loading={accessLoading || storeLoading || Boolean(storeId) && (loading || !current && !currentError)} error={currentAction ? "" : currentError || (!storeId && !accessLoading && !storeLoading ? "Selecciona una tienda para consultar sus órdenes." : "")} success={success?.storeId === storeId ? success : null}
       onStatus={value => { setStatus(value); setPage(0); setSearch(""); setSuccess(null); }} onSearch={setSearch} onRefresh={() => { void load(); }} onPage={value => { setPage(value); setSearch(""); }}
       onConfirm={order => { if (storeId) { setAction({ order, type: "confirm", storeId }); setError(null); } }} onCancel={order => { if (storeId) { setAction({ order, type: "cancel", storeId }); setError(null); } }} />
     {currentAction && <RemittanceActionDialog key={`${currentAction.storeId}:${currentAction.order.id}:${currentAction.type}`} action={currentAction} busy={busy} error={currentError} onClose={() => { if (!busy) { setAction(null); setError(null); } }} onSubmit={(reference, received) => { void save(reference, received); }} />}
