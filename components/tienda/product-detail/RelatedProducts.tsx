@@ -6,6 +6,7 @@
    Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
+import { catalogWeightLabel } from "@/lib/storefront/catalog-filters";
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
@@ -94,6 +95,7 @@ export default function RelatedProducts({
 
               <p className="mt-1 font-black text-red-600">
                 ${Number(item.price).toFixed(2)}
+                <span className="ml-2 text-xs font-semibold text-slate-600">{catalogWeightLabel(item)}</span>
               </p>
 
               <div className="mt-3 space-y-2">

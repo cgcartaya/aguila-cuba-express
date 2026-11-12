@@ -10,6 +10,7 @@
    /tienda/dl-racing-cyber/producto/123
 ========================================================= */
 
+import { catalogWeightLabel } from "@/lib/storefront/catalog-filters";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -230,6 +231,7 @@ export default function ProductDetailClient({
             platformFeeExempt={product.platform_fee_exempt}
             name={product.name}
             price={Number(product.price)}
+            weightLabel={catalogWeightLabel(product)}
             description={
               product.description
             }
