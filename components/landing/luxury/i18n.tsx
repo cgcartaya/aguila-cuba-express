@@ -9,13 +9,22 @@ export function LuxuryLanguageProvider({children}:{children:ReactNode}) {
   const [language,setLanguage] = useState<LuxuryLanguage>('es');
   useEffect(() => {
     const previousLanguage=document.documentElement.lang;
-    try { const saved=localStorage.getItem('luxury-language-v1');if(saved==='en'||saved==='fr')setLanguage(saved); } catch { /* Storage is optional. */ }
+    const preferred = navigator.languages.map((value) => value.split('-')[0].toLowerCase())
+      .find((value) => value === 'en' || value === 'es' || value === 'fr');
+    let saved: string | null = null;
+    try { saved = localStorage.getItem('luxury-language-v1'); } catch { /* Storage is optional. */ }
+    setLanguage(saved === 'es' || saved === 'en' || saved === 'fr' ? saved : preferred ?? 'en');
     return () => { document.documentElement.lang=previousLanguage; };
   },[]);
   useEffect(() => { document.documentElement.lang=language; },[language]);
-  function changeLanguage(value:LuxuryLanguage) { setLanguage(value);try{localStorage.setItem('luxury-language-v1',value);}catch{ /* Private browsing is supported. */ } }
+  function changeLanguage(value:LuxuryLanguage) { setLanguage(value);saveLuxuryLanguage(value); }
   return <LanguageContext.Provider value={{language,setLanguage:changeLanguage}}>{children}</LanguageContext.Provider>;
 }
+export function saveLuxuryLanguage(language: 'en' | 'es' | 'fr') {
+  try { localStorage.setItem('luxury-language-v1', language); } catch { /* Optional storage. */ }
+  document.cookie = 'luxury_language=' + language + '; Path=/; Max-Age=31536000; SameSite=Lax';
+}
+
 export const useLuxuryLanguage = () => useContext(LanguageContext);
 export function translateText(text:string,language:LuxuryLanguage):string {
   if(language==='es')return text;

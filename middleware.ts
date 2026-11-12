@@ -1,3 +1,4 @@
+import { dmcHost, sections as dmcSections } from '@/lib/luxury/dmc/content';
 import { NextRequest, NextResponse } from "next/server";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
@@ -280,6 +281,25 @@ export async function middleware(request: NextRequest) {
    * normales de la plataforma.
    */
   const normalizedHost = normalizeHost(host);
+
+  if (normalizedHost === dmcHost &&
+      dmcSections.some((section) => pathname === '/' + section || pathname.startsWith('/destinations/'))) {
+    const preferred = request.cookies.get('luxury_language')?.value;
+    const browser = (request.headers.get('accept-language') ?? '').split(',')
+      .map((entry) => {
+        const [tag, weight] = entry.trim().toLowerCase().split(';');
+        return { locale: tag.split('-')[0], weight: weight ? Number(weight.replace('q=', '').trim()) : 1 };
+      })
+      .filter(({ locale, weight }) => (locale === 'en' || locale === 'es' || locale === 'fr') && weight > 0)
+      .sort((left, right) => right.weight - left.weight)[0]?.locale;
+    const language = preferred === 'es' || preferred === 'en' || preferred === 'fr' ? preferred : browser;
+    const url = request.nextUrl.clone();
+    url.pathname = (language === 'es' ? '/es' : '/en') + pathname;
+    const response = NextResponse.redirect(url);
+    response.headers.set('Cache-Control', 'private, no-store');
+    return response;
+  }
+
 
   /* =======================================================
      DOMINIO HISTÓRICO DE ÁGUILA

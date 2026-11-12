@@ -7,6 +7,7 @@ import { ArrowUpRight, BriefcaseBusiness, Car, CircleDollarSign, Clock3, FileTex
 import TravelExplorer from './TravelExplorer';
 import HeroGallery from './HeroGallery';
 import GroupExplorer from './GroupExplorer';
+import { localized, pages, sections } from '@/lib/luxury/dmc/content';
 import LanguageSelector from './LanguageSelector';
 import LuxuryPickup from './LuxuryPickup';
 import LuxuryShipping from './LuxuryShipping';
@@ -59,6 +60,8 @@ function LuxuryContent({ initialPackages, initialError, initialShipping }: { ini
   const packages = catalog.filter(pkg => isPackageVisible(pkg));
   const cruise = packages.find(pkg => pkg.content.category === 'cruise');
   const {language}=useLuxuryLanguage();
+  const dmcLocale = language === 'es' ? 'es' : 'en';
+  const dmcLinks = sections.map((section) => <a key={section} href={'/' + dmcLocale + '/' + section}>{localized(pages[section].label, dmcLocale)}</a>);
   const now = new Date();
   const month = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit' }).formatToParts(now);
   const minMonth = `${month.find(p => p.type === 'year')?.value}-${month.find(p => p.type === 'month')?.value}`;
@@ -68,7 +71,7 @@ function LuxuryContent({ initialPackages, initialError, initialShipping }: { ini
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
     <a href="#contenido" className={s.skip}>Saltar al contenido</a>
     <div className={s.topbar}><a href={`tel:${contact.tel}`}><Phone size={12} /> {contact.phone}<span> · Atención a distancia 24/7</span></a></div>
-    <header className={s.header}><nav className={s.nav} aria-label="Navegación principal"><a className={s.brand} href="#inicio" aria-label="Luxury Travel Point, inicio"><Image src="/luxury/original-logo.webp" width={96} height={80} alt="Luxury Travel Point" preload /><b className={s.dmc}>DMC</b></a><div className={s.desktopNav}><a href="#destinos">Viajes en grupo</a>{cruise && <a href="#cruceros">Cruceros</a>}<a href="#envios">Envíos a Cuba</a><a href="#servicios">Más servicios</a></div><LanguageSelector /><a className={s.headerContact} href="#contacto">Hablemos <ArrowUpRight size={17} /></a><details className={s.mobileMenu}><summary>Menú</summary><div><a href="#destinos">Viajes en grupo</a>{cruise && <a href="#cruceros">Cruceros</a>}<a href="#envios">Envíos a Cuba</a><a href="#servicios">Más servicios</a><a href="#contacto">Contacto</a></div></details></nav></header>
+    <header className={s.header}><nav className={s.nav} aria-label="Navegación principal"><a className={s.brand} href="#inicio" aria-label="Luxury Travel Point, inicio"><Image src="/luxury/original-logo.webp" width={96} height={80} alt="Luxury Travel Point" preload /><b className={s.dmc}>DMC</b></a><div className={s.desktopNav}><a href="#destinos">Viajes en grupo</a>{cruise && <a href="#cruceros">Cruceros</a>}<a href="#envios">Envíos a Cuba</a><a href="#servicios">Más servicios</a>{dmcLinks}</div><LanguageSelector /><a className={s.headerContact} href="#contacto">Hablemos <ArrowUpRight size={17} /></a><details className={s.mobileMenu}><summary>Menú</summary><div><a href="#destinos">Viajes en grupo</a>{cruise && <a href="#cruceros">Cruceros</a>}<a href="#envios">Envíos a Cuba</a><a href="#servicios">Más servicios</a>{dmcLinks}<a href="#contacto">Contacto</a></div></details></nav></header>
     <main id="contenido">
       <HeroGallery />
       <div className={s.container}><GroupExplorer packages={packages} error={catalogError}/><TravelExplorer minMonth={minMonth} packages={packages}/></div>

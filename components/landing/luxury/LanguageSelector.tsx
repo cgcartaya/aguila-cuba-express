@@ -1,10 +1,20 @@
 'use client';
 
 import { useLuxuryLanguage, type LuxuryLanguage } from './i18n';
-import s from './luxury.module.css';
+import s from './dmc.module.css';
+
+const languages = [
+  ['en', '🇺🇸', 'English'],
+  ['es', '🇪🇸', 'Español'],
+  ['fr', '🇫🇷', 'Français'],
+] as const satisfies readonly (readonly [LuxuryLanguage, string, string])[];
 
 export default function LanguageSelector() {
-  const {language,setLanguage}=useLuxuryLanguage();
-  const label=language==='en'?'Language':language==='fr'?'Langue':'Idioma';
-  return <label className={s.languageSelect}><span>🌐 {label}</span><select aria-label={label} value={language} onChange={e=>setLanguage(e.target.value as LuxuryLanguage)}><option value="es" lang="es">Español</option><option value="en" lang="en">English</option><option value="fr" lang="fr">Français</option></select></label>;
+  const { language, setLanguage } = useLuxuryLanguage();
+  const label = language === 'en' ? 'Language' : language === 'fr' ? 'Langue' : 'Idioma';
+  return <div className={s.languages} role="group" aria-label={label}>
+    {languages.map(([code, flag, name]) => (
+      <button key={code} type="button" lang={code} aria-label={name} aria-pressed={language === code} onClick={() => setLanguage(code)}>{flag}</button>
+    ))}
+  </div>;
 }
