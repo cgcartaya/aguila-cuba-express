@@ -81,10 +81,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     requestHeaders.get("x-forwarded-host") || requestHeaders.get("host")
   );
   if (host === dmcHost) {
-    const { getDmcDestinations } = await import('@/lib/luxury/dmc/destinations');
-    const destinations = await getDmcDestinations();
+    const { stateGuides } = await import('@/lib/luxury/dmc/state-guides');
     const origin = 'https://' + dmcHost;
-    const paths = [...sections, ...destinations.map(({ slug }) => 'destinations/' + slug)];
+    const paths = [...sections, ...Object.entries(stateGuides).flatMap(([slug, guide]) => {
+      const path = 'destinations/' + slug;
+      return [path, ...guide.cities.map((city) => path + '/' + city.slug)];
+    })];
     return [
       { url: origin },
       ...paths.flatMap((path) => {

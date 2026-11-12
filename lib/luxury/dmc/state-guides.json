@@ -1,0 +1,772 @@
+{
+  "alabama": {
+    "name": "Alabama",
+    "cities": [
+      {
+        "name": "Birmingham",
+        "place": "Birmingham Botanical Gardens",
+        "slug": "birmingham"
+      },
+      {
+        "name": "Huntsville",
+        "place": "U.S. Space & Rocket Center",
+        "slug": "huntsville"
+      }
+    ]
+  },
+  "alaska": {
+    "name": "Alaska",
+    "cities": [
+      {
+        "name": "Anchorage",
+        "place": "Anchorage Museum",
+        "slug": "anchorage"
+      },
+      {
+        "name": "Juneau",
+        "place": "Mendenhall Glacier",
+        "slug": "juneau"
+      }
+    ]
+  },
+  "arizona": {
+    "name": "Arizona",
+    "cities": [
+      {
+        "name": "Phoenix",
+        "place": "Desert Botanical Garden",
+        "slug": "phoenix"
+      },
+      {
+        "name": "Scottsdale",
+        "place": "Old Town Scottsdale",
+        "slug": "scottsdale"
+      },
+      {
+        "name": "Tucson",
+        "place": "Arizona-Sonora Desert Museum",
+        "slug": "tucson"
+      }
+    ]
+  },
+  "arkansas": {
+    "name": "Arkansas",
+    "cities": [
+      {
+        "name": "Little Rock",
+        "place": "River Market District",
+        "slug": "little-rock"
+      },
+      {
+        "name": "Bentonville",
+        "place": "Crystal Bridges Museum of American Art",
+        "slug": "bentonville"
+      }
+    ]
+  },
+  "california": {
+    "name": "California",
+    "cities": [
+      {
+        "name": "Los Angeles",
+        "place": "Griffith Observatory",
+        "slug": "los-angeles"
+      },
+      {
+        "name": "San Francisco",
+        "place": "Golden Gate Park",
+        "slug": "san-francisco"
+      },
+      {
+        "name": "San Diego",
+        "place": "Balboa Park",
+        "slug": "san-diego"
+      }
+    ]
+  },
+  "colorado": {
+    "name": "Colorado",
+    "cities": [
+      {
+        "name": "Denver",
+        "place": "Denver Botanic Gardens",
+        "slug": "denver"
+      },
+      {
+        "name": "Colorado Springs",
+        "place": "Garden of the Gods",
+        "slug": "colorado-springs"
+      }
+    ]
+  },
+  "connecticut": {
+    "name": "Connecticut",
+    "cities": [
+      {
+        "name": "New Haven",
+        "place": "Yale University Art Gallery",
+        "slug": "new-haven"
+      },
+      {
+        "name": "Mystic",
+        "place": "Mystic Seaport Museum",
+        "slug": "mystic"
+      }
+    ]
+  },
+  "delaware": {
+    "name": "Delaware",
+    "cities": [
+      {
+        "name": "Wilmington",
+        "place": "Delaware Art Museum",
+        "slug": "wilmington"
+      },
+      {
+        "name": "Rehoboth Beach",
+        "place": "Rehoboth Beach Boardwalk",
+        "slug": "rehoboth-beach"
+      }
+    ]
+  },
+  "florida": {
+    "name": "Florida",
+    "cities": [
+      {
+        "name": "Miami",
+        "place": "Vizcaya Museum and Gardens",
+        "slug": "miami"
+      },
+      {
+        "name": "Orlando",
+        "place": "Harry P. Leu Gardens",
+        "slug": "orlando"
+      },
+      {
+        "name": "Tampa",
+        "place": "Tampa Riverwalk",
+        "slug": "tampa"
+      }
+    ]
+  },
+  "georgia": {
+    "name": "Georgia",
+    "cities": [
+      {
+        "name": "Atlanta",
+        "place": "Atlanta Botanical Garden",
+        "slug": "atlanta"
+      },
+      {
+        "name": "Savannah",
+        "place": "Forsyth Park",
+        "slug": "savannah"
+      }
+    ]
+  },
+  "hawaii": {
+    "name": "Hawaii",
+    "cities": [
+      {
+        "name": "Honolulu",
+        "place": "Bishop Museum",
+        "slug": "honolulu"
+      },
+      {
+        "name": "Hilo",
+        "place": "Liliʻuokalani Gardens",
+        "slug": "hilo"
+      }
+    ]
+  },
+  "idaho": {
+    "name": "Idaho",
+    "cities": [
+      {
+        "name": "Boise",
+        "place": "Boise River Greenbelt",
+        "slug": "boise"
+      },
+      {
+        "name": "Coeur d’Alene",
+        "place": "Lake Coeur d’Alene",
+        "slug": "coeur-dalene"
+      }
+    ]
+  },
+  "illinois": {
+    "name": "Illinois",
+    "cities": [
+      {
+        "name": "Chicago",
+        "place": "Millennium Park",
+        "slug": "chicago"
+      },
+      {
+        "name": "Springfield",
+        "place": "Abraham Lincoln Presidential Library and Museum",
+        "slug": "springfield"
+      }
+    ]
+  },
+  "indiana": {
+    "name": "Indiana",
+    "cities": [
+      {
+        "name": "Indianapolis",
+        "place": "White River State Park",
+        "slug": "indianapolis"
+      },
+      {
+        "name": "South Bend",
+        "place": "Studebaker National Museum",
+        "slug": "south-bend"
+      }
+    ]
+  },
+  "iowa": {
+    "name": "Iowa",
+    "cities": [
+      {
+        "name": "Des Moines",
+        "place": "Greater Des Moines Botanical Garden",
+        "slug": "des-moines"
+      },
+      {
+        "name": "Dubuque",
+        "place": "National Mississippi River Museum & Aquarium",
+        "slug": "dubuque"
+      }
+    ]
+  },
+  "kansas": {
+    "name": "Kansas",
+    "cities": [
+      {
+        "name": "Wichita",
+        "place": "Botanica Wichita",
+        "slug": "wichita"
+      },
+      {
+        "name": "Lawrence",
+        "place": "Spencer Museum of Art",
+        "slug": "lawrence"
+      }
+    ]
+  },
+  "kentucky": {
+    "name": "Kentucky",
+    "cities": [
+      {
+        "name": "Louisville",
+        "place": "Louisville Slugger Museum & Factory",
+        "slug": "louisville"
+      },
+      {
+        "name": "Lexington",
+        "place": "Kentucky Horse Park",
+        "slug": "lexington"
+      }
+    ]
+  },
+  "louisiana": {
+    "name": "Louisiana",
+    "cities": [
+      {
+        "name": "New Orleans",
+        "place": "City Park",
+        "slug": "new-orleans"
+      },
+      {
+        "name": "Baton Rouge",
+        "place": "Louisiana Art & Science Museum",
+        "slug": "baton-rouge"
+      }
+    ]
+  },
+  "maine": {
+    "name": "Maine",
+    "cities": [
+      {
+        "name": "Portland",
+        "place": "Portland Museum of Art",
+        "slug": "portland"
+      },
+      {
+        "name": "Bar Harbor",
+        "place": "Acadia National Park",
+        "slug": "bar-harbor"
+      }
+    ]
+  },
+  "maryland": {
+    "name": "Maryland",
+    "cities": [
+      {
+        "name": "Baltimore",
+        "place": "National Aquarium",
+        "slug": "baltimore"
+      },
+      {
+        "name": "Annapolis",
+        "place": "Historic Annapolis",
+        "slug": "annapolis"
+      }
+    ]
+  },
+  "massachusetts": {
+    "name": "Massachusetts",
+    "cities": [
+      {
+        "name": "Boston",
+        "place": "Boston Public Garden",
+        "slug": "boston"
+      },
+      {
+        "name": "Salem",
+        "place": "Peabody Essex Museum",
+        "slug": "salem"
+      }
+    ]
+  },
+  "michigan": {
+    "name": "Michigan",
+    "cities": [
+      {
+        "name": "Detroit",
+        "place": "Detroit Institute of Arts",
+        "slug": "detroit"
+      },
+      {
+        "name": "Grand Rapids",
+        "place": "Frederik Meijer Gardens & Sculpture Park",
+        "slug": "grand-rapids"
+      }
+    ]
+  },
+  "minnesota": {
+    "name": "Minnesota",
+    "cities": [
+      {
+        "name": "Minneapolis",
+        "place": "Minneapolis Sculpture Garden",
+        "slug": "minneapolis"
+      },
+      {
+        "name": "Duluth",
+        "place": "Canal Park",
+        "slug": "duluth"
+      }
+    ]
+  },
+  "mississippi": {
+    "name": "Mississippi",
+    "cities": [
+      {
+        "name": "Jackson",
+        "place": "Mississippi Civil Rights Museum",
+        "slug": "jackson"
+      },
+      {
+        "name": "Biloxi",
+        "place": "Maritime & Seafood Industry Museum",
+        "slug": "biloxi"
+      }
+    ]
+  },
+  "missouri": {
+    "name": "Missouri",
+    "cities": [
+      {
+        "name": "St. Louis",
+        "place": "Missouri Botanical Garden",
+        "slug": "st-louis"
+      },
+      {
+        "name": "Kansas City",
+        "place": "Nelson-Atkins Museum of Art",
+        "slug": "kansas-city"
+      }
+    ]
+  },
+  "montana": {
+    "name": "Montana",
+    "cities": [
+      {
+        "name": "Bozeman",
+        "place": "Museum of the Rockies",
+        "slug": "bozeman"
+      },
+      {
+        "name": "Missoula",
+        "place": "Missoula Art Museum",
+        "slug": "missoula"
+      }
+    ]
+  },
+  "nebraska": {
+    "name": "Nebraska",
+    "cities": [
+      {
+        "name": "Omaha",
+        "place": "Lauritzen Gardens",
+        "slug": "omaha"
+      },
+      {
+        "name": "Lincoln",
+        "place": "Sunken Gardens",
+        "slug": "lincoln"
+      }
+    ]
+  },
+  "nevada": {
+    "name": "Nevada",
+    "cities": [
+      {
+        "name": "Las Vegas",
+        "place": "Springs Preserve",
+        "slug": "las-vegas"
+      },
+      {
+        "name": "Reno",
+        "place": "Nevada Museum of Art",
+        "slug": "reno"
+      }
+    ]
+  },
+  "new-hampshire": {
+    "name": "New Hampshire",
+    "cities": [
+      {
+        "name": "Portsmouth",
+        "place": "Strawbery Banke Museum",
+        "slug": "portsmouth"
+      },
+      {
+        "name": "Manchester",
+        "place": "Currier Museum of Art",
+        "slug": "manchester"
+      }
+    ]
+  },
+  "new-jersey": {
+    "name": "New Jersey",
+    "cities": [
+      {
+        "name": "Jersey City",
+        "place": "Liberty State Park",
+        "slug": "jersey-city"
+      },
+      {
+        "name": "Cape May",
+        "place": "Cape May Historic District",
+        "slug": "cape-may"
+      }
+    ]
+  },
+  "new-mexico": {
+    "name": "New Mexico",
+    "cities": [
+      {
+        "name": "Santa Fe",
+        "place": "Museum of International Folk Art",
+        "slug": "santa-fe"
+      },
+      {
+        "name": "Albuquerque",
+        "place": "ABQ BioPark",
+        "slug": "albuquerque"
+      }
+    ]
+  },
+  "new-york": {
+    "name": "New York",
+    "cities": [
+      {
+        "name": "New York City",
+        "place": "Central Park",
+        "slug": "new-york-city"
+      },
+      {
+        "name": "Buffalo",
+        "place": "Buffalo AKG Art Museum",
+        "slug": "buffalo"
+      }
+    ]
+  },
+  "north-carolina": {
+    "name": "North Carolina",
+    "cities": [
+      {
+        "name": "Charlotte",
+        "place": "Mint Museum Uptown",
+        "slug": "charlotte"
+      },
+      {
+        "name": "Asheville",
+        "place": "North Carolina Arboretum",
+        "slug": "asheville"
+      }
+    ]
+  },
+  "north-dakota": {
+    "name": "North Dakota",
+    "cities": [
+      {
+        "name": "Fargo",
+        "place": "Plains Art Museum",
+        "slug": "fargo"
+      },
+      {
+        "name": "Bismarck",
+        "place": "North Dakota Heritage Center & State Museum",
+        "slug": "bismarck"
+      }
+    ]
+  },
+  "ohio": {
+    "name": "Ohio",
+    "cities": [
+      {
+        "name": "Cleveland",
+        "place": "Cleveland Museum of Art",
+        "slug": "cleveland"
+      },
+      {
+        "name": "Columbus",
+        "place": "Franklin Park Conservatory and Botanical Gardens",
+        "slug": "columbus"
+      }
+    ]
+  },
+  "oklahoma": {
+    "name": "Oklahoma",
+    "cities": [
+      {
+        "name": "Oklahoma City",
+        "place": "Myriad Botanical Gardens",
+        "slug": "oklahoma-city"
+      },
+      {
+        "name": "Tulsa",
+        "place": "Philbrook Museum of Art",
+        "slug": "tulsa"
+      }
+    ]
+  },
+  "oregon": {
+    "name": "Oregon",
+    "cities": [
+      {
+        "name": "Portland",
+        "place": "Portland Japanese Garden",
+        "slug": "portland"
+      },
+      {
+        "name": "Bend",
+        "place": "High Desert Museum",
+        "slug": "bend"
+      }
+    ]
+  },
+  "pennsylvania": {
+    "name": "Pennsylvania",
+    "cities": [
+      {
+        "name": "Philadelphia",
+        "place": "Philadelphia Museum of Art",
+        "slug": "philadelphia"
+      },
+      {
+        "name": "Pittsburgh",
+        "place": "Phipps Conservatory and Botanical Gardens",
+        "slug": "pittsburgh"
+      }
+    ]
+  },
+  "rhode-island": {
+    "name": "Rhode Island",
+    "cities": [
+      {
+        "name": "Providence",
+        "place": "RISD Museum",
+        "slug": "providence"
+      },
+      {
+        "name": "Newport",
+        "place": "Cliff Walk",
+        "slug": "newport"
+      }
+    ]
+  },
+  "south-carolina": {
+    "name": "South Carolina",
+    "cities": [
+      {
+        "name": "Charleston",
+        "place": "Waterfront Park",
+        "slug": "charleston"
+      },
+      {
+        "name": "Greenville",
+        "place": "Falls Park on the Reedy",
+        "slug": "greenville"
+      }
+    ]
+  },
+  "south-dakota": {
+    "name": "South Dakota",
+    "cities": [
+      {
+        "name": "Sioux Falls",
+        "place": "Falls Park",
+        "slug": "sioux-falls"
+      },
+      {
+        "name": "Rapid City",
+        "place": "Journey Museum",
+        "slug": "rapid-city"
+      }
+    ]
+  },
+  "tennessee": {
+    "name": "Tennessee",
+    "cities": [
+      {
+        "name": "Nashville",
+        "place": "Cheekwood Estate & Gardens",
+        "slug": "nashville"
+      },
+      {
+        "name": "Memphis",
+        "place": "Shelby Farms Park",
+        "slug": "memphis"
+      }
+    ]
+  },
+  "texas": {
+    "name": "Texas",
+    "cities": [
+      {
+        "name": "Austin",
+        "place": "Lady Bird Lake",
+        "slug": "austin"
+      },
+      {
+        "name": "San Antonio",
+        "place": "San Antonio River Walk",
+        "slug": "san-antonio"
+      },
+      {
+        "name": "Houston",
+        "place": "Museum of Fine Arts Houston",
+        "slug": "houston"
+      }
+    ]
+  },
+  "utah": {
+    "name": "Utah",
+    "cities": [
+      {
+        "name": "Salt Lake City",
+        "place": "Natural History Museum of Utah",
+        "slug": "salt-lake-city"
+      },
+      {
+        "name": "Moab",
+        "place": "Arches National Park",
+        "slug": "moab"
+      }
+    ]
+  },
+  "vermont": {
+    "name": "Vermont",
+    "cities": [
+      {
+        "name": "Burlington",
+        "place": "Waterfront Park",
+        "slug": "burlington"
+      },
+      {
+        "name": "Shelburne",
+        "place": "Shelburne Museum",
+        "slug": "shelburne"
+      }
+    ]
+  },
+  "virginia": {
+    "name": "Virginia",
+    "cities": [
+      {
+        "name": "Richmond",
+        "place": "Virginia Museum of Fine Arts",
+        "slug": "richmond"
+      },
+      {
+        "name": "Williamsburg",
+        "place": "Colonial Williamsburg",
+        "slug": "williamsburg"
+      }
+    ]
+  },
+  "washington": {
+    "name": "Washington",
+    "cities": [
+      {
+        "name": "Seattle",
+        "place": "Seattle Art Museum",
+        "slug": "seattle"
+      },
+      {
+        "name": "Spokane",
+        "place": "Riverfront Park",
+        "slug": "spokane"
+      }
+    ]
+  },
+  "west-virginia": {
+    "name": "West Virginia",
+    "cities": [
+      {
+        "name": "Charleston",
+        "place": "West Virginia State Museum",
+        "slug": "charleston"
+      },
+      {
+        "name": "Fayetteville",
+        "place": "New River Gorge National Park and Preserve",
+        "slug": "fayetteville"
+      }
+    ]
+  },
+  "wisconsin": {
+    "name": "Wisconsin",
+    "cities": [
+      {
+        "name": "Milwaukee",
+        "place": "Milwaukee Art Museum",
+        "slug": "milwaukee"
+      },
+      {
+        "name": "Madison",
+        "place": "Olbrich Botanical Gardens",
+        "slug": "madison"
+      }
+    ]
+  },
+  "wyoming": {
+    "name": "Wyoming",
+    "cities": [
+      {
+        "name": "Cheyenne",
+        "place": "Cheyenne Botanic Gardens",
+        "slug": "cheyenne"
+      },
+      {
+        "name": "Jackson",
+        "place": "National Museum of Wildlife Art",
+        "slug": "jackson"
+      }
+    ]
+  }
+}
