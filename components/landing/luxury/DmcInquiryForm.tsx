@@ -38,26 +38,43 @@ export function DmcInquiryForm({ locale, kind, destination }: {
     }
   }
 
-  return <section className={s.section} id="proposal">
-    <h2>{kind === 'event' ? t('Request an event proposal', 'Solicita una propuesta para tu evento') : t('Request a travel proposal', 'Solicita una propuesta de viaje')}</h2>
-    {state === 'sent' ? (
-      <p role="status">{t('We received your request. Save this reference:', 'Recibimos tu solicitud. Guarda esta referencia:')} <strong>{confirmation}</strong></p>
-    ) : (
-      <form className={s.inquiry} onSubmit={submit}>
+  const contactFields = <>
         <label>{t('Full name', 'Nombre completo')} <input name="name" autoComplete="name" required minLength={2} maxLength={100} /></label>
         <label>{t('Email', 'Correo electrónico')} <input name="email" type="email" autoComplete="email" required maxLength={254} /></label>
         <label>{t('Company (optional)', 'Empresa (opcional)')} <input name="organization" autoComplete="organization" maxLength={120} /></label>
         <label>{t('Phone (optional)', 'Teléfono (opcional)')} <input name="phone" type="tel" autoComplete="tel" maxLength={40} /></label>
+  </>;
+  const eventFields = <>
         <label>{t('Program type', 'Tipo de programa')}
           <select name="program" required defaultValue="">
             <option value="" disabled>{t('Select an option', 'Selecciona una opción')}</option>
             {[...programs, t('Other', 'Otro')].map((program) => <option key={program}>{program}</option>)}
           </select>
         </label>
-        <label>{t('Preferred city or state', 'Ciudad o estado de interés')} <input name="location" defaultValue={destination} maxLength={150} /></label>
-        <label>{t('Estimated dates', 'Fechas estimadas')} <input name="dates" maxLength={100} /></label>
-        <label>{t('Estimated group size', 'Tamaño estimado del grupo')} <input name="size" inputMode="numeric" pattern="[0-9]{0,8}" maxLength={8} /></label>
+        <label>{(kind === 'event' ? t('Preferred city or state (optional)', 'Ciudad o estado de interés (opcional)') : t('Preferred city or state', 'Ciudad o estado de interés'))} <input name="location" defaultValue={destination} maxLength={150} /></label>
+        <label>{(kind === 'event' ? t('Estimated dates (optional)', 'Fechas estimadas (opcional)') : t('Estimated dates', 'Fechas estimadas'))} <input name="dates" maxLength={100} /></label>
+        <label>{(kind === 'event' ? t('Estimated group size (optional)', 'Tamaño estimado del grupo (opcional)') : t('Estimated group size', 'Tamaño estimado del grupo'))} <input name="size" inputMode="numeric" pattern="[0-9]{0,8}" maxLength={8} /></label>
         <label className={s.fullField}>{t('Tell us what you are planning', 'Cuéntanos qué estás planeando')} <textarea name="details" rows={5} required minLength={10} maxLength={3000} /></label>
+  </>;
+
+  return <section className={s.section} id="proposal">
+    <h2>{kind === 'event' ? t('Request an event proposal', 'Solicita una propuesta para tu evento') : t('Request a travel proposal', 'Solicita una propuesta de viaje')}</h2>
+    {state === 'sent' ? (
+      <p role="status">{t('We received your request. Save this reference:', 'Recibimos tu solicitud. Guarda esta referencia:')} <strong>{confirmation}</strong></p>
+    ) : (
+      <form className={s.inquiry} onSubmit={submit}>
+        {kind === 'event' ? (
+          <>
+            <fieldset className={s.eventFieldset}>
+              <legend>{t('Event details', 'Detalles del evento')}</legend>
+              <div className={s.eventFields}>{eventFields}</div>
+            </fieldset>
+            <fieldset className={s.eventFieldset}>
+              <legend>{t('Contact details', 'Datos de contacto')}</legend>
+              <div className={s.eventFields}>{contactFields}</div>
+            </fieldset>
+          </>
+        ) : <>{contactFields}{eventFields}</>}
         <div hidden aria-hidden="true"><input name="website" tabIndex={-1} autoComplete="off" /></div>
         <div className={s.fullField}>
           <button className={s.button} disabled={state === 'sending'}>{state === 'sending' ? t('Sending…', 'Enviando…') : t('Send request', 'Enviar solicitud')}</button>

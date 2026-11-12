@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { cache } from 'react';
 import { dmcHost, localized, pages, sections, type Locale, type Section } from '@/lib/luxury/dmc/content';
 import { getDmcStateIndex } from '@/lib/luxury/dmc/destinations';
+import { MiceEditorial, miceHero } from '@/components/landing/luxury/MiceEditorial';
 import { DmcInquiryForm } from '@/components/landing/luxury/DmcInquiryForm';
 import { DmcLanguageLinks } from '@/components/landing/luxury/DmcLanguageLinks';
 import s from '@/components/landing/luxury/dmc.module.css';
@@ -34,12 +35,12 @@ async function resolve(params: Props['params']) {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, page, destination, path } = await resolve(params);
+  const { locale, key, page, destination, path } = await resolve(params);
   const origin = 'https://' + dmcHost;
   const url = origin + '/' + locale + path;
   const title = (destination?.seoTitle[locale] ?? localized(page.label, locale)) + ' | Luxury Travel Point';
   const description = destination?.seoDescription[locale] ?? localized(page.description, locale);
-  const image = destination?.image ?? origin + page.image;
+  const image = destination?.image ?? origin + (key === 'mice-events' ? miceHero : page.image);
   return {
     title: { absolute: title },
     description,
@@ -81,7 +82,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
         <DmcLanguageLinks locale={locale} path={path} />
       </header>
 
-      <main>
+      {key === 'mice-events' ? <MiceEditorial locale={locale} /> : <main>
         <section className={s.hero}>
           <Image src={destination?.image ?? page.image} alt="" fill sizes="100vw" preload />
           <div className={s.heroCopy}>
@@ -90,9 +91,8 @@ export default async function DmcPage({ params, searchParams }: Props) {
             <p>{destination?.description[locale] ?? localized(page.description, locale)}</p>
             <div className={s.actions}>
               <Link className={s.button} href="#proposal">
-                {key === 'mice-events' ? t('Request an event proposal', 'Solicita una propuesta para tu evento') : t('Request a travel proposal', 'Solicita una propuesta de viaje')}
+                {t('Request a travel proposal', 'Solicita una propuesta de viaje')}
               </Link>
-              {key === 'mice-events' && <Link className={s.secondary} href={base + '/our-services'}>{t('Explore our services', 'Explora nuestros servicios')}</Link>}
               {destination && <Link className={s.secondary} href={base + '/destinations'}>{t('All destinations', 'Todos los destinos')}</Link>}
             </div>
           </div>
@@ -100,7 +100,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
 
         {page.features.length > 0 && (
           <section className={s.section}>
-            <h2>{key === 'mice-events' ? t('Corporate programs', 'Programas corporativos') : t('Services for every stage of your trip', 'Servicios para cada etapa del viaje')}</h2>
+            <h2>{t('Services for every stage of your trip', 'Servicios para cada etapa del viaje')}</h2>
             <div className={s.grid}>
               {page.features.map(([title, description], index) => (
                 <article className={s.card} key={title[0]}>
@@ -111,15 +111,6 @@ export default async function DmcPage({ params, searchParams }: Props) {
                 </article>
               ))}
             </div>
-          </section>
-        )}
-
-        {key === 'mice-events' && (
-          <section className={s.section}>
-            <h2>{t('How we plan your event', 'Cómo organizamos tu evento')}</h2>
-            <ol className={s.process}>
-              {[t('Consultation', 'Consulta'), t('Custom proposal', 'Propuesta personalizada'), t('Planning & coordination', 'Planificación y coordinación'), t('Event execution', 'Ejecución del evento')].map((step) => <li key={step}>{step}</li>)}
-            </ol>
           </section>
         )}
 
@@ -171,8 +162,8 @@ export default async function DmcPage({ params, searchParams }: Props) {
             {destination.experiences.length > 0 && <><h2>{t('Experiences', 'Experiencias')}</h2><ul>{destination.experiences.map((experience) => <li key={experience.en}>{experience[locale]}</li>)}</ul></>}
           </section>
         )}
-        <DmcInquiryForm key={destination?.name ?? requestedState ?? key} locale={locale} kind={key === 'mice-events' ? 'event' : key === 'our-services' ? 'services' : 'destination'} destination={destination?.name ?? requestedState} />
-      </main>
+        <DmcInquiryForm key={destination?.name ?? requestedState ?? key} locale={locale} kind={key === 'our-services' ? 'services' : 'destination'} destination={destination?.name ?? requestedState} />
+      </main>}
       <footer className={s.footer}>
         <Link href="/">Luxury Travel Point</Link>
         <Link href="/#contacto">{t('Contact', 'Contacto')}</Link>
