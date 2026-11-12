@@ -47,30 +47,13 @@ export type ShipmentsPageFilters = {
 // aplicados en el servidor (Supabase), en vez de traer la tienda
 // completa y filtrar en el navegador. Devuelve también el conteo total
 // que cumple los filtros (para pintar "página X de Y").
-export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters) {
-  let query = supabase
-    .from("shipments")
-    .select("*", { count: "exact" })
-    .eq("store_id", storeId)
-    .is("deleted_at", null);
-
+export async function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters) {
   const search = filters.search?.trim();
-  if (search) {
-    const like = `%${search}%`;
-    query = query.or(
-      [
-        `order_number::text.ilike.${like}`,
-        `tracking_code.ilike.${like}`,
-        `recipient_name.ilike.${like}`,
-        `recipient_phone.ilike.${like}`,
-        `sender_name.ilike.${like}`,
-        `sender_phone.ilike.${like}`,
-        `recipient_identity_card.ilike.${like}`,
-        `recipient_address.ilike.${like}`,
-        `location.ilike.${like}`,
-      ].join(",")
-    );
-  }
+  const shipments = search
+    ? supabase.rpc("search_store_shipments", { p_store_id: storeId, p_search: search }, { count: "exact" })
+    : supabase.from("shipments").select("*", { count: "exact" });
+
+  let query = shipments.eq("store_id", storeId).is("deleted_at", null);
 
   if (filters.status === "pending_active") query = query.not("status", "in", "(delivered,issue,cancelled)");
   else if (filters.status && filters.status !== "all") query = query.eq("status", filters.status);
@@ -103,7 +86,9 @@ export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters)
   const start = (filters.page - 1) * filters.pageSize;
   const end = start + filters.pageSize - 1;
 
-  return query.range(start, end).returns<Shipment[]>();
+  const result = await query.range(start, end);
+  // Both query paths return rows from public.shipments.
+  return { ...result, data: result.data as Shipment[] | null };
 }
 
 // Conteos livianos para las tarjetas del encabezado. Son consultas
