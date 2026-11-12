@@ -1,3 +1,4 @@
+import { dmcHost, sections } from '@/lib/luxury/dmc/content';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
@@ -79,6 +80,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const host = normalizeHost(
     requestHeaders.get("x-forwarded-host") || requestHeaders.get("host")
   );
+  if (host === dmcHost) {
+    const { getDmcDestinations } = await import('@/lib/luxury/dmc/destinations');
+    const destinations = await getDmcDestinations();
+    const origin = 'https://' + dmcHost;
+    const paths = [...sections, ...destinations.map(({ slug }) => 'destinations/' + slug)];
+    return [
+      { url: origin },
+      ...paths.flatMap((path) => {
+        const languages = { en: origin + '/en/' + path, es: origin + '/es/' + path };
+        return Object.values(languages).map((url) => ({ url, alternates: { languages } }));
+      }),
+    ];
+  }
   const domainSitemap = resolveSitemap(host);
 
   return domainSitemap.routes.map((route) => ({

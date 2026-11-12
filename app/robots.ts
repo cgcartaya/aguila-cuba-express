@@ -1,9 +1,11 @@
+import { dmcHost } from '@/lib/luxury/dmc/content';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 const DOMAIN_BASE_URLS: Record<string, string> = {
+  [dmcHost]: "https://" + dmcHost,
   "alvarez-travel.com": "https://alvarez-travel.com",
   "aguilaexpressusa.com": "https://aguilaexpressusa.com",
   "depariscienfuegos.com": "https://depariscienfuegos.com",

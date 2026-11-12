@@ -18,6 +18,8 @@ const i18n=load('i18n.tsx');
 const css=new Proxy({},{get:(_,key)=>String(key)});
 function localizedPage(language){
  const deps={'@/lib/travel/types':travelTypes,'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
+ deps['./dmc.module.css']=css;
+ deps['@/lib/luxury/dmc/content']=load('content.ts',{},'lib/luxury/dmc/');
  deps['./LuxuryPickup']={default:()=>null,__esModule:true};
  deps['@/lib/luxury/shipping']=load('shipping.ts',{},'lib/luxury/');
  deps['@/lib/shipping/weight-rate']=load('weight-rate.ts',{},'lib/shipping/');
@@ -31,6 +33,7 @@ function localizedPage(language){
 }
 test('English and French render locally without scripts or external translation requests',()=>{
  const en=localizedPage('en'),fr=localizedPage('fr');
+ assert.match(en,/href="\/en\/mice-events"/);assert.match(en,/href="\/en\/our-services"/);assert.match(en,/href="\/en\/destinations"/);
  assert.match(en,/The world awaits/);assert.match(en,/All countries/);assert.match(en,/Frequently asked questions/);assert.match(en,/Monday–Saturday: 10 a.m.–6 p.m./);
  assert.match(en,/15 × 15 × 15 gold box/);assert.match(en,/Track with SolveBigTech/);assert.match(en,/Estimate your shipment/);
  assert.match(fr,/Boîte dorée 15 × 15 × 15/);assert.match(fr,/Suivre avec YoY MultiServices/);

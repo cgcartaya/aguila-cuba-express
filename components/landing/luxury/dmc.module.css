@@ -1,0 +1,55 @@
+.root {
+  --night: #09122d;
+  --gold: #e2bb29;
+  --ivory: #f7f5f0;
+  --heading: "Minion Pro", "minion-pro", Georgia, serif;
+  background: var(--ivory);
+  color: var(--night);
+}
+.header, .footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: .75rem max(1.25rem, calc((100% - 76rem) / 2));
+  background: var(--ivory);
+}
+.header nav, .brand, .languages, .actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem 1.25rem;
+}
+.brand { flex-wrap: nowrap; font-weight: 700; gap: .5rem; }
+.brand img { width: 4.5rem; height: auto; }
+.header nav a, .languages a, .languages button { display: inline-flex; align-items: center; min-height: 44px; }
+.header a[aria-current], .languages [aria-pressed="true"] { text-decoration: underline; text-underline-offset: .35em; }
+.languages { gap: .25rem; }
+.languages a, .languages button { padding: 0 .45rem; font-size: 1.2rem; cursor: pointer; }
+.hero { position: relative; isolation: isolate; display: grid; align-items: end; min-height: clamp(28rem, 65vw, 39rem); background: var(--night); color: white; }
+.hero img { object-fit: cover; z-index: -2; }
+.hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, #09122df2, #09122d77); }
+.heroCopy, .section { width: min(76rem, calc(100% - 2.5rem)); margin-inline: auto; }
+.heroCopy { padding-block: clamp(2.5rem, 7vw, 6rem); }
+.heroCopy h1 { max-width: 16ch; font: 400 clamp(2.5rem, 6.5vw, 5.5rem)/1.02 var(--heading); margin-block: .6rem 1rem; }
+.heroCopy p { max-width: 53ch; }
+.actions { margin-top: 1.5rem; }
+.button, .secondary { display: inline-flex; align-items: center; min-height: 44px; padding: .65rem 1rem; font-weight: 700; }
+.button { color: var(--night); background: var(--gold); cursor: pointer; }
+.secondary { border: 1px solid #fff8; }
+.section { padding-block: clamp(2.25rem, 6vw, 4.5rem); }
+.section + .section { border-top: 1px solid #09122d24; }
+.section h2 { font: 400 clamp(2rem, 4vw, 3.5rem)/1.1 var(--heading); margin-bottom: 1.3rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; }
+.card { padding: 1.4rem; background: white; border-top: 2px solid #a88428; }
+.card h3 { font: 400 1.65rem/1.2 var(--heading); margin-bottom: .65rem; }
+.card a { text-decoration: underline; text-underline-offset: .2em; }
+.process { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 1rem; list-style: decimal inside; }
+.process li { padding: 1rem; background: white; }
+.search { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1rem; }
+.search input { min-height: 44px; max-width: 100%; border: 1px solid #09122d80; background: white; padding: .5rem; }
+.footer { background: var(--night); color: white; padding-block: 1.5rem; }
+@media (max-width: 700px) {
+  .header { flex-wrap: wrap; }
+  .header nav { order: 3; width: 100%; column-gap: .9rem; font-size: .875rem; }
+}
