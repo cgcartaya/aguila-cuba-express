@@ -6,17 +6,13 @@ import { useState } from "react";
 import {
   ArrowRight,
   Check,
-  Hotel,
   MapPin,
   Menu,
   MessageCircle,
   PackageCheck,
   Plane,
   Search,
-  ShieldCheck,
   ShoppingBag,
-  TicketCheck,
-  WalletCards,
   X,
 } from "lucide-react";
 import {
@@ -31,20 +27,12 @@ import RemittanceCalculator from "./RemittanceCalculator";
 
 const navigation = [
   { label: "Recogida", href: "#solicitar-recogida" },
-  { label: "Envíos", href: "#servicios" },
+  { label: "Envíos", href: "#cotizar" },
   { label: "Remesas", href: "#remesas" },
-  { label: "Cómo funciona", href: "#como-funciona" },
   { label: "Viajes", href: "#viajes" },
   { label: "Tienda", href: "/tienda" },
   { label: "Rastrear", href: "#rastreo" },
   { label: "Visítanos", href: "#contacto" },
-];
-
-const services = [
-  { icon: Plane, title: "Envíos a Cuba", description: "Te orientamos sobre las opciones disponibles para tus paquetes y documentos.", href: "#cotizar" },
-  { icon: WalletCards, title: "Remesas", description: "Calcula la comisión y el total de tu remesa con nuestras tarifas actuales.", href: "#remesas" },
-  { icon: TicketCheck, title: "Viajes", description: "Orientación para pasajes y reservaciones según disponibilidad.", href: "#viajes" },
-  { icon: Hotel, title: "Hoteles y autos", description: "Consulta alternativas para organizar tu estancia desde un solo lugar.", href: "#viajes" },
 ];
 
 function whatsappHref(message: string) {
@@ -62,12 +50,10 @@ export default function AlvarezLanding() {
       <ShippingOptions />
       <section id="cotizar" className="scroll-mt-28 bg-[#091D3D] px-5 py-12 sm:px-7 sm:py-16 lg:px-10"><div className="mx-auto max-w-[1320px] lg:max-w-[1040px]"><div className="mb-7"><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Cotización en línea</p><h2 className="mt-3 text-2xl font-black uppercase sm:text-4xl">Cotiza tu envío a Cuba</h2><p className="mt-3 text-[#B5BFCD]">Recogida gratis: paga solo las libras de tu envío según la tarifa. {ALVAREZ_DEPARTURES}</p></div><PublicQuoteCalculator embedded /></div></section>
       <RemittanceCalculator />
-      <BrandPromise />
-      <Services />
-      <Process />
       <Tracking />
       <TravelAndStore />
       <RefundPolicy />
+      <AdditionalPolicies />
       <Contact />
       <Footer />
     </main>
@@ -196,19 +182,6 @@ function ShippingOptions() {
   );
 }
 
-function BrandPromise() {
-  return <section className="border-y border-white/10 bg-[#000415] px-5 py-12 sm:px-7 lg:px-10"><div className="mx-auto grid max-w-[1320px] gap-6 md:grid-cols-4">{[["Cercanía","Hablamos claro, en un lenguaje familiar."],["Confianza","Información precisa y procesos transparentes."],["Energía","Una atención ágil, activa y resolutiva."],["Identidad","Raíces cubanas y mirada hacia adelante."]].map(([a,b],i)=><div key={a} className="border-l-2 border-[#07409A] pl-5"><span className="text-xs font-black text-[#CA0C28]">0{i+1}</span><h3 className="mt-2 text-xl font-black uppercase">{a}</h3><p className="mt-2 text-sm leading-6 text-[#B5BFCD]">{b}</p></div>)}</div></section>;
-}
-
-function Services() {
-  return <section id="servicios" className="bg-[#091D3D] px-5 py-20 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px]"><SectionTitle eyebrow="Servicio y conexión" title="Todo empieza por entender qué necesitas." text="Te orientamos con información clara y confirmamos las condiciones antes de gestionar cada servicio."/><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{services.map(({icon:Icon,...s})=><a key={s.title} href={s.href} className="group rounded-2xl border border-white/10 bg-[#000415] p-6 transition hover:-translate-y-1 hover:border-[#07409A]"><span className="grid h-12 w-12 place-items-center rounded-xl bg-[#07409A]/25 text-[#B5BFCD]"><Icon size={23}/></span><h3 className="mt-6 text-xl font-black uppercase">{s.title}</h3><p className="mt-3 min-h-20 text-sm leading-6 text-[#B5BFCD]">{s.description}</p><span className="mt-5 inline-flex items-center gap-2 text-sm font-black text-white">Consultar <ArrowRight size={16} className="transition group-hover:translate-x-1"/></span></a>)}</div></div></section>;
-}
-
-function Process() {
-  const steps=[[MessageCircle,"Cuéntanos qué necesitas","Escríbenos o utiliza el cotizador para iniciar la consulta."],[ShieldCheck,"Confirmamos las condiciones","Revisamos opciones, requisitos, precio y disponibilidad antes de continuar."],[PackageCheck,"Gestionamos contigo","Te acompañamos durante el proceso con información clara y trato directo."]];
-  return <section id="como-funciona" className="bg-[#000415] px-5 py-20 sm:px-7 lg:px-10"><div className="mx-auto max-w-[1320px]"><SectionTitle eyebrow="Cómo funciona" title="Claro desde el primer paso." text="Sin promesas genéricas: cada servicio se confirma según las condiciones operativas disponibles."/><div className="mt-12 grid gap-5 md:grid-cols-3">{steps.map(([I,t,d],i)=>{const Icon=I as typeof MessageCircle;return <div key={String(t)} className="relative rounded-2xl border border-white/10 bg-[#091D3D] p-7"><span className="absolute right-6 top-5 text-5xl font-black text-white/5">0{i+1}</span><Icon className="text-[#CA0C28]" size={28}/><h3 className="mt-6 text-xl font-black uppercase">{String(t)}</h3><p className="mt-3 text-sm leading-6 text-[#B5BFCD]">{String(d)}</p></div>})}</div></div></section>;
-}
-
 function Tracking() {
   return <section id="rastreo" className="border-y border-white/10 bg-[#091D3D] px-5 py-20 sm:px-7 lg:px-10"><div className="mx-auto grid max-w-[1320px] gap-10 lg:grid-cols-[1fr_.8fr] lg:items-center"><div><SectionTitle eyebrow="Seguimiento" title="Información útil, sin complicaciones." text="Consulta el estado de tu envío desde la plataforma. Si necesitas ayuda, nuestro equipo puede orientarte."/><div className="mt-7 flex flex-col gap-3 sm:flex-row"><Link href="/rastrear" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl bg-[#CA0C28] px-6 font-black uppercase"><Search size={18}/> Rastrear envío</Link><a href={whatsappHref("Hola, necesito orientación con el seguimiento de un envío.")} target="_blank" rel="noreferrer" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-xl border border-white/15 px-6 font-black"><MessageCircle size={18}/> Pedir ayuda</a></div></div><div className="rounded-3xl border border-white/10 bg-[#000415] p-7"><div className="flex items-center gap-4"><div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#07409A]/25"><PackageCheck className="text-[#B5BFCD]"/></div><div><p className="text-xs font-black uppercase tracking-widest text-[#CA0C28]">Álvarez Travel</p><h3 className="text-xl font-black">Tu conexión a Cuba</h3></div></div><div className="mt-7 h-1 rounded-full bg-gradient-to-r from-[#CA0C28] via-white to-[#07409A]"/><p className="mt-5 text-sm leading-6 text-[#B5BFCD]">Mantén a mano tu referencia de envío para consultar el estado y recibir orientación.</p></div></div></section>;
 }
@@ -235,6 +208,29 @@ function RefundPolicy() {
             <p className="mt-3 leading-7 text-[#B5BFCD]">Se devuelve el dinero del envío si el paquete acumula una demora de 10 días por encima del plazo máximo del rango de entrega correspondiente a la modalidad contratada: Envío Express o Envío Regular.</p>
           </article>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function AdditionalPolicies() {
+  return (
+    <section aria-label="Políticas de cancelación y privacidad" className="bg-[#091D3D] px-5 pb-14 sm:px-7 lg:px-10">
+      <div className="mx-auto grid max-w-[1320px] gap-5 md:grid-cols-2">
+        <article id="politica-de-cancelacion" className="scroll-mt-28 rounded-2xl border border-white/15 bg-[#000415] p-6">
+          <h2 className="text-xl font-black">Política de cancelación</h2>
+          <p className="mt-3 leading-7 text-[#B5BFCD]">
+            No se aceptan cancelaciones. Para cualquier problema relacionado con una cancelación, llame directamente a la tienda al{" "}
+            <a href={`tel:+${ALVAREZ_WHATSAPP_PHONE}`} className="font-bold text-white underline">(305) 509-0981</a>.
+          </p>
+        </article>
+        <article id="politica-de-privacidad" className="scroll-mt-28 rounded-2xl border border-white/15 bg-[#000415] p-6">
+          <h2 className="text-xl font-black">Política de privacidad</h2>
+          <p className="mt-3 leading-7 text-[#B5BFCD]">
+            En Álvarez Travel utilizamos los datos del cliente y del destinatario para gestionar pedidos, pagos y entregas en Cuba. Compartimos únicamente la información necesaria con los proveedores que participan en el servicio y cuando lo exige la ley. Para consultas sobre sus datos,{" "}
+            <a href="#contacto" className="font-bold text-white underline">comuníquese con nuestro equipo</a>.
+          </p>
+        </article>
       </div>
     </section>
   );
