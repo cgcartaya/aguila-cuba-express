@@ -53,3 +53,10 @@
   .header { flex-wrap: wrap; }
   .header nav { order: 3; width: 100%; column-gap: .9rem; font-size: .875rem; }
 }
+.inquiry { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; max-width: 54rem; }
+.inquiry label { display: grid; gap: .35rem; font-weight: 650; }
+.inquiry input, .inquiry select, .inquiry textarea { width: 100%; min-height: 44px; border: 1px solid #09122d70; background: white; padding: .6rem; font-weight: 400; }
+.fullField { grid-column: 1 / -1; }
+.inquiry button:disabled { opacity: .65; }
+.cardImage { width: 100%; height: 12rem; object-fit: cover; margin-bottom: 1rem; }
+@media (max-width: 600px) { .inquiry { grid-template-columns: 1fr; } }
