@@ -19,7 +19,7 @@ import { ArrowLeft } from "lucide-react";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getStoreBySlug } from "@/lib/services/stores";
-import ProductCard from "@/components/tienda/ProductCard";
+import CatalogFilters from "@/components/tienda/CatalogFilters";
 import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types/cart";
 
@@ -161,15 +161,11 @@ export default function CategoryClient({ slug, category }: Props) {
             Cargando productos...
           </p>
         ) : productosFiltrados.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            {productosFiltrados.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                onAddToCart={addToCart}
-              />
-            ))}
-          </div>
+          <CatalogFilters
+            key={`${storeSlug}:${categoryName}`}
+            products={productosFiltrados}
+            onAddToCart={addToCart}
+          />
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
             <h2 className="text-xl font-black text-[#061b3a]">

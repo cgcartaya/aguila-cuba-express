@@ -2,17 +2,19 @@
 
 import { Search, XCircle } from "lucide-react";
 
-import ProductCard from "@/components/tienda/ProductCard";
+import CatalogFilters from "@/components/tienda/CatalogFilters";
 import { useTiendaSearch } from "@/components/tienda/search/TiendaSearchContext";
 import type { Product } from "@/types/cart";
 
 type Props = {
   products: Product[];
+  showWeightFilter: boolean;
   onAddToCart: (product: Product) => void;
 };
 
 export default function SearchResultsSection({
   products,
+  showWeightFilter,
   onAddToCart,
 }: Props) {
   const { search, clearSearch } = useTiendaSearch();
@@ -31,11 +33,6 @@ export default function SearchResultsSection({
             Resultados para “{query}”
           </h2>
 
-          <p role="status" aria-live="polite" className="mt-1 text-sm font-semibold text-slate-500">
-            {products.length === 1
-              ? "1 producto encontrado"
-              : `${products.length} productos encontrados`}
-          </p>
         </div>
 
         <button
@@ -48,31 +45,20 @@ export default function SearchResultsSection({
         </button>
       </div>
 
-      {products.length === 0 ? (
-        <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-            <Search size={26} />
+      <CatalogFilters
+        products={products}
+        showWeightFilter={showWeightFilter}
+        onAddToCart={onAddToCart}
+      >
+        {products.length === 0 && (
+          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+            <h3 className="text-xl font-black text-[#061b3a]">No encontramos productos</h3>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Prueba con otro nombre, marca o categoría.
+            </p>
           </div>
-
-          <h3 className="mt-4 text-xl font-black text-[#061b3a]">
-            No encontramos productos
-          </h3>
-
-          <p className="mt-2 text-sm font-semibold text-slate-500">
-            Prueba con otro nombre, marca o categoría.
-          </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={onAddToCart}
-            />
-          ))}
-        </div>
-      )}
+        )}
+      </CatalogFilters>
     </section>
   );
 }

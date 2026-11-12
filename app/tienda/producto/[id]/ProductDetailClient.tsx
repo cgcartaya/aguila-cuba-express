@@ -6,6 +6,7 @@
    app/tienda/layout.tsxiiii
 ========================================================= */
 
+import { catalogWeightLabel } from "@/lib/storefront/catalog-filters";
 import Image from "next/image";
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -181,6 +182,7 @@ export default function ProductDetailPage({ params }: PageProps) {
             platformFeeExempt={product.platform_fee_exempt}
             name={product.name}
             price={Number(product.price)}
+            weightLabel={catalogWeightLabel(product)}
             description={product.description}
             tag={product.tag}
             stock={Number(product.stock)}

@@ -6,6 +6,7 @@
    Usa <img> normal para imágenes de productos de Supabase.
 ========================================================= */
 
+import { catalogWeightLabel } from "@/lib/storefront/catalog-filters";
 import Image from "next/image";
 import Link from "next/link";
 import { Minus, Plus, Star } from "lucide-react";
@@ -54,6 +55,7 @@ export default function ProductCard({
       : `/tienda/producto/${product.id}`;
 
   const imageUrl = getSafeImageUrl(product.image_url);
+  const weightLabel = catalogWeightLabel(product);
   const basePrice = Number(product.price || 0);
   const displayBasePrice = getUnitPriceForQuantity(
     basePrice,
@@ -153,6 +155,8 @@ export default function ProductCard({
             <p className="text-lg font-black text-[#061b3a]">
               <Price usd={effectivePrice} />
             </p>
+
+            {weightLabel && <span className="text-xs font-semibold text-slate-600">{weightLabel}</span>}
 
             {hasQuantityDiscount && (
               <span className="text-xs font-bold text-slate-400 line-through">

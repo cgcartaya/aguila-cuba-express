@@ -12,6 +12,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
+import { catalogWeightLb } from "@/lib/storefront/catalog-filters";
 import { searchProducts } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import {
@@ -24,6 +25,7 @@ import RemittanceEntry from "@/components/remittances/RemittanceEntry";
 import RestaurantEntry from "@/components/restaurant/RestaurantEntry";
 import MainBanner from "@/components/tienda/MainBanner";
 import StoreCombosSection from "@/components/tienda/combos/StoreCombosSection";
+import CatalogFilters from "@/components/tienda/CatalogFilters";
 import CategoryProductsSection from "@/components/tienda/CategoryProductsSection";
 import DeliveryBanner from "@/components/tienda/DeliveryBanner";
 import HelpCard from "@/components/tienda/HelpCard";
@@ -148,6 +150,11 @@ export default function StoreSlugTiendaPage() {
     return searchProducts(productos, busqueda);
   }, [productos, busqueda, hayBusqueda]);
 
+  const showWeightFilter = useMemo(
+    () => productos.some((product) => catalogWeightLb(product) !== null),
+    [productos],
+  );
+
   const productosDestacados = useMemo(() => {
     return productos
       .filter((producto) => producto.is_home_featured)
@@ -182,6 +189,7 @@ export default function StoreSlugTiendaPage() {
       {hayBusqueda ? (
         <SearchResultsSection
           products={productosBuscados}
+          showWeightFilter={showWeightFilter}
           onAddToCart={addToCart}
         />
       ) : (
@@ -218,18 +226,20 @@ export default function StoreSlugTiendaPage() {
             </div>
           )}
 
-          {sectionEnabled(storeSettings?.show_products) && (
+          {sectionEnabled(storeSettings?.show_products) && productos.length > 0 && (
             <div className="mt-2">
-              {productosPorCategoria.map((grupo) => (
-                <CategoryProductsSection
-                  key={grupo.categoria}
-                  title={grupo.categoria}
-                  color={grupo.color}
-                  products={grupo.productos}
-                  onAddToCart={addToCart}
-                  storeSlug={slug}
-                />
-              ))}
+              <CatalogFilters key={store?.id} products={productos} onAddToCart={addToCart} showWeightFilter={showWeightFilter} inset>
+                {productosPorCategoria.map((grupo) => (
+                  <CategoryProductsSection
+                    key={grupo.categoria}
+                    title={grupo.categoria}
+                    color={grupo.color}
+                    products={grupo.productos}
+                    onAddToCart={addToCart}
+                    storeSlug={slug}
+                  />
+                ))}
+              </CatalogFilters>
             </div>
           )}
 

@@ -18,6 +18,7 @@ type ProductInfoProps = {
   platformFeeExempt?: boolean | null;
   name: string;
   price: number;
+  weightLabel?: string | null;
   description?: string | null;
   tag?: string | null;
   stock: number;
@@ -35,6 +36,7 @@ export default function ProductInfo({
   platformFeeExempt,
   name,
   price,
+  weightLabel,
   description,
   tag,
   stock,
@@ -86,6 +88,8 @@ export default function ProductInfo({
           <p className="text-3xl font-black text-red-600">
             <Price usd={effectivePrice} />
           </p>
+
+          {weightLabel && <span className="text-sm font-semibold text-slate-600">{weightLabel}</span>}
 
           {hasQuantityDiscount && (
             <span className="text-base font-bold text-slate-400 line-through">
