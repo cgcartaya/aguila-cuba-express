@@ -86,7 +86,7 @@ export function getShipmentsPage(storeId: string, filters: ShipmentsPageFilters)
   const start = (filters.page - 1) * filters.pageSize;
   const end = start + filters.pageSize - 1;
 
-  return query.range(start, end).returns<Shipment[]>();
+  return query.range(start, end).overrideTypes<Shipment[], { merge: false }>();
 }
 
 // Conteos livianos para las tarjetas del encabezado. Son consultas
