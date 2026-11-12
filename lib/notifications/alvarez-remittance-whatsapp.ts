@@ -13,17 +13,9 @@ export async function whatsappConfiguration() {
   if (process.env.VERCEL_ENV !== 'production') return { ready: false, reason: 'production_only' } as const;
   if (!token || /^Bearer\s/i.test(token) || process.env.ALVAREZ_TIMELINES_CHAT_ID?.trim() !== CHAT)
     return { ready: false, reason: 'configuration_missing_or_invalid' } as const;
-  try {
-    const response = await fetch(`${API}/chats/${CHAT}`, {
-      headers: { Authorization: `Bearer ${token}` }, cache: 'no-store', signal: AbortSignal.timeout(8000),
-    });
-    if (!response.ok) return { ready: false, reason: `provider_${response.status}` } as const;
-    const body = await response.json();
-    const chat = body.data;
-    if (body.status !== 'ok' || chat?.name?.trim().toLowerCase() !== 'entrada de pedidos' || chat?.is_group === false || (chat?.id != null && String(chat.id) !== CHAT))
-      return { ready: false, reason: 'destination_mismatch' } as const;
-    return { ready: true, token } as const;
-  } catch { return { ready: false, reason: 'provider_unavailable' } as const; }
+  // The destination is pinned to the verified group ID above.
+  // Reading chat metadata consumes a separate quota and can block valid sends.
+  return { ready: true, token } as const;
 }
 
 async function finish(job: Job, state: State, error: string | null, messageId: string | null = null) {
