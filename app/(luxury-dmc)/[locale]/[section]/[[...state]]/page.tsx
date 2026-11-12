@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { cache } from 'react';
 import { dmcHost, localized, pages, sections, type Locale, type Section } from '@/lib/luxury/dmc/content';
+import { getStateGuide, stateGuides } from '@/lib/luxury/dmc/state-guides';
 import { getDmcStateIndex } from '@/lib/luxury/dmc/destinations';
 import { MiceEditorial, miceHero } from '@/components/landing/luxury/MiceEditorial';
 import { DmcInquiryForm } from '@/components/landing/luxury/DmcInquiryForm';
@@ -23,23 +24,31 @@ async function resolve(params: Props['params']) {
   const host = (await headers()).get('host')?.split(':')[0].toLowerCase();
   if (host !== dmcHost || (locale !== 'en' && locale !== 'es') ||
     !sections.includes(section as Section) ||
-    (state && (section !== 'destinations' || state.length !== 1))) notFound();
+    (state && (section !== 'destinations' || state.length > 2))) notFound();
 
   const key = section as Section;
-  const states = key === 'destinations' ? await catalog() : [];
-  const destinations = states.flatMap(({ name, slug, content }) => content ? [{ name, slug, ...content }] : []);
-  const destination = state ? destinations.find((item) => item.slug === state[0]) : undefined;
-  if (state && !destination) notFound();
-  const path = '/' + key + (destination ? '/' + destination.slug : '');
-  return { locale: locale as Locale, key, page: pages[key], states, destination, path };
+  const catalogStates = key === 'destinations' ? await catalog() : [];
+  const states = key === 'destinations' ? Object.entries(stateGuides).map(([slug, guide]) => ({
+    slug, name: guide.name, content: catalogStates.find((item) => item.slug === slug)?.content,
+  })) : [];
+  const selectedState = state ? states.find((item) => item.slug === state[0]) : undefined;
+  const guide = selectedState ? getStateGuide(selectedState.slug) : undefined;
+  const city = state?.[1] ? guide?.cities.find((item) => item.slug === state[1]) : undefined;
+  if (state && (!selectedState || (state[1] && !city))) notFound();
+  const destination = city ? undefined : selectedState?.content;
+  const path = '/' + key + (state ? '/' + state.join('/') : '');
+  return { locale: locale as Locale, key, page: pages[key], states, selectedState, guide, city, destination, path };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, key, page, destination, path } = await resolve(params);
+  const { locale, key, page, selectedState, city, destination, path } = await resolve(params);
   const origin = 'https://' + dmcHost;
   const url = origin + '/' + locale + path;
-  const title = (destination?.seoTitle[locale] ?? localized(page.label, locale)) + ' | Luxury Travel Point';
-  const description = destination?.seoDescription[locale] ?? localized(page.description, locale);
+  const title = (destination?.seoTitle[locale] ?? city?.name ?? selectedState?.name ?? localized(page.label, locale)) + ' | Luxury Travel Point';
+  const guideDescription = city
+    ? localized([`Explore ${city.place} in ${city.name} and request a tailored group proposal.`, `Descubre ${city.place} en ${city.name} y solicita una propuesta para tu grupo.`], locale)
+    : selectedState && localized([`Explore cities and places to visit in ${selectedState.name}.`, `Explora ciudades y lugares para visitar en ${selectedState.name}.`], locale);
+  const description = destination?.seoDescription[locale] ?? guideDescription ?? localized(page.description, locale);
   const image = destination?.image ?? origin + (key === 'mice-events' ? miceHero : page.image);
   return {
     title: { absolute: title },
@@ -54,14 +63,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function DmcPage({ params, searchParams }: Props) {
-  const { locale, key, page, states, destination, path } = await resolve(params);
+  const { locale, key, page, states, selectedState, guide, city, destination, path } = await resolve(params);
   const t = (en: string, es: string) => localized([en, es], locale);
   const base = '/' + locale;
   const { q: search, destination: selected } = await searchParams;
   const requestedState = states.find((item) => item.name === selected)?.name;
   const query = typeof search === 'string' ? search.trim().slice(0, 100) : '';
   const matching = states.filter((item) =>
-    [item.name, ...(item.content?.cities ?? [])].some((value) => value.toLowerCase().includes(query.toLowerCase())),
+    [item.name, ...(item.content?.cities ?? []), ...(getStateGuide(item.slug)?.cities.map((city) => city.name) ?? [])].some((value) => value.toLowerCase().includes(query.toLowerCase())),
   );
 
   return (
@@ -74,7 +83,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
         <nav aria-label={t('Main navigation', 'Navegación principal')}>
           <Link href="/">{t('Home', 'Inicio')}</Link>
           {sections.map((section) => (
-            <Link key={section} href={base + '/' + section} aria-current={key === section && !destination ? 'page' : undefined}>
+            <Link key={section} href={base + '/' + section} aria-current={key === section && !selectedState ? 'page' : undefined}>
               {localized(pages[section].label, locale)}
             </Link>
           ))}
@@ -87,13 +96,13 @@ export default async function DmcPage({ params, searchParams }: Props) {
           <Image src={destination?.image ?? page.image} alt="" fill sizes="100vw" preload />
           <div className={s.heroCopy}>
             <p>{localized(page.label, locale)}</p>
-            <h1>{destination?.name ?? localized(page.title, locale)}</h1>
-            <p>{destination?.description[locale] ?? localized(page.description, locale)}</p>
+            <h1>{city?.name ?? selectedState?.name ?? localized(page.title, locale)}</h1>
+            <p>{destination?.description[locale] ?? (selectedState ? t('Explore places to visit and ask about availability for your group.', 'Explora lugares para visitar y consulta disponibilidad para tu grupo.') : localized(page.description, locale))}</p>
             <div className={s.actions}>
               <Link className={s.button} href="#proposal">
                 {t('Request a travel proposal', 'Solicita una propuesta de viaje')}
               </Link>
-              {destination && <Link className={s.secondary} href={base + '/destinations'}>{t('All destinations', 'Todos los destinos')}</Link>}
+              {selectedState && <Link className={s.secondary} href={base + '/destinations' + (city ? '/' + selectedState.slug : '')}>{city ? selectedState.name : t('All destinations', 'Todos los destinos')}</Link>}
             </div>
           </div>
         </section>
@@ -114,7 +123,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
           </section>
         )}
 
-        {key === 'destinations' && !destination && states.length > 0 && (
+        {key === 'destinations' && !selectedState && states.length > 0 && (
           <section className={s.section}>
             <h2>{t('Ideas for your next program', 'Ideas para tu próximo programa')}</h2>
             <div className={s.grid}>
@@ -134,7 +143,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
           </section>
         )}
 
-        {key === 'destinations' && !destination && (
+        {key === 'destinations' && !selectedState && (
           <section className={s.section}>
             <h2>{t('Explore by state', 'Explora por estado')}</h2>
             <p>{t('Use this directory for inspiration. Ask us to confirm availability for your destination and dates.', 'Usa este directorio como inspiración. Consúltanos para confirmar disponibilidad en tu destino y fechas.')}</p>
@@ -148,11 +157,27 @@ export default async function DmcPage({ params, searchParams }: Props) {
             {matching.length ? (
               <div className={s.grid}>{matching.map((item) => (
                 <article className={s.card} key={item.slug}>
-                  <h3>{item.content ? <Link href={base + '/destinations/' + item.slug}>{item.name}</Link> : item.name}</h3>
+                  <h3><Link href={base + '/destinations/' + item.slug}>{item.name}</Link></h3>
                   {item.content ? <p>{item.content.seoDescription[locale]}</p> : <Link href={base + '/destinations?destination=' + encodeURIComponent(item.name) + '#proposal'}>{t('Ask about this state', 'Consulta por este estado')}</Link>}
                 </article>
               ))}</div>
             ) : <p>{states.length ? t('No destinations match your search.', 'No encontramos destinos para tu búsqueda.') : t('Destinations will appear as they are confirmed for publication.', 'Los destinos aparecerán a medida que se confirme su publicación.')}</p>}
+          </section>
+        )}
+
+        {guide && selectedState && (
+          <section className={s.section}>
+            <h2>{city ? t('Place to explore', 'Lugar para explorar') : t('Explore cities and places', 'Explora ciudades y lugares')}</h2>
+            <div className={s.grid}>
+              {(city ? [city] : guide.cities).map((item) => (
+                <article key={item.slug} className={s.card}>
+                  {city ? <h3>{item.place}</h3> : <>
+                    <h3><Link href={base + '/destinations/' + selectedState.slug + '/' + item.slug}>{item.name}</Link></h3>
+                    <p>{item.place}</p>
+                  </>}
+                </article>
+              ))}
+            </div>
           </section>
         )}
 
@@ -162,7 +187,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
             {destination.experiences.length > 0 && <><h2>{t('Experiences', 'Experiencias')}</h2><ul>{destination.experiences.map((experience) => <li key={experience.en}>{experience[locale]}</li>)}</ul></>}
           </section>
         )}
-        <DmcInquiryForm key={destination?.name ?? requestedState ?? key} locale={locale} kind={key === 'our-services' ? 'services' : 'destination'} destination={destination?.name ?? requestedState} />
+        <DmcInquiryForm key={city?.name ?? selectedState?.name ?? requestedState ?? key} locale={locale} kind={key === 'our-services' ? 'services' : 'destination'} destination={city ? city.name + ', ' + selectedState?.name : selectedState?.name ?? requestedState} />
       </main>}
       <footer className={s.footer}>
         <Link href="/">Luxury Travel Point</Link>
