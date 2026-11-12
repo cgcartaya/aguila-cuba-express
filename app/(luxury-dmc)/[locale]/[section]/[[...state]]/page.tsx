@@ -28,7 +28,7 @@ async function resolve(params: Props['params']) {
   const destination = state ? destinations.find((item) => item.slug === state[0]) : undefined;
   if (state && !destination) notFound();
   const path = '/' + key + (destination ? '/' + destination.slug : '');
-  return { locale, key, page: pages[key], destinations, destination, path };
+  return { locale: locale as Locale, key, page: pages[key], destinations, destination, path };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -75,7 +75,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
             </Link>
           ))}
         </nav>
-        <DmcLanguageLinks locale={locale as Locale} path={path} />
+        <DmcLanguageLinks locale={locale} path={path} />
       </header>
 
       <main>
