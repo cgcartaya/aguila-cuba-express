@@ -25,6 +25,7 @@ import { isAssignmentOnlyAccess } from "@/lib/admin/access";
 import { hasShippingPermission } from "@/lib/shipping/permissions";
 import ShipmentDriverSelect from "@/components/admin/shipping/ShipmentDriverSelect";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
+import ManualWhatsappNotice from "@/components/admin/remittances/ManualWhatsappNotice";
 import InvoiceActions from "@/components/admin/shipping/InvoiceActions";
 import PaymentCollectButton from "@/components/admin/shipping/PaymentCollectButton";
 import ShippingAdvancedFilters, {
@@ -438,6 +439,9 @@ export default function ShippingShipmentsPage() {
 
                       {(!assignmentOnly || membership?.role === "SHIPPING_CATALOG") && <div className="shipping-actions-panel min-w-0 border-t border-slate-100 pt-3 sm:col-span-2 xl:col-span-1 xl:border-0 xl:pt-0">
                         <InvoiceActions shipment={shipment} store={activeStore} compact readOnly={assignmentOnly} />
+                        {activeStore?.slug === "alvarez-travel" && (shipment.contains_money || shipment.products_only) &&
+                          (isSuperAdmin || hasShippingPermission(membership, "shipping.billing")) &&
+                          <ManualWhatsappNotice storeId={activeStore.id} sourceId={shipment.id} sourceKind="shipment" />}
                         {!assignmentOnly && <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2 xl:justify-end">
                           <PaymentCollectButton shipment={shipment} onPaid={() => void loadPage()} compact />
                           {canEdit && <Link

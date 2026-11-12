@@ -26,26 +26,34 @@ async function finish(job: Job, state: State, error: string | null, messageId: s
   if (dbError) throw new Error('notification_record_failed');
 }
 
+export async function loadWhatsappMessage(job: Pick<Job, 'source_kind' | 'source_id' | 'store_id'>) {
+  const { data: settings, error: settingsError } = await supabaseAdmin.from('shipping_settings').select('currency').eq('store_id', job.store_id).maybeSingle();
+  if (settingsError || settings?.currency !== 'USD') return { error: 'currency_unavailable' } as const;
+  const order = job.source_kind === 'order';
+  const { data: source, error } = await supabaseAdmin.from(order ? 'remittance_orders' : 'shipments')
+    .select(order ? 'id,payload,amount,status' : 'id,sender_name,recipient_name,recipient_phone,recipient_phone_alt,recipient_address,notes,money_amount,money_delivery_currency,money_usd_to_cup,money_exchange_rate,money_delivery_amount,store_products,payment_status,contains_money,deleted_at,status')
+    .eq('store_id', job.store_id).eq('id', job.source_id).maybeSingle<Source>();
+  if (error) return { error: 'source_unavailable' } as const;
+  if (!source || source.status === 'cancelled' || (!order && (source.deleted_at || !source.contains_money && (!Array.isArray(source.store_products) || !source.store_products.length)))) {
+    return { error: 'source_cancelled' } as const;
+  }
+  try {
+    return { message: remittanceWhatsappMessage(job.source_id, order ? source.payload : source,
+      order ? source.amount : source.money_amount) } as const;
+  } catch { return { error: 'invalid_source' } as const; }
+}
+
 async function dispatch(job: Job, token: string) {
   const { data: store, error: storeError } = await supabaseAdmin.from('stores').select('id')
     .eq('id', job.store_id).eq('subdomain', 'alvarez-travel').eq('is_active', true).eq('module_shipping_enabled', true).maybeSingle();
   if (storeError) { await finish(job, 'failed', 'source_unavailable'); return; }
   if (!store) { await finish(job, 'cancelled', 'store_unavailable'); return; }
-  const { data: settings, error: settingsError } = await supabaseAdmin.from('shipping_settings').select('currency').eq('store_id', job.store_id).maybeSingle();
-  if (settingsError || settings?.currency !== 'USD') { await finish(job, 'failed', 'currency_unavailable'); return; }
-  const order = job.source_kind === 'order';
-  const { data: source, error } = await supabaseAdmin.from(order ? 'remittance_orders' : 'shipments')
-    .select(order ? 'id,payload,amount,status' : 'id,sender_name,recipient_name,recipient_phone,recipient_phone_alt,recipient_address,notes,money_amount,money_delivery_currency,money_usd_to_cup,money_exchange_rate,money_delivery_amount,store_products,payment_status,contains_money,deleted_at,status')
-    .eq('store_id', job.store_id).eq('id', job.source_id).maybeSingle<Source>();
-  if (error) { await finish(job, 'failed', 'source_unavailable'); return; }
-  if (!source || source.status === 'cancelled' || (!order && (source.deleted_at || !source.contains_money && (!Array.isArray(source.store_products) || !source.store_products.length)))) {
-    await finish(job, 'cancelled', 'source_cancelled'); return;
+  const result = await loadWhatsappMessage(job);
+  if (!result.message) {
+    await finish(job, result.error === 'source_cancelled' ? 'cancelled' : 'failed', result.error ?? 'invalid_source');
+    return;
   }
-  let message: string;
-  try {
-    message = remittanceWhatsappMessage(job.source_id, order ? source.payload : source,
-      order ? source.amount : source.money_amount);
-  } catch { await finish(job, 'failed', 'invalid_source'); return; }
+  const { message } = result;
   // Once a POST starts, transport failures are ambiguous: require a human check.
   try {
     const response = await fetch(`${API}/chats/${CHAT}/messages`, {

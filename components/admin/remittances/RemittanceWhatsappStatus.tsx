@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-type Job = { id: string; source_id: string; state: string; last_error: string | null };
+type Job = { id: string; source_id: string; state: string; last_error: string | null; manual_sent_by: string | null };
 type Snapshot = { ready: boolean; reason: string | null; jobs: Job[] };
 const labels: Record<string, string> = { pending: 'En cola', sending: 'Enviando', accepted: 'Aceptado por el proveedor', failed: 'No enviado', uncertain: 'Revisar en el grupo', cancelled: 'Cancelado' };
 export default function RemittanceWhatsappStatus({ storeId }: { storeId: string }) {
@@ -45,8 +45,8 @@ export default function RemittanceWhatsappStatus({ storeId }: { storeId: string 
     {snapshot && !snapshot.ready && <p className="my-2 text-amber-800">La conexión no está disponible ({snapshot.reason}). Los avisos permanecen registrados.</p>}
     <button type="button" className="my-2 rounded-lg border px-3 py-2" onClick={() => setVersion(value => value + 1)}>Actualizar estado</button>
     <ul className="divide-y divide-slate-100">{snapshot?.jobs.map(job => <li key={job.id} className="flex flex-wrap items-center gap-2 py-2">
-      <span className="break-all">{job.source_id}</span><strong>{labels[job.state] ?? job.state}</strong>
-      {(job.state === 'failed' || job.state === 'uncertain') && <button type="button" disabled={busy} className="rounded-lg border px-3 py-2 disabled:opacity-50" onClick={() => void retry(job.id)}>Reintentar tras revisar</button>}
+      <span className="break-all">{job.source_id}</span><strong>{job.manual_sent_by ? 'Enviado manualmente' : job.last_error === 'manual_in_progress' ? 'Envío manual en curso' : labels[job.state] ?? job.state}</strong>
+      {job.last_error !== 'manual_in_progress' && (job.state === 'failed' || job.state === 'uncertain') && <button type="button" disabled={busy} className="rounded-lg border px-3 py-2 disabled:opacity-50" onClick={() => void retry(job.id)}>Reintentar tras revisar</button>}
     </li>)}</ul>
     {snapshot?.jobs.length === 0 && <p>No hay avisos nuevos registrados.</p>}
   </details>;

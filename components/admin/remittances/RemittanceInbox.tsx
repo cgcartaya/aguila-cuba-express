@@ -1,5 +1,6 @@
 "use client";
 
+import ManualWhatsappNotice from "@/components/admin/remittances/ManualWhatsappNotice";
 import Link from "next/link";
 import { ArrowDownLeft, ArrowUpRight, CheckCircle2, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, FileText, Inbox, Loader2, MapPin, RefreshCw, Search, ShieldCheck, WalletCards, XCircle } from "lucide-react";
 
@@ -34,7 +35,8 @@ export function ShipmentLinks({ id }: { id: string }) {
   </>;
 }
 
-export function RemittanceOrderCard({ order, busy, onConfirm, onCancel }: {
+export function RemittanceOrderCard({ order, busy, onConfirm, onCancel, whatsappStoreId }: {
+  whatsappStoreId?: string;
   order: RemittanceOrder;
   busy: boolean;
   onConfirm: (order: RemittanceOrder) => void;
@@ -70,6 +72,7 @@ export function RemittanceOrderCard({ order, busy, onConfirm, onCancel }: {
     <footer className="flex flex-col justify-between gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
       <p className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400"><ShieldCheck size={14} />{order.status === "pending" ? "Verifica el ingreso antes de continuar" : order.shipment_id ? "Conserva el vínculo con la compra original" : "Historial de la solicitud"}</p>
       <div className="flex flex-col gap-2 sm:flex-row">
+        {whatsappStoreId && order.status === "paid" && <ManualWhatsappNotice storeId={whatsappStoreId} sourceId={order.id} sourceKind="order" />}
         {order.status === "pending" ? <><button type="button" disabled={busy} onClick={() => onCancel(order)} className={`${button} border border-slate-200 bg-white text-slate-500 hover:border-red-200 hover:bg-red-50 hover:text-red-700`}>Cancelar pedido</button><button type="button" disabled={busy} onClick={() => onConfirm(order)} className={`${button} bg-blue-700 text-white shadow-sm hover:bg-blue-800`}><CheckCircle2 size={16} />Confirmar pago y crear envío</button></> : order.shipment_id ? <ShipmentLinks id={order.shipment_id} /> : null}
       </div>
     </footer>
@@ -77,6 +80,7 @@ export function RemittanceOrderCard({ order, busy, onConfirm, onCancel }: {
 }
 
 type Props = {
+  whatsappStoreId?: string;
   storeName: string;
   orders: RemittanceOrder[];
   status: RemittanceFilter;
@@ -129,7 +133,7 @@ export default function RemittanceInbox(props: Props) {
           <div className="flex min-w-0 gap-2"><label className="relative min-w-0 flex-1"><span className="sr-only">Buscar en esta página</span><Search size={15} className="pointer-events-none absolute left-3 top-3.5 text-slate-400" /><input type="search" value={search} onChange={event => props.onSearch(event.target.value)} placeholder="Buscar en esta página…" className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 lg:w-56" /></label><button type="button" onClick={props.onRefresh} disabled={loading || busy} aria-label="Actualizar órdenes" title="Actualizar órdenes" className={`${button} border border-slate-200 bg-white px-3 text-slate-500 hover:bg-slate-50`}><RefreshCw size={16} className={loading ? "animate-spin" : ""} /></button></div>
         </div>
         <div className="flex flex-wrap justify-between gap-1 px-1 text-[11px] text-slate-400"><span>{loading ? "Cargando solicitudes…" : `${visible.length} ${visible.length === 1 ? "solicitud" : "solicitudes"}${query ? ` de ${orders.length} en esta página` : " en esta página"}`}</span><span>Resumen de la página actual · USD</span></div>
-        {loading ? <div role="status" className="grid min-h-56 place-items-center rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500"><span className="flex items-center gap-2"><Loader2 size={18} className="animate-spin" />Cargando órdenes…</span></div> : visible.length ? <div className="space-y-4">{visible.map(order => <RemittanceOrderCard key={order.id} order={order} busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancel} />)}</div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center"><Inbox size={30} className="mx-auto text-slate-300" /><h2 className="mt-4 text-base font-bold text-slate-700">{query ? "No encontramos coincidencias" : "No hay solicitudes en esta página"}</h2><p className="mt-2 text-sm text-slate-400">{query ? "Prueba con otro nombre, teléfono o referencia." : status === "pending" ? "Las nuevas compras de remesas aparecerán aquí." : "Cambia el estado o vuelve a la página anterior."}</p></div>}
+        {loading ? <div role="status" className="grid min-h-56 place-items-center rounded-2xl border border-slate-200 bg-white p-8 text-sm text-slate-500"><span className="flex items-center gap-2"><Loader2 size={18} className="animate-spin" />Cargando órdenes…</span></div> : visible.length ? <div className="space-y-4">{visible.map(order => <RemittanceOrderCard key={order.id} order={order} busy={busy} onConfirm={props.onConfirm} onCancel={props.onCancel} whatsappStoreId={props.whatsappStoreId} />)}</div> : <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center"><Inbox size={30} className="mx-auto text-slate-300" /><h2 className="mt-4 text-base font-bold text-slate-700">{query ? "No encontramos coincidencias" : "No hay solicitudes en esta página"}</h2><p className="mt-2 text-sm text-slate-400">{query ? "Prueba con otro nombre, teléfono o referencia." : status === "pending" ? "Las nuevas compras de remesas aparecerán aquí." : "Cambia el estado o vuelve a la página anterior."}</p></div>}
         <div className="flex items-center justify-between pt-2"><button type="button" disabled={page === 0 || loading || busy} onClick={() => props.onPage(page - 1)} className={`${button} border border-slate-200 bg-white text-slate-600`}><ChevronLeft size={15} />Anterior</button><span className="text-xs font-medium text-slate-500">Página {page + 1}</span><button type="button" disabled={orders.length < 50 || loading || busy} onClick={() => props.onPage(page + 1)} className={`${button} border border-slate-200 bg-white text-slate-600`}>Siguiente<ChevronRight size={15} /></button></div>
       </section>
     </div>
