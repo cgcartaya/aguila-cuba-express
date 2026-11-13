@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cache } from 'react';
-import { dmcHost, localized, pages, sections, type Locale, type Section } from '@/lib/luxury/dmc/content';
+import { isLuxuryHost } from '@/lib/luxury/hosts';
+import { normalizeStoreHost } from '@/lib/saas/store-metadata';
+import { localized, pages, sections, type Locale, type Section } from '@/lib/luxury/dmc/content';
 import { getStateGuide, stateGuides } from '@/lib/luxury/dmc/state-guides';
 import { getDmcStateIndex } from '@/lib/luxury/dmc/destinations';
 import { MiceEditorial, miceHero } from '@/components/landing/luxury/MiceEditorial';
@@ -21,8 +23,8 @@ const catalog = cache(getDmcStateIndex);
 
 async function resolve(params: Props['params']) {
   const { locale, section, state } = await params;
-  const host = (await headers()).get('host')?.split(':')[0].toLowerCase();
-  if (host !== dmcHost || (locale !== 'en' && locale !== 'es') ||
+  const host = normalizeStoreHost((await headers()).get('host') || '');
+  if (!isLuxuryHost(host) || (locale !== 'en' && locale !== 'es') ||
     !sections.includes(section as Section) ||
     (state && (section !== 'destinations' || state.length > 2))) notFound();
 
@@ -37,12 +39,12 @@ async function resolve(params: Props['params']) {
   if (state && (!selectedState || (state[1] && !city))) notFound();
   const destination = city ? undefined : selectedState?.content;
   const path = '/' + key + (state ? '/' + state.join('/') : '');
-  return { locale: locale as Locale, key, page: pages[key], states, selectedState, guide, city, destination, path };
+  return { locale: locale as Locale, key, page: pages[key], states, selectedState, guide, city, destination, path, host };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale, key, page, selectedState, city, destination, path } = await resolve(params);
-  const origin = 'https://' + dmcHost;
+  const { locale, key, page, selectedState, city, destination, path, host } = await resolve(params);
+  const origin = 'https://' + host;
   const url = origin + '/' + locale + path;
   const title = (destination?.seoTitle[locale] ?? city?.name ?? selectedState?.name ?? localized(page.label, locale)) + ' | Luxury Travel Point';
   const guideDescription = city

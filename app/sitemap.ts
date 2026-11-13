@@ -1,4 +1,5 @@
-import { dmcHost, sections } from '@/lib/luxury/dmc/content';
+import { isLuxuryHost } from '@/lib/luxury/hosts';
+import { sections } from '@/lib/luxury/dmc/content';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
@@ -80,9 +81,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const host = normalizeHost(
     requestHeaders.get("x-forwarded-host") || requestHeaders.get("host")
   );
-  if (host === dmcHost) {
+  if (isLuxuryHost(host)) {
     const { stateGuides } = await import('@/lib/luxury/dmc/state-guides');
-    const origin = 'https://' + dmcHost;
+    const origin = 'https://' + host;
     const paths = [...sections, ...Object.entries(stateGuides).flatMap(([slug, guide]) => {
       const path = 'destinations/' + slug;
       return [path, ...guide.cities.map((city) => path + '/' + city.slug)];

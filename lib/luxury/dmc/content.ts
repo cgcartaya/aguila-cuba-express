@@ -1,4 +1,3 @@
-export const dmcHost = 'luxury-travel-point.perlamarketplace.com';
 export const sections = ['mice-events', 'our-services', 'destinations'] as const;
 export type Section = typeof sections[number];
 export type Locale = 'en' | 'es';

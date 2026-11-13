@@ -1,11 +1,10 @@
-import { dmcHost } from '@/lib/luxury/dmc/content';
+import { isLuxuryHost } from '@/lib/luxury/hosts';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 const DOMAIN_BASE_URLS: Record<string, string> = {
-  [dmcHost]: "https://" + dmcHost,
   "alvarez-travel.com": "https://alvarez-travel.com",
   "aguilaexpressusa.com": "https://aguilaexpressusa.com",
   "depariscienfuegos.com": "https://depariscienfuegos.com",
@@ -24,6 +23,7 @@ function normalizeHost(value: string | null) {
 }
 
 function resolveBaseUrl(host: string) {
+  if (isLuxuryHost(host)) return "https://" + host;
   return DOMAIN_BASE_URLS[host] || DOMAIN_BASE_URLS["perlamarketplace.com"];
 }
 
