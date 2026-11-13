@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { cache } from 'react';
 import { isLuxuryHost } from '@/lib/luxury/hosts';
-import { normalizeStoreHost } from '@/lib/saas/store-metadata';
+import { buildLuxuryMetadata } from '@/components/landing/luxury/metadata';
+import { normalizeStoreHost, resolveStoreByHost } from '@/lib/saas/store-metadata';
 import { localized, pages, sections, type Locale, type Section } from '@/lib/luxury/dmc/content';
 import { getStateGuide, stateGuides } from '@/lib/luxury/dmc/state-guides';
 import { getDmcStateIndex } from '@/lib/luxury/dmc/destinations';
@@ -52,7 +53,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : selectedState && localized([`Explore cities and places to visit in ${selectedState.name}.`, `Explora ciudades y lugares para visitar en ${selectedState.name}.`], locale);
   const description = destination?.seoDescription[locale] ?? guideDescription ?? localized(page.description, locale);
   const image = destination?.image ?? origin + (key === 'mice-events' ? miceHero : page.image);
+  const { icons } = buildLuxuryMetadata(await resolveStoreByHost(host), host);
   return {
+    icons,
     title: { absolute: title },
     description,
     alternates: {
