@@ -35,8 +35,8 @@ test('English and French render locally without scripts or external translation 
  const en=localizedPage('en'),fr=localizedPage('fr');
  assert.match(en,/href="\/en\/mice-events"/);assert.match(en,/href="\/en\/our-services"/);assert.match(en,/href="\/en\/destinations"/);
  assert.match(en,/The world awaits/);assert.match(en,/All countries/);assert.match(en,/Frequently asked questions/);assert.match(en,/Monday–Saturday: 10 a.m.–6 p.m./);
- assert.match(en,/15 × 15 × 15 gold box/);assert.match(en,/Track with SolveBigTech/);assert.match(en,/Estimate your shipment/);
- assert.match(fr,/Boîte dorée 15 × 15 × 15/);assert.match(fr,/Suivre avec YoY MultiServices/);
+ assert.match(en,/15 × 15 × 15 gold box/);assert.match(en,/Track CM…AP code/);assert.match(en,/Estimate your shipment/);
+ assert.match(fr,/Boîte dorée 15 × 15 × 15/);assert.match(fr,/Suivre le code TRE/);
  for (const html of [en,fr]) {
   assert.match(html,/wa\.me\/12395550100\?text=/);
   assert.match(html,/https:\/\/billetera\.cc\/cobertura/);
