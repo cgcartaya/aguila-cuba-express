@@ -172,32 +172,32 @@
   .serviceCard { transition: none; }
 }
 
-.root .brand,
+.root .brand {
+  flex-direction: row;
+  flex-shrink: 0;
+}
+
+.root .brand img { flex-shrink: 0; }
+
 .root .footerBrand {
   flex-direction: column;
   align-items: center;
   gap: 3px;
 }
 
-.root .footerBrand img {
-  height: 82px;
-  filter: brightness(0) saturate(100%) invert(85%) sepia(48%) saturate(766%) hue-rotate(348deg) brightness(100%);
-}
+.root .footerBrand img { height: 82px; }
 
 .root .brandSlogan {
-  max-width: 13rem;
-  color: #785c19;
+  color: #cf9d14;
   font: italic 500 .69rem/1.2 var(--luxury-heading-font);
   text-align: center;
 }
 
-.root .footerBrand .brandSlogan {
-  max-width: none;
-  color: #e7c56b;
-  font-size: .9rem;
-}
+.root .brand .brandSlogan { white-space: nowrap; }
+
+.root .footerBrand .brandSlogan { font-size: .9rem; }
 
 @media (max-width: 600px) {
-  .root .brandSlogan { max-width: 9rem; font-size: .62rem; }
-  .root .brand img { height: 44px; }
+  .root .brand { gap: 6px; }
+  .root .brand .brandSlogan { font-size: .62rem; }
 }
