@@ -21,7 +21,7 @@
   gap: .5rem 1.25rem;
 }
 .brand { flex-wrap: nowrap; font-weight: 700; gap: .5rem; }
-.brand img { width: 4.5rem; height: auto; }
+.brand img { width: 5rem; height: auto; }
 .header nav a, .languages a, .languages button { display: inline-flex; align-items: center; min-height: 44px; }
 .header a[aria-current], .languages [aria-pressed="true"] { text-decoration: underline; text-underline-offset: .35em; }
 .languages { gap: .25rem; }
