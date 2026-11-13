@@ -7,6 +7,7 @@ import { ArrowUpRight, BriefcaseBusiness, Car, CircleDollarSign, Clock3, FileTex
 import TravelExplorer from './TravelExplorer';
 import HeroGallery from './HeroGallery';
 import GroupExplorer from './GroupExplorer';
+import { luxuryOrigin } from '@/lib/luxury/hosts';
 import { localized, pages, sections } from '@/lib/luxury/dmc/content';
 import LanguageSelector from './LanguageSelector';
 import LuxuryPickup from './LuxuryPickup';
@@ -66,7 +67,7 @@ function LuxuryContent({ initialPackages, initialError, initialShipping }: { ini
   const month = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit' }).formatToParts(now);
   const minMonth = `${month.find(p => p.type === 'year')?.value}-${month.find(p => p.type === 'month')?.value}`;
   const { tr, whatsapp: commercialContact } = useCommercialCopy(shipping);
-  const structuredData = { '@context': 'https://schema.org', '@type': 'TravelAgency', name: 'Luxury Travel Point', url: 'https://luxury-travel-point.perlamarketplace.com', telephone: contact.tel, email: contact.email, image: 'https://luxury-travel-point.perlamarketplace.com/luxury/logo.webp', address: { '@type': 'PostalAddress', streetAddress: '3418 51st St W', addressLocality: 'Lehigh Acres', addressRegion: 'FL', postalCode: '33971', addressCountry: 'US' }, openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '10:00', closes: '18:00' }, { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Sunday', opens: '10:00', closes: '16:00' }] };
+  const structuredData = { '@context': 'https://schema.org', '@type': 'TravelAgency', name: 'Luxury Travel Point', url: luxuryOrigin, '@id': luxuryOrigin + '/#agency', telephone: contact.tel, email: contact.email, image: luxuryOrigin + '/luxury/logo.webp', address: { '@type': 'PostalAddress', streetAddress: '3418 51st St W', addressLocality: 'Lehigh Acres', addressRegion: 'FL', postalCode: '33971', addressCountry: 'US' }, openingHoursSpecification: [{ '@type': 'OpeningHoursSpecification', dayOfWeek: ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], opens: '10:00', closes: '18:00' }, { '@type': 'OpeningHoursSpecification', dayOfWeek: 'Sunday', opens: '10:00', closes: '16:00' }] };
   return translateTree(<div className={s.root} id="inicio">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
     <a href="#contenido" className={s.skip}>Saltar al contenido</a>

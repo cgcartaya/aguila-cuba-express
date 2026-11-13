@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cache } from 'react';
-import { isLuxuryHost } from '@/lib/luxury/hosts';
+import { luxuryLanguageUrls } from '@/lib/luxury/seo';
+import { isLuxuryHost, luxuryOrigin } from '@/lib/luxury/hosts';
 import { buildLuxuryMetadata } from '@/components/landing/luxury/metadata';
 import { normalizeStoreHost, resolveStoreByHost } from '@/lib/saas/store-metadata';
 import { localized, pages, sections, type Locale, type Section } from '@/lib/luxury/dmc/content';
@@ -45,22 +46,22 @@ async function resolve(params: Props['params']) {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, key, page, selectedState, city, destination, path, host } = await resolve(params);
-  const origin = 'https://' + host;
-  const url = origin + '/' + locale + path;
+  const languages = luxuryLanguageUrls(path);
+  const url = languages[locale];
   const title = (destination?.seoTitle[locale] ?? city?.name ?? selectedState?.name ?? localized(page.label, locale)) + ' | Luxury Travel Point';
   const guideDescription = city
     ? localized([`Explore ${city.place} in ${city.name} and request a tailored group proposal.`, `Descubre ${city.place} en ${city.name} y solicita una propuesta para tu grupo.`], locale)
     : selectedState && localized([`Explore cities and places to visit in ${selectedState.name}.`, `Explora ciudades y lugares para visitar en ${selectedState.name}.`], locale);
   const description = destination?.seoDescription[locale] ?? guideDescription ?? localized(page.description, locale);
-  const image = destination?.image ?? origin + (key === 'mice-events' ? miceHero : page.image);
-  const { icons } = buildLuxuryMetadata(await resolveStoreByHost(host), host);
+  const image = destination?.image ?? luxuryOrigin + (key === 'mice-events' ? miceHero : page.image);
+  const { icons } = buildLuxuryMetadata(await resolveStoreByHost(host));
   return {
     icons,
     title: { absolute: title },
     description,
     alternates: {
       canonical: url,
-      languages: { en: origin + '/en' + path, es: origin + '/es' + path, 'x-default': origin + '/en' + path },
+      languages,
     },
     openGraph: { title, description, url, images: [image], locale: locale === 'es' ? 'es_US' : 'en_US', type: 'website' },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
@@ -78,8 +79,20 @@ export default async function DmcPage({ params, searchParams }: Props) {
     [item.name, ...(item.content?.cities ?? []), ...(getStateGuide(item.slug)?.cities.map((city) => city.name) ?? [])].some((value) => value.toLowerCase().includes(query.toLowerCase())),
   );
 
+  const service = !selectedState && key !== 'destinations' ? {
+    '@context': 'https://schema.org',
+    '@type': 'Service',
+    name: localized(page.label, locale),
+    description: localized(page.description, locale),
+    url: luxuryLanguageUrls(path)[locale],
+    provider: { '@id': luxuryOrigin + '/#agency' },
+  } : null;
+
   return (
     <div className={s.root} lang={locale}>
+      {service && <script type="application/ld+json" dangerouslySetInnerHTML={{
+        __html: JSON.stringify(service).replace(/</g, '\\u003c'),
+      }} />}
       <header className={s.header}>
         <Link className={s.brand} href="/" aria-label="Luxury Travel Point">
           <Image src="/luxury/original-logo.webp" width={96} height={80} alt="Luxury Travel Point" />

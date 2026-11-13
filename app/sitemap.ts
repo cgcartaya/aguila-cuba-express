@@ -1,4 +1,6 @@
-import { isLuxuryHost } from '@/lib/luxury/hosts';
+import { luxuryLanguageUrls } from '@/lib/luxury/seo';
+import { getPublicTravelPackages } from '@/lib/services/travel-public';
+import { isLuxuryHost, luxuryOrigin } from '@/lib/luxury/hosts';
 import { sections } from '@/lib/luxury/dmc/content';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
@@ -82,17 +84,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     requestHeaders.get("x-forwarded-host") || requestHeaders.get("host")
   );
   if (isLuxuryHost(host)) {
-    const { stateGuides } = await import('@/lib/luxury/dmc/state-guides');
-    const origin = 'https://' + host;
+    const [{ stateGuides }, packages] = await Promise.all([
+      import('@/lib/luxury/dmc/state-guides'),
+      getPublicTravelPackages(),
+    ]);
     const paths = [...sections, ...Object.entries(stateGuides).flatMap(([slug, guide]) => {
       const path = 'destinations/' + slug;
       return [path, ...guide.cities.map((city) => path + '/' + city.slug)];
     })];
     return [
-      { url: origin },
+      { url: luxuryOrigin + '/' },
+      ...packages.map(({ id, updated_at }) => ({
+        url: luxuryOrigin + '/viajes/' + id,
+        lastModified: updated_at,
+      })),
       ...paths.flatMap((path) => {
-        const languages = { en: origin + '/en/' + path, es: origin + '/es/' + path };
-        return Object.values(languages).map((url) => ({ url, alternates: { languages } }));
+        const languages = luxuryLanguageUrls('/' + path);
+        return [languages.en, languages.es].map((url) => ({ url, alternates: { languages } }));
       }),
     ];
   }

@@ -1,8 +1,9 @@
+import { luxuryOrigin } from "@/lib/luxury/hosts";
 import type { Metadata } from "next";
 import type { StoreMetadataRow } from "@/lib/saas/store-metadata";
 
-export function buildLuxuryMetadata(store: StoreMetadataRow | null, host = "luxury-travel-point.perlamarketplace.com"): Metadata {
-  const origin = "https://" + host;
+export function buildLuxuryMetadata(store: StoreMetadataRow | null): Metadata {
+  const origin = luxuryOrigin;
   const title = store?.meta_title?.trim() || "Luxury Travel Point | Viajes, cruceros y experiencias a tu medida";
   const description = store?.meta_description?.trim() || "Descubre destinos, viajes en grupo y privados, cruceros y escapadas al Caribe. Asesoría personalizada desde Lehigh Acres. También envíos a Cuba y multiservicios.";
   // Landing SEO takes precedence over the separate storefront sharing image.
