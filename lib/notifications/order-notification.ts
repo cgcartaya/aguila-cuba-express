@@ -1,18 +1,8 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { sendNewOrderEmail } from "@/lib/notifications/order-email";
+import { sendNewOrderEmail, type NewOrderEmailParams } from "@/lib/notifications/order-email";
 
-type NewOrderNotificationParams = {
+type NewOrderNotificationParams = Omit<NewOrderEmailParams, "toEmails"> & {
   storeId: string;
-  storeName: string;
-  orderNumber: string;
-  customerName: string;
-  customerPhone: string;
-  subtotal: number;
-  deliveryFee: number;
-  total: number;
-  itemsCount: number;
-  isLocalDelivery: boolean;
-  municipality: string;
 };
 
 /**
@@ -26,14 +16,14 @@ type NewOrderNotificationParams = {
  * notificación nunca debe convertir una orden válida en un checkout fallido.
  */
 export async function sendNewOrderNotification(
-  params: NewOrderNotificationParams
+  { storeId, ...emailParams }: NewOrderNotificationParams
 ) {
   try {
     const { data: notificationSettings, error: settingsError } =
       await supabaseAdmin
         .from("store_settings")
         .select("order_notification_email")
-        .eq("store_id", params.storeId)
+        .eq("store_id", storeId)
         .maybeSingle();
 
     if (settingsError) {
@@ -61,19 +51,7 @@ export async function sendNewOrderNotification(
 
     if (recipients.length === 0) return;
 
-    await sendNewOrderEmail({
-      toEmails: recipients,
-      storeName: params.storeName,
-      orderNumber: params.orderNumber,
-      customerName: params.customerName,
-      customerPhone: params.customerPhone,
-      subtotal: params.subtotal,
-      deliveryFee: params.deliveryFee,
-      total: params.total,
-      itemsCount: params.itemsCount,
-      isLocalDelivery: params.isLocalDelivery,
-      municipality: params.municipality,
-    });
+    await sendNewOrderEmail({ ...emailParams, toEmails: recipients });
   } catch (notificationError) {
     console.error(
       "Error enviando notificación de nueva orden (no afecta la orden):",
