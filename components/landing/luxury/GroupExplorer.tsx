@@ -28,11 +28,11 @@ const benefits = [
 ];
 const faqs = [
   ['¿El boleto aéreo está incluido?', 'Sí, en estos grupos el programa contempla vuelo. El origen, las conexiones y las condiciones se confirman para cada salida.'],
-  ['¿Desde qué ciudad salen los vuelos?', 'Depende del circuito. Muchos parten de Miami; consulta el origen exacto con Luxury antes de reservar.'],
+  ['¿Desde qué ciudad salen los vuelos?', 'Depende del circuito. Muchos parten de Miami; consulta el origen exacto con nuestra agencia antes de reservar.'],
   ['¿Todos viajan en el mismo vuelo?', 'La operación busca coordinar al grupo. Las plazas disponibles o una incorporación por cuenta propia pueden requerir vuelos diferentes.'],
   ['¿Qué incluye el boleto aéreo?', 'Tarifa e impuestos según el programa. El equipaje, los asientos y las restricciones dependen de la aerolínea y de la tarifa confirmada.'],
   ['¿Se pueden cambiar los vuelos?', 'Cualquier cambio requiere disponibilidad y puede generar diferencias de tarifa o penalidades. Pide las condiciones antes de pagar.'],
-  ['¿Cuándo se confirma el itinerario aéreo?', 'Luxury te indicará los vuelos y los plazos de confirmación de tu grupo antes de formalizar la reserva.'],
+  ['¿Cuándo se confirma el itinerario aéreo?', 'Nuestra agencia te indicará los vuelos y los plazos de confirmación de tu grupo antes de formalizar la reserva.'],
   ['¿Puedo comprar solo los servicios terrestres?', 'Consulta si tu circuito permite incorporarte en destino, cómo se ajusta el importe y qué traslados están incluidos.'],
   ['¿Puedo salir desde otra ciudad?', 'Solicita una alternativa aérea. La agencia debe confirmar disponibilidad, suplemento y coordinación con el grupo.'],
   ['¿Cómo funciona el pago?', 'Solicita el depósito, las cuotas, la fecha de pago final y las condiciones de cancelación de tu salida. No todos los programas tienen los mismos plazos.'],

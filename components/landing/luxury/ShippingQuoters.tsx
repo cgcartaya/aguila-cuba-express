@@ -68,9 +68,9 @@ export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog
   const title = mode === 'offers' ? copy?.title : selected && `${selected.service} · ${selected.destination}`;
   const subject = title || tr('envíos a Cuba','shipping to Cuba','les envois vers Cuba');
   const message = validWeight && title ? tr(
-    `Hola, quisiera confirmar un envío con Luxury: ${title}. Peso por caja: ${weight} lb.${money ? ` Estimado: ${money}.` : ''}`,
-    `Hello, I’d like to confirm a shipment with Luxury: ${title}. Weight per box: ${weight} lb.${money ? ` Estimate: ${money}.` : ''}`,
-    `Bonjour, je souhaite confirmer un envoi avec Luxury : ${title}. Poids par boîte : ${weight} lb.${money ? ` Estimation : ${money}.` : ''}`,
+    `Hola, quisiera confirmar un envío con Luxury Travel Point: ${title}. Peso por caja: ${weight} lb.${money ? ` Estimado: ${money}.` : ''}`,
+    `Hello, I’d like to confirm a shipment with Luxury Travel Point: ${title}. Weight per box: ${weight} lb.${money ? ` Estimate: ${money}.` : ''}`,
+    `Bonjour, je souhaite confirmer un envoi avec Luxury Travel Point : ${title}. Poids par boîte : ${weight} lb.${money ? ` Estimation : ${money}.` : ''}`,
   ) : undefined;
 
   return <section className={s.quoter} id="cotizar">

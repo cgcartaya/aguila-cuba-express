@@ -104,3 +104,71 @@
 .quoteTotal { margin-top: 1rem; display: flex; align-items: center; gap: .75rem; }
 .quoteTotal strong { color: #753b27; font-size: 1.5rem; }
 @media (max-width: 600px) { .quoteFields { grid-template-columns: 1fr; } }
+
+.goldenPhoto .boxSeal {
+  position: absolute;
+  top: 59%;
+  left: 57%;
+  width: clamp(4rem, 16%, 7rem);
+  height: auto;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+  transform: translate(-50%, -50%) skewY(-6deg) scaleX(.92);
+}
+
+.serviceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.serviceCard {
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  border: 1px solid #e2cdae;
+  border-radius: 1.15rem;
+  background: linear-gradient(155deg, #fffaf4 45%, #f6e8d5);
+  color: #351621;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.serviceCard:is(:hover, :focus-within) {
+  border-color: #a98346;
+  box-shadow: 0 10px 24px #35162117;
+}
+
+.serviceIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-bottom: 1rem;
+  border-radius: .75rem;
+  background: #351621;
+  color: #f3d695;
+}
+
+.serviceCard h3 { margin: 0 0 .65rem; font-size: 1.25rem; }
+.serviceCard .commercialPrice { margin: .25rem 0 .6rem; line-height: 1.2; }
+.serviceDetails { margin-top: 1rem; border-top: 1px solid #e2cdae; }
+.serviceDetails summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding-block: .75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.serviceDetails summary::-webkit-details-marker { display: none; }
+.serviceDetails[open] summary svg { transform: rotate(180deg); }
+.serviceDetails p { margin-bottom: .75rem; font-size: .95rem; }
+.serviceActions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.serviceCard .serviceActions { margin-top: 1rem; }
+.serviceCard .textButton { padding: .65rem .85rem; background: #351621; color: #fff8ee; border: 0; border-radius: .55rem; }
+.serviceCard .textButton:hover { background: #5c2739; }
+.serviceCard :is(summary, a):focus-visible { outline: 2px solid #753b27; outline-offset: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .serviceCard { transition: none; }
+}
