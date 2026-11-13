@@ -6,6 +6,7 @@ export type CheckoutBlocks = {
   recipient: boolean;
   address: boolean;
   delivery: boolean;
+  product_shipping: boolean;
   coupon: boolean;
   notes: boolean;
   summary: boolean;
@@ -40,6 +41,7 @@ export const DEFAULT_CHECKOUT_BLOCKS: CheckoutBlocks = {
   recipient: true,
   address: true,
   delivery: true,
+  product_shipping: true,
   coupon: true,
   notes: true,
   summary: true,

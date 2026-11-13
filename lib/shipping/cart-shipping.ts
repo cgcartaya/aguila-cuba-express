@@ -9,6 +9,15 @@ export type ShippingCartItem = {
   combo_id?: string | null;
   quantity: number;
 };
+export async function isCartShippingEnabled(storeId: string): Promise<boolean> {
+  const { data, error } = await db
+    .from("checkout_settings")
+    .select("blocks")
+    .eq("store_id", storeId)
+    .maybeSingle();
+  return !error && data?.blocks?.product_shipping !== false;
+}
+
 export async function quoteCartShipping(
   storeId: string,
   items: ShippingCartItem[],
@@ -22,6 +31,9 @@ export async function quoteCartShipping(
     .maybeSingle();
   if (se || !store?.module_shipping_enabled)
     throw new Error("Esta tienda no tiene habilitado el módulo de envíos.");
+  if (!(await isCartShippingEnabled(storeId))) {
+    throw new Error("Esta tienda no tiene habilitado el envío de productos por peso en el checkout.");
+  }
   if (!items.length || items.length > 200) throw new Error("Carrito inválido.");
   const needs = new Map<string, number>();
   const comboIds: string[] = [];

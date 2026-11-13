@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
-import { quoteCartShipping } from "@/lib/shipping/cart-shipping";
+import { isCartShippingEnabled, quoteCartShipping } from "@/lib/shipping/cart-shipping";
 export async function GET(request: NextRequest) {
   const storeId = request.nextUrl.searchParams.get("storeId") || "";
   const { data: store } = await db
@@ -10,7 +10,9 @@ export async function GET(request: NextRequest) {
     .eq("is_active", true)
     .eq("module_shipping_enabled", true)
     .maybeSingle();
-  if (!store) return NextResponse.json({ options: [] });
+  if (!store || !(await isCartShippingEnabled(storeId))) {
+    return NextResponse.json({ options: [] }, { headers: { "Cache-Control": "no-store" } });
+  }
   const [r, s, c, p, m, l] = await Promise.all([
     db
       .from("shipping_rates")

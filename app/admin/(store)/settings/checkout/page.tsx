@@ -64,6 +64,7 @@ const blockOptions: Array<{
   { key: "recipient", label: "Datos del destinatario", icon: PackageCheck },
   { key: "address", label: "Dirección", icon: MapPin },
   { key: "delivery", label: "Delivery", icon: Truck },
+  { key: "product_shipping", label: "Envío de productos por peso", icon: Truck },
   { key: "coupon", label: "Cupón", icon: CircleDollarSign },
   { key: "notes", label: "Notas", icon: ClipboardList },
   { key: "summary", label: "Resumen", icon: ShoppingBag },
@@ -499,6 +500,7 @@ function CheckoutPreview({ settings }: { settings: CheckoutSettings }) {
           />
         )}
         {activeMethod.key === "pickup" && <PreviewBlock title="Recogida" fields={["Fecha", "Hora"]} />}
+        {settings.blocks.product_shipping && <PreviewBlock title="Envío de productos por peso" fields={["Estos productos son para enviar"]} />}
         {settings.blocks.notes && <PreviewBlock title="Notas" fields={["Escribe una nota opcional..."]} />}
         {settings.blocks.summary && (
           <div className="rounded-2xl border border-slate-200 p-4">
