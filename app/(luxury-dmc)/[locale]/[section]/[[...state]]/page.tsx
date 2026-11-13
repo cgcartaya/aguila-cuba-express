@@ -95,8 +95,7 @@ export default async function DmcPage({ params, searchParams }: Props) {
       }} />}
       <header className={s.header}>
         <Link className={s.brand} href="/" aria-label="Luxury Travel Point">
-          <Image src="/luxury/original-logo.webp" width={96} height={80} alt="Luxury Travel Point" />
-          <span>DMC</span>
+          <Image src="/luxury/dmc-brand.webp" width={480} height={387} alt="Luxury Travel Point" />
         </Link>
         <nav aria-label={t('Main navigation', 'Navegación principal')}>
           <Link href="/">{t('Home', 'Inicio')}</Link>

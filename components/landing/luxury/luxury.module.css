@@ -88,7 +88,6 @@
 .root .topbar { display: flex; justify-content: flex-end; }
 .root .brand { min-width: 0; gap: 12px; }
 .root .brand img, .root .footerBrand img { width: auto; height: 64px; object-fit: contain; border-radius: 4px; }
-.dmc { font-size: .86rem; letter-spacing: .12em; }
 @media (max-width: 600px) {
   .root .brand img { height: 52px; }
 }
@@ -172,3 +171,5 @@
 @media (prefers-reduced-motion: reduce) {
   .serviceCard { transition: none; }
 }
+
+.root .footerBrand img { height: 82px; padding: 5px; background: #fffefb; }
