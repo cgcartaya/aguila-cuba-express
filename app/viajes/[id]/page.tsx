@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { getPublicTravelPackages } from '@/lib/services/travel-public';
@@ -29,5 +30,5 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function TravelPackagePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ salida?: string }> }) {
   const { id } = await params;
   const [{ pkg }, query] = await Promise.all([getPackage(id), searchParams]);
-  return <LuxuryLanguageProvider><main className={s.root} style={{ minHeight: '100vh', background: '#f5f2eb', paddingBottom: 50 }}><div style={{ maxWidth: 1048, margin: 'auto' }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 24 }}><a className={s.packageBack} href="/#destinos">← Luxury Travel Point · Todos los viajes</a><LanguageSelector/></div><PackageDetail content={pkg.content} initialDepartureId={typeof query.salida === 'string' ? query.salida : ''}/></div></main></LuxuryLanguageProvider>;
+  return <LuxuryLanguageProvider><main className={s.root} style={{ minHeight: '100vh', background: '#f5f2eb', paddingBottom: 50 }}><div style={{ maxWidth: 1048, margin: 'auto' }}><div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 24 }}><Link className={s.packageBack} href="/#destinos">← Luxury Travel Point · Todos los viajes</Link><LanguageSelector/></div><PackageDetail content={pkg.content} initialDepartureId={typeof query.salida === 'string' ? query.salida : ''}/></div></main></LuxuryLanguageProvider>;
 }
