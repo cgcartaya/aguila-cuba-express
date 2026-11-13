@@ -19,6 +19,7 @@ const css=new Proxy({},{get:(_,key)=>String(key)});
 function localizedPage(language){
  const deps={'@/lib/travel/types':travelTypes,'./i18n':{...i18n,useLuxuryLanguage:()=>({language,setLanguage:()=>{}})},'./luxury.module.css':css,'./content':load('content.ts'),'./groups.json':JSON.parse(fs.readFileSync(base+'groups.json','utf8'))};
  deps['./dmc.module.css']=css;
+ deps['@/lib/luxury/hosts']=load('hosts.ts',{},'lib/luxury/');
  deps['@/lib/luxury/dmc/content']=load('content.ts',{},'lib/luxury/dmc/');
  deps['./LuxuryPickup']={default:()=>null,__esModule:true};
  deps['@/lib/luxury/shipping']=load('shipping.ts',{},'lib/luxury/');

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
 const module = { exports: {} };
-vm.runInNewContext(ts.transpileModule(fs.readFileSync('components/landing/luxury/metadata.ts','utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module,exports:module.exports,URL});
+vm.runInNewContext(ts.transpileModule(fs.readFileSync('components/landing/luxury/metadata.ts','utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module,exports:module.exports,URL,require:()=>({luxuryOrigin:'https://luxurytravelpoint.com'})});
 const build = module.exports.buildLuxuryMetadata;
 const settings = { og_image_url:'https://assets.example/seo/landing.png?v=42', store_og_image_url:'https://assets.example/seo/store.jpg', meta_title:'Viajes de Luxury', meta_description:'Viajes a tu medida', favicon_url:'https://assets.example/icon.png' };
 test('Luxury homepage reads saved admin settings and keeps the page URL separate from the image',async()=>{
@@ -25,11 +25,11 @@ test('Luxury homepage reads saved admin settings and keeps the page URL separate
  assert.equal(m.title.absolute,settings.meta_title);
  assert.equal(m.description,settings.meta_description);
  assert.equal(m.icons.icon[0].url,settings.favicon_url);
- assert.equal(m.openGraph.url,'https://luxury-travel-point.perlamarketplace.com');
+ assert.equal(m.openGraph.url,'https://luxurytravelpoint.com');
  assert.equal(m.alternates.canonical,m.openGraph.url);
 });
 test('Luxury accepts a storefront fallback but future landing uploads immediately take precedence',()=>{
  assert.equal(build({...settings,og_image_url:null}).openGraph.images[0].url,settings.store_og_image_url);
  assert.equal(build({...settings,og_image_url:'https://assets.example/new.png?v=99'}).openGraph.images[0].url,'https://assets.example/new.png?v=99');
- const m=build(null);assert.equal(m.openGraph.images[0].url,'https://luxury-travel-point.perlamarketplace.com/luxury/hero.webp');assert.equal(m.openGraph.images[0].height,2560);assert.match(m.title.absolute,/Luxury Travel Point/);
+ const m=build(null);assert.equal(m.openGraph.images[0].url,'https://luxurytravelpoint.com/luxury/hero.webp');assert.equal(m.openGraph.images[0].height,2560);assert.match(m.title.absolute,/Luxury Travel Point/);
 });

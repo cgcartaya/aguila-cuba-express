@@ -178,7 +178,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (resolveLanding(host) === "luxury") {
     const store = await resolveStoreByHost(host);
-    return buildLuxuryMetadata(store, host);
+    return buildLuxuryMetadata(store);
   }
 
   if (resolveLanding(host) === "wfcargo") {

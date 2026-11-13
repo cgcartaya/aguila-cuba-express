@@ -1,4 +1,4 @@
-import { isLuxuryHost } from '@/lib/luxury/hosts';
+import { isLuxuryHost, luxuryOrigin } from '@/lib/luxury/hosts';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
@@ -23,7 +23,7 @@ function normalizeHost(value: string | null) {
 }
 
 function resolveBaseUrl(host: string) {
-  if (isLuxuryHost(host)) return "https://" + host;
+  if (isLuxuryHost(host)) return luxuryOrigin;
   return DOMAIN_BASE_URLS[host] || DOMAIN_BASE_URLS["perlamarketplace.com"];
 }
 
@@ -45,6 +45,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
         "/login",
         "/checkout",
         "/tienda/checkout",
+        ...(isLuxuryHost(host) ? ["/design-preview/", "/pedido/", "/repartidores", "/gestores"] : []),
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
