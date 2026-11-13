@@ -187,7 +187,7 @@
 .root .brandSlogan {
   max-width: 13rem;
   color: #785c19;
-  font: italic .69rem/1.2 var(--luxury-heading-font);
+  font: italic 500 .69rem/1.2 var(--luxury-heading-font);
   text-align: center;
 }
 
