@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getPublicTravelPackages } from "@/lib/services/travel-public";
 import { getLuxuryShipping } from '@/lib/luxury/shipping-public';
+import { isLuxuryHost } from '@/lib/luxury/hosts';
 import LuxuryLanding from "@/components/landing/luxury/LuxuryLanding";
 import { buildLuxuryMetadata } from "@/components/landing/luxury/metadata";
 import { headers } from "next/headers";
@@ -62,7 +63,7 @@ function normalizeHost(value: string | null) {
 function resolveLanding(host: string): LandingType {
   const normalizedHost = normalizeHost(host);
 
-  if (normalizedHost === `luxury-travel-point.${PLATFORM_DOMAIN}`) return "luxury";
+  if (isLuxuryHost(normalizedHost)) return "luxury";
 
   if (normalizedHost === `wf-cargo.${PLATFORM_DOMAIN}`) return "wfcargo";
 
@@ -177,7 +178,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   if (resolveLanding(host) === "luxury") {
     const store = await resolveStoreByHost(host);
-    return buildLuxuryMetadata(store);
+    return buildLuxuryMetadata(store, host);
   }
 
   if (resolveLanding(host) === "wfcargo") {

@@ -1,4 +1,5 @@
-import { dmcHost, sections as dmcSections } from '@/lib/luxury/dmc/content';
+import { isLuxuryHost } from '@/lib/luxury/hosts';
+import { sections as dmcSections } from '@/lib/luxury/dmc/content';
 import { NextRequest, NextResponse } from "next/server";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
@@ -282,8 +283,8 @@ export async function middleware(request: NextRequest) {
    */
   const normalizedHost = normalizeHost(host);
 
-  if (normalizedHost === dmcHost &&
-      dmcSections.some((section) => pathname === '/' + section || pathname.startsWith('/destinations/'))) {
+  if (isLuxuryHost(host) &&
+      (dmcSections.some((section) => pathname === '/' + section) || pathname.startsWith('/destinations/'))) {
     const preferred = request.cookies.get('luxury_language')?.value;
     const browser = (request.headers.get('accept-language') ?? '').split(',')
       .map((entry) => {

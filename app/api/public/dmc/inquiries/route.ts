@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { dmcHost } from '@/lib/luxury/dmc/content';
+import { isLuxuryHost } from '@/lib/luxury/hosts';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { contact } from '@/components/landing/luxury/content';
 
@@ -21,8 +21,8 @@ const inquiry = z.object({
 });
 
 export async function POST(request: Request) {
-  if (request.headers.get('host') !== dmcHost ||
-    request.headers.get('origin') !== 'https://' + dmcHost) {
+  const host = request.headers.get('host');
+  if (!isLuxuryHost(host) || request.headers.get('origin') !== 'https://' + host) {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
 
