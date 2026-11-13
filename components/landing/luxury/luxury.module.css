@@ -172,4 +172,32 @@
   .serviceCard { transition: none; }
 }
 
-.root .footerBrand img { height: 82px; padding: 5px; background: #fffefb; }
+.root .brand,
+.root .footerBrand {
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.root .footerBrand img {
+  height: 82px;
+  filter: brightness(0) saturate(100%) invert(85%) sepia(48%) saturate(766%) hue-rotate(348deg) brightness(100%);
+}
+
+.root .brandSlogan {
+  max-width: 13rem;
+  color: #785c19;
+  font: italic .69rem/1.2 Georgia, serif;
+  text-align: center;
+}
+
+.root .footerBrand .brandSlogan {
+  max-width: none;
+  color: #e7c56b;
+  font-size: .9rem;
+}
+
+@media (max-width: 600px) {
+  .root .brandSlogan { max-width: 9rem; font-size: .62rem; }
+  .root .brand img { height: 44px; }
+}
