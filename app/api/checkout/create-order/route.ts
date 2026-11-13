@@ -1006,12 +1006,24 @@ export async function POST(request: Request) {
         orderNumber: publicOrderNumber,
         customerName,
         customerPhone,
-        subtotal,
-        deliveryFee,
-        total,
-        itemsCount: preparedItems.length,
-        isLocalDelivery,
-        municipality: city,
+        customerEmail: email || undefined,
+        subtotal: payload.subtotal,
+        deliveryFee: payload.delivery_fee,
+        discountAmount: payload.discount_amount,
+        total: payload.total,
+        items: preparedItems.map((item) => ({
+          product_name: item.product_name,
+          item_type: item.item_type,
+          quantity: item.quantity,
+          unit_price: item.price,
+          subtotal: item.subtotal,
+        })),
+        deliveryLabel: productShippingQuote
+          ? `Envío — ${productShippingQuote.service_name}`
+          : isLocalDelivery || isDistanceDelivery
+            ? "Entrega local"
+            : "Envío a Cuba",
+        destination: [...new Set([payload.municipality, payload.state, payload.country].filter(Boolean))].join(", "),
       });
 
       // Confirmación al comprador (solo si dejó email en el checkout).

@@ -420,8 +420,10 @@ function orderHarness({ shipping = true } = {}) {
       alvarezShippingPolicy: () => ({ minimumWeight: 5 }),
     },
   });
+  const deferred = [];
+  const notifications = [];
   const route = load("app/api/checkout/create-order/route.ts", {
-    "next/server": { after: () => {}, NextResponse: { json: Response.json } },
+    "next/server": { after: (callback) => deferred.push(callback), NextResponse: { json: Response.json } },
     crypto: { randomUUID: () => "device-id" },
     "@/lib/shareapp/server": { attributeOrder: async () => {} },
     "@/lib/supabase-admin": { supabaseAdmin: db },
@@ -433,7 +435,9 @@ function orderHarness({ shipping = true } = {}) {
     },
     "@/lib/shipping/cart-shipping": cartApi,
     "@/lib/storefront/product-quantity-pricing": pricing,
-    "@/lib/notifications/order-notification": {},
+    "@/lib/notifications/order-notification": {
+      sendNewOrderNotification: async (notification) => notifications.push(notification),
+    },
     "@/lib/notifications/customer-order-email": {},
     "@/lib/config/features": { getPlatformOrderFixedFee: () => 0.5 },
     "@/lib/checkout/distance-delivery": {},
@@ -459,6 +463,8 @@ function orderHarness({ shipping = true } = {}) {
   return {
     data,
     writes,
+    deferred,
+    notifications,
     post: () =>
       route.POST(
         new Request("https://store.test/api/checkout/create-order", {
@@ -486,6 +492,29 @@ test("actual checkout charges authoritative mixed prices plus weight shipping; i
   assert.equal(lines[0].platform_fee_amount, 0);
   assert.equal(lines[1].price, 10.25);
   assert.equal(lines[1].platform_fee_amount, 0.25);
+  assert.equal(h.notifications.length, 0);
+  assert.equal(h.deferred.length, 1);
+  const writesBeforeEmail = h.writes.length;
+  await h.deferred[0]();
+  assert.equal(h.writes.length, writesBeforeEmail);
+  assert.equal(h.notifications.length, 1);
+  const notification = h.notifications[0];
+  assert.equal(notification.storeId, order.store_id);
+  assert.equal(notification.subtotal, order.subtotal);
+  assert.equal(notification.deliveryFee, order.delivery_fee);
+  assert.equal(notification.discountAmount, order.discount_amount);
+  assert.equal(notification.total, order.total);
+  assert.match(notification.destination, /Cuba/);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(notification.items)),
+    JSON.parse(JSON.stringify(lines.map((line) => ({
+      product_name: line.product_name,
+      item_type: line.item_type,
+      quantity: line.quantity,
+      unit_price: line.price,
+      subtotal: line.subtotal,
+    })))),
+  );
 });
 test("ordinary checkout remains available and keeps its preexisting delivery-included rule", async () => {
   const h = orderHarness({ shipping: false });
