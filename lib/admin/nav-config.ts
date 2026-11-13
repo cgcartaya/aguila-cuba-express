@@ -57,6 +57,9 @@ export type AdminSection = {
 };
 
 export const adminNavSections: AdminSection[] = [
+  { title: "Casillero Virtual", links: [
+    { href: "/admin/casillero", label: "Recepción y despacho", icon: ClipboardCheck, storeSlugs: ["wf-cago"] },
+  ] },
   {
     title: "Trámites",
     links: [
