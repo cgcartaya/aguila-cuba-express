@@ -1,5 +1,6 @@
 "use client";
 
+import LockerRules from "@/components/landing/wfcargo/LockerRules";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -65,6 +66,24 @@ export default function LockerPortal() {
     });
     return () => { current = false; };
   }, [session, load]);
+
+  async function continueWithGoogle() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/casillero`,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
+    } catch {
+      setMessage("No se pudo conectar con Google. Intenta de nuevo.");
+      setBusy(false);
+    }
+  }
 
   async function access(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,6 +155,10 @@ export default function LockerPortal() {
             <button className={mode === "register" ? primary : secondary} aria-pressed={mode === "register"} onClick={() => { setMode("register"); setMessage(""); }}>Registrarme</button>
           </div>
           <h2 className="mb-4 text-2xl font-bold">{mode === "login" ? "Entra a tu casillero" : "Crea tu cuenta"}</h2>
+          <button type="button" className={`${secondary} w-full justify-center disabled:opacity-50`} disabled={busy} onClick={() => void continueWithGoogle()}>
+            Continuar con Google
+          </button>
+          <p className="mb-4 mt-2 text-sm text-slate-600">Si ya tienes un casillero, elige la cuenta de Google con el mismo correo que usaste para abrirlo.</p>
           <form key={mode} onSubmit={access} className="grid gap-4">
             <label>Correo electrónico<input name="email" className={field} type="email" autoComplete="email" required /></label>
             <label>Contraseña<input name="password" className={field} type="password" minLength={mode === "register" ? 8 : undefined} autoComplete={mode === "register" ? "new-password" : "current-password"} required /></label>
@@ -159,9 +182,8 @@ export default function LockerPortal() {
           <p className="text-sm text-slate-600">Comprobamos el formato del número. WF Cargo verifica el documento antes del despacho. Si tu formato no está disponible, <a className="underline" href={whatsapp("Hola, necesito ayuda para abrir mi casillero con mi tipo de documento.")} target="_blank" rel="noreferrer">contacta a WF Cargo</a>.</p>
           <details className="space-y-2 text-sm text-slate-700">
             <summary className="font-semibold">Reglas del casillero</summary>
-            <p>Fournier Investment Services LLC opera el servicio. El casillero es personal. WF Cargo verifica la identificación antes del despacho y retiene los paquetes cuyo nombre o código no coincide hasta que se acredite la compra.</p>
-            <p>Prealerta cada compra por WhatsApp con su factura. WF Cargo confirma la recepción al registrar el paquete y puede abrirlo para inspección. Tienes 30 días de almacenaje gratuito y luego se cobra $1 por paquete al día.</p>
-            <p>WF Cargo confirma el destino, los artículos admitidos, la tarifa, el seguro y los cargos antes del pago. Puedes solicitar consolidación. El despacho requiere el pago total.</p>
+            <LockerRules />
+            <Link className="underline" href="/condiciones">Ver condiciones del servicio</Link>
           </details>
           <label className="flex gap-2"><input type="checkbox" name="accepted" required /> Leí y acepto las reglas del casillero.</label>
           <button className={primary} disabled={busy}>Abrir mi casillero</button>

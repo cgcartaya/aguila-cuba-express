@@ -111,6 +111,8 @@ export default function WfCargoLanding() {
         <div>
           <a href="tel:+17722127150">{contact.phone}</a>
           <a href={`mailto:${contact.email}`}>{contact.email}</a>
+          <a href="/privacidad">Política de privacidad</a>
+          <a href="/condiciones">Condiciones del servicio</a>
           <a href="/login">Acceso de personal</a>
         </div>
         <small>
