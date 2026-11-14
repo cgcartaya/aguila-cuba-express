@@ -1,12 +1,13 @@
 "use client";
 
 import LockerRules from "@/components/landing/wfcargo/LockerRules";
+import LockerDialog from "@/components/lockers/LockerDialog";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { State } from "country-state-city";
-import { Barcode, PackageCheck, ShoppingCart } from "lucide-react";
+import { PackageCheck } from "lucide-react";
 import { lockerWarehouse, shipping, whatsapp } from "@/components/landing/wfcargo/content";
 
 const auth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
@@ -115,20 +116,22 @@ export default function LockerPortal() {
     } finally { setBusy(false); }
   }
 
+  const [prealertMessage, setPrealertMessage] = useState("");
+
   async function savePrealert(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) return;
     const form = event.currentTarget;
     const fields = Object.fromEntries(new FormData(form));
     setBusy(true);
-    setMessage("");
+    setPrealertMessage("");
     try {
       await api(session, "POST", { ...fields, action: "prealert", declared_value: Number(fields.declared_value) });
       form.reset();
       setAccount({ userId: session.user.id, result: await load(session) });
-      setMessage("Prealerta registrada.");
+      setPrealertMessage("Prealerta registrada.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "No se pudo guardar la prealerta.");
+      setPrealertMessage(error instanceof Error ? error.message : "No se pudo guardar la prealerta.");
     } finally {
       setBusy(false);
     }
@@ -136,11 +139,7 @@ export default function LockerPortal() {
 
   const locker = session && result?.locker;
   const address = locker ? [`${locker.customer_name} – ${locker.code}`, addressLines[0], locker.code, ...addressLines.slice(1)].join("\n") : "";
-  const guide = locker ? [
-    { title: "Compra en línea", Icon: ShoppingCart, image: `${locker.customer_name} · ${locker.code}`, text: "En Amazon, Walmart o eBay, escribe tu nombre completo junto al código WF en el campo de destinatario." },
-    { title: "Prealerta tu compra", Icon: Barcode, image: "Rastreo y factura", text: "Envía el rastreo, la tienda, el contenido, el valor pagado y la factura por WhatsApp." },
-    { title: "Consulta tus paquetes", Icon: PackageCheck, image: "Recepción en WF Cargo", text: "Cuando llegue un paquete, WF Cargo lo asigna con el nombre y el código de la etiqueta." },
-  ] : [];
+  const activity = result?.prealerts?.slice(0, 3) ?? [];
 
   return <div className="min-h-screen bg-slate-100 text-slate-900">
     <header className="border-b border-slate-200 bg-white">
@@ -200,23 +199,9 @@ export default function LockerPortal() {
         </form>
       </section>}
       {locker && <>
-        <div><h1 className="text-4xl font-bold tracking-tight">Mi casillero</h1><p className="mt-2 text-slate-600">Usa esta dirección y tu código al pagar en la tienda.</p></div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <section className={panel}><h2 className="text-xl font-bold">Tu código</h2><p className="my-3 break-all font-mono text-4xl font-bold text-blue-800">{locker.code}</p><p>{locker.verified_at ? "Titular verificado" : "Verificación de identidad pendiente"}</p></section>
-          <section className={panel}><h2 className="text-xl font-bold">Dirección de entrega</h2><p className="my-3 whitespace-pre-line">{address}</p><button className={secondary} onClick={async () => {
-            try { await navigator.clipboard.writeText(address); setMessage("Dirección copiada."); }
-            catch { setMessage("Selecciona la dirección para copiarla."); }
-          }}>Copiar dirección</button></section>
-        </div>
-        <section><h2 className="mb-3 text-2xl font-bold">Cómo funciona</h2><div className="grid gap-4 md:grid-cols-3">
-          {guide.map(({ title, Icon, image, text }) => <article className={panel} key={title}>
-            <div className="mb-4 grid min-h-28 place-items-center content-center gap-2 rounded-lg bg-blue-50 p-3 text-center text-sm font-semibold text-blue-900"><Icon size={34} aria-hidden="true" />{image}</div>
-            <h3 className="mb-2 text-lg font-bold">{title}</h3><p className="text-slate-600">{text}</p>
-            {title === "Prealerta tu compra" && <a className="mt-3 inline-block font-semibold text-blue-800 underline" href={whatsapp(`Hola, quiero prealertar una compra para ${locker.code}.\nRastreo: \nTienda: \nContenido: \nValor pagado: `)} target="_blank" rel="noreferrer">Prealertar por WhatsApp</a>}
-          </article>)}
-        </div></section>
-        <section className={panel}>
-          <h2 className="mb-3 text-xl font-bold">Prealertar una compra</h2>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div><h1 className="text-4xl font-bold tracking-tight">Mi casillero</h1><p className="mt-2 text-slate-600">Tu dirección de compras en Estados Unidos.</p></div>
+          <LockerDialog label="Prealertar compra" title="Prealertar una compra">
           <form onSubmit={savePrealert} className="grid gap-3 sm:grid-cols-2">
             <label>Tienda<input className={field} name="merchant" required maxLength={120} /></label>
             <label>Rastreo<input className={field} name="tracking" required maxLength={120} /></label>
@@ -224,13 +209,43 @@ export default function LockerPortal() {
             <label>Valor pagado (USD)<input className={field} name="declared_value" type="number" min="0" max="999999" step="0.01" required /></label>
             <button className={primary} disabled={busy}>Guardar prealerta</button>
           </form>
-          {result?.prealerts?.map(alert => <p className="mt-3 break-words" key={alert.tracking}>
-            {alert.tracking} · {alert.merchant} · {result.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Pendiente de recepción"}
-          </p>)}
-          <a className="mt-3 inline-block underline" href={whatsapp(`Hola, adjunto la factura de una prealerta de ${locker.code}. Rastreo: `)}>Enviar factura por WhatsApp</a>
-        </section>
+            <a className="mt-3 inline-block text-blue-800 underline" href={whatsapp(`Hola, adjunto la factura de una prealerta de ${locker.code}. Rastreo: `)} target="_blank" rel="noreferrer">Enviar factura por WhatsApp</a>
+            <p className="mt-2 text-sm" role="status">{prealertMessage}</p>
+          </LockerDialog>
+        </div>
+        <div className="grid gap-4 md:grid-cols-[1.15fr_1fr]">
+          <section className="rounded-2xl bg-[#102c55] p-5 text-white sm:p-7">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div><h2 className="text-sm text-blue-100">Tu código de casillero</h2><p className="font-mono text-3xl font-bold">{locker.code}</p></div>
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-950">{locker.verified_at ? "Titular verificado" : "Verificación pendiente"}</span>
+            </div>
+            <dl className="my-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 break-words text-sm">
+              <dt>Nombre</dt><dd>{locker.customer_name} {locker.code}</dd>
+              <dt>Dirección 1</dt><dd>{lockerWarehouse.street}</dd>
+              <dt>Dirección 2</dt><dd className="font-semibold">{locker.code}</dd>
+              <dt>Ciudad y ZIP</dt><dd>{lockerWarehouse.cityLine}</dd>
+              <dt>Teléfono</dt><dd>{lockerWarehouse.phone}</dd>
+            </dl>
+            <button className={`${secondary} bg-white text-blue-950`} onClick={async () => {
+              try { await navigator.clipboard.writeText(address); setMessage("Dirección copiada."); }
+              catch { setMessage("Selecciona la dirección para copiarla."); }
+            }}>Copiar dirección</button>
+          </section>
+          <section className={panel}>
+            <h2 className="text-xl font-bold">Actividad reciente</h2>
+            {!activity.length && !result?.packages.length && <p className="mt-3 text-slate-600">Todavía no tienes prealertas ni paquetes.</p>}
+            <ul className="mt-4 grid gap-2">
+              {activity.map(alert => <li key={alert.tracking} className="break-words rounded-lg bg-blue-50 p-3">
+                <strong>{alert.merchant}</strong><p>{alert.tracking} · {result?.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Prealertado"}</p>
+              </li>)}
+              {result?.packages.filter(pkg => !activity.some(alert => alert.tracking === pkg.tracking)).slice(0, 3).map(pkg => <li key={pkg.id} className="break-words rounded-lg bg-blue-50 p-3">
+                <strong>{pkg.tracking}</strong><p>Recibido · {pkg.weight_lb} lb</p>
+              </li>)}
+            </ul>
+          </section>
+        </div>
         <section className={panel}>
-          <h2 className="mb-3 text-xl font-bold">Paquetes recibidos</h2>
+          <h2 className="mb-3 text-xl font-bold">Mis paquetes</h2>
           {result?.packages.length ? <ul className="divide-y divide-slate-200">
             {result.packages.map(pkg => <li key={pkg.id} className="break-words py-3">
               <strong>{pkg.tracking}</strong> · {pkg.weight_lb} lb · {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}
@@ -241,6 +256,14 @@ export default function LockerPortal() {
           </ul> : <p>Aún no tienes paquetes registrados.</p>}
           <a className={`${primary} mt-4`} href={whatsapp(`Hola, quisiera ayuda con mi casillero ${locker.code}.`)} target="_blank" rel="noreferrer">Preguntar por WhatsApp</a>
         </section>
+        <details className={panel}>
+          <summary className="cursor-pointer font-semibold">Cómo usar tu casillero</summary>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-700">
+            <li>Pon el código WF junto a tu nombre y también en Dirección 2.</li>
+            <li>Cuando la tienda te dé el rastreo, guarda una prealerta y envía la factura a WF Cargo por WhatsApp.</li>
+            <li>Consulta el estado del paquete y el costo cuando WF Cargo lo vincule a una guía.</li>
+          </ol>
+        </details>
       </>}
       {message && <p role="status" className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-blue-950">{message}</p>}
     </main>
