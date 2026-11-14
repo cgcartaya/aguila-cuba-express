@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import LockerDialog from "@/components/lockers/LockerDialog";
-import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 type LockerResult = {
@@ -85,7 +84,7 @@ export default function LockerAdmin() {
     }
   }
 
-  const record = useRef<HTMLDivElement>(null);
+  const record = useRef<HTMLDialogElement>(null);
 
   async function run(value: string, body?: object) {
     setBusy(true);
@@ -94,7 +93,7 @@ export default function LockerAdmin() {
     try {
       if (body) await api(value, body);
       setResult(await api(value));
-      if (!body) requestAnimationFrame(() => record.current?.scrollIntoView({ block: "nearest" }));
+      if (!body) record.current?.showModal();
       if (body) { setMessage("Cambio guardado."); setRefresh(value => value + 1); }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo completar la operación.");
@@ -171,7 +170,14 @@ export default function LockerAdmin() {
       </div>}
     </section>
     <p role="status">{message}</p>
-    {result && <div ref={record} className="grid scroll-mt-4 gap-4">
+    <dialog ref={record} aria-labelledby="locker-record-title" onClose={() => { setResult(null); setMessage(""); }}
+      className="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-4xl overflow-y-auto rounded-2xl bg-white p-5 text-slate-900 shadow-xl backdrop:bg-slate-950/60">
+      <header className="mb-4 flex items-center justify-between gap-3">
+        <h2 id="locker-record-title" className="text-xl font-bold">Ficha del casillero</h2>
+        <button type="button" className={button} onClick={() => record.current?.close()}>Cerrar</button>
+      </header>
+      <p role="status">{message}</p>
+      {result && <div className="grid gap-4">
       <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-xl font-bold">{result.locker.code} · {result.locker.customer_name}</h2>
         <p>{result.locker.email} · {result.locker.phone}</p>
@@ -208,23 +214,14 @@ export default function LockerAdmin() {
         <h2 className="text-xl font-bold">Paquetes recibidos</h2>
         {!result.packages.length && <p>Todavía no hay paquetes registrados.</p>}
         {result.packages.map(pkg => <article key={pkg.id} className="grid gap-2 border-t pt-3">
-          <p>{pkg.tracking} · {pkg.weight_lb} lb · {pkg.dimensions} pulg</p>
+          <p>{pkg.tracking || "Paquete sin rastreo"} · {pkg.weight_lb} lb · {pkg.dimensions} pulg</p>
           <p>Recepción: {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}</p>
           {/^\+?1?\d{10}$/.test(result.locker.phone.replace(/[ ()-]/g, "")) && <a className="underline" target="_blank" rel="noreferrer"
-            href={`https://wa.me/${result.locker.phone.replace(/\D/g, "").padStart(11, "1")}?text=${encodeURIComponent(`Hola, WF Cargo recibió el paquete ${pkg.tracking} en tu casillero ${result.locker.code}.`)}`}>Avisar por WhatsApp</a>}
-          {pkg.shipment_reference ? <p>Despachado · {pkg.shipment_reference}</p> : result.locker.verified_at && <>
-            <Link className="underline" href="/admin/shipping/new">Crear guía en Envíos</Link>
-            <form className="flex flex-wrap items-end gap-2" onSubmit={event => {
-              event.preventDefault();
-              const fields = new FormData(event.currentTarget);
-              void run(result.locker.code, { action: "dispatch", package_id: pkg.id, shipment_reference: fields.get("reference") });
-            }}>
-              <label className="grid gap-1">Rastreo de la guía pagada <input className={field} name="reference" required /></label>
-              <button className={button} disabled={busy}>Registrar despacho</button>
-            </form>
-          </>}
+            href={`https://wa.me/${result.locker.phone.replace(/\D/g, "").padStart(11, "1")}?text=${encodeURIComponent(`Hola, WF Cargo recibió un paquete${pkg.tracking ? ` (${pkg.tracking})` : ""} en tu casillero ${result.locker.code}.`)}`}>Avisar por WhatsApp</a>}
+          <p>{pkg.shipment_reference ? `Despachado · ${pkg.shipment_reference}` : "Recibido en almacén"}</p>
         </article>)}
       </section>
-    </div>}
+      </div>}
+    </dialog>
   </main>;
 }

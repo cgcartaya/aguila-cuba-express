@@ -281,8 +281,8 @@ export default function LockerPortal() {
           <summary className="cursor-pointer font-semibold">Cómo usar tu casillero</summary>
           <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-700">
             <li>Pon el código WF junto a tu nombre y también en Dirección 2.</li>
-            <li>Cuando la tienda te dé el rastreo, guarda una prealerta y envía la factura a WF Cargo por WhatsApp.</li>
-            <li>Consulta el estado del paquete y el costo cuando WF Cargo lo vincule a una guía.</li>
+            <li>Guarda una prealerta después de comprar. Puedes hacerlo aunque todavía no tengas rastreo. Envía el comprobante de compra a WF Cargo por WhatsApp.</li>
+            <li>Consulta cuándo llega tu paquete al almacén. Para coordinar el envío final y pedir la factura, contacta a WF Cargo por WhatsApp.</li>
           </ol>
         </details>
       </>}

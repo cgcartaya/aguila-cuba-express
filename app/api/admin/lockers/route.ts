@@ -146,6 +146,14 @@ export async function POST(request: Request) {
     return updated.error ? response({ error: "No se pudo completar la compra." }, 503) : response({ ok: true });
   }
   if (action.action === "receive") {
+    if (action.tracking) {
+      const match = await db.from("virtual_locker_prealerts").select("id,completed_at")
+        .eq("store_id", user.store).eq("locker_id", locker.id).eq("tracking", action.tracking).maybeSingle();
+      if (match.error) return response({ error: "No se pudo comprobar el rastreo." }, 503);
+      if (match.data && match.data.id !== action.prealert_id) {
+        return response({ error: "Ese rastreo corresponde a otra prealerta de este casillero. Selecciona la compra correspondiente antes de registrar la recepción." }, 409);
+      }
+    }
     const result = await db.from("virtual_locker_packages").insert({
       store_id: user.store, locker_id: locker.id, tracking: action.tracking, prealert_id: action.prealert_id, branch: action.branch, weight_lb: action.weight_lb,
       dimensions: action.dimensions, received_by: user.id,
