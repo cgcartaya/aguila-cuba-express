@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { purchaseDate, purchaseStatus, type Purchase } from "@/lib/lockers/purchase";
 import LockerDialog from "@/components/lockers/LockerDialog";
 import { supabase } from "@/lib/supabase";
 
 type LockerResult = {
   locker: { code: string; customer_name: string; phone: string; email: string; destination: string; verified_at: string | null };
   packages: { id: string; prealert_id: string | null; tracking: string | null; weight_lb: number; dimensions: string; received_at: string; shipment_reference: string | null }[];
-  prealerts: { id: string; completed_at: string | null; tracking: string | null; merchant: string; contents: string; declared_value: number }[];
+  prealerts: Purchase[];
   identification?: string;
   identification_state?: string | null;
   identification_type?: "license" | "state_id" | null;
@@ -192,11 +193,46 @@ export default function LockerAdmin() {
       <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-xl font-bold">Prealertas</h2>
         {!result.prealerts.length && <p>Todavía no hay prealertas.</p>}
-        {result.prealerts.map(alert => <div key={alert.id}>
-          {alert.tracking} · {alert.merchant} · {alert.contents} · USD {alert.declared_value}
-          {" · "}{alert.completed_at ? "Recibida completa" : result.packages.some(pkg => pkg.prealert_id === alert.id) ? "Recibida parcialmente" : "Pendiente"}
-          {!alert.completed_at && result.packages.some(pkg => pkg.prealert_id === alert.id) && <button type="button" className="ml-2 underline" disabled={busy} onClick={() => void run(result.locker.code, { action: "complete", prealert_id: alert.id })}>Marcar compra completa</button>}
-        </div>)}
+        {result.prealerts.map(alert => {
+          const boxes = result.packages.filter(pkg => pkg.prealert_id === alert.id);
+          return <article key={alert.id} className="grid gap-3 rounded-xl border border-slate-200 p-4">
+            <div><h3 className="font-bold">{alert.merchant} · #{alert.id.slice(0, 8).toUpperCase()}</h3>
+              <p>{purchaseStatus(alert, boxes.length)} · {purchaseDate(alert.created_at)} · {boxes.length} caja(s)</p>
+              <p>{alert.contents} · USD {alert.declared_value}</p></div>
+            {boxes.map(pkg => <p key={pkg.id}>{pkg.tracking || "Sin rastreo"} · {pkg.weight_lb} lb · {purchaseDate(pkg.received_at)}</p>)}
+            {!alert.completed_at && boxes.length > 0 && <button type="button" className={button} disabled={busy} onClick={() => void run(result.locker.code, { action: "complete", prealert_id: alert.id })}>Marcar recepción completa</button>}
+            {alert.dispatched_at && !alert.delivered_at && <button type="button" className={button} disabled={busy} onClick={() => void run(result.locker.code, { action: "deliver_purchase", prealert_id: alert.id })}>Confirmar entrega</button>}
+            <LockerDialog label="Editar datos" title="Editar compra">
+              <form className="grid gap-3" onSubmit={event => {
+                event.preventDefault();
+                const fields = Object.fromEntries(new FormData(event.currentTarget));
+                void run(result.locker.code, { ...fields, declared_value: Number(fields.declared_value), action: "edit_purchase", prealert_id: alert.id });
+              }}>
+                <label>Tienda<input className={field} name="merchant" defaultValue={alert.merchant} required maxLength={120} /></label>
+                <label>Artículos<textarea className={field} name="contents" defaultValue={alert.contents} required maxLength={6500} /></label>
+                <label>Valor (USD)<input className={field} type="number" min="0" step=".01" name="declared_value" defaultValue={alert.declared_value} required /></label>
+                <label>Referencia externa<input className={field} name="external_tracking" defaultValue={alert.external_tracking ?? ""} /></label>
+                <label>Enlace de rastreo final<input className={field} type="url" name="external_url" defaultValue={alert.external_url ?? ""} /></label>
+                <label>Enlace de factura<input className={field} type="url" name="invoice_url" defaultValue={alert.invoice_url ?? ""} /></label>
+                <button className={button} disabled={busy}>Guardar cambios</button>
+                <p role="status">{message}</p>
+              </form>
+            </LockerDialog>
+            {alert.completed_at && !alert.dispatched_at && result.locker.verified_at && <LockerDialog label="Registrar despacho" title="Registrar despacho externo">
+              <form className="grid gap-3" onSubmit={event => {
+                event.preventDefault();
+                const fields = Object.fromEntries(new FormData(event.currentTarget));
+                void run(result.locker.code, { ...fields, action: "send_purchase", prealert_id: alert.id });
+              }}>
+                <label>Referencia externa<input className={field} name="external_tracking" defaultValue={alert.external_tracking ?? ""} /></label>
+                <label>Enlace de rastreo final<input className={field} type="url" name="external_url" defaultValue={alert.external_url ?? ""} /></label>
+                <label>Enlace de factura<input className={field} type="url" name="invoice_url" defaultValue={alert.invoice_url ?? ""} /></label>
+                <button className={button} disabled={busy}>Confirmar despacho</button>
+                <p role="status">{message}</p>
+              </form>
+            </LockerDialog>}
+          </article>;
+        })}
       </section>
       <LockerDialog key={result.locker.code} label="Registrar recepción" title="Registrar recepción">
       <form onSubmit={receive} className="grid gap-3 sm:grid-cols-2">

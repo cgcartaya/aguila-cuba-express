@@ -15,6 +15,12 @@ const listing = z.object({
 });
 const mutation = z.discriminatedUnion("action", [
   listing,
+  z.object({ action: z.enum(["send_purchase", "deliver_purchase", "edit_purchase"]), code,
+    prealert_id: z.uuid(), external_tracking: z.string().trim().max(120).optional(),
+    external_url: z.url({ protocol: /^https?$/ }).max(2048).or(z.literal("")).optional(),
+    invoice_url: z.url({ protocol: /^https?$/ }).max(2048).or(z.literal("")).optional(),
+    merchant: z.string().trim().min(2).max(120).optional(), contents: z.string().trim().min(1).max(6500).optional(),
+    declared_value: z.number().min(0).max(999999).optional() }),
   z.object({ action: z.literal("complete"), code, prealert_id: z.uuid() }),
   z.object({
     action: z.literal("create"),
@@ -53,7 +59,7 @@ export async function GET(request: Request) {
     .eq("store_id", user.store).eq("locker_id", locker.id).order("received_at", { ascending: false });
   if (packages.error) return response({ error: "No se pudieron consultar los paquetes." }, 503);
   const prealerts = await db.from("virtual_locker_prealerts")
-    .select("id,tracking,tracking_url,merchant,contents,items,declared_value,completed_at").eq("store_id", user.store)
+    .select("id,tracking,tracking_url,merchant,contents,items,declared_value,completed_at,created_at,dispatched_at,delivered_at,external_tracking,external_url,invoice_url,events").eq("store_id", user.store)
     .eq("locker_id", locker.id).order("created_at", { ascending: false });
   if (prealerts.error) return response({ error: "No se pudieron consultar las prealertas." }, 503);
   if (user.supervisor && !locker.verified_at) {
@@ -136,6 +142,33 @@ export async function POST(request: Request) {
       .eq("store_id", user.store).eq("id", locker.id).is("verified_at", null);
     return result.error ? response({ error: "No se pudo verificar el titular." }, 503) : response({ ok: true });
   }
+  if (action.action === "send_purchase" || action.action === "deliver_purchase" || action.action === "edit_purchase") {
+    const scope = () => db.from("virtual_locker_prealerts");
+    const current = await scope().select("completed_at,dispatched_at,delivered_at,events")
+      .eq("store_id", user.store).eq("locker_id", locker.id).eq("id", action.prealert_id).maybeSingle();
+    if (current.error) return response({ error: "No se pudo consultar la compra." }, 503);
+    const purchase = current.data;
+    if (!purchase) return response({ error: "Compra no encontrada." }, 404);
+    const now = new Date().toISOString();
+    const event = { at: now, actor: user.id, action: action.action };
+    const details = { external_tracking: action.external_tracking || null, external_url: action.external_url || null, invoice_url: action.invoice_url || null };
+    const edits = action.action === "edit_purchase";
+    const sending = action.action === "send_purchase";
+    if (sending && (!locker.verified_at || !purchase.completed_at || purchase.dispatched_at)) {
+      return response({ error: "El despacho requiere una compra recibida completa y un titular verificado." }, 409);
+    }
+    if (!edits && !sending && (!purchase.dispatched_at || purchase.delivered_at)) {
+      return response({ error: "Solo puedes confirmar la entrega de una compra en tránsito." }, 409);
+    }
+    const changes = edits ? { ...details, merchant: action.merchant, contents: action.contents,
+      declared_value: action.declared_value, ...(action.contents !== undefined && { items: null }) }
+      : sending ? { ...details, dispatched_at: now } : { delivered_at: now };
+    const saved = await scope().update({ ...changes, events: [...purchase.events, event] })
+      .eq("store_id", user.store).eq("locker_id", locker.id).eq("id", action.prealert_id)
+      .eq("events", JSON.stringify(purchase.events)).select("id").maybeSingle();
+    if (saved.error) return response({ error: "No se pudo actualizar la compra." }, 503);
+    return saved.data ? response({ ok: true }) : response({ error: "La compra cambió. Abre la ficha nuevamente." }, 409);
+  }
   if (action.action === "complete") {
     const packageResult = await db.from("virtual_locker_packages").select("id")
       .eq("store_id", user.store).eq("locker_id", locker.id).eq("prealert_id", action.prealert_id).limit(1);
@@ -161,6 +194,7 @@ export async function POST(request: Request) {
     if (result.error?.code === "23505") return response({ error: "Ese rastreo ya fue registrado." }, 409);
     return result.error ? response({ error: "No se pudo registrar el paquete." }, 503) : response({ ok: true }, 201);
   }
+  if (action.action !== "dispatch") return response({ error: "Acción inválida." }, 400);
   if (!locker.verified_at) return response({ error: "Verifica al titular antes de despachar." }, 409);
   const shipment = await db.from("shipments").select("tracking_code,payment_status")
     .eq("store_id", user.store).eq("tracking_code", action.shipment_reference)

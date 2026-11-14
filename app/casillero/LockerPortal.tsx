@@ -2,6 +2,7 @@
 
 import LockerRules from "@/components/landing/wfcargo/LockerRules";
 import LockerDialog from "@/components/lockers/LockerDialog";
+import { purchaseDate, purchaseStatus, type Purchase } from "@/lib/lockers/purchase";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
@@ -22,7 +23,7 @@ const states = State.getStatesOfCountry("US").filter(state => !["AS", "GU", "MP"
 type Result = {
   locker: { code: string; customer_name: string; verified_at: string | null } | null;
   packages: { id: string; tracking: string | null; prealert_id: string | null; branch: string | null; received_at: string; weight_lb: number; shipment_reference: string | null; guide: { status: string; service_price: number | null; public_tracking_enabled: boolean } | null }[];
-  prealerts?: { id: string; tracking: string | null; tracking_url: string | null; merchant: string; contents: string; completed_at: string | null }[];
+  prealerts?: Purchase[];
 };
 
 async function api(session: Session, method: string, body?: object) {
@@ -132,7 +133,7 @@ export default function LockerPortal() {
       form.reset();
       setItems([{ name: "", quantity: 1 }]);
       setAccount({ userId: session.user.id, result: await load(session) });
-      setPrealertMessage("Prealerta registrada.");
+      setPrealertMessage("Prealerta enviada a WF Cargo.");
     } catch (error) {
       setPrealertMessage(error instanceof Error ? error.message : "No se pudo guardar la prealerta.");
     } finally {
@@ -218,7 +219,7 @@ export default function LockerPortal() {
               <button type="button" className={secondary} disabled={items.length >= 50} onClick={() => setItems(rows => [...rows, { name: "", quantity: 1 }])}>+ Añadir artículo</button>
             </fieldset>
             <label>Valor pagado (USD)<input className={field} name="declared_value" type="number" min="0" max="999999" step="0.01" required /></label>
-            <button className={primary} disabled={busy}>Guardar prealerta</button>
+            <button className={primary} disabled={busy}>Enviar prealerta</button>
           </form>
             <a className="mt-3 inline-block text-blue-800 underline" href={whatsapp(`Hola, adjunto la factura de una prealerta de ${locker.code}. Rastreo: `)} target="_blank" rel="noreferrer">Enviar factura por WhatsApp</a>
             <p className="mt-2 text-sm" role="status">{prealertMessage}</p>
@@ -247,7 +248,7 @@ export default function LockerPortal() {
             {!activity.length && !result?.packages.length && <p className="mt-3 text-slate-600">Todavía no tienes prealertas ni paquetes.</p>}
             <ul className="mt-4 grid gap-2">
               {activity.map(alert => <li key={alert.id} className="break-words rounded-lg bg-blue-50 p-3">
-                <strong>{alert.merchant}</strong><p>{alert.tracking} · {result?.packages.some(pkg => pkg.prealert_id === alert.id) ? (alert.completed_at ? "Recibida" : "Recibida parcialmente") : "Prealertada"}</p>
+                <strong>{alert.merchant}</strong><p>{purchaseStatus(alert, result?.packages.filter(pkg => pkg.prealert_id === alert.id).length ?? 0)}</p>
               </li>)}
               {result?.packages.filter(pkg => !activity.some(alert => alert.tracking === pkg.tracking)).slice(0, 3).map(pkg => <li key={pkg.id} className="break-words rounded-lg bg-blue-50 p-3">
                 <strong>{pkg.tracking}</strong><p>Recibido · {pkg.weight_lb} lb</p>
@@ -256,17 +257,30 @@ export default function LockerPortal() {
           </section>
         </div>
         <section className={panel}>
-          <h2 className="mb-3 text-xl font-bold">Historial de compras</h2>
+          <h2 className="mb-3 text-xl font-bold">Mis compras</h2>
           {!result?.prealerts?.length && <p>Aún no tienes compras prealertadas.</p>}
-          {result?.prealerts?.map(alert => <article key={alert.id} className="border-b border-slate-200 py-3">
-            <strong>{alert.merchant}</strong><p>{alert.contents}</p>
-            <p>{alert.completed_at ? "Recibida completa" : result.packages.some(pkg => pkg.prealert_id === alert.id) ? "Recibida parcialmente" : "Pendiente de recepción"}</p>
-            {alert.tracking_url && <a className="underline" href={alert.tracking_url} target="_blank" rel="noreferrer">Rastrear compra hasta el almacén</a>}
-            {result.packages.filter(pkg => pkg.prealert_id === alert.id).map(pkg => <p key={pkg.id}>{pkg.tracking || "Paquete sin rastreo"} · {pkg.weight_lb} lb {pkg.branch && `· ${pkg.branch}`}</p>)}
-          </article>)}
-          <h2 className="mb-3 mt-5 text-xl font-bold">Mis paquetes</h2>
-          {result?.packages.length ? <ul className="divide-y divide-slate-200">
-            {result.packages.map(pkg => <li key={pkg.id} className="break-words py-3">
+          {result?.prealerts?.map(alert => {
+            const boxes = result.packages.filter(pkg => pkg.prealert_id === alert.id);
+            return <details key={alert.id} className="my-3 rounded-xl border border-slate-200 p-4">
+              <summary className="cursor-pointer font-semibold">{alert.merchant} · {purchaseStatus(alert, boxes.length)} · {purchaseDate(alert.created_at)}</summary>
+              <div className="mt-3 grid gap-2">
+                <p>{alert.contents}</p>
+                <p>Compra #{alert.id.slice(0, 8).toUpperCase()} · USD {alert.declared_value}</p>
+                {alert.tracking && <p>Rastreo de la tienda · {alert.tracking}</p>}
+                {alert.tracking_url && <a className="underline" href={alert.tracking_url} target="_blank" rel="noreferrer">Rastrear compra hasta el almacén</a>}
+                {boxes.map(pkg => <p key={pkg.id}>Recibido el {purchaseDate(pkg.received_at)} · {pkg.tracking || "Sin rastreo"} · {pkg.weight_lb} lb {pkg.branch && `· ${pkg.branch}`}</p>)}
+                {alert.completed_at && <p>Recepción completa · {purchaseDate(alert.completed_at)}</p>}
+                {alert.dispatched_at && <p>Despachada · {purchaseDate(alert.dispatched_at)}</p>}
+                {alert.delivered_at && <p>Entregada · {purchaseDate(alert.delivered_at)}</p>}
+                {alert.external_tracking && <p>Rastreo final · {alert.external_tracking}</p>}
+                {alert.external_url && <a className="underline" href={alert.external_url} target="_blank" rel="noreferrer">Rastrear envío final</a>}
+                {alert.invoice_url && <a className="underline" href={alert.invoice_url} target="_blank" rel="noreferrer">Ver factura de WF Cargo</a>}
+              </div>
+            </details>;
+          })}
+          <h2 className="mb-3 mt-5 text-xl font-bold">Paquetes sin compra asociada</h2>
+          {result?.packages.some(pkg => !pkg.prealert_id) ? <ul className="divide-y divide-slate-200">
+            {result.packages.filter(pkg => !pkg.prealert_id).map(pkg => <li key={pkg.id} className="break-words py-3">
               <strong>{pkg.tracking || "Paquete sin rastreo"}</strong> {pkg.branch && `· ${pkg.branch}`} · {pkg.weight_lb} lb · {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}
               <p>{pkg.guide?.status === "delivered" ? "Entregado" : ["in_transit", "out_for_delivery", "received_cuba"].includes(pkg.guide?.status ?? "") ? "En tránsito" : pkg.shipment_reference ? "Despachado" : "Recibido en almacén"}
               {pkg.shipment_reference && ` · Guía ${pkg.shipment_reference}`}</p>

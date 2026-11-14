@@ -49,7 +49,7 @@ export async function GET(request: Request) {
     .eq("store_id", auth.store).eq("locker_id", locker.id).order("received_at", { ascending: false });
   if (packages.error) return response({ error: "No se pudieron cargar tus paquetes." }, 503);
   const alerts = await db.from("virtual_locker_prealerts")
-    .select("id,tracking,tracking_url,merchant,contents,items,declared_value,completed_at")
+    .select("id,tracking,tracking_url,merchant,contents,items,declared_value,completed_at,created_at,dispatched_at,delivered_at,external_tracking,external_url,invoice_url,events")
     .eq("store_id", auth.store).eq("locker_id", locker.id).order("created_at", { ascending: false });
   if (alerts.error) return response({ error: "No se pudieron cargar tus prealertas." }, 503);
   const references = [...new Set(packages.data.flatMap(pkg => pkg.shipment_reference ? [pkg.shipment_reference] : []))];
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     packages: packages.data.map(pkg => ({
       ...pkg, guide: byReference.get(pkg.shipment_reference) ?? null,
     })),
-    prealerts: alerts.data,
+    prealerts: alerts.data.map(alert => ({ ...alert, events: alert.events.map(({ at, action }: { at: string; action: string }) => ({ at, action })) })),
   });
 }
 
