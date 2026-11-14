@@ -46,6 +46,7 @@ function getSubdomain(host: string) {
 function shouldIgnorePath(pathname: string) {
   return (
     pathname.startsWith("/api") ||
+    pathname === "/casillero" || pathname.startsWith("/casillero/") ||
     pathname === "/restaurante" || pathname.startsWith("/restaurante/") ||
     pathname.startsWith("/r/") ||
     pathname === "/repartidores" || pathname.startsWith("/repartidores/") ||

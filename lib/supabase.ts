@@ -5,10 +5,10 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    // Recovery tokens for ShareAPP are handled only by its independent client.
+    // ShareAPP and the WF locker portal handle their own auth callbacks.
     detectSessionInUrl:
       typeof window === "undefined" ||
-      (!/^\/gestores(?:\/|$)/.test(window.location.pathname) &&
+      (!/^\/(?:gestores|casillero)(?:\/|$)/.test(window.location.pathname) &&
         new URLSearchParams(window.location.hash.slice(1)).get("type") !==
           "recovery"),
   },
