@@ -72,7 +72,16 @@ test("migration preserves codes, packages, tenant isolation and normalized filte
       `, [store, legacy.code, "%Pérez%", identification]);
       assert.deepEqual(filtered.rows, [{ code: legacy.code, last4: "9012" }]);
     }
+    await migrate("20261114180000_wf_locker_prealerts.sql");
+    const prealert = tenant => db.query(`
+      insert into virtual_locker_prealerts(store_id,locker_id,tracking,merchant,contents,declared_value)
+      values ($1,$2,'NEW-TRACKING','Test Store','Books',10)
+    `, [tenant, legacy.id]);
+    await prealert(store);
+    await assert.rejects(prealert(store), /unique constraint/);
+    await assert.rejects(prealert(otherStore), /foreign key/);
     await db.exec("set role authenticated");
+    await assert.rejects(db.query("select * from virtual_locker_prealerts"), /permission denied/);
     await assert.rejects(db.query("select * from virtual_lockers"), /permission denied/);
     await assert.rejects(db.query("select * from virtual_locker_packages"), /permission denied/);
   } finally {

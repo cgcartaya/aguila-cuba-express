@@ -40,13 +40,17 @@ export async function GET(request: Request) {
     .select("id,tracking,weight_lb,dimensions,received_at,shipment_reference")
     .eq("store_id", user.store).eq("locker_id", locker.id).order("received_at", { ascending: false });
   if (packages.error) return response({ error: "No se pudieron consultar los paquetes." }, 503);
+  const prealerts = await db.from("virtual_locker_prealerts")
+    .select("tracking,merchant,contents,declared_value").eq("store_id", user.store)
+    .eq("locker_id", locker.id).order("created_at", { ascending: false });
+  if (prealerts.error) return response({ error: "No se pudieron consultar las prealertas." }, 503);
   if (user.supervisor && !locker.verified_at) {
     const identity = await db.from("virtual_lockers").select("identification,identification_state,identification_type")
       .eq("store_id", user.store).eq("id", locker.id).single();
     if (identity.error) return response({ error: "No se pudo consultar la identificación." }, 503);
-    return response({ locker, packages: packages.data, ...identity.data });
+    return response({ locker, packages: packages.data, prealerts: prealerts.data, ...identity.data });
   }
-  return response({ locker, packages: packages.data });
+  return response({ locker, packages: packages.data, prealerts: prealerts.data });
 }
 
 export async function POST(request: Request) {

@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { State } from "country-state-city";
 import { Barcode, PackageCheck, ShoppingCart } from "lucide-react";
-import { lockerWarehouse, whatsapp } from "@/components/landing/wfcargo/content";
+import { lockerWarehouse, shipping, whatsapp } from "@/components/landing/wfcargo/content";
 
 const auth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
   auth: { storageKey: "perla-wfcargo-locker", detectSessionInUrl: true },
@@ -20,7 +20,8 @@ const addressLines = [lockerWarehouse.street, lockerWarehouse.cityLine, `Tel. ${
 const states = State.getStatesOfCountry("US").filter(state => !["AS", "GU", "MP", "PR", "UM", "VI"].includes(state.isoCode));
 type Result = {
   locker: { code: string; customer_name: string; verified_at: string | null } | null;
-  packages: { id: string; tracking: string; received_at: string; weight_lb: number; shipment_reference: string | null }[];
+  packages: { id: string; tracking: string; received_at: string; weight_lb: number; shipment_reference: string | null; guide: { status: string; service_price: number | null } | null }[];
+  prealerts?: { tracking: string; merchant: string }[];
 };
 
 async function api(session: Session, method: string, body?: object) {
@@ -37,7 +38,7 @@ export default function LockerPortal() {
   const [session, setSession] = useState<Session | null | undefined>();
   const [account, setAccount] = useState<{ userId: string; result: Result }>();
   const result = account?.userId === session?.user.id ? account?.result : undefined;
-  const [mode, setMode] = useState<"login" | "register">("login");
+
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -92,16 +93,8 @@ export default function LockerPortal() {
     setBusy(true);
     setMessage("");
     try {
-      if (mode === "register") {
-        const { data, error } = await auth.signUp({
-          ...credentials, options: { emailRedirectTo: `${window.location.origin}/casillero` },
-        });
-        if (error) throw new Error("No se pudo crear la cuenta. Revisa tus datos o intenta iniciar sesión.");
-        if (!data.session) setMessage("Revisa tu correo para confirmar la cuenta. Luego vuelve al casillero para completar tus datos.");
-      } else {
-        const { error } = await auth.signInWithPassword(credentials);
-        if (error) throw new Error("Revisa el correo y la contraseña. Si acabas de registrarte, confirma primero tu correo.");
-      }
+      const { error } = await auth.signInWithPassword(credentials);
+      if (error) throw new Error("Revisa tu correo y contraseña.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo acceder.");
     } finally { setBusy(false); }
@@ -122,8 +115,27 @@ export default function LockerPortal() {
     } finally { setBusy(false); }
   }
 
+  async function savePrealert(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) return;
+    const form = event.currentTarget;
+    const fields = Object.fromEntries(new FormData(form));
+    setBusy(true);
+    setMessage("");
+    try {
+      await api(session, "POST", { ...fields, action: "prealert", declared_value: Number(fields.declared_value) });
+      form.reset();
+      setAccount({ userId: session.user.id, result: await load(session) });
+      setMessage("Prealerta registrada.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo guardar la prealerta.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const locker = session && result?.locker;
-  const address = locker ? [`${locker.customer_name} – ${locker.code}`, ...addressLines].join("\n") : "";
+  const address = locker ? [`${locker.customer_name} – ${locker.code}`, addressLines[0], locker.code, ...addressLines.slice(1)].join("\n") : "";
   const guide = locker ? [
     { title: "Compra en línea", Icon: ShoppingCart, image: `${locker.customer_name} · ${locker.code}`, text: "En Amazon, Walmart o eBay, escribe tu nombre completo junto al código WF en el campo de destinatario." },
     { title: "Prealerta tu compra", Icon: Barcode, image: "Rastreo y factura", text: "Envía el rastreo, la tienda, el contenido, el valor pagado y la factura por WhatsApp." },
@@ -147,29 +159,27 @@ export default function LockerPortal() {
         <section className="grid min-h-64 content-center rounded-2xl bg-gradient-to-br from-slate-950 to-blue-800 p-7 text-white sm:p-10">
           <PackageCheck size={42} aria-hidden="true" />
           <h1 className="my-4 text-4xl font-bold tracking-tight">Tus compras tienen una dirección en EE. UU.</h1>
-          <p>Usa tu código de WF Cargo para recibir tus pedidos de Amazon, Walmart, eBay y otras tiendas.</p>
+          <p>Compra en Amazon, Walmart, Shein y otras tiendas con tu dirección en Port St. Lucie. Prealerta tu rastreo y consulta la recepción y la entrega desde tu cuenta.</p>
+          <p className="mt-3">Marítimo a Cuba · desde USD {shipping.perPound.toFixed(2)}/lb. Confirma las condiciones y los cargos para tu destino.</p>
+          <a className="mt-4 underline" href={whatsapp("Hola, quisiera consultar la tarifa por libra para mi destino desde el casillero.")}>Consultar tarifas por destino</a>
         </section>
         <section className={panel}>
-          <div className="mb-5 flex flex-wrap gap-2">
-            <button className={mode === "login" ? primary : secondary} aria-pressed={mode === "login"} onClick={() => { setMode("login"); setMessage(""); }}>Iniciar sesión</button>
-            <button className={mode === "register" ? primary : secondary} aria-pressed={mode === "register"} onClick={() => { setMode("register"); setMessage(""); }}>Registrarme</button>
-          </div>
-          <h2 className="mb-4 text-2xl font-bold">{mode === "login" ? "Entra a tu casillero" : "Crea tu cuenta"}</h2>
-          <button type="button" className={`${secondary} w-full justify-center disabled:opacity-50`} disabled={busy} onClick={() => void continueWithGoogle()}>
+          <h2 className="mb-4 text-2xl font-bold">Abre o consulta tu casillero</h2>
+          <button type="button" className={`${primary} w-full justify-center disabled:opacity-50`} disabled={busy} onClick={() => void continueWithGoogle()}>
             Continuar con Google
           </button>
           <p className="mb-4 mt-2 text-sm text-slate-600">Si ya tienes un casillero, elige la cuenta de Google con el mismo correo que usaste para abrirlo.</p>
-          <form key={mode} onSubmit={access} className="grid gap-4">
+          <details><summary>Entrar con una cuenta de correo existente</summary><form onSubmit={access} className="mt-3 grid gap-4">
             <label>Correo electrónico<input name="email" className={field} type="email" autoComplete="email" required /></label>
-            <label>Contraseña<input name="password" className={field} type="password" minLength={mode === "register" ? 8 : undefined} autoComplete={mode === "register" ? "new-password" : "current-password"} required /></label>
-            {mode === "register" && <p className="text-sm text-slate-600">Confirma tu correo primero. Si ya tenías un código WF, usa el correo que registraste para recuperarlo.</p>}
-            <button className={primary} disabled={busy}>{mode === "login" ? "Entrar" : "Crear cuenta"}</button>
-          </form>
+            <label>Contraseña<input name="password" className={field} type="password" autoComplete="current-password" required /></label>
+            <button className={secondary} disabled={busy}>Entrar</button>
+          </form></details>
         </section>
       </div>}
       {session && result && !locker && <section className={`${panel} mx-auto w-full max-w-2xl`}>
         <h1 className="mb-2 text-3xl font-bold">Abre tu casillero</h1>
         <p className="mb-5 text-slate-600">Completa tus datos para recibir tu código WF.</p>
+        <p className="mb-4 break-all">Correo de la cuenta · {session.user.email}</p>
         <form onSubmit={register} className="grid gap-4">
           <label>Nombre completo<input name="customer_name" className={field} autoComplete="name" required maxLength={120} /></label>
           <label>Teléfono<input name="phone" className={field} type="tel" autoComplete="tel" required maxLength={24} /></label>
@@ -206,11 +216,27 @@ export default function LockerPortal() {
           </article>)}
         </div></section>
         <section className={panel}>
+          <h2 className="mb-3 text-xl font-bold">Prealertar una compra</h2>
+          <form onSubmit={savePrealert} className="grid gap-3 sm:grid-cols-2">
+            <label>Tienda<input className={field} name="merchant" required maxLength={120} /></label>
+            <label>Rastreo<input className={field} name="tracking" required maxLength={120} /></label>
+            <label>Contenido<input className={field} name="contents" required maxLength={500} /></label>
+            <label>Valor pagado (USD)<input className={field} name="declared_value" type="number" min="0" max="999999" step="0.01" required /></label>
+            <button className={primary} disabled={busy}>Guardar prealerta</button>
+          </form>
+          {result?.prealerts?.map(alert => <p className="mt-3 break-words" key={alert.tracking}>
+            {alert.tracking} · {alert.merchant} · {result.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Pendiente de recepción"}
+          </p>)}
+          <a className="mt-3 inline-block underline" href={whatsapp(`Hola, adjunto la factura de una prealerta de ${locker.code}. Rastreo: `)}>Enviar factura por WhatsApp</a>
+        </section>
+        <section className={panel}>
           <h2 className="mb-3 text-xl font-bold">Paquetes recibidos</h2>
           {result?.packages.length ? <ul className="divide-y divide-slate-200">
             {result.packages.map(pkg => <li key={pkg.id} className="break-words py-3">
               <strong>{pkg.tracking}</strong> · {pkg.weight_lb} lb · {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}
-              <p>{pkg.shipment_reference ? `Despachado · ${pkg.shipment_reference}` : "Recibido en almacén"}</p>
+              <p>{pkg.guide?.status === "delivered" ? "Entregado" : ["in_transit", "out_for_delivery", "received_cuba"].includes(pkg.guide?.status ?? "") ? "En tránsito" : pkg.shipment_reference ? "Despachado" : "Recibido en almacén"}
+              {pkg.shipment_reference && ` · Guía ${pkg.shipment_reference}`}</p>
+              {pkg.guide?.service_price != null && <p>Costo de la guía · {new Intl.NumberFormat("es-US", { style: "currency", currency: "USD" }).format(pkg.guide.service_price)}</p>}
             </li>)}
           </ul> : <p>Aún no tienes paquetes registrados.</p>}
           <a className={`${primary} mt-4`} href={whatsapp(`Hola, quisiera ayuda con mi casillero ${locker.code}.`)} target="_blank" rel="noreferrer">Preguntar por WhatsApp</a>

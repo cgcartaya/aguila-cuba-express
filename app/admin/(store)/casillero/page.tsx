@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 type LockerResult = {
   locker: { code: string; customer_name: string; phone: string; email: string; destination: string; verified_at: string | null };
   packages: { id: string; tracking: string; weight_lb: number; dimensions: string; received_at: string; shipment_reference: string | null }[];
+  prealerts: { tracking: string; merchant: string; contents: string; declared_value: number }[];
   identification?: string;
   identification_state?: string | null;
   identification_type?: "license" | "state_id" | null;
@@ -125,6 +126,14 @@ export default function LockerAdmin() {
             onClick={() => void run(result.locker.code, { action: "verify" })}>Confirmar identificación verificada</button>
         </div>}
       </section>
+      <section className="grid gap-2 rounded border p-4">
+        <h2 className="text-xl font-bold">Prealertas</h2>
+        {!result.prealerts.length && <p>Todavía no hay prealertas.</p>}
+        {result.prealerts.map(alert => <p key={alert.tracking}>
+          {alert.tracking} · {alert.merchant} · {alert.contents} · USD {alert.declared_value}
+          {" · "}{result.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Pendiente"}
+        </p>)}
+      </section>
       <form key={result.locker.code} onSubmit={receive} className="grid gap-3 rounded border p-4">
         <h2 className="text-xl font-bold">Registrar recepción</h2>
         <label>Nombre en la etiqueta <input name="label_name" className={field} required /></label>
@@ -139,6 +148,8 @@ export default function LockerAdmin() {
         {result.packages.map(pkg => <article key={pkg.id} className="grid gap-2 border-t pt-3">
           <p>{pkg.tracking} · {pkg.weight_lb} lb · {pkg.dimensions} pulg</p>
           <p>Recepción: {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}</p>
+          {/^\+?1?\d{10}$/.test(result.locker.phone.replace(/[ ()-]/g, "")) && <a className="underline" target="_blank" rel="noreferrer"
+            href={`https://wa.me/${result.locker.phone.replace(/\D/g, "").padStart(11, "1")}?text=${encodeURIComponent(`Hola, WF Cargo recibió el paquete ${pkg.tracking} en tu casillero ${result.locker.code}.`)}`}>Avisar por WhatsApp</a>}
           {pkg.shipment_reference ? <p>Despachado · {pkg.shipment_reference}</p> : result.locker.verified_at && <>
             <Link className="underline" href="/admin/shipping/new">Crear guía en Envíos</Link>
             <form className="flex flex-wrap items-end gap-2" onSubmit={event => {
