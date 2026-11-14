@@ -5,9 +5,10 @@ import { identificationPattern, normalizeIdentification, validIdentification } f
 
 const prealert = z.object({
   action: z.literal("prealert"),
-  tracking: z.string().trim().toUpperCase().regex(/^[A-Z0-9][A-Z0-9 -]{2,119}$/),
+  tracking: z.string().trim().toUpperCase().regex(/^[A-Z0-9][A-Z0-9 -]{2,119}$/).nullish(),
   merchant: z.string().trim().min(2).max(120),
-  contents: z.string().trim().min(2).max(500),
+  tracking_url: z.url({ protocol: /^https?$/ }).max(2048).nullish(),
+  items: z.array(z.object({ name: z.string().trim().min(1).max(120), quantity: z.number().int().min(1).max(9999) })).min(1).max(50),
   declared_value: z.number().min(0).max(999999),
 });
 
@@ -44,16 +45,16 @@ export async function GET(request: Request) {
   if (error) return response({ error: "No se pudo cargar tu casillero." }, 503);
   if (!locker) return response({ locker: null, packages: [] });
   const packages = await db.from("virtual_locker_packages")
-    .select("id,tracking,weight_lb,dimensions,received_at,shipment_reference")
+    .select("id,prealert_id,branch,tracking,weight_lb,dimensions,received_at,shipment_reference")
     .eq("store_id", auth.store).eq("locker_id", locker.id).order("received_at", { ascending: false });
   if (packages.error) return response({ error: "No se pudieron cargar tus paquetes." }, 503);
   const alerts = await db.from("virtual_locker_prealerts")
-    .select("tracking,merchant,contents,declared_value")
+    .select("id,tracking,tracking_url,merchant,contents,items,declared_value,completed_at")
     .eq("store_id", auth.store).eq("locker_id", locker.id).order("created_at", { ascending: false });
   if (alerts.error) return response({ error: "No se pudieron cargar tus prealertas." }, 503);
   const references = [...new Set(packages.data.flatMap(pkg => pkg.shipment_reference ? [pkg.shipment_reference] : []))];
   const guides = references.length ? await db.from("shipments")
-    .select("tracking_code,status,service_price").eq("store_id", auth.store)
+    .select("tracking_code,status,service_price,public_tracking_enabled").eq("store_id", auth.store)
     .is("deleted_at", null).in("tracking_code", references) : { data: [], error: null };
   if (guides.error) return response({ error: "No se pudieron cargar las guías." }, 503);
   const byReference = new Map(guides.data.map(guide => [guide.tracking_code, guide]));
@@ -87,9 +88,9 @@ export async function POST(request: Request) {
       .eq("store_id", auth.store).eq("customer_user_id", auth.user).maybeSingle();
     if (lookupError) return response({ error: "No se pudo consultar el casillero." }, 503);
     if (!locker) return response({ error: "Abre tu casillero para prealertar una compra." }, 403);
-    const { tracking, merchant, contents, declared_value } = input.data;
+    const { tracking, tracking_url, merchant, items, declared_value } = input.data;
     const { error } = await db.from("virtual_locker_prealerts").insert({
-      tracking, merchant, contents, declared_value, store_id: auth.store, locker_id: locker.id,
+      tracking, tracking_url, merchant, items, contents: items.map(item => `${item.quantity} × ${item.name}`).join(", "), declared_value, store_id: auth.store, locker_id: locker.id,
     });
     if (error?.code === "23505") return response({ error: "Ese rastreo ya tiene una prealerta." }, 409);
     return error ? response({ error: "No se pudo guardar la prealerta." }, 503) : response({ ok: true }, 201);

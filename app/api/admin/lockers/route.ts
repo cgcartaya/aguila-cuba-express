@@ -10,10 +10,12 @@ const listing = z.object({
   code: z.string().trim().max(30),
   name: z.string().trim().max(120),
   identification: z.string().trim().max(60).transform(normalizeIdentification),
+  pending: z.boolean().default(false),
   page: z.number().int().min(0).max(100000),
 });
 const mutation = z.discriminatedUnion("action", [
   listing,
+  z.object({ action: z.literal("complete"), code, prealert_id: z.uuid() }),
   z.object({
     action: z.literal("create"),
     customer_name: z.string().trim().min(3).max(120),
@@ -25,13 +27,12 @@ const mutation = z.discriminatedUnion("action", [
     email_checked: z.literal(true),
   }),
   z.object({ action: z.literal("verify"), code }),
-  z.object({ action: z.literal("receive"), code, label_name: z.string().trim().min(3).max(120),
-    tracking: z.string().trim().toUpperCase().min(3).max(120), weight_lb: z.number().positive().max(10000),
+  z.object({ action: z.literal("receive"), code, label_checked: z.literal(true), prealert_id: z.uuid().nullish(), branch: z.enum(["US 1", "Bayshore"]),
+    tracking: z.string().trim().toUpperCase().min(3).max(120).nullish(), weight_lb: z.number().positive().max(10000),
     dimensions: z.string().trim().regex(/^\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?$/i).max(60) }),
   z.object({ action: z.literal("dispatch"), code, package_id: z.uuid(),
     shipment_reference: z.string().trim().min(3).max(120) }),
 ]);
-const normalizeName = (name: string) => name.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
 
 async function findLocker(store: string, value: string) {
   return db.from("virtual_lockers")
@@ -48,11 +49,11 @@ export async function GET(request: Request) {
   if (error) return response({ error: "No se pudo consultar el casillero." }, 503);
   if (!locker) return response({ error: "Casillero no encontrado." }, 404);
   const packages = await db.from("virtual_locker_packages")
-    .select("id,tracking,weight_lb,dimensions,received_at,shipment_reference")
+    .select("id,prealert_id,branch,tracking,weight_lb,dimensions,received_at,shipment_reference")
     .eq("store_id", user.store).eq("locker_id", locker.id).order("received_at", { ascending: false });
   if (packages.error) return response({ error: "No se pudieron consultar los paquetes." }, 503);
   const prealerts = await db.from("virtual_locker_prealerts")
-    .select("tracking,merchant,contents,declared_value").eq("store_id", user.store)
+    .select("id,tracking,tracking_url,merchant,contents,items,declared_value,completed_at").eq("store_id", user.store)
     .eq("locker_id", locker.id).order("created_at", { ascending: false });
   if (prealerts.error) return response({ error: "No se pudieron consultar las prealertas." }, 503);
   if (user.supervisor && !locker.verified_at) {
@@ -101,10 +102,11 @@ export async function POST(request: Request) {
     }
     const escape = (value: string) => value.replace(/[\\%_*]/g, match => `\\${match}`);
     const limit = 25;
-    let query = db.from("virtual_lockers")
-      .select("code,customer_name,verified_at,identification_normalized", { count: "exact" })
+    let query = db.from("virtual_locker_directory")
+      .select("code,customer_name,verified_at,identification_normalized,pending_prealerts", { count: "exact" })
       .eq("store_id", user.store).order("number", { ascending: false })
       .range(action.page * limit, (action.page + 1) * limit - 1);
+    if (action.pending) query = query.gt("pending_prealerts", 0);
     if (action.code) {
       if (!/^[A-Z0-9-]+$/i.test(action.code)) return response({ error: "Revisa el código de casillero." }, 400);
       query = query.ilike("code", `%${action.code}%`);
@@ -134,12 +136,18 @@ export async function POST(request: Request) {
       .eq("store_id", user.store).eq("id", locker.id).is("verified_at", null);
     return result.error ? response({ error: "No se pudo verificar el titular." }, 503) : response({ ok: true });
   }
+  if (action.action === "complete") {
+    const packageResult = await db.from("virtual_locker_packages").select("id")
+      .eq("store_id", user.store).eq("locker_id", locker.id).eq("prealert_id", action.prealert_id).limit(1);
+    if (packageResult.error) return response({ error: "No se pudo comprobar la recepción." }, 503);
+    if (!packageResult.data.length) return response({ error: "Registra una recepción primero." }, 409);
+    const updated = await db.from("virtual_locker_prealerts").update({ completed_at: new Date().toISOString() })
+      .eq("store_id", user.store).eq("locker_id", locker.id).eq("id", action.prealert_id).is("completed_at", null);
+    return updated.error ? response({ error: "No se pudo completar la compra." }, 503) : response({ ok: true });
+  }
   if (action.action === "receive") {
-    if (normalizeName(action.label_name) !== normalizeName(locker.customer_name)) {
-      return response({ error: "El nombre de la etiqueta no coincide. Retén el paquete y solicita el comprobante de compra." }, 409);
-    }
     const result = await db.from("virtual_locker_packages").insert({
-      store_id: user.store, locker_id: locker.id, tracking: action.tracking, weight_lb: action.weight_lb,
+      store_id: user.store, locker_id: locker.id, tracking: action.tracking, prealert_id: action.prealert_id, branch: action.branch, weight_lb: action.weight_lb,
       dimensions: action.dimensions, received_by: user.id,
     });
     if (result.error?.code === "23505") return response({ error: "Ese rastreo ya fue registrado." }, 409);
