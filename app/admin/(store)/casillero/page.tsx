@@ -7,8 +7,8 @@ import { supabase } from "@/lib/supabase";
 
 type LockerResult = {
   locker: { code: string; customer_name: string; phone: string; email: string; destination: string; verified_at: string | null };
-  packages: { id: string; tracking: string; weight_lb: number; dimensions: string; received_at: string; shipment_reference: string | null }[];
-  prealerts: { tracking: string; merchant: string; contents: string; declared_value: number }[];
+  packages: { id: string; prealert_id: string | null; tracking: string | null; weight_lb: number; dimensions: string; received_at: string; shipment_reference: string | null }[];
+  prealerts: { id: string; completed_at: string | null; tracking: string | null; merchant: string; contents: string; declared_value: number }[];
   identification?: string;
   identification_state?: string | null;
   identification_type?: "license" | "state_id" | null;
@@ -32,13 +32,13 @@ async function api(code: string, body?: object) {
 }
 
 type LockerList = {
-  lockers: { code: string; customer_name: string; verified_at: string | null; identification_last4: string | null }[];
+  lockers: { code: string; customer_name: string; verified_at: string | null; identification_last4: string | null; pending_prealerts: number }[];
   canSearchIdentification: boolean;
   count: number;
   limit: number;
 };
 
-const emptyFilters = { code: "", name: "", identification: "" };
+const emptyFilters = { code: "", name: "", identification: "", pending: false };
 
 export default function LockerAdmin() {
   const [filters, setFilters] = useState(emptyFilters);
@@ -107,7 +107,7 @@ export default function LockerAdmin() {
     event.preventDefault();
     if (!result) return;
     const fields = Object.fromEntries(new FormData(event.currentTarget));
-    void run(result.locker.code, { ...fields, action: "receive", weight_lb: Number(fields.weight_lb) });
+    void run(result.locker.code, { ...fields, tracking: String(fields.tracking).trim() || null, prealert_id: fields.prealert_id || null, label_checked: fields.label_checked === "on", action: "receive", weight_lb: Number(fields.weight_lb) });
   }
 
   return <main className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:p-8">
@@ -149,17 +149,18 @@ export default function LockerAdmin() {
         <label className="grid gap-1">Código<input className={field} value={filters.code} onChange={event => setFilters({ ...filters, code: event.target.value })} placeholder="WF-1001" maxLength={30} /></label>
         <label className="grid gap-1">Nombre<input className={field} value={filters.name} onChange={event => setFilters({ ...filters, name: event.target.value })} placeholder="Nombre o apellido" maxLength={120} /></label>
         {list?.canSearchIdentification && <label className="grid gap-1">ID o licencia<input className={field} value={filters.identification} onChange={event => setFilters({ ...filters, identification: event.target.value })} placeholder="Número o últimos 4" maxLength={60} autoComplete="off" /></label>}
+        <label><input type="checkbox" checked={filters.pending} onChange={event => setFilters({ ...filters, pending: event.target.checked })} /> Con prealertas pendientes</label>
         <button className={button}>Filtrar</button>
         <button type="button" className="underline" onClick={() => { setFilters(emptyFilters); setSearch({ query: emptyFilters, page: 0 }); }}>Limpiar</button>
       </form>
       <p role="status">{listMessage || (list ? `${list.count} casilleros` : "Cargando casilleros…")}</p>
       {list && <div className="overflow-x-auto"><table className="w-full text-left">
-        <thead><tr className="border-b border-slate-200 bg-slate-100"><th className="p-2">Código</th><th className="p-2">Titular</th>{list.canSearchIdentification && <th className="p-2">Identificación</th>}<th className="p-2">Verificación</th><th className="p-2">Ficha</th></tr></thead>
+        <thead><tr className="border-b border-slate-200 bg-slate-100"><th className="p-2">Código</th><th className="p-2">Titular</th>{list.canSearchIdentification && <th className="p-2">Identificación</th>}<th className="p-2">Verificación</th><th className="p-2">Prealertas pendientes</th><th className="p-2">Ficha</th></tr></thead>
         <tbody>{list.lockers.map(locker => <tr key={locker.code} className="border-b border-slate-100">
           <td className="p-2 font-semibold">{locker.code}</td><td className="p-2">{locker.customer_name}</td>
           {list.canSearchIdentification && <td className="p-2">{locker.identification_last4 ? `•••• ${locker.identification_last4}` : "—"}</td>}
           <td className="p-2"><span className={`rounded-full px-2.5 py-1 text-sm font-semibold ${locker.verified_at ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-950"}`}>{locker.verified_at ? "Verificado" : "Pendiente"}</span></td>
-          <td className="p-2"><button type="button" className={button} disabled={busy} onClick={() => void run(locker.code)}>Ver ficha</button></td>
+          <td className="p-2">{locker.pending_prealerts || "—"}</td><td className="p-2"><button type="button" className={button} disabled={busy} onClick={() => void run(locker.code)}>Ver ficha</button></td>
         </tr>)}</tbody>
       </table></div>}
       {list && !list.lockers.length && <p>No se encontraron casilleros.</p>}
@@ -185,15 +186,18 @@ export default function LockerAdmin() {
       <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-xl font-bold">Prealertas</h2>
         {!result.prealerts.length && <p>Todavía no hay prealertas.</p>}
-        {result.prealerts.map(alert => <p key={alert.tracking}>
+        {result.prealerts.map(alert => <div key={alert.id}>
           {alert.tracking} · {alert.merchant} · {alert.contents} · USD {alert.declared_value}
-          {" · "}{result.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Pendiente"}
-        </p>)}
+          {" · "}{alert.completed_at ? "Recibida completa" : result.packages.some(pkg => pkg.prealert_id === alert.id) ? "Recibida parcialmente" : "Pendiente"}
+          {!alert.completed_at && result.packages.some(pkg => pkg.prealert_id === alert.id) && <button type="button" className="ml-2 underline" disabled={busy} onClick={() => void run(result.locker.code, { action: "complete", prealert_id: alert.id })}>Marcar compra completa</button>}
+        </div>)}
       </section>
       <LockerDialog key={result.locker.code} label="Registrar recepción" title="Registrar recepción">
       <form onSubmit={receive} className="grid gap-3 sm:grid-cols-2">
-        <label>Nombre en la etiqueta <input name="label_name" className={field} required /></label>
-        <label>Rastreo <input name="tracking" className={field} required /></label>
+        <label className="sm:col-span-2"><input type="checkbox" name="label_checked" required /> Confirmé el titular y código de la etiqueta física · {result.locker.customer_name} · {result.locker.code}</label>
+        <label>Compra asociada<select name="prealert_id" className={field}><option value="">Sin prealerta</option>{result.prealerts.filter(alert => !alert.completed_at).map(alert => <option key={alert.id} value={alert.id}>{alert.merchant} · {alert.tracking || alert.contents}</option>)}</select></label>
+        <label>Sucursal<select name="branch" className={field} required><option value="">Selecciona</option><option>US 1</option><option>Bayshore</option></select></label>
+        <label>Rastreo del transportista (opcional)<input name="tracking" className={field} /></label>
         <label>Peso en libras <input name="weight_lb" type="number" min="0.01" step="0.01" className={field} required /></label>
         <label>Dimensiones en pulgadas <input name="dimensions" placeholder="24x24x24" className={field} required /></label>
         <button className={button} disabled={busy}>Registrar paquete</button>

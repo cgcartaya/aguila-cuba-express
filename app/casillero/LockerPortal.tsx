@@ -21,8 +21,8 @@ const addressLines = [lockerWarehouse.street, lockerWarehouse.cityLine, `Tel. ${
 const states = State.getStatesOfCountry("US").filter(state => !["AS", "GU", "MP", "PR", "UM", "VI"].includes(state.isoCode));
 type Result = {
   locker: { code: string; customer_name: string; verified_at: string | null } | null;
-  packages: { id: string; tracking: string; received_at: string; weight_lb: number; shipment_reference: string | null; guide: { status: string; service_price: number | null } | null }[];
-  prealerts?: { tracking: string; merchant: string }[];
+  packages: { id: string; tracking: string | null; prealert_id: string | null; branch: string | null; received_at: string; weight_lb: number; shipment_reference: string | null; guide: { status: string; service_price: number | null; public_tracking_enabled: boolean } | null }[];
+  prealerts?: { id: string; tracking: string | null; tracking_url: string | null; merchant: string; contents: string; completed_at: string | null }[];
 };
 
 async function api(session: Session, method: string, body?: object) {
@@ -118,6 +118,8 @@ export default function LockerPortal() {
 
   const [prealertMessage, setPrealertMessage] = useState("");
 
+  const [items, setItems] = useState([{ name: "", quantity: 1 }]);
+
   async function savePrealert(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) return;
@@ -126,8 +128,9 @@ export default function LockerPortal() {
     setBusy(true);
     setPrealertMessage("");
     try {
-      await api(session, "POST", { ...fields, action: "prealert", declared_value: Number(fields.declared_value) });
+      await api(session, "POST", { ...fields, action: "prealert", items, tracking: String(fields.tracking).trim() || null, tracking_url: String(fields.tracking_url).trim() || null, declared_value: Number(fields.declared_value) });
       form.reset();
+      setItems([{ name: "", quantity: 1 }]);
       setAccount({ userId: session.user.id, result: await load(session) });
       setPrealertMessage("Prealerta registrada.");
     } catch (error) {
@@ -204,8 +207,16 @@ export default function LockerPortal() {
           <LockerDialog label="Prealertar compra" title="Prealertar una compra">
           <form onSubmit={savePrealert} className="grid gap-3 sm:grid-cols-2">
             <label>Tienda<input className={field} name="merchant" required maxLength={120} /></label>
-            <label>Rastreo<input className={field} name="tracking" required maxLength={120} /></label>
-            <label>Contenido<input className={field} name="contents" required maxLength={500} /></label>
+            <label>Número de rastreo (opcional)<input className={field} name="tracking" maxLength={120} /></label>
+            <label className="sm:col-span-2">Enlace de rastreo de la tienda (opcional)<input className={field} type="url" name="tracking_url" maxLength={2048} /></label>
+            <fieldset className="grid gap-2 sm:col-span-2"><legend>Artículos</legend>
+              {items.map((item, index) => <div key={index} className="grid grid-cols-[5rem_1fr_auto] items-end gap-2">
+                <label>Cantidad<input className={field} type="number" min="1" max="9999" required value={item.quantity || ""} onChange={event => setItems(rows => rows.map((row, i) => i === index ? { ...row, quantity: Number(event.target.value) } : row))} /></label>
+                <label>Artículo<input className={field} required maxLength={120} value={item.name} onChange={event => setItems(rows => rows.map((row, i) => i === index ? { ...row, name: event.target.value } : row))} /></label>
+                <button type="button" disabled={items.length === 1} onClick={() => setItems(rows => rows.filter((_, i) => i !== index))}>Quitar</button>
+              </div>)}
+              <button type="button" className={secondary} disabled={items.length >= 50} onClick={() => setItems(rows => [...rows, { name: "", quantity: 1 }])}>+ Añadir artículo</button>
+            </fieldset>
             <label>Valor pagado (USD)<input className={field} name="declared_value" type="number" min="0" max="999999" step="0.01" required /></label>
             <button className={primary} disabled={busy}>Guardar prealerta</button>
           </form>
@@ -235,8 +246,8 @@ export default function LockerPortal() {
             <h2 className="text-xl font-bold">Actividad reciente</h2>
             {!activity.length && !result?.packages.length && <p className="mt-3 text-slate-600">Todavía no tienes prealertas ni paquetes.</p>}
             <ul className="mt-4 grid gap-2">
-              {activity.map(alert => <li key={alert.tracking} className="break-words rounded-lg bg-blue-50 p-3">
-                <strong>{alert.merchant}</strong><p>{alert.tracking} · {result?.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Prealertado"}</p>
+              {activity.map(alert => <li key={alert.id} className="break-words rounded-lg bg-blue-50 p-3">
+                <strong>{alert.merchant}</strong><p>{alert.tracking} · {result?.packages.some(pkg => pkg.prealert_id === alert.id) ? (alert.completed_at ? "Recibida" : "Recibida parcialmente") : "Prealertada"}</p>
               </li>)}
               {result?.packages.filter(pkg => !activity.some(alert => alert.tracking === pkg.tracking)).slice(0, 3).map(pkg => <li key={pkg.id} className="break-words rounded-lg bg-blue-50 p-3">
                 <strong>{pkg.tracking}</strong><p>Recibido · {pkg.weight_lb} lb</p>
@@ -245,12 +256,22 @@ export default function LockerPortal() {
           </section>
         </div>
         <section className={panel}>
-          <h2 className="mb-3 text-xl font-bold">Mis paquetes</h2>
+          <h2 className="mb-3 text-xl font-bold">Historial de compras</h2>
+          {!result?.prealerts?.length && <p>Aún no tienes compras prealertadas.</p>}
+          {result?.prealerts?.map(alert => <article key={alert.id} className="border-b border-slate-200 py-3">
+            <strong>{alert.merchant}</strong><p>{alert.contents}</p>
+            <p>{alert.completed_at ? "Recibida completa" : result.packages.some(pkg => pkg.prealert_id === alert.id) ? "Recibida parcialmente" : "Pendiente de recepción"}</p>
+            {alert.tracking_url && <a className="underline" href={alert.tracking_url} target="_blank" rel="noreferrer">Rastrear compra hasta el almacén</a>}
+            {result.packages.filter(pkg => pkg.prealert_id === alert.id).map(pkg => <p key={pkg.id}>{pkg.tracking || "Paquete sin rastreo"} · {pkg.weight_lb} lb {pkg.branch && `· ${pkg.branch}`}</p>)}
+          </article>)}
+          <h2 className="mb-3 mt-5 text-xl font-bold">Mis paquetes</h2>
           {result?.packages.length ? <ul className="divide-y divide-slate-200">
             {result.packages.map(pkg => <li key={pkg.id} className="break-words py-3">
-              <strong>{pkg.tracking}</strong> · {pkg.weight_lb} lb · {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}
+              <strong>{pkg.tracking || "Paquete sin rastreo"}</strong> {pkg.branch && `· ${pkg.branch}`} · {pkg.weight_lb} lb · {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}
               <p>{pkg.guide?.status === "delivered" ? "Entregado" : ["in_transit", "out_for_delivery", "received_cuba"].includes(pkg.guide?.status ?? "") ? "En tránsito" : pkg.shipment_reference ? "Despachado" : "Recibido en almacén"}
               {pkg.shipment_reference && ` · Guía ${pkg.shipment_reference}`}</p>
+              {pkg.guide?.public_tracking_enabled && pkg.shipment_reference && <Link className="underline" href={`/rastrear/${encodeURIComponent(pkg.shipment_reference)}`}>Rastrear envío de WF Cargo</Link>}
+              {pkg.guide?.public_tracking_enabled && pkg.shipment_reference && <Link className="ml-3 underline" href={`/factura/${encodeURIComponent(pkg.shipment_reference)}`}>Ver factura de WF Cargo</Link>}
               {pkg.guide?.service_price != null && <p>Costo de la guía · {new Intl.NumberFormat("es-US", { style: "currency", currency: "USD" }).format(pkg.guide.service_price)}</p>}
             </li>)}
           </ul> : <p>Aún no tienes paquetes registrados.</p>}
