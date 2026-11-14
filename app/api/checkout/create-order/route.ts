@@ -246,6 +246,21 @@ export async function POST(request: Request) {
     if (customerRequired && (!customerName || !customerPhone || !email)) {
       return fail("Faltan datos obligatorios del cliente.");
     }
+    let zelleInfo: string | null = null;
+    if (intendedPaymentMethod === "whatsapp") {
+      const { data: paymentSettings, error: paymentSettingsError } = await supabaseAdmin
+        .from("store_settings")
+        .select("zelle_info")
+        .eq("store_id", store.id)
+        .maybeSingle();
+
+      if (paymentSettingsError) {
+        console.error("Could not read store Zelle settings:", paymentSettingsError.code);
+      } else {
+        zelleInfo = paymentSettings?.zelle_info?.trim() || null;
+      }
+    }
+
     const isYoyo = store.slug === YOYO_SLUG;
     const isLocalDelivery = !body.productShipping && Boolean(body.isLocalDelivery);
 
@@ -1052,6 +1067,7 @@ export async function POST(request: Request) {
       order: {
         id: order.id,
         order_number: publicOrderNumber,
+        zelle_info: zelleInfo,
         shipping_details: productShippingQuote,
         subtotal,
         delivery_fee: deliveryFee,
