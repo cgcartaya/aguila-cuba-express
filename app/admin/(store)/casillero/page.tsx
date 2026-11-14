@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 type LockerResult = {
   locker: { code: string; customer_name: string; phone: string; email: string; destination: string; verified_at: string | null };
   packages: { id: string; tracking: string; weight_lb: number; dimensions: string; received_at: string; shipment_reference: string | null }[];
+  prealerts: { tracking: string; merchant: string; contents: string; declared_value: number }[];
   identification?: string;
   identification_state?: string | null;
   identification_type?: "license" | "state_id" | null;
@@ -60,6 +61,29 @@ export default function LockerAdmin() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const [credentials, setCredentials] = useState<{ code: string; email: string; password: string }>();
+  const [createMessage, setCreateMessage] = useState("");
+
+  async function createLocker(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const { accepted, email_checked, ...fields } = Object.fromEntries(new FormData(form));
+    setBusy(true);
+    setCredentials(undefined);
+    setCreateMessage("");
+    try {
+      setCredentials(await api("", {
+        ...fields, action: "create", accepted: accepted === "on", email_checked: email_checked === "on",
+      }));
+      form.reset();
+      setRefresh(value => value + 1);
+    } catch (error) {
+      setCreateMessage(error instanceof Error ? error.message : "No se pudo crear el casillero.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function run(value: string, body?: object) {
     setBusy(true);
     setMessage("");
@@ -84,6 +108,33 @@ export default function LockerAdmin() {
 
   return <main className="mx-auto grid max-w-4xl gap-5 p-6">
     <header><p className="text-sm text-slate-600">WF Cargo / Casillero Virtual</p><h1 className="text-3xl font-bold">Casilleros abiertos</h1></header>
+    {list?.canSearchIdentification && <details className="rounded-2xl border border-slate-200 bg-white p-4">
+      <summary className="cursor-pointer font-semibold">Crear casillero manualmente</summary>
+      <form className="mt-4 grid gap-3" onSubmit={createLocker}>
+        <label>Nombre completo <input className={field} name="customer_name" maxLength={120} required /></label>
+        <label>Correo del cliente <input className={field} name="email" type="email" maxLength={254} required /></label>
+        <label>Teléfono o WhatsApp <input className={field} name="phone" type="tel" maxLength={24} required /></label>
+        <label>País y dirección de entrega <textarea className={field} name="destination" maxLength={350} required /></label>
+        <label>Número de identificación <input className={field} name="identification" maxLength={60} required autoComplete="off" /></label>
+        <label><input name="email_checked" type="checkbox" required /> Comprobé que el cliente controla este correo.</label>
+        <label><input name="accepted" type="checkbox" required /> El cliente aceptó las reglas del casillero.</label>
+        <button className={button} disabled={busy}>Crear casillero y generar contraseña</button>
+      </form>
+      {credentials && <div className="mt-4 grid gap-2 rounded border p-3">
+        <p>Casillero creado · {credentials.code}</p>
+        <p>Correo · {credentials.email}</p>
+        <p>Contraseña · <code>{credentials.password}</code></p>
+        <p>Comparte el acceso en privado con el titular. La contraseña se muestra solo en esta pantalla.</p>
+        <button type="button" className={button} onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(`Entra a https://wfcargoenviospsl.com/casillero y selecciona Entrar con una cuenta de correo existente.\nCasillero: ${credentials.code}\nCorreo: ${credentials.email}\nContraseña: ${credentials.password}`);
+            setCreateMessage("Acceso copiado.");
+          } catch { setCreateMessage("Selecciona y copia los datos de acceso de esta pantalla."); }
+        }}>Copiar datos de acceso</button>
+        <button type="button" className="underline" onClick={() => { setCredentials(undefined); setCreateMessage(""); }}>Ocultar credenciales</button>
+      </div>}
+      <p role="status">{createMessage}</p>
+    </details>}
     <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4">
       <form className="flex flex-wrap items-end gap-3" onSubmit={event => {
         event.preventDefault();
@@ -125,6 +176,14 @@ export default function LockerAdmin() {
             onClick={() => void run(result.locker.code, { action: "verify" })}>Confirmar identificación verificada</button>
         </div>}
       </section>
+      <section className="grid gap-2 rounded border p-4">
+        <h2 className="text-xl font-bold">Prealertas</h2>
+        {!result.prealerts.length && <p>Todavía no hay prealertas.</p>}
+        {result.prealerts.map(alert => <p key={alert.tracking}>
+          {alert.tracking} · {alert.merchant} · {alert.contents} · USD {alert.declared_value}
+          {" · "}{result.packages.some(pkg => pkg.tracking === alert.tracking) ? "Recibido" : "Pendiente"}
+        </p>)}
+      </section>
       <form key={result.locker.code} onSubmit={receive} className="grid gap-3 rounded border p-4">
         <h2 className="text-xl font-bold">Registrar recepción</h2>
         <label>Nombre en la etiqueta <input name="label_name" className={field} required /></label>
@@ -139,6 +198,8 @@ export default function LockerAdmin() {
         {result.packages.map(pkg => <article key={pkg.id} className="grid gap-2 border-t pt-3">
           <p>{pkg.tracking} · {pkg.weight_lb} lb · {pkg.dimensions} pulg</p>
           <p>Recepción: {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}</p>
+          {/^\+?1?\d{10}$/.test(result.locker.phone.replace(/[ ()-]/g, "")) && <a className="underline" target="_blank" rel="noreferrer"
+            href={`https://wa.me/${result.locker.phone.replace(/\D/g, "").padStart(11, "1")}?text=${encodeURIComponent(`Hola, WF Cargo recibió el paquete ${pkg.tracking} en tu casillero ${result.locker.code}.`)}`}>Avisar por WhatsApp</a>}
           {pkg.shipment_reference ? <p>Despachado · {pkg.shipment_reference}</p> : result.locker.verified_at && <>
             <Link className="underline" href="/admin/shipping/new">Crear guía en Envíos</Link>
             <form className="flex flex-wrap items-end gap-2" onSubmit={event => {
