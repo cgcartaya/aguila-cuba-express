@@ -21,6 +21,8 @@ function localizedPage(language){
  deps['./dmc.module.css']=css;
  deps['@/lib/luxury/hosts']=load('hosts.ts',{},'lib/luxury/');
  deps['@/lib/luxury/dmc/content']=load('content.ts',{},'lib/luxury/dmc/');
+ deps['@/components/pickups/UpcomingPickupRoutes']={default:()=>null,__esModule:true};
+ deps['@/lib/pickups/luxury-coverage']=load('luxury-coverage.ts',{},'lib/pickups/');
  deps['./LuxuryPickup']={default:()=>null,__esModule:true};
  deps['@/lib/luxury/shipping']=load('shipping.ts',{},'lib/luxury/');
  deps['@/lib/shipping/weight-rate']=load('weight-rate.ts',{},'lib/shipping/');

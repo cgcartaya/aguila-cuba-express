@@ -53,7 +53,7 @@ function RouteMap({ route, progress }: { route: PublicRoute; progress: Scheduled
   return <PublicPickupRouteMap route={route} progress={progress} />;
 }
 
-export default function UpcomingPickupRoutes({ storeSlug }: { storeSlug: string }) {
+export default function UpcomingPickupRoutes({ storeSlug, hideWhenEmpty = false }: { storeSlug: string; hideWhenEmpty?: boolean }) {
   const [payload, setPayload] = useState<PublicPayload>({ routes: [], coverageCities: [] });
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -107,6 +107,7 @@ export default function UpcomingPickupRoutes({ storeSlug }: { storeSlug: string 
     return { route, coverage };
   }, [payload, query, searched]);
 
+  if (hideWhenEmpty && !activeRoute) return null;
   if (loading) return <div className="mx-auto flex max-w-7xl items-center justify-center px-5 py-14 text-slate-500"><Loader2 className="mr-2 animate-spin" size={18} /> Cargando rutas y cobertura...</div>;
 
   return (
