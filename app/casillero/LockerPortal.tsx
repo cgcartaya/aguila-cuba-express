@@ -66,6 +66,24 @@ export default function LockerPortal() {
     return () => { current = false; };
   }, [session, load]);
 
+  async function continueWithGoogle() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/casillero`,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
+    } catch {
+      setMessage("No se pudo conectar con Google. Intenta de nuevo.");
+      setBusy(false);
+    }
+  }
+
   async function access(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -136,6 +154,10 @@ export default function LockerPortal() {
             <button className={mode === "register" ? primary : secondary} aria-pressed={mode === "register"} onClick={() => { setMode("register"); setMessage(""); }}>Registrarme</button>
           </div>
           <h2 className="mb-4 text-2xl font-bold">{mode === "login" ? "Entra a tu casillero" : "Crea tu cuenta"}</h2>
+          <button type="button" className={`${secondary} w-full justify-center disabled:opacity-50`} disabled={busy} onClick={() => void continueWithGoogle()}>
+            Continuar con Google
+          </button>
+          <p className="mb-4 mt-2 text-sm text-slate-600">Si ya tienes un casillero, elige la cuenta de Google con el mismo correo que usaste para abrirlo.</p>
           <form key={mode} onSubmit={access} className="grid gap-4">
             <label>Correo electrónico<input name="email" className={field} type="email" autoComplete="email" required /></label>
             <label>Contraseña<input name="password" className={field} type="password" minLength={mode === "register" ? 8 : undefined} autoComplete={mode === "register" ? "new-password" : "current-password"} required /></label>
