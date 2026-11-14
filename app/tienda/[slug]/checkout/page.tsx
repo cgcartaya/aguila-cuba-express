@@ -164,7 +164,6 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [businessWhatsapp, setBusinessWhatsapp] = useState("");
-  const [businessZelle, setBusinessZelle] = useState("");
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings | null>(null);
   const [method, setMethod] = useState<CheckoutMethod>("cuba");
   const [error, setError] = useState("");
@@ -245,7 +244,6 @@ export default function CheckoutPage() {
         setBusinessWhatsapp(
           normalizeStoreWhatsapp(storeSettingsResponse.data?.whatsapp) || ""
         );
-        setBusinessZelle(storeSettingsResponse.data?.zelle_info || "");
         const cardAvailable = Boolean(paymentAvailabilityResponse?.available) && CARD_PAYMENTS_ENABLED;
         setCardPaymentAvailable(cardAvailable);
         // Tarjeta es el método preferido cuando está disponible; WhatsApp
@@ -816,6 +814,7 @@ export default function CheckoutPage() {
     return result.order as {
       id: string;
       order_number?: string | null;
+      zelle_info?: string | null;
       subtotal: number;
       delivery_fee: number;
       shipping_details: ProductShippingQuote | null;
@@ -885,6 +884,7 @@ ${orderUrl}`);
     orderUrl: string;
     whatsappMessage: string;
     totalUsd: number;
+    zelleInfo?: string | null;
   }) {
     if (store?.slug) clearCheckoutDraft(store.slug);
     const host = window.location.hostname
@@ -914,7 +914,7 @@ ${orderUrl}`);
         businessWhatsapp,
         whatsappMessage: params.whatsappMessage,
         paymentMethod: payWith === "whatsapp" ? "zelle" : "other",
-        zelleInfo: payWith === "whatsapp" ? businessZelle : "",
+        zelleInfo: params.zelleInfo ?? "",
         totalUsd: params.totalUsd,
       })
     );
@@ -1049,6 +1049,7 @@ ${orderUrl}`);
         orderUrl,
         whatsappMessage,
         totalUsd: Number(order.total),
+        zelleInfo: order.zelle_info,
       });
     } catch (submitError: any) {
       console.error("ERROR CHECKOUT:", submitError);
@@ -1220,7 +1221,6 @@ ${orderUrl}`);
                   cardPaymentAvailable={cardPaymentAvailable}
                   payWith={payWith}
                   onChangePayWith={setPayWith}
-                  zelleInfo={businessZelle}
                   onAddProducts={
                     selectedZone && totals.subtotal < totals.minimumOrder
                       ? () => setShowMinimumUpsell(true)
