@@ -61,6 +61,29 @@ export default function LockerAdmin() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const [credentials, setCredentials] = useState<{ code: string; email: string; password: string }>();
+  const [createMessage, setCreateMessage] = useState("");
+
+  async function createLocker(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const { accepted, email_checked, ...fields } = Object.fromEntries(new FormData(form));
+    setBusy(true);
+    setCredentials(undefined);
+    setCreateMessage("");
+    try {
+      setCredentials(await api("", {
+        ...fields, action: "create", accepted: accepted === "on", email_checked: email_checked === "on",
+      }));
+      form.reset();
+      setRefresh(value => value + 1);
+    } catch (error) {
+      setCreateMessage(error instanceof Error ? error.message : "No se pudo crear el casillero.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function run(value: string, body?: object) {
     setBusy(true);
     setMessage("");
@@ -85,6 +108,33 @@ export default function LockerAdmin() {
 
   return <main className="mx-auto grid max-w-4xl gap-5 p-6">
     <header><p className="text-sm text-slate-600">WF Cargo / Casillero Virtual</p><h1 className="text-3xl font-bold">Casilleros abiertos</h1></header>
+    {list?.canSearchIdentification && <details className="rounded-2xl border border-slate-200 bg-white p-4">
+      <summary className="cursor-pointer font-semibold">Crear casillero manualmente</summary>
+      <form className="mt-4 grid gap-3" onSubmit={createLocker}>
+        <label>Nombre completo <input className={field} name="customer_name" maxLength={120} required /></label>
+        <label>Correo del cliente <input className={field} name="email" type="email" maxLength={254} required /></label>
+        <label>Teléfono o WhatsApp <input className={field} name="phone" type="tel" maxLength={24} required /></label>
+        <label>País y dirección de entrega <textarea className={field} name="destination" maxLength={350} required /></label>
+        <label>Número de identificación <input className={field} name="identification" maxLength={60} required autoComplete="off" /></label>
+        <label><input name="email_checked" type="checkbox" required /> Comprobé que el cliente controla este correo.</label>
+        <label><input name="accepted" type="checkbox" required /> El cliente aceptó las reglas del casillero.</label>
+        <button className={button} disabled={busy}>Crear casillero y generar contraseña</button>
+      </form>
+      {credentials && <div className="mt-4 grid gap-2 rounded border p-3">
+        <p>Casillero creado · {credentials.code}</p>
+        <p>Correo · {credentials.email}</p>
+        <p>Contraseña · <code>{credentials.password}</code></p>
+        <p>Comparte el acceso en privado con el titular. La contraseña se muestra solo en esta pantalla.</p>
+        <button type="button" className={button} onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(`Entra a https://wfcargoenviospsl.com/casillero y selecciona Entrar con una cuenta de correo existente.\nCasillero: ${credentials.code}\nCorreo: ${credentials.email}\nContraseña: ${credentials.password}`);
+            setCreateMessage("Acceso copiado.");
+          } catch { setCreateMessage("Selecciona y copia los datos de acceso de esta pantalla."); }
+        }}>Copiar datos de acceso</button>
+        <button type="button" className="underline" onClick={() => { setCredentials(undefined); setCreateMessage(""); }}>Ocultar credenciales</button>
+      </div>}
+      <p role="status">{createMessage}</p>
+    </details>}
     <section className="grid gap-4 rounded-2xl border border-slate-200 bg-white p-4">
       <form className="flex flex-wrap items-end gap-3" onSubmit={event => {
         event.preventDefault();

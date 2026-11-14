@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { normalizeIdentification } from "@/lib/lockers/identity";
@@ -13,6 +14,16 @@ const listing = z.object({
 });
 const mutation = z.discriminatedUnion("action", [
   listing,
+  z.object({
+    action: z.literal("create"),
+    customer_name: z.string().trim().min(3).max(120),
+    email: z.email().max(254).transform(value => value.toLowerCase()),
+    phone: z.string().trim().regex(/^\+?[\d ()-]{7,24}$/),
+    destination: z.string().trim().min(8).max(350),
+    identification: z.string().trim().min(3).max(60),
+    accepted: z.literal(true),
+    email_checked: z.literal(true),
+  }),
   z.object({ action: z.literal("verify"), code }),
   z.object({ action: z.literal("receive"), code, label_name: z.string().trim().min(3).max(120),
     tracking: z.string().trim().toUpperCase().min(3).max(120), weight_lb: z.number().positive().max(10000),
@@ -59,6 +70,31 @@ export async function POST(request: Request) {
   const input = mutation.safeParse(await request.json().catch(() => null));
   if (!input.success) return response({ error: "Revisa los datos ingresados." }, 400);
   const action = input.data;
+  if (action.action === "create") {
+    if (!user.supervisor) return response({ error: "El alta manual requiere un administrador de WF Cargo." }, 403);
+    const { customer_name, email, phone, destination, identification } = action;
+    const existing = await db.from("virtual_lockers").select("id")
+      .eq("store_id", user.store).eq("email_normalized", email).maybeSingle();
+    if (existing.error) return response({ error: "No se pudo comprobar el correo." }, 503);
+    if (existing.data) return response({ error: "Ya existe un casillero para ese correo." }, 409);
+    const password = randomBytes(15).toString("base64url") + "!a1";
+    const account = await db.auth.admin.createUser({ email, password, email_confirm: true });
+    if (account.error || !account.data.user) {
+      const duplicate = ["email_exists", "user_already_exists"].includes(account.error?.code ?? "");
+      return response({ error: duplicate ? "Ese correo ya tiene una cuenta. El cliente debe usar su acceso existente." : "No se pudo crear la cuenta." }, duplicate ? 409 : 503);
+    }
+    const created = await db.from("virtual_lockers").insert({
+      customer_name, email, phone, destination, identification,
+      store_id: user.store, customer_user_id: account.data.user.id, code: "WF", rules_version: "WF-2026-11",
+    }).select("code").single();
+    if (created.error || !created.data) {
+      const cleanup = await db.auth.admin.deleteUser(account.data.user.id);
+      return response({ error: cleanup.error
+        ? "No se pudo completar el alta. Contacta al soporte para revisar la cuenta antes de reintentar."
+        : "No se pudo guardar el casillero. Puedes reintentar." }, 503);
+    }
+    return response({ code: created.data.code, email, password }, 201);
+  }
   if (action.action === "list") {
     if (action.identification && !user.supervisor) {
       return response({ error: "La búsqueda por identificación requiere un administrador." }, 403);
