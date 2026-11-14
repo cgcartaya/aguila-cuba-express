@@ -1,3 +1,4 @@
+import { isWfCargoHost } from "@/lib/saas/wfcargo-hosts";
 import type { Metadata } from "next";
 import { getPublicTravelPackages } from "@/lib/services/travel-public";
 import { getLuxuryShipping } from '@/lib/luxury/shipping-public';
@@ -65,7 +66,7 @@ function resolveLanding(host: string): LandingType {
 
   if (isLuxuryHost(normalizedHost)) return "luxury";
 
-  if (normalizedHost === `wf-cargo.${PLATFORM_DOMAIN}`) return "wfcargo";
+  if (isWfCargoHost(normalizedHost)) return "wfcargo";
 
   if (
     normalizedHost === "wwwalvareztravel.com" ||

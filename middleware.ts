@@ -1,3 +1,4 @@
+import { isWfCargoHost } from "@/lib/saas/wfcargo-hosts";
 import { isLuxuryHost } from '@/lib/luxury/hosts';
 import { sections as dmcSections } from '@/lib/luxury/dmc/content';
 import { NextRequest, NextResponse } from "next/server";
@@ -283,6 +284,8 @@ export async function middleware(request: NextRequest) {
    * normales de la plataforma.
    */
   const normalizedHost = normalizeHost(host);
+
+  if (pathname === "/" && isWfCargoHost(normalizedHost)) return NextResponse.next();
 
   if (isLuxuryHost(host) &&
       (dmcSections.some((section) => pathname === '/' + section) || pathname.startsWith('/destinations/'))) {

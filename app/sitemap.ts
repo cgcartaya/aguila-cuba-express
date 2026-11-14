@@ -1,3 +1,4 @@
+import { isWfCargoHost, wfCargoOrigin } from "@/lib/saas/wfcargo-hosts";
 import { luxuryLanguageUrls } from '@/lib/luxury/seo';
 import { getPublicTravelPackages } from '@/lib/services/travel-public';
 import { isLuxuryHost, luxuryOrigin } from '@/lib/luxury/hosts';
@@ -104,6 +105,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ];
   }
+  if (isWfCargoHost(host)) return [{ url: wfCargoOrigin }];
   const domainSitemap = resolveSitemap(host);
 
   return domainSitemap.routes.map((route) => ({
