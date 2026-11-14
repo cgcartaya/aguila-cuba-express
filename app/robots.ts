@@ -1,3 +1,4 @@
+import { isWfCargoHost, wfCargoOrigin } from "@/lib/saas/wfcargo-hosts";
 import { isLuxuryHost, luxuryOrigin } from '@/lib/luxury/hosts';
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
@@ -24,6 +25,7 @@ function normalizeHost(value: string | null) {
 
 function resolveBaseUrl(host: string) {
   if (isLuxuryHost(host)) return luxuryOrigin;
+  if (isWfCargoHost(host)) return wfCargoOrigin;
   return DOMAIN_BASE_URLS[host] || DOMAIN_BASE_URLS["perlamarketplace.com"];
 }
 

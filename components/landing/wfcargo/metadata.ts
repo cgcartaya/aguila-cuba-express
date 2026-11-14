@@ -1,8 +1,9 @@
+import { wfCargoOrigin } from "@/lib/saas/wfcargo-hosts";
 import type { Metadata } from "next";
 import type { StoreMetadataRow } from "@/lib/saas/store-metadata";
 
 export function buildWfCargoMetadata(store: StoreMetadataRow | null): Metadata {
-  const origin = "https://wf-cargo.perlamarketplace.com";
+  const origin = wfCargoOrigin;
   const title =
     store?.meta_title?.trim() ||
     "WF Cargo Envíos | Envíos y multiservicios en Port St. Lucie";

@@ -14,7 +14,16 @@ const ast = ts.createSourceFile(
 const resolver = ast.statements
   .find((n) => ts.isFunctionDeclaration(n) && n.name?.text === "resolveLanding")
   .getText(ast);
+function loadHosts(path) {
+  const module = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path, "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS },
+  }).outputText, { module, exports: module.exports });
+  return module.exports;
+}
 const context = {
+  ...loadHosts("lib/luxury/hosts.ts"),
+  ...loadHosts("lib/saas/wfcargo-hosts.ts"),
   PLATFORM_DOMAIN: "perlamarketplace.com",
   normalizeHost: (v) =>
     v
@@ -35,6 +44,8 @@ vm.runInContext(
 test("WF Cargo is selected only for its own exact domain", () => {
   assert.equal(context.resolve("wf-cargo.perlamarketplace.com"), "wfcargo");
   assert.equal(context.resolve("WF-CARGO.PERLAMARKETPLACE.COM:443"), "wfcargo");
+  assert.equal(context.resolve("wfcargoenviospsl.com"), "wfcargo");
+  assert.equal(context.resolve("www.wfcargoenviospsl.com"), "wfcargo");
   for (const host of [
     "wf-cargo.evil.test",
     "wf-cargo.perlamarketplace.com.evil.test",
