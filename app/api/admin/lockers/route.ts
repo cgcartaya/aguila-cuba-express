@@ -1,9 +1,18 @@
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
+import { normalizeIdentification } from "@/lib/lockers/identity";
 import { response, staff } from "@/lib/procedures/server";
 
 const code = z.string().trim().toUpperCase().regex(/^WF-\d{4,14}$/);
+const listing = z.object({
+  action: z.literal("list"),
+  code: z.string().trim().max(30),
+  name: z.string().trim().max(120),
+  identification: z.string().trim().max(60).transform(normalizeIdentification),
+  page: z.number().int().min(0).max(100000),
+});
 const mutation = z.discriminatedUnion("action", [
+  listing,
   z.object({ action: z.literal("verify"), code }),
   z.object({ action: z.literal("receive"), code, label_name: z.string().trim().min(3).max(120),
     tracking: z.string().trim().toUpperCase().min(3).max(120), weight_lb: z.number().positive().max(10000),
@@ -32,10 +41,10 @@ export async function GET(request: Request) {
     .eq("store_id", user.store).eq("locker_id", locker.id).order("received_at", { ascending: false });
   if (packages.error) return response({ error: "No se pudieron consultar los paquetes." }, 503);
   if (user.supervisor && !locker.verified_at) {
-    const identity = await db.from("virtual_lockers").select("identification")
+    const identity = await db.from("virtual_lockers").select("identification,identification_state,identification_type")
       .eq("store_id", user.store).eq("id", locker.id).single();
     if (identity.error) return response({ error: "No se pudo consultar la identificación." }, 503);
-    return response({ locker, packages: packages.data, identification: identity.data.identification });
+    return response({ locker, packages: packages.data, ...identity.data });
   }
   return response({ locker, packages: packages.data });
 }
@@ -46,6 +55,36 @@ export async function POST(request: Request) {
   const input = mutation.safeParse(await request.json().catch(() => null));
   if (!input.success) return response({ error: "Revisa los datos ingresados." }, 400);
   const action = input.data;
+  if (action.action === "list") {
+    if (action.identification && !user.supervisor) {
+      return response({ error: "La búsqueda por identificación requiere un administrador." }, 403);
+    }
+    const escape = (value: string) => value.replace(/[\\%_*]/g, match => `\\${match}`);
+    const limit = 25;
+    let query = db.from("virtual_lockers")
+      .select("code,customer_name,verified_at,identification_normalized", { count: "exact" })
+      .eq("store_id", user.store).order("number", { ascending: false })
+      .range(action.page * limit, (action.page + 1) * limit - 1);
+    if (action.code) {
+      if (!/^[A-Z0-9-]+$/i.test(action.code)) return response({ error: "Revisa el código de casillero." }, 400);
+      query = query.ilike("code", `%${action.code}%`);
+    }
+    if (action.name) query = query.ilike("customer_name", `%${escape(action.name)}%`);
+    if (action.identification) {
+      if (!/^[A-Z0-9]+$/.test(action.identification)) return response({ error: "Revisa el número de identificación." }, 400);
+      query = /^\d{4}$/.test(action.identification)
+        ? query.like("identification_normalized", `%${action.identification}`)
+        : query.eq("identification_normalized", action.identification);
+    }
+    const { data, count, error } = await query;
+    if (error) return response({ error: "No se pudieron consultar los casilleros." }, 503);
+    return response({
+      lockers: data.map(({ identification_normalized, ...row }) => ({
+        ...row, identification_last4: user.supervisor ? identification_normalized.slice(-4) : null,
+      })),
+      canSearchIdentification: user.supervisor, count, limit,
+    });
+  }
   const { data: locker, error } = await findLocker(user.store, action.code);
   if (error) return response({ error: "No se pudo consultar el casillero." }, 503);
   if (!locker) return response({ error: "Casillero no encontrado." }, 404);

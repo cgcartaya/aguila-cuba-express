@@ -69,12 +69,17 @@ export const procedures = [
   { name: "Documento + MINREX", price: 310 },
   { name: "Documento + consulado extranjero", price: 425 },
 ];
+export const lockerWarehouse = {
+  street: "10546 S US Hwy 1",
+  cityLine: "Port St. Lucie, FL 34952",
+  phone: contact.phone,
+};
 export const branches = [
   {
     name: "WF Cargo Envíos II · US 1",
     focus: "Tu conexión con Cuba",
-    address: "10546 S US Hwy 1, Port St. Lucie, FL 34952",
-    phone: "772-212-7150",
+    address: `${lockerWarehouse.street}, ${lockerWarehouse.cityLine}`,
+    phone: lockerWarehouse.phone,
     services:
       "Paquetería y remesas a Cuba, recogidas, trámites cubanos, renta de autos y hoteles.",
   },

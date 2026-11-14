@@ -3,7 +3,6 @@ import { MessageCircle, Phone, ArrowUpRight } from "lucide-react";
 import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
 import ManagedProcedures from "./ManagedProcedures";
-import VirtualLocker from "./VirtualLocker";
 import PickupForm from "./PickupForm";
 import {
   ServiceGrid,
@@ -46,7 +45,7 @@ export default function WfCargoLanding() {
             <a href="#servicios">Servicios</a>
             <a href="#cotizador">Envíos</a>
             <a href="#tramites">Trámites</a>
-            <a href="#casillero">Casillero Virtual</a>
+            <a href="/casillero">Casillero Virtual</a>
             <a href="#sucursales">Sucursales</a>
           </div>
           <a
@@ -64,7 +63,7 @@ export default function WfCargoLanding() {
               <a href="#servicios">Servicios</a>
               <a href="#cotizador">Cotizar envío</a>
               <a href="#tramites">Trámites</a>
-            <a href="#casillero">Casillero Virtual</a>
+            <a href="/casillero">Casillero Virtual</a>
               <a href="#sucursales">Sucursales</a>
             </div>
           </details>
@@ -77,7 +76,6 @@ export default function WfCargoLanding() {
           <ShippingCalculator />
         </div>
         <ManagedProcedures />
-        <VirtualLocker />
         <Benefits />
         <PickupForm />
         <FeaturedServices />
