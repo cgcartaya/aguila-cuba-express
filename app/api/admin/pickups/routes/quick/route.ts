@@ -2,22 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { requirePickupRouteWrite } from "@/lib/pickups/route-access";
 import { prepareRouteImage } from "@/lib/pickups/route-image";
-import { itineraryCities, localDate, validateItinerary, validRouteDate } from "@/lib/pickups/itinerary";
+import { cityKey, itineraryCities, localDate, validateItinerary, validRouteDate } from "@/lib/pickups/itinerary";
+import { LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
 import { getCityOptions } from "@/lib/geo/location-catalog";
 
 export const maxDuration = 60;
 const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
 
+async function getRouteCoverage(storeId: string) {
+  const [{ data: store, error: storeError }, { data: settings, error: settingsError }] = await Promise.all([
+    supabaseAdmin.from("stores").select("slug").eq("id", storeId).single(),
+    supabaseAdmin.from("pickup_service_settings").select("country_code,region_code,timezone,allowed_cities").eq("store_id", storeId).maybeSingle(),
+  ]);
+  if (storeError || settingsError) throw new Error("No se pudo cargar la cobertura de la tienda.");
+  const restricted = store?.slug === LUXURY_PICKUP_STORE_SLUG;
+  const configured = settings?.allowed_cities;
+  const cities = restricted
+    ? (Array.isArray(configured) ? configured : [])
+      .filter((name): name is string => typeof name === "string" && Boolean(name.trim()))
+      .map((name) => ({ label: name.trim() }))
+    : getCityOptions(settings?.country_code || "US", settings?.region_code || "SC");
+  return { restricted, cities, timezone: settings?.timezone || "America/New_York" };
+}
+
+function validateRouteCoverage(itinerary: ReturnType<typeof validateItinerary>, coverage: Awaited<ReturnType<typeof getRouteCoverage>>) {
+  if (!coverage.restricted) return;
+  const allowed = new Set(coverage.cities.map((city) => cityKey(city.label)));
+  const outsideCoverage = itineraryCities(itinerary).filter((city) => !allowed.has(cityKey(city)));
+  if (outsideCoverage.length) throw new Error(`Usa las ciudades configuradas en Luxury Travel Point. Fuera de cobertura: ${outsideCoverage.join(", ")}.`);
+}
+
 export async function GET(request: NextRequest) {
   const storeId = request.nextUrl.searchParams.get("store_id") || "";
   const denied = await requirePickupRouteWrite(request, storeId);
   if (denied) return denied;
-  const [{ data: templates, error }, { data: settings }] = await Promise.all([
-    supabaseAdmin.from("pickup_route_templates").select("*").eq("store_id", storeId).order("created_at", { ascending: false }),
-    supabaseAdmin.from("pickup_service_settings").select("country_code,region_code,timezone").eq("store_id", storeId).maybeSingle(),
-  ]);
-  if (error) return fail("No se pudo cargar el editor de rutas.", 500);
-  return NextResponse.json({ templates, cities: getCityOptions(settings?.country_code || "US", settings?.region_code || "SC"), today: localDate(settings?.timezone || "America/New_York"), image_import_enabled: Boolean(process.env.OPENAI_API_KEY) }, { headers: { "Cache-Control": "no-store" } });
+  try {
+    const [{ data: templates, error }, coverage] = await Promise.all([
+      supabaseAdmin.from("pickup_route_templates").select("*").eq("store_id", storeId).order("created_at", { ascending: false }),
+      getRouteCoverage(storeId),
+    ]);
+    if (error) return fail("No se pudo cargar el editor de rutas.", 500);
+    return NextResponse.json({
+      templates, cities: coverage.cities, restricted_cities: coverage.restricted,
+      today: localDate(coverage.timezone), image_import_enabled: Boolean(process.env.OPENAI_API_KEY),
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch {
+    return fail("No se pudo cargar la cobertura del editor de rutas.", 500);
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -32,6 +63,8 @@ export async function POST(request: NextRequest) {
     const name = String(plan.name || "").trim().slice(0, 120);
     if (!name) return fail("Escribe un nombre para la ruta.");
     const itinerary = validateItinerary(plan.itinerary);
+    const coverage = await getRouteCoverage(storeId);
+    validateRouteCoverage(itinerary, coverage);
     const zoneId = plan.zone_id || null;
     if (zoneId) {
       const { data: zone } = await supabaseAdmin.from("pickup_zones").select("id").eq("store_id", storeId).eq("id", zoneId).eq("is_active", true).maybeSingle();
@@ -45,8 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ template: data });
     }
     if (!validRouteDate(plan.route_date)) return fail("Selecciona una fecha válida con el año correcto.");
-    const { data: settings } = await supabaseAdmin.from("pickup_service_settings").select("timezone").eq("store_id", storeId).maybeSingle();
-    if (plan.publish && (plan.reviewed !== true || plan.route_date < localDate(settings?.timezone || "America/New_York"))) {
+    if (plan.publish && (plan.reviewed !== true || plan.route_date < localDate(coverage.timezone))) {
       return fail("Revisa la ruta y selecciona una fecha actual o futura antes de publicar.");
     }
     if (plan.route_id) {
@@ -113,6 +145,7 @@ export async function PATCH(request: NextRequest) {
     if (!name || !validRouteDate(body.route_date)) return fail("Revisa el nombre y la fecha de la ruta.");
     if (!Array.isArray(body.public_itinerary)) return fail("Revisa las ciudades del recorrido.");
     const itinerary = body.public_itinerary.length ? validateItinerary(body.public_itinerary) : [];
+    validateRouteCoverage(itinerary, await getRouteCoverage(storeId));
     const cities = itineraryCities(itinerary);
     const text = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) || null : null;
     const values = {

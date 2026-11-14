@@ -1,7 +1,9 @@
 "use client";
 
-import { FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { preparePickupPrefill, type PickupPlannerPrefill } from "@/lib/pickups/planner-prefill";
+import { localDate } from "@/lib/pickups/itinerary";
+import { LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
 import { createPortal } from "react-dom";
 import CityAutocomplete from "./CityAutocomplete";
 import LocationPickerMap from "@/components/maps/LocationPickerMap";
@@ -56,21 +58,24 @@ type PickupPublicConfig = {
   postalCodesByCity?: Record<string, string[]>;
 };
 
-function nextDays(count = 8) {
+function nextDays(nearTermToday?: string, count = 8) {
   const days: Array<{ iso: string; weekday: string; day: string; month: string }> = [];
-  const weekday = new Intl.DateTimeFormat("es-US", { weekday: "short" });
-  const month = new Intl.DateTimeFormat("es-US", { month: "short" });
+  const weekday = new Intl.DateTimeFormat("es-US", { weekday: "short", timeZone: nearTermToday ? "UTC" : undefined });
+  const month = new Intl.DateTimeFormat("es-US", { month: "short", timeZone: nearTermToday ? "UTC" : undefined });
 
-  for (let offset = 1; offset <= 16 && days.length < count; offset += 1) {
-    const date = new Date();
-    date.setHours(12, 0, 0, 0);
-    date.setDate(date.getDate() + offset);
-    if (date.getDay() === 0) continue;
+  for (let offset = nearTermToday ? 0 : 1; offset <= 16 && days.length < count; offset += 1) {
+    const date = nearTermToday ? new Date(`${nearTermToday}T12:00:00Z`) : new Date();
+    if (nearTermToday) date.setUTCDate(date.getUTCDate() + offset);
+    else {
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() + offset);
+    }
+    if ((nearTermToday ? date.getUTCDay() : date.getDay()) === 0 && !(nearTermToday && offset < 2)) continue;
 
     days.push({
       iso: date.toISOString().slice(0, 10),
       weekday: weekday.format(date).replace(".", ""),
-      day: String(date.getDate()),
+      day: String(nearTermToday ? date.getUTCDate() : date.getDate()),
       month: month.format(date).replace(".", ""),
     });
   }
@@ -80,7 +85,8 @@ function nextDays(count = 8) {
 
 export default function PickupPlannerHero({ variant = "card", storeSlug, storeName, whatsappPhone, renderTrigger }: { variant?: "card" | "horizontal"; storeSlug: string; storeName: string; whatsappPhone: string; renderTrigger?: (open: (prefill?: PickupPlannerPrefill) => void) => ReactNode }) {
   const horizontal = variant === "horizontal";
-  const days = useMemo(() => nextDays(), []);
+  const luxuryToday = storeSlug === LUXURY_PICKUP_STORE_SLUG ? localDate() : undefined;
+  const days = nextDays(luxuryToday);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -112,6 +118,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
   const [config, setConfig] = useState<PickupPublicConfig | null>(null);
   const [configLoading, setConfigLoading] = useState(true);
   const [requestedRoute, setRequestedRoute] = useState<RequestedRoute | null>(null);
+  const sameDayRequested = Boolean(luxuryToday && (selectedDates.includes(luxuryToday) || requestedRoute?.date === luxuryToday));
   const [pin, setPin] = useState<{ latitude: number | null; longitude: number | null }>({ latitude: null, longitude: null });
 
   useEffect(() => {
@@ -623,6 +630,8 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                   </button>
                   <h3 className="text-2xl font-black text-slate-950">¿Qué días te convienen?</h3>
                   <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. ${storeName} confirmará el día definitivo.`}</p>
+
+                  {sameDayRequested && <p role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-900">Si solicitas la recogida para hoy, elige también otro día como alternativa y espera la confirmación de Luxury Travel Point.</p>}
 
                   <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[...days, ...selectedDates.filter(iso => !days.some(day => day.iso === iso)).map(iso => {

@@ -10,6 +10,8 @@ import GroupExplorer from './GroupExplorer';
 import { luxuryOrigin } from '@/lib/luxury/hosts';
 import { localized, pages, sections } from '@/lib/luxury/dmc/content';
 import LanguageSelector from './LanguageSelector';
+import UpcomingPickupRoutes from "@/components/pickups/UpcomingPickupRoutes";
+import { LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
 import LuxuryPickup from './LuxuryPickup';
 import LuxuryShipping from './LuxuryShipping';
 import { type ShippingCatalog, useCommercialCopy } from './commercial-copy';
@@ -80,6 +82,7 @@ function LuxuryContent({ initialPackages, initialError, initialShipping }: { ini
       <section id="envios" className={s.shipping}><div className={s.container}>
         <LuxuryShipping catalog={shipping} />
         <LuxuryPickup />
+        <UpcomingPickupRoutes storeSlug={LUXURY_PICKUP_STORE_SLUG} hideWhenEmpty />
       </div></section>
       <section id="servicios" className={`${s.container} ${s.services}`}><div className={s.sectionHeading}><div><p className={s.eyebrow}>UNA AGENCIA, MUCHAS SOLUCIONES</p><h2>Además de viajar,<br /><em>cuenta con nosotros.</em></h2></div><p>Servicios para tus viajes, tu familia y tus gestiones del día a día, con atención personalizada.</p></div><div className={s.servicesGrid}>{services.map(item => { const Icon = icons[item.icon as keyof typeof icons]; return <article key={item.title}><Icon size={26} strokeWidth={1.3} /><h3>{item.title}</h3><p>{item.text}</p><a href={consult(item.title)} {...external} aria-label={`Consultar ${item.title}`}>Consultar <ArrowUpRight size={16} /></a></article>; })}
         <article><Plane size={26}/><h3>{tr('Boletos Aéreos y Seguros de Viaje', 'Flights and Travel Insurance', 'Vols et assurances voyage')}</h3>
