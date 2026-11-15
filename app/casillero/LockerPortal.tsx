@@ -376,7 +376,7 @@ export default function LockerPortal() {
           <PackageCheck size={42} aria-hidden="true" />
           <h1 className="my-4 text-4xl font-bold tracking-tight">Tus compras tienen una dirección en EE. UU.</h1>
           <p>Compra en Amazon, Walmart, Shein y otras tiendas con tu dirección en Port St. Lucie. Prealerta tu rastreo y consulta la recepción y la entrega desde tu cuenta.</p>
-          <p className="mt-3">Marítimo a Cuba · desde USD {shipping.perPound.toFixed(2)}/lb. Confirma las condiciones y los cargos para tu destino.</p>
+          <p className="mt-3">Marítimo a Cuba · desde USD {shipping.perPound.sea.toFixed(2)}/lb. Confirma las condiciones y los cargos para tu destino.</p>
           <a className="mt-4 underline" href={whatsapp("Hola, quisiera consultar la tarifa por libra para mi destino desde el casillero.")}>Consultar tarifas por destino</a>
         </section>
         <section className={panel}>
