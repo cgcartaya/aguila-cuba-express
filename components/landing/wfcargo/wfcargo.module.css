@@ -1192,3 +1192,109 @@
   height: 1rem;
   margin: .1rem 0 0;
 }
+
+.quoteSteps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quoteSteps li {
+  border-bottom: 3px solid #e2e8f2;
+  padding: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.quoteSteps li[aria-current="step"] {
+  border-color: var(--yellow);
+  color: var(--navy);
+}
+
+.quoteDestination {
+  margin: 0;
+  color: var(--navy);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.quoteModes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.quoteModes legend {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.quoteModes label {
+  position: relative;
+  flex: 1 0 80px;
+  min-width: 0;
+  padding: 12px 8px;
+  border: 1px solid #d3dae5;
+  border-radius: 8px;
+  align-items: center;
+  background: #fff;
+  cursor: pointer;
+}
+
+.quoteModes label:has(input:checked) {
+  border-color: var(--navy);
+  background: #fff8df;
+}
+
+.quoteModes label:has(input:focus-visible) {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
+.quoteModes input {
+  position: absolute;
+  width: 1px;
+  min-height: 0;
+  height: 1px;
+  opacity: 0;
+}
+
+.quoteModes small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.quoteActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.quoteActions .button {
+  margin-inline-start: auto;
+}
+
+.quoteBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quoteResult .whatsappButton {
+  align-self: flex-start;
+  margin-top: 6px;
+  color: #fff;
+}
