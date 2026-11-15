@@ -121,8 +121,18 @@ test("email requests have a database-backed limit with expiry and independent bu
     assert.equal(await tryEmail("email:b"), true);
     await db.exec("update wf_locker_auth_attempts set reset_at = now() - interval '1 minute' where bucket = 'email:a';");
     assert.equal(await tryEmail("email:a"), true);
+    await db.exec(await readFile(new URL("../supabase/migrations/20261115040000_wf_locker_confirmation_cooldown.sql", import.meta.url), "utf8"));
+    const reserve = async () => (await db.query(
+      "select reserve_wf_locker_confirmation('a') as wait_seconds",
+    )).rows[0].wait_seconds;
+    const reservations = await Promise.all([reserve(), reserve()]);
+    assert.equal(reservations.filter(seconds => seconds === 0).length, 1);
+    assert.ok(reservations.some(seconds => seconds > 0 && seconds <= 60));
+    await db.exec("update wf_locker_auth_attempts set reset_at = now() where bucket = 'signup:a';");
+    assert.equal(await reserve(), 0);
     await db.exec("set role anon;");
     await assert.rejects(tryEmail("email:a"), /permission denied/);
+    await assert.rejects(reserve(), /permission denied/);
   } finally {
     await db.close();
   }

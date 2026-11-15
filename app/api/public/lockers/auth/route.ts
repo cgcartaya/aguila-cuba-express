@@ -31,6 +31,16 @@ export async function POST(request: Request) {
     if (!data) return response({ error: "Espera unos minutos antes de volver a intentarlo." }, 429);
   }
 
+  if (details.action === "signup") {
+    const { data: retryAfter, error } = await supabaseAdmin.rpc("reserve_wf_locker_confirmation", {
+      bucket_key: digest(details.email),
+    });
+    if (error) return response({ error: "El envío de correos no está disponible." }, 503);
+    if (retryAfter > 0) {
+      return response({ error: "Espera para solicitar otro enlace.", retryAfter }, 429);
+    }
+  }
+
   const { data, error } = await supabaseAdmin.auth.admin.generateLink(details.action === "signup"
     ? { type: "signup", email: details.email, password: details.password }
     : { type: "recovery", email: details.email });
