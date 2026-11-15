@@ -7,7 +7,7 @@ export const contact = {
 export const whatsapp = (message: string) =>
   `https://wa.me/${contact.whatsapp}?text=${encodeURIComponent(message)}`;
 export const shipping = {
-  perPound: 1.5,
+  perPound: { sea: 1.99, air: 2.99, express: 4 },
   packagingPerVisit: 5,
   maxBoxWeight: 100,
   boxes: [
@@ -22,7 +22,7 @@ export const slides = [
     tag: "Envíos a Cuba y Latinoamérica",
     title: "Más cerca de los tuyos.",
     description:
-      "Marítimo a Cuba a $1.50/lb o cajas desde $50, con entrega a domicilio incluida. Consulta cobertura y condiciones.",
+      `Marítimo a Cuba a $${shipping.perPound.sea.toFixed(2)}/lb o cajas desde $50, con entrega a domicilio incluida. Consulta cobertura y condiciones.`,
     image: "/wfcargo/banner-envios.webp",
     alt: "Cajas de envío con la marca WF Cargo frente a una calle de La Habana",
     label: "Cotizar mi envío",
