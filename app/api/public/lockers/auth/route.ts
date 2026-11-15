@@ -23,20 +23,28 @@ export async function POST(request: Request) {
   const details = parsed.data;
   const ip = request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const digest = (value: string) => createHash("sha256").update(value).digest("hex");
-  for (const [bucket, limit] of [[`ip:${digest(ip)}`, 20], [`email:${digest(details.email)}`, 3]] as const) {
-    const { data, error } = await supabaseAdmin.rpc("consume_wf_locker_auth_attempt", {
-      bucket_key: bucket, max_attempts: limit,
-    });
-    if (error) return response({ error: "El envío de correos no está disponible." }, 503);
-    if (!data) return response({ error: "Espera unos minutos antes de volver a intentarlo." }, 429);
-  }
-
   if (details.action === "signup") {
     const { data: retryAfter, error } = await supabaseAdmin.rpc("reserve_wf_locker_confirmation", {
       bucket_key: digest(details.email),
     });
     if (error) return response({ error: "El envío de correos no está disponible." }, 503);
     if (retryAfter > 0) {
+      return response({ error: "Espera para solicitar otro enlace.", retryAfter }, 429);
+    }
+  }
+
+  const limits: [string, number][] = [[`ip:${digest(ip)}`, 20]];
+  if (details.action === "recovery") limits.push([`email:${digest(details.email)}`, 3]);
+  for (const [bucket, limit] of limits) {
+    const { data, error } = await supabaseAdmin.rpc("consume_wf_locker_auth_attempt", {
+      bucket_key: bucket, max_attempts: limit,
+    });
+    if (error) return response({ error: "El envío de correos no está disponible." }, 503);
+    if (!data) {
+      const { data: window, error: lookupError } = await supabaseAdmin.from("wf_locker_auth_attempts")
+        .select("reset_at").eq("bucket", bucket).maybeSingle();
+      if (lookupError) return response({ error: "El envío de correos no está disponible." }, 503);
+      const retryAfter = window ? Math.max(1, Math.ceil((Date.parse(window.reset_at) - Date.now()) / 1000)) : 1;
       return response({ error: "Espera para solicitar otro enlace.", retryAfter }, 429);
     }
   }

@@ -390,7 +390,7 @@ export default function LockerPortal() {
           </div>
           {emailMode === "signup" && confirmation ? <div className="grid gap-3">
             <h3 className="text-lg font-semibold">{confirmation.accepted ? "Cuenta creada. Confirma tu correo." : "Verificación pendiente"}</h3>
-            <p className="text-sm">Abre el enlace más reciente enviado a <strong className="break-all">{confirmation.email}</strong>. Revisa también la carpeta de correo no deseado.</p>
+            <p className="text-sm">{confirmation.accepted ? "Abre el enlace más reciente enviado a " : "Podrás solicitar otro enlace para "}<strong className="break-all">{confirmation.email}</strong>{confirmation.accepted ? ". Revisa también la carpeta de correo no deseado." : " cuando termine la cuenta regresiva."}</p>
             <button type="button" className={secondary} disabled={busy || secondsLeft > 0}
               onClick={() => { if (signupCredentials.current) void requestConfirmation(signupCredentials.current); }}>
               {busy ? "Enviando…" : secondsLeft > 0 ? `Reenviar enlace en ${secondsLeft} s` : "Reenviar enlace de verificación"}
