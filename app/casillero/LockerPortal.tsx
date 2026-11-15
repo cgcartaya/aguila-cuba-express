@@ -107,6 +107,7 @@ export default function LockerPortal() {
 
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [acceptedRulesFor, setAcceptedRulesFor] = useState<string | null>(null);
 
 
   const emailRequest = useRef(false);
@@ -422,8 +423,9 @@ export default function LockerPortal() {
             <LockerRules />
             <Link className="underline" href="/condiciones">Ver condiciones del servicio</Link>
           </details>
-          <label className="flex gap-2"><input type="checkbox" name="accepted" required /> Leí y acepto las reglas del casillero.</label>
-          <button className={primary} disabled={busy}>Abrir mi casillero</button>
+          <label className="flex gap-2"><input type="checkbox" name="accepted" required checked={acceptedRulesFor === session.user.id}
+            onChange={event => setAcceptedRulesFor(event.target.checked ? session.user.id : null)} /> Leí y acepto las reglas del casillero.</label>
+          <button className={primary} disabled={busy || acceptedRulesFor !== session.user.id}>Abrir mi casillero</button>
         </form>
       </section>}
       {!mailLink && !resetting && locker && <>
