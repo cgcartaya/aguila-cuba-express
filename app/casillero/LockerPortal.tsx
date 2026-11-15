@@ -5,7 +5,7 @@ import LockerDialog from "@/components/lockers/LockerDialog";
 import { purchaseDate, purchaseStatus, type Purchase } from "@/lib/lockers/purchase";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
 import { Country, State } from "country-state-city";
 import { PackageCheck } from "lucide-react";
@@ -109,6 +109,51 @@ export default function LockerPortal() {
   const [busy, setBusy] = useState(false);
 
 
+  const emailRequest = useRef(false);
+  const signupCredentials = useRef<{ email: string; password: string } | null>(null);
+  const [confirmation, setConfirmation] = useState<{ email: string; accepted: boolean }>();
+  const [resendAt, setResendAt] = useState(0);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+
+  useEffect(() => {
+    if (!resendAt) return;
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (!remaining) window.clearInterval(timer);
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [resendAt]);
+
+  async function requestConfirmation(credentials: { email: string; password: string }) {
+    if (emailRequest.current) return;
+    emailRequest.current = true;
+    setBusy(true);
+    setMessage("");
+    try {
+      const res = await fetch("/api/public/lockers/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...credentials, action: "signup" }),
+      });
+      const result = await res.json();
+      if (!res.ok && !(res.status === 429 && Number.isInteger(result.retryAfter))) {
+        throw new Error(result.error);
+      }
+      signupCredentials.current = credentials;
+      setConfirmation(current => ({ email: credentials.email, accepted: res.ok
+        || (current?.email === credentials.email && current.accepted) }));
+      const seconds = res.ok ? 60 : result.retryAfter;
+      setSecondsLeft(seconds);
+      setResendAt(Date.now() + seconds * 1000);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "No se pudo solicitar el enlace.");
+    } finally {
+      emailRequest.current = false;
+      setBusy(false);
+    }
+  }
+
   const [emailMode, setEmailMode] = useState<"login" | "signup" | "recovery">("login");
   const [mailLink, setMailLink] = useState<{ token_hash: string; type: "signup" | "recovery" }>();
   const [resetting, setResetting] = useState(false);
@@ -208,13 +253,18 @@ export default function LockerPortal() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const credentials = { email: String(form.get("email")).trim(), password: String(form.get("password")) };
+    if (emailMode === "signup") {
+      if (credentials.password !== form.get("confirmation")) {
+        setMessage("Las contraseñas deben coincidir.");
+        return;
+      }
+      await requestConfirmation(credentials);
+      return;
+    }
     setBusy(true);
     setMessage("");
     try {
-      if (emailMode !== "login") {
-        if (emailMode === "signup" && credentials.password !== form.get("confirmation")) {
-          throw new Error("Las contraseñas deben coincidir.");
-        }
+      if (emailMode === "recovery") {
         const res = await fetch("/api/public/lockers/auth", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -222,9 +272,7 @@ export default function LockerPortal() {
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error);
-        setMessage(emailMode === "signup"
-          ? "Revisa tu correo. Si tu cuenta aún está pendiente, recibirás un enlace para confirmarla. Puedes solicitar otro con este formulario."
-          : "Si tu cuenta está activa, recibirás un enlace para cambiar tu contraseña.");
+        setMessage("Si tu cuenta está activa, recibirás un enlace para cambiar tu contraseña.");
         return;
       }
       const { error } = await auth.signInWithPassword(credentials);
@@ -340,15 +388,27 @@ export default function LockerPortal() {
             <button type="button" className={emailMode === "login" ? primary : secondary} onClick={() => { setEmailMode("login"); setMessage(""); }}>Iniciar sesión</button>
             <button type="button" className={emailMode === "signup" ? primary : secondary} onClick={() => { setEmailMode("signup"); setMessage(""); }}>Crear cuenta</button>
           </div>
-          <form key={emailMode} onSubmit={access} className="grid gap-4">
+          {emailMode === "signup" && confirmation ? <div className="grid gap-3">
+            <h3 className="text-lg font-semibold">{confirmation.accepted ? "Cuenta creada. Confirma tu correo." : "Verificación pendiente"}</h3>
+            <p className="text-sm">Abre el enlace más reciente enviado a <strong className="break-all">{confirmation.email}</strong>. Revisa también la carpeta de correo no deseado.</p>
+            <button type="button" className={secondary} disabled={busy || secondsLeft > 0}
+              onClick={() => { if (signupCredentials.current) void requestConfirmation(signupCredentials.current); }}>
+              {busy ? "Enviando…" : secondsLeft > 0 ? `Reenviar enlace en ${secondsLeft} s` : "Reenviar enlace de verificación"}
+            </button>
+            <button type="button" className="text-left underline" onClick={() => {
+              signupCredentials.current = null;
+              setConfirmation(undefined);
+              setMessage("");
+            }}>Usar otro correo</button>
+          </div> : <form key={emailMode} onSubmit={access} className="grid gap-4">
             <label>Correo electrónico<input name="email" className={field} type="email" autoComplete="email" required /></label>
             {emailMode !== "recovery" && <label>Contraseña<input name="password" className={field} type="password"
               autoComplete={emailMode === "signup" ? "new-password" : "current-password"}
               minLength={emailMode === "signup" ? 8 : undefined} maxLength={emailMode === "signup" ? 72 : undefined} required /></label>}
             {emailMode === "signup" && <label>Confirma tu contraseña<input name="confirmation" className={field} type="password" autoComplete="new-password" required /></label>}
-            <button className={secondary} disabled={busy}>{emailMode === "login" ? "Entrar" : emailMode === "signup" ? "Crear mi cuenta o reenviar confirmación" : "Enviar enlace de recuperación"}</button>
+            <button className={secondary} disabled={busy}>{emailMode === "login" ? "Entrar" : emailMode === "signup" ? "Crear mi cuenta" : "Enviar enlace de recuperación"}</button>
             {emailMode === "login" && <button type="button" className="text-left underline" onClick={() => { setEmailMode("recovery"); setMessage(""); }}>¿Olvidaste tu contraseña?</button>}
-          </form>
+          </form>}
         </section>
       </div>}
       {!mailLink && !resetting && session && result && !locker && <section className={`${panel} mx-auto w-full max-w-2xl`}>
