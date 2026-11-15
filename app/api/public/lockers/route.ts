@@ -1,3 +1,4 @@
+import { Country, State } from "country-state-city";
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { publicStore, response } from "@/lib/procedures/server";
@@ -12,15 +13,38 @@ const prealert = z.object({
   declared_value: z.number().min(0).max(999999),
 });
 
-const registration = z.object({
+const country = z.string().regex(/^[A-Z]{2}$/)
+  .refine(code => Boolean(Country.getCountryByCode(code)));
+
+const profile = z.object({
   customer_name: z.string().trim().min(3).max(120),
   phone: z.string().trim().regex(/^\+?[\d ()-]{7,24}$/),
   destination: z.string().trim().min(8).max(350),
-  identification: z.string().trim().min(3).max(60).transform(normalizeIdentification),
-  identification_state: z.string().regex(/^[A-Z]{2}$/),
-  identification_type: z.enum(["license", "state_id"]),
-  accepted: z.literal(true),
-});
+  destination_country: country,
+  identification: z.string().trim().min(3).max(60).regex(/^[\p{L}\p{N}][\p{L}\p{N} .\/-]*$/u),
+  identification_country: country,
+  identification_state: z.string().optional(),
+  identification_type: z.enum(["license", "state_id", "national_id", "passport", "other"]),
+}).superRefine((details, ctx) => {
+  const { identification_country, identification_state, identification_type, identification } = details;
+  if (identification_country === "US" && (identification_type === "license" || identification_type === "state_id")) {
+    if (!identification_state || !State.getStateByCodeAndCountry(identification_state, "US")
+      || (identificationPattern(identification_state, identification_type)
+        && !validIdentification(identification_state, identification_type, identification))) {
+      ctx.addIssue({ code: "custom", path: ["identification"], message: "Revisa el estado emisor y el número de tu documento." });
+    }
+  }
+}).transform(details => ({
+  ...details,
+  identification_state: details.identification_country === "US"
+    && (details.identification_type === "license" || details.identification_type === "state_id")
+    ? details.identification_state ?? null : null,
+  identification: details.identification_country === "US"
+    && (details.identification_type === "license" || details.identification_type === "state_id")
+    ? normalizeIdentification(details.identification) : details.identification,
+}));
+
+const profileFields = "customer_name,phone,destination,destination_country,identification,identification_country,identification_state,identification_type";
 
 async function customer(request: Request) {
   const store = await publicStore(request);
@@ -35,7 +59,7 @@ async function customer(request: Request) {
   return { store: store.id, user: user.id, email: user.email.toLowerCase() };
 }
 
-const lockerFields = "id,code,customer_name,verified_at";
+const lockerFields = `id,code,verified_at,${profileFields}` as const;
 
 export async function GET(request: Request) {
   const auth = await customer(request);
@@ -59,7 +83,7 @@ export async function GET(request: Request) {
   if (guides.error) return response({ error: "No se pudieron cargar las guías." }, 503);
   const byReference = new Map(guides.data.map(guide => [guide.tracking_code, guide]));
   return response({
-    locker: { code: locker.code, customer_name: locker.customer_name, verified_at: locker.verified_at },
+    locker: { ...locker, email: auth.email },
     packages: packages.data.map(pkg => ({
       ...pkg, guide: byReference.get(pkg.shipment_reference) ?? null,
     })),
@@ -70,6 +94,16 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const auth = await customer(request);
   if (auth.error) return auth.error;
+  const body = await request.json().catch(() => null);
+  if (body?.action === "profile") {
+    const input = profile.safeParse(body);
+    if (!input.success) return response({ error: "Revisa el documento y los datos de entrega." }, 400);
+    const { data, error } = await db.from("virtual_lockers").update(input.data)
+      .eq("store_id", auth.store).eq("customer_user_id", auth.user).select(lockerFields).maybeSingle();
+    if (error) return response({ error: "No se pudo guardar tu perfil." }, 503);
+    if (!data) return response({ error: "Casillero no encontrado." }, 404);
+    return response({ locker: { ...data, email: auth.email } });
+  }
   // Existing customers retain the original code when they prove control of the registered email.
   const { data, error } = await db.from("virtual_lockers").update({ customer_user_id: auth.user })
     .eq("store_id", auth.store).eq("email_normalized", auth.email).is("customer_user_id", null).select("id").maybeSingle();
@@ -95,19 +129,12 @@ export async function POST(request: Request) {
     if (error?.code === "23505") return response({ error: "Ese rastreo ya tiene una prealerta." }, 409);
     return error ? response({ error: "No se pudo guardar la prealerta." }, 503) : response({ ok: true }, 201);
   }
-  const input = registration.safeParse(body);
-  if (!input.success) return response({ error: "Revisa tus datos y acepta las reglas del casillero." }, 400);
-  const { identification_state, identification_type, identification } = input.data;
-  if (!identificationPattern(identification_state, identification_type)) {
-    return response({ error: "El formato de ese documento aún no está disponible. Contacta a WF Cargo para abrir tu casillero." }, 400);
+  const input = profile.safeParse(body);
+  if (!input.success || body?.accepted !== true) {
+    return response({ error: "Revisa tus datos y acepta las reglas del casillero." }, 400);
   }
-  if (!validIdentification(identification_state, identification_type, identification)) {
-    return response({ error: "El número no coincide con el formato del estado y documento que seleccionaste." }, 400);
-  }
-  const { accepted, ...details } = input.data;
-  if (!accepted) return response({ error: "Acepta las reglas del casillero." }, 400);
   const { error } = await db.from("virtual_lockers").insert({
-    ...details, email: auth.email, customer_user_id: auth.user,
+    ...input.data, email: auth.email, customer_user_id: auth.user,
     store_id: auth.store, code: "WF", rules_version: "WF-2026-11",
   });
   if (error?.code === "23505") {

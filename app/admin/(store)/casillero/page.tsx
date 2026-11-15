@@ -6,12 +6,14 @@ import LockerDialog from "@/components/lockers/LockerDialog";
 import { supabase } from "@/lib/supabase";
 
 type LockerResult = {
-  locker: { code: string; customer_name: string; phone: string; email: string; destination: string; verified_at: string | null };
+  locker: { code: string; customer_name: string; phone: string; email: string; destination: string; destination_country: string | null; verified_at: string | null };
   packages: { id: string; prealert_id: string | null; tracking: string | null; weight_lb: number; dimensions: string; received_at: string; shipment_reference: string | null }[];
   prealerts: Purchase[];
   identification?: string;
+  identity_revision?: string;
+  identification_country?: string | null;
   identification_state?: string | null;
-  identification_type?: "license" | "state_id" | null;
+  identification_type?: "license" | "state_id" | "national_id" | "passport" | "other" | null;
 };
 
 const field = "block w-full rounded border border-slate-300 bg-white p-2 text-slate-900";
@@ -182,12 +184,12 @@ export default function LockerAdmin() {
       <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-xl font-bold">{result.locker.code} · {result.locker.customer_name}</h2>
         <p>{result.locker.email} · {result.locker.phone}</p>
-        <p>Destino: {result.locker.destination}</p>
+        <p>Destino: {result.locker.destination}{result.locker.destination_country && ` · ${result.locker.destination_country}`}</p>
         <p>{result.locker.verified_at ? "Titular verificado" : "Identidad pendiente de verificar"}</p>
         {result.identification && <div>
-          <p>{result.identification_type === "license" ? "Licencia" : result.identification_type === "state_id" ? "ID estatal" : "Identificación"} {result.identification_state} · {result.identification}</p>
+          <p>{result.identification_type === "license" ? "Licencia" : result.identification_type === "state_id" ? "ID estatal" : result.identification_type === "passport" ? "Pasaporte" : "Identificación"} {result.identification_country} {result.identification_state} · {result.identification}</p>
           <button type="button" className={button} disabled={busy}
-            onClick={() => void run(result.locker.code, { action: "verify" })}>Confirmar identificación verificada</button>
+            onClick={() => void run(result.locker.code, { action: "verify", identity_revision: result.identity_revision })}>Confirmar identificación verificada</button>
         </div>}
       </section>
       <section className="grid gap-2 rounded-2xl border border-slate-200 bg-white p-4">

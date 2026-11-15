@@ -72,6 +72,24 @@ test("migration preserves codes, packages, tenant isolation and normalized filte
       `, [store, legacy.code, "%Pérez%", identification]);
       assert.deepEqual(filtered.rows, [{ code: legacy.code, last4: "9012" }]);
     }
+    await migrate("20261115010000_wf_locker_international_profile.sql");
+    await db.query("update virtual_lockers set verified_at=now(), verified_by=$1 where id=$2", [owner, legacy.id]);
+    const { rows: [destinationUpdate] } = await db.query(`
+      update virtual_lockers set destination_country='CU', destination='La Habana, Cuba'
+      where store_id=$1 and customer_user_id=$2 returning code, verified_at, identity_revision
+    `, [store, owner]);
+    assert.equal(destinationUpdate.code, legacy.code);
+    assert.ok(destinationUpdate.verified_at);
+    const { rows: [identityUpdate] } = await db.query(`
+      update virtual_lockers set identification_country='CU', identification_type='national_id',
+        identification='00123456789'
+      where store_id=$1 and customer_user_id=$2 returning code, verified_at, verified_by, identity_revision, identification
+    `, [store, owner]);
+    assert.equal(identityUpdate.code, legacy.code);
+    assert.equal(identityUpdate.identification, "00123456789");
+    assert.equal(identityUpdate.verified_at, null);
+    assert.equal(identityUpdate.verified_by, null);
+    assert.notEqual(identityUpdate.identity_revision, destinationUpdate.identity_revision);
     await migrate("20261114180000_wf_locker_prealerts.sql");
     const prealert = tenant => db.query(`
       insert into virtual_locker_prealerts(store_id,locker_id,tracking,merchant,contents,declared_value)

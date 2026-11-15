@@ -32,7 +32,7 @@ const mutation = z.discriminatedUnion("action", [
     accepted: z.literal(true),
     email_checked: z.literal(true),
   }),
-  z.object({ action: z.literal("verify"), code }),
+  z.object({ action: z.literal("verify"), code, identity_revision: z.uuid() }),
   z.object({ action: z.literal("receive"), code, label_checked: z.literal(true), prealert_id: z.uuid().nullish(), branch: z.enum(["US 1", "Bayshore"]),
     tracking: z.string().trim().toUpperCase().min(3).max(120).nullish(), weight_lb: z.number().positive().max(10000),
     dimensions: z.string().trim().regex(/^\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?$/i).max(60) }),
@@ -42,7 +42,7 @@ const mutation = z.discriminatedUnion("action", [
 
 async function findLocker(store: string, value: string) {
   return db.from("virtual_lockers")
-    .select("id,code,customer_name,phone,email,destination,verified_at,rules_version,accepted_at")
+    .select("id,code,customer_name,phone,email,destination,destination_country,verified_at,rules_version,accepted_at")
     .eq("store_id", store).eq("code", value).maybeSingle();
 }
 
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     .eq("locker_id", locker.id).order("created_at", { ascending: false });
   if (prealerts.error) return response({ error: "No se pudieron consultar las prealertas." }, 503);
   if (user.supervisor && !locker.verified_at) {
-    const identity = await db.from("virtual_lockers").select("identification,identification_state,identification_type")
+    const identity = await db.from("virtual_lockers").select("identification,identification_country,identification_state,identification_type,identity_revision")
       .eq("store_id", user.store).eq("id", locker.id).single();
     if (identity.error) return response({ error: "No se pudo consultar la identificación." }, 503);
     return response({ locker, packages: packages.data, prealerts: prealerts.data, ...identity.data });
@@ -139,8 +139,11 @@ export async function POST(request: Request) {
   if (action.action === "verify") {
     if (!user.supervisor) return response({ error: "La verificación requiere un administrador de WF Cargo." }, 403);
     const result = await db.from("virtual_lockers").update({ verified_by: user.id, verified_at: new Date().toISOString() })
-      .eq("store_id", user.store).eq("id", locker.id).is("verified_at", null);
-    return result.error ? response({ error: "No se pudo verificar el titular." }, 503) : response({ ok: true });
+      .eq("store_id", user.store).eq("id", locker.id).eq("identity_revision", action.identity_revision)
+      .is("verified_at", null).select("id").maybeSingle();
+    if (result.error) return response({ error: "No se pudo verificar el titular." }, 503);
+    if (!result.data) return response({ error: "Vuelve a consultar el casillero para revisar los datos vigentes." }, 409);
+    return response({ ok: true });
   }
   if (action.action === "send_purchase" || action.action === "deliver_purchase" || action.action === "edit_purchase") {
     const scope = () => db.from("virtual_locker_prealerts");
