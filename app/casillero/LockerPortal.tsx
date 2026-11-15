@@ -109,8 +109,60 @@ export default function LockerPortal() {
   const [busy, setBusy] = useState(false);
 
 
+  const [emailMode, setEmailMode] = useState<"login" | "signup" | "recovery">("login");
+  const [mailLink, setMailLink] = useState<{ token_hash: string; type: "signup" | "recovery" }>();
+  const [resetting, setResetting] = useState(false);
+
+  async function redeemMailLink() {
+    if (!mailLink) return;
+    setBusy(true);
+    setMessage("");
+    if (mailLink.type === "recovery") setResetting(true);
+    try {
+      const { error } = await auth.verifyOtp({ token_hash: mailLink.token_hash, type: mailLink.type === "signup" ? "email" : "recovery" });
+      if (error) throw error;
+      window.history.replaceState(null, "", "/casillero");
+      setMailLink(undefined);
+    } catch {
+      setResetting(false);
+      setMessage("El enlace venció o ya fue usado. Solicita otro desde el casillero.");
+    } finally { setBusy(false); }
+  }
+
+  async function changePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get("password"));
+    if (password !== form.get("confirmation")) {
+      setMessage("Las contraseñas deben coincidir.");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await auth.updateUser({ password });
+      if (error) throw error;
+      const logout = await auth.signOut({ scope: "others" });
+      if (logout.error) console.warn("WF Cargo could not revoke other sessions.");
+      setResetting(false);
+      setMessage("Tu contraseña fue actualizada.");
+    } catch {
+      setMessage("No se pudo actualizar la contraseña. Revisa que sea válida y diferente de la anterior.");
+    } finally { setBusy(false); }
+  }
+
   useEffect(() => {
-    const { data } = auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data } = auth.onAuthStateChange((event, next) => {
+      if (event === "INITIAL_SESSION") {
+        const params = new URLSearchParams(window.location.hash.slice(1));
+        const token_hash = params.get("wf_token");
+        const action = params.get("wf_action");
+        if (token_hash && (action === "signup" || action === "recovery")) {
+          setMailLink({ token_hash, type: action });
+        }
+      }
+      setSession(next);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 
@@ -122,7 +174,7 @@ export default function LockerPortal() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session || resetting || mailLink) return;
     let current = true;
     void load(session).then(data => {
       if (!current) return;
@@ -132,7 +184,7 @@ export default function LockerPortal() {
       if (current) setMessage("No pudimos cargar tu casillero. Recarga la página para reintentar.");
     });
     return () => { current = false; };
-  }, [session, load]);
+  }, [session, load, resetting, mailLink]);
 
   async function continueWithGoogle() {
     setBusy(true);
@@ -159,7 +211,24 @@ export default function LockerPortal() {
     setBusy(true);
     setMessage("");
     try {
+      if (emailMode !== "login") {
+        if (emailMode === "signup" && credentials.password !== form.get("confirmation")) {
+          throw new Error("Las contraseñas deben coincidir.");
+        }
+        const res = await fetch("/api/public/lockers/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...credentials, action: emailMode }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error);
+        setMessage(emailMode === "signup"
+          ? "Revisa tu correo. Si tu cuenta aún está pendiente, recibirás un enlace para confirmarla. Puedes solicitar otro con este formulario."
+          : "Si tu cuenta está activa, recibirás un enlace para cambiar tu contraseña.");
+        return;
+      }
       const { error } = await auth.signInWithPassword(credentials);
+      if (error?.code === "email_not_confirmed") throw new Error("Confirma tu correo. Puedes solicitar otro enlace desde Crear cuenta.");
       if (error) throw new Error("Revisa tu correo y contraseña.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo acceder.");
@@ -239,8 +308,21 @@ export default function LockerPortal() {
       </div>
     </header>
     <main className="mx-auto grid max-w-6xl gap-5 px-4 py-7 sm:px-7 sm:py-10">
-      {(session === undefined || (session && !result)) && !message && <p role="status">Cargando casillero…</p>}
-      {session === null && <div className="grid items-start gap-5 md:grid-cols-2">
+      {mailLink && <section className={panel}>
+        <h1 className="mb-4 text-2xl font-bold">{mailLink.type === "signup" ? "Confirma tu cuenta" : "Recupera tu contraseña"}</h1>
+        <button className={primary} disabled={busy} onClick={() => void redeemMailLink()}>Continuar</button>
+        <Link href="/casillero" className="ml-4 underline" onClick={() => { setMailLink(undefined); setMessage(""); }}>Volver al casillero</Link>
+      </section>}
+      {resetting && !mailLink && <section className={panel}>
+        <h1 className="mb-4 text-2xl font-bold">Elige una nueva contraseña</h1>
+        <form onSubmit={changePassword} className="grid max-w-md gap-4">
+          <label>Nueva contraseña<input name="password" className={field} type="password" autoComplete="new-password" minLength={8} maxLength={72} required /></label>
+          <label>Confirma la contraseña<input name="confirmation" className={field} type="password" autoComplete="new-password" minLength={8} maxLength={72} required /></label>
+          <button className={primary} disabled={busy}>Guardar contraseña</button>
+        </form>
+      </section>}
+      {!mailLink && !resetting && (session === undefined || (session && !result)) && !message && <p role="status">Cargando casillero…</p>}
+      {!mailLink && !resetting && session === null && <div className="grid items-start gap-5 md:grid-cols-2">
         <section className="grid min-h-64 content-center rounded-2xl bg-gradient-to-br from-slate-950 to-blue-800 p-7 text-white sm:p-10">
           <PackageCheck size={42} aria-hidden="true" />
           <h1 className="my-4 text-4xl font-bold tracking-tight">Tus compras tienen una dirección en EE. UU.</h1>
@@ -254,14 +336,22 @@ export default function LockerPortal() {
             Continuar con Google
           </button>
           <p className="mb-4 mt-2 text-sm text-slate-600">Si ya tienes un casillero, elige la cuenta de Google con el mismo correo que usaste para abrirlo.</p>
-          <details><summary>Entrar con una cuenta de correo existente</summary><form onSubmit={access} className="mt-3 grid gap-4">
+          <div className="mb-4 flex flex-wrap gap-3">
+            <button type="button" className={emailMode === "login" ? primary : secondary} onClick={() => { setEmailMode("login"); setMessage(""); }}>Iniciar sesión</button>
+            <button type="button" className={emailMode === "signup" ? primary : secondary} onClick={() => { setEmailMode("signup"); setMessage(""); }}>Crear cuenta</button>
+          </div>
+          <form key={emailMode} onSubmit={access} className="grid gap-4">
             <label>Correo electrónico<input name="email" className={field} type="email" autoComplete="email" required /></label>
-            <label>Contraseña<input name="password" className={field} type="password" autoComplete="current-password" required /></label>
-            <button className={secondary} disabled={busy}>Entrar</button>
-          </form></details>
+            {emailMode !== "recovery" && <label>Contraseña<input name="password" className={field} type="password"
+              autoComplete={emailMode === "signup" ? "new-password" : "current-password"}
+              minLength={emailMode === "signup" ? 8 : undefined} maxLength={emailMode === "signup" ? 72 : undefined} required /></label>}
+            {emailMode === "signup" && <label>Confirma tu contraseña<input name="confirmation" className={field} type="password" autoComplete="new-password" required /></label>}
+            <button className={secondary} disabled={busy}>{emailMode === "login" ? "Entrar" : emailMode === "signup" ? "Crear mi cuenta o reenviar confirmación" : "Enviar enlace de recuperación"}</button>
+            {emailMode === "login" && <button type="button" className="text-left underline" onClick={() => { setEmailMode("recovery"); setMessage(""); }}>¿Olvidaste tu contraseña?</button>}
+          </form>
         </section>
       </div>}
-      {session && result && !locker && <section className={`${panel} mx-auto w-full max-w-2xl`}>
+      {!mailLink && !resetting && session && result && !locker && <section className={`${panel} mx-auto w-full max-w-2xl`}>
         <h1 className="mb-2 text-3xl font-bold">Abre tu casillero</h1>
         <p className="mb-5 text-slate-600">Completa tus datos para recibir tu código WF.</p>
         <p className="mb-4 break-all">Correo de la cuenta · {session.user.email}</p>
@@ -276,7 +366,7 @@ export default function LockerPortal() {
           <button className={primary} disabled={busy}>Abrir mi casillero</button>
         </form>
       </section>}
-      {locker && <>
+      {!mailLink && !resetting && locker && <>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div><h1 className="text-4xl font-bold tracking-tight">Mi casillero</h1><p className="mt-2 text-slate-600">Tu dirección de compras en Estados Unidos.</p></div>
           <LockerDialog label="Prealertar compra" title="Prealertar una compra">

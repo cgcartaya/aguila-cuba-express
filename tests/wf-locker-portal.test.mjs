@@ -106,3 +106,24 @@ test("migration preserves codes, packages, tenant isolation and normalized filte
     await db.close();
   }
 });
+
+test("email requests have a database-backed limit with expiry and independent buckets", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec("create role anon; create role authenticated; create role service_role bypassrls;");
+    await db.exec(await readFile(new URL("../supabase/migrations/20261115030000_wf_locker_auth_throttle.sql", import.meta.url), "utf8"));
+    const tryEmail = async name => (await db.query(
+      "select consume_wf_locker_auth_attempt($1, 2) as allowed", [name],
+    )).rows[0].allowed;
+    assert.equal(await tryEmail("email:a"), true);
+    assert.equal(await tryEmail("email:a"), true);
+    assert.equal(await tryEmail("email:a"), false);
+    assert.equal(await tryEmail("email:b"), true);
+    await db.exec("update wf_locker_auth_attempts set reset_at = now() - interval '1 minute' where bucket = 'email:a';");
+    assert.equal(await tryEmail("email:a"), true);
+    await db.exec("set role anon;");
+    await assert.rejects(tryEmail("email:a"), /permission denied/);
+  } finally {
+    await db.close();
+  }
+});
