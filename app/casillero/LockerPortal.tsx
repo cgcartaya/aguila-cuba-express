@@ -7,7 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { createClient, type Session } from "@supabase/supabase-js";
-import { State } from "country-state-city";
+import { Country, State } from "country-state-city";
 import { PackageCheck } from "lucide-react";
 import { lockerWarehouse, shipping, whatsapp } from "@/components/landing/wfcargo/content";
 
@@ -20,8 +20,72 @@ const primary = "inline-flex rounded-lg bg-blue-800 px-4 py-2.5 font-semibold te
 const secondary = "inline-flex rounded-lg border border-slate-300 px-4 py-2 font-semibold";
 const addressLines = [lockerWarehouse.street, lockerWarehouse.cityLine, `Tel. ${lockerWarehouse.phone}`];
 const states = State.getStatesOfCountry("US").filter(state => !["AS", "GU", "MP", "PR", "UM", "VI"].includes(state.isoCode));
+const countryNames = new Intl.DisplayNames(["es"], { type: "region" });
+const countries = Country.getAllCountries()
+  .map(({ isoCode }) => ({ code: isoCode, name: countryNames.of(isoCode) ?? isoCode }))
+  .sort((a, b) => a.name.localeCompare(b.name, "es"));
+
+type Profile = {
+  customer_name: string;
+  email: string;
+  phone: string;
+  destination: string;
+  destination_country: string | null;
+  identification: string;
+  identification_country: string | null;
+  identification_state: string | null;
+  identification_type: string | null;
+};
+
+function CountryField({ label, name, value, onChange }: {
+  label: string; name: string; value: string; onChange?: (value: string) => void;
+}) {
+  return <label>{label}
+    <select name={name} className={field} defaultValue={value} required onChange={event => onChange?.(event.target.value)}>
+      <option value="">Selecciona un país</option>
+      {countries.map(country => <option key={country.code} value={country.code}>{country.name}</option>)}
+    </select>
+  </label>;
+}
+
+function ProfileFields({ profile }: { profile?: Profile }) {
+  const [issuer, setIssuer] = useState(profile?.identification_country ?? "");
+  const [document, setDocument] = useState(profile?.identification_type ?? "national_id");
+  const needsState = issuer === "US" && (document === "license" || document === "state_id");
+  return <>
+    <label>Nombre completo<input name="customer_name" className={field} autoComplete="name" required minLength={3} maxLength={120} defaultValue={profile?.customer_name} /></label>
+    <label>Teléfono con código de país<input name="phone" className={field} type="tel" autoComplete="tel" required maxLength={24} defaultValue={profile?.phone} /></label>
+    <fieldset className="grid gap-3"><legend className="font-semibold">Dirección de entrega</legend>
+      <CountryField label="País de entrega" name="destination_country" value={profile?.destination_country ?? ""} />
+      <label>Calle, número, municipio o ciudad, provincia y código postal si aplica
+        <textarea name="destination" className={field} autoComplete="street-address" required minLength={8} maxLength={350} defaultValue={profile?.destination} />
+      </label>
+    </fieldset>
+    <fieldset className="grid gap-3"><legend className="font-semibold">Documento de identidad</legend>
+      <CountryField label="País emisor" name="identification_country" value={issuer} onChange={setIssuer} />
+      <label>Tipo de documento
+        <select name="identification_type" className={field} value={document} onChange={event => setDocument(event.target.value)}>
+          <option value="national_id">Carné, cédula o documento nacional</option>
+          <option value="passport">Pasaporte</option>
+          <option value="license">Licencia de conducir</option>
+          <option value="state_id">Identificación estatal</option>
+          <option value="other">Otro documento</option>
+        </select>
+      </label>
+      {needsState && <label>Estado emisor
+        <select name="identification_state" className={field} defaultValue={profile?.identification_state ?? ""} required>
+          <option value="">Selecciona un estado</option>
+          {states.map(state => <option key={state.isoCode} value={state.isoCode}>{state.name}</option>)}
+        </select>
+      </label>}
+      <label>Número de identificación<input name="identification" className={field} autoComplete="off" required minLength={3} maxLength={60} defaultValue={profile?.identification} /></label>
+      <p className="text-sm text-slate-600">WF Cargo verifica el documento antes del despacho. Si cambias el nombre o el documento, la agencia deberá verificarlo de nuevo.</p>
+    </fieldset>
+  </>;
+}
+
 type Result = {
-  locker: { code: string; customer_name: string; verified_at: string | null } | null;
+  locker: (Profile & { code: string; verified_at: string | null }) | null;
   packages: { id: string; tracking: string | null; prealert_id: string | null; branch: string | null; received_at: string; weight_lb: number; shipment_reference: string | null; guide: { status: string; service_price: number | null; public_tracking_enabled: boolean } | null }[];
   prealerts?: Purchase[];
 };
@@ -117,6 +181,24 @@ export default function LockerPortal() {
     } finally { setBusy(false); }
   }
 
+  const [profileMessage, setProfileMessage] = useState("");
+
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!session) return;
+    const fields = Object.fromEntries(new FormData(event.currentTarget));
+    setBusy(true);
+    setProfileMessage("");
+    try {
+      const updated: Pick<Result, "locker"> = await api(session, "PATCH", { ...fields, action: "profile" });
+      setAccount(current => current?.userId === session.user.id
+        ? { ...current, result: { ...current.result, locker: updated.locker } } : current);
+      setProfileMessage("Perfil actualizado.");
+    } catch (error) {
+      setProfileMessage(error instanceof Error ? error.message : "No se pudo guardar tu perfil.");
+    } finally { setBusy(false); }
+  }
+
   const [prealertMessage, setPrealertMessage] = useState("");
 
   const [items, setItems] = useState([{ name: "", quantity: 1 }]);
@@ -184,15 +266,7 @@ export default function LockerPortal() {
         <p className="mb-5 text-slate-600">Completa tus datos para recibir tu código WF.</p>
         <p className="mb-4 break-all">Correo de la cuenta · {session.user.email}</p>
         <form onSubmit={register} className="grid gap-4">
-          <label>Nombre completo<input name="customer_name" className={field} autoComplete="name" required maxLength={120} /></label>
-          <label>Teléfono<input name="phone" className={field} type="tel" autoComplete="tel" required maxLength={24} /></label>
-          <label>País y dirección de entrega<textarea name="destination" className={field} required maxLength={350} /></label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label>Estado emisor<select name="identification_state" className={field} defaultValue="FL" required>{states.map(state => <option key={state.isoCode} value={state.isoCode}>{state.name}</option>)}</select></label>
-            <label>Tipo de documento<select name="identification_type" className={field}><option value="license">Licencia de conducir</option><option value="state_id">ID estatal</option></select></label>
-          </div>
-          <label>Número de identificación<input name="identification" className={field} autoComplete="off" required maxLength={60} /></label>
-          <p className="text-sm text-slate-600">Comprobamos el formato del número. WF Cargo verifica el documento antes del despacho. Si tu formato no está disponible, <a className="underline" href={whatsapp("Hola, necesito ayuda para abrir mi casillero con mi tipo de documento.")} target="_blank" rel="noreferrer">contacta a WF Cargo</a>.</p>
+          <ProfileFields />
           <details className="space-y-2 text-sm text-slate-700">
             <summary className="font-semibold">Reglas del casillero</summary>
             <LockerRules />
@@ -225,6 +299,15 @@ export default function LockerPortal() {
             <p className="mt-2 text-sm" role="status">{prealertMessage}</p>
           </LockerDialog>
         </div>
+        <details className={panel} key={locker.code}>
+          <summary className="cursor-pointer text-lg font-semibold">Mi perfil y dirección de entrega</summary>
+          <p className="my-3 break-all text-sm text-slate-600">Correo de la cuenta · {locker.email}</p>
+          <form onSubmit={saveProfile} className="grid max-w-2xl gap-4">
+            <ProfileFields profile={locker} />
+            <button className={primary} disabled={busy}>Guardar perfil</button>
+            {profileMessage && <p role="status">{profileMessage}</p>}
+          </form>
+        </details>
         <div className="grid gap-4 md:grid-cols-[1.15fr_1fr]">
           <section className="rounded-2xl bg-[#102c55] p-5 text-white sm:p-7">
             <div className="flex flex-wrap items-center justify-between gap-3">
