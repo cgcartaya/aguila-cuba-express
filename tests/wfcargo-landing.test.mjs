@@ -92,7 +92,9 @@ test("contact and tariff data match the supplied business brief", () => {
     new URL(content.whatsapp("Prueba & recogida")).searchParams.get("text"),
     "Prueba & recogida",
   );
-  assert.equal(content.shipping.perPound, 1.5);
+  assert.equal(content.shipping.perPound.sea, 1.99);
+  assert.equal(content.shipping.perPound.air, 2.99);
+  assert.equal(content.shipping.perPound.express, 4);
   assert.equal(content.shipping.boxes[0].price, 50);
   assert.equal(content.shipping.maxBoxWeight, 100);
   assert.equal(content.branches.length, 2);
