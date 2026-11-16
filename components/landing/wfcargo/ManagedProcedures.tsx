@@ -2,8 +2,20 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import type { CatalogEntry } from "@/lib/procedures/catalog";
-import { whatsapp } from "./content";
+import Image from "next/image";
+import { BadgeCheck, CarFront, ChevronRight, Clock, FileText, Globe, Headset, Lock, MessageCircle, Phone, ShieldCheck, Stamp, Users } from "lucide-react";
+import { contact, whatsapp } from "./content";
 import styles from "./wfcargo.module.css";
+
+const serviceArtwork = new Map<string, typeof FileText>([
+  ["pasaporte-cubano", FileText],
+  ["pasaporte-americano", FileText],
+  ["apostilla", BadgeCheck],
+  ["notarizacion", Stamp],
+  ["evisa-cuba", Globe],
+  ["renta-carros", CarFront],
+]);
+const serviceOrder = [...serviceArtwork.keys()];
 
 export default function ManagedProcedures() {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
@@ -56,28 +68,63 @@ export default function ManagedProcedures() {
   }
 
   return (
-    <section id="tramites" className={`${styles.tool} ${styles.procedureSection}`}>
-      <div className={styles.toolHeading}><h2>Trámites de WF Cargo</h2></div>
+    <section id="tramites" className={styles.procedureSection} aria-labelledby="wf-procedures-title">
+      <header className={styles.procedureHero}>
+        <div>
+          <span className={styles.procedureBadge}><FileText size={18} aria-hidden="true" /> Trámites con WF Cargo</span>
+          <h2 id="wf-procedures-title">Gestión de Trámites</h2>
+          <p>Te apoyamos con la preparación y gestión de tus documentos con asesoría personalizada.</p>
+          <ul className={styles.procedureBenefits}>
+            <li><ShieldCheck aria-hidden="true" /> Asesoría confiable</li>
+            <li><Clock aria-hidden="true" /> Gestión ágil</li>
+            <li><Users aria-hidden="true" /> Acompañamiento personalizado</li>
+            <li><Lock aria-hidden="true" /> Confidencialidad de tus datos</li>
+          </ul>
+        </div>
+        <div className={styles.procedureHeroImage}>
+          <Image src="/wfcargo/banner-tramites.webp" alt="" fill sizes="(max-width: 700px) 100vw, 42vw" />
+        </div>
+      </header>
       <div className={styles.toolBody}>
         {!catalog.length && <p role="status">{loading ? "Cargando trámites…" : catalogUnavailable
           ? "No pudimos cargar los trámites. Inténtalo de nuevo en unos minutos."
           : "Las solicitudes en línea estarán disponibles cuando WF Cargo publique sus trámites."}</p>}
         <div className={styles.procedureCards}>
-          {catalog.map(item => (
-            <article className={styles.procedureCard} key={item.service}>
-              <h3>{item.configuration.title}</h3>
-              <p>{item.configuration.description}</p>
-              {!!item.configuration.fees.length && <details>
-                <summary>Tarifas de terceros</summary>
-                <ul>{item.configuration.fees.map((fee, index) => <li key={index}>{fee.label} · ${fee.amount.toFixed(2)} {fee.unit}</li>)}</ul>
-              </details>}
-              {item.configuration.agencyFee !== null && <p>Gestión WF Cargo · ${item.configuration.agencyFee.toFixed(2)}</p>}
-              <button type="button" className={styles.button} onClick={() => {
-                setService(item.service); setVariant(item.configuration.variants[0].id); setResult(""); setError("");
-                requestAnimationFrame(() => document.getElementById("solicitud-tramite")?.focus());
-              }}>Solicitar trámite</button>
-            </article>
-          ))}
+          {[...catalog].sort((a, b) => {
+            const rank = (id: string) => serviceArtwork.has(id) ? serviceOrder.indexOf(id) : serviceOrder.length;
+            return rank(a.service) - rank(b.service);
+          }).map(item => {
+            const Icon = serviceArtwork.get(item.service) ?? FileText;
+            return (
+              <article className={styles.procedureCard} key={item.service}>
+                <div className={styles.procedureArtwork}><Icon size={48} aria-hidden="true" /></div>
+                <div className={styles.procedureCardBody}>
+                  <h3>{item.configuration.title}</h3>
+                  <p>{item.configuration.description}</p>
+                  {!!item.configuration.fees.length && <details>
+                    <summary>Tarifas de terceros</summary>
+                    <ul>{item.configuration.fees.map((fee, index) => <li key={index}>{fee.label} · ${fee.amount.toFixed(2)} {fee.unit}</li>)}</ul>
+                  </details>}
+                  {item.configuration.agencyFee !== null && <p>Gestión WF Cargo · ${item.configuration.agencyFee.toFixed(2)}</p>}
+                  <details className={styles.procedureRequirements}>
+                    <summary><FileText size={16} aria-hidden="true" /> Ver requisitos</summary>
+                    {item.configuration.variants.map(variant => (
+                      <div key={variant.id}>
+                        <strong>{variant.title}</strong>
+                        <ul>{variant.requirements.map(requirement => (
+                          <li key={requirement.id}>{requirement.label}{requirement.optional && " (opcional)"}</li>
+                        ))}</ul>
+                      </div>
+                    ))}
+                  </details>
+                  <button type="button" className={styles.procedureAction} disabled={busy} onClick={() => {
+                    setService(item.service); setVariant(item.configuration.variants[0].id); setResult(""); setError("");
+                    requestAnimationFrame(() => document.getElementById("solicitud-tramite")?.focus());
+                  }}>Solicitar trámite <ChevronRight size={18} aria-hidden="true" /></button>
+                </div>
+              </article>
+            );
+          })}
         </div>
         {entry && option && <div id="solicitud-tramite" tabIndex={-1} className={styles.procedureForm}>
           <h3>{entry.configuration.title}</h3>
@@ -111,6 +158,11 @@ export default function ManagedProcedures() {
             <button type="submit" className={styles.button} disabled={busy}>{busy ? "Enviando…" : "Enviar solicitud"}</button>
           </form>}
         </div>}
+        <aside className={styles.procedureContact} aria-label="Orientación sobre trámites">
+          <div><Headset size={32} aria-hidden="true" /><span><strong>¿Necesitas orientación?</strong><br />Nuestro equipo te asesora en el trámite que necesites.</span></div>
+          <a href={whatsapp("Hola, necesito orientación sobre un trámite.")} target="_blank" rel="noreferrer"><MessageCircle size={22} aria-hidden="true" /> Contáctanos por WhatsApp</a>
+          <a href={`tel:+1${contact.phone.replace(/\D/g, "")}`}><Phone size={20} aria-hidden="true" /> {contact.phone}</a>
+        </aside>
       </div>
     </section>
   );
