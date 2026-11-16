@@ -3,19 +3,19 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { CatalogEntry } from "@/lib/procedures/catalog";
 import Image from "next/image";
-import { BadgeCheck, CarFront, ChevronRight, Clock, FileText, Globe, Headset, Lock, MessageCircle, Phone, ShieldCheck, Stamp, Users } from "lucide-react";
+import { ChevronRight, Clock, FileText, Headset, Lock, MessageCircle, Phone, ShieldCheck, Users } from "lucide-react";
 import { contact, whatsapp } from "./content";
 import styles from "./wfcargo.module.css";
 
-const serviceArtwork = new Map<string, typeof FileText>([
-  ["pasaporte-cubano", FileText],
-  ["pasaporte-americano", FileText],
-  ["apostilla", BadgeCheck],
-  ["notarizacion", Stamp],
-  ["evisa-cuba", Globe],
-  ["renta-carros", CarFront],
-]);
-const serviceOrder = [...serviceArtwork.keys()];
+const servicePhotos: Record<string, { src: string; alt: string }> = {
+  "pasaporte-cubano": { src: "/wfcargo/pasaporte.webp", alt: "Pasaporte cubano" },
+  "pasaporte-americano": { src: "/wfcargo/tramites.webp", alt: "Documentación para trámites de pasaporte" },
+  "apostilla": { src: "/wfcargo/tramites.webp", alt: "Documentos para trámites y apostillas" },
+  "notarizacion": { src: "/wfcargo/tramites.webp", alt: "Documentación para notarización" },
+  "evisa-cuba": { src: "/wfcargo/banner-tramites.webp", alt: "Documentos de viaje para Cuba" },
+  "renta-carros": { src: "/wfcargo/autos.webp", alt: "Vehículo de alquiler" },
+};
+const serviceOrder = Object.keys(servicePhotos);
 
 export default function ManagedProcedures() {
   const [catalog, setCatalog] = useState<CatalogEntry[]>([]);
@@ -73,7 +73,7 @@ export default function ManagedProcedures() {
         <div>
           <span className={styles.procedureBadge}><FileText size={18} aria-hidden="true" /> Trámites con WF Cargo</span>
           <h2 id="wf-procedures-title">Gestión de Trámites</h2>
-          <p>Te apoyamos con la preparación y gestión de tus documentos con asesoría personalizada.</p>
+          <p>Te apoyamos con la preparación y gestión de tus documentos de forma segura, rápida y con asesoría personalizada.</p>
           <ul className={styles.procedureBenefits}>
             <li><ShieldCheck aria-hidden="true" /> Asesoría confiable</li>
             <li><Clock aria-hidden="true" /> Gestión ágil</li>
@@ -91,13 +91,13 @@ export default function ManagedProcedures() {
           : "Las solicitudes en línea estarán disponibles cuando WF Cargo publique sus trámites."}</p>}
         <div className={styles.procedureCards}>
           {[...catalog].sort((a, b) => {
-            const rank = (id: string) => serviceArtwork.has(id) ? serviceOrder.indexOf(id) : serviceOrder.length;
+            const rank = (id: string) => serviceOrder.includes(id) ? serviceOrder.indexOf(id) : serviceOrder.length;
             return rank(a.service) - rank(b.service);
           }).map(item => {
-            const Icon = serviceArtwork.get(item.service) ?? FileText;
+            const photo = servicePhotos[item.service];
             return (
               <article className={styles.procedureCard} key={item.service}>
-                <div className={styles.procedureArtwork}><Icon size={48} aria-hidden="true" /></div>
+                <div className={styles.procedureArtwork}>{photo ? <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 700px) 100vw, (max-width: 1100px) 30vw, 180px" /> : <FileText size={48} aria-hidden="true" />}</div>
                 <div className={styles.procedureCardBody}>
                   <h3>{item.configuration.title}</h3>
                   <p>{item.configuration.description}</p>
@@ -107,11 +107,11 @@ export default function ManagedProcedures() {
                   </details>}
                   {item.configuration.agencyFee !== null && <p>Gestión WF Cargo · ${item.configuration.agencyFee.toFixed(2)}</p>}
                   <details className={styles.procedureRequirements}>
-                    <summary><FileText size={16} aria-hidden="true" /> Ver requisitos</summary>
+                    <summary><FileText size={16} aria-hidden="true" /> {item.configuration.variants.some(v => v.requirements.length > 0) ? "Ver requisitos" : "Ver detalles"}</summary>
                     {item.configuration.variants.map(variant => (
                       <div key={variant.id}>
                         <strong>{variant.title}</strong>
-                        <ul>{variant.requirements.map(requirement => (
+                        <ul>{variant.requirements.length === 0 && <li>Consulta con WF Cargo las condiciones de este servicio.</li>}{variant.requirements.map(requirement => (
                           <li key={requirement.id}>{requirement.label}{requirement.optional && " (opcional)"}</li>
                         ))}</ul>
                       </div>
