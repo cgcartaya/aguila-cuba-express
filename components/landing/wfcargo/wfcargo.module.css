@@ -1394,3 +1394,88 @@
   .procedureHero, .procedureCards { grid-template-columns: minmax(0, 1fr); }
   .procedureHeroImage { min-height: 160px; }
 }
+
+
+/* WF Cargo procedures redesign — scoped to the public landing only. */
+.procedureSection {
+  width: min(calc(100% - 32px), 1510px);
+  margin: 42px auto 56px;
+  padding: 0 24px 28px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(160deg, #dff1ff 0%, #f7fbff 47%, #e7f4ff 100%);
+}
+.procedureHero {
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: 290px;
+  margin: 0 -24px 8px;
+}
+.procedureHero > div:first-child { padding: clamp(26px, 4vw, 56px) 20px clamp(26px, 4vw, 56px) clamp(26px, 4vw, 56px); position: relative; z-index: 1; }
+.procedureHero h2 { font-size: clamp(34px, 3.3vw, 54px); font-weight: 900; letter-spacing: -.045em; margin: 12px 0 8px; }
+.procedureHero p { max-width: 680px; font-size: clamp(15px, 1.25vw, 19px); line-height: 1.5; }
+.procedureBadge { border-radius: 10px; background: #ffd31b; padding: 8px 16px; font-size: 17px; font-weight: 850; }
+.procedureHeroImage { align-self: stretch; min-height: 270px; border: 0; overflow: hidden; }
+.procedureHeroImage img { object-fit: cover; object-position: center; }
+.procedureHeroImage::before { content: ""; position: absolute; z-index: 1; left: -6%; right: -8%; bottom: -34px; height: 75px; background: #ffd31b; border-radius: 65% 0 0 0 / 100% 0 0 0; transform: rotate(-6deg); }
+.procedureHeroImage::after { content: ""; position: absolute; z-index: 2; left: -7%; right: -8%; bottom: -49px; height: 70px; background: #0649b7; border-radius: 70% 0 0 0 / 100% 0 0 0; transform: rotate(-6deg); }
+.procedureBenefits { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 26px; }
+.procedureBenefits li { padding: 0 12px; border-right: 1px solid #9cb5cf; font-size: 13px; font-weight: 800; line-height: 1.3; }
+.procedureBenefits li:first-child { padding-left: 0; }
+.procedureBenefits li:last-child { border-right: 0; }
+.procedureBenefits svg { width: 31px; height: 31px; color: #0c49b6; }
+.procedureCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.procedureCard { grid-template-columns: minmax(0, 41%) minmax(0, 1fr); gap: 16px; padding: 14px; min-height: 250px; border: 1px solid #e6edf5; border-radius: 20px; box-shadow: 0 4px 10px #09285c18; transition: transform .2s ease, box-shadow .2s ease; }
+.procedureCard:hover { transform: translateY(-3px); box-shadow: 0 9px 22px #09285c22; }
+.procedureArtwork { position: relative; min-height: 215px; overflow: hidden; background: #dbeaf5; border-radius: 14px; }
+.procedureArtwork img { object-fit: cover; object-position: center; }
+.procedureCardBody { min-width: 0; width: 100%; gap: 8px; align-items: stretch; }
+.procedureCardBody h3 { color: #071e52; font-size: clamp(17px, 1.4vw, 22px); font-weight: 850; line-height: 1.17; letter-spacing: -.025em; }
+.procedureCardBody p { font-size: 13px; line-height: 1.43; color: #17223a; }
+.procedureCardBody details:not(.procedureRequirements) { font-size: 12px; }
+.procedureCardBody details:not(.procedureRequirements) summary { cursor: pointer; }
+.procedureRequirements { margin-top: auto; font-size: 13px; }
+.procedureRequirements summary { font-size: 13px; font-weight: 800; color: #073a9c; text-underline-offset: 3px; }
+.procedureRequirements ul { margin: 6px 0; padding-left: 18px; font-size: 12px; }
+.procedureAction { min-height: 45px; border-radius: 13px; background: #ffd31b; color: #091c41; font-size: 14px; font-weight: 850; }
+.procedureContact { margin: 28px 8px 0; padding: 20px 30px; gap: 16px; border-radius: 60px; background: linear-gradient(160deg, #0b4aab, #051b52); }
+.procedureContact > div { gap: 15px; flex: 1 1 300px; }
+.procedureContact > div svg { flex: none; width: 43px; height: 43px; }
+.procedureContact > div strong { font-size: 20px; }
+.procedureContact a { min-height: 52px; padding: 10px 20px; border-radius: 18px; font-size: 15px; justify-content: center; }
+.procedureContact a:first-of-type { background: #10a827; border-color: #10a827; }
+.procedureContact a:last-of-type { border: 2px solid white; }
+@media (max-width: 1200px) {
+  .procedureHero { grid-template-columns: 1.2fr 1fr; }
+  .procedureBenefits { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 0; }
+  .procedureBenefits li:nth-child(2) { border-right: 0; }
+  .procedureCards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .procedureContact { border-radius: 30px; }
+}
+@media (max-width: 700px) {
+  .procedureSection { width: calc(100% - 20px); padding: 0 12px 20px; margin: 24px auto; border-radius: 20px; }
+  .procedureHero { display: flex; flex-direction: column; margin: 0 -12px 16px; }
+  .procedureHero > div:first-child { width: 100%; padding: 26px 20px 12px; }
+  .procedureHero h2 { font-size: clamp(31px, 8vw, 43px); }
+  .procedureHero p { font-size: 14px; }
+  .procedureBadge { font-size: 13px; }
+  .procedureBenefits { gap: 14px 0; margin-top: 20px; }
+  .procedureBenefits li { font-size: 11px; padding: 0 8px; }
+  .procedureBenefits svg { width: 25px; height: 25px; }
+  .procedureHeroImage { width: 100%; min-height: 205px; }
+  .procedureCards { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .procedureCard { grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 12px; padding: 10px; min-height: 225px; }
+  .procedureArtwork { min-height: 205px; }
+  .procedureCardBody h3 { font-size: 18px; }
+  .procedureCardBody p { font-size: 12px; }
+  .procedureAction { font-size: 12px; padding: 9px 7px; }
+  .procedureContact { margin: 20px 0 0; padding: 22px 16px; flex-direction: column; align-items: stretch; border-radius: 25px; }
+  .procedureContact > div { flex: initial; }
+  .procedureContact > div strong { font-size: 18px; }
+  .procedureContact a { width: 100%; }
+}
+@media (max-width: 390px) {
+  .procedureCard { grid-template-columns: minmax(0, 1fr); }
+  .procedureArtwork { min-height: 190px; }
+}
+@media (prefers-reduced-motion: reduce) { .procedureCard { transition: none; } .procedureCard:hover { transform: none; } }
