@@ -97,7 +97,7 @@ export default function ManagedProcedures() {
             const photo = servicePhotos[item.service];
             return (
               <article className={styles.procedureCard} key={item.service}>
-                <div className={styles.procedureArtwork}>{photo ? <Image src={photo.src} alt={photo.alt} fill sizes="(max-width: 700px) 100vw, (max-width: 1100px) 30vw, 180px" /> : <FileText size={48} aria-hidden="true" />}</div>
+                <div className={styles.procedureArtwork} role={photo ? "img" : undefined} aria-label={photo?.alt} style={photo ? { backgroundImage: `url("${photo.src}")` } : undefined}>{!photo && <FileText size={48} aria-hidden="true" />}</div>
                 <div className={styles.procedureCardBody}>
                   <h3>{item.configuration.title}</h3>
                   <p>{item.configuration.description}</p>
