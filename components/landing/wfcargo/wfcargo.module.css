@@ -1479,3 +1479,18 @@
   .procedureArtwork { min-height: 190px; }
 }
 @media (prefers-reduced-motion: reduce) { .procedureCard { transition: none; } .procedureCard:hover { transform: none; } }
+
+/* Ensure existing WF Cargo service photography remains visible without image optimization. */
+.procedureArtwork {
+  background-color: #dbeaf5;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  width: 100%;
+  align-self: stretch;
+}
+.procedureCardBody { justify-content: flex-start; }
+.procedureCardBody .procedureAction { margin-top: 0; }
+@media (max-width: 700px) {
+  .procedureArtwork { min-height: 210px; }
+}
