@@ -14,6 +14,44 @@ import { lockerWarehouse, shipping, whatsapp } from "@/components/landing/wfcarg
 const auth = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
   auth: { storageKey: "perla-wfcargo-locker", detectSessionInUrl: true },
 }).auth;
+function LockerParcelArt({ variant }: { variant: "access" | "dashboard" }) {
+  const access = variant === "access";
+  return (
+    <svg viewBox="0 0 240 215" aria-hidden="true" focusable="false" className="block h-auto w-full">
+      {access && <path fill="#1464b7" opacity=".58" d="m21 31 15 7 3-9 48 8 39 1 34 9 18-6 14 4 15-7 7-13 9-2 6 10-10 12-4 18-19 10-10 18 2 17 8 14-5 4-15-14-9-16-17 2-8 9-13-4-14 3-4 13-12-4-11-16-21-7-13-14-20-5-9-16z" />}
+      <ellipse cx="120" cy="192" rx="108" ry="17" fill="#001a42" opacity=".48" />
+      <path d="m130 140 49-17 37 11v50l-37 14-49-12z" fill="#1558b5" />
+      <path d="m130 140 49 12 37-18-37-11z" fill="#72aaff" />
+      <path d="M179 152v46l37-14v-50z" fill="#09438e" />
+      <path d="m27 136 57-19 74 12v58l-56 17-75-17z" fill="#d99143" />
+      <path d="m27 136 75 14 56-21-74-12z" fill="#ffcf86" />
+      <path d="M102 150v54l56-17v-58z" fill="#b97532" />
+      <path d="m54 127 13-4 73 13-14 5z" fill="#ffdfa6" />
+      <path d="m126 141 14-5v19l-14 5z" fill="#e8ab63" />
+      <path d="m78 79 53-15 65 13v55l-51 16-67-14z" fill="#ecac5d" />
+      <path d="m78 79 67 13 51-15-65-13z" fill="#ffda99" />
+      <path d="M145 92v56l51-16V77z" fill="#c3813d" />
+      <path d="m105 71 13-4 66 13-13 4z" fill="#fff0c8" />
+      <path d="m171 84 13-4v18l-13 4z" fill="#eebb78" />
+      <path d="m89 92 28 5v14l-28-5z" fill="#fff3da" />
+      <path d="m93 97 19 4m-19 0 12 3" stroke="#89755c" strokeWidth="1.4" />
+      <path d="m38 151 28 6v16l-28-6z" fill="#fff3da" />
+      <path d="m42 156 19 4m-19 0 12 3" stroke="#89755c" strokeWidth="1.4" />
+      {access ? <>
+        <path d="M153 18a26 26 0 0 1 26 26c0 17-26 45-26 45s-26-28-26-45a26 26 0 0 1 26-26Z" fill="#ed4642" />
+        <circle cx="153" cy="44" r="11" fill="#fff6eb" />
+        <path d="M27 177c16 24 124 24 181-21 13-10 18-19 11-25" fill="none" stroke="#ffce06" strokeWidth="7" strokeLinecap="round" />
+      </> : <>
+        <path d="m161 72 18 23 17-23" fill="#ffce06" />
+        <circle cx="179" cy="51" r="29" fill="#fff" />
+        <path d="M158 40h42m-45 10h48m-47 10h46m-41 10h36" stroke="#e83949" strokeWidth="5" />
+        <path d="M158 37a25 25 0 0 1 20-10v24h-23a24 24 0 0 1 3-14Z" fill="#154d9e" />
+        <path d="M161 38h2m5-4h2m2 8h2m-14 4h2m5 0h2" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+      </>}
+    </svg>
+  );
+}
+
 const panel = "min-w-0 rounded-2xl border border-blue-100 bg-white p-5 shadow-sm sm:p-6";
 const field = "block w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-base";
 const primary = "inline-flex rounded-lg bg-gradient-to-b from-blue-700 to-blue-900 px-4 py-2.5 font-semibold text-white disabled:opacity-50";
@@ -402,9 +440,14 @@ export default function LockerPortal() {
       {!mailLink && !resetting && (session === undefined || (session && !result)) && !message && <p role="status">Cargando casillero…</p>}
       {!mailLink && !resetting && session === null && <div className="grid items-start gap-5 md:grid-cols-[1.1fr_1fr]">
         <section className="relative h-full overflow-hidden rounded-3xl bg-gradient-to-br from-[#061e4b] to-[#063e89] p-6 text-white sm:p-9">
+          <div className="grid items-center gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(7rem,32%)]">
+          <div>
           <div className="flex flex-wrap items-center gap-3 text-2xl font-bold"><PackageCheck size={36} aria-hidden="true" /> Casillero <span className="rounded-lg bg-[#ffce06] px-2 text-blue-950">Virtual</span></div>
           <p className="mt-7 max-w-xl text-3xl font-bold tracking-tight sm:text-4xl">Compra en tus tiendas favoritas <span className="text-[#ffce06]">y envía a tu destino.</span></p>
           <p className="mt-4 max-w-lg text-blue-50">Obtén una dirección en EE. UU. con tu código personal y recibe tus compras de Amazon, Walmart, Shein, eBay y más.</p>
+          </div>
+          <div className="mx-auto w-full max-w-44 sm:max-w-none"><LockerParcelArt variant="access" /></div>
+          </div>
           <h2 className="mt-8 text-2xl font-bold">¿Cómo funciona?</h2>
           <ol className="mt-4 grid gap-4 sm:grid-cols-3">
             {[
@@ -492,7 +535,8 @@ export default function LockerPortal() {
           <p className="mt-1 text-slate-600">Gestiona tus compras, prealertas y envíos desde un solo lugar.</p>
         </div>
         <div className="grid items-stretch gap-4 xl:grid-cols-[1.65fr_1fr]">
-          <section className="rounded-2xl bg-gradient-to-r from-[#061e4b] to-[#064399] p-5 text-white sm:p-7">
+          <section className="grid items-center gap-4 rounded-2xl bg-gradient-to-r from-[#061e4b] to-[#064399] p-5 text-white sm:grid-cols-[minmax(0,1fr)_minmax(7rem,32%)] sm:p-7">
+            <div className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div><h2 className="flex items-center gap-2 text-sm text-blue-100"><MapPin size={16} aria-hidden="true" />Tu código de casillero</h2><p className="text-4xl font-extrabold text-[#ffce06]">{locker.code}</p></div>
               <span className={`rounded-full px-3 py-1 text-sm font-semibold ${locker.verified_at ? "bg-green-700 text-white" : "bg-white/15 text-white"}`}>{locker.verified_at ? "Titular verificado" : "Verificación pendiente"}</span>
@@ -508,6 +552,8 @@ export default function LockerPortal() {
               try { await navigator.clipboard.writeText(address); setMessage("Dirección copiada."); }
               catch { setMessage("Selecciona la dirección para copiarla."); }
             }}><Copy size={17} className="mr-2 self-center" aria-hidden="true" />Copiar dirección</button>
+            </div>
+            <div className="mx-auto w-full max-w-40 sm:max-w-none"><LockerParcelArt variant="dashboard" /></div>
           </section>
           <section id="prealertar" className="grid content-center gap-3 rounded-2xl bg-gradient-to-br from-[#ffdb26] to-[#ffbf00] p-5 sm:p-7 [&>button]:justify-self-start">
             <h2 className="flex items-center gap-2 text-2xl font-bold"><PackageCheck aria-hidden="true" />Prealertar compra</h2>
