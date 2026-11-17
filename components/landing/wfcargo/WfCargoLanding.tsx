@@ -5,6 +5,7 @@ import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
 import ManagedProcedures from "./ManagedProcedures";
 import PickupForm from "./PickupForm";
+import CatalogSection from "./CatalogSection";
 import {
   ServiceGrid,
   Benefits,
@@ -121,6 +122,7 @@ export default async function WfCargoLanding() {
       <main id="contenido">
         <PromotionSlider />
         <ServiceGrid />
+        <CatalogSection />
         <div className={s.tools}>
           <ShippingCalculator destinations={destinations} />
         </div>
