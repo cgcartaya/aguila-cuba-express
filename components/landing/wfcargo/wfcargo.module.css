@@ -1417,24 +1417,27 @@
 .procedureBadge { border-radius: 10px; background: #ffd31b; padding: 8px 16px; font-size: 17px; font-weight: 850; }
 .procedureHeroImage { align-self: stretch; min-height: 270px; border: 0; overflow: hidden; }
 .procedureHeroImage img { object-fit: cover; object-position: center; }
-.procedureHeroImage::before { content: ""; position: absolute; z-index: 1; left: -6%; right: -8%; bottom: -34px; height: 75px; background: #ffd31b; border-radius: 65% 0 0 0 / 100% 0 0 0; transform: rotate(-6deg); }
-.procedureHeroImage::after { content: ""; position: absolute; z-index: 2; left: -7%; right: -8%; bottom: -49px; height: 70px; background: #0649b7; border-radius: 70% 0 0 0 / 100% 0 0 0; transform: rotate(-6deg); }
+.procedureHeroImage {
+  mask-image: linear-gradient(to right, transparent, black 15%);
+}
+.procedureBody { display: grid; gap: 16px; }
 .procedureBenefits { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 26px; }
 .procedureBenefits li { padding: 0 12px; border-right: 1px solid #9cb5cf; font-size: 13px; font-weight: 800; line-height: 1.3; }
 .procedureBenefits li:first-child { padding-left: 0; }
 .procedureBenefits li:last-child { border-right: 0; }
 .procedureBenefits svg { width: 31px; height: 31px; color: #0c49b6; }
 .procedureCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.procedureCard { grid-template-columns: minmax(0, 41%) minmax(0, 1fr); gap: 16px; padding: 14px; min-height: 250px; border: 1px solid #e6edf5; border-radius: 20px; box-shadow: 0 4px 10px #09285c18; transition: transform .2s ease, box-shadow .2s ease; }
+.procedureCard { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); gap: 14px; padding: 14px; min-height: 250px; border: 1px solid #e6edf5; border-radius: 20px; box-shadow: 0 4px 10px #09285c18; transition: transform .2s ease, box-shadow .2s ease; }
 .procedureCard:hover { transform: translateY(-3px); box-shadow: 0 9px 22px #09285c22; }
-.procedureArtwork { position: relative; min-height: 215px; overflow: hidden; background: #dbeaf5; border-radius: 14px; }
+.procedureArtwork { position: relative; width: 100%; min-height: 215px; overflow: hidden; background: #dbeaf5; border-radius: 14px; }
 .procedureArtwork img { object-fit: cover; object-position: center; }
-.procedureCardBody { min-width: 0; width: 100%; gap: 8px; align-items: stretch; }
+.procedureCardWithoutPhoto { grid-template-columns: minmax(0, 1fr); }
+.procedureCardBody { min-width: 0; overflow-wrap: anywhere; width: 100%; gap: 8px; align-items: stretch; }
 .procedureCardBody h3 { color: #071e52; font-size: clamp(17px, 1.4vw, 22px); font-weight: 850; line-height: 1.17; letter-spacing: -.025em; }
-.procedureCardBody p { font-size: 13px; line-height: 1.43; color: #17223a; }
+.procedureCardBody p { font-size: 15px; line-height: 1.4; color: #17223a; }
 .procedureCardBody details:not(.procedureRequirements) { font-size: 12px; }
 .procedureCardBody details:not(.procedureRequirements) summary { cursor: pointer; }
-.procedureRequirements { margin-top: auto; font-size: 13px; }
+.procedureRequirements { margin-top: auto; padding-top: 4px; font-size: 14px; }
 .procedureRequirements summary { font-size: 13px; font-weight: 800; color: #073a9c; text-underline-offset: 3px; }
 .procedureRequirements ul { margin: 6px 0; padding-left: 18px; font-size: 12px; }
 .procedureAction { min-height: 45px; border-radius: 13px; background: #ffd31b; color: #091c41; font-size: 14px; font-weight: 850; }
@@ -1462,12 +1465,13 @@
   .procedureBenefits { gap: 14px 0; margin-top: 20px; }
   .procedureBenefits li { font-size: 11px; padding: 0 8px; }
   .procedureBenefits svg { width: 25px; height: 25px; }
-  .procedureHeroImage { width: 100%; min-height: 205px; }
+  .procedureHeroImage { width: 100%; min-height: 0; aspect-ratio: 595 / 309; mask-image: none; }
   .procedureCards { grid-template-columns: minmax(0, 1fr); gap: 14px; }
   .procedureCard { grid-template-columns: minmax(0, 36%) minmax(0, 1fr); gap: 12px; padding: 10px; min-height: 225px; }
-  .procedureArtwork { min-height: 205px; }
+  .procedureArtwork { min-height: 180px; }
+  .procedureCardWithoutPhoto { grid-template-columns: minmax(0, 1fr); }
   .procedureCardBody h3 { font-size: 18px; }
-  .procedureCardBody p { font-size: 12px; }
+  .procedureCardBody p { font-size: 14px; }
   .procedureAction { font-size: 12px; padding: 9px 7px; }
   .procedureContact { margin: 20px 0 0; padding: 22px 16px; flex-direction: column; align-items: stretch; border-radius: 25px; }
   .procedureContact > div { flex: initial; }
@@ -1476,6 +1480,6 @@
 }
 @media (max-width: 390px) {
   .procedureCard { grid-template-columns: minmax(0, 1fr); }
-  .procedureArtwork { min-height: 190px; }
+  .procedureArtwork { min-height: 0; aspect-ratio: 16 / 9; }
 }
 @media (prefers-reduced-motion: reduce) { .procedureCard { transition: none; } .procedureCard:hover { transform: none; } }
