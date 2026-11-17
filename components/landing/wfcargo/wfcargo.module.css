@@ -1427,7 +1427,7 @@
 .procedureBenefits li:last-child { border-right: 0; }
 .procedureBenefits svg { width: 31px; height: 31px; color: #0c49b6; }
 .procedureCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-.procedureCard { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); gap: 14px; padding: 14px; min-height: 250px; border: 1px solid #e6edf5; border-radius: 20px; box-shadow: 0 4px 10px #09285c18; transition: transform .2s ease, box-shadow .2s ease; }
+.procedureCard { grid-template-columns: minmax(0, 40%) minmax(0, 1fr); align-content: stretch; gap: 14px; padding: 14px; min-height: 250px; border: 1px solid #e6edf5; border-radius: 20px; box-shadow: 0 4px 10px #09285c18; transition: transform .2s ease, box-shadow .2s ease; }
 .procedureCard:hover { transform: translateY(-3px); box-shadow: 0 9px 22px #09285c22; }
 .procedureArtwork { position: relative; width: 100%; min-height: 215px; overflow: hidden; background: #dbeaf5; border-radius: 14px; }
 .procedureArtwork img { object-fit: cover; object-position: center; }
@@ -1440,7 +1440,7 @@
 .procedureRequirements { margin-top: auto; padding-top: 4px; font-size: 14px; }
 .procedureRequirements summary { font-size: 13px; font-weight: 800; color: #073a9c; text-underline-offset: 3px; }
 .procedureRequirements ul { margin: 6px 0; padding-left: 18px; font-size: 12px; }
-.procedureAction { min-height: 45px; border-radius: 13px; background: #ffd31b; color: #091c41; font-size: 14px; font-weight: 850; }
+.procedureCardBody .procedureAction { min-height: 45px; border-radius: 13px; background: #ffd31b; color: #091c41; font-size: 14px; font-weight: 850; }
 .procedureContact { margin: 28px 8px 0; padding: 20px 30px; gap: 16px; border-radius: 60px; background: linear-gradient(160deg, #0b4aab, #051b52); }
 .procedureContact > div { gap: 15px; flex: 1 1 300px; }
 .procedureContact > div svg { flex: none; width: 43px; height: 43px; }
@@ -1472,7 +1472,7 @@
   .procedureCardWithoutPhoto { grid-template-columns: minmax(0, 1fr); }
   .procedureCardBody h3 { font-size: 18px; }
   .procedureCardBody p { font-size: 14px; }
-  .procedureAction { font-size: 12px; padding: 9px 7px; }
+  .procedureCardBody .procedureAction { font-size: 12px; padding: 9px 7px; }
   .procedureContact { margin: 20px 0 0; padding: 22px 16px; flex-direction: column; align-items: stretch; border-radius: 25px; }
   .procedureContact > div { flex: initial; }
   .procedureContact > div strong { font-size: 18px; }
