@@ -29,9 +29,11 @@ import {
 import { shareappApi, type Member, type Result } from "@/lib/shareapp/client";
 import CampaignPanel from "./CampaignPanel";
 import AccountCreator from "./AccountCreator";
+import LymSalesReport from "@/components/lym/LymSalesReport";
 import s from "./owner.module.css";
 const tabs = [
   { id: "resumen", name: "Resumen", icon: BarChart3 },
+  { id: "ventas", name: "Ventas por persona", icon: Wallet },
   { id: "equipo", name: "Equipo", icon: Users },
   { id: "campanas", name: "Campañas", icon: ImagePlus },
   { id: "configuracion", name: "Configuración", icon: Settings2 },
@@ -49,6 +51,7 @@ export default function OwnerPanel({
   salesConfirmed?: boolean;
   storeName: string;
 }) {
+  const visibleTabs = tabs.filter(tab => tab.id !== "ventas" || salesConfirmed);
   const [members, setMembers] = useState<Member[]>([]);
   const [rows, setRows] = useState<Result[]>([]);
   const [enabled, setEnabled] = useState(false);
@@ -62,6 +65,7 @@ export default function OwnerPanel({
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded] = useState(false);
+  const [salesRefresh, setSalesRefresh] = useState(0);
   const [tab, setTab] = useState<Tab>("resumen");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todos");
@@ -259,7 +263,7 @@ export default function OwnerPanel({
       </header>
       <div className={s.toolbar}>
         <div className={s.tabs} role="tablist" aria-label="Panel de gestores">
-          {tabs.map((t) => (
+          {visibleTabs.map((t) => (
             <button
               key={t.id}
               id={`tab-${t.id}`}
@@ -269,18 +273,18 @@ export default function OwnerPanel({
                 if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key))
                   return;
                 e.preventDefault();
-                const index = tabs.findIndex((item) => item.id === tab);
+                const index = visibleTabs.findIndex((item) => item.id === tab);
                 const next =
                   e.key === "Home"
                     ? 0
                     : e.key === "End"
-                      ? tabs.length - 1
+                      ? visibleTabs.length - 1
                       : (index +
                           (e.key === "ArrowRight" ? 1 : -1) +
-                          tabs.length) %
-                        tabs.length;
-                setTab(tabs[next].id);
-                document.getElementById(`tab-${tabs[next].id}`)?.focus();
+                          visibleTabs.length) %
+                        visibleTabs.length;
+                setTab(visibleTabs[next].id);
+                document.getElementById(`tab-${visibleTabs[next].id}`)?.focus();
               }}
               aria-selected={tab === t.id}
               aria-controls={`panel-${t.id}`}
@@ -295,7 +299,7 @@ export default function OwnerPanel({
         </div>
         <button
           className={s.refresh}
-          onClick={() => void reload()}
+          onClick={() => { setSalesRefresh(value => value + 1); void reload(); }}
           disabled={loading || busy}
         >
           <RefreshCw size={15} className={loading ? s.spin : ""} />
@@ -800,6 +804,9 @@ export default function OwnerPanel({
       >
         {tab === "campanas" && <CampaignPanel storeId={storeId} admin />}
       </section>
+      {salesConfirmed && <section id="panel-ventas" role="tabpanel" aria-labelledby="tab-ventas" hidden={tab !== "ventas"}>
+        {tab === "ventas" && <LymSalesReport key={storeId} storeId={storeId} refreshToken={salesRefresh} />}
+      </section>}
       <footer className={s.footer}>
         <ShieldCheck size={14} /> Accesos y resultados exclusivos de {storeName}
         .

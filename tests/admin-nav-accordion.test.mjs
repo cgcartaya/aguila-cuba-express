@@ -8,7 +8,10 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 function load(path,deps={}){const module={exports:{}};const source=ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;vm.runInNewContext(source,{module,exports:module.exports,require:n=>n in deps?deps[n]:require(n)});return module.exports;}
-const nav=load('lib/admin/nav-config.ts');
+const access=load('lib/admin/access.ts');
+const permissions=load('lib/shipping/permissions.ts');
+const navigationAccess=load('lib/admin/navigation-access.ts',{'@/lib/admin/access':access,'@/lib/shipping/permissions':permissions});
+const nav=load('lib/admin/nav-config.ts',{'@/lib/admin/navigation-access':navigationAccess});
 const accordion=load('components/admin/nav/AdminNavAccordion.tsx',{'@/lib/admin/nav-config':nav});
 const store={slug:'alvarez-travel',module_store_enabled:true,module_shipping_enabled:true};
 test('store sections combine analytics and reports without dropping links',()=>{
