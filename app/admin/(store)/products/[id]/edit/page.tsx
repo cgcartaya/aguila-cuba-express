@@ -128,7 +128,7 @@ export default function EditProductPage() {
         weight: product.weight == null ? "" : String(product.weight),
         weight_unit: product.weight_unit || "lb",
         platform_fee_exempt: product.platform_fee_exempt === true,
-        stock: String(product.stock || ""),
+        stock: activeStore.slug === "lym" ? String(product.stock ?? 0) : String(product.stock || ""),
         tag: product.tag || "",
         is_active: product.is_active ?? true,
         combo_only: product.combo_only ?? false,

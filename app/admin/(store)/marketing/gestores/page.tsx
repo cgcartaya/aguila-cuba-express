@@ -14,6 +14,7 @@ export default function GestoresAdminPage() {
   if (!storeId) return <main className="p-8">Selecciona una tienda.</main>;
   return (
     <OwnerPanel
+      salesConfirmed={(isSuperAdmin ? selectedStore || accessStore : accessStore)?.slug === "lym"}
       key={storeId}
       storeId={storeId}
       storeName={

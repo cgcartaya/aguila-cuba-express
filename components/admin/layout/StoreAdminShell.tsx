@@ -46,6 +46,8 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
 
   const theme = getStoreTheme(activeStore);
 
+  if (!isSuperAdmin && access?.storeMembership?.role === "LYM_SALES") return <div className="min-h-screen bg-slate-50"><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white p-4"><strong>{storeName} · Ventas</strong><nav className="flex flex-wrap gap-4 font-bold"><Link href="/admin/orders">Órdenes</Link><Link href="/admin/products">Productos</Link><Link href="/admin/inventory">Inventario</Link><Link href="/admin/account">Mi cuenta</Link><LogoutButton /></nav></header>{children}</div>;
+
   if (isAssignmentOnlyAccess(access)) {
     const catalog = access?.storeMembership?.role === "SHIPPING_CATALOG";
     return <div className="min-h-screen bg-slate-50"><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-4 py-4 sm:px-6"><div><p className="font-black text-[#061b3a]">{storeName}</p><p className="text-xs text-slate-500">{catalog ? "Envíos, productos e inventario" : "Solo asignar repartidores"}</p></div><nav className="flex flex-wrap items-center gap-4 text-sm font-bold"><Link href="/admin/shipping/shipments">Envíos</Link>{catalog && activeStore?.module_store_enabled && <><Link href="/admin/products">Productos</Link><Link href="/admin/inventory">Inventario</Link></>}<Link href="/admin/account">Mi cuenta</Link><LogoutButton /></nav></header>{children}</div>;

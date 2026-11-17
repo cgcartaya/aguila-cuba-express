@@ -6,9 +6,11 @@ import Results from "./Results";
 import styles from "./workspace.module.css";
 export default function ResultsPanel({
   storeId,
+  salesConfirmed = false,
   online,
 }: {
   storeId: string;
+  salesConfirmed?: boolean;
   online: boolean;
 }) {
   const [rows, setRows] = useState<Result[]>([]);
@@ -56,7 +58,7 @@ export default function ResultsPanel({
           {error}
         </p>
       )}
-      {loading ? <div className={styles.skeleton} /> : <Results rows={rows} />}
+      {loading ? <div className={styles.skeleton} /> : <Results rows={rows} salesConfirmed={salesConfirmed} />}
       <section className={styles.card}>
         <div className={styles.row}>
           <BarChart3 size={20} color="#6252d8" />
@@ -69,9 +71,7 @@ export default function ResultsPanel({
         </p>
         <p>
           <strong>Pedidos creados:</strong> compras iniciadas que quedaron
-          registradas. <strong>Pedidos pagados:</strong> pedidos cuyo pago
-          confirmó la tienda. Las ventas muestran el total pagado y no calculan
-          comisiones.
+          registradas. {salesConfirmed ? <><strong>Ventas confirmadas:</strong> ventas que LYM confirmó manualmente. Se incluyen las órdenes manuales atribuidas a ti y se excluyen las cancelaciones y devoluciones. Los importes no son comisiones.</> : <><strong>Pedidos pagados:</strong> pedidos cuyo pago confirmó la tienda. Las ventas muestran el total pagado y no calculan comisiones.</>}
         </p>
         <p>
           Solo se muestran tus resultados para la tienda seleccionada. Las

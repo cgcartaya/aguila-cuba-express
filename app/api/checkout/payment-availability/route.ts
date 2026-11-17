@@ -8,11 +8,11 @@ const getCachedPaymentAvailability = unstable_cache(
   async (storeId: string) => {
     const { data: store } = await supabaseAdmin
       .from("stores")
-      .select("stripe_mode, stripe_account_id, stripe_charges_enabled, stripe_direct_secret_key")
+      .select("slug, stripe_mode, stripe_account_id, stripe_charges_enabled, stripe_direct_secret_key")
       .eq("id", storeId)
       .maybeSingle();
 
-    if (!store) return false;
+    if (!store || store.slug === "lym") return false;
     const clover = await getCloverSettings(storeId);
     return Boolean(clover?.enabled && clover.private_token && clover.webhook_secret) || Boolean(getStoreStripeContext(store));
   },

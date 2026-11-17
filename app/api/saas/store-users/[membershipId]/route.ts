@@ -113,6 +113,11 @@ export async function PATCH(request: Request, context: RouteContext) {
     return jsonError("La relación usuario-tienda no existe.", 404);
   }
 
+  if (body.role === "LYM_SALES") {
+    const { data: roleStore } = await supabaseAdmin.from("stores").select("slug").eq("id", membership.store_id).maybeSingle();
+    if (roleStore?.slug !== "lym") return jsonError("Este rol solo se puede asignar a LYM.");
+  }
+
   const updates: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };

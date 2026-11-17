@@ -555,7 +555,7 @@ export default function CartPageClient() {
                 <div className="flex items-start justify-between gap-5">
                   <span className="text-white/65">Entrega</span>
                   <span className="max-w-[190px] text-right text-xs font-semibold text-white/75">
-                    Se coordina después del pago
+                    {store?.slug === "lym" ? "Se coordina al confirmar la solicitud" : "Se coordina después del pago"}
                   </span>
                 </div>
               </div>
@@ -575,16 +575,16 @@ export default function CartPageClient() {
                 href={checkoutUrl}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-4 text-center font-black text-white shadow-lg shadow-red-950/20 transition hover:bg-red-700"
               >
-                Continuar con el pedido <ArrowRight size={18} />
+                {store?.slug === "lym" ? "Continuar con la solicitud" : "Continuar con el pedido"} <ArrowRight size={18} />
               </Link>
 
               <div className="mt-6 space-y-3 border-t border-white/15 pt-5 text-sm font-semibold text-white/85">
-                <p className="flex items-center gap-3"><ShieldCheck size={18} /> Pago seguro</p>
-                <p className="flex items-center gap-3"><Truck size={18} /> Entrega coordinada después del pago</p>
+                <p className="flex items-center gap-3"><ShieldCheck size={18} /> {store?.slug === "lym" ? "Solicitud sin pago en línea" : "Pago seguro"}</p>
+                <p className="flex items-center gap-3"><Truck size={18} /> {store?.slug === "lym" ? "Entrega sujeta a confirmación" : "Entrega coordinada después del pago"}</p>
                 <p className="flex items-center gap-3"><CheckCircle2 size={18} /> Confirmación antes de finalizar</p>
               </div>
               <p className="mt-5 text-xs leading-5 text-white/50">
-                Podrás revisar los datos antes de completar la compra.
+                {store?.slug === "lym" ? "La tienda confirmará la disponibilidad antes de registrar la venta." : "Podrás revisar los datos antes de completar la compra."}
               </p>
             </aside>
 

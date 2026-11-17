@@ -42,9 +42,11 @@ const amount = (n: number) =>
 const count = (n: number) => n.toLocaleString("es-US");
 export default function OwnerPanel({
   storeId,
+  salesConfirmed = false,
   storeName,
 }: {
   storeId: string;
+  salesConfirmed?: boolean;
   storeName: string;
 }) {
   const [members, setMembers] = useState<Member[]>([]);
@@ -169,13 +171,13 @@ export default function OwnerPanel({
       hint: "Pedidos atribuidos al equipo",
     },
     {
-      label: "Pedidos pagados",
+      label: salesConfirmed ? "Ventas confirmadas" : "Pedidos pagados",
       value: count(totals.paid),
       icon: CheckCircle2,
-      hint: "Con pago confirmado",
+      hint: salesConfirmed ? "Confirmadas manualmente por LYM" : "Con pago confirmado",
     },
     {
-      label: "Ventas pagadas",
+      label: salesConfirmed ? "Importe confirmado" : "Ventas pagadas",
       value: amount(totals.sales),
       icon: Wallet,
       hint: "Total en USD · No son comisiones",
@@ -367,7 +369,7 @@ export default function OwnerPanel({
                     <th>Visitas</th>
                     <th>Productos vistos</th>
                     <th>Pedidos</th>
-                    <th>Pagados</th>
+                    <th>{salesConfirmed ? "Confirmados" : "Pagados"}</th>
                     <th>Ventas · USD</th>
                   </tr>
                 </thead>
@@ -427,8 +429,7 @@ export default function OwnerPanel({
           <div className={s.footnote}>
             <Info size={16} />
             <p>
-              Las visitas pueden incluir repeticiones. Las ventas corresponden a
-              pedidos con pago confirmado y excluyen cancelados. No representan
+              Las visitas pueden incluir repeticiones. {salesConfirmed ? "Las ventas corresponden a confirmaciones manuales de LYM, excluyendo canceladas y devueltas." : "Las ventas corresponden a pedidos con pago confirmado y excluyen cancelados."} No representan
               comisiones.
             </p>
           </div>

@@ -54,7 +54,7 @@ export default function AdminProductsPage() {
   const { access, loading: accessLoading, isSuperAdmin, store: accessStore } =
     useAdminAccess();
 
-  const catalogRole = !isSuperAdmin && access?.storeMembership?.role === "SHIPPING_CATALOG";
+  const catalogRole = !isSuperAdmin && ["SHIPPING_CATALOG", "LYM_SALES"].includes(access?.storeMembership?.role || "");
 
   const { store: selectedStore, loading: storeLoading } = useStore();
 

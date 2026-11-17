@@ -1,3 +1,4 @@
+import { lymApiBoundary } from "@/lib/lym/api-boundary";
 import { isWfCargoHost } from "@/lib/saas/wfcargo-hosts";
 import { isLuxuryHost } from '@/lib/luxury/hosts';
 import { sections as dmcSections } from '@/lib/luxury/dmc/content';
@@ -266,6 +267,8 @@ function getStoreByCustomDomain(host: string) {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const lymDenied = await lymApiBoundary(request);
+  if (lymDenied) return lymDenied;
 
   /*
    * /login, /admin, API, autenticación y archivos estáticos son globales.

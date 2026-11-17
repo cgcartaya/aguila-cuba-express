@@ -210,6 +210,8 @@ export async function POST(request: Request) {
     return jsonError("La tienda seleccionada no existe.", 404);
   }
 
+  if (role === "LYM_SALES" && store.slug !== "lym") return jsonError("Este rol solo se puede asignar a LYM.");
+
   let authUser: User | null = null;
   let reusedExistingUser = false;
 

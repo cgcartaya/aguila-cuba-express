@@ -14,10 +14,12 @@ import styles from "./workspace.module.css";
 
 export default function HomePanel({
   storeId,
+  salesConfirmed = false,
   online,
   onNavigate,
 }: {
   storeId: string;
+  salesConfirmed?: boolean;
   online: boolean;
   onNavigate: (section: "catalogo" | "campanas" | "publicaciones" | "resultados") => void;
 }) {
@@ -81,7 +83,7 @@ export default function HomePanel({
       <section className={styles.homeMetrics}>
         <Metric icon={<Eye size={19} />} label="Visitas" value={total.visits} />
         <Metric icon={<ShoppingBag size={19} />} label="Pedidos" value={total.orders} />
-        <Metric icon={<WalletCards size={19} />} label="Ventas pagadas" value={`$${total.amount.toFixed(2)}`} />
+        <Metric icon={<WalletCards size={19} />} label={salesConfirmed ? "Ventas confirmadas" : "Ventas pagadas"} value={`$${total.amount.toFixed(2)}`} />
         <Metric icon={<Target size={19} />} label="Conversión" value={`${conversion.toFixed(1)}%`} />
       </section>
 
@@ -91,7 +93,7 @@ export default function HomePanel({
           <h2>Así está funcionando tu contenido</h2>
           <div className={styles.homeStatsList}>
             <div><span>Productos vistos</span><strong>{total.views}</strong></div>
-            <div><span>Pedidos pagados</span><strong>{total.paid}</strong></div>
+            <div><span>{salesConfirmed ? "Ventas confirmadas" : "Pedidos pagados"}</span><strong>{total.paid}</strong></div>
             <div><span>Conversión visita → pedido</span><strong>{conversion.toFixed(1)}%</strong></div>
           </div>
           <button className={styles.textButton} onClick={() => onNavigate("resultados")}>

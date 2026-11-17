@@ -19,6 +19,7 @@ export type CampaignMetric = {
   publications: number;
 };
 export type CampaignReport = {
+  saleBasis?: "confirmed" | "paid";
   campaigns: (CampaignMetric & {
     campaign_id: string;
     title: string;

@@ -15,6 +15,8 @@
 ========================================================= */
 
 import { useState } from "react";
+import { useStore } from "@/hooks/useStore";
+import { lymFetch } from "@/lib/lym/client";
 import { supabase } from "@/lib/supabase";
 
 const EXIT_REASONS = [
@@ -34,6 +36,7 @@ export default function StockModal({
   onClose: () => void;
   onSaved?: (newStock: number) => void;
 }) {
+  const { store } = useStore();
   const [stock, setStock] = useState(product.stock);
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
@@ -46,12 +49,23 @@ export default function StockModal({
   async function save() {
     setError("");
 
-    if (isDecrease && !reason) {
-      setError("Selecciona el motivo de la baja de stock.");
+    if ((isDecrease && !reason) || (store?.slug === "lym" && !reason && !notes.trim())) {
+      setError(store?.slug === "lym" ? "Indica el motivo del ajuste de existencias." : "Selecciona el motivo de la baja de stock.");
       return;
     }
 
     setSaving(true);
+
+    const { data: targetStore, error: targetStoreError } = await supabase.from("stores").select("slug").eq("id", product.store_id).maybeSingle();
+    if (targetStoreError || !targetStore) { alert("No se pudo verificar la tienda del producto."); setSaving(false); return; }
+    if (targetStore.slug === "lym") {
+      try {
+        await lymFetch('', { storeId: product.store_id, action: 'stock', productId: product.id, stock: Number(stock), expected: previousStock, reason: [EXIT_REASONS.find(r => r.value === reason)?.label, notes].filter(Boolean).join(' · ') });
+        onSaved?.(Number(stock));
+      } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo ajustar.'); }
+      finally { setSaving(false); }
+      return;
+    }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const createdByEmail = sessionData?.session?.user?.email || null;
@@ -111,6 +125,7 @@ export default function StockModal({
         <h2 className="text-2xl font-black">Ajustar Inventario</h2>
 
         <p className="mt-2 font-semibold">{product.name}</p>
+        {store?.slug === "lym" && <p className="mt-2 text-sm text-slate-600">Para registrar una venta, crea una orden manual y confírmala desde Órdenes.</p>}
 
         <div className="mt-6">
           <label className="font-bold">Nuevo stock</label>
@@ -123,10 +138,10 @@ export default function StockModal({
           />
         </div>
 
-        {isDecrease && (
+        {(isDecrease || store?.slug === "lym") && (
           <div className="mt-4">
             <label className="font-bold">
-              Motivo de la baja <span className="text-red-600">*</span>
+              {store?.slug === "lym" ? "Motivo del ajuste" : "Motivo de la baja"} <span className="text-red-600">*</span>
             </label>
 
             <select
@@ -135,7 +150,7 @@ export default function StockModal({
               className="mt-2 w-full rounded-xl border p-3"
             >
               <option value="">Selecciona un motivo...</option>
-              {EXIT_REASONS.map((r) => (
+              {EXIT_REASONS.filter(r => store?.slug !== "lym" || r.value !== "venta_manual").map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
                 </option>
