@@ -305,7 +305,7 @@ export default function StoreUsersPage() {
               <div className="md:col-span-2">
                 <label htmlFor="new-user-role" className="mb-2 block text-sm font-bold text-slate-700">Rol del usuario</label>
                 <select id="new-user-role" value={form.role} onChange={e => setForm({ ...form, role: e.target.value as StoreUserRole })} className="w-full rounded-2xl border p-3">
-                  {STORE_USER_ROLES.map(role => <option key={role} value={role}>{getRoleLabel(role)}</option>)}
+                  {STORE_USER_ROLES.filter(role => role !== "LYM_SALES" || store?.slug === "lym").map(role => <option key={role} value={role}>{getRoleLabel(role)}</option>)}
                 </select>
                 <p className="mt-2 text-sm text-slate-500">Solo asignar repartidores: entra directamente a Envíos y únicamente puede cambiar el repartidor.</p>
               </div>
@@ -426,7 +426,7 @@ export default function StoreUsersPage() {
                         await loadUsers();
                         setSaving(false);
                       }} className="max-w-full rounded-xl border bg-slate-50 px-3 py-2 text-xs font-bold">
-                        {STORE_USER_ROLES.map(role => <option key={role} value={role}>{getRoleLabel(role)}</option>)}
+                        {STORE_USER_ROLES.filter(role => role !== "LYM_SALES" || store?.slug === "lym").map(role => <option key={role} value={role}>{getRoleLabel(role)}</option>)}
                       </select>
 
                       <span

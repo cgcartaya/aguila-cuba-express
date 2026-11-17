@@ -114,7 +114,7 @@ export default function CampaignResults({
                       <th>Publicaciones</th>
                       <th>Visitas del enlace</th>
                       <th>Pedidos</th>
-                      <th>Pagados</th>
+                      <th>{report?.saleBasis === "confirmed" ? "Confirmados" : "Pagados"}</th>
                       <th>Ventas · USD</th>
                     </tr>
                   </thead>
@@ -162,7 +162,7 @@ export default function CampaignResults({
                         <th>Publicaciones</th>
                         <th>Visitas del enlace</th>
                         <th>Productos vistos</th>
-                        <th>Pedidos pagados</th>
+                        <th>{report?.saleBasis === "confirmed" ? "Ventas confirmadas" : "Pedidos pagados"}</th>
                         <th>Ventas · USD</th>
                       </tr>
                     </thead>
@@ -192,7 +192,7 @@ export default function CampaignResults({
                       {admin && <th>Gestor</th>}
                       <th>Red de referencia</th>
                       <th>Visitas del enlace</th>
-                      <th>Pedidos pagados</th>
+                      <th>{report?.saleBasis === "confirmed" ? "Ventas confirmadas" : "Pedidos pagados"}</th>
                       <th>Ventas · USD</th>
                     </tr>
                   </thead>

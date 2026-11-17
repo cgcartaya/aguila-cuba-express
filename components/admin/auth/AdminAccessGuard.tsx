@@ -75,7 +75,7 @@ export default function AdminAccessGuard({ children, area }: AdminAccessGuardPro
       setAccess(result.data);
       if (area === "store" && isAssignmentOnlyAccess(result.data) && !isAssignmentOnlyPath(pathname, result.data.storeMembership?.role)) {
         setState("checking");
-        router.replace("/admin/shipping/shipments");
+        router.replace(result.data.storeMembership?.role === "LYM_SALES" ? "/admin/orders" : "/admin/shipping/shipments");
         return;
       }
       setState("allowed");

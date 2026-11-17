@@ -1,5 +1,5 @@
 import type { Result } from "@/lib/shareapp/client";
-export default function Results({ rows }: { rows: Result[] }) {
+export default function Results({ rows, salesConfirmed = false }: { rows: Result[]; salesConfirmed?: boolean }) {
   const total = rows.reduce(
     (acc, row) => ({
       visits: acc.visits + Number(row.visits),
@@ -17,8 +17,8 @@ export default function Results({ rows }: { rows: Result[] }) {
           ["Visitas", total.visits],
           ["Productos vistos", total.views],
           ["Pedidos creados", total.orders],
-          ["Pedidos pagados", total.paid],
-          ["Ventas pagadas · USD", total.amount.toFixed(2)],
+          [salesConfirmed ? "Ventas confirmadas" : "Pedidos pagados", total.paid],
+          [salesConfirmed ? "Ventas confirmadas · USD" : "Ventas pagadas · USD", total.amount.toFixed(2)],
         ].map(([label, value]) => (
           <div
             key={label}
@@ -31,8 +31,7 @@ export default function Results({ rows }: { rows: Result[] }) {
       </div>
       <p className="text-sm text-slate-500">
         Últimos 30 días. Las visitas cuentan entradas con referencia; pueden
-        incluir repeticiones. Las ventas se calculan desde pedidos con pago
-        confirmado, excluyendo cancelados. No son comisiones.
+        incluir repeticiones. {salesConfirmed ? "Las ventas se calculan por fecha de confirmación manual de LYM, excluyendo canceladas y devueltas." : "Las ventas se calculan desde pedidos con pago confirmado, excluyendo cancelados."} No son comisiones.
       </p>
       {rows.length > 1 && (
         <div className="overflow-x-auto rounded-2xl border bg-white">
@@ -44,7 +43,7 @@ export default function Results({ rows }: { rows: Result[] }) {
                   "Visitas",
                   "Vistas",
                   "Pedidos",
-                  "Pagados",
+                  salesConfirmed ? "Confirmados" : "Pagados",
                   "USD",
                 ].map((text) => (
                   <th className="p-3" key={text}>

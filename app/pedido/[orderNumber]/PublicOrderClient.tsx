@@ -27,6 +27,7 @@ type Order = {
   order_number: string | null;
   status: string;
   source_shipment_id?: string | null;
+  lym_sale_state?: string | null;
   payment_status?: string | null;
   payment_method?: string | null;
   subtotal: number | null;
@@ -316,7 +317,8 @@ export function PublicOrderClient({
   }
 
   const { order, items, store } = initialData;
-  const statusText = statusLabels[order.status] || order.status;
+  const isLym = store?.slug === 'lym';
+  const statusText = isLym ? ({pending: 'Solicitud pendiente de confirmación', confirmed: 'Venta confirmada', cancelled: 'Cancelada / devuelta', legacy: 'Orden histórica'}[order.lym_sale_state || 'legacy'] || order.status) : statusLabels[order.status] || order.status;
   const storeName = store?.name?.trim() || "Perla Marketplace";
   const storeUrl = store?.slug ? `/tienda/${store.slug}` : "/tienda";
   const publicNumber = order.order_number || order.id;
@@ -361,19 +363,19 @@ export function PublicOrderClient({
               {statusText}
             </span>
             <span className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold">
-              Pago:{" "}
+              {isLym ? "LYM revisará disponibilidad y entrega" : <>Pago:{" "}
               {order.payment_status === "paid"
                 ? "Pagado"
                 : order.payment_status === "expired"
                   ? "No completado"
                   : order.payment_method === "card"
                     ? "Pendiente"
-                    : "Pendiente de confirmar"}
+                    : "Pendiente de confirmar"}</>}
             </span>
           </div>
 
           {order.source_shipment_id && <p className="my-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">Productos incluidos en la factura de tu envío: no es un cobro adicional. Gestiona el pago con la agencia desde Envíos.</p>}
-          {!order.source_shipment_id && order.payment_method === "card" && order.payment_status !== "paid" && (
+          {!isLym && !order.source_shipment_id && order.payment_method === "card" && order.payment_status !== "paid" && (
             <>
               <p className="mt-4 text-sm text-white/70">
                 {order.payment_status === "expired"
@@ -433,7 +435,7 @@ export function PublicOrderClient({
         </section>
 
         <section className="mt-5 rounded-3xl bg-white p-5 shadow-sm">
-          <h2 className="mb-4 text-lg font-bold">Resumen del pago</h2>
+          <h2 className="mb-4 text-lg font-bold">{isLym ? "Resumen de la solicitud" : "Resumen del pago"}</h2>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between"><span className="text-gray-500">Productos</span><strong>${Number(order.subtotal || 0).toFixed(2)}</strong></div>
             <div className="flex justify-between"><span className="text-gray-500">Envío</span><strong>${Number(order.delivery_fee || 0).toFixed(2)}</strong></div>
@@ -443,7 +445,7 @@ export function PublicOrderClient({
             {order.payment_method === "card" && (
               <div className="flex justify-between text-blue-700"><span>Recargo por tarjeta ({(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)</span><strong>+${cardSurcharge.toFixed(2)}</strong></div>
             )}
-            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">{order.source_shipment_id ? "Productos incluidos en el envío" : order.payment_status === "paid" ? "Total pagado" : "Total a pagar"}</span><span className="font-black">${displayedTotal.toFixed(2)}</span></div>
+            <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">{isLym ? "Total de la solicitud" : order.source_shipment_id ? "Productos incluidos en el envío" : order.payment_status === "paid" ? "Total pagado" : "Total a pagar"}</span><span className="font-black">${displayedTotal.toFixed(2)}</span></div>
           </div>
         </section>
 
@@ -456,7 +458,7 @@ export function PublicOrderClient({
 
         <section className="mt-5 rounded-3xl bg-green-50 p-5 text-green-800">
           <div className="flex items-center gap-2 font-black"><CheckCircle2 size={20} /> Tu pedido fue recibido correctamente.</div>
-          <p className="mt-2 text-sm">El equipo de {storeName} confirmará el pago y actualizará el estado del pedido.</p>
+          <p className="mt-2 text-sm">{isLym ? "La venta se confirma manualmente por LYM. Esta solicitud no requiere un pago en línea ni reserva inventario." : <>El equipo de {storeName} confirmará el pago y actualizará el estado del pedido.</>}</p>
         </section>
 
         <div className="mt-5">

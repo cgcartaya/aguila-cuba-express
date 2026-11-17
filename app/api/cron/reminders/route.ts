@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
         }
 
         const store = storeById.get(cartRow.store_id);
+        if (store?.slug === "lym") continue; // Catalog requests never require an online-payment reminder.
         const storeName = store?.name || "la tienda";
         const baseUrl = getBaseUrl(store || {});
         const checkoutUrl = `${baseUrl}/tienda/${store?.slug || ""}/checkout`;
@@ -165,6 +166,7 @@ export async function GET(request: NextRequest) {
         }
 
         const store = order.store_id ? storeById.get(order.store_id) : null;
+        if (store?.slug === "lym") continue; // LYM confirms catalog requests manually, without online-payment reminders.
         const storeName = store?.name || "la tienda";
         const baseUrl = getBaseUrl(store || {});
         const publicNumber = order.order_number || order.id;

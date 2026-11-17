@@ -1,4 +1,5 @@
 "use client";
+import LymCheckout from "@/components/lym/LymCheckout";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -1059,6 +1060,8 @@ ${orderUrl}`);
       setLoading(false);
     }
   }
+
+  if (store?.slug === "lym") return <LymCheckout storeId={store.id} whatsapp={businessWhatsapp} />;
 
   const settings = checkoutSettings || (store?.id ? createDefaultCheckoutSettings(store.id) : null);
   const showRecipient = usesDistanceDelivery

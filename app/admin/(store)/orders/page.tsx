@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import LymOrders from "@/components/lym/LymOrders";
 import OrdersManager from "@/components/admin/OrdersManager";
 import OrderPeriodStats from "@/components/admin/orders/OrderPeriodStats";
 import AdminPageHeader from "@/components/admin/ui/AdminPageHeader";
@@ -127,6 +128,8 @@ export default function AdminOrdersPage() {
         setLoading(false);
         return;
       }
+
+      if (activeStore.slug === "lym") { setLoading(false); return; }
 
       setLoading(true);
       setErrorMessage("");
@@ -287,6 +290,8 @@ export default function AdminOrdersPage() {
     setDeletedOrders((prev) => [...prev, ...merged]);
     setLoadingMore(false);
   }, [activeStore?.id, deletedOrders.length]);
+
+  if (activeStore?.slug === "lym") return <main className="min-h-screen bg-slate-50 p-4 md:p-6"><div className="mx-auto max-w-7xl"><h1 className="mb-5 text-3xl font-black">Órdenes y ventas de LYM</h1><LymOrders storeId={activeStore.id} /></div></main>;
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 pb-28 text-[#061b3a] md:p-6">

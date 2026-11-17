@@ -10,6 +10,7 @@
 ========================================================= */
 
 import { useState } from "react";
+import { lymFetch } from "@/lib/lym/client";
 import { supabase } from "@/lib/supabase";
 
 type InventoryProduct = {
@@ -44,6 +45,17 @@ export default function StockEntryModal({
 
     const previousStock = Number(product.stock || 0);
     const newStock = previousStock + quantity;
+
+    const { data: targetStore, error: targetStoreError } = await supabase.from("stores").select("slug").eq("id", product.store_id).maybeSingle();
+    if (targetStoreError || !targetStore) { alert("No se pudo verificar la tienda del producto."); setSaving(false); return; }
+    if (targetStore.slug === "lym") {
+      try {
+        await lymFetch('', { storeId: product.store_id, action: 'stock', productId: product.id, stock: newStock, expected: previousStock, reason: `Entrada de inventario · ${supplier || 'Sin proveedor'} · Costo: ${cost || 0} · ${notes}` });
+        onSaved?.(newStock);
+      } catch (e) { alert(e instanceof Error ? e.message : 'No se pudo registrar la entrada.'); }
+      finally { setSaving(false); }
+      return;
+    }
 
     const { data: sessionData } = await supabase.auth.getSession();
     const createdByEmail = sessionData?.session?.user?.email || null;

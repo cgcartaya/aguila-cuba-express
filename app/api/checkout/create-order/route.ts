@@ -44,6 +44,7 @@
 
 import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
+import { createLymRequest } from "@/lib/lym/checkout";
 import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
@@ -233,6 +234,8 @@ export async function POST(request: Request) {
     ) {
       return fail("Esta tienda no está disponible.", 404);
     }
+
+    if (store.slug === "lym") return createLymRequest(storeId, body as unknown as Record<string, unknown>);
 
     // La obligatoriedad del comprador se decide con la configuración guardada
     // de esta tienda, nunca con un indicador enviado desde el navegador.
