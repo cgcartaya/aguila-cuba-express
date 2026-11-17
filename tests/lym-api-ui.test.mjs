@@ -149,6 +149,24 @@ test("server ignores supplied actor and forwards only authenticated identity to 
   assert.equal((await route.POST(request)).status, 200);
   assert.equal(rpc.args.p_actor, actor);
   assert.equal(rpc.name, "lym_order_action");
+  const deliveryResponse = await route.POST(
+    new Request(request.url, {
+      method: "POST",
+      headers: { Authorization: "Bearer valid" },
+      body: JSON.stringify({
+        storeId: store,
+        action: "delivery_status",
+        actor: "forged",
+        orderId: "order",
+        version: 2,
+        status: "delivered",
+      }),
+    }),
+  );
+  assert.equal(deliveryResponse.status, 200);
+  assert.equal(rpc.name, "lym_update_delivery_status");
+  assert.equal(rpc.args.p_actor, actor);
+  assert.equal(rpc.args.p_status, "delivered");
 });
 test("legacy API boundary denies sales role but preserves other accounts and public requests", async () => {
   for (const [role, expected] of [
@@ -301,12 +319,12 @@ function renderOrders({
       : null,
   };
   const overrides = {
-    6: data,
-    7: false,
-    10: selected,
-    13: editing,
-    15: order.order_items,
-    16: {
+    4: data,
+    5: false,
+    8: selected,
+    11: editing,
+    13: order.order_items,
+    14: {
       customer_name: "Ana Compradora",
       customer_phone: "111",
       recipient_name: "Rosa Destinataria",
@@ -366,8 +384,22 @@ test("pending receipt identifies buyer, recipient, order, prices and pending sta
   assert(!confirmed.includes("Confirmar venta y descontar inventario"));
   assert(!confirmed.includes("Revisar productos, cantidades y precios"));
   assert(confirmed.includes("Cancelar / devolución completa"));
+  assert(confirmed.includes('aria-label="Estado de entrega"'));
+  assert(!html.includes('aria-label="Estado de entrega"'));
+  for (const status of ["in_transit", "delivered"]) {
+    const delivery = renderOrders({
+      selected: { ...order, lym_sale_state: "confirmed", status },
+    });
+    assert(
+      delivery.includes(
+        status === "in_transit"
+          ? "Venta confirmada · En camino"
+          : "Venta confirmada · Entregada",
+      ),
+    );
+  }
 });
-test("manual form exposes line quantity, price, available stock and responsible; monthly panel is owner-only", () => {
+test("manual form exposes line quantity, price, available stock and responsible; monthly report is absent from orders", () => {
   const html = renderOrders({ editing: true });
   for (const label of [
     "Cantidad Producto A",
@@ -378,7 +410,8 @@ test("manual form exposes line quantity, price, available stock and responsible;
   ])
     assert(html.includes(label), label);
   assert(!renderOrders({ owner: false }).includes("Ventas del mes"));
-  assert(renderOrders().includes("Ventas del mes"));
+  assert(!renderOrders().includes("Ventas del mes"));
+  assert(!html.includes('type="month"'));
 });
 test("printing isolates escaped receipt and requests US Letter with paginated table headers", () => {
   let appended;

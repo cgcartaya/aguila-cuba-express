@@ -203,6 +203,12 @@ await db.exec(
     "utf8",
   ),
 );
+await db.exec(
+  fs.readFileSync(
+    "supabase/migrations/20261117222351_lym_order_delivery_status.sql",
+    "utf8",
+  ),
+);
 await db.query("update store_users set role='LYM_SALES' where user_id=$1", [
   staff,
 ]);
@@ -292,6 +298,75 @@ await test("confirmation debits once, duplicate concurrent API requests do not d
     /pendiente/,
   );
 });
+await test("delivery lifecycle preserves inventory and confirmation; enforces permissions, versions and idempotency", async () => {
+  let o = await save();
+  const delivery = (order, status, actor = staff, tenant = store) =>
+    scalar("select public.lym_update_delivery_status($1,$2,$3,$4,$5) result", [
+      tenant,
+      actor,
+      order.id,
+      order.lym_version,
+      status,
+    ]);
+  await assert.rejects(delivery(o, "delivered"), /Confirma primero/);
+  await act(o, "confirm");
+  o = await fresh(o.id);
+  const initial = o,
+    beforeStock = await stock();
+  const movements = await scalar(
+    "select count(*) result from inventory_movements",
+  );
+  await assert.rejects(delivery(o, "pending"), /inválido/);
+  await assert.rejects(delivery(o, "in_transit", outsider), /Sin permiso/);
+  await assert.rejects(
+    delivery(o, "in_transit", staff, other),
+    /Sin permiso|no encontrada/,
+  );
+  const transit = await delivery(o, "in_transit");
+  assert.equal(transit.status, "in_transit");
+  assert.equal(
+    (await delivery(o, "in_transit")).lym_version,
+    transit.lym_version,
+  );
+  await assert.rejects(delivery(o, "delivered"), /La orden cambió/);
+  const delivered = await delivery(transit, "delivered");
+  assert.equal(delivered.status, "delivered");
+  for (const key of [
+    "lym_sale_state",
+    "lym_confirmed_at",
+    "lym_confirmed_by",
+    "lym_seller_key",
+    "total",
+  ])
+    assert.equal(delivered[key], initial[key]);
+  assert.equal(await stock(), beforeStock);
+  assert.equal(
+    await scalar("select count(*) result from inventory_movements"),
+    movements,
+  );
+  assert.equal(
+    Number(
+      await scalar(
+        "select count(*) result from lym_order_events where order_id=$1 and action='delivery_status'",
+        [o.id],
+      ),
+    ),
+    2,
+  );
+  await act(delivered, "cancel");
+  assert.equal(await stock(), beforeStock + 2);
+  await assert.rejects(
+    delivery(await fresh(o.id), "in_transit"),
+    /Confirma primero/,
+  );
+  assert.equal(
+    await scalar(
+      "select has_function_privilege('authenticated','public.lym_update_delivery_status(uuid,uuid,uuid,integer,text)','execute') result",
+    ),
+    false,
+  );
+});
+
 await test("insufficient stock returns all deficient products and leaves order and stock unchanged", async () => {
   const o = await save({
     lines: [
