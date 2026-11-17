@@ -291,7 +291,7 @@ export default function AdminOrdersPage() {
     setLoadingMore(false);
   }, [activeStore?.id, deletedOrders.length]);
 
-  if (activeStore?.slug === "lym") return <main className="min-h-screen bg-slate-50 p-4 md:p-6"><div className="mx-auto max-w-7xl"><h1 className="mb-5 text-3xl font-black">Órdenes y ventas de LYM</h1><LymOrders storeId={activeStore.id} /></div></main>;
+  if (activeStore?.slug === "lym") return <main className="min-h-screen bg-slate-50 p-4 md:p-6"><div className="mx-auto max-w-7xl"><h1 className="mb-5 text-3xl font-black">Órdenes de LYM</h1><LymOrders storeId={activeStore.id} /></div></main>;
 
   return (
     <main className="min-h-screen bg-gray-50 p-4 pb-28 text-[#061b3a] md:p-6">

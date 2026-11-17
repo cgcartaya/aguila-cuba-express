@@ -446,7 +446,12 @@ test("monthly sales view renders each responsible person and filters order detai
 });
 
 const { NextResponse } = require("next/server");
-function apiDatabase({ role = "OWNER", slug = "lym", active = true } = {}) {
+function apiDatabase({
+  role = "OWNER",
+  slug = "lym",
+  active = true,
+  operational = false,
+} = {}) {
   const calls = [];
   return {
     calls,
@@ -460,7 +465,7 @@ function apiDatabase({ role = "OWNER", slug = "lym", active = true } = {}) {
       return { data: report };
     },
     from(table) {
-      if (["orders", "products"].includes(table))
+      if (!operational && ["orders", "products"].includes(table))
         throw Error("Read-only sales view must not fetch operational tables");
       const rows =
         table === "shareapp_members"
@@ -499,6 +504,19 @@ function apiDatabase({ role = "OWNER", slug = "lym", active = true } = {}) {
         order() {
           return b;
         },
+        is(k, v) {
+          calls.push({ table, k, v });
+          return b;
+        },
+        not() {
+          return b;
+        },
+        range() {
+          return b;
+        },
+        limit() {
+          return b;
+        },
         maybeSingle: async () => ({ data: single }),
         then(resolve, reject) {
           return Promise.resolve({ data: rows }).then(resolve, reject);
@@ -515,6 +533,39 @@ function routeFor(db) {
   });
   return load("app/api/admin/lym/route.ts", { "@/lib/lym/server": service });
 }
+test("orders query skips monthly report and scopes delivery filters to confirmed sales", async () => {
+  for (const status of ["", "in_transit", "delivered"]) {
+    const db = apiDatabase({ operational: true });
+    const response = await routeFor(db).GET(
+      new Request(
+        `https://lym.perlamarketplace.com/api/admin/lym?storeId=${store.id}&state=${status}`,
+        { headers: { Authorization: "Bearer valid" } },
+      ),
+    );
+    assert.equal(response.status, 200);
+    assert(!db.calls.some((c) => c.rpc === "lym_monthly_report"));
+    assert(
+      db.calls.some(
+        (c) => c.table === "orders" && c.k === "store_id" && c.v === store.id,
+      ),
+    );
+    if (status) {
+      assert(
+        db.calls.some(
+          (c) =>
+            c.table === "orders" &&
+            c.k === "lym_sale_state" &&
+            c.v === "confirmed",
+        ),
+      );
+      assert(
+        db.calls.some(
+          (c) => c.table === "orders" && c.k === "status" && c.v === status,
+        ),
+      );
+    }
+  }
+});
 const request = (extra = "", token = "valid") =>
   new Request(
     `https://lym.perlamarketplace.com/api/admin/lym?view=sales&storeId=${store.id}&year=2026&month=11${extra}`,

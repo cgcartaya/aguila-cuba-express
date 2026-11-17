@@ -18,16 +18,17 @@ export async function GET(request: Request) {
       url.searchParams.get("month") || new Date().getUTCMonth() + 1,
     );
     if (
-      !Number.isInteger(year) ||
-      year < 2000 ||
-      year > 2100 ||
-      !Number.isInteger(month) ||
-      month < 1 ||
-      month > 12
+      reportOnly &&
+      (!Number.isInteger(year) ||
+        year < 2000 ||
+        year > 2100 ||
+        !Number.isInteger(month) ||
+        month < 1 ||
+        month > 12)
     )
       throw new LymError("Mes inválido.");
     // Calendar bounds are computed in PostgreSQL's America/Havana timezone.
-    const { data: report, error: re } = access.owner
+    const { data: report, error: re } = reportOnly
       ? await db.rpc("lym_monthly_report", {
           p_store: storeId,
           p_actor: access.actor,
@@ -52,7 +53,10 @@ export async function GET(request: Request) {
         query = query.not("deleted_at", "is", null);
       else query = query.is("deleted_at", null);
       const state = url.searchParams.get("state");
-      if (state) query = query.eq("lym_sale_state", state);
+      if (state)
+        query = ["in_transit", "delivered"].includes(state)
+          ? query.eq("lym_sale_state", "confirmed").eq("status", state)
+          : query.eq("lym_sale_state", state);
       const seller = url.searchParams.get("seller");
       if (seller)
         query =
@@ -190,6 +194,14 @@ export async function POST(request: Request) {
         p_items: body.items,
         p_public: false,
         p_request: body.orderId ? null : body.requestKey,
+      });
+    } else if (action === "delivery_status") {
+      result = await db.rpc("lym_update_delivery_status", {
+        p_store: access.store.id,
+        p_actor: access.actor,
+        p_order: body.orderId,
+        p_version: body.version,
+        p_status: body.status,
       });
     } else if (action === "stock") {
       result = await db.rpc("lym_adjust_stock", {

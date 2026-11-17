@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { printLymReceipt } from "@/lib/lym/print";
 import { lymFetch } from "@/lib/lym/client";
 
@@ -26,6 +26,7 @@ type Order = {
   notes: string;
   created_at: string;
   deleted_at: string | null;
+  status: string;
   lym_sale_state: string;
   lym_origin: string;
   lym_seller_key: string | null;
@@ -38,23 +39,6 @@ type Order = {
 };
 type Seller = { key: string; name: string; active: boolean; role: string };
 type Product = { id: string; name: string; stock: number; price: number };
-type Summary = {
-  seller_key: string;
-  seller_name: string;
-  pending: number;
-  confirmed: number;
-  units: number;
-  amount: number;
-};
-type ReportOrder = {
-  id: string;
-  order_number: string;
-  seller_key: string;
-  state: string;
-  origin: string;
-  date: string;
-  total: number;
-};
 type Data = {
   orders: Order[];
   count: number;
@@ -63,18 +47,12 @@ type Data = {
   owner: boolean;
   actor: string;
   store: { name: string; logo_url: string | null };
-  report: {
-    rows: Summary[];
-    orders: ReportOrder[];
-    legacy_count: number;
-    timezone: string;
-  } | null;
 };
 type Event = {
   actor_id: string | null;
   action: string;
   created_at: string;
-  details: { reason?: string };
+  details: { reason?: string; status?: string };
 };
 const money = (n: number) => `$${Number(n || 0).toFixed(2)}`;
 const date = (s: string | null) =>
@@ -84,6 +62,7 @@ const eventName = (action: string) =>
     created: "Solicitud creada",
     edited: "Solicitud editada",
     confirm: "Venta confirmada",
+    delivery_status: "Estado de entrega actualizado",
     cancel: "Cancelación / devolución",
     trash: "Enviada a papelera",
     restore: "Reabierta como solicitud",
@@ -96,17 +75,20 @@ const stateName = (s: string) =>
     confirmed: "Venta confirmada",
     cancelled: "Cancelada / devuelta",
     legacy: "Histórica · requiere conciliación",
+    in_transit: "En camino",
+    delivered: "Entregada",
   })[s] || s;
+const orderStateName = (o: Order) =>
+  stateName(o.lym_sale_state) +
+  (o.lym_sale_state === "confirmed" &&
+  ["in_transit", "delivered"].includes(o.status)
+    ? ` · ${stateName(o.status)}`
+    : "");
 const fieldClass = "w-full rounded-xl border border-slate-300 bg-white p-3";
 const buttonClass =
   "rounded-xl border border-slate-300 bg-white px-4 py-2 font-semibold disabled:opacity-50";
 
 export default function LymOrders({ storeId }: { storeId: string }) {
-  const today = new Date(
-    new Date().toLocaleString("en-US", { timeZone: "America/Havana" }),
-  );
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
   const [seller, setSeller] = useState("");
   const [state, setState] = useState("");
   const [trash, setTrash] = useState(false);
@@ -143,7 +125,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
     setLoading(true);
     try {
       const result = await lymFetch(
-        `?${new URLSearchParams({ storeId, year: String(year), month: String(month), seller, state, trash: String(trash), page: String(page) })}`,
+        `?${new URLSearchParams({ storeId, seller, state, trash: String(trash), page: String(page) })}`,
       );
       if (sequence === loadSequence.current) setData(result);
     } catch (e) {
@@ -154,7 +136,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
     } finally {
       if (sequence === loadSequence.current) setLoading(false);
     }
-  }, [storeId, year, month, seller, state, trash, page]);
+  }, [storeId, seller, state, trash, page]);
   useEffect(() => {
     void load();
   }, [load]);
@@ -227,7 +209,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
       setBusy(false);
     }
   }
-  async function action(order: Order, action: string) {
+  async function action(order: Order, action: string, status?: string) {
     if (lock.current) return;
     const reason = [
       "cancel",
@@ -256,6 +238,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
         orderId: order.id,
         version: order.lym_version,
         reason,
+        status,
       });
       if (result.success === false) {
         setShortages(result.inventory || []);
@@ -275,33 +258,6 @@ export default function LymOrders({ storeId }: { storeId: string }) {
       setBusy(false);
     }
   }
-  const reportRows = useMemo(() => {
-    const rows = [...(data?.report?.rows || [])];
-    for (const s of data?.sellers || [])
-      if (!rows.some((r) => r.seller_key === s.key))
-        rows.push({
-          seller_key: s.key,
-          seller_name: s.name,
-          pending: 0,
-          confirmed: 0,
-          units: 0,
-          amount: 0,
-        });
-    return rows.filter((r) => !seller || r.seller_key === seller);
-  }, [data, seller]);
-  const details = (data?.report?.orders || []).filter(
-    (o) =>
-      (!seller || o.seller_key === seller) && (!state || o.state === state),
-  );
-  const totals = reportRows.reduce(
-    (a, r) => ({
-      pending: a.pending + Number(r.pending),
-      confirmed: a.confirmed + Number(r.confirmed),
-      units: a.units + Number(r.units),
-      amount: a.amount + Number(r.amount),
-    }),
-    { pending: 0, confirmed: 0, units: 0, amount: 0 },
-  );
   const total =
     lines.reduce((s, x) => s + Number(x.quantity) * Number(x.price), 0) +
     Number(form.delivery_fee || 0);
@@ -314,7 +270,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
   return (
     <section className="space-y-5 text-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p>Solicitudes de catálogo y ventas confirmadas · LYM</p>
+        <p>Pedidos de la web y órdenes manuales · LYM</p>
         <button
           className="rounded-xl bg-blue-950 px-5 py-3 font-bold text-white"
           onClick={() => edit(null)}
@@ -323,25 +279,6 @@ export default function LymOrders({ storeId }: { storeId: string }) {
         </button>
       </div>
       <div className="flex flex-wrap gap-3 rounded-2xl bg-white p-4">
-        <label>
-          Mes
-          <input
-            aria-label="Mes y año"
-            className={fieldClass}
-            type="month"
-            min="2000-01"
-            max="2100-12"
-            value={`${year}-${String(month).padStart(2, "0")}`}
-            onChange={(e) => {
-              const [y, m] = e.target.value.split("-").map(Number);
-              if (y && m) {
-                setYear(y);
-                setMonth(m);
-                setPage(0);
-              }
-            }}
-          />
-        </label>
         <label>
           Venta de
           <select
@@ -373,9 +310,18 @@ export default function LymOrders({ storeId }: { storeId: string }) {
             }}
           >
             <option value="">Todos</option>
-            {["pending", "confirmed", "cancelled", "legacy"].map((s) => (
+            {[
+              "pending",
+              "confirmed",
+              "in_transit",
+              "delivered",
+              "cancelled",
+              "legacy",
+            ].map((s) => (
               <option key={s} value={s}>
-                {stateName(s)}
+                {s === "confirmed"
+                  ? "Ventas confirmadas (todas)"
+                  : stateName(s)}
               </option>
             ))}
           </select>
@@ -406,118 +352,9 @@ export default function LymOrders({ storeId }: { storeId: string }) {
           ))}
         </ul>
       )}
-      {data?.owner && data.report && (
-        <div className="space-y-4 rounded-2xl bg-white p-5">
-          <h2 className="text-xl font-black">
-            Ventas del mes · {month}/{year}
-          </h2>
-          <p className="text-sm text-slate-600">
-            Ventas por fecha de confirmación, hora de Cuba. Solicitudes
-            pendientes creadas en el mes. Cancelaciones y devoluciones completas
-            se excluyen del mes de la venta original. Unidades incluyen los
-            productos de los combos.
-          </p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr>
-                  {[
-                    "Persona",
-                    "Pendientes",
-                    "Ventas confirmadas",
-                    "Unidades",
-                    "Importe",
-                  ].map((h) => (
-                    <th className="p-2" key={h}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {reportRows.map((r) => (
-                  <tr key={r.seller_key} className="border-t">
-                    <td className="p-2">
-                      <button
-                        className="text-blue-700 underline"
-                        onClick={() => {
-                          setSeller(r.seller_key);
-                          setPage(0);
-                        }}
-                      >
-                        {r.seller_name}
-                      </button>
-                    </td>
-                    <td className="p-2">
-                      {state && state !== "pending" ? 0 : r.pending}
-                    </td>
-                    <td className="p-2">
-                      {state && state !== "confirmed" ? 0 : r.confirmed}
-                    </td>
-                    <td className="p-2">
-                      {state && state !== "confirmed" ? 0 : r.units}
-                    </td>
-                    <td className="p-2">
-                      {money(state && state !== "confirmed" ? 0 : r.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t font-bold">
-                  <td className="p-2">
-                    {seller ? "Total filtrado" : "Total general LYM"}
-                  </td>
-                  <td>{state && state !== "pending" ? 0 : totals.pending}</td>
-                  <td>
-                    {state && state !== "confirmed" ? 0 : totals.confirmed}
-                  </td>
-                  <td>{state && state !== "confirmed" ? 0 : totals.units}</td>
-                  <td>
-                    {money(state && state !== "confirmed" ? 0 : totals.amount)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          {data.report.legacy_count > 0 && (
-            <p className="text-sm text-amber-800">
-              {data.report.legacy_count} órdenes históricas sin fecha de
-              confirmación fiable, excluidas de los totales mensuales.
-            </p>
-          )}
-          <details>
-            <summary className="cursor-pointer font-bold">
-              Ver órdenes del mes ({details.length})
-            </summary>
-            <ul>
-              {details.map((o) => (
-                <li
-                  className="flex flex-wrap justify-between gap-2 border-t py-2"
-                  key={o.id}
-                >
-                  <button
-                    className="text-blue-700 underline"
-                    onClick={() => void open(o.id)}
-                  >
-                    {o.order_number}
-                  </button>
-                  <span>
-                    {o.origin === "manual" ? "Manual" : "Web"} ·{" "}
-                    {stateName(o.state)} · {date(o.date)} · {money(o.total)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details>
-        </div>
-      )}
       <h2 className="text-xl font-black">
         {trash ? "Papelera" : "Todas las órdenes"}{" "}
-        <span className="text-sm font-normal">
-          ({data?.count || 0}) · Los filtros de persona y estado también se
-          aplican aquí
-        </span>
+        <span className="text-sm font-normal">({data?.count || 0})</span>
       </h2>
       {loading && <p aria-live="polite">Cargando…</p>}
       <div className="grid gap-3">
@@ -540,7 +377,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
                   : "Web"}
             </p>
             <p className="text-sm text-blue-800">
-              {stateName(o.lym_sale_state)} · {date(o.created_at)}
+              {orderStateName(o)} · {date(o.created_at)}
             </p>
           </button>
         ))}
@@ -819,7 +656,7 @@ export default function LymOrders({ storeId }: { storeId: string }) {
                       {date(selected.created_at)}
                     </p>
                     <p className="rounded border-2 border-black p-3 font-bold">
-                      {stateName(selected.lym_sale_state)}
+                      {orderStateName(selected)}
                       {selected.deleted_at ? " · EN PAPELERA" : ""}
                     </p>
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -906,6 +743,29 @@ export default function LymOrders({ storeId }: { storeId: string }) {
                           </button>
                         </>
                       )}
+                    {selected.lym_sale_state === "confirmed" &&
+                      !selected.deleted_at && (
+                        <label>
+                          Estado de entrega
+                          <select
+                            className={fieldClass}
+                            aria-label="Estado de entrega"
+                            value={selected.status}
+                            disabled={busy}
+                            onChange={(e) =>
+                              void action(
+                                selected,
+                                "delivery_status",
+                                e.target.value,
+                              )
+                            }
+                          >
+                            <option value="confirmed">Confirmada</option>
+                            <option value="in_transit">En camino</option>
+                            <option value="delivered">Entregada</option>
+                          </select>
+                        </label>
+                      )}
                     {["pending", "confirmed"].includes(
                       selected.lym_sale_state,
                     ) &&
@@ -984,6 +844,8 @@ export default function LymOrders({ storeId }: { storeId: string }) {
                         <li className="border-t py-2 text-sm" key={i}>
                           {date(e.created_at)} · {displayActor(e.actor_id)} ·{" "}
                           {eventName(e.action)}{" "}
+                          {e.details.status &&
+                            `· ${stateName(e.details.status)}`}
                           {e.details.reason && `· ${e.details.reason}`}
                         </li>
                       ))}
