@@ -80,7 +80,7 @@ test("every promotional asset exists and is scoped to WF Cargo", () => {
   for (const slide of content.slides) {
     assert.match(slide.image, /^\/wfcargo\//);
     assert.ok(fs.existsSync("public" + slide.image));
-    assert.ok(slide.href.startsWith("#"));
+    assert.ok(slide.href.startsWith("#") || new URL(slide.href).hostname === "wa.me");
   }
 });
 test("contact and tariff data match the supplied business brief", () => {

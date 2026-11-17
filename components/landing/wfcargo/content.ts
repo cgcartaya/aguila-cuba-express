@@ -36,7 +36,7 @@ export const slides = [
     image: "/wfcargo/banner-remesas.webp",
     alt: "Familia cubana compartiendo la confirmación de una remesa",
     label: "Consultar remesas",
-    href: "#remesas",
+    href: whatsapp("Hola, quisiera información sobre remesas."),
   },
   {
     tag: "Trámites sin fronteras",
@@ -56,7 +56,7 @@ export const slides = [
     image: "/wfcargo/banner-autos.webp",
     alt: "Auto moderno junto al mar en La Habana",
     label: "Consultar disponibilidad",
-    href: "#viajes",
+    href: whatsapp("Hola, quisiera consultar la disponibilidad de autos y hoteles en Cuba."),
   },
 ];
 export const procedures = [
