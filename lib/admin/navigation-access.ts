@@ -17,6 +17,8 @@ export function canAccessAdminPath(
   }
   const path = pathname.replace(/\/$/, "");
   if (
+    path === "/admin/sales" ||
+    path.startsWith("/admin/sales/") ||
     path === "/admin/marketing/gestores" ||
     path.startsWith("/admin/marketing/gestores/")
   )

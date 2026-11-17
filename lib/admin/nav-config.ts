@@ -80,6 +80,7 @@ export const adminNavSections: AdminSection[] = [
     links: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
       { href: "/admin/orders", label: "Órdenes", icon: ShoppingCart },
+      { href: "/admin/sales", label: "Ventas del mes", icon: ChartNoAxesCombined, storeSlugs: ["lym"] },
       { href: "/admin/products", label: "Productos", icon: Package },
       { href: "/admin/physical-products", label: "Productos tienda física", icon: Package, storeSlugs: ["alvarez-travel"] },
       { href: "/admin/products/resenas", label: "Reseñas", icon: MessageSquareText },

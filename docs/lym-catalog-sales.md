@@ -82,3 +82,5 @@ Pruebas adicionales:
 ```sh
 node --test tests/lym-navigation-sales.test.mjs tests/admin-nav-accordion.test.mjs tests/lym-api-ui.test.mjs tests/lym-sales.test.mjs tests/shipping-assignment-only.test.mjs
 ```
+
+El reporte también tiene un acceso directo en la sección **Tienda** del menú: **Ventas del mes** aparece inmediatamente debajo de **Órdenes** en el menú lateral de PC y en el menú lateral móvil de LYM. Abre `/admin/sales`, una página propia que reutiliza el mismo reporte protegido. Solo se muestra a propietaria/administradora de LYM y superadministradores con LYM seleccionada; no añade permisos ni consultas para otras tiendas.
