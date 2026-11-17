@@ -9,8 +9,6 @@ import CatalogSection from "./CatalogSection";
 import {
   ServiceGrid,
   Benefits,
-  FeaturedServices,
-  OtherServices,
   Branches,
   FaqSection,
 } from "./ServiceSections";
@@ -122,15 +120,13 @@ export default async function WfCargoLanding() {
       <main id="contenido">
         <PromotionSlider />
         <ServiceGrid />
-        <CatalogSection />
         <div className={s.tools}>
           <ShippingCalculator destinations={destinations} />
         </div>
+        <CatalogSection />
         <ManagedProcedures />
         <Benefits />
         <PickupForm />
-        <FeaturedServices />
-        <OtherServices />
         <Branches />
         <FaqSection />
         <section className={s.contactCta}>

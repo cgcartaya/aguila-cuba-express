@@ -1,4 +1,3 @@
-import Image from "next/image";
 import {
   ArrowRight,
   Package,
@@ -38,7 +37,7 @@ const services = [
     icon: Wallet,
     name: "Enviar remesas",
     text: "Cerca de quienes más quieres",
-    href: "#remesas",
+    href: whatsapp("Hola, quisiera información sobre remesas."),
   },
   {
     icon: Car,
@@ -50,7 +49,7 @@ const services = [
     icon: Grid2X2,
     name: "Otros servicios",
     text: "Soluciones en un mismo lugar",
-    href: "#multiservicios",
+    href: whatsapp("Hola, quisiera información sobre sus otros servicios."),
   },
 ];
 export function ServiceGrid() {
@@ -107,110 +106,6 @@ export function Benefits() {
         </div>
       ))}
     </div>
-  );
-}
-export function FeaturedServices() {
-  return (
-    <section className={`${s.section} ${s.featured}`}>
-      <article id="remesas" className={s.featureCard}>
-        <Image
-          src="/wfcargo/remesas.webp"
-          alt="Promoción de remesas a Cuba de WF Cargo"
-          width={590}
-          height={665}
-          className={s.promoImage}
-        />
-        <div>
-          <p className={s.kicker}>CONEXIONES QUE IMPORTAN</p>
-          <h2>
-            Tu familia,
-            <br />
-            siempre más cerca.
-          </h2>
-          <p>
-            Remesas a Cuba y Latinoamérica. Consulta las opciones, tasas y
-            condiciones disponibles con nuestro equipo.
-          </p>
-          <a
-            className={s.button}
-            href={whatsapp(
-              "Hola, quisiera información sobre remesas y las tasas disponibles.",
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Consultar remesas
-            <ArrowRight size={18} />
-          </a>
-        </div>
-      </article>
-      <article id="viajes" className={s.featureCard}>
-        <Image
-          src="/wfcargo/autos.webp"
-          alt="Promoción de renta de autos en Cuba de WF Cargo"
-          width={560}
-          height={700}
-          className={s.promoImage}
-        />
-        <div>
-          <p className={s.kicker}>PLANEA TU PRÓXIMA VISITA</p>
-          <h2>
-            Nos vemos
-            <br />
-            en Cuba.
-          </h2>
-          <p>
-            Renta de autos y reservas de hotel en Cuba. Cuéntanos tus fechas y
-            te ayudamos a consultar disponibilidad.
-          </p>
-          <a
-            className={s.button}
-            href="#tramites"
-          >
-            Consultar renta de autos
-            <ArrowRight size={18} />
-          </a>
-          <p><a href={whatsapp("Hola, quisiera consultar disponibilidad de hoteles en Cuba.")}
-            target="_blank" rel="noopener noreferrer">Consultar hoteles por WhatsApp</a></p>
-        </div>
-      </article>
-    </section>
-  );
-}
-export function OtherServices() {
-  return (
-    <section id="multiservicios" className={`${s.section} ${s.other}`}>
-      <div className={s.sectionHeading}>
-        <p className={s.kicker}>MUCHO MÁS QUE ENVÍOS</p>
-        <h2>Resuelve más, en un mismo lugar.</h2>
-      </div>
-      <div className={s.otherGrid}>
-        {[
-          "Notaría pública",
-          "Apostillas",
-          "Traducciones",
-          "Preparación de impuestos",
-          "Llenado de formularios",
-          "Recargas a Latinoamérica",
-          "Agencia de viajes",
-        ].map((name) => (
-          <a
-            key={name}
-            href={name === "Notaría pública" || name === "Apostillas"
-              ? "#tramites"
-              : whatsapp(`Hola, quisiera información sobre ${name}.`)}
-          >
-            <FileText size={21} />
-            {name}
-            <ArrowRight size={16} />
-          </a>
-        ))}
-      </div>
-      <p className={s.small}>
-        No ofrecemos asesoría legal ni de inmigración. Consulta disponibilidad y
-        requisitos por sucursal.
-      </p>
-    </section>
   );
 }
 export function Branches() {
