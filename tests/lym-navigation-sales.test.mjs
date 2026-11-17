@@ -602,3 +602,101 @@ test("Gestores offers the sales tab only for LYM and keeps its ShareAPP team and
     assert(html.includes('id="tab-configuracion"'));
   }
 });
+
+test("Ventas del mes is directly below Orders for LYM owners on desktop and mobile, and hidden for other roles/stores", () => {
+  for (const role of ["OWNER", "ADMIN"]) {
+    const visible = paths(role);
+    assert.equal(visible[visible.indexOf("/admin/orders") + 1], "/admin/sales");
+    const rendered = renderNavigation(role);
+    for (const html of [rendered.shell, rendered.drawer]) {
+      assert(html.includes("Ventas del mes"));
+      assert(html.includes('href="/admin/sales"'));
+      assert(
+        html.indexOf('href="/admin/orders"') <
+          html.indexOf('href="/admin/sales"'),
+      );
+      assert(
+        html.indexOf('href="/admin/sales"') <
+          html.indexOf('href="/admin/products"'),
+      );
+    }
+  }
+  for (const role of [
+    "LYM_SALES",
+    "ASSIGNER",
+    "SHIPPING_CATALOG",
+    "VIEWER",
+    "BILLER",
+  ])
+    assert(!paths(role).includes("/admin/sales"));
+  assert(
+    !paths("OWNER", { ...store, slug: "another-store" }).includes(
+      "/admin/sales",
+    ),
+  );
+  assert(
+    !nav
+      .getVisibleAdminSections({ ...store, slug: "another-store" }, true, null)
+      .flatMap((s) => s.links)
+      .some((l) => l.href === "/admin/sales"),
+  );
+});
+
+test("monthly sales page reuses the protected report only for authorized LYM administrators", () => {
+  function renderPage({
+    role = "OWNER",
+    slug = "lym",
+    superAdmin = false,
+    loading = false,
+    moduleEnabled = true,
+  } = {}) {
+    const selected = { ...store, slug, module_store_enabled: moduleEnabled };
+    const Page = load("app/admin/(store)/sales/page.tsx", {
+      "next/link": {
+        __esModule: true,
+        default: ({ children, ...props }) =>
+          React.createElement("a", props, children),
+      },
+      "@/hooks/useAdminAccess": {
+        useAdminAccess: () => ({
+          access: { storeMembership: membership(role) },
+          store: selected,
+          isSuperAdmin: superAdmin,
+          loading,
+        }),
+      },
+      "@/hooks/useStore": {
+        useStore: () => ({ store: selected, loading: false }),
+      },
+      "@/components/admin/ui/AdminPageHeader": {
+        __esModule: true,
+        default: ({ title }) => React.createElement("h1", null, title),
+      },
+      "@/components/lym/LymSalesReport": {
+        __esModule: true,
+        default: ({ storeId }) =>
+          React.createElement(
+            "div",
+            { "data-sales-report": storeId },
+            "Reporte mensual",
+          ),
+      },
+    }).default;
+    return renderToStaticMarkup(React.createElement(Page));
+  }
+  for (const role of ["OWNER", "ADMIN"])
+    assert(renderPage({ role }).includes("data-sales-report="));
+  assert(
+    renderPage({ superAdmin: true, role: "VIEWER" }).includes(
+      "data-sales-report=",
+    ),
+  );
+  for (const input of [
+    { role: "LYM_SALES" },
+    { role: "VIEWER" },
+    { slug: "another-store" },
+    { loading: true },
+    { moduleEnabled: false },
+  ])
+    assert(!renderPage(input).includes("data-sales-report="));
+});
