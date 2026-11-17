@@ -26,6 +26,8 @@ export interface Store {
   module_shipping_enabled: boolean
   module_pickups_enabled: boolean
   module_menu_enabled: boolean
+  module_procedures_enabled: boolean
+  procedures_public_enabled: boolean
   module_reservas_enabled: boolean
   module_marketing_posts_enabled?: boolean
   module_marketing_catalogs_enabled?: boolean

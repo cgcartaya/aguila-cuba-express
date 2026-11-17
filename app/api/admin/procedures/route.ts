@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { configuration, key, states, transitions, type State } from "@/lib/procedures/catalog";
+import { submission, requestValues } from "@/lib/procedures/submission";
 import { initialCatalog } from "@/lib/procedures/seed";
-import { catalog, response, staff } from "@/lib/procedures/server";
+import { catalog, response, procedureStaff } from "@/lib/procedures/server";
 
 const mutation = z.discriminatedUnion("action", [
+  submission.extend({ action: z.literal("create"), origin: z.enum(["presencial", "telefono", "whatsapp"]),
+    employee: z.uuid().nullable(), note: z.string().trim().max(2000) }).strict(),
+  z.object({ action: z.literal("note"), id: z.uuid(), revision: z.number().int().nonnegative(), note: z.string().trim().min(1).max(2000) }).strict(),
   z.object({ action: z.literal("seed") }).strict(),
   z.object({ action: z.literal("catalog"), service: key, configuration, publish: z.boolean() }).strict(),
   z.object({ action: z.literal("state"), id: z.uuid(), revision: z.number().int().nonnegative(), state: z.enum(statesKeys()) }).strict(),
@@ -33,8 +37,8 @@ export async function PUT(request: Request) {
 }
 
 async function readPanel(request: Request, params: URLSearchParams) {
-  const user = await staff(request);
-  if (!user) return response({ error: "Acceso restringido al equipo de trámites de WF Cargo." }, 403);
+  const user = await procedureStaff(request);
+  if (!user) return response({ error: "Acceso restringido al módulo de trámites." }, 403);
   const id = z.uuid().safeParse(params.get("id"));
   try {
     let query = db.from("procedure_requests").select("*", { count: "exact" }).eq("store_id", user.store);
@@ -46,7 +50,10 @@ async function readPanel(request: Request, params: URLSearchParams) {
       const history = await db.from("procedure_audit").select("revision,event,actor_id,previous_state,next_state,created_at")
         .eq("store_id", user.store).eq("request_id", id.data).order("revision", { ascending: false });
       if (history.error) throw history.error;
-      return response({ entry: data, history: history.data });
+      const snapshot = await db.from("procedure_catalog").select("service,version,configuration")
+        .eq("store_id", user.store).eq("service", data.service).eq("version", data.version).single();
+      if (snapshot.error) throw snapshot.error;
+      return response({ entry: data, history: history.data, snapshot: snapshot.data });
     }
     const page = Math.max(0, Math.min(10000, Math.trunc(Number(params.get("page")) || 0)));
     const state = params.get("state");
@@ -62,14 +69,13 @@ async function readPanel(request: Request, params: URLSearchParams) {
     if (assigned.success) query = query.eq("assigned_to", assigned.data);
     if (params.get("assigned") === "none") query = query.is("assigned_to", null);
     if (search) {
-      const filters = [`customer_name.ilike.%${search}%`, `phone.ilike.%${search}%`, `email.ilike.%${search}%`];
+      const filters = [`reference.ilike.%${search}%`, `customer_name.ilike.%${search}%`, `phone.ilike.%${search}%`, `email.ilike.%${search}%`];
       if (z.uuid().safeParse(search).success) filters.push(`id.eq.${search}`);
       query = query.or(filters.join(","));
     }
-    const employeeQuery = user.supervisor
-      ? db.from("store_users").select("user_id")
-        .eq("store_id", user.store).eq("active", true).in("role", ["OWNER", "ADMIN", "OPERATIONS"])
-      : Promise.resolve({ data: [], error: null });
+    const employeeQuery = db.from("store_users").select("user_id")
+        .eq("store_id", user.store).eq("active", true).in("role", ["OWNER", "ADMIN", "OPERATIONS"]);
+    if (!user.supervisor) employeeQuery.eq("user_id", user.id);
     const totals = Promise.all([...statesKeys(), "unassigned"].map(async status => {
       let countQuery = db.from("procedure_requests").select("id", { count: "exact", head: true }).eq("store_id", user.store);
       if (!user.supervisor) countQuery = countQuery.eq("assigned_to", user.id);
@@ -78,7 +84,7 @@ async function readPanel(request: Request, params: URLSearchParams) {
       return [status, result.count];
     }));
     const [result, employees, entries, counts] = await Promise.all([
-      query.order("created_at", { ascending: false }).range(page * 25, page * 25 + 24),
+      query.order("created_at", { ascending: params.get("sort") === "oldest" }).order("id").range(page * 25, page * 25 + 24),
       employeeQuery, catalog(user.store, !user.supervisor), totals,
     ]);
     if (result.error || employees.error) throw result.error || employees.error;
@@ -89,21 +95,39 @@ async function readPanel(request: Request, params: URLSearchParams) {
     if (profiles.error) throw profiles.error;
     return response({ requests: result.data, total: result.count,
       employees: profiles.data?.map(profile => ({ user_id: profile.id, profiles: profile })), catalog: entries,
-      supervisor: user.supervisor, counts: Object.fromEntries(counts) });
+      supervisor: user.supervisor, store: { name: user.name, color: user.color, slug: user.slug }, counts: Object.fromEntries(counts) });
   } catch {
     return response({ error: "No se pudo consultar el panel." }, 503);
   }
 }
 
 export async function POST(request: Request) {
-  const user = await staff(request);
+  const user = await procedureStaff(request);
   if (!user) return response({ error: "Acceso restringido." }, 403);
   const parsed = mutation.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return response({ error: "Datos inválidos." }, 400);
   const input = parsed.data;
   try {
+    if (input.action === "create") {
+      const entry = (await catalog(user.store, !user.supervisor)).find(row => row.service === input.service);
+      const values = requestValues(input, entry);
+      if (!values || entry?.configuration.active === false) return response({ error: "Revisa el servicio, variante y requisitos." }, 400);
+      if (!user.supervisor && input.employee !== user.id) return response({ error: "Debes asignarte la solicitud." }, 403);
+      if (input.employee) {
+        const employee = await db.from("store_users").select("user_id").eq("store_id", user.store)
+          .eq("user_id", input.employee).eq("active", true).in("role", ["OWNER", "ADMIN", "OPERATIONS"]).maybeSingle();
+        const profile = await db.from("profiles").select("id").eq("id", input.employee).eq("active", true).maybeSingle();
+        if (employee.error || profile.error) throw employee.error || profile.error;
+        if (!employee.data || !profile.data) return response({ error: "Empleado no disponible." }, 400);
+      }
+      const saved = await db.from("procedure_requests").insert({ ...values, store_id: user.store,
+        created_by: user.id, origin: input.origin, assigned_to: input.employee, internal_notes: input.note }).select("id").single();
+      if (saved.error) throw saved.error;
+      return response({ reference: saved.data.id }, 201);
+    }
     if (input.action === "catalog" || input.action === "seed") {
       if (!user.supervisor) return response({ error: "Acceso restringido." }, 403);
+      if (input.action === "seed" && user.slug !== "wf-cago") return response({ error: "Crea tu propio catálogo de servicios." }, 400);
       const entries = await catalog(user.store, false);
       const rows = input.action === "seed"
         ? Object.entries(initialCatalog).filter(([service]) => !entries.some(row => row.service === service))
@@ -127,6 +151,12 @@ export async function POST(request: Request) {
     if (data.revision !== input.revision) return response({ error: "La solicitud cambió. Actualiza e inténtalo de nuevo." }, 409);
     const closed = ["completed", "cancelled"].includes(data.state);
     const checklist = data.checklist as { id: string; optional: boolean; verification: string; verified_by?: string; verified_at?: string }[];
+    if (input.action === "note") {
+      const result = await db.rpc("procedure_add_note", { p_store: user.store, p_request: input.id,
+        p_revision: input.revision, p_actor: user.id, p_note: input.note });
+      if (result.error) throw result.error;
+      return result.data ? response({ ok: true }) : response({ error: "La solicitud cambió o está cerrada." }, 409);
+    }
     if (input.action === "state") {
       if ((closed && !user.supervisor) || !transitions[data.state as State].includes(input.state)) {
         return response({ error: "Cambio de estado no permitido." }, 409);

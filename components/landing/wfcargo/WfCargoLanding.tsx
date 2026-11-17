@@ -1,5 +1,8 @@
+import { headers } from "next/headers";
+import { procedurePublicStore } from "@/lib/procedures/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import Image from "next/image";
+import Link from "next/link";
 import { MessageCircle, Phone, ArrowUpRight } from "lucide-react";
 import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
@@ -59,6 +62,7 @@ async function loadBoxRates() {
 }
 
 export default async function WfCargoLanding() {
+  const procedureStore = await procedurePublicStore(new Request(`https://${(await headers()).get("host") || "invalid.local"}`));
   const destinations = await loadBoxRates().catch((error: unknown) => {
     console.error("WF Cargo box rates unavailable", error);
     return null;
@@ -93,7 +97,7 @@ export default async function WfCargoLanding() {
             <a href="#servicios">Servicios</a>
             <a href="#cotizador">Envíos</a>
             <a href="#tramites">Trámites</a>
-            <a href="/casillero">Casillero Virtual</a>
+            <Link href="/casillero">Casillero Virtual</Link>
             <a href="#sucursales">Sucursales</a>
           </div>
           <a
@@ -111,7 +115,7 @@ export default async function WfCargoLanding() {
               <a href="#servicios">Servicios</a>
               <a href="#cotizador">Cotizar envío</a>
               <a href="#tramites">Trámites</a>
-            <a href="/casillero">Casillero Virtual</a>
+            <Link href="/casillero">Casillero Virtual</Link>
               <a href="#sucursales">Sucursales</a>
             </div>
           </details>
@@ -124,7 +128,7 @@ export default async function WfCargoLanding() {
           <ShippingCalculator destinations={destinations} />
         </div>
         <CatalogSection />
-        <ManagedProcedures />
+        {procedureStore && <ManagedProcedures />}
         <Benefits />
         <PickupForm />
         <Branches />
@@ -158,9 +162,9 @@ export default async function WfCargoLanding() {
         <div>
           <a href="tel:+17722127150">{contact.phone}</a>
           <a href={`mailto:${contact.email}`}>{contact.email}</a>
-          <a href="/privacidad">Política de privacidad</a>
-          <a href="/condiciones">Condiciones del servicio</a>
-          <a href="/login">Acceso de personal</a>
+          <Link href="/privacidad">Política de privacidad</Link>
+          <Link href="/condiciones">Condiciones del servicio</Link>
+          <Link href="/login">Acceso de personal</Link>
         </div>
         <small>
           Oficina de notaría pública. No ofrecemos asesoría legal ni de

@@ -99,6 +99,8 @@ export async function getCurrentAdminAccess(): Promise<{
         module_shipping_enabled,
         module_pickups_enabled,
         module_menu_enabled,
+        module_procedures_enabled,
+        procedures_public_enabled,
         module_reservas_enabled,
         module_economy_enabled,
         module_marketing_posts_enabled,
