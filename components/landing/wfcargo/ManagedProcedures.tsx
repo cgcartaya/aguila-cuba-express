@@ -8,12 +8,12 @@ import { contact, whatsapp } from "./content";
 import styles from "./wfcargo.module.css";
 
 const servicePhotos: Record<string, { src: string; alt: string }> = {
-  "pasaporte-cubano": { src: "/wfcargo/pasaporte.webp", alt: "Pasaporte cubano" },
-  "pasaporte-americano": { src: "/wfcargo/tramites.webp", alt: "Documentación para trámites de pasaporte" },
-  "apostilla": { src: "/wfcargo/tramites.webp", alt: "Documentos para trámites y apostillas" },
-  "notarizacion": { src: "/wfcargo/tramites.webp", alt: "Documentación para notarización" },
-  "evisa-cuba": { src: "/wfcargo/banner-tramites.webp", alt: "Documentos de viaje para Cuba" },
-  "renta-carros": { src: "/wfcargo/autos.webp", alt: "Vehículo de alquiler" },
+  "pasaporte-cubano": { src: "/wfcargo/pasaporte-cubano.webp", alt: "Pasaporte cubano" },
+  "pasaporte-americano": { src: "/wfcargo/pasaporte-americano.webp", alt: "Documentación para trámites de pasaporte" },
+  "apostilla": { src: "/wfcargo/apostilla.webp", alt: "Documentos para trámites y apostillas" },
+  "notarizacion": { src: "/wfcargo/notarizacion.webp", alt: "Documentación para notarización" },
+  "evisa-cuba": { src: "/wfcargo/evisa-cuba.webp", alt: "Documentos de viaje para Cuba" },
+  "renta-carros": { src: "/wfcargo/renta-carros.webp", alt: "Vehículo de alquiler" },
 };
 const serviceOrder = Object.keys(servicePhotos);
 
@@ -82,10 +82,10 @@ export default function ManagedProcedures() {
           </ul>
         </div>
         <div className={styles.procedureHeroImage}>
-          <Image src="/wfcargo/banner-tramites.webp" alt="" fill sizes="(max-width: 700px) 100vw, 42vw" />
+          <Image src="/wfcargo/hero-tramites.webp" alt="" fill unoptimized />
         </div>
       </header>
-      <div className={styles.toolBody}>
+      <div className={styles.procedureBody}>
         {!catalog.length && <p role="status">{loading ? "Cargando trámites…" : catalogUnavailable
           ? "No pudimos cargar los trámites. Inténtalo de nuevo en unos minutos."
           : "Las solicitudes en línea estarán disponibles cuando WF Cargo publique sus trámites."}</p>}
@@ -96,8 +96,12 @@ export default function ManagedProcedures() {
           }).map(item => {
             const photo = servicePhotos[item.service];
             return (
-              <article className={styles.procedureCard} key={item.service}>
-                <div className={styles.procedureArtwork} role={photo ? "img" : undefined} aria-label={photo?.alt} style={photo ? { backgroundImage: `url("${photo.src}")` } : undefined}>{!photo && <FileText size={48} aria-hidden="true" />}</div>
+              <article className={photo ? styles.procedureCard : `${styles.procedureCard} ${styles.procedureCardWithoutPhoto}`} key={item.service}>
+                {photo && (
+                  <div className={styles.procedureArtwork}>
+                    <Image src={photo.src} alt={photo.alt} fill unoptimized />
+                  </div>
+                )}
                 <div className={styles.procedureCardBody}>
                   <h3>{item.configuration.title}</h3>
                   <p>{item.configuration.description}</p>
