@@ -5,6 +5,12 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const storeId = url.searchParams.get("storeId") || "";
     const access = await lymAccess(request, storeId);
+    const reportOnly = url.searchParams.get("view") === "sales";
+    if (reportOnly && !access.owner)
+      throw new LymError(
+        "Solo la administradora puede consultar las ventas por persona.",
+        403,
+      );
     const year = Number(
       url.searchParams.get("year") || new Date().getUTCFullYear(),
     );
@@ -33,13 +39,15 @@ export async function GET(request: Request) {
       0,
       Math.min(100000, Number(url.searchParams.get("page") || 0) | 0),
     );
-    let query = db
-      .from("orders")
-      .select("*,order_items(*)", { count: "exact" })
-      .eq("store_id", storeId);
+    let query = reportOnly
+      ? null
+      : db
+          .from("orders")
+          .select("*,order_items(*)", { count: "exact" })
+          .eq("store_id", storeId);
     const detailId = url.searchParams.get("orderId");
-    if (detailId) query = query.eq("id", detailId);
-    else {
+    if (query && detailId) query = query.eq("id", detailId);
+    else if (query) {
       if (url.searchParams.get("trash") === "true")
         query = query.not("deleted_at", "is", null);
       else query = query.is("deleted_at", null);
@@ -54,16 +62,20 @@ export async function GET(request: Request) {
     }
     const [orders, products, promoters, staff] = await Promise.all([
       query
-        .order("created_at", { ascending: false })
-        .range(page * 30, page * 30 + 29),
-      db
-        .from("products")
-        .select("id,name,price,stock")
-        .eq("store_id", storeId)
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .order("name")
-        .limit(10000),
+        ? query
+            .order("created_at", { ascending: false })
+            .range(page * 30, page * 30 + 29)
+        : Promise.resolve({ data: [], count: 0, error: null }),
+      reportOnly
+        ? Promise.resolve({ data: [], error: null })
+        : db
+            .from("products")
+            .select("id,name,price,stock")
+            .eq("store_id", storeId)
+            .eq("is_active", true)
+            .is("deleted_at", null)
+            .order("name")
+            .limit(10000),
       db
         .from("shareapp_members")
         .select("id,display_name,active")
@@ -103,6 +115,14 @@ export async function GET(request: Request) {
         };
       }),
     ];
+    if (reportOnly)
+      return lymJson({
+        report,
+        sellers,
+        store: { id: access.store.id, name: access.store.name },
+        year,
+        month,
+      });
     const order = detailId ? orders.data?.[0] : null;
     let audit = null;
     let actorNames: Record<string, string> = {};

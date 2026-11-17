@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { Menu, Rocket, Store } from "lucide-react";
 
-import { isAssignmentOnlyAccess } from "@/lib/admin/access";
-import LogoutButton from "@/components/admin/LogoutButton";
 import RemittanceNotifications from "@/components/admin/remittances/RemittanceNotifications";
 import StoreAdminNav from "@/components/admin/nav/StoreAdminNav";
 import StoreAdminMobileMenu from "@/components/admin/nav/StoreAdminMobileMenu";
@@ -14,6 +12,7 @@ import MobileAdminBottomNav from "@/components/admin/MobileAdminBottomNav";
 import StoreSwitcher from "@/components/admin/StoreSwitcher";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
+import { canAccessAdminPath } from "@/lib/admin/navigation-access";
 import { getStoreTheme } from "@/lib/admin/theme";
 
 export default function StoreAdminShell({ children }: { children: ReactNode }) {
@@ -45,13 +44,6 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
     (isSuperAdmin ? "Administración General" : "Tienda activa");
 
   const theme = getStoreTheme(activeStore);
-
-  if (!isSuperAdmin && access?.storeMembership?.role === "LYM_SALES") return <div className="min-h-screen bg-slate-50"><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white p-4"><strong>{storeName} · Ventas</strong><nav className="flex flex-wrap gap-4 font-bold"><Link href="/admin/orders">Órdenes</Link><Link href="/admin/products">Productos</Link><Link href="/admin/inventory">Inventario</Link><Link href="/admin/account">Mi cuenta</Link><LogoutButton /></nav></header>{children}</div>;
-
-  if (isAssignmentOnlyAccess(access)) {
-    const catalog = access?.storeMembership?.role === "SHIPPING_CATALOG";
-    return <div className="min-h-screen bg-slate-50"><header className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-4 py-4 sm:px-6"><div><p className="font-black text-[#061b3a]">{storeName}</p><p className="text-xs text-slate-500">{catalog ? "Envíos, productos e inventario" : "Solo asignar repartidores"}</p></div><nav className="flex flex-wrap items-center gap-4 text-sm font-bold"><Link href="/admin/shipping/shipments">Envíos</Link>{catalog && activeStore?.module_store_enabled && <><Link href="/admin/products">Productos</Link><Link href="/admin/inventory">Inventario</Link></>}<Link href="/admin/account">Mi cuenta</Link><LogoutButton /></nav></header>{children}</div>;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -134,7 +126,7 @@ export default function StoreAdminShell({ children }: { children: ReactNode }) {
         )}
 
         <div className="pb-[calc(6rem+env(safe-area-inset-bottom,0px))] xl:pb-0">
-          {!accessLoading && activeStore?.slug === "alvarez-travel" && <RemittanceNotifications key={activeStore.id} storeId={activeStore.id} />}
+          {!accessLoading && activeStore?.slug === "alvarez-travel" && canAccessAdminPath("/admin/shipping/remittances", access?.storeMembership || null, isSuperAdmin) && <RemittanceNotifications key={activeStore.id} storeId={activeStore.id} />}
           {children}
         </div>
       </div>

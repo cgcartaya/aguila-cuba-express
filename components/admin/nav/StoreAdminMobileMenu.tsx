@@ -91,14 +91,15 @@ function MenuSection({
 export default function StoreAdminMobileMenu({ open, onClose }: AdminMobileMenuProps) {
   const pathname = usePathname();
   const { store } = useStore();
-  const { isSuperAdmin, store: accessStore } = useAdminAccess();
+  const { access, isSuperAdmin, store: accessStore } = useAdminAccess();
   const { profile } = useAdminProfile();
 
   const activeStore = isSuperAdmin ? store || accessStore : accessStore;
-  const sections = getVisibleAdminSections(activeStore, isSuperAdmin);
-  const lowStockCount = useLowStockCount(activeStore?.id);
-  const pendingReservationsCount = usePendingReservationsCount(activeStore?.id);
-  const pendingMenuOrdersCount = usePendingMenuOrdersCount(activeStore?.id);
+  const sections = getVisibleAdminSections(activeStore, isSuperAdmin, access?.storeMembership || null);
+  const visiblePaths = new Set(sections.flatMap(section => section.links.map(link => link.href)));
+  const lowStockCount = useLowStockCount(visiblePaths.has("/admin/inventory") ? activeStore?.id : null);
+  const pendingReservationsCount = usePendingReservationsCount(visiblePaths.has("/admin/reservas/solicitudes") ? activeStore?.id : null);
+  const pendingMenuOrdersCount = usePendingMenuOrdersCount(visiblePaths.has("/admin/menu/ordenes") ? activeStore?.id : null);
 
   const initials = profile.fullName
     .split(/\s+/)

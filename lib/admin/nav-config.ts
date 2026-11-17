@@ -30,7 +30,8 @@ import {
   CircleDollarSign,
 } from "lucide-react";
 
-import type { AccessStore } from "@/lib/admin/access";
+import { canAccessAdminPath } from "@/lib/admin/navigation-access";
+import type { AccessStore, StoreMembership } from "@/lib/admin/access";
 
 export type AdminModuleKey =
   | "procedures"
@@ -260,12 +261,13 @@ export function getVisibleAdminSections(
     | null
     | undefined,
   isSuperAdmin: boolean,
+  membership?: StoreMembership | null,
 ): AdminSection[] {
   const visible = adminNavSections
     .filter((section) => section.module === "procedures" ? isModuleEnabled(store, section.module) : isSuperAdmin || isModuleEnabled(store, section.module))
     .map((section) => ({
       ...section,
-      links: section.links.filter((link) => !link.storeSlugs || link.storeSlugs.includes(store?.slug || "")),
+      links: section.links.filter((link) => (!link.storeSlugs || link.storeSlugs.includes(store?.slug || "")) && (membership === undefined || canAccessAdminPath(link.href, membership, isSuperAdmin))),
     }));
   // Group only after filtering: each commercial tool keeps its module gate.
   const groups: AdminSection[] = [];

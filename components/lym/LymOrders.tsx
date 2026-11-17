@@ -158,6 +158,12 @@ export default function LymOrders({ storeId }: { storeId: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    const orderId = new URLSearchParams(window.location.search).get("orderId");
+    if (orderId && /^[0-9a-f-]{36}$/i.test(orderId)) void open(orderId);
+    // Read the requested order once when entering this store from its sales report.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId]);
   async function open(id: string) {
     setError("");
     setShortages([]);

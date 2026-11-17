@@ -68,3 +68,17 @@ LYM_TEST_PG_URL=postgresql://postgres:password@127.0.0.1:5432/lym_test_sales LYM
 No usar una base con datos: la prueba crea roles y tablas de prueba. El adaptador rechaza servidores distintos de localhost y nombres ajenos a `lym_test`.
 
 La suite adicional de ShareAPP tuvo dos fallos de expectativas de precio (13.32 frente a 13.33 USD), reproducidos idénticamente en `main` (`681f6dd`): `catalog prices match the storefront with fee enabled and disabled` y `social preview uses the original photo, storefront price and matching card metadata`. No se modificó ese cálculo ajeno a LYM. La compilación usa variables de entorno ficticias de build; no constituye una prueba autenticada contra producción. La comprobación física de impresión y la prueba con la cuenta real quedan para la activación.
+
+## Menú habitual y ventas dentro de Gestores
+
+Los roles `LYM_SALES`, `ASSIGNER` y `SHIPPING_CATALOG` usan la misma estructura administrativa que la propietaria: menú lateral, cabecera, menú móvil y barra inferior. La navegación se filtra según sus rutas ya autorizadas; no se sustituyen las políticas RLS ni se amplían permisos. El botón de agregar producto, los accesos rápidos y las consultas de contadores también respetan el filtro. Los permisos existentes de envíos y sus excepciones se reutilizan para sus enlaces.
+
+La administradora de LYM puede entrar en **Marketing → Gestores · ShareAPP → Ventas por persona**. Esta pestaña muestra gestores, jefa y personal de tienda física, incluidas personas con cero ventas y responsables históricos o inactivos. Permite elegir mes/año, buscar o seleccionar persona y consultar ventas confirmadas, unidades, importe y pendientes. El detalle distingue origen web/manual y permite abrir la orden administrativa correspondiente. No se atribuye una venta a quien la procesó si «Venta de» identifica a otra persona.
+
+La consulta `GET /api/admin/lym?view=sales` reutiliza `lym_monthly_report`, comprueba en el servidor que el actor sea propietario/administrador de LYM o superadministrador y devuelve solo el reporte y las personas. No descarga el catálogo ni las órdenes operativas con datos de compradores. La trabajadora y los gestores no reciben por esta vista permisos para consultar el reporte general. Las otras tiendas conservan las pestañas existentes de ShareAPP. No se requieren nuevas migraciones para esta actualización.
+
+Pruebas adicionales:
+
+```sh
+node --test tests/lym-navigation-sales.test.mjs tests/admin-nav-accordion.test.mjs tests/lym-api-ui.test.mjs tests/lym-sales.test.mjs tests/shipping-assignment-only.test.mjs
+```
