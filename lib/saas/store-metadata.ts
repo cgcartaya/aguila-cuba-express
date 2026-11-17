@@ -20,6 +20,9 @@ export type StoreMetadataRow = {
   tracking_og_image_url: string | null;
   is_active: boolean | null;
   has_landing: boolean | null;
+  module_procedures_enabled?: boolean;
+  procedures_public_enabled?: boolean;
+  primary_color?: string | null;
 };
 
 export type StoreMetadataOverrides = {
@@ -79,6 +82,9 @@ async function fetchStore(
       "tracking_og_image_url",
       "is_active",
       "has_landing",
+      "module_procedures_enabled",
+      "procedures_public_enabled",
+      "primary_color",
     ].join(",")
   );
 

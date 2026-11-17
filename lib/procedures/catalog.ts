@@ -5,10 +5,13 @@ export const key = z.string().regex(/^[a-z0-9-]{1,64}$/);
 const requirement = z.object({ id: key, label, optional: z.boolean() }).strict();
 const variant = z.object({
   id: key, title: label,
-  requirements: z.array(requirement).min(1).max(30)
+  requirements: z.array(requirement).max(30)
     .refine(items => new Set(items.map(item => item.id)).size === items.length),
 }).strict();
 export const configuration = z.object({
+  active: z.boolean().optional(), sortOrder: z.number().int().min(0).max(10000).optional(),
+  image: z.string().url().max(2048).refine(value => value.startsWith("https://")).or(z.literal("")).optional(),
+  emailRequired: z.boolean().optional(),
   title: label, description: z.string().trim().min(1).max(2000),
   fees: z.array(z.object({ label, amount: z.number().min(0).max(100000), unit: label }).strict()).max(20),
   agencyFee: z.number().min(0).max(100000).nullable(),

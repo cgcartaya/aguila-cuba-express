@@ -9,11 +9,15 @@ export default function CatalogEditor({ value, change }: { value: Configuration;
     change({ ...value, variants: value.variants.map((item, i) => i === index ? variant : item) });
   }
   return <div className="grid gap-4">
+    <label><input type="checkbox" checked={value.active !== false} onChange={event => change({ ...value, active: event.target.checked })} /> Servicio activo (publica la versión para actualizar la web)</label>
+    <label><input type="checkbox" checked={value.emailRequired !== false} onChange={event => change({ ...value, emailRequired: event.target.checked })} /> Correo obligatorio</label>
+    <label>Orden <input className={input} type="number" min="0" max="10000" value={value.sortOrder || 0} onChange={event => change({ ...value, sortOrder: Number(event.target.value) })} /></label>
+    <label>Imagen (URL HTTPS) <input className={input} type="url" value={value.image || ""} onChange={event => change({ ...value, image: event.target.value })} /></label>
     <label>Título <input className={input} required maxLength={240} value={value.title}
       onChange={event => change({ ...value, title: event.target.value })} /></label>
     <label>Descripción y plazos <textarea className={input} required maxLength={2000} rows={3} value={value.description}
       onChange={event => change({ ...value, description: event.target.value })} /></label>
-    <label>Honorarios de WF Cargo en USD <input className={input} type="number" min="0" max="100000" step="0.01" value={value.agencyFee ?? ""}
+    <label>Honorarios de la agencia en USD <input className={input} type="number" min="0" max="100000" step="0.01" value={value.agencyFee ?? ""}
       onChange={event => change({ ...value, agencyFee: event.target.value ? Number(event.target.value) : null })} /></label>
     <details className="min-w-0 rounded-lg border border-slate-200 p-3">
       <summary className="cursor-pointer font-medium">Tarifas de terceros</summary>
@@ -43,7 +47,7 @@ export default function CatalogEditor({ value, change }: { value: Configuration;
         <label className="py-2"><input type="checkbox" checked={item.optional}
           onChange={event => updateVariant(index, { ...variant, requirements: variant.requirements.map((row, i) =>
             i === position ? { ...row, optional: event.target.checked } : row) })} /> Admite «No aplica»</label>
-        <button className="justify-self-start underline" type="button" disabled={variant.requirements.length === 1}
+        <button className="justify-self-start underline" type="button"
           onClick={() => updateVariant(index, { ...variant, requirements: variant.requirements.filter((_, i) => i !== position) })}>Quitar requisito</button>
       </div>)}
       <button className="justify-self-start underline" type="button" disabled={variant.requirements.length >= 30}

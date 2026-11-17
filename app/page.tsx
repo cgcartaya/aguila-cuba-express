@@ -8,6 +8,7 @@ import { buildLuxuryMetadata } from "@/components/landing/luxury/metadata";
 import { headers } from "next/headers";
 
 import { buildWfCargoMetadata } from "@/components/landing/wfcargo/metadata";
+import PublicProcedures from "@/components/procedures/PublicProcedures";
 import WfCargoLanding from "@/components/landing/wfcargo/WfCargoLanding";
 import Bar1820Landing from "@/components/landing/bar1820/Bar1820Landing";
 import AlvarezLanding from "@/components/landing/alvarez/AlvarezLanding";
@@ -283,7 +284,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPerlaMetadata();
 }
 
-export default async function HomePage() {
+async function LandingContent() {
   const landing = await getCurrentLanding();
 
   if (landing === "luxury") {
@@ -378,4 +379,12 @@ export default async function HomePage() {
   }
 
   return <PerlaMarketplaceLanding />;
+}
+
+
+export default async function HomePage() {
+  const host = (await headers()).get("host") || "";
+  const store = await resolveStoreByHost(host);
+  const showProcedures = resolveLanding(host) !== "wfcargo" && store?.module_procedures_enabled && store.procedures_public_enabled;
+  return <><LandingContent />{showProcedures && <PublicProcedures name={store.name} color={store.primary_color} />}</>;
 }

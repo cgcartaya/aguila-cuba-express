@@ -82,6 +82,8 @@ type StoreForm = {
   module_shipping_enabled: boolean
   module_pickups_enabled: boolean
   module_menu_enabled: boolean
+  module_procedures_enabled: boolean
+  procedures_public_enabled: boolean
   module_reservas_enabled: boolean
   module_economy_enabled: boolean
   module_marketing_posts_enabled: boolean
@@ -121,6 +123,8 @@ const EMPTY_FORM: StoreForm = {
   module_shipping_enabled: false,
   module_pickups_enabled: false,
   module_menu_enabled: false,
+  module_procedures_enabled: false,
+  procedures_public_enabled: false,
   module_reservas_enabled: false,
   module_economy_enabled: false,
   module_marketing_posts_enabled: false,
@@ -355,6 +359,8 @@ export default function EditStorePage() {
         module_shipping_enabled: Boolean(store.module_shipping_enabled),
         module_pickups_enabled: Boolean(store.module_pickups_enabled),
         module_menu_enabled: Boolean(store.module_menu_enabled),
+        module_procedures_enabled: Boolean(store.module_procedures_enabled),
+        procedures_public_enabled: Boolean(store.procedures_public_enabled),
         module_reservas_enabled: Boolean(store.module_reservas_enabled),
         module_economy_enabled: Boolean(economy?.module_economy_enabled),
         module_marketing_posts_enabled: Boolean(store.module_marketing_posts_enabled),
@@ -504,6 +510,8 @@ export default function EditStorePage() {
         module_shipping_enabled: form.module_shipping_enabled,
         module_pickups_enabled: form.module_pickups_enabled,
         module_menu_enabled: form.module_menu_enabled,
+        module_procedures_enabled: form.module_procedures_enabled,
+        procedures_public_enabled: form.procedures_public_enabled,
         module_reservas_enabled: form.module_reservas_enabled,
         module_marketing_posts_enabled: form.module_marketing_posts_enabled,
         module_marketing_catalogs_enabled: form.module_marketing_catalogs_enabled,
@@ -696,6 +704,14 @@ export default function EditStorePage() {
                       checked={form.module_menu_enabled}
                       onChange={(value) => setValue("module_menu_enabled", value)}
                     />
+                    <ModuleCard icon={CalendarDays} iconClass="bg-indigo-50 text-indigo-600"
+                      title="Gestión de Trámites" description="Catálogo, solicitudes, responsables y seguimiento."
+                      helper="Desactivar conserva solicitudes y configuraciones."
+                      checked={form.module_procedures_enabled} onChange={(value) => setValue("module_procedures_enabled", value)} />
+                    <ModuleCard icon={CalendarDays} iconClass="bg-teal-50 text-teal-600"
+                      title="Formulario público de trámites" description="Mostrar servicios y recibir solicitudes en la landing."
+                      helper="Requiere Gestión de Trámites activa."
+                      checked={form.procedures_public_enabled} onChange={(value) => setValue("procedures_public_enabled", value)} />
                     <ModuleCard
                       icon={CalendarDays}
                       iconClass="bg-blue-50 text-blue-600"

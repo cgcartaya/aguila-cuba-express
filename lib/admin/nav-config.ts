@@ -33,6 +33,7 @@ import {
 import type { AccessStore } from "@/lib/admin/access";
 
 export type AdminModuleKey =
+  | "procedures"
   | "store"
   | "pickups"
   | "shipping"
@@ -62,9 +63,10 @@ export const adminNavSections: AdminSection[] = [
   ] },
   {
     title: "Trámites",
+    module: "procedures",
     links: [
-      { href: "/admin/tramites", label: "Solicitudes", icon: ClipboardCheck, storeSlugs: ["wf-cago"] },
-      { href: "/admin/tramites/configuracion", label: "Configuración", icon: Settings, storeSlugs: ["wf-cago"] },
+      { href: "/admin/tramites", label: "Solicitudes", icon: ClipboardCheck },
+      { href: "/admin/tramites/configuracion", label: "Configuración", icon: Settings },
     ],
   },
   { title: "Turismo", links: [
@@ -203,6 +205,7 @@ export function isModuleEnabled(
         | "module_shipping_enabled"
         | "module_pickups_enabled"
         | "module_menu_enabled"
+        | "module_procedures_enabled"
         | "module_reservas_enabled"
         | "module_economy_enabled"
         | "module_marketing_posts_enabled"
@@ -216,6 +219,8 @@ export function isModuleEnabled(
   if (!moduleKey) return true;
 
   switch (moduleKey) {
+    case "procedures":
+      return store?.module_procedures_enabled === true;
     case "store":
       return store?.module_store_enabled !== false;
     case "shipping":
@@ -248,6 +253,7 @@ export function getVisibleAdminSections(
         | "module_shipping_enabled"
         | "module_pickups_enabled"
         | "module_menu_enabled"
+        | "module_procedures_enabled"
         | "module_reservas_enabled"
         | "module_economy_enabled"
       >
@@ -256,7 +262,7 @@ export function getVisibleAdminSections(
   isSuperAdmin: boolean,
 ): AdminSection[] {
   const visible = adminNavSections
-    .filter((section) => isSuperAdmin || isModuleEnabled(store, section.module))
+    .filter((section) => section.module === "procedures" ? isModuleEnabled(store, section.module) : isSuperAdmin || isModuleEnabled(store, section.module))
     .map((section) => ({
       ...section,
       links: section.links.filter((link) => !link.storeSlugs || link.storeSlugs.includes(store?.slug || "")),
