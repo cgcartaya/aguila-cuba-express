@@ -178,3 +178,38 @@ test('module navigation is tenant-independent and disappears when disabled, incl
     assert.equal(links(false).some(link=>link.href==='/admin/tramites'),false);
   }
 });
+test('column-level grants support public stores and authenticated admin membership without allowing owners to enable modules', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(`create role anon; create role authenticated; create role service_role bypassrls;
+      create schema auth;
+      create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
+      create function auth.jwt() returns jsonb language sql as $$select '{"role":"authenticated"}'::jsonb$$;
+      create table stores(id uuid primary key,slug text,private_field text);
+      create table profiles(id uuid primary key,active boolean,role text);
+      insert into stores values ('${store}','wf-cago','private');
+      insert into profiles values ('${actor}',true,'super_admin');
+      alter table stores enable row level security;
+      create policy stores_read on stores for select to anon,authenticated using(true);
+      create policy stores_update on stores for update to authenticated using(true) with check(true);
+      grant select(id,slug) on stores to anon,authenticated;`);
+    await db.exec(readFileSync('supabase/migrations/20261111140000_wf_procedures.sql','utf8'));
+    await db.exec(readFileSync('supabase/migrations/20261117182229_global_procedures_module.sql','utf8'));
+    for(const role of ['anon','authenticated']) {
+      await db.exec(`set role ${role}`);
+      await assert.rejects(db.query('select id,slug,module_procedures_enabled,procedures_public_enabled from stores'),/permission denied/);
+      await db.exec('reset role');
+    }
+    await db.exec(readFileSync('supabase/migrations/20261117193456_fix_procedures_store_column_reads.sql','utf8'));
+    for(const role of ['anon','authenticated']) {
+      await db.exec(`set role ${role}`);
+      assert.equal((await db.query('select id,slug,module_procedures_enabled,procedures_public_enabled from stores')).rows.length,1);
+      await assert.rejects(db.query('select private_field from stores'),/permission denied/);
+      await assert.rejects(db.query('select * from procedure_requests'),/permission denied/);
+      if(role==='authenticated') await assert.rejects(db.query('update stores set module_procedures_enabled=false'),/Solo el superadministrador/);
+      await db.exec('reset role');
+    }
+    await db.exec(`select set_config('test.uid','${actor}',false); set role authenticated; update stores set module_procedures_enabled=false;`);
+    assert.equal((await db.query('select module_procedures_enabled from stores')).rows[0].module_procedures_enabled,false);
+  } finally { await db.close(); }
+});
