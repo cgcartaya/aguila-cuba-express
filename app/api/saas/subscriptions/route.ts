@@ -16,6 +16,26 @@ export async function GET(request: Request) {
     return json({ error: "Acceso exclusivo para administradores SaaS." }, 403);
   try {
     const url = new URL(request.url);
+    if (url.searchParams.has("commission-cycle")) {
+      const store = url.searchParams.get("store");
+      const month = url.searchParams.get("month") || "";
+      if (
+        (store && !/^[a-f0-9-]{36}$/i.test(store)) ||
+        !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(month)
+      )
+        return json({ error: "Selecciona un cliente y un mes válidos." }, 400);
+      const { data, error } = await db.rpc("saas_commission_cycle", {
+        p_actor: actor,
+        p_store: store,
+        p_month: month,
+      });
+      if (error)
+        return json(
+          { error: "No se pudo cargar el ciclo de comisiones." },
+          400,
+        );
+      return json(data);
+    }
     if (url.searchParams.has("quote")) {
       const store = url.searchParams.get("store") || "";
       const month = url.searchParams.get("month") || "";

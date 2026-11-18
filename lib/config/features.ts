@@ -27,6 +27,7 @@ export const CARD_SURCHARGE_RATE = 0.025;
 export const PLATFORM_ORDER_FIXED_FEE = 0.3;
 
 // Acuerdo de Águila. Las demás tiendas conservan su tarifa actual.
-export function getPlatformOrderFixedFee(storeSlug: string): number {
+export function getPlatformOrderFixedFee(storeSlug: string, configuredFee?: number | null): number {
+  if (configuredFee != null) return Number(configuredFee);
   return storeSlug === "aguila" ? 0.5 : PLATFORM_ORDER_FIXED_FEE;
 }

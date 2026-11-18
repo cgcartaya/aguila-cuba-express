@@ -36,6 +36,12 @@ const input =
 const button =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold disabled:opacity-50";
 const primary = `${button.replace("bg-white", "bg-[#0B1F4D]")} border-transparent text-white`;
+type CommissionCycleRow = {
+  kind: "order" | "shipping";
+  state: "unbilled" | "pending" | "paid";
+  amount: number;
+  operations: number;
+};
 type Payment = {
   id: string;
   invoice_id: string;
@@ -95,9 +101,38 @@ export function invoiceTotals(
 }
 export default function SubscriptionBilling() {
   const router = useRouter();
+  const [cycleMonth, setCycleMonth] = useState(() => today().slice(0, 7));
+  const [cycleRevision, setCycleRevision] = useState(0);
+  const [cycle, setCycle] = useState<{
+    key: string;
+    rows?: CommissionCycleRow[];
+    error?: string;
+  } | null>(null);
   const params = useSearchParams();
   const storeId = params.get("store") || "";
   const openNew = params.get("new") === "1";
+  const cycleKey = `${storeId}/${cycleMonth}/${cycleRevision}`;
+  const currentCycle = cycle?.key === cycleKey ? cycle : null;
+  useEffect(() => {
+    if (!cycleMonth) return;
+    let active = true;
+    const query = new URLSearchParams({
+      "commission-cycle": "1",
+      month: `${cycleMonth}-01`,
+    });
+    if (storeId) query.set("store", storeId);
+    billingRequest(`?${query}`)
+      .then((response) => response.json())
+      .then((rows: CommissionCycleRow[]) => {
+        if (active) setCycle({ key: cycleKey, rows });
+      })
+      .catch((error: Error) => {
+        if (active) setCycle({ key: cycleKey, error: error.message });
+      });
+    return () => {
+      active = false;
+    };
+  }, [storeId, cycleMonth, cycleKey]);
   const [stores, setStores] = useState<Store[]>([]),
     [invoices, setInvoices] = useState<Invoice[]>([]),
     [lifecycle, setLifecycle] = useState<Lifecycle[]>([]),
@@ -152,6 +187,7 @@ export default function SubscriptionBilling() {
     setLifecycle(data.lifecycle);
     setIssuer(data.issuer);
     setAllPayments(data.allPayments || []);
+    setCycleRevision((revision) => revision + 1);
     if (invoice) {
       setPayments(data.payments);
       setEvents(data.events);
@@ -711,6 +747,78 @@ export default function SubscriptionBilling() {
                   : "Cargando facturación..."}
               </p>
             </div>
+          )}
+        </section>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-[#0B1F4D]">
+                Comisiones del ciclo
+              </h2>
+              <p className="mt-1 text-xs text-slate-500">
+                Los cargos quedan liquidados al pagar la factura completa. Las
+                liquidaciones anteriores a Facturación SaaS están en la ficha
+                del cliente.
+              </p>
+            </div>
+            <label className="text-xs font-semibold">
+              Mes del ciclo
+              <input
+                type="month"
+                className={input}
+                max={month}
+                value={cycleMonth}
+                onChange={(e) => setCycleMonth(e.target.value)}
+              />
+            </label>
+          </div>
+          {currentCycle?.rows ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="text-xs text-slate-500">
+                  <tr>
+                    <th className="p-2">Comisión</th>
+                    <th className="p-2">Por facturar</th>
+                    <th className="p-2">En facturas por liquidar</th>
+                    <th className="p-2">Liquidadas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(
+                    [
+                      ["order", "Órdenes de tienda"],
+                      ["shipping", "Operaciones de envío"],
+                    ] as const
+                  ).map(([kind, label]) => (
+                    <tr key={kind} className="border-t border-slate-100">
+                      <th scope="row" className="p-2 font-semibold">
+                        {label}
+                      </th>
+                      {(["unbilled", "pending", "paid"] as const).map(
+                        (state) => {
+                          const item = currentCycle.rows?.find(
+                            (row) => row.kind === kind && row.state === state,
+                          );
+                          return (
+                            <td key={state} className="p-2">
+                              <b>{money(item?.amount ?? 0)}</b>
+                              <span className="block text-xs text-slate-500">
+                                {item?.operations ?? 0} operaciones
+                              </span>
+                            </td>
+                          );
+                        },
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p role="status" className="mt-3 text-sm text-slate-600">
+              {currentCycle?.error ||
+                (cycleMonth ? "Cargando comisiones…" : "Selecciona un mes.")}
+            </p>
           )}
         </section>
       </div>

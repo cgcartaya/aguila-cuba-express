@@ -221,7 +221,7 @@ export async function POST(request: Request) {
     const { data: store, error: storeError } = await supabaseAdmin
       .from("stores")
       .select(
-        "id, name, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent"
+        "id, name, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent, platform_order_fixed_fee"
       )
       .eq("id", storeId)
       .maybeSingle();
@@ -663,7 +663,7 @@ export async function POST(request: Request) {
       deliveryFee = 0;
     }
 
-    const platformFixedFee = getPlatformOrderFixedFee(store.slug);
+    const platformFixedFee = getPlatformOrderFixedFee(store.slug, store.platform_order_fixed_fee);
     const platformFeeAmount = money(
       preparedItems.reduce((sum, item) => sum + item.platform_fee_amount, 0) +
         platformFixedFee

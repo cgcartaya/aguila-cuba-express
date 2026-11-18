@@ -493,6 +493,16 @@ test("mixed invoices allocate each charge once and respect legacy settlement cut
         month,
       ])
     ).rows[0].result;
+  const cycle = async (store = tenant, period = month) =>
+    (
+      await db.query("select saas_commission_cycle($1,$2,$3) as result", [
+        actor,
+        store,
+        period,
+      ])
+    ).rows[0].result;
+  const cycleAmount = (rows, kind, state) =>
+    rows.find((row) => row.kind === kind && row.state === state)?.amount ?? 0;
   const invoiceRequest = (estimate, store = tenant) => ({
     ...create(),
     store_id: store,
@@ -503,10 +513,13 @@ test("mixed invoices allocate each charge once and respect legacy settlement cut
     await db.exec(bootstrap);
     await db.exec(`
       create schema private;
+      create function auth.uid() returns uuid language sql stable as
+        $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
       alter table stores add column created_at timestamptz default '2025-01-01';
       create table platform_fee_settlements(store_id uuid, period_end timestamptz);
       create table orders(id uuid default gen_random_uuid(), store_id uuid, source_shipment_id text,
-        created_at timestamptz, platform_fee_amount numeric, lym_confirmed_at timestamptz);
+        created_at timestamptz, platform_fee_amount numeric, lym_confirmed_at timestamptz,
+        lym_sale_state text, platform_fixed_fee_amount numeric);
       create table shipping_platform_charges(shipment_id text, store_id uuid, created_at timestamptz, amount numeric);
       insert into platform_fee_settlements values ('${tenant}', '2025-11-05 12:00Z');
       insert into orders(store_id,source_shipment_id,created_at,platform_fee_amount) values
@@ -528,6 +541,11 @@ test("mixed invoices allocate each charge once and respect legacy settlement cut
       subtotal: 60,
     });
     await execMigration("20261117235500_saas_billing_commissions.sql");
+    await execMigration(
+      "20261118001500_store_order_fees_and_commission_cycles.sql",
+    );
+    assert.equal(cycleAmount(await cycle(), "order", "unbilled"), 3.5);
+    assert.equal(cycleAmount(await cycle(null), "order", "unbilled"), 15.5);
     const estimate = await quote();
     assert.deepEqual(
       [estimate.subscription, estimate.orders, estimate.shipping],
@@ -548,6 +566,9 @@ test("mixed invoices allocate each charge once and respect legacy settlement cut
     assert.equal(settled[1].status, "rejected");
     const issued = settled[0].value;
     assert.equal(Number(issued.total), 43.9);
+    assert.equal(cycleAmount(await cycle(), "order", "unbilled"), 0);
+    assert.equal(cycleAmount(await cycle(), "order", "pending"), 3.5);
+    assert.equal(cycleAmount(await cycle(), "shipping", "pending"), 0.4);
     assert.equal((await command("create", requests[0])).id, issued.id);
     assert.equal((await quote()).subtotal, 0);
     await assert.rejects(
@@ -565,6 +586,8 @@ test("mixed invoices allocate each charge once and respect legacy settlement cut
       reason: "Prueba de corrección",
     });
     assert.equal((await quote()).subtotal, 43.9);
+    assert.equal(cycleAmount(await cycle(), "shipping", "pending"), 0);
+    assert.equal(cycleAmount(await cycle(), "shipping", "unbilled"), 0.4);
     const replacement = await command("issue", { invoice_id: draft.id });
     assert.equal(Number(replacement.total), 43.9);
     assert.equal((await quote()).subtotal, 0);
@@ -606,6 +629,53 @@ test("mixed invoices allocate each charge once and respect legacy settlement cut
       /con pagos/,
     );
     assert.equal((await quote()).subtotal, 0);
+    assert.equal(cycleAmount(await cycle(), "order", "paid"), 2);
+    assert.equal(cycleAmount(await cycle(), "order", "pending"), 3.5);
+    await command("pay", {
+      ...pay,
+      invoice_id: replacement.id,
+      request_id: randomUUID(),
+      amount: 3,
+    });
+    assert.equal(cycleAmount(await cycle(), "order", "pending"), 3.5);
+    await command("pay", {
+      ...pay,
+      invoice_id: replacement.id,
+      request_id: randomUUID(),
+      amount: 40.9,
+    });
+    const paidCycle = await cycle();
+    assert.equal(cycleAmount(paidCycle, "order", "pending"), 0);
+    assert.equal(cycleAmount(paidCycle, "shipping", "pending"), 0);
+    assert.equal(cycleAmount(paidCycle, "order", "paid"), 5.5);
+    assert.equal(cycleAmount(paidCycle, "shipping", "paid"), 0.4);
+    assert.equal(
+      cycleAmount(await cycle(tenant, "2025-12-01"), "shipping", "unbilled"),
+      0.4,
+    );
+
+    await db.exec(`grant update,select on stores to authenticated;
+      set role authenticated; set request.jwt.claim.sub='${owner}'`);
+    await assert.rejects(
+      db.exec(
+        `update stores set platform_order_fixed_fee=0.75 where id='${tenant}'`,
+      ),
+      /administrador SaaS/,
+    );
+    await db.exec(`set request.jwt.claim.sub='${actor}';
+      update stores set platform_order_fixed_fee=0 where id='${tenant}';
+      reset role;
+      insert into orders(store_id,created_at,lym_sale_state) values ('${tenant}',now(),'requested');
+      update orders set lym_sale_state='confirmed',platform_fixed_fee_amount=0.30,platform_fee_amount=0.30
+        where lym_sale_state='requested';`);
+    assert.equal(
+      (
+        await db.query(
+          "select platform_fee_amount from orders where lym_sale_state='confirmed'",
+        )
+      ).rows[0].platform_fee_amount,
+      "0",
+    );
   } finally {
     await db.close();
   }
