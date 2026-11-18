@@ -74,7 +74,38 @@ function LuxuryContent({ initialPackages, initialError, initialShipping }: { ini
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }} />
     <a href="#contenido" className={s.skip}>Saltar al contenido</a>
     <div className={s.topbar}><a href={`tel:${contact.tel}`}><Phone size={12} /> {contact.phone}<span> · Atención a distancia 24/7</span></a></div>
-    <header className={s.header}><nav className={s.nav} aria-label="Navegación principal"><a className={s.brand} href="#inicio" aria-label="Luxury Travel Point, inicio"><Image src="/luxury/dmc-brand.webp" width={480} height={387} alt="Luxury Travel Point" preload /><span className={s.brandSlogan} lang="en" translate="no">« Your starting point to a luxury experience »</span></a><div className={s.desktopNav}><a href="#destinos">Viajes en grupo</a>{cruise && <a href="#cruceros">Cruceros</a>}<a href="#envios">Envíos a Cuba</a><a href="#servicios">Más servicios</a>{dmcLinks}</div><LanguageSelector /><a className={s.headerContact} href="#contacto">Hablemos <ArrowUpRight size={17} /></a><details className={s.mobileMenu}><summary>Menú</summary><div><a href="#destinos">Viajes en grupo</a>{cruise && <a href="#cruceros">Cruceros</a>}<a href="#envios">Envíos a Cuba</a><a href="#servicios">Más servicios</a>{dmcLinks}<a href="#contacto">Contacto</a></div></details></nav></header>
+    <header className={s.header}>
+      <nav className={s.nav} aria-label="Navegación principal">
+        <a className={s.brand} href="#inicio" aria-label="Luxury Travel Point, inicio">
+          <Image src="/luxury/dmc-brand.webp" width={480} height={387} alt="Luxury Travel Point" preload />
+          <span className={s.brandSlogan} lang="en" translate="no">« Your starting point to a luxury experience »</span>
+        </a>
+        <div className={s.desktopNav}>
+          <a href="#destinos">Viajes en grupo</a>
+          {cruise && <a href="#cruceros">Cruceros</a>}
+          <a href="#envios">Envíos a Cuba</a>
+          <a href="#recogidas">{tr('Solicitar recogida', 'Request a pickup', 'Demander un enlèvement')}</a>
+          <a href="#servicios">Más servicios</a>
+          {dmcLinks}
+        </div>
+        <LanguageSelector />
+        <a className={s.headerContact} href="#contacto">Hablemos <ArrowUpRight size={17} /></a>
+        <details className={s.mobileMenu}>
+          <summary>Menú</summary>
+          <div>
+            <a href="#destinos">Viajes en grupo</a>
+            {cruise && <a href="#cruceros">Cruceros</a>}
+            <a href="#envios">Envíos a Cuba</a>
+            <a href="#recogidas" onClick={(event) => event.currentTarget.closest('details')?.removeAttribute('open')}>
+              {tr('Solicitar recogida', 'Request a pickup', 'Demander un enlèvement')}
+            </a>
+            <a href="#servicios">Más servicios</a>
+            {dmcLinks}
+            <a href="#contacto">Contacto</a>
+          </div>
+        </details>
+      </nav>
+    </header>
     <main id="contenido">
       <HeroGallery />
       <div className={s.container}><GroupExplorer packages={packages} error={catalogError}/><TravelExplorer minMonth={minMonth} packages={packages}/></div>

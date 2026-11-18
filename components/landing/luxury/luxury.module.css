@@ -41,9 +41,13 @@
 /* Luxury display typography: Minion Pro requires an Adobe web-font license; Georgia fallback. */
 .root{--luxury-heading-font:"Minion Pro","minion-pro",Georgia,"Times New Roman",serif}
 .root h1,.root h2,.root .galleryCopy h1,.root .galleryCopy h2,.root .pickup h3{font-family:var(--luxury-heading-font)}
+.root .pickup { scroll-margin-top: 105px; }
 .root .pickup button.goldButton{border:0;cursor:pointer}
 .root .pickupCities{margin-top:8px;font-weight:600}
-@media(max-width:600px){.root .pickup button.goldButton{width:100%;margin-left:0;white-space:normal}}
+@media (max-width: 600px) {
+  .root .pickup { scroll-margin-top: 132px; }
+  .root .pickup button.goldButton{width:100%;margin-left:0;white-space:normal}
+}
 
 .goldenBox {
   display: grid;
