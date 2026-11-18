@@ -78,6 +78,8 @@ export const branches = [
   {
     name: "WF Cargo Envíos II · US 1",
     focus: "Tu conexión con Cuba",
+    focusEn: "Your connection to Cuba",
+    servicesEn: "Packages and money transfers to Cuba, pickups, Cuban document services, car rentals, and hotels.",
     address: `${lockerWarehouse.street}, ${lockerWarehouse.cityLine}`,
     phone: lockerWarehouse.phone,
     services:
@@ -86,13 +88,15 @@ export const branches = [
   {
     name: "WF Cargo Envíos I · Bayshore",
     focus: "Conectados con Latinoamérica",
+    focusEn: "Connected to Latin America",
+    servicesEn: "Packages to the Dominican Republic and Colombia. Money transfers, Notary Public, and related services.",
     address: "1628 SW Bayshore Blvd, Port St. Lucie, FL 34984",
     phone: "772-877-2726",
     services:
-      "Paquetería a República Dominicana y Colombia. Remesas, notaría y multiservicios.",
+      "Paquetería a República Dominicana y Colombia. Remesas, servicios de Notary Public y multiservicios.",
   },
 ];
-export const faqs = [
+const spanishFaqs = [
   [
     "¿Cómo envío un paquete?",
     "Visita una de nuestras sucursales o solicita una recogida para envíos a Cuba. Pesamos y empacamos tu envío y te entregamos el recibo.",
@@ -115,6 +119,55 @@ export const faqs = [
   ],
   [
     "¿Ofrecen asesoría legal o de inmigración?",
-    "No ofrecemos asesoría legal ni de inmigración. Somos oficina de notaría pública y ofrecemos llenado de formularios. Para asesoría legal podemos conectarte con abogados de inmigración.",
+    "WF Cargo ofrece apoyo administrativo con formularios. Para asesoría legal o representación, consulta a un abogado autorizado.",
   ],
+];
+
+export const faqs = {
+  es: spanishFaqs,
+  en: [
+    ["How do I ship a package?", "Visit one of our locations or request a pickup for shipments to Cuba. We weigh and pack your shipment and give you a receipt."],
+    ["Is home delivery in Cuba included?", "Yes. Ocean shipping includes home delivery in Cuba. Confirm coverage for the destination address before shipping."],
+    ["Are there additional fees?", "Packing materials cost $5 per visit and the fee may be waived. Customs duties depend on the destination and contents. Confirm the terms and declared value before shipping."],
+    ["How long will delivery take?", "Ask our team about the next departure and estimated transit time for your destination. Transit time begins when the container departs."],
+    ["What do I need to ship?", "Bring photo identification and the recipient’s full name, address, and phone number. Check requirements and permitted items with our team before packing."],
+    ["Do you offer legal or immigration advice?", "WF Cargo provides administrative help with forms. For legal advice or representation, consult a licensed attorney."],
+  ],
+};
+
+export const englishSlides = [
+  {
+    ...slides[0],
+    tag: "Shipping to Cuba and Latin America",
+    title: "Closer to your loved ones.",
+    description: `Ocean shipping to Cuba from $${shipping.perPound.sea.toFixed(2)}/lb or boxes from $50, including home delivery. Ask about coverage and terms.`,
+    alt: "WF Cargo shipping boxes in front of a Havana street",
+    label: "Get a shipping quote",
+  },
+  {
+    ...slides[1],
+    tag: "Money transfers to Cuba",
+    title: "Send support where it matters most.",
+    description: "Support your family from Port St. Lucie. Ask our team about money transfer options to Cuba and Latin America.",
+    alt: "Cuban family sharing a money transfer confirmation",
+    label: "Ask about money transfers",
+    href: whatsapp("Hello, I’d like information about money transfers."),
+  },
+  {
+    ...slides[2],
+    tag: "Document services",
+    title: "Get help with your paperwork.",
+    description: "We can guide you through Cuban passport requests, electronic visas, travel authorizations for minors, and other documents.",
+    alt: "Cuban passport and documents on a desk",
+    label: "Explore document services",
+  },
+  {
+    ...slides[3],
+    tag: "Plan your next trip",
+    title: "Ready for your trip to Cuba?",
+    description: "Ask about car rentals and hotel reservations for your next visit to Cuba.",
+    alt: "Modern car next to the ocean in Havana",
+    label: "Check availability",
+    href: whatsapp("Hello, I’d like to check car rental and hotel availability in Cuba."),
+  },
 ];

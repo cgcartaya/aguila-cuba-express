@@ -1483,3 +1483,64 @@
   .procedureArtwork { min-height: 0; aspect-ratio: 16 / 9; }
 }
 @media (prefers-reduced-motion: reduce) { .procedureCard { transition: none; } .procedureCard:hover { transform: none; } }
+
+.languageLinks {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 800;
+}
+.languageLinks a {
+  padding: 6px;
+  border-radius: 5px;
+}
+.languageLinks [aria-current="page"] {
+  color: white;
+  background: #163678;
+}
+.about {
+  scroll-margin-top: 110px;
+}
+.aboutIntro {
+  max-width: 78ch;
+  margin: 0 auto 30px;
+}
+.aboutGrid,
+.aboutValues {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 14px 0 26px;
+}
+.aboutGrid article,
+.aboutValues div {
+  padding: 18px 22px;
+  border: 1px solid #dce5f2;
+  border-radius: 12px;
+  background: #f8faff;
+}
+.aboutValues dt {
+  font-weight: 800;
+}
+.aboutValues dd {
+  margin: 4px 0 0;
+}
+.notaryNotice {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid #8b6b2e;
+  border-radius: 8px;
+  background: #fff9eb;
+  color: #291e11;
+  font-size: .82rem;
+  font-weight: 750;
+}
+.notaryNotice p {
+  margin: 4px 0;
+}
+@media (max-width: 650px) {
+  .aboutGrid,
+  .aboutValues { grid-template-columns: 1fr; }
+  .nav { flex-wrap: wrap; }
+}

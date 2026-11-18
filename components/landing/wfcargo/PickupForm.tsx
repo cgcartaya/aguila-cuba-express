@@ -1,31 +1,32 @@
 "use client";
+import { wfCopy, type WfLocale } from "./Language";
 import { Truck, ArrowUpRight } from "lucide-react";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import { contact } from "./content";
 import s from "./wfcargo.module.css";
-export default function PickupForm() {
+export default function PickupForm({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
   return (
     <section id="recogida" className={s.pickup}>
       <div>
-        <p className={s.eyebrow}>VAMOS HASTA TI</p>
+        <p className={s.eyebrow}>{t("VAMOS HASTA TI", "WE COME TO YOU")}</p>
         <Truck size={45} />
         <h2>
-          Tu envío empieza
+          {t("Tu envío empieza", "Your shipment starts")}
           <br />
-          en la puerta de casa.
+          {t("en la puerta de casa.", "at your doorstep.")}
         </h2>
         <p>
-          Solicita recogida a domicilio para tus envíos a Cuba. Nuestro equipo
-          te ayudará a coordinarla.
+          {t("Solicita recogida a domicilio para tus envíos a Cuba. Nuestro equipo te ayudará a coordinarla.", "Request a home pickup for shipments to Cuba. Our team will help you schedule it.")}
         </p>
-        <span className={s.pill}>Recogidas todas las tardes</span>
+        <span className={s.pill}>{t("Recogidas todas las tardes", "Afternoon pickups")}</span>
         <p className={s.small}>
-          Sujeto a cobertura y disponibilidad. La fecha se confirma con la
-          agencia.
+          {t("Sujeto a cobertura y disponibilidad. La fecha se confirma con la agencia.", "Subject to service area and availability. Confirm the date with our team.")}
         </p>
       </div>
       <PickupPlannerHero
         storeSlug="wf-cago"
+        locale={locale}
         storeName="WF Cargo Envíos"
         whatsappPhone={contact.whatsapp}
         renderTrigger={(openPlanner) => (
@@ -43,10 +44,10 @@ export default function PickupForm() {
               });
             }}
           >
-            <h3>Coordina tu recogida</h3>
+            <h3>{t("Coordina tu recogida", "Schedule your pickup")}</h3>
             <div className={s.formGrid}>
               <label>
-                Nombre completo
+                {t("Nombre completo", "Full name")}
                 <input
                   name="name"
                   autoComplete="name"
@@ -55,7 +56,7 @@ export default function PickupForm() {
                 />
               </label>
               <label>
-                Teléfono
+                {t("Teléfono", "Phone")}
                 <input
                   name="phone"
                   type="tel"
@@ -66,7 +67,7 @@ export default function PickupForm() {
               </label>
             </div>
             <label>
-              Dirección y código postal
+              {t("Dirección y código postal", "Street address and ZIP code")}
               <input
                 name="address"
                 autoComplete="street-address"
@@ -76,11 +77,11 @@ export default function PickupForm() {
             </label>
             <div className={s.formGrid}>
               <label>
-                Cantidad de cajas
+                {t("Cantidad de cajas", "Number of boxes")}
                 <input name="boxes" type="number" min="1" max="99" required />
               </label>
               <label>
-                Fecha preferida
+                {t("Fecha preferida", "Preferred date")}
                 <input
                   name="date"
                   type="date"
@@ -95,12 +96,11 @@ export default function PickupForm() {
               </label>
             </div>
             <button className={s.button}>
-              Continuar con mi solicitud
+              {t("Continuar con mi solicitud", "Continue with my request")}
               <ArrowUpRight size={18} />
             </button>
             <p className={s.small}>
-              Confirma tu dirección en el mapa y completa la solicitud. Quedará
-              guardada con un código; después podrás avisar por WhatsApp.
+              {t("Confirma tu dirección en el mapa y completa la solicitud. Quedará guardada con un código; después podrás avisar por WhatsApp.", "Confirm your address on the map and complete your request. You’ll get a reference code and can follow up on WhatsApp.")}
             </p>
           </form>
         )}

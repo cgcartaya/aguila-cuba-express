@@ -1,9 +1,11 @@
 "use client";
 
+import { wfCopy, type WfLocale } from "@/components/landing/wfcargo/Language";
 import { KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, MapPin, Search, X } from "lucide-react";
 
 type CityAutocompleteProps = {
+  locale?: WfLocale;
   cities: string[];
   value: string;
   onChange: (city: string) => void;
@@ -21,13 +23,15 @@ function normalize(value: string) {
 }
 
 export default function CityAutocomplete({
+  locale = "es",
   cities,
   value,
   onChange,
   disabled = false,
   loading = false,
-  placeholder = "Ej. Columbia",
+  placeholder,
 }: CityAutocompleteProps) {
+  const t = wfCopy(locale);
   const [query, setQuery] = useState(value);
   const listId = useId();
   const [open, setOpen] = useState(false);
@@ -105,7 +109,7 @@ export default function CityAutocomplete({
 
   return (
     <div className="relative">
-      <label className="mb-2 block text-sm font-black text-slate-800">Ciudad</label>
+      <label className="mb-2 block text-sm font-black text-slate-800">{t("Ciudad", "City")}</label>
       <div
         className={`flex min-h-14 items-center rounded-2xl border bg-white transition focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-100 ${
           selected ? "border-emerald-400" : "border-slate-300"
@@ -121,7 +125,7 @@ export default function CityAutocomplete({
           }}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder={loading ? "Cargando ciudades..." : placeholder}
+          placeholder={loading ? t("Cargando ciudades...", "Loading cities…") : placeholder ?? t("Ej. Columbia", "E.g. Columbia")}
           autoComplete="off"
           role="combobox"
           aria-expanded={open}
@@ -134,7 +138,7 @@ export default function CityAutocomplete({
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={clearCity}
-            aria-label="Limpiar ciudad"
+            aria-label={t("Limpiar ciudad", "Clear city")}
             className="mr-3 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
           >
             <X size={18} />
@@ -143,7 +147,7 @@ export default function CityAutocomplete({
       </div>
 
       <p className="mt-2 text-sm font-medium text-slate-500">
-        Escribe las primeras letras y selecciona una ciudad de la lista.
+        {t("Escribe las primeras letras y selecciona una ciudad de la lista.", "Type the first few letters and select a city from the list.")}
       </p>
 
       {open && !disabled && (
@@ -153,7 +157,7 @@ export default function CityAutocomplete({
           className="relative z-[120] mt-2 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,23,42,.22)] sm:absolute"
         >
           <div className="border-b border-slate-100 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
-            Coincidencias
+            {t("Coincidencias", "Matches")}
           </div>
           <div className="max-h-48 overflow-y-auto overscroll-contain p-2 sm:max-h-72">
             {matches.length > 0 ? (
@@ -190,8 +194,8 @@ export default function CityAutocomplete({
               })
             ) : (
               <div className="px-5 py-8 text-center">
-                <p className="font-black text-slate-900">No encontramos esa ciudad</p>
-                <p className="mt-1 text-sm font-medium text-slate-500">Prueba con menos letras.</p>
+                <p className="font-black text-slate-900">{t("No encontramos esa ciudad", "We couldn’t find that city")}</p>
+                <p className="mt-1 text-sm font-medium text-slate-500">{t("Prueba con menos letras.", "Try fewer letters.")}</p>
               </div>
             )}
           </div>
@@ -199,7 +203,7 @@ export default function CityAutocomplete({
       )}
 
       {query && !selected && !open && (
-        <p className="mt-2 text-sm font-bold text-amber-700">Selecciona una ciudad de las sugerencias.</p>
+        <p className="mt-2 text-sm font-bold text-amber-700">{t("Selecciona una ciudad de las sugerencias.", "Select a city from the suggestions.")}</p>
       )}
     </div>
   );

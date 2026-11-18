@@ -1,5 +1,6 @@
 "use client";
 
+import { wfCopy, type WfLocale } from "@/components/landing/wfcargo/Language";
 import { FormEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { preparePickupPrefill, type PickupPlannerPrefill } from "@/lib/pickups/planner-prefill";
 import { localDate } from "@/lib/pickups/itinerary";
@@ -58,10 +59,10 @@ type PickupPublicConfig = {
   postalCodesByCity?: Record<string, string[]>;
 };
 
-function nextDays(nearTermToday?: string, count = 8) {
+function nextDays(nearTermToday?: string, count = 8, dateLocale = "es-US") {
   const days: Array<{ iso: string; weekday: string; day: string; month: string }> = [];
-  const weekday = new Intl.DateTimeFormat("es-US", { weekday: "short", timeZone: nearTermToday ? "UTC" : undefined });
-  const month = new Intl.DateTimeFormat("es-US", { month: "short", timeZone: nearTermToday ? "UTC" : undefined });
+  const weekday = new Intl.DateTimeFormat(dateLocale, { weekday: "short", timeZone: nearTermToday ? "UTC" : undefined });
+  const month = new Intl.DateTimeFormat(dateLocale, { month: "short", timeZone: nearTermToday ? "UTC" : undefined });
 
   for (let offset = nearTermToday ? 0 : 1; offset <= 16 && days.length < count; offset += 1) {
     const date = nearTermToday ? new Date(`${nearTermToday}T12:00:00Z`) : new Date();
@@ -83,10 +84,12 @@ function nextDays(nearTermToday?: string, count = 8) {
   return days;
 }
 
-export default function PickupPlannerHero({ variant = "card", storeSlug, storeName, whatsappPhone, renderTrigger }: { variant?: "card" | "horizontal"; storeSlug: string; storeName: string; whatsappPhone: string; renderTrigger?: (open: (prefill?: PickupPlannerPrefill) => void) => ReactNode }) {
+export default function PickupPlannerHero({ locale = "es", variant = "card", storeSlug, storeName, whatsappPhone, renderTrigger }: { locale?: WfLocale; variant?: "card" | "horizontal"; storeSlug: string; storeName: string; whatsappPhone: string; renderTrigger?: (open: (prefill?: PickupPlannerPrefill) => void) => ReactNode }) {
   const horizontal = variant === "horizontal";
   const luxuryToday = storeSlug === LUXURY_PICKUP_STORE_SLUG ? localDate() : undefined;
-  const days = nextDays(luxuryToday);
+  const dateLocale = locale === "en" ? "en-US" : "es-US";
+  const days = nextDays(luxuryToday, 8, dateLocale);
+  const t = wfCopy(locale);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -156,12 +159,12 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
         setConfig(result);
         setForm((current) => ({ ...current, region: result.regionName || result.regionCode || "" }));
       } catch (configError) {
-        setError(configError instanceof Error ? configError.message : "No pudimos cargar las ciudades.");
+        setError(locale === "en" ? "We couldn’t load the service area. Try again." : configError instanceof Error ? configError.message : "No pudimos cargar las ciudades.");
       } finally {
         setConfigLoading(false);
       }
     })();
-  }, [storeSlug]);
+  }, [storeSlug, locale]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -302,11 +305,11 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
         }));
         setPin({ latitude: result.latitude ?? null, longitude: result.longitude ?? null });
       } else {
-        setError(result.message || "Revisa la dirección.");
+        setError(locale === "en" ? "Check the pickup address and try again." : result.message || "Revisa la dirección.");
       }
       return Boolean(result.valid);
     } catch (validationError) {
-      setError(validationError instanceof Error ? validationError.message : "No pudimos validar la dirección.");
+      setError(locale === "en" ? "We couldn’t verify the address. Check it and try again." : validationError instanceof Error ? validationError.message : "No pudimos validar la dirección.");
       return false;
     } finally {
       setValidating(false);
@@ -335,7 +338,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
       setAddressResult((current) => current ? { ...current, formattedAddress: result.formattedAddress || current.formattedAddress, latitude: result.latitude, longitude: result.longitude } : current);
       return true;
     } catch (geocodeError) {
-      setError(geocodeError instanceof Error ? geocodeError.message : "No pudimos localizar la dirección.");
+      setError(locale === "en" ? "We couldn’t locate the address. Check it and try again." : geocodeError instanceof Error ? geocodeError.message : "No pudimos localizar la dirección.");
       return false;
     } finally {
       setGeocoding(false);
@@ -354,15 +357,15 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
   async function continueLocation() {
     setError("");
     if (!form.city) {
-      setError("Selecciona una ciudad de la lista.");
+      setError(t("Selecciona una ciudad de la lista.", "Select a city from the list."));
       return;
     }
     if (form.address_line_1.trim().length < 5) {
-      setError("Escribe la dirección donde debemos recoger.");
+      setError(t("Escribe la dirección donde debemos recoger.", "Enter the pickup address."));
       return;
     }
     if (form.postal_code.trim().length < 5) {
-      setError("Escribe un código postal válido.");
+      setError(t("Escribe un código postal válido.", "Enter a valid ZIP code."));
       return;
     }
 
@@ -377,7 +380,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
   function continueMap() {
     setError("");
     if (pin.latitude == null || pin.longitude == null) {
-      setError("Confirma el punto exacto en el mapa antes de continuar.");
+      setError(t("Confirma el punto exacto en el mapa antes de continuar.", "Confirm the exact location on the map before continuing."));
       return;
     }
     setStep(3);
@@ -386,7 +389,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
   function continueDates() {
     setError("");
     if (selectedDates.length === 0) {
-      setError("Selecciona al menos un día que te convenga.");
+      setError(t("Selecciona al menos un día que te convenga.", "Select at least one date that works for you."));
       return;
     }
     setStep(4);
@@ -396,7 +399,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
     event.preventDefault();
     setError("");
     if (!form.customer_name.trim() || form.phone.replace(/\D/g, "").length < 7) {
-      setError("Escribe tu nombre y un teléfono válido.");
+      setError(t("Escribe tu nombre y un teléfono válido.", "Enter your name and a valid phone number."));
       return;
     }
 
@@ -439,13 +442,13 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
       setSuccessWhatsappUrl(`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(message)}`);
       setStep(5);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Ocurrió un error inesperado.");
+      setError(locale === "en" ? "We couldn’t submit the request. Try again." : submitError instanceof Error ? submitError.message : "Ocurrió un error inesperado.");
     } finally {
       setLoading(false);
     }
   }
 
-  const stepLabels = ["Ubicación", "Punto exacto", "Fechas", "Detalles"];
+  const stepLabels = [t("Ubicación", "Location"), t("Punto exacto", "Map pin"), t("Fechas", "Dates"), t("Detalles", "Details")];
 
   return (
     <>
@@ -480,24 +483,25 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
           className="fixed left-0 right-0 top-[var(--pickup-visible-top,0px)] z-[9999] flex h-[var(--pickup-visible-height,100dvh)] w-full justify-end overflow-hidden bg-slate-950/70 backdrop-blur-sm overscroll-none"
           role="dialog"
           aria-modal="true"
-          aria-label="Programar recogida"
+          lang={locale}
+          aria-label={t("Programar recogida", "Schedule a pickup")}
         >
-          <button type="button" onClick={closePlanner} className="absolute inset-0 cursor-default" aria-label="Cerrar formulario" />
+          <button type="button" onClick={closePlanner} className="absolute inset-0 cursor-default" aria-label={t("Cerrar formulario", "Close form")} />
 
           <div className="relative flex h-full max-h-full min-h-0 w-full max-w-2xl flex-col overflow-hidden bg-white shadow-2xl sm:rounded-l-[2rem]">
             <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 sm:px-8 sm:py-4">
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600 sm:text-xs">{storeName}</p>
-                <h2 className="mt-1 text-lg font-black leading-tight text-[#061b3a] sm:text-2xl">Programa tu recogida</h2>
+                <h2 className="mt-1 text-lg font-black leading-tight text-[#061b3a] sm:text-2xl">{t("Programa tu recogida", "Schedule your pickup")}</h2>
               </div>
-              <button type="button" onClick={closePlanner} className="shrink-0 rounded-full border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Cerrar">
+              <button type="button" onClick={closePlanner} className="shrink-0 rounded-full border border-slate-200 p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label={t("Cerrar", "Close")}>
                 <X size={22} />
               </button>
             </header>
 
             {step < 5 && (
               <div className="shrink-0 border-b border-slate-100 px-4 py-2 sm:px-8 sm:py-4">
-                <div className="grid grid-cols-4 gap-1 sm:gap-2" aria-label={`Paso ${step} de 4: ${stepLabels[step - 1]}`}>
+                <div className="grid grid-cols-4 gap-1 sm:gap-2" aria-label={`${t("Paso", "Step")} ${step} ${t("de", "of")} 4: ${stepLabels[step - 1]}`}>
                   {stepLabels.map((label, index) => {
                     const number = index + 1;
                     const active = step === number;
@@ -518,20 +522,21 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
             <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-contain px-4 py-4 [scroll-padding-block:1rem] [-webkit-overflow-scrolling:touch] sm:px-8 sm:py-8">
               {requestedRoute && step < 4 && (
                 <div className="mx-auto mb-6 max-w-xl rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">Reserva vinculada a una ruta</p>
+                  <p className="text-xs font-black uppercase tracking-[0.14em] text-blue-700">{t("Reserva vinculada a una ruta", "Published route pickup")}</p>
                   <p className="mt-1 font-black text-[#061b3a]">{requestedRoute.name}</p>
-                  <p className="mt-1 text-sm font-semibold text-blue-800">Fecha programada: {new Intl.DateTimeFormat("es-US", { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${requestedRoute.date}T12:00:00`))}</p>
-                  <p className="mt-2 text-xs font-semibold text-slate-500">La agencia confirmará que todavía exista disponibilidad antes de añadir tu parada.</p>
+                  <p className="mt-1 text-sm font-semibold text-blue-800">{t("Fecha programada:", "Scheduled date:")} {new Intl.DateTimeFormat(dateLocale, { weekday: "long", day: "numeric", month: "long" }).format(new Date(`${requestedRoute.date}T12:00:00`))}</p>
+                  <p className="mt-2 text-xs font-semibold text-slate-500">{t("La agencia confirmará que todavía exista disponibilidad antes de añadir tu parada.", "Our team will confirm availability before adding your stop.")}</p>
                 </div>
               )}
               {step === 1 && (
                 <div className="mx-auto max-w-xl">
-                  <h3 className="text-xl font-black text-slate-950 sm:text-2xl">¿Dónde recogemos?</h3>
-                  <p className="mt-2 text-sm font-medium text-slate-500 sm:text-base">Primero selecciona tu ciudad. Después escribe la dirección exacta.</p>
+                  <h3 className="text-xl font-black text-slate-950 sm:text-2xl">{t("¿Dónde recogemos?", "Where should we pick up?")}</h3>
+                  <p className="mt-2 text-sm font-medium text-slate-500 sm:text-base">{t("Primero selecciona tu ciudad. Después escribe la dirección exacta.", "Choose your city, then enter the pickup address.")}</p>
 
                   <div className="mt-4 space-y-5 sm:mt-7">
                     <CityAutocomplete
-                      placeholder={storeSlug === "luxury-travel-point" ? "Ej. Lehigh Acres o Cape Coral" : config?.regionCode === "FL" ? "Ej. Miami o Hialeah" : undefined}
+                      locale={locale}
+                      placeholder={storeSlug === "luxury-travel-point" ? t("Ej. Lehigh Acres o Cape Coral", "E.g. Lehigh Acres or Cape Coral") : config?.regionCode === "FL" ? t("Ej. Miami o Hialeah", "E.g. Miami or Hialeah") : undefined}
                       cities={config?.cities || []}
                       value={form.city}
                       onChange={(city) => update("city", city)}
@@ -540,13 +545,13 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                     />
 
                     <div>
-                      <label className="mb-2 block text-sm font-black text-slate-800">Dirección</label>
+                      <label className="mb-2 block text-sm font-black text-slate-800">{t("Dirección", "Address")}</label>
                       <div className="relative">
                         <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-red-500" size={20} />
                         <input
                           value={form.address_line_1}
                           onChange={(event) => update("address_line_1", event.target.value)}
-                          placeholder={config?.regionCode === "FL" ? "Ej. 1805 E 4th Ave" : "Ej. 1500 Main St"}
+                          placeholder={config?.regionCode === "FL" ? t("Ej. 1805 E 4th Ave", "E.g. 1805 E 4th Ave") : t("Ej. 1500 Main St", "E.g. 1500 Main St")}
                           autoComplete="street-address"
                           className="min-h-14 w-full rounded-2xl border border-slate-300 bg-white py-3.5 pl-12 pr-4 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                         />
@@ -555,7 +560,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-black text-slate-800">Apartamento o unidad <span className="font-medium text-slate-400">(opcional)</span></label>
+                        <label className="mb-2 block text-sm font-black text-slate-800">{t("Apartamento o unidad", "Apartment or unit")} <span className="font-medium text-slate-400">{t("(opcional)", "(optional)")}</span></label>
                         <input
                           value={form.address_line_2}
                           onChange={(event) => update("address_line_2", event.target.value)}
@@ -574,13 +579,13 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                           inputMode="numeric"
                           className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                         />
-                        {config?.postalCodesByCity?.[form.city]?.length ? <><datalist id="luxury-pickup-zip-options">{config.postalCodesByCity[form.city].map(zip => <option key={zip} value={zip} />)}</datalist><p className="mt-1 text-xs text-slate-500">ZIP de referencia: {config.postalCodesByCity[form.city].join(", ")}</p></> : null}
+                        {config?.postalCodesByCity?.[form.city]?.length ? <><datalist id="luxury-pickup-zip-options">{config.postalCodesByCity[form.city].map(zip => <option key={zip} value={zip} />)}</datalist><p className="mt-1 text-xs text-slate-500">{t("ZIP de referencia:", "Suggested ZIP codes:")} {config.postalCodesByCity[form.city].join(", ")}</p></> : null}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 rounded-2xl bg-blue-50 px-4 py-3.5 text-sm font-bold text-blue-950">
                       <ShieldCheck className="shrink-0 text-blue-700" size={20} />
-                      Cobertura configurada para {form.region || "la región seleccionada"}.
+                      {t("Cobertura configurada para", "Pickup coverage for")} {form.region || t("la región seleccionada", "the selected region")}.
                     </div>
 
                     {addressResult?.valid && (
@@ -588,7 +593,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                         <div className="flex items-start gap-3">
                           <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-600" size={21} />
                           <div>
-                            <p className="font-black text-emerald-800">{addressResult.message}</p>
+                            <p className="font-black text-emerald-800">{locale === "en" ? "Address confirmed." : addressResult.message}</p>
                             <p className="mt-1 text-sm font-semibold text-slate-600">{addressResult.formattedAddress}</p>
                           </div>
                         </div>
@@ -601,12 +606,13 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
               {step === 2 && (
                 <div className="mx-auto max-w-xl">
                   <button type="button" onClick={() => setStep(1)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
-                    <ArrowLeft size={18} /> Cambiar dirección
+                    <ArrowLeft size={18} /> {t("Cambiar dirección", "Change address")}
                   </button>
-                  <h3 className="text-2xl font-black text-slate-950">Confirma el punto exacto</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">El marcador se colocó usando tu dirección. Arrástralo hasta la entrada correcta si hace falta.</p>
+                  <h3 className="text-2xl font-black text-slate-950">{t("Confirma el punto exacto", "Confirm the exact location")}</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">{t("El marcador se colocó usando tu dirección. Arrástralo hasta la entrada correcta si hace falta.", "We placed the pin using your address. Drag it to the correct entrance if needed.")}</p>
                   <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                     <LocationPickerMap
+                      locale={locale}
                       latitude={pin.latitude}
                       longitude={pin.longitude}
                       onChange={(latitude, longitude) => setPin({ latitude, longitude })}
@@ -618,7 +624,7 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                   </div>
                   <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
                     <p className="font-black text-[#082b5c]">{addressResult?.formattedAddress || [form.address_line_1, form.city, form.region, form.postal_code].filter(Boolean).join(", ")}</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-600">Este punto será el que verá {storeName} al organizar la ruta.</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-600">{locale === "en" ? `${storeName} will use this pin to plan the route.` : `Este punto será el que verá ${storeName} al organizar la ruta.`}</p>
                   </div>
                 </div>
               )}
@@ -626,17 +632,17 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
               {step === 3 && (
                 <div className="mx-auto max-w-xl">
                   <button type="button" onClick={() => setStep(2)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
-                    <ArrowLeft size={18} /> Cambiar punto
+                    <ArrowLeft size={18} /> {t("Cambiar punto", "Change map pin")}
                   </button>
-                  <h3 className="text-2xl font-black text-slate-950">¿Qué días te convienen?</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? "La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario." : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. ${storeName} confirmará el día definitivo.`}</p>
+                  <h3 className="text-2xl font-black text-slate-950">{t("¿Qué días te convienen?", "Which dates work for you?")}</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">{requestedRoute ? t("La fecha de la ruta ya está seleccionada. Puedes añadir otras opciones por si fuera necesario.", "The route date is already selected. You can add backup dates.") : locale === "en" ? `Choose up to ${config?.maxPreferredDates || 3} dates. ${storeName} will confirm the final date.` : `Selecciona hasta ${config?.maxPreferredDates || 3} opciones. ${storeName} confirmará el día definitivo.`}</p>
 
                   {sameDayRequested && <p role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-900">Si solicitas la recogida para hoy, elige también otro día como alternativa y espera la confirmación de Luxury Travel Point.</p>}
 
                   <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     {[...days, ...selectedDates.filter(iso => !days.some(day => day.iso === iso)).map(iso => {
                       const date = new Date(`${iso}T12:00:00`);
-                      return { iso, weekday: new Intl.DateTimeFormat("es-US", { weekday: "short" }).format(date), day: String(date.getDate()), month: new Intl.DateTimeFormat("es-US", { month: "short" }).format(date) };
+                      return { iso, weekday: new Intl.DateTimeFormat(dateLocale, { weekday: "short" }).format(date), day: String(date.getDate()), month: new Intl.DateTimeFormat(dateLocale, { month: "short" }).format(date) };
                     })].map((item) => {
                       const selected = selectedDates.includes(item.iso);
                       return (
@@ -656,8 +662,8 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                   </div>
 
                   <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="flex items-center gap-2 font-black text-slate-900"><CalendarDays className="text-blue-700" size={19} /> Fechas seleccionadas: {selectedDates.length}</p>
-                    <p className="mt-1 text-sm font-medium text-slate-500">La fecha final depende de la ruta organizada para tu zona.</p>
+                    <p className="flex items-center gap-2 font-black text-slate-900"><CalendarDays className="text-blue-700" size={19} /> {t("Fechas seleccionadas:", "Selected dates:")} {selectedDates.length}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-500">{t("La fecha final depende de la ruta organizada para tu zona.", "Your pickup date depends on the route for your area.")}</p>
                   </div>
                 </div>
               )}
@@ -665,52 +671,52 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
               {step === 4 && (
                 <form id="pickup-details-form" onSubmit={submit} className="mx-auto max-w-xl">
                   <button type="button" onClick={() => setStep(3)} className="mb-5 inline-flex items-center gap-2 text-sm font-black text-slate-500 hover:text-slate-900">
-                    <ArrowLeft size={18} /> Cambiar fechas
+                    <ArrowLeft size={18} /> {t("Cambiar fechas", "Change dates")}
                   </button>
-                  <h3 className="text-2xl font-black text-slate-950">Cuéntanos sobre la recogida</h3>
-                  <p className="mt-2 text-base font-medium text-slate-500">Con estos datos {storeName} podrá contactarte y organizar la ruta.</p>
+                  <h3 className="text-2xl font-black text-slate-950">{t("Cuéntanos sobre la recogida", "Tell us about your pickup")}</h3>
+                  <p className="mt-2 text-base font-medium text-slate-500">{locale === "en" ? `${storeName} will use these details to contact you and plan the route.` : `Con estos datos ${storeName} podrá contactarte y organizar la ruta.`}</p>
 
                   <div className="mt-7 space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-black text-slate-800">Nombre y apellidos</label>
-                        <input value={form.customer_name} onChange={(event) => update("customer_name", event.target.value)} placeholder="Tu nombre" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                        <label className="mb-2 block text-sm font-black text-slate-800">{t("Nombre y apellidos", "Full name")}</label>
+                        <input value={form.customer_name} onChange={(event) => update("customer_name", event.target.value)} placeholder={t("Tu nombre", "Your name")} className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
                       </div>
                       <div>
-                        <label className="mb-2 block text-sm font-black text-slate-800">Teléfono / WhatsApp</label>
+                        <label className="mb-2 block text-sm font-black text-slate-800">{t("Teléfono / WhatsApp", "Phone / WhatsApp")}</label>
                         <input value={form.phone} onChange={(event) => update("phone", event.target.value)} placeholder={config?.regionCode === "FL" ? "305 555 0123" : "803 262 3676"} inputMode="tel" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
                       </div>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <label className="mb-2 block text-sm font-black text-slate-800">Tipo de artículos</label>
+                        <label className="mb-2 block text-sm font-black text-slate-800">{t("Tipo de artículos", "Item type")}</label>
                         <select value={form.package_type} onChange={(event) => update("package_type", event.target.value)} className="min-h-14 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100">
-                          <option>Cajas y misceláneas</option>
-                          <option>Electrodomésticos</option>
-                          <option>Equipos electrónicos</option>
-                          <option>Bicicleta</option>
-                          <option>Otro</option>
+                          <option value="Cajas y misceláneas">{t("Cajas y misceláneas", "Boxes and miscellaneous items")}</option>
+                          <option value="Electrodomésticos">{t("Electrodomésticos", "Appliances")}</option>
+                          <option value="Equipos electrónicos">{t("Equipos electrónicos", "Electronics")}</option>
+                          <option value="Bicicleta">{t("Bicicleta", "Bicycle")}</option>
+                          <option value="Otro">{t("Otro", "Other")}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="mb-2 block text-sm font-black text-slate-800">Cantidad de paquetes</label>
+                        <label className="mb-2 block text-sm font-black text-slate-800">{t("Cantidad de paquetes", "Number of packages")}</label>
                         <input value={form.package_count} onChange={(event) => update("package_count", event.target.value)} type="number" min="1" max="99" className="min-h-14 w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
                       </div>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2">
                       <button type="button" onClick={() => update("needs_box", !form.needs_box)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left font-black transition ${form.needs_box ? "border-red-300 bg-red-50 text-red-700" : "border-slate-200 hover:bg-slate-50"}`}>
-                        <Box size={22} /> Necesito caja
+                        <Box size={22} /> {t("Necesito caja", "I need a box")}
                       </button>
                       <button type="button" onClick={() => update("needs_packing_help", !form.needs_packing_help)} className={`flex items-center gap-3 rounded-2xl border p-4 text-left font-black transition ${form.needs_packing_help ? "border-blue-300 bg-blue-50 text-blue-800" : "border-slate-200 hover:bg-slate-50"}`}>
-                        <Package size={22} /> Ayuda para empacar
+                        <Package size={22} /> {t("Ayuda para empacar", "Help with packing")}
                       </button>
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-black text-slate-800">Notas <span className="font-medium text-slate-400">(opcional)</span></label>
-                      <textarea value={form.notes} onChange={(event) => update("notes", event.target.value)} placeholder="Detalles que debamos conocer" rows={3} className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                      <label className="mb-2 block text-sm font-black text-slate-800">{t("Notas", "Notes")} <span className="font-medium text-slate-400">{t("(opcional)", "(optional)")}</span></label>
+                      <textarea value={form.notes} onChange={(event) => update("notes", event.target.value)} placeholder={t("Detalles que debamos conocer", "Anything we should know")} rows={3} className="w-full rounded-2xl border border-slate-300 px-4 py-3.5 text-base font-bold outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
                     </div>
                   </div>
                 </form>
@@ -721,19 +727,19 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
                   <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                     <CheckCircle2 size={46} />
                   </div>
-                  <h3 className="mt-6 text-3xl font-black text-[#061b3a]">¡Solicitud recibida!</h3>
-                  <p className="mt-3 max-w-md text-base font-semibold leading-7 text-slate-600">{storeName} organizará la ruta y te confirmará el día definitivo por WhatsApp.</p>
+                  <h3 className="mt-6 text-3xl font-black text-[#061b3a]">{t("¡Solicitud recibida!", "Request received!")}</h3>
+                  <p className="mt-3 max-w-md text-base font-semibold leading-7 text-slate-600">{locale === "en" ? `${storeName} will plan the route and confirm the pickup date on WhatsApp.` : `${storeName} organizará la ruta y te confirmará el día definitivo por WhatsApp.`}</p>
                   <div className="mt-6 w-full max-w-sm rounded-2xl bg-slate-950 px-5 py-5 text-white">
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-200">Código de solicitud</p>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-200">{t("Código de solicitud", "Request code")}</p>
                     <p className="mt-2 text-3xl font-black">{successCode}</p>
                   </div>
                   {successWhatsappUrl && <>
                     <a href={successWhatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex min-h-14 w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 font-black text-white hover:bg-emerald-700">
-                      <MessageCircle size={22} /> Avisar a {storeName} por WhatsApp
+                      <MessageCircle size={22} /> {locale === "en" ? `Message ${storeName} on WhatsApp` : `Avisar a ${storeName} por WhatsApp`}
                     </a>
-                    <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">Tu solicitud ya está guardada. Este botón abre WhatsApp con el resumen; pulsa Enviar para hacérselo llegar a {storeName}.</p>
+                    <p className="mt-3 max-w-sm text-sm leading-6 text-slate-500">{locale === "en" ? `Your request has been saved. Open WhatsApp and send the summary to ${storeName}.` : `Tu solicitud ya está guardada. Este botón abre WhatsApp con el resumen; pulsa Enviar para hacérselo llegar a ${storeName}.`}</p>
                   </>}
-                  <button type="button" onClick={() => { resetPlanner(); closePlanner(); }} className="mt-6 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 hover:bg-slate-50">Cerrar</button>
+                  <button type="button" onClick={() => { resetPlanner(); closePlanner(); }} className="mt-6 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 hover:bg-slate-50">{t("Cerrar", "Close")}</button>
                 </div>
               )}
 
@@ -745,21 +751,21 @@ export default function PickupPlannerHero({ variant = "card", storeSlug, storeNa
             {step < 5 && (
               <footer className="shrink-0 border-t border-slate-200 bg-white px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-4">
                 <div className="mx-auto flex max-w-xl items-center justify-between gap-3">
-                  <p className="hidden text-sm font-semibold text-slate-500 sm:block">Paso {step} de 4</p>
+                  <p className="hidden text-sm font-semibold text-slate-500 sm:block">{t("Paso", "Step")} {step} {t("de", "of")} 4</p>
                   {step === 1 && (
                     <button type="button" onClick={continueLocation} disabled={validating || geocoding} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-[#082b5c] px-6 font-black text-white transition hover:bg-[#0a3978] disabled:opacity-60">
                       {validating || geocoding ? <Loader2 className="animate-spin" size={19} /> : <ArrowRight size={19} />}
-                      {validating ? "Validando..." : geocoding ? "Buscando tu casa..." : "Continuar"}
+                      {validating ? t("Validando...", "Checking address…") : geocoding ? t("Buscando tu casa...", "Finding your address…") : t("Continuar", "Continue")}
                     </button>
                   )}
                   {step === 2 && (
                     <button type="button" onClick={continueMap} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700">
-                      Continuar <ArrowRight size={19} />
+                      {t("Continuar", "Continue")} <ArrowRight size={19} />
                     </button>
                   )}
                   {step === 3 && (
                     <button type="button" onClick={continueDates} className="ml-auto flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 font-black text-white transition hover:bg-red-700">
-                      Continuar <ArrowRight size={19} />
+                      {t("Continuar", "Continue")} <ArrowRight size={19} />
                     </button>
                   )}
                   {step === 4 && (

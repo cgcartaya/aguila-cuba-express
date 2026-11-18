@@ -1,5 +1,6 @@
 "use client";
 
+import { wfCopy, type WfLocale } from "./Language";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Calculator, MessageCircle, Plane, Ship, Zap } from "lucide-react";
 import { shipping, whatsapp } from "./content";
@@ -9,14 +10,15 @@ type Mode = keyof typeof shipping.perPound;
 type Destination = {
   id: string;
   name: string;
+  code?: string;
   boxes: { id: string; size: string; price: number }[];
 };
 
-const modes = {
-  sea: { label: "Marítimo", icon: Ship },
-  air: { label: "Aéreo", icon: Plane },
-  express: { label: "Exprés", icon: Zap },
-} satisfies Record<Mode, { label: string; icon: typeof Ship }>;
+const modes = (t: ReturnType<typeof wfCopy>) => ({
+  sea: { label: t("Marítimo", "Ocean"), icon: Ship },
+  air: { label: t("Aéreo", "Air"), icon: Plane },
+  express: { label: t("Exprés", "Express"), icon: Zap },
+} satisfies Record<Mode, { label: string; icon: typeof Ship }>);
 
 const cuba = {
   id: "cuba",
@@ -26,7 +28,9 @@ const cuba = {
 
 const money = (amount: number) => `$${amount.toFixed(2)}`;
 
-export default function ShippingCalculator({ destinations }: { destinations: Destination[] | null }) {
+export default function ShippingCalculator({ destinations, locale }: { destinations: Destination[] | null; locale: WfLocale }) {
+  const t = wfCopy(locale);
+  const shippingModes = modes(t);
   const [step, setStep] = useState(1);
   const [destinationId, setDestinationId] = useState(cuba.id);
   const [mode, setMode] = useState<Mode>("sea");
@@ -36,6 +40,8 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
   const [quantity, setQuantity] = useState("1");
   const [quote, setQuote] = useState<{ total: number; details: string } | null>(null);
   const destination = destinations?.find(({ id }) => id === destinationId) ?? cuba;
+  const destinationLabel = ({ code, name }: Destination) =>
+    locale === "en" && code ? new Intl.DisplayNames("en", { type: "region" }).of(code) ?? name : name;
   const isCuba = destination.id === cuba.id;
   const byBox = !isCuba || (mode === "sea" && billing === "box");
   const box = destination.boxes.find(({ id }) => id === boxId) ?? destination.boxes[0];
@@ -45,7 +51,7 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
     <section id="cotizador" className={s.tool} aria-labelledby="wf-quote-title">
       <div className={s.toolHeading}>
         <Calculator aria-hidden="true" />
-        <h2 id="wf-quote-title">Calculadora de envíos</h2>
+        <h2 id="wf-quote-title">{t("Calculadora de envíos", "Shipping calculator")}</h2>
       </div>
       <form
         className={s.toolBody}
@@ -62,19 +68,19 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
           setQuote({
             total,
             details: byBox
-              ? `${amount} caja(s) de ${box.size} pulgadas × ${money(unitRate)} USD`
+              ? `${amount} ${t("caja(s) de", "box(es) of")} ${box.size} ${t("pulgadas", "inches")} × ${money(unitRate)} USD`
               : `${amount} lb × ${money(unitRate)} USD/lb`,
           });
         }}
       >
-        <ol className={s.quoteSteps} aria-label="Pasos de la cotización">
-          {["Destino", "Modalidad", "Cálculo"].map((label, index) => (
+        <ol className={s.quoteSteps} aria-label={t("Pasos de la cotización", "Quote steps")}>
+          {[t("Destino", "Destination"), t("Modalidad", "Shipping method"), t("Cálculo", "Estimate")].map((label, index) => (
             <li key={label} aria-current={step === index + 1 ? "step" : undefined}>{label}</li>
           ))}
         </ol>
         {step === 1 && (
           <label>
-            País de destino
+            {t("País de destino", "Destination country")}
             <select
               value={destinationId}
               onChange={(event) => {
@@ -85,39 +91,39 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
                 setQuote(null);
               }}
             >
-              {[cuba, ...(destinations ?? [])].map(({ id, name }) => (
-                <option key={id} value={id}>{name}</option>
+              {[cuba, ...(destinations ?? [])].map((item) => (
+                <option key={item.id} value={item.id}>{destinationLabel(item)}</option>
               ))}
             </select>
           </label>
         )}
-        {step > 1 && <p className={s.quoteDestination}>Destino · {destination.name}</p>}
+        {step > 1 && <p className={s.quoteDestination}>{t("Destino", "Destination")} · {destinationLabel(destination)}</p>}
         {step === 2 && (
           <>
             <fieldset className={s.quoteModes}>
-              <legend>Modalidad de envío</legend>
+              <legend>{t("Modalidad de envío", "Shipping method")}</legend>
               {(isCuba ? (["sea", "air", "express"] as const) : (["sea"] as const)).map((value) => {
-                const { label, icon: Icon } = modes[value];
+                const { label, icon: Icon } = shippingModes[value];
                 return (
                   <label key={value}>
                     <input type="radio" name="wf-shipping-mode" value={value} checked={mode === value}
                       onChange={() => { setMode(value); setQuote(null); }} />
                     <Icon size={20} aria-hidden="true" />
                     {label}
-                    <small>{isCuba ? `${money(shipping.perPound[value])}/lb` : "Por caja"}</small>
+                    <small>{isCuba ? `${money(shipping.perPound[value])}/lb` : t("Por caja", "Per box")}</small>
                   </label>
                 );
               })}
             </fieldset>
             {isCuba && mode === "sea" && (
               <label>
-                Tipo de tarifa
+                {t("Tipo de tarifa", "Rate type")}
                 <select value={billing} onChange={(event) => {
                   setBilling(event.target.value === "box" ? "box" : "weight");
                   setQuote(null);
                 }}>
-                  <option value="weight">Por libra</option>
-                  <option value="box">Caja a precio fijo · Hasta {shipping.maxBoxWeight} lb por caja</option>
+                  <option value="weight">{t("Por libra", "Per pound")}</option>
+                  <option value="box">{t("Caja a precio fijo · Hasta", "Flat-rate box · Up to")} {shipping.maxBoxWeight} {t("lb por caja", "lb per box")}</option>
                 </select>
               </label>
             )}
@@ -125,11 +131,11 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
         )}
         {step === 3 && (
           <>
-            <p className={s.small}>{modes[mode].label} · {money(unitRate)} USD {byBox ? "por caja" : "por libra"}</p>
+            <p className={s.small}>{shippingModes[mode].label} · {money(unitRate)} USD {byBox ? t("por caja", "per box") : t("por libra", "per pound")}</p>
             {byBox ? (
               <div className={s.formGrid}>
                 <label>
-                  Tamaño de caja (pulgadas)
+                  {t("Tamaño de caja (pulgadas)", "Box size (inches)")}
                   <select value={box.id} onChange={(event) => { setBoxId(event.target.value); setQuote(null); }}>
                     {destination.boxes.map(({ id, size, price }) => (
                       <option key={id} value={id}>{size} · {money(price)}</option>
@@ -137,16 +143,16 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
                   </select>
                 </label>
                 <label>
-                  Cantidad de cajas
+                  {t("Cantidad de cajas", "Number of boxes")}
                   <input required type="number" min="1" max="100" step="1" value={quantity}
                     onChange={(event) => { setQuantity(event.target.value); setQuote(null); }} />
                 </label>
               </div>
             ) : (
               <label>
-                Peso total (lb)
+                {t("Peso total (lb)", "Total weight (lb)")}
                 <input required type="number" min="0.01" step="0.01" inputMode="decimal"
-                  placeholder="Ej. 20" value={weight}
+                  placeholder={t("Ej. 20", "E.g. 20")} value={weight}
                   onChange={(event) => { setWeight(event.target.value); setQuote(null); }} />
               </label>
             )}
@@ -155,30 +161,30 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
         <div className={s.quoteActions}>
           {step > 1 && (
             <button className={s.quoteBack} type="button" onClick={() => { setStep(step - 1); setQuote(null); }}>
-              <ArrowLeft size={16} aria-hidden="true" /> Atrás
+              <ArrowLeft size={16} aria-hidden="true" /> {t("Atrás", "Back")}
             </button>
           )}
           <button className={s.button} type="submit">
-            {step === 3 ? "Calcular estimado" : "Continuar"} <ArrowRight size={18} aria-hidden="true" />
+            {step === 3 ? t("Calcular estimado", "Calculate estimate") : t("Continuar", "Continue")} <ArrowRight size={18} aria-hidden="true" />
           </button>
         </div>
         {step === 3 && (
           <div aria-live="polite">
             {quote && (
               <div className={s.quoteResult}>
-                <span>Transporte estimado a {destination.name}</span>
+                <span>{t("Transporte estimado a", "Estimated shipping to")} {destinationLabel(destination)}</span>
                 <strong>{money(quote.total)} USD</strong>
-                <span>{modes[mode].label} · {quote.details}</span>
+                <span>{shippingModes[mode].label} · {quote.details}</span>
                 <a className={s.whatsappButton}
                   href={whatsapp([
-                    "Hola, WF Cargo. Quisiera confirmar este estimado de envío.",
-                    `Destino: ${destination.name}`,
-                    `Modalidad: ${modes[mode].label}`,
-                    `Cálculo: ${quote.details}`,
-                    `Transporte estimado: ${money(quote.total)} USD`,
+                    t("Hola, WF Cargo. Quisiera confirmar este estimado de envío.", "Hello, WF Cargo. I’d like to confirm this shipping estimate."),
+                    `${t("Destino", "Destination")}: ${destinationLabel(destination)}`,
+                    `${t("Modalidad", "Shipping method")}: ${shippingModes[mode].label}`,
+                    `${t("Cálculo", "Estimate")}: ${quote.details}`,
+                    `${t("Transporte estimado", "Estimated shipping")}: ${money(quote.total)} USD`,
                   ].join("\n"))}
                   target="_blank" rel="noopener noreferrer">
-                  <MessageCircle size={18} aria-hidden="true" /> Consultar por WhatsApp
+                  <MessageCircle size={18} aria-hidden="true" /> {t("Consultar por WhatsApp", "Ask on WhatsApp")}
                 </a>
               </div>
             )}
@@ -186,15 +192,15 @@ export default function ShippingCalculator({ destinations }: { destinations: Des
         )}
         {step === 3 && (
           <p className={s.small}>
-            {isCuba && mode === "sea" && "Entrega a domicilio en Cuba incluida. "}
-            {isCuba && `Empaque: $${shipping.packagingPerVisit} por visita, sujeto a exoneración. `}
-            Estimado de transporte. Confirma con la agencia la cobertura, el seguro, los aranceles y los cargos adicionales.
+            {isCuba && mode === "sea" && t("Entrega a domicilio en Cuba incluida. ", "Home delivery in Cuba included. ")}
+            {isCuba && `${t("Empaque", "Packing materials")}: $${shipping.packagingPerVisit} ${t("por visita, sujeto a exoneración.", "per visit, fee may be waived.")} `}
+            {t("Estimado de transporte. Confirma con la agencia la cobertura, el seguro, los aranceles y los cargos adicionales.", "Shipping estimate. Confirm coverage, insurance, customs duties, and any additional charges with our team.")}
           </p>
         )}
         {step === 1 && (
-          <a className={s.textLink} href={whatsapp("Hola, quisiera cotizar un envío a otro destino.")}
+          <a className={s.textLink} href={whatsapp(t("Hola, quisiera cotizar un envío a otro destino.", "Hello, I’d like a shipping quote for another destination."))}
             target="_blank" rel="noopener noreferrer">
-            {destinations === null ? "Consulta las tarifas internacionales por WhatsApp" : "Consultar otro destino por WhatsApp"}
+            {destinations === null ? t("Consulta las tarifas internacionales por WhatsApp", "Ask about international rates on WhatsApp") : t("Consultar otro destino por WhatsApp", "Ask about another destination on WhatsApp")}
           </a>
         )}
       </form>

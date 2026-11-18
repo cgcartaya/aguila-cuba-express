@@ -107,11 +107,12 @@ const wf = load("components/landing/wfcargo/PickupForm.tsx", {
     received = props;
     return props.renderTrigger(() => {});
   },
+  "./Language": load("components/landing/wfcargo/Language.ts"),
   "./content": { contact: { whatsapp: "17725771507" } },
   "./wfcargo.module.css": {},
 }).default;
 test("WF card retains its design and pins the actual tenant and WhatsApp", () => {
-  const html = renderToStaticMarkup(React.createElement(wf));
+  const html = renderToStaticMarkup(React.createElement(wf, { locale: "es" }));
   assert.equal(received.storeSlug, "wf-cago");
   assert.equal(received.storeName, "WF Cargo Envíos");
   assert.equal(received.whatsappPhone, "17725771507");
@@ -119,4 +120,12 @@ test("WF card retains its design and pins the actual tenant and WhatsApp", () =>
   assert.match(html, /Fecha preferida/);
   assert.match(html, /Continuar con mi solicitud/);
   assert.doesNotMatch(html, /Continuar en WhatsApp/);
+});
+
+test("WF pickup passes the English presentation to the shared planner", () => {
+  const html = renderToStaticMarkup(React.createElement(wf, { locale: "en" }));
+  assert.equal(received.locale, "en");
+  assert.match(html, /Schedule your pickup/);
+  assert.match(html, /Preferred date/);
+  assert.doesNotMatch(html, /Nombre completo/);
 });

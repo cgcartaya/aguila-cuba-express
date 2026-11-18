@@ -36,7 +36,7 @@ export const initialCatalog: Record<string, Configuration> = {
     variants: [variant("florida", "Documento de Florida", ["Documento original o copia certificada elegible", "Formulario de apostilla con país de destino", "Cheque o money order", "Sobre de retorno prepagado con rastreo"])],
   },
   notarizacion: {
-    title: "Notarización de documentos", description: "Notario público de Florida. Coordina con WF Cargo la presencia de los firmantes y testigos.", agencyFee: null,
+    title: "Notary Public", description: "Coordina con WF Cargo la presencia de los firmantes y testigos.", agencyFee: null,
     fees: fees([["Acto notarial", 10, "por firma notarizada"]]),
     variants: [variant("florida", "Acto notarial", ["Documento completo y sin firmar", "Identificación vigente de cada firmante", "Disponibilidad de todos los firmantes"], ["Testigos requeridos por el documento", "País de destino definido para uso en el extranjero"])],
   },

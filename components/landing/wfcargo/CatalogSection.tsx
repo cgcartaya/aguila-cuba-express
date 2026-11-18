@@ -1,3 +1,4 @@
+import { wfCopy, type WfLocale } from "./Language";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ShoppingBag } from "lucide-react";
@@ -17,7 +18,8 @@ const dollars = new Intl.NumberFormat("en-US", {
   currency: "USD",
 });
 
-export default async function CatalogSection() {
+export default async function CatalogSection({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")
     .select("id,slug")
@@ -49,9 +51,9 @@ export default async function CatalogSection() {
   return (
     <section id="tienda-virtual" className={styles.section} aria-labelledby="wf-catalog-heading">
       <header className={styles.heading}>
-        <p><ShoppingBag size={17} aria-hidden="true" /> Tienda virtual</p>
-        <h2 id="wf-catalog-heading">Compra en WF Cargo</h2>
-        <span>Equipos para el hogar, telefonía y alimentos en un solo lugar.</span>
+        <p><ShoppingBag size={17} aria-hidden="true" /> {t("Tienda virtual", "Online store")}</p>
+        <h2 id="wf-catalog-heading">{t("Compra en WF Cargo", "Shop at WF Cargo")}</h2>
+        <span>{t("Equipos para el hogar, telefonía y alimentos en un solo lugar.", "Home appliances, phones, and groceries in one place.")}</span>
       </header>
       {products.length > 0 && (
         <ul className={styles.grid}>
@@ -65,7 +67,7 @@ export default async function CatalogSection() {
                   <p>{product.category}</p>
                   <h3>{product.name}</h3>
                   <div className={styles.price}>{dollars.format(product.price)} <span>USD</span></div>
-                  <span className={styles.detail}>Ver producto <ArrowRight size={16} aria-hidden="true" /></span>
+                  <span className={styles.detail}>{t("Ver producto", "View product")} <ArrowRight size={16} aria-hidden="true" /></span>
                 </div>
               </Link>
             </li>
@@ -73,7 +75,7 @@ export default async function CatalogSection() {
         </ul>
       )}
       <Link className={styles.cta} href={shop}>
-        Ver catálogo completo <ArrowRight size={19} aria-hidden="true" />
+        {t("Ver catálogo completo", "View full catalog")} <ArrowRight size={19} aria-hidden="true" />
       </Link>
     </section>
   );
