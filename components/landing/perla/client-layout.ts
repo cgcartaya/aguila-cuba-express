@@ -13,7 +13,7 @@ const references = [
   { slug: "dreamon", name: "DreamOn" },
   { slug: "dl-racing-cyber", name: "DL Racing Cyber" },
   { slug: "luxury-travel-point", name: "Luxury Travel Point" },
-  { slug: "wf-cago", name: "WF Cago" },
+  { slug: "wf-cago", name: "WF Cargo Envíos" },
 ];
 
 // This only arranges the public, enabled records supplied by the server.

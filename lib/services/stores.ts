@@ -73,6 +73,13 @@ export async function getStoreById(id: string): Promise<Store | null> {
   return data as Store | null
 }
 
+function publicStoreWithCorrectedName(store: Store | null): Store | null {
+  if (store?.slug === "wf-cago" && store.name?.trim().toLowerCase() === "wf cago") {
+    return { ...store, name: "WF Cargo Envíos" }
+  }
+  return store
+}
+
 export async function getStoreBySlug(slug: string): Promise<Store | null> {
   const { data, error } = await publicSupabase
     .from("stores")
@@ -85,7 +92,7 @@ export async function getStoreBySlug(slug: string): Promise<Store | null> {
     return null
   }
 
-  return data as Store | null
+  return publicStoreWithCorrectedName(data as Store | null)
 }
 
 export async function getStoreByDomain(domain: string): Promise<Store | null> {
@@ -102,7 +109,7 @@ export async function getStoreByDomain(domain: string): Promise<Store | null> {
     return null
   }
 
-  return data as Store | null
+  return publicStoreWithCorrectedName(data as Store | null)
 }
 
 export async function getStoreBySubdomain(
@@ -121,7 +128,7 @@ export async function getStoreBySubdomain(
     return null
   }
 
-  return data as Store | null
+  return publicStoreWithCorrectedName(data as Store | null)
 }
 
 

@@ -12,7 +12,10 @@ test("public catalog reads do not wait for a blocked admin session refresh", asy
     assert.equal(url.origin, "https://fixture.supabase.co");
     assert.ok(url.pathname.startsWith("/rest/v1/"));
     const single = new Headers(init?.headers).get("Accept")?.includes("object");
-    const row = { id: "item", name: "Tienda", is_active: true };
+    const isWfCargo = url.pathname.endsWith("/stores") && url.searchParams.get("slug") !== "eq.demo";
+    const row = isWfCargo
+      ? { id: "item", name: "WF Cago", slug: "wf-cago", is_active: true }
+      : { id: "item", name: "Tienda", slug: "demo", is_active: true };
     return new Response(JSON.stringify(single ? row : [row]), {
       headers: { "content-type": "application/json" },
     });
@@ -54,7 +57,7 @@ test("public catalog reads do not wait for a blocked admin session refresh", asy
         settings.getBannersByStoreId("store-a"),
         combos.getActiveCombosByStoreId("store-a"),
         combos.getPublicComboById("item", "store-a"),
-      ]),
+      ] as const),
       new Promise<never>((_, reject) => {
         timeout = setTimeout(
           () => reject(new Error("Public reads waited for admin auth")),
@@ -63,6 +66,10 @@ test("public catalog reads do not wait for a blocked admin session refresh", asy
       }),
     ]);
     assert.equal(result.length, 12);
+    assert.equal(result[0]?.name, "WF Cargo Envíos");
+    assert.equal(result[0]?.slug, "wf-cago");
+    assert.equal(result[1]?.name, "Tienda");
+    assert.equal(result[2]?.name, "WF Cargo Envíos");
     for (const request of requests) {
       assert.equal(
         request.headers.get("Authorization"),
