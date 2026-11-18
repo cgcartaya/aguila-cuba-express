@@ -80,7 +80,7 @@ test("every promotional asset exists and is scoped to WF Cargo", () => {
   for (const slide of content.slides) {
     assert.match(slide.image, /^\/wfcargo\//);
     assert.ok(fs.existsSync("public" + slide.image));
-    assert.ok(slide.href.startsWith("#") || new URL(slide.href).hostname === "wa.me");
+    assert.ok(slide.href.startsWith("#") || slide.href === "/remesas" || new URL(slide.href).hostname === "wa.me");
   }
 });
 test("contact and tariff data match the supplied business brief", () => {
@@ -98,4 +98,15 @@ test("contact and tariff data match the supplied business brief", () => {
   assert.equal(content.shipping.boxes[0].price, 50);
   assert.equal(content.shipping.maxBoxWeight, 100);
   assert.equal(content.branches.length, 2);
+});
+
+test("WF remittance bulletin examples calculate the cash fee at the correct threshold", () => {
+  const { cashRemittanceFee, wfRemittanceRates, wfRemittancesHref } = loadHosts("components/landing/wfcargo/remittances.ts");
+  assert.equal(wfRemittancesHref("es"), "/remesas");
+  assert.equal(wfRemittancesHref("en"), "/remesas?lang=en");
+  assert.equal(wfRemittanceRates.cupTransfer * 100, 90000);
+  assert.equal(wfRemittanceRates.cupCash * 50, 45000);
+  assert.equal(50 + cashRemittanceFee(50), 53);
+  assert.equal(100 + cashRemittanceFee(100), 103);
+  assert.equal(150 + cashRemittanceFee(150), 154.5);
 });

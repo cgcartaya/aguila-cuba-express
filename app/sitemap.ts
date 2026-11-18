@@ -105,7 +105,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }),
     ];
   }
-  if (isWfCargoHost(host)) return [{ url: wfCargoOrigin }];
+  if (isWfCargoHost(host)) {
+    const es = wfCargoOrigin + "/remesas";
+    const en = es + "?lang=en";
+    const alternates = { languages: { es, en } };
+    return [{ url: wfCargoOrigin }, { url: es, alternates }, { url: en, alternates }];
+  }
   const domainSitemap = resolveSitemap(host);
 
   return domainSitemap.routes.map((route) => ({

@@ -14,9 +14,10 @@ import {
   HeartHandshake,
 } from "lucide-react";
 import { branches, faqs, whatsapp } from "./content";
+import { wfRemittancesHref } from "./remittances";
 import NotaryNotice from "./NotaryNotice";
 import s from "./wfcargo.module.css";
-function getServices(t: ReturnType<typeof wfCopy>) {
+function getServices(t: ReturnType<typeof wfCopy>, locale: WfLocale) {
   return [
     {
       icon: Package,
@@ -40,7 +41,7 @@ function getServices(t: ReturnType<typeof wfCopy>) {
       icon: Wallet,
       name: t("Enviar remesas", "Send money"),
       text: t("Cerca de quienes más quieres", "Stay close to your loved ones"),
-      href: whatsapp(t("Hola, quisiera información sobre remesas.", "Hello, I’d like information about money transfers.")),
+      href: wfRemittancesHref(locale),
     },
     {
       icon: Car,
@@ -66,7 +67,7 @@ export function ServiceGrid({ locale }: { locale: WfLocale }) {
         <p>{t("Elige un servicio. Nosotros te acompañamos en el siguiente paso.", "Choose a service and we’ll help you with the next step.")}</p>
       </div>
       <div className={s.serviceGrid}>
-        {getServices(t).map(({ icon: Icon, ...item }) => (
+        {getServices(t, locale).map(({ icon: Icon, ...item }) => (
           <a key={item.name} href={item.href} className={s.serviceCard}>
             <span className={s.serviceIcon}>
               <Icon size={29} />

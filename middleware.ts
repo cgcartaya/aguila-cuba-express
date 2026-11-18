@@ -288,7 +288,7 @@ export async function middleware(request: NextRequest) {
    */
   const normalizedHost = normalizeHost(host);
 
-  if (["/", "/privacidad", "/condiciones"].includes(pathname) && isWfCargoHost(normalizedHost)) return NextResponse.next();
+  if (["/", "/privacidad", "/condiciones", "/remesas"].includes(pathname) && isWfCargoHost(normalizedHost)) return NextResponse.next();
 
   if (isLuxuryHost(host) &&
       (dmcSections.some((section) => pathname === '/' + section) || pathname.startsWith('/destinations/'))) {
