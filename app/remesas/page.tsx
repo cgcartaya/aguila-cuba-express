@@ -9,6 +9,7 @@ import { wfCopy, wfLocale } from "@/components/landing/wfcargo/Language";
 import { contact, whatsapp } from "@/components/landing/wfcargo/content";
 import {
   cashRemittanceFee,
+  wfCashDeliveryFee,
   wfRemittanceCoverage,
   wfRemittanceRates,
   wfRemittancesHref,
@@ -93,8 +94,8 @@ export default async function WfRemittancesPage({ searchParams }: Props) {
             <h2 id="wf-fees"><Wallet aria-hidden="true" /> {t("Cargos para entregas en efectivo", "Cash delivery fees")}</h2>
             <p>{t("La misma regla aplica a CUP y USD en efectivo. El cargo de mensajería se suma al monto enviado.", "The same rule applies to CUP and USD in cash. The delivery fee is added to the amount you send.")}</p>
             <ul>
-              <li>{t("Menos de 100 USD", "Under 100 USD")} <strong>· 3 USD</strong></li>
-              <li>{t("100 USD o más", "100 USD or more")} <strong>· 3%</strong></li>
+              <li>{t("Menos de", "Under")} {wfCashDeliveryFee.threshold} USD <strong>· {wfCashDeliveryFee.fixedUsd} USD</strong></li>
+              <li>{wfCashDeliveryFee.threshold} USD {t("o más", "or more")} <strong>· {wfCashDeliveryFee.percent}%</strong></li>
             </ul>
             <div className={s.tableWrap}>
               <table>

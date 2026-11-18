@@ -65,7 +65,11 @@ export default function ManagedProcedures({ locale }: { locale: WfLocale }) {
                 <div className={styles.procedureCardBody}>
                   <h3>{configuration.title}</h3>
                   <p>{configuration.description}</p>
-                  {item.service === "notarizacion" && <NotaryNotice />}
+                  {item.service === "notarizacion" && (
+                    <a href="#wf-procedure-legal" className={styles.procedureNoticeLink}>
+                      {t("Ver aviso legal bilingüe", "Read the bilingual legal notice")}
+                    </a>
+                  )}
                   {!!configuration.fees.length && <details>
                     <summary>{t("Tarifas de terceros", "Third-party fees")}</summary>
                     <ul>{configuration.fees.map((fee, index) => <li key={index}>{fee.label} · ${fee.amount.toFixed(2)} {fee.unit}</li>)}</ul>
@@ -91,6 +95,10 @@ export default function ManagedProcedures({ locale }: { locale: WfLocale }) {
             );
           })}
         </div>
+        <section id="wf-procedure-legal" className={styles.procedureLegal} aria-labelledby="wf-procedure-legal-title">
+          <h3 id="wf-procedure-legal-title">Notary Public · Farelas Inmigración Services</h3>
+          <NotaryNotice />
+        </section>
         {entry && selectedConfiguration && selectedOption && <div id="solicitud-tramite" tabIndex={-1} className={styles.procedureForm}>
           <h3>{selectedConfiguration.title}</h3>
           {entry.service === "notarizacion" && <NotaryNotice />}
@@ -124,10 +132,6 @@ export default function ManagedProcedures({ locale }: { locale: WfLocale }) {
             <button type="submit" className={styles.button} disabled={busy}>{busy ? t("Enviando…", "Sending…") : t("Enviar solicitud", "Submit request")}</button>
           </form>}
         </div>}
-        <section aria-labelledby="wf-farelas-title">
-          <h3 id="wf-farelas-title">Farelas Inmigración Services</h3>
-          <NotaryNotice />
-        </section>
         <aside className={styles.procedureContact} aria-label={t("Orientación sobre trámites", "Document services assistance")}>
           <div><Headset size={32} aria-hidden="true" /><span><strong>{t("¿Necesitas orientación?", "Need help?")}</strong><br />{t("Nuestro equipo te explica los pasos para tu trámite.", "Our team can explain the steps for your request.")}</span></div>
           <a href={whatsapp(t("Hola, necesito orientación sobre un trámite.", "Hello, I need help with a document service."))} target="_blank" rel="noreferrer"><MessageCircle size={22} aria-hidden="true" /> {t("Contáctanos por WhatsApp", "Message us on WhatsApp")}</a>
