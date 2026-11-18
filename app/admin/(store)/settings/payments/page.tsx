@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, CircleAlert, Loader2, WalletCards } from "lucide-react";
 
 import CloverPaymentSettings from "@/components/admin/CloverPaymentSettings";
+import SquarePaymentSettings from "@/components/admin/SquarePaymentSettings";
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -154,10 +155,11 @@ export default function StripeConnectSettingsPage() {
           Plataformas de pago
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Configura Stripe o Clover para los cobros en línea de compras y envíos.
+          Configura las pasarelas de cobro de la tienda.
         </p>
 
         {activeStore?.id && <CloverPaymentSettings key={activeStore.id} storeId={activeStore.id} />}
+        {activeStore?.id && <SquarePaymentSettings key={activeStore.id} storeId={activeStore.id} />}
 
         {/* --- Selector de modo --- */}
         <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6">

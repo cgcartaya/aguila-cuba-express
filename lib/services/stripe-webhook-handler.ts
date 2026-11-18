@@ -64,6 +64,7 @@ export async function handleStripeWebhookEvent(
         })
         .eq("id", orderId)
         .eq("store_id", metadataStoreId)
+        .or("checkout_payment_provider.is.null,checkout_payment_provider.eq.stripe")
         .is("deleted_at", null);
     }
 
@@ -147,6 +148,7 @@ export async function handleStripeWebhookEvent(
         .eq("id", orderId)
         .eq("store_id", metadataStoreId)
         .eq("payment_status", "pending")
+        .or("checkout_payment_provider.is.null,checkout_payment_provider.eq.stripe")
         .eq("stock_restored", false)
         .is("deleted_at", null)
         .select("id");

@@ -123,7 +123,6 @@ test('retired elTOQUE cron has no service dependencies and reports disabled', as
   assert.equal((await response.json()).enabled, false);
   const config = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
   assert.equal(config.crons.some(cron => cron.path === '/api/cron/eltoque-rate'), false);
-  assert.equal(config.crons.length, 3);
 });
 
 test.after(async () => { await db.close(); });

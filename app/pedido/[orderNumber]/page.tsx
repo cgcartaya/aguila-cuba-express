@@ -14,6 +14,7 @@ type OrderRow = {
   status: string;
   source_shipment_id?: string | null;
   payment_status?: string | null;
+  checkout_payment_provider?: string | null;
   payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
