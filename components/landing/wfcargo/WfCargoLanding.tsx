@@ -1,3 +1,4 @@
+import { wfCopy, type WfLocale } from "./Language";
 import { headers } from "next/headers";
 import { procedurePublicStore } from "@/lib/procedures/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
@@ -8,6 +9,7 @@ import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
 import ManagedProcedures from "./ManagedProcedures";
 import PickupForm from "./PickupForm";
+import AboutSection from "./AboutSection";
 import CatalogSection from "./CatalogSection";
 import {
   ServiceGrid,
@@ -56,30 +58,34 @@ async function loadBoxRates() {
       }
     }
     return boxes.size
-      ? [{ id: country.id, name: country.name, boxes: [...boxes.values()].sort((a, b) => a.price - b.price) }]
+      ? [{ id: country.id, name: country.name, code: country.code, boxes: [...boxes.values()].sort((a, b) => a.price - b.price) }]
       : [];
   });
 }
 
-export default async function WfCargoLanding() {
-  const procedureStore = await procedurePublicStore(new Request(`https://${(await headers()).get("host") || "invalid.local"}`));
-  const destinations = await loadBoxRates().catch((error: unknown) => {
-    console.error("WF Cargo box rates unavailable", error);
-    return null;
-  });
+export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
+  const host = (await headers()).get("host") || "invalid.local";
+  const [procedureStore, destinations] = await Promise.all([
+    procedurePublicStore(new Request(`https://${host}`)),
+    loadBoxRates().catch((error: unknown) => {
+      console.error("WF Cargo box rates unavailable", error);
+      return null;
+    }),
+  ]);
   return (
-    <div className={s.root}>
+    <div className={s.root} lang={locale}>
       <a href="#contenido" className={s.skip}>
-        Saltar al contenido
+        {t("Saltar al contenido", "Skip to content")}
       </a>
       <div className={s.topbar}>
-        <span>Tu agencia de envíos y multiservicios en Port St. Lucie</span>
+        <span>{t("Tu agencia de envíos y multiservicios en Port St. Lucie", "Your shipping and service center in Port St. Lucie")}</span>
         <a href="tel:+17722127150">
           <Phone size={13} /> {contact.phone}
         </a>
       </div>
       <header className={s.header}>
-        <nav className={s.nav} aria-label="Navegación principal">
+        <nav className={s.nav} aria-label={t("Navegación principal", "Main navigation")}>
           <a href="#inicio" className={s.brand}>
             <Image
               src="/wfcargo/logo.webp"
@@ -90,19 +96,24 @@ export default async function WfCargoLanding() {
             />
             <span>
               WF Cargo <b>Envíos</b>
-              <small>Tu mundo más cerca</small>
+              <small>{t("Tu mundo más cerca", "Bringing your world closer")}</small>
             </span>
           </a>
           <div className={s.desktopNav}>
-            <a href="#servicios">Servicios</a>
-            <a href="#cotizador">Envíos</a>
-            <a href="#tramites">Trámites</a>
-            <Link href="/casillero">Casillero Virtual</Link>
-            <a href="#sucursales">Sucursales</a>
+            <a href="#servicios">{t("Servicios", "Services")}</a>
+            <a href="#cotizador">{t("Envíos", "Shipping")}</a>
+            <a href="#tramites">{t("Trámites", "Document services")}</a>
+            <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
+            <a href="#sucursales">{t("Sucursales", "Locations")}</a>
+            <a href="#quienes-somos">{t("Quiénes somos", "About us")}</a>
+          </div>
+          <div className={s.languageLinks} role="group" aria-label={t("Idioma", "Language")}>
+            <Link href="/" lang="es" hrefLang="es" aria-label="Español" aria-current={locale === "es" ? "page" : undefined}>ES</Link>
+            <Link href="/?lang=en" lang="en" hrefLang="en" aria-label="English" aria-current={locale === "en" ? "page" : undefined}>EN</Link>
           </div>
           <a
             className={s.whatsappButton}
-            href={whatsapp("Hola, quisiera información sobre sus servicios.")}
+            href={whatsapp(t("Hola, quisiera información sobre sus servicios.", "Hello, I’d like information about your services."))}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -110,42 +121,44 @@ export default async function WfCargoLanding() {
             <span>WhatsApp</span>
           </a>
           <details className={s.mobileMenu}>
-            <summary>Menú</summary>
+            <summary>{t("Menú", "Menu")}</summary>
             <div>
-              <a href="#servicios">Servicios</a>
-              <a href="#cotizador">Cotizar envío</a>
-              <a href="#tramites">Trámites</a>
-            <Link href="/casillero">Casillero Virtual</Link>
-              <a href="#sucursales">Sucursales</a>
+              <a href="#servicios">{t("Servicios", "Services")}</a>
+              <a href="#cotizador">{t("Cotizar envío", "Get a shipping quote")}</a>
+              <a href="#tramites">{t("Trámites", "Document services")}</a>
+              <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
+              <a href="#sucursales">{t("Sucursales", "Locations")}</a>
+              <a href="#quienes-somos">{t("Quiénes somos", "About us")}</a>
             </div>
           </details>
         </nav>
       </header>
       <main id="contenido">
-        <PromotionSlider />
-        <ServiceGrid />
+        <PromotionSlider locale={locale} />
+        <ServiceGrid locale={locale} />
         <div className={s.tools}>
-          <ShippingCalculator destinations={destinations} />
+          <ShippingCalculator locale={locale} destinations={destinations} />
         </div>
-        <CatalogSection />
-        {procedureStore && <ManagedProcedures />}
-        <Benefits />
-        <PickupForm />
-        <Branches />
-        <FaqSection />
+        <CatalogSection locale={locale} />
+        {procedureStore && <ManagedProcedures locale={locale} />}
+        <Benefits locale={locale} />
+        <PickupForm locale={locale} />
+        <Branches locale={locale} />
+        <FaqSection locale={locale} />
+        <AboutSection locale={locale} />
         <section className={s.contactCta}>
           <div>
-            <p className={s.eyebrow}>HABLEMOS DE LO QUE NECESITAS</p>
-            <h2>Estamos para ayudarte.</h2>
-            <p>Un mensaje puede ser el comienzo de tu próxima solución.</p>
+            <p className={s.eyebrow}>{t("HABLEMOS DE LO QUE NECESITAS", "TELL US WHAT YOU NEED")}</p>
+            <h2>{t("Estamos para ayudarte.", "We’re here to help.")}</h2>
+            <p>{t("Un mensaje puede ser el comienzo de tu próxima solución.", "Send us a message and we’ll help you get started.")}</p>
           </div>
           <a
             className={s.button}
-            href={whatsapp("Hola, quisiera hablar con el equipo de WF Cargo.")}
+            href={whatsapp(t("Hola, quisiera hablar con el equipo de WF Cargo.", "Hello, I’d like to speak with the WF Cargo team."))}
             target="_blank"
             rel="noopener noreferrer"
           >
-            Escríbenos por WhatsApp
+            {t("Escríbenos por WhatsApp", "Message us on WhatsApp")}
             <ArrowUpRight size={20} />
           </a>
         </section>
@@ -156,25 +169,25 @@ export default async function WfCargoLanding() {
           <p>
             Fournier Investment Services LLC
             <br />
-            Envíos y multiservicios · Port St. Lucie, Florida
+            {t("Envíos y multiservicios · Port St. Lucie, Florida", "Shipping and related services · Port St. Lucie, Florida")}
           </p>
         </div>
         <div>
           <a href="tel:+17722127150">{contact.phone}</a>
           <a href={`mailto:${contact.email}`}>{contact.email}</a>
-          <Link href="/privacidad">Política de privacidad</Link>
-          <Link href="/condiciones">Condiciones del servicio</Link>
-          <Link href="/login">Acceso de personal</Link>
+          <a href="#quienes-somos">{t("Quiénes somos", "About us")}</a>
+          <Link href="/privacidad">{t("Política de privacidad", "Privacy policy")}</Link>
+          <Link href="/condiciones">{t("Condiciones del servicio", "Terms of service")}</Link>
+          <Link href="/login">{t("Acceso de personal", "Staff sign-in")}</Link>
         </div>
         <small>
-          Oficina de notaría pública. No ofrecemos asesoría legal ni de
-          inmigración. Tarifas y servicios sujetos a confirmación.
+          {t("Tarifas y servicios sujetos a confirmación.", "Rates and services are subject to confirmation.")}
         </small>
       </footer>
       <a
         className={s.floatingWhatsApp}
-        aria-label="Contactar a WF Cargo por WhatsApp"
-        href={whatsapp("Hola, quisiera información sobre WF Cargo Envíos.")}
+        aria-label={t("Contactar a WF Cargo por WhatsApp", "Contact WF Cargo on WhatsApp")}
+        href={whatsapp(t("Hola, quisiera información sobre WF Cargo Envíos.", "Hello, I’d like information about WF Cargo Envíos."))}
         target="_blank"
         rel="noopener noreferrer"
       >

@@ -9,6 +9,7 @@ import { headers } from "next/headers";
 
 import { buildWfCargoMetadata } from "@/components/landing/wfcargo/metadata";
 import PublicProcedures from "@/components/procedures/PublicProcedures";
+import { wfLocale } from "@/components/landing/wfcargo/Language";
 import WfCargoLanding from "@/components/landing/wfcargo/WfCargoLanding";
 import Bar1820Landing from "@/components/landing/bar1820/Bar1820Landing";
 import AlvarezLanding from "@/components/landing/alvarez/AlvarezLanding";
@@ -175,7 +176,7 @@ function buildLandingFallbackMetadata(
   };
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: HomeProps): Promise<Metadata> {
   const host = await getCurrentHost();
 
   if (resolveLanding(host) === "luxury") {
@@ -187,7 +188,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // This existing tenant was registered with the legacy slug "wf-cago".
     // Read its editable SEO settings without renaming any tenant identifiers.
     const store = await resolveStoreByHost(host) || await resolveStoreBySlug("wf-cago");
-    return buildWfCargoMetadata(store);
+    return buildWfCargoMetadata(store, wfLocale((await searchParams).lang));
   }
 
 
@@ -284,7 +285,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPerlaMetadata();
 }
 
-async function LandingContent() {
+type HomeProps = { searchParams: Promise<{ lang?: string | string[] }> };
+
+async function LandingContent({ searchParams }: HomeProps) {
   const landing = await getCurrentLanding();
 
   if (landing === "luxury") {
@@ -296,7 +299,7 @@ async function LandingContent() {
     />;
   }
 
-  if (landing === "wfcargo") return <WfCargoLanding />;
+  if (landing === "wfcargo") return <WfCargoLanding locale={wfLocale((await searchParams).lang)} />;
 
   if (landing === "tumercadolajero") {
     const store = await resolveStoreBySlug("tumercadolajero");
@@ -382,9 +385,9 @@ async function LandingContent() {
 }
 
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: HomeProps) {
   const host = (await headers()).get("host") || "";
   const store = await resolveStoreByHost(host);
   const showProcedures = resolveLanding(host) !== "wfcargo" && store?.module_procedures_enabled && store.procedures_public_enabled;
-  return <><LandingContent />{showProcedures && <PublicProcedures name={store.name} color={store.primary_color} />}</>;
+  return <><LandingContent searchParams={searchParams} />{showProcedures && <PublicProcedures name={store.name} color={store.primary_color} />}</>;
 }

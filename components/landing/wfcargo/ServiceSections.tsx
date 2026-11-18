@@ -1,3 +1,4 @@
+import { wfCopy, type WfLocale } from "./Language";
 import {
   ArrowRight,
   Package,
@@ -13,55 +14,59 @@ import {
   HeartHandshake,
 } from "lucide-react";
 import { branches, faqs, whatsapp } from "./content";
+import NotaryNotice from "./NotaryNotice";
 import s from "./wfcargo.module.css";
-const services = [
-  {
-    icon: Package,
-    name: "Enviar paquetes",
-    text: "Cuba, R. Dominicana y Colombia",
-    href: "#cotizador",
-  },
-  {
-    icon: Truck,
-    name: "Solicitar recogida",
-    text: "Para tus envíos a Cuba",
-    href: "#recogida",
-  },
-  {
-    icon: FileText,
-    name: "Trámites",
-    text: "Pasaportes, visas y documentos",
-    href: "#tramites",
-  },
-  {
-    icon: Wallet,
-    name: "Enviar remesas",
-    text: "Cerca de quienes más quieres",
-    href: whatsapp("Hola, quisiera información sobre remesas."),
-  },
-  {
-    icon: Car,
-    name: "Renta de autos",
-    text: "Planea tu próxima visita a Cuba",
-    href: "#tramites",
-  },
-  {
-    icon: Grid2X2,
-    name: "Otros servicios",
-    text: "Soluciones en un mismo lugar",
-    href: whatsapp("Hola, quisiera información sobre sus otros servicios."),
-  },
-];
-export function ServiceGrid() {
+function getServices(t: ReturnType<typeof wfCopy>) {
+  return [
+    {
+      icon: Package,
+      name: t("Enviar paquetes", "Send packages"),
+      text: t("Cuba, R. Dominicana y Colombia", "Cuba, Dominican Republic, and Colombia"),
+      href: "#cotizador",
+    },
+    {
+      icon: Truck,
+      name: t("Solicitar recogida", "Request a pickup"),
+      text: t("Para tus envíos a Cuba", "For shipments to Cuba"),
+      href: "#recogida",
+    },
+    {
+      icon: FileText,
+      name: t("Trámites", "Document services"),
+      text: t("Pasaportes, visas y documentos", "Passports, visas, and documents"),
+      href: "#tramites",
+    },
+    {
+      icon: Wallet,
+      name: t("Enviar remesas", "Send money"),
+      text: t("Cerca de quienes más quieres", "Stay close to your loved ones"),
+      href: whatsapp(t("Hola, quisiera información sobre remesas.", "Hello, I’d like information about money transfers.")),
+    },
+    {
+      icon: Car,
+      name: t("Renta de autos", "Car rentals"),
+      text: t("Planea tu próxima visita a Cuba", "Plan your next trip to Cuba"),
+      href: "#tramites",
+    },
+    {
+      icon: Grid2X2,
+      name: t("Otros servicios", "Other services"),
+      text: t("Soluciones en un mismo lugar", "Several services in one place"),
+      href: whatsapp(t("Hola, quisiera información sobre sus otros servicios.", "Hello, I’d like information about your other services.")),
+    },
+  ];
+}
+export function ServiceGrid({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
   return (
     <section id="servicios" className={s.section}>
       <div className={s.sectionHeading}>
-        <p className={s.kicker}>UN SOLO LUGAR. MUCHAS SOLUCIONES.</p>
-        <h2>¿Qué necesitas hacer hoy?</h2>
-        <p>Elige un servicio. Nosotros te acompañamos en el siguiente paso.</p>
+        <p className={s.kicker}>{t("UN SOLO LUGAR. MUCHAS SOLUCIONES.", "SEVERAL SERVICES IN ONE PLACE")}</p>
+        <h2>{t("¿Qué necesitas hacer hoy?", "How can we help today?")}</h2>
+        <p>{t("Elige un servicio. Nosotros te acompañamos en el siguiente paso.", "Choose a service and we’ll help you with the next step.")}</p>
       </div>
       <div className={s.serviceGrid}>
-        {services.map(({ icon: Icon, ...item }) => (
+        {getServices(t).map(({ icon: Icon, ...item }) => (
           <a key={item.name} href={item.href} className={s.serviceCard}>
             <span className={s.serviceIcon}>
               <Icon size={29} />
@@ -77,24 +82,25 @@ export function ServiceGrid() {
     </section>
   );
 }
-export function Benefits() {
+export function Benefits({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
   return (
     <div className={s.benefits}>
       {[
         {
           icon: Package,
-          title: "Cajas desde $50",
-          text: "Modalidades para tu envío",
+          title: t("Cajas desde $50", "Boxes from $50"),
+          text: t("Modalidades para tu envío", "Options for your shipment"),
         },
         {
           icon: ShieldCheck,
-          title: "Entrega incluida en Cuba",
-          text: "A domicilio, según cobertura",
+          title: t("Entrega incluida en Cuba", "Delivery included in Cuba"),
+          text: t("A domicilio, según cobertura", "Home delivery where available"),
         },
         {
           icon: HeartHandshake,
-          title: "Atención personalizada",
-          text: "Tu agencia de confianza",
+          title: t("Atención personalizada", "Personalized service"),
+          text: t("Tu agencia de confianza", "Your local shipping agency"),
         },
       ].map(({ icon: Icon, title, text }) => (
         <div key={title}>
@@ -108,13 +114,14 @@ export function Benefits() {
     </div>
   );
 }
-export function Branches() {
+export function Branches({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
   return (
     <section id="sucursales" className={s.section}>
       <div className={s.sectionHeading}>
-        <p className={s.kicker}>ESTAMOS CERCA DE TI</p>
-        <h2>Dos sucursales. La misma confianza.</h2>
-        <p>Visítanos en Port St. Lucie.</p>
+        <p className={s.kicker}>{t("ESTAMOS CERCA DE TI", "FIND US NEAR YOU")}</p>
+        <h2>{t("Dos sucursales. La misma confianza.", "Two locations, the same dependable service.")}</h2>
+        <p>{t("Visítanos en Port St. Lucie.", "Visit us in Port St. Lucie.")}</p>
       </div>
       <div className={s.branchGrid}>
         {branches.map((b) => (
@@ -122,17 +129,18 @@ export function Branches() {
             <div className={s.branchTop}>
               <MapPin size={29} />
               <div>
-                <p className={s.kicker}>{b.focus}</p>
+                <p className={s.kicker}>{locale === "en" ? b.focusEn : b.focus}</p>
                 <h3>{b.name}</h3>
               </div>
             </div>
             <p>{b.address}</p>
-            <p className={s.muted}>{b.services}</p>
+            <p className={s.muted}>{locale === "en" ? b.servicesEn : b.services}</p>
+            {b.services.includes("Notary Public") && <NotaryNotice />}
             <p className={s.hours}>
               <Clock size={17} />
-              Lun–Vie 10:00 a. m.–7:00 p. m.
+              {t("Lun–Vie 10:00 a. m.–7:00 p. m.", "Mon–Fri 10:00 a.m.–7:00 p.m.")}
               <br />
-              Sáb 10:00 a. m.–2:00 p. m. · Dom cerrado
+              {t("Sáb 10:00 a. m.–2:00 p. m. · Dom cerrado", "Sat 10:00 a.m.–2:00 p.m. · Closed Sunday")}
             </p>
             <div className={s.actions}>
               <a
@@ -141,7 +149,7 @@ export function Branches() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Cómo llegar
+                {t("Cómo llegar", "Get directions")}
                 <ArrowRight size={16} />
               </a>
               <a
@@ -158,29 +166,30 @@ export function Branches() {
     </section>
   );
 }
-export function FaqSection() {
+export function FaqSection({ locale }: { locale: WfLocale }) {
+  const t = wfCopy(locale);
   return (
     <section id="preguntas" className={`${s.section} ${s.faq}`}>
       <div>
-        <p className={s.kicker}>TE AYUDAMOS A RESOLVER</p>
+        <p className={s.kicker}>{t("TE AYUDAMOS A RESOLVER", "WE’RE HERE TO HELP")}</p>
         <h2>
-          Antes de enviar,
+          {t("Antes de enviar,", "Before you ship,")}
           <br />
-          resuelve tus dudas.
+          {t("resuelve tus dudas.", "get your questions answered.")}
         </h2>
-        <p>Información clara para dar el siguiente paso.</p>
+        <p>{t("Información clara para dar el siguiente paso.", "Find the information you need to get started.")}</p>
         <a
           className={s.textLink}
-          href={whatsapp("Hola, tengo una consulta sobre sus servicios.")}
+          href={whatsapp(t("Hola, tengo una consulta sobre sus servicios.", "Hello, I have a question about your services."))}
           target="_blank"
           rel="noopener noreferrer"
         >
-          Hablar con nuestro equipo
+          {t("Hablar con nuestro equipo", "Talk to our team")}
           <ArrowRight size={18} />
         </a>
       </div>
       <div>
-        {faqs.map(([q, a]) => (
+        {faqs[locale].map(([q, a]) => (
           <details key={q}>
             <summary>{q}</summary>
             <p>{a}</p>
