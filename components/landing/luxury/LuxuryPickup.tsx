@@ -1,4 +1,5 @@
 "use client";
+import { useEffect, useRef } from "react";
 import { ArrowUpRight, Truck } from "lucide-react";
 import PickupPlannerHero from "@/components/pickups/PickupPlannerHero";
 import { LUXURY_PICKUP_CITIES, LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
@@ -6,11 +7,25 @@ import { contact } from "./content";
 import s from "./luxury.module.css";
 
 export default function LuxuryPickup() {
+  const pickupSection = useRef<HTMLDivElement>(null);
+  const pickupButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("recogida") !== "1") return;
+
+    const frame = window.requestAnimationFrame(() => {
+      pickupSection.current?.scrollIntoView({ behavior: "instant", block: "start" });
+      pickupButton.current?.click();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
   return <PickupPlannerHero
     storeSlug={LUXURY_PICKUP_STORE_SLUG}
     storeName="Luxury Travel Point"
     whatsappPhone={contact.whatsapp}
-    renderTrigger={(openPlanner) => <div id="recogidas" className={s.pickup}>
+    renderTrigger={(openPlanner) => <div ref={pickupSection} id="recogidas" className={s.pickup}>
       <Truck size={38} strokeWidth={1.3} aria-hidden="true" />
       <div>
         <h3>De tu casa, camino a los tuyos.</h3>
@@ -18,7 +33,7 @@ export default function LuxuryPickup() {
         <p className={s.pickupCities}>Cobertura: {LUXURY_PICKUP_CITIES.join(" · ")}.</p>
         <small>Martes a sábado, 9 a. m.–6 p. m. Lunes y domingos: según disponibilidad y coordinación previa. La agencia confirmará la fecha y el cargo.</small>
       </div>
-      <button type="button" className={s.goldButton} onClick={() => openPlanner()}>
+      <button ref={pickupButton} type="button" className={s.goldButton} onClick={() => openPlanner()}>
         Solicitar recogida <ArrowUpRight size={18} />
       </button>
     </div>}
