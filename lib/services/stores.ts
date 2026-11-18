@@ -34,6 +34,7 @@ const STORE_PUBLIC_FIELDS = `
   monthly_price,
   platform_fee_enabled,
   platform_fee_percent,
+  platform_order_fixed_fee,
   payment_status,
   last_payment_date,
   next_payment_date,
@@ -190,6 +191,7 @@ export async function updateStore(
     monthly_price?: number | null
     platform_fee_enabled?: boolean
     platform_fee_percent?: number | null
+    platform_order_fixed_fee?: number | null
     next_payment_date?: string | null
     last_payment_date?: string | null
     payment_status?: string | null

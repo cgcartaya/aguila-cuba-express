@@ -37,6 +37,7 @@ export interface Store {
 
   platform_fee_enabled: boolean
   platform_fee_percent: number | null
+  platform_order_fixed_fee?: number | null
 
   next_payment_date: string | null
   last_payment_date: string | null

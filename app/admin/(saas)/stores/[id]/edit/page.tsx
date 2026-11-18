@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { getPlatformOrderFixedFee } from "@/lib/config/features"
 import ShippingBillingSettings from "@/components/admin/saas/ShippingBillingSettings"
 import PhoneCountryField from "@/components/checkout/PhoneCountryField"
 import {
@@ -72,6 +73,7 @@ type StoreForm = {
   monthly_price: number
   platform_fee_enabled: boolean
   platform_fee_percent: string
+  platform_order_fixed_fee: string
   is_active: boolean
   has_landing: boolean
   module_store_enabled: boolean
@@ -113,6 +115,7 @@ const EMPTY_FORM: StoreForm = {
   monthly_price: 20,
   platform_fee_enabled: false,
   platform_fee_percent: "0",
+  platform_order_fixed_fee: "0.30",
   is_active: true,
   has_landing: false,
   module_store_enabled: true,
@@ -350,6 +353,7 @@ export default function EditStorePage() {
         monthly_price: Number(store.monthly_price ?? 0),
         platform_fee_enabled: Boolean(store.platform_fee_enabled),
         platform_fee_percent: String(store.platform_fee_percent ?? "0"),
+        platform_order_fixed_fee: getPlatformOrderFixedFee(store.slug, store.platform_order_fixed_fee).toFixed(2),
         is_active: Boolean(store.is_active),
         has_landing: Boolean(store.has_landing),
         module_store_enabled: store.module_store_enabled !== false,
@@ -405,6 +409,12 @@ export default function EditStorePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    if (!/^\d+(\.\d{1,2})?$/.test(form.platform_order_fixed_fee) || Number(form.platform_order_fixed_fee) > 10000) {
+      alert("Ingresa una comisión fija entre $0 y $10,000 con un máximo de dos decimales.")
+      setActiveSection("billing")
+      return
+    }
 
     try {
       setSaving(true)
@@ -471,6 +481,7 @@ export default function EditStorePage() {
         monthly_price: Number(form.monthly_price),
         platform_fee_enabled: form.platform_fee_enabled,
         platform_fee_percent: Number(form.platform_fee_percent) || 0,
+        platform_order_fixed_fee: Number(form.platform_order_fixed_fee),
         is_active: form.is_active,
         has_landing: form.has_landing,
         module_store_enabled: form.module_store_enabled,
@@ -991,6 +1002,11 @@ export default function EditStorePage() {
                     </div>
                   </div>
 
+                  <div className="mt-6 max-w-xs">
+                    <label className="block text-sm font-bold text-slate-700" htmlFor="platform-order-fixed-fee">Comisión fija por orden de tienda (USD)</label>
+                    <input id="platform-order-fixed-fee" type="number" min="0" max="10000" step="0.01" required className={inputClass} value={form.platform_order_fixed_fee} onChange={(e) => setValue("platform_order_fixed_fee", e.target.value)} />
+                    <p className="mt-1 text-xs text-slate-500">Aplica a nuevas órdenes. Usa $0 para desactivar el fijo.</p>
+                  </div>
                   <ShippingBillingSettings key={storeId} storeId={storeId} />
 
                   <div className="mt-7 rounded-2xl border border-slate-200 p-5">
