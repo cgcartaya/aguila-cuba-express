@@ -2,6 +2,7 @@ import { Check } from "lucide-react";
 
 type Props = {
   step: 1 | 2 | 3;
+  includeDelivery?: boolean;
   onStepClick: (step: 1 | 2 | 3) => void;
 };
 
@@ -11,10 +12,11 @@ const STEPS: Array<{ id: 1 | 2 | 3; label: string }> = [
   { id: 3, label: "Pago" },
 ];
 
-export function CheckoutSteps({ step, onStepClick }: Props) {
+export function CheckoutSteps({ step, onStepClick, includeDelivery = true }: Props) {
+  const steps = includeDelivery ? STEPS : STEPS.filter(({ id }) => id !== 2);
   return (
     <div className="mb-6 flex items-center gap-2 sm:gap-3">
-      {STEPS.map((item, index) => {
+      {steps.map((item, index) => {
         const isDone = item.id < step;
         const isCurrent = item.id === step;
         const isClickable = item.id <= step;
@@ -42,12 +44,12 @@ export function CheckoutSteps({ step, onStepClick }: Props) {
                       : "bg-slate-200"
                 }`}
               >
-                {isDone ? <Check size={12} /> : item.id}
+                {isDone ? <Check size={12} /> : index + 1}
               </span>
               <span className="hidden sm:inline">{item.label}</span>
             </button>
 
-            {index < STEPS.length - 1 && (
+            {index < steps.length - 1 && (
               <div
                 className={`h-[2px] flex-1 rounded-full ${
                   item.id < step ? "bg-blue-300" : "bg-slate-100"
