@@ -245,7 +245,8 @@ export async function POST(request: Request) {
       .eq("store_id", storeId)
       .maybeSingle();
     if (checkoutConfigError) return fail("No se pudo validar la configuración del checkout.", 500);
-    const customerRequired = checkoutConfig?.blocks?.customer !== false;
+    const boxProductsOnly = store.slug === "wf-cago";
+    const customerRequired = boxProductsOnly || checkoutConfig?.blocks?.customer !== false;
     if (customerRequired && (!customerName || !customerPhone || !email)) {
       return fail("Faltan datos obligatorios del cliente.");
     }
@@ -265,7 +266,7 @@ export async function POST(request: Request) {
     }
 
     const isYoyo = store.slug === YOYO_SLUG;
-    const isLocalDelivery = !body.productShipping && Boolean(body.isLocalDelivery);
+    const isLocalDelivery = !boxProductsOnly && !body.productShipping && Boolean(body.isLocalDelivery);
 
     // Fee de plataforma (Perla): se calcula SIEMPRE en el servidor a
     // partir de la configuración real de la tienda, nunca confiando en
@@ -571,10 +572,12 @@ export async function POST(request: Request) {
       .eq("store_id", storeId)
       .maybeSingle();
     const isDistanceDelivery =
-      !body.productShipping && body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
+      !boxProductsOnly && !body.productShipping && body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
 
     let productShippingQuote: Awaited<ReturnType<typeof quoteCartShipping>> | null = null;
-    if (body.productShipping) {
+    if (boxProductsOnly) {
+      zoneName = "Productos para completar caja";
+    } else if (body.productShipping) {
       if (!clean(form.recipient_name, 150) || !clean(form.recipient_phone, 40) || !clean(form.exact_address, 300)) return fail("Completa destinatario, teléfono y dirección para el envío.");
       try { productShippingQuote = await quoteCartShipping(storeId, requestedItems.map(item => ({ ...item, item_type: item.item_type || "product", quantity: Number(item.quantity) })), body.productShipping); }
       catch (error) { return fail(error instanceof Error ? error.message : "No se pudo calcular el envío.", 422); }
@@ -716,7 +719,7 @@ export async function POST(request: Request) {
     const total = money(Math.max(subtotal + deliveryFee - discountAmount, 0));
 
     const customerIsRecipient = isLocalDelivery || isDistanceDelivery;
-    const city = customerIsRecipient
+    const city = boxProductsOnly ? "" : customerIsRecipient
       ? clean(form.city, 120)
       : clean(form.municipality, 120);
 
@@ -794,8 +797,8 @@ export async function POST(request: Request) {
       discount_code: discountCode,
       discount_amount: discountAmount,
       total,
-      country: productShippingQuote?.country || (isLocalDelivery ? "Estados Unidos" : "Cuba"),
-      state: productShippingQuote ? productShippingQuote.province : isLocalDelivery ? null : clean(form.province || "Cienfuegos", 120),
+      country: boxProductsOnly ? null : productShippingQuote?.country || (isLocalDelivery ? "Estados Unidos" : "Cuba"),
+      state: boxProductsOnly ? null : productShippingQuote ? productShippingQuote.province : isLocalDelivery ? null : clean(form.province || "Cienfuegos", 120),
       municipality: productShippingQuote?.municipality || city,
       delivery_zone_id: deliveryZoneId,
       zone_name: zoneName,
@@ -806,17 +809,17 @@ export async function POST(request: Request) {
       delivery_formatted_address: isDistanceDelivery
         ? clean(form.delivery_formatted_address || form.exact_address, 300)
         : null,
-      exact_address: clean(form.exact_address, 300),
-      recipient_name: customerIsRecipient
+      exact_address: boxProductsOnly ? null : clean(form.exact_address, 300),
+      recipient_name: boxProductsOnly ? null : customerIsRecipient
         ? customerName
         : clean(form.recipient_name, 150),
-      recipient_phone: customerIsRecipient
+      recipient_phone: boxProductsOnly ? null : customerIsRecipient
         ? customerPhone
         : clean(form.recipient_phone, 40),
-      recipient_phone_alt: customerIsRecipient
+      recipient_phone_alt: boxProductsOnly || customerIsRecipient
         ? null
         : clean(form.recipient_phone_alt, 40),
-      address: clean(form.exact_address, 300),
+      address: boxProductsOnly ? "" : clean(form.exact_address, 300),
       notes: [
         form.reference ? `Referencia: ${clean(form.reference, 200)}` : "",
         clean(form.notes, 500),
@@ -1037,7 +1040,7 @@ export async function POST(request: Request) {
           unit_price: item.price,
           subtotal: item.subtotal,
         })),
-        deliveryLabel: productShippingQuote
+        deliveryLabel: boxProductsOnly ? "Productos para completar caja" : productShippingQuote
           ? `Envío — ${productShippingQuote.service_name}`
           : isLocalDelivery || isDistanceDelivery
             ? "Entrega local"

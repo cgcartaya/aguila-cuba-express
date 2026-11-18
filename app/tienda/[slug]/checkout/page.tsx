@@ -152,6 +152,7 @@ export default function CheckoutPage() {
   const { store } = useStore();
 
   const isYoyo = store?.slug === YOYO_SLUG;
+  const boxProductsOnly = store?.slug === "wf-cago";
   const cartUrl = store?.slug ? `/tienda/${store.slug}/cart` : "/tienda/cart";
   const orderUrlBase = "/pedido";
 
@@ -162,7 +163,8 @@ export default function CheckoutPage() {
   // poder pagar. Se divide en 3 pasos sin tocar la lógica de validación
   // ni de envío existente (missingCheckoutFields, canCheckout,
   // handleSubmit siguen siendo la misma fuente de verdad).
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [savedStep, setStep] = useState<1 | 2 | 3>(1);
+  const step = boxProductsOnly && savedStep === 2 ? 1 : savedStep;
   const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [businessWhatsapp, setBusinessWhatsapp] = useState("");
   const [checkoutSettings, setCheckoutSettings] = useState<CheckoutSettings | null>(null);
@@ -172,12 +174,12 @@ export default function CheckoutPage() {
   const submittingRef = useRef(false);
   const [loadingCheckout, setLoadingCheckout] = useState(true);
   useEffect(() => {
-    if (!loadingCheckout && checkoutSettings?.blocks.customer === false) {
+    if (!boxProductsOnly && !loadingCheckout && checkoutSettings?.blocks.customer === false) {
       setStep((current) => current === 1 ? 2 : current);
     }
-  }, [loadingCheckout, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, loadingCheckout, checkoutSettings?.blocks.customer]);
   const shippingItems = useMemo(() => cart.map(item => ({ item_type: item.type, product_id: item.type === "product" ? getOriginalCartItemId(item.id) : null, combo_id: item.type === "combo" ? getOriginalCartItemId(item.id) : null, quantity: item.quantity })), [cart]);
-  const productShipping = useProductShipping(store?.id, shippingItems);
+  const productShipping = useProductShipping(boxProductsOnly ? undefined : store?.id, shippingItems);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   // Telefono con el que se valido el bono. Si el cliente lo cambia despues
   // de aplicarlo, el bono deja de ser valido para ese numero y hay que
@@ -450,11 +452,11 @@ export default function CheckoutPage() {
   );
 
   const usesDistanceDelivery =
-    method === "delivery" && checkoutSettings?.delivery_address_mode === "distance";
+    !boxProductsOnly && method === "delivery" && checkoutSettings?.delivery_address_mode === "distance";
 
   const cubaTotals = useMemo(
-    () => calculateCheckoutTotals(checkoutCart, selectedZone),
-    [checkoutCart, selectedZone]
+    () => calculateCheckoutTotals(checkoutCart, boxProductsOnly ? null : selectedZone),
+    [boxProductsOnly, checkoutCart, selectedZone]
   );
 
   const totals = useMemo<CheckoutTotals>(() => {
@@ -562,12 +564,13 @@ export default function CheckoutPage() {
     Boolean(form.municipality) && !loadingCheckout && availableZones.length === 0;
 
   const canCheckout = useMemo(() => {
-    const customerRequired = checkoutSettings?.blocks.customer !== false;
+    const customerRequired = boxProductsOnly || checkoutSettings?.blocks.customer !== false;
     const customerComplete = !customerRequired || (
       Boolean(form.name.trim()) &&
       Boolean(form.email.trim()) &&
       Boolean(form.phone.trim())
     );
+    if (boxProductsOnly) return cart.length > 0 && customerComplete;
     if (productShipping.enabled) return cart.length > 0 && customerComplete && productShipping.ready && Boolean(form.recipient_name.trim()) && Boolean(form.recipient_phone.trim()) && Boolean(form.exact_address.trim());
     if (usesDistanceDelivery) {
       return cart.length > 0 && customerComplete &&
@@ -584,7 +587,7 @@ export default function CheckoutPage() {
     }
     return cart.length > 0 && customerComplete &&
       Boolean(form.city.trim()) && Boolean(form.exact_address.trim());
-  }, [productShipping.enabled, productShipping.ready, cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, productShipping.enabled, productShipping.ready, cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   const missingCheckoutFields = useMemo(() => {
     const missing: Array<{ name: keyof CheckoutForm; label: string }> = [];
@@ -592,11 +595,13 @@ export default function CheckoutPage() {
       if (!String(form[name] || "").trim()) missing.push({ name, label });
     };
 
-    if (checkoutSettings?.blocks.customer !== false) {
+    if (boxProductsOnly || checkoutSettings?.blocks.customer !== false) {
       requireField("name", "nombre del cliente");
       requireField("email", "email");
       requireField("phone", "teléfono del cliente");
     }
+
+    if (boxProductsOnly) return missing;
 
     if (productShipping.enabled) {
       requireField("recipient_name", "nombre del destinatario");
@@ -622,7 +627,7 @@ export default function CheckoutPage() {
     }
 
     return missing;
-  }, [productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   // Mismo array de missingCheckoutFields, solo separado por a qué paso
   // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
@@ -637,7 +642,8 @@ export default function CheckoutPage() {
   );
 
   function goToStep(nextStep: 1 | 2 | 3) {
-    if (checkoutSettings?.blocks.customer === false && nextStep === 1) nextStep = 2;
+    if (boxProductsOnly && nextStep === 2) nextStep = 3;
+    if (!boxProductsOnly && checkoutSettings?.blocks.customer === false && nextStep === 1) nextStep = 2;
     // Retroceder nunca necesita validación.
     if (nextStep < step) {
       setError("");
@@ -773,7 +779,7 @@ export default function CheckoutPage() {
             ? isYoyo && method === "delivery"
             : false,
         form,
-        zoneId: selectedZone?.id || null,
+        zoneId: boxProductsOnly ? null : selectedZone?.id || null,
         items: orderItems,
         discountCampaignId: appliedDiscount?.campaignId || null,
         discountCode: appliedDiscount?.code || null,
@@ -940,7 +946,7 @@ ${orderUrl}`);
     if (payWith === "whatsapp" && !businessWhatsapp) return showCheckoutError("Esta tienda todavía no tiene WhatsApp configurado.");
     if (cart.length === 0) return showCheckoutError("Tu carrito está vacío.");
     if (productShipping.enabled && !productShipping.ready) return showCheckoutError(productShipping.error || "Selecciona servicio, modalidad y destino y espera el cálculo del envío.");
-    if (loadingRules) return showCheckoutError("Espera un momento mientras verificamos las reglas de entrega.");
+    if (!boxProductsOnly && loadingRules) return showCheckoutError("Espera un momento mientras verificamos las reglas de entrega.");
 
     if (missingCheckoutFields.length > 0) {
       const firstMissing = missingCheckoutFields[0];
@@ -1011,7 +1017,11 @@ ${orderUrl}`);
       }
 
       const orderUrl = `${window.location.origin}${orderUrlBase}/${orderNumber}`;
-      const whatsappMessage = order.shipping_details
+      const whatsappMessage = boxProductsOnly
+        ? encodeURIComponent([store.name, `Pedido ${orderNumber} · Productos para completar caja`, form.name,
+            form.phone, ...cart.map((item) => `${item.quantity}x ${item.name}`),
+            `Total $${Number(order.total).toFixed(2)}`, orderUrl].join("\n"))
+        : order.shipping_details
         ? encodeURIComponent(`${store.name}\nPEDIDO NUEVO\nOrden: ${orderNumber}\n\nCLIENTE\n${form.name}\n${form.phone}\n${form.email}\n\nDESTINATARIO\n${form.recipient_name}\n${form.recipient_phone}\n${form.exact_address}\n\nENVÍO POR PESO\n${order.shipping_details.service_name} · ${order.shipping_details.transport_mode}\nDestino: ${order.shipping_details.destination}\nPeso: ${order.shipping_details.weight_lb.toFixed(3)} lb\n\nPRODUCTOS\n${cart.map(item => `${item.quantity}x ${item.name}`).join("\n")}\n\nSubtotal: $${Number(order.subtotal).toFixed(2)}\nEnvío: $${Number(order.delivery_fee).toFixed(2)}\nDescuento: $${Number(order.discount_amount).toFixed(2)}\nTOTAL: $${Number(order.total).toFixed(2)}\nVer pedido: ${orderUrl}`)
         : usesDistanceDelivery
         ? buildDistanceWhatsappMessage(orderNumber, orderUrl)
@@ -1100,7 +1110,8 @@ ${orderUrl}`);
           </div>
         ) : (
           <>
-            <CheckoutSteps step={step} onStepClick={goToStep} />
+            <CheckoutSteps step={step} onStepClick={goToStep} includeDelivery={!boxProductsOnly} />
+            {boxProductsOnly && <p className="mb-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">Estos productos son para completar tu caja con WF Cargo.</p>}
 
             {step < 3 ? (
               <div className="min-w-0 space-y-6 pb-2">
@@ -1124,7 +1135,7 @@ ${orderUrl}`);
                       />
                     )}
 
-                    {checkoutSettings?.blocks.customer !== false && (
+                    {(boxProductsOnly || checkoutSettings?.blocks.customer !== false) && (
                       <CustomerInfoForm form={form} onChange={handleChange} />
                     )}
                   </>
@@ -1185,11 +1196,11 @@ ${orderUrl}`);
               <div className="min-w-0 space-y-4">
                 <button
                   type="button"
-                  onClick={() => goToStep(2)}
+                  onClick={() => goToStep(boxProductsOnly ? 1 : 2)}
                   className="inline-flex items-center gap-2 text-sm font-bold text-blue-700 hover:underline"
                 >
                   <ArrowLeft size={16} />
-                  Editar datos de entrega
+                  {boxProductsOnly ? "Editar tus datos" : "Editar datos de entrega"}
                 </button>
 
                 {productShipping.enabled && productShipping.quote && (
@@ -1199,8 +1210,8 @@ ${orderUrl}`);
                 )}
                 <OrderSummary
                   cart={cart}
-                  selectedZone={selectedZone}
-                  municipality={method === "delivery" ? form.city : form.municipality}
+                  selectedZone={boxProductsOnly ? null : selectedZone}
+                  municipality={boxProductsOnly ? "" : method === "delivery" ? form.city : form.municipality}
                   totals={totals}
                   error={error}
                   loading={loading}
@@ -1213,11 +1224,11 @@ ${orderUrl}`);
                   onApplyDiscount={applyDiscount}
                   onRemoveDiscount={removeDiscount}
                   showCoupon={showCoupon}
-                  showDelivery={productShipping.enabled || showDelivery}
+                  showDelivery={!boxProductsOnly && (productShipping.enabled || showDelivery)}
                   deliveryLabel={productShipping.enabled ? "Envío por peso" : "Delivery"}
-                  deliveryRequiresZone={!productShipping.enabled && method === "cuba"}
+                  deliveryRequiresZone={!boxProductsOnly && !productShipping.enabled && method === "cuba"}
                   locationLabel={
-                    method === "delivery" && form.city
+                    !boxProductsOnly && method === "delivery" && form.city
                       ? `Entrega en ${form.city}`
                       : undefined
                   }
