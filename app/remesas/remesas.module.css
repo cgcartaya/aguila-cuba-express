@@ -1,0 +1,85 @@
+.page {
+  --navy: #0b1f4d;
+  --red: #bc1632;
+  min-height: 100vh;
+  background: #f4f7fc;
+  color: var(--navy);
+}
+.shell {
+  width: min(100% - 2rem, 1120px);
+  margin-inline: auto;
+}
+.header { background: white; }
+.header nav, .footer, .languages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.header nav, .footer { padding-block: 1rem; }
+.header a, .footer a, .textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  font-weight: 750;
+}
+.languages a { border-radius: .4rem; padding: .35rem .55rem; }
+.languages [aria-current="page"] { background: var(--navy); color: white; }
+.hero {
+  color: white;
+  background: linear-gradient(90deg, #0b1f4d 12%, #0b1f4def 48%, #0b1f4d70), url("/wfcargo/banner-remesas.webp") center right / cover;
+  padding-block: clamp(3rem, 9vw, 6.5rem);
+}
+.eyebrow { font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
+.hero h1 { margin-block: .45rem .6rem; font-size: clamp(2.65rem, 7vw, 5rem); line-height: 1; }
+.hero p:not(.eyebrow) { max-width: 48ch; color: #edf2ff; font-size: 1.15rem; }
+.primary {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  width: fit-content;
+  margin-top: 1rem;
+  background: var(--red);
+  color: white;
+  border-radius: .6rem;
+  padding: .7rem 1rem;
+  font-weight: 800;
+}
+.sections { display: grid; gap: 1.5rem; padding-block: 2.5rem; }
+.sections h2 {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin-bottom: .5rem;
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  line-height: 1.2;
+  font-weight: 800;
+}
+.sections h2 svg { flex-shrink: 0; }
+.date { color: #4b5b78; margin-bottom: .3rem; font-weight: 750; }
+.rateGrid, .supportGrid { display: grid; gap: .9rem; }
+.rateGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr)); margin-top: 1rem; }
+.supportGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); }
+.card, .panel, .contact {
+  border: 1px solid #dbe4f3;
+  border-radius: 1rem;
+  padding: clamp(1rem, 3vw, 1.6rem);
+  background: white;
+}
+.card dt { color: #4b5b78; font-weight: 750; }
+.card dd { font-size: 1.45rem; font-weight: 850; }
+.card small { font-size: .82rem; font-weight: 650; white-space: nowrap; }
+.panel ul { margin-block: .75rem; padding-inline-start: 1.25rem; list-style: disc; }
+.tableWrap { overflow-x: auto; margin-top: 1rem; }
+.tableWrap table { width: 100%; min-width: 33rem; text-align: left; border-collapse: collapse; }
+.tableWrap caption { text-align: left; padding-bottom: .55rem; font-weight: 800; }
+.tableWrap th, .tableWrap td { padding: .65rem .55rem; border-bottom: 1px solid #dbe4f3; }
+.tableWrap thead { background: #edf2fb; }
+.textLink { margin-top: .8rem; text-decoration: underline; text-underline-offset: .2em; }
+.contact { background: var(--navy); color: white; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem; }
+.contact .primary { margin-top: 0; }
+.footer { border-top: 1px solid #dbe4f3; }
+@media (max-width: 600px) {
+  .hero { background-image: linear-gradient(#0b1f4ddf, #0b1f4def), url("/wfcargo/banner-remesas.webp"); }
+}

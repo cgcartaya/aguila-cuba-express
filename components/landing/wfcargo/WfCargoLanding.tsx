@@ -9,6 +9,7 @@ import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
 import ManagedProcedures from "./ManagedProcedures";
 import PickupForm from "./PickupForm";
+import { wfRemittancesHref } from "./remittances";
 import AboutSection from "./AboutSection";
 import CatalogSection from "./CatalogSection";
 import {
@@ -102,6 +103,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
           <div className={s.desktopNav}>
             <a href="#servicios">{t("Servicios", "Services")}</a>
             <a href="#cotizador">{t("Envíos", "Shipping")}</a>
+            <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
             <a href="#tramites">{t("Trámites", "Document services")}</a>
             <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
             <a href="#sucursales">{t("Sucursales", "Locations")}</a>
@@ -125,6 +127,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
             <div>
               <a href="#servicios">{t("Servicios", "Services")}</a>
               <a href="#cotizador">{t("Cotizar envío", "Get a shipping quote")}</a>
+              <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
               <a href="#tramites">{t("Trámites", "Document services")}</a>
               <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
               <a href="#sucursales">{t("Sucursales", "Locations")}</a>
@@ -176,6 +179,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
           <a href="tel:+17722127150">{contact.phone}</a>
           <a href={`mailto:${contact.email}`}>{contact.email}</a>
           <a href="#quienes-somos">{t("Quiénes somos", "About us")}</a>
+          <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
           <Link href="/privacidad">{t("Política de privacidad", "Privacy policy")}</Link>
           <Link href="/condiciones">{t("Condiciones del servicio", "Terms of service")}</Link>
           <Link href="/login">{t("Acceso de personal", "Staff sign-in")}</Link>

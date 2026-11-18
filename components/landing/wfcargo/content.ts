@@ -35,8 +35,8 @@ export const slides = [
       "Ayuda a tu familia desde Port St. Lucie. Consulta las opciones de remesas a Cuba y Latinoamérica con nuestro equipo.",
     image: "/wfcargo/banner-remesas.webp",
     alt: "Familia cubana compartiendo la confirmación de una remesa",
-    label: "Consultar remesas",
-    href: whatsapp("Hola, quisiera información sobre remesas."),
+    label: "Ver cómo funcionan las remesas",
+    href: "/remesas",
   },
   {
     tag: "Trámites sin fronteras",
@@ -150,8 +150,8 @@ export const englishSlides = [
     title: "Send support where it matters most.",
     description: "Support your family from Port St. Lucie. Ask our team about money transfer options to Cuba and Latin America.",
     alt: "Cuban family sharing a money transfer confirmation",
-    label: "Ask about money transfers",
-    href: whatsapp("Hello, I’d like information about money transfers."),
+    label: "See how money transfers work",
+    href: "/remesas?lang=en",
   },
   {
     ...slides[2],
