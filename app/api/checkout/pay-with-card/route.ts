@@ -6,6 +6,8 @@ import {
   CARD_SURCHARGE_RATE,
   PLATFORM_ORDER_FIXED_FEE,
 } from "@/lib/config/features";
+import { createSquareCheckout } from "@/lib/services/square-checkout";
+import { getStorePublicBaseUrl } from "@/lib/saas/store-metadata";
 import { reactivateExpiredOrder } from "@/lib/services/order-stock-admin";
 
 const fail = (message: string, status = 400) => NextResponse.json({ success: false, message }, { status });
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   const { data: order, error } = await supabaseAdmin
     .from("orders")
-    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount, customer_name, source_shipment_id")
+    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount, customer_name, source_shipment_id, checkout_payment_provider, status, stock_restored, payment_method")
     .eq("id", orderId)
     .eq("store_id", storeId)
     .is("deleted_at", null)
@@ -38,6 +40,11 @@ export async function POST(request: NextRequest) {
   // (el stock se devolvió automáticamente). Hay que volver a apartarlo
   // antes de mandarlo a Stripe — si alguien más se llevó lo que quedaba
   // mientras tanto, no se puede seguir como si nada.
+  if (order.checkout_payment_provider === "square" && (
+    order.payment_method !== "card" || order.payment_status !== "pending" || order.stock_restored || ["cancelled", "canceled"].includes(order.status)
+  )) {
+    return fail("Este pago Square requiere revisión de la tienda.", 409);
+  }
   if (order.payment_status === "expired") {
     const reactivation = await reactivateExpiredOrder(orderId);
     if (!reactivation.ok) {
@@ -47,14 +54,29 @@ export async function POST(request: NextRequest) {
 
   const { data: store, error: storeError } = await supabaseAdmin
     .from("stores")
-    .select("id, name, stripe_mode, stripe_account_id, stripe_charges_enabled, stripe_direct_secret_key")
+    .select("id, name, slug, domain, subdomain, is_active, module_store_enabled, stripe_mode, stripe_account_id, stripe_charges_enabled, stripe_direct_secret_key")
     .eq("id", storeId)
     .maybeSingle();
 
   if (storeError || !store) return fail("Tienda no encontrada.", 404);
 
+  if (order.checkout_payment_provider === "square") {
+    if (store.is_active === false || store.module_store_enabled === false) return fail("La tienda no está disponible.", 409);
+    try {
+      const publicBase = new URL(getStorePublicBaseUrl(store));
+      const url = await createSquareCheckout({
+        storeId, orderId: order.id, amountCents: Math.round(Number(order.total) * 100),
+        name: `Pedido ${order.order_number || order.id.slice(0, 8)}`,
+        returnUrl: new URL(`/pedido/${encodeURIComponent(order.order_number || order.id)}`, publicBase).toString(),
+      });
+      return NextResponse.json({ success: true, url });
+    } catch {
+      return fail("No se pudo iniciar el pago con Square.", 503);
+    }
+  }
+
   try {
-    const clover = await getCloverSettings(storeId);
+    const clover = order.checkout_payment_provider === "stripe" ? null : await getCloverSettings(storeId);
     if (clover?.enabled) {
       const origin = request.nextUrl.origin;
       const url = await createCloverCheckout(clover, { storeId, targetType: "order", targetId: order.id,
@@ -65,6 +87,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success:true, url });
     }
   } catch (error) { return fail(error instanceof Error ? error.message : "No se pudo iniciar Clover.",503); }
+
+  if (order.checkout_payment_provider === "clover") return fail("Clover no está activo para este pedido.", 503);
 
   const stripeCtx = getStoreStripeContext(store);
   if (!stripeCtx) {

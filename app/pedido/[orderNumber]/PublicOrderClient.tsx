@@ -29,6 +29,7 @@ type Order = {
   source_shipment_id?: string | null;
   lym_sale_state?: string | null;
   payment_status?: string | null;
+  checkout_payment_provider?: string | null;
   payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
@@ -379,10 +380,14 @@ export function PublicOrderClient({
             <>
               <p className="mt-4 text-sm text-white/70">
                 {order.payment_status === "expired"
-                  ? "El intento de pago anterior venció sin completarse. Puedes intentarlo de nuevo:"
+                  ? order.checkout_payment_provider === "square"
+                    ? "El enlace de pago venció. Crea un nuevo pedido para continuar."
+                    : "El intento de pago anterior venció sin completarse. Puedes intentarlo de nuevo:"
                   : "Todavía no se ha completado el pago de este pedido."}
               </p>
-              <PayNowButton orderId={order.id} storeId={order.store_id || ""} amountToPay={displayedTotal} />
+              {(order.checkout_payment_provider !== "square" || order.payment_status !== "expired") && (
+                <PayNowButton orderId={order.id} storeId={order.store_id || ""} amountToPay={displayedTotal} />
+              )}
             </>
           )}
         </section>

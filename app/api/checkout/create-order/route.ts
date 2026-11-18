@@ -221,7 +221,7 @@ export async function POST(request: Request) {
     const { data: store, error: storeError } = await supabaseAdmin
       .from("stores")
       .select(
-        "id, name, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent, platform_order_fixed_fee"
+        "id, name, slug, is_active, module_store_enabled, platform_fee_enabled, platform_fee_percent, platform_order_fixed_fee, active_payment_provider"
       )
       .eq("id", storeId)
       .maybeSingle();
@@ -784,6 +784,7 @@ export async function POST(request: Request) {
       status: "pending",
       payment_status: "pending",
       payment_method: intendedPaymentMethod,
+      checkout_payment_provider: store.active_payment_provider ?? null,
       subtotal,
       shipping_details: productShippingQuote,
       delivery_fee: deliveryFee,

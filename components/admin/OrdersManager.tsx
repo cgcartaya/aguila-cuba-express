@@ -395,6 +395,10 @@ export default function OrdersManager({
   }
 
   async function sendOrderToTrash(order: any) {
+    if (order.checkout_payment_provider === "square" && order.payment_status === "pending" && order.payment_method === "card") {
+      alert("Espera la confirmación o el vencimiento del cobro Square antes de devolver el inventario.");
+      return;
+    }
     if (order.source_shipment_id) { alert("Gestiona esta orden desde el envío vinculado; así no se duplica el inventario ni el cobro."); return; }
     const ok = confirm(
       "¿Seguro que deseas enviar esta orden a la papelera?\n\nEl inventario de los productos de esta orden será restaurado automáticamente."
