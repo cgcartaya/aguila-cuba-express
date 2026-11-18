@@ -1,6 +1,6 @@
 import { wfCopy, type WfLocale } from "./Language";
 import { headers } from "next/headers";
-import { procedurePublicStore } from "@/lib/procedures/server";
+import { procedurePublicStore, wfSlug } from "@/lib/procedures/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import Image from "next/image";
 import Link from "next/link";
@@ -103,6 +103,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
           <div className={s.desktopNav}>
             <a href="#servicios">{t("Servicios", "Services")}</a>
             <a href="#cotizador">{t("Envíos", "Shipping")}</a>
+            <Link className={s.shopNavLink} href={`/tienda/${wfSlug}`}>{t("Tienda", "Shop")}</Link>
             <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
             <a href="#tramites">{t("Trámites", "Document services")}</a>
             <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
@@ -127,6 +128,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
             <div>
               <a href="#servicios">{t("Servicios", "Services")}</a>
               <a href="#cotizador">{t("Cotizar envío", "Get a shipping quote")}</a>
+              <Link className={s.shopNavLink} href={`/tienda/${wfSlug}`}>{t("Tienda", "Shop")}</Link>
               <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
               <a href="#tramites">{t("Trámites", "Document services")}</a>
               <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
