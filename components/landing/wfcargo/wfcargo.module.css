@@ -1636,3 +1636,18 @@
   .aboutValues { grid-template-columns: 1fr; }
   .nav { flex-wrap: wrap; }
 }
+
+.procedureNoticeLink {
+  align-self: flex-start;
+  color: #164788;
+  font-size: .8rem;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+.procedureLegal {
+  scroll-margin-top: 110px;
+}
+.procedureLegal .notaryNotice {
+  margin-block: .55rem 0;
+}

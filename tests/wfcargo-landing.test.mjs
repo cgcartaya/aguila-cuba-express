@@ -106,7 +106,8 @@ test("WF remittance bulletin examples calculate the cash fee at the correct thre
   assert.equal(wfRemittancesHref("en"), "/remesas?lang=en");
   assert.equal(wfRemittanceRates.cupTransfer * 100, 90000);
   assert.equal(wfRemittanceRates.cupCash * 50, 45000);
-  assert.equal(50 + cashRemittanceFee(50), 53);
-  assert.equal(100 + cashRemittanceFee(100), 103);
-  assert.equal(150 + cashRemittanceFee(150), 154.5);
+  assert.equal(50 + cashRemittanceFee(50), 55);
+  assert.equal(cashRemittanceFee(99.99), 5);
+  assert.equal(100 + cashRemittanceFee(100), 105);
+  assert.equal(150 + cashRemittanceFee(150), 157.5);
 });

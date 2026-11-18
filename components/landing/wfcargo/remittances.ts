@@ -15,6 +15,9 @@ export function wfRemittancesHref(locale: WfLocale) {
   return locale === "en" ? "/remesas?lang=en" : "/remesas";
 }
 
+export const wfCashDeliveryFee = { threshold: 100, fixedUsd: 5, percent: 5 } as const;
+
 export function cashRemittanceFee(usd: number) {
-  return usd < 100 ? 3 : Math.round(usd * 3) / 100;
+  const { threshold, fixedUsd, percent } = wfCashDeliveryFee;
+  return usd < threshold ? fixedUsd : Math.round(usd * percent) / 100;
 }
