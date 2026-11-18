@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     return response;
   }
   if (!/^[A-Za-z0-9_-]{43}$/.test(state) || state !== cookie) return finish("invalid");
+  let stage = "state";
   try {
     const { data, error } = await supabaseAdmin.from("square_oauth_states").delete()
       .eq("state_hash", hashSquareState(state)).gt("expires_at", new Date().toISOString())
@@ -26,19 +27,28 @@ export async function GET(request: NextRequest) {
     if (!code || (environment !== "sandbox" && environment !== "production")) return finish("invalid");
     if (environment === "production" && process.env.SQUARE_ENABLE_PRODUCTION !== "true") return finish("invalid");
     if (new URL(squareConfig(environment).redirectUri).origin !== request.nextUrl.origin) return finish("invalid");
+    stage = "exchange";
     const tokens = await obtainSquareTokens(environment, { code });
+    stage = "verify";
     const verified = await verifySquareConnection(environment, tokens);
+    stage = "encrypt";
+    const tokenFields = squareTokenFields(data.store_id, environment, tokens);
+    stage = "save";
     const { error: insertError } = await supabaseAdmin.from("store_square_settings").insert({
       store_id: data.store_id,
       environment,
       merchant_id: tokens.merchant_id,
       merchant_name: verified.merchantName,
       location_id: verified.locations.length === 1 ? verified.locations[0].id : null,
-      ...squareTokenFields(data.store_id, environment, tokens),
+      ...tokenFields,
     });
     if (insertError) throw insertError;
     return finish("connected");
-  } catch {
+  } catch (error) {
+    const providerStatus = error instanceof Error
+      ? /^Square respondió con estado (\d{3})\.$/.exec(error.message)?.[1]
+      : undefined;
+    console.warn("Square OAuth callback failed", { stage, providerStatus });
     return finish("error");
   }
 }
