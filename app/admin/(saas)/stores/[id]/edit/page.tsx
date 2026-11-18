@@ -34,7 +34,6 @@ import {
 } from "lucide-react"
 import {
   getStoreById,
-  getStorePlatformFeeSummary,
   updateStore,
   uploadStoreFavicon,
   uploadStoreLogo,
@@ -44,10 +43,7 @@ import {
   uploadStoreTrackingOgImage,
 } from "@/lib/services/stores"
 import {
-  getPendingPlatformFee,
   getPlatformFeeSettlementHistory,
-  registerPlatformFeeSettlement,
-  type PendingPlatformFee,
   type PlatformFeeSettlement,
 } from "@/lib/services/platform-fee-settlements"
 import {
@@ -314,12 +310,12 @@ export default function EditStorePage() {
   const [orderOgImageFile, setOrderOgImageFile] = useState<File | null>(null)
   const [trackingOgImageFile, setTrackingOgImageFile] = useState<File | null>(null)
 
-  const [feeSummary, setFeeSummary] = useState<{ totalSales: number; totalFee: number; ordersCount: number } | null>(null)
-  const [pendingFee, setPendingFee] = useState<PendingPlatformFee | null>(null)
   const [settlementHistory, setSettlementHistory] = useState<PlatformFeeSettlement[]>([])
-  const [registeringSettlement, setRegisteringSettlement] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+    setSettlementHistory([])
+    setActiveSection(new URLSearchParams(window.location.search).get("section") === "billing" ? "billing" : "modules")
     async function loadStore() {
       setLoading(true)
 
@@ -328,6 +324,7 @@ export default function EditStorePage() {
         getEconomyModuleStatus(storeId),
       ])
 
+      if (cancelled) return
       if (!store) {
         alert("No se encontró la tienda")
         router.push("/admin/stores")
@@ -350,7 +347,7 @@ export default function EditStorePage() {
         primary_color: store.primary_color || "#0B1F4D",
         secondary_color: store.secondary_color || "#DC2626",
         plan: store.plan || "basic",
-        monthly_price: Number(store.monthly_price || 20),
+        monthly_price: Number(store.monthly_price ?? 0),
         platform_fee_enabled: Boolean(store.platform_fee_enabled),
         platform_fee_percent: String(store.platform_fee_percent ?? "0"),
         is_active: Boolean(store.is_active),
@@ -377,14 +374,12 @@ export default function EditStorePage() {
 
       setLoading(false)
 
-      void Promise.all([
-        getStorePlatformFeeSummary(storeId).then(setFeeSummary),
-        getPendingPlatformFee(storeId).then(setPendingFee),
-        getPlatformFeeSettlementHistory(storeId).then(setSettlementHistory),
-      ])
+      const history = await getPlatformFeeSettlementHistory(storeId)
+      if (!cancelled) setSettlementHistory(history)
     }
 
     void loadStore()
+    return () => { cancelled = true }
   }, [router, storeId])
 
   const ogPreviewUrl = form.og_image_url
@@ -406,34 +401,6 @@ export default function EditStorePage() {
   function setValue<K extends keyof StoreForm>(key: K, value: StoreForm[K]) {
     setSaved(false)
     setForm((current) => ({ ...current, [key]: value }))
-  }
-
-  async function handleRegisterSettlement() {
-    if (!pendingFee || pendingFee.feeAmount <= 0) return
-
-    const confirmed = window.confirm(
-      `¿Confirmas que ya recibiste $${pendingFee.feeAmount.toFixed(2)} de esta tienda? Esto cierra el periodo pendiente.`
-    )
-    if (!confirmed) return
-
-    try {
-      setRegisteringSettlement(true)
-      const { data, error } = await registerPlatformFeeSettlement(storeId)
-
-      if (error || !data) {
-        alert(error?.message || "No se pudo registrar el pago")
-        return
-      }
-
-      const [newPending, newHistory] = await Promise.all([
-        getPendingPlatformFee(storeId),
-        getPlatformFeeSettlementHistory(storeId),
-      ])
-      setPendingFee(newPending)
-      setSettlementHistory(newHistory)
-    } finally {
-      setRegisteringSettlement(false)
-    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -987,6 +954,9 @@ export default function EditStorePage() {
                     <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-500">Finanzas SaaS</p>
                     <h2 className="mt-2 text-2xl font-black text-[#0f1f3d]">Billing y suscripción</h2>
                     <p className="mt-1 text-sm font-medium text-slate-500">Plan mensual, estado de pago y comisión de plataforma.</p>
+                    <Link href={`/admin/stores/billing?store=${storeId}`} className="mt-3 inline-flex font-bold text-indigo-700 hover:underline">
+                      Ver facturas y registrar pagos
+                    </Link>
                   </div>
 
                   <div className="grid gap-5 md:grid-cols-3">
@@ -1039,31 +1009,11 @@ export default function EditStorePage() {
                       </div>
                     ) : null}
 
-                    {feeSummary ? (
-                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-bold text-slate-400">Órdenes</p><p className="mt-1 text-xl font-black text-slate-900">{feeSummary.ordersCount}</p></div>
-                        <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-bold text-slate-400">Ventas históricas</p><p className="mt-1 text-xl font-black text-slate-900">${feeSummary.totalSales.toFixed(2)}</p></div>
-                        <div className="rounded-xl bg-emerald-50 p-4"><p className="text-xs font-bold text-emerald-600">Comisión generada</p><p className="mt-1 text-xl font-black text-emerald-800">${feeSummary.totalFee.toFixed(2)}</p></div>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-wider text-emerald-600">Pendiente por cobrar</p>
-                        <p className="mt-1 text-3xl font-black text-emerald-900">${(pendingFee?.feeAmount ?? 0).toFixed(2)}</p>
-                        <p className="mt-1 text-xs font-semibold text-emerald-700/80">sobre ${(pendingFee?.salesAmount ?? 0).toFixed(2)} en ventas · {pendingFee?.ordersCount ?? 0} órdenes</p>
-                      </div>
-                      <button type="button" disabled={registeringSettlement || !pendingFee || pendingFee.feeAmount <= 0} onClick={handleRegisterSettlement} className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white shadow-sm disabled:opacity-40">
-                        {registeringSettlement ? "Registrando..." : "Registrar pago"}
-                      </button>
-                    </div>
                   </div>
 
                   {settlementHistory.length > 0 ? (
                     <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200">
-                      <div className="border-b border-slate-100 bg-slate-50 px-4 py-3"><p className="text-sm font-black text-slate-700">Historial de pagos</p></div>
+                      <div className="border-b border-slate-100 bg-slate-50 px-4 py-3"><p className="text-sm font-black text-slate-700">Liquidaciones anteriores de comisión</p></div>
                       <div className="divide-y divide-slate-100">
                         {settlementHistory.slice(0, 6).map((item) => (
                           <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">

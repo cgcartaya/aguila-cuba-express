@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BarChart3,
   Building2,
+  Receipt,
   History,
   KeyRound,
   LayoutDashboard,
@@ -26,6 +27,7 @@ type AdminLink = {
 const mainLinks: AdminLink[] = [
   { href: "/admin/saas", label: "Dashboard general", icon: LayoutDashboard },
   { href: "/admin/stores", label: "Tiendas", icon: Building2 },
+  { href: "/admin/stores/billing", label: "Facturación", icon: Receipt },
 ];
 
 const analyticsLinks: AdminLink[] = [
@@ -43,7 +45,8 @@ const configLinks: AdminLink[] = [
 ];
 
 function isActivePath(pathname: string, href: string) {
-  if (href === "/admin/saas") return pathname === href;
+  if (href === "/admin/stores" && pathname.startsWith("/admin/stores/billing")) return false;
+  if (href === "/admin/saas" || href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -69,6 +72,7 @@ function Section({
           <Link
             key={link.href}
             href={link.href}
+            aria-current={active ? "page" : undefined}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-black transition ${
               active
                 ? "bg-blue-50 text-blue-700"

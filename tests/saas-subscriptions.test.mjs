@@ -45,6 +45,8 @@ const create = () => ({
   issued_on: "2026-11-01",
   due_on: "2026-11-10",
   period: "Noviembre 2026",
+  billing_month: "2026-11-01",
+  quote_revision: "a".repeat(32),
   client_name: "Carlos",
   phone: "+13055551234",
   email: "",
@@ -62,6 +64,9 @@ const example = {
   status: "pending",
   store_name: "Tienda uno",
   total: 40,
+  subscription_amount: 25,
+  order_commission: 10,
+  shipping_commission: 5,
   paid: 10,
   issuer: { name: "Perla Marketplace" },
 };
@@ -245,9 +250,9 @@ test("monetary inputs, dates, phone and overdue reminders are validated", () => 
     model.invoiceState({ ...example, status: "paid" }, "2026-11-17"),
     "paid",
   );
-  for (const subtotal of [-1, NaN, Infinity, 0.001])
+  for (const discount of [-1, NaN, Infinity, 0.001])
     assert.equal(
-      model.commandSchema.safeParse({ action: "create", ...create(), subtotal })
+      model.commandSchema.safeParse({ action: "create", ...create(), discount })
         .success,
       false,
     );
@@ -325,6 +330,8 @@ test("letter PDF includes historical total and client without internal payment r
   assert.match(pdf.toString("latin1"), /MediaBox \[0 0 612\. 792\.\]/);
   assert.match(pdf.toString("latin1"), /PERLA-2026-0001/);
   assert.match(pdf.toString("latin1"), /Tienda uno/);
+  assert.match(pdf.toString("latin1"), /Comisi.n de pedidos/);
+  assert.match(pdf.toString("latin1"), /Comisi.n de env.os/);
   assert.match(pdf.toString("latin1"), /40.00/);
   assert.match(pdf.toString("latin1"), /30.00/);
 });
@@ -451,4 +458,155 @@ test("search, lifecycle filters and billing totals retain their distinct meaning
   assert.equal(totals.billed, 40);
   assert.equal(totals.pending, 30);
   assert.equal(totals.overdue, 30);
+  const selected = invoiceTotals(
+    [example, { ...example, id: other, store_id: other, total: 90, paid: 30 }],
+    "2026-11",
+    tenant,
+    [
+      { invoice_id: example.id, paid_on: "2026-11-10", amount: 10 },
+      { invoice_id: other, paid_on: "2026-11-10", amount: 30 },
+    ],
+  );
+  assert.equal(selected.billed, 40);
+  assert.equal(selected.collected, 10);
+  assert.equal(selected.pending, 30);
+});
+
+test("mixed invoices allocate each charge once and respect legacy settlement cutoffs", async () => {
+  const db = new PGlite();
+  const month = "2025-11-01";
+  const execMigration = (file) =>
+    db.exec(fs.readFileSync(`supabase/migrations/${file}`, "utf8"));
+  const command = async (action, data) =>
+    (
+      await db.query("select saas_billing_command($1,$2,$3) as result", [
+        actor,
+        action,
+        data,
+      ])
+    ).rows[0].result;
+  const quote = async (store = tenant) =>
+    (
+      await db.query("select saas_billing_preview($1,$2,$3) as result", [
+        actor,
+        store,
+        month,
+      ])
+    ).rows[0].result;
+  const invoiceRequest = (estimate, store = tenant) => ({
+    ...create(),
+    store_id: store,
+    billing_month: month,
+    quote_revision: estimate.revision,
+  });
+  try {
+    await db.exec(bootstrap);
+    await db.exec(`
+      create schema private;
+      alter table stores add column created_at timestamptz default '2025-01-01';
+      create table platform_fee_settlements(store_id uuid, period_end timestamptz);
+      create table orders(id uuid default gen_random_uuid(), store_id uuid, source_shipment_id text,
+        created_at timestamptz, platform_fee_amount numeric, lym_confirmed_at timestamptz);
+      create table shipping_platform_charges(shipment_id text, store_id uuid, created_at timestamptz, amount numeric);
+      insert into platform_fee_settlements values ('${tenant}', '2025-11-05 12:00Z');
+      insert into orders(store_id,source_shipment_id,created_at,platform_fee_amount) values
+        ('${tenant}',null,'2025-11-05 12:00Z',500),
+        ('${tenant}',null,'2025-11-06 12:00Z',3.50),
+        ('${tenant}','shipment-order','2025-11-06 12:00Z',500),
+        ('${other}',null,'2025-11-06 12:00Z',12);
+      insert into shipping_platform_charges values
+        ('included','${tenant}','2025-12-01 04:59Z',0.40),
+        ('next-month','${tenant}','2025-12-01 05:00Z',0.40);
+    `);
+    await execMigration("20261117190000_saas_subscription_billing.sql");
+    await command("create", {
+      ...create(),
+      store_id: other,
+      issued_on: "2025-11-12",
+      due_on: "2025-11-15",
+      period: "noviembre de 2025",
+      subtotal: 60,
+    });
+    await execMigration("20261117235500_saas_billing_commissions.sql");
+    const estimate = await quote();
+    assert.deepEqual(
+      [estimate.subscription, estimate.orders, estimate.shipping],
+      [40, 3.5, 0.4],
+    );
+    assert.equal((await quote(other)).subscription, 0);
+    assert.equal((await quote(other)).orders, 12);
+    assert.equal(estimate.order_rows, undefined);
+    const draft = await command("create", {
+      ...invoiceRequest(estimate),
+      draft: true,
+    });
+    const requests = [invoiceRequest(estimate), invoiceRequest(estimate)];
+    const settled = await Promise.allSettled(
+      requests.map((data) => command("create", data)),
+    );
+    assert.equal(settled[0].status, "fulfilled");
+    assert.equal(settled[1].status, "rejected");
+    const issued = settled[0].value;
+    assert.equal(Number(issued.total), 43.9);
+    assert.equal((await command("create", requests[0])).id, issued.id);
+    assert.equal((await quote()).subtotal, 0);
+    await assert.rejects(
+      command("issue", { invoice_id: draft.id }),
+      /desactualizado/,
+    );
+    await assert.rejects(
+      db.exec(
+        `insert into platform_fee_settlements values ('${tenant}', now())`,
+      ),
+      /Facturación SaaS/,
+    );
+    await command("void", {
+      invoice_id: issued.id,
+      reason: "Prueba de corrección",
+    });
+    assert.equal((await quote()).subtotal, 43.9);
+    const replacement = await command("issue", { invoice_id: draft.id });
+    assert.equal(Number(replacement.total), 43.9);
+    assert.equal((await quote()).subtotal, 0);
+    await db.exec(
+      `insert into orders(store_id,created_at,platform_fee_amount) values ('${tenant}','2025-11-30 12:00Z',2)`,
+    );
+    const supplemental = await quote();
+    assert.deepEqual(
+      [supplemental.subscription, supplemental.orders, supplemental.shipping],
+      [0, 2, 0],
+    );
+    const supplementalInvoice = await command(
+      "create",
+      invoiceRequest(supplemental),
+    );
+    const pay = {
+      invoice_id: supplementalInvoice.id,
+      request_id: randomUUID(),
+      paid_on: "2026-11-17",
+      amount: 2,
+      method: "Zelle",
+      reference: "",
+      notes: "",
+    };
+    assert.equal((await command("pay", pay)).status, "paid");
+    assert.equal(
+      (
+        await db.query("select last_payment_date from stores where id=$1", [
+          tenant,
+        ])
+      ).rows[0].last_payment_date,
+      null,
+    );
+    await assert.rejects(
+      command("void", {
+        invoice_id: supplementalInvoice.id,
+        reason: "Ya pagada",
+      }),
+      /con pagos/,
+    );
+    assert.equal((await quote()).subtotal, 0);
+  } finally {
+    await db.close();
+  }
 });

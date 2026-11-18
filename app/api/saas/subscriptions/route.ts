@@ -11,10 +11,39 @@ import { invoicePdf } from "@/lib/saas-billing/pdf";
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  if (!(await saasActor(request)))
+  const actor = await saasActor(request);
+  if (!actor)
     return json({ error: "Acceso exclusivo para administradores SaaS." }, 403);
   try {
     const url = new URL(request.url);
+    if (url.searchParams.has("quote")) {
+      const store = url.searchParams.get("store") || "";
+      const month = url.searchParams.get("month") || "";
+      if (
+        !/^[a-f0-9-]{36}$/i.test(store) ||
+        !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(month)
+      )
+        return json(
+          { error: "Selecciona un cliente y un mes de facturación." },
+          400,
+        );
+      const { data, error } = await db.rpc("saas_billing_preview", {
+        p_actor: actor,
+        p_store: store,
+        p_month: month,
+      });
+      if (error)
+        return json(
+          {
+            error:
+              error.code === "P0001"
+                ? error.message
+                : "No se pudo calcular la factura.",
+          },
+          400,
+        );
+      return json(data);
+    }
     const id = url.searchParams.get("pdf");
     if (id) {
       const { data, error } = await db
@@ -97,12 +126,7 @@ export async function POST(request: Request) {
         400,
       );
     const command = parsed.data;
-    if (
-      command.action === "create" &&
-      (command.due_on < command.issued_on ||
-        command.subtotal - command.discount + command.adjustment + command.tax <
-          0)
-    )
+    if (command.action === "create" && command.due_on < command.issued_on)
       return json(
         { error: "Revisa las fechas y el total de la factura." },
         400,
