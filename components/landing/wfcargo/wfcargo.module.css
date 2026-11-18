@@ -1503,28 +1503,119 @@
   scroll-margin-top: 110px;
 }
 .aboutIntro {
-  max-width: 78ch;
-  margin: 0 auto 30px;
+  max-width: 76ch;
+  margin: 0 auto 36px;
+  color: #304563;
 }
-.aboutGrid,
+.aboutIntro > p + p {
+  margin-top: .85rem;
+}
+.purposeGrid,
+.leadershipGrid,
 .aboutValues {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  margin: 14px 0 26px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-.aboutGrid article,
-.aboutValues div {
-  padding: 18px 22px;
+.purposeGrid {
+  margin-bottom: 36px;
+}
+.mission,
+.vision {
+  padding: clamp(22px, 4vw, 42px);
+  border-radius: 20px;
+  border-top: 4px solid var(--red);
+}
+.mission {
+  background: linear-gradient(135deg, #071e52, #154782);
+  color: #fff;
+}
+.vision {
+  background: linear-gradient(135deg, #edf3fc, #f7f9fe);
+  color: var(--navy);
+}
+.purposeHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.purposeHeader h3 {
+  font-size: clamp(1.55rem, 3vw, 2.25rem);
+  letter-spacing: -.035em;
+}
+.purposeIcon,
+.valueIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+}
+.purposeIcon {
+  width: 58px;
+  height: 58px;
+  background: #fff;
+  color: var(--navy);
+}
+.mission .purposeIcon {
+  background: #ffffff22;
+  color: #fff;
+}
+.summitIcon {
+  position: relative;
+}
+.summitIcon > svg:first-child {
+  transform: translateY(5px);
+}
+.summitIcon > svg:last-child {
+  position: absolute;
+  top: 5px;
+  left: 23px;
+  color: var(--red);
+}
+.about .aboutSubheading {
+  margin: 0 0 14px;
+  padding-left: 12px;
+  border-left: 4px solid var(--red);
+  font-size: 1.3rem;
+}
+.aboutValues {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 30px;
+}
+.aboutValues > div,
+.leadershipGrid article {
+  padding: 15px 18px;
   border: 1px solid #dce5f2;
   border-radius: 12px;
-  background: #f8faff;
+  background: #fff;
 }
-.aboutValues dt {
+.aboutValues dt,
+.leadershipGrid article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.aboutValues dt,
+.leadershipGrid h4 {
   font-weight: 800;
 }
+.valueIcon {
+  width: 38px;
+  height: 38px;
+  background: #edf3fc;
+  color: #133771;
+}
+.aboutValues dd,
+.leadershipGrid p {
+  color: #425570;
+  font-size: .94rem;
+}
 .aboutValues dd {
-  margin: 4px 0 0;
+  margin: 7px 0 0;
+}
+@media (max-width: 900px) {
+  .aboutValues { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .notaryNotice {
   margin: 16px 0;
@@ -1540,7 +1631,8 @@
   margin: 4px 0;
 }
 @media (max-width: 650px) {
-  .aboutGrid,
+  .purposeGrid,
+  .leadershipGrid,
   .aboutValues { grid-template-columns: 1fr; }
   .nav { flex-wrap: wrap; }
 }
