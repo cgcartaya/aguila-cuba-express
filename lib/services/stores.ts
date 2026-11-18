@@ -34,7 +34,6 @@ const STORE_PUBLIC_FIELDS = `
   monthly_price,
   platform_fee_enabled,
   platform_fee_percent,
-  platform_order_fixed_fee,
   payment_status,
   last_payment_date,
   next_payment_date,
