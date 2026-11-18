@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { supabase } from "@/lib/supabase"
 import { getPlatformOrderFixedFee } from "@/lib/config/features"
 import ShippingBillingSettings from "@/components/admin/saas/ShippingBillingSettings"
 import PhoneCountryField from "@/components/checkout/PhoneCountryField"
@@ -51,6 +52,17 @@ import {
   getEconomyModuleStatus,
   setEconomyModuleStatus,
 } from "@/lib/services/economy"
+
+async function loadStoreOrderFixedFee(storeId: string): Promise<number | null> {
+  const { data } = await supabase.auth.getSession()
+  const response = await fetch(
+    `/api/saas/subscriptions?order-fixed-fee=${encodeURIComponent(storeId)}`,
+    { headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` } }
+  )
+  if (!response.ok) throw new Error("No se pudo cargar la comisión fija.")
+  const result: { platform_order_fixed_fee: number | null } = await response.json()
+  return result.platform_order_fixed_fee
+}
 
 type SectionKey = "general" | "modules" | "domains" | "brand" | "billing" | "client"
 
@@ -322,9 +334,10 @@ export default function EditStorePage() {
     async function loadStore() {
       setLoading(true)
 
-      const [store, economy] = await Promise.all([
+      const [store, economy, fixedFee] = await Promise.all([
         getStoreById(storeId),
         getEconomyModuleStatus(storeId),
+        loadStoreOrderFixedFee(storeId),
       ])
 
       if (cancelled) return
@@ -353,7 +366,7 @@ export default function EditStorePage() {
         monthly_price: Number(store.monthly_price ?? 0),
         platform_fee_enabled: Boolean(store.platform_fee_enabled),
         platform_fee_percent: String(store.platform_fee_percent ?? "0"),
-        platform_order_fixed_fee: getPlatformOrderFixedFee(store.slug, store.platform_order_fixed_fee).toFixed(2),
+        platform_order_fixed_fee: getPlatformOrderFixedFee(store.slug, fixedFee).toFixed(2),
         is_active: Boolean(store.is_active),
         has_landing: Boolean(store.has_landing),
         module_store_enabled: store.module_store_enabled !== false,
@@ -382,7 +395,12 @@ export default function EditStorePage() {
       if (!cancelled) setSettlementHistory(history)
     }
 
-    void loadStore()
+    void loadStore().catch((error: unknown) => {
+      if (cancelled) return
+      console.error("Error cargando ajustes de tienda:", error)
+      alert("No se pudieron cargar los ajustes de la tienda.")
+      router.push("/admin/stores")
+    })
     return () => { cancelled = true }
   }, [router, storeId])
 

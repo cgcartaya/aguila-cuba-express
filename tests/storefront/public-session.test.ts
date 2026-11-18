@@ -70,6 +70,11 @@ test("public catalog reads do not wait for a blocked admin session refresh", asy
       );
       assert.equal(request.headers.get("apikey"), "fixture-public-key");
     }
+    const storeRequests = requests.filter((request) => request.url.pathname.endsWith("/stores"));
+    assert.equal(storeRequests.length, 3);
+    for (const { url } of storeRequests) {
+      assert.ok(!url.searchParams.get("select")?.includes("platform_order_fixed_fee"));
+    }
     for (const request of requests.filter(
       (r) =>
         r.url.pathname.endsWith("/products") ||

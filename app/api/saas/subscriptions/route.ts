@@ -16,6 +16,19 @@ export async function GET(request: Request) {
     return json({ error: "Acceso exclusivo para administradores SaaS." }, 403);
   try {
     const url = new URL(request.url);
+    const feeStoreId = url.searchParams.get("order-fixed-fee");
+    if (feeStoreId !== null) {
+      if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(feeStoreId))
+        return json({ error: "Identificador de tienda inválido." }, 400);
+      const { data, error } = await db
+        .from("stores")
+        .select("platform_order_fixed_fee")
+        .eq("id", feeStoreId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ error: "Tienda no encontrada." }, 404);
+      return json(data);
+    }
     if (url.searchParams.has("commission-cycle")) {
       const store = url.searchParams.get("store");
       const month = url.searchParams.get("month") || "";
