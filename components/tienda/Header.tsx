@@ -12,7 +12,6 @@ import {
   Star,
   Gift,
   PackageSearch,
-  CalendarDays,
   MessageCircle,
   ShoppingCart,
   Lock,
@@ -42,7 +41,6 @@ export default function Header({ cartCount }: HeaderProps) {
   const { store, loading: storeLoading } = useStore();
   const restaurantSection = useRestaurantSection(store?.slug);
   const showShipping = !storeLoading && store?.module_shipping_enabled === true;
-  const showDepartures = showShipping && store?.module_pickups_enabled === true;
   const { search, setSearch, clearSearch } = useTiendaSearch();
   const searchPath = getStorefrontSearchPath(pathname);
 
@@ -95,11 +93,8 @@ export default function Header({ cartCount }: HeaderProps) {
       ...(showShipping
         ? [{ label: "Rastrear paquete", href: "/rastrear", icon: PackageSearch }]
         : []),
-      ...(showDepartures
-        ? [{ label: "Salidas", href: "/salidas", icon: CalendarDays }]
-        : []),
     ],
-    [storeBaseUrl, showShipping, showDepartures, restaurantSection]
+    [storeBaseUrl, showShipping, restaurantSection]
   );
 
   return (

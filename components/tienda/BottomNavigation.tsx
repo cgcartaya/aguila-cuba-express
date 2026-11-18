@@ -11,7 +11,6 @@ import {
   House,
   Package,
   ShoppingBag,
-  CalendarDays,
   MessageCircle,
 } from "lucide-react";
 
@@ -30,7 +29,6 @@ export default function BottomNavigation() {
     return () => { active = false; };
   }, [store?.id, storeLoading, store?.client_phone]);
   const showShipping = !storeLoading && store?.module_shipping_enabled === true;
-  const showDepartures = showShipping && store?.module_pickups_enabled === true;
 
 const isDefaultStore = store?.slug === "aguila";
 
@@ -72,14 +70,6 @@ const storeBaseUrl =
           <ShoppingBag size={21} />
           <span>Tienda</span>
         </Link>
-
-        {showDepartures && <Link
-          href="/salidas"
-          className={itemClass(pathname.startsWith("/salidas"))}
-        >
-          <CalendarDays size={21} />
-          <span>Salidas</span>
-        </Link>}
 
         {helpPhone && <a
           href={`https://wa.me/${helpPhone}`}
