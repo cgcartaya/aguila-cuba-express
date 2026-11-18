@@ -37,12 +37,39 @@ export interface Invoice {
   };
   description: string;
   subtotal: number;
+  billing_month?: string | null;
+  subscription_amount?: number | null;
+  order_commission?: number | null;
+  shipping_commission?: number | null;
   discount: number;
   adjustment: number;
   tax: number;
   total: number;
   paid: number;
 }
+export type BillingQuote = {
+  subscription: number;
+  orders: number;
+  shipping: number;
+  subtotal: number;
+  revision: string;
+};
+export const invoicePeriodLabel = (i: Invoice) =>
+  i.billing_month
+    ? new Intl.DateTimeFormat("es-US", {
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(`${i.billing_month}T12:00:00Z`))
+    : i.period;
+export const invoiceLineItems = (i: Invoice) =>
+  (
+    [
+      ["Suscripción mensual", Number(i.subscription_amount ?? 0)],
+      ["Comisión de pedidos", Number(i.order_commission ?? 0)],
+      ["Comisión de envíos", Number(i.shipping_commission ?? 0)],
+    ] as const
+  ).filter(([, amount]) => amount > 0);
 export const balance = (i: Invoice) =>
   Math.round((Number(i.total) - Number(i.paid)) * 100) / 100;
 export function invoiceState(i: Invoice, now = today()) {
@@ -57,7 +84,7 @@ export const statusText: Record<string, string> = {
 };
 export function whatsappMessage(i: Invoice, url: string) {
   const overdue = invoiceState(i) === "overdue";
-  return `Hola, ${i.client_name || i.store_name}. 👋\n\nEsperamos que se encuentre muy bien.\n\n${overdue ? "Le recordamos respetuosamente que tiene un saldo pendiente de" : "Le compartimos la factura de"} la suscripción de *Perla Marketplace* de su negocio *${i.store_name}*, correspondiente a *${i.period}*.\n\n💳 Total: ${money(i.total)} USD\n💳 Saldo pendiente: ${money(balance(i))} USD\n📅 ${overdue ? "Vencimiento original" : "Fecha de vencimiento"}: ${dateText(i.due_on)}\n\n📄 Puede descargar su factura aquí (enlace válido por 30 días):\n${url}\n\nLe agradecemos su confianza y preferencia. Seguimos a su disposición para cualquier consulta.\n\n¡Muchas gracias!\n*Equipo Perla Marketplace*`;
+  return `Hola, ${i.client_name || i.store_name}. 👋\n\nEsperamos que se encuentre muy bien.\n\n${overdue ? "Le recordamos respetuosamente que tiene un saldo pendiente de la factura de" : "Le compartimos la factura de"} *Perla Marketplace* de su negocio *${i.store_name}*, correspondiente a *${invoicePeriodLabel(i)}*.\n\n💳 Total: ${money(i.total)} USD\n💳 Saldo pendiente: ${money(balance(i))} USD\n📅 ${overdue ? "Vencimiento original" : "Fecha de vencimiento"}: ${dateText(i.due_on)}\n\n📄 Puede descargar su factura aquí (enlace válido por 30 días):\n${url}\n\nLe agradecemos su confianza y preferencia. Seguimos a su disposición para cualquier consulta.\n\n¡Muchas gracias!\n*Equipo Perla Marketplace*`;
 }
 export function whatsappPhone(value: string) {
   if (!/^\+[1-9][\d\s()-]{6,22}$/.test(value.trim()))
@@ -95,12 +122,12 @@ export const commandSchema = z.discriminatedUnion("action", [
     draft: z.boolean(),
     issued_on: date,
     due_on: date,
-    period: z.string().trim().min(1).max(100),
+    billing_month: z.iso.date().refine((value) => value.endsWith("-01")),
+    quote_revision: z.string().regex(/^[a-f0-9]{32}$/),
     client_name: z.string().trim().min(1).max(200),
     phone: z.string().max(40),
     email: z.union([z.email(), z.literal("")]),
     description: z.string().trim().min(1).max(500),
-    subtotal: amount,
     discount: amount,
     adjustment: signedAmount,
     tax: amount,

@@ -9,6 +9,8 @@ import {
   money,
   statusText,
   type Invoice,
+  invoiceLineItems,
+  invoicePeriodLabel,
 } from "./model";
 
 export async function invoicePdf(i: Invoice) {
@@ -64,10 +66,10 @@ export async function invoicePdf(i: Invoice) {
   line("Negocio", i.store_name);
   if (i.email) line("Correo", i.email);
   if (i.phone) line("WhatsApp", i.phone);
-  line("Período", i.period);
+  line("Período", invoicePeriodLabel(i));
   line("Servicio", i.description);
   // Long issuer/service information is allowed to continue on another letter page.
-  if (y > 570) {
+  if (y > 510) {
     pdf.addPage("letter");
     y = 60;
   }
@@ -75,6 +77,7 @@ export async function invoicePdf(i: Invoice) {
   pdf.setDrawColor("#DFE5EF");
   pdf.line(40, y, 572, y);
   y += 25;
+  for (const [label, amount] of invoiceLineItems(i)) line(label, money(amount));
   line("Subtotal", money(i.subtotal));
   if (Number(i.discount)) line("Descuento", `-${money(i.discount)}`);
   if (Number(i.adjustment)) line("Ajuste", money(i.adjustment));

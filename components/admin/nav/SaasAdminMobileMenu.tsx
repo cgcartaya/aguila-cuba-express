@@ -6,6 +6,7 @@ import {
   X,
   Rocket,
   Building2,
+  Receipt,
   LayoutDashboard,
   Store,
   Settings,
@@ -28,6 +29,7 @@ type MenuItem = {
 const links: MenuItem[] = [
   { label: "Dashboard SaaS", href: "/admin/saas", icon: LayoutDashboard },
   { label: "Tiendas", href: "/admin/stores", icon: Building2 },
+  { href: "/admin/stores/billing", label: "Facturación", icon: Receipt },
   { label: "Métricas", href: "/admin/saas/metrics", icon: BarChart3 },
   {
     label: "Movimientos de inventario",
@@ -40,6 +42,8 @@ const links: MenuItem[] = [
 ];
 
 function isActivePath(pathname: string, href: string) {
+  if (href === "/admin/stores" && pathname.startsWith("/admin/stores/billing")) return false;
+  if (href === "/admin/saas" || href === "/admin") return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -84,6 +88,7 @@ export default function SaasAdminMobileMenu({ open, onClose }: Props) {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 onClick={onClose}
                 className={`flex items-center gap-4 rounded-2xl px-4 py-4 text-base font-black transition ${
                   isActive

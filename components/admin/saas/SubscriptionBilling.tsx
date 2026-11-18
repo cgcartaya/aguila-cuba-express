@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowLeft,
@@ -18,6 +19,9 @@ import {
   invoiceState,
   statusText,
   whatsappPhone,
+  invoiceLineItems,
+  invoicePeriodLabel,
+  type BillingQuote,
   type Invoice,
 } from "@/lib/saas-billing/model";
 import {
@@ -34,6 +38,7 @@ const button =
 const primary = `${button.replace("bg-white", "bg-[#0B1F4D]")} border-transparent text-white`;
 type Payment = {
   id: string;
+  invoice_id: string;
   amount: number;
   paid_on: string;
   method: string;
@@ -62,9 +67,23 @@ type View =
 export function invoiceTotals(
   invoices: Invoice[],
   month = today().slice(0, 7),
+  storeId = "",
+  payments: Pick<Payment, "paid_on" | "invoice_id" | "amount">[] = [],
 ) {
-  const valid = invoices.filter((i) => !["draft", "void"].includes(i.status));
+  const valid = invoices.filter(
+    (i) =>
+      (!storeId || i.store_id === storeId) &&
+      (i.status === "pending" || i.status === "paid"),
+  );
+  const invoiceIds = new Set(valid.map((invoice) => invoice.id));
   return {
+    collected: payments
+      .filter(
+        (payment) =>
+          payment.paid_on.startsWith(month) &&
+          invoiceIds.has(payment.invoice_id),
+      )
+      .reduce((sum, payment) => sum + Number(payment.amount), 0),
     billed: valid
       .filter((i) => i.issued_on.startsWith(month))
       .reduce((s, i) => s + Number(i.total), 0),
@@ -75,6 +94,10 @@ export function invoiceTotals(
   };
 }
 export default function SubscriptionBilling() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const storeId = params.get("store") || "";
+  const openNew = params.get("new") === "1";
   const [stores, setStores] = useState<Store[]>([]),
     [invoices, setInvoices] = useState<Invoice[]>([]),
     [lifecycle, setLifecycle] = useState<Lifecycle[]>([]),
@@ -85,7 +108,6 @@ export default function SubscriptionBilling() {
     [events, setEvents] = useState<Event[]>([]),
     [allPayments, setAllPayments] = useState<Payment[]>([]);
   const [view, setView] = useState<View | null>(null),
-    [storeId, setStoreId] = useState(""),
     [status, setStatus] = useState("all"),
     [period, setPeriod] = useState(""),
     [from, setFrom] = useState(""),
@@ -96,14 +118,31 @@ export default function SubscriptionBilling() {
     [notice, setNotice] = useState(""),
     [loaded, setLoaded] = useState(false),
     [createStore, setCreateStore] = useState("");
+  const [billingMonth, setBillingMonth] = useState(() => today().slice(0, 7));
+  const [quote, setQuote] = useState<{
+    key: string;
+    data?: BillingQuote;
+    error?: string;
+  } | null>(null);
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
+  const quoteKey = `${createStore}/${billingMonth}/${quoteAttempt}`;
+  const currentQuote = quote?.key === quoteKey ? quote : null;
+  const pricing = currentQuote?.data;
   const [draftAmounts, setDraftAmounts] = useState({
-    subtotal: 0,
     discount: 0,
     adjustment: 0,
     tax: 0,
   });
   const requestId = useRef("");
-  const initial = useRef(true);
+  const previousStore = useRef(storeId);
+  useEffect(() => {
+    if (previousStore.current === storeId) return;
+    previousStore.current = storeId;
+    setView(null);
+    setNotice("");
+    setError("");
+  }, [storeId]);
+
   async function load(invoice?: string) {
     const data = await (
       await billingRequest(invoice ? `?invoice=${invoice}` : "")
@@ -121,29 +160,51 @@ export default function SubscriptionBilling() {
     return data;
   }
   useEffect(() => {
-    load()
-      .then((data) => {
-        if (initial.current) {
-          initial.current = false;
-          const params = new URLSearchParams(window.location.search),
-            id = params.get("store") || "";
-          setStoreId(id);
-          setCreateStore(id);
-          if (params.has("new")) {
-            requestId.current = crypto.randomUUID();
-            setView({ kind: "create" });
-            const store = data.stores.find((s: Store) => s.id === id);
-            setDraftAmounts({
-              subtotal: Number(store?.monthly_price || 0),
-              discount: 0,
-              adjustment: 0,
-              tax: 0,
-            });
-          }
-        }
-      })
-      .catch((e) => setError(e.message));
+    load().catch((e) => setError(e.message));
   }, []);
+  useEffect(() => {
+    if (!loaded || !openNew) return;
+    const valid =
+      stores.some((store) => store.id === storeId) &&
+      !lifecycle.some(
+        (row) => row.store_id === storeId && row.state === "archived",
+      );
+    if (valid) {
+      requestId.current = crypto.randomUUID();
+      setCreateStore(storeId);
+      setBillingMonth(today().slice(0, 7));
+      setDraftAmounts({ discount: 0, adjustment: 0, tax: 0 });
+      setQuoteAttempt((attempt) => attempt + 1);
+      setView({ kind: "create" });
+    }
+    router.replace(
+      valid ? `?store=${encodeURIComponent(storeId)}` : "/admin/stores/billing",
+      { scroll: false },
+    );
+  }, [loaded, openNew, stores, lifecycle, storeId, router]);
+
+  const creating = view?.kind === "create";
+  useEffect(() => {
+    if (!creating || !createStore || !billingMonth) return;
+    let cancelled = false;
+    const query = new URLSearchParams({
+      quote: "1",
+      store: createStore,
+      month: `${billingMonth}-01`,
+    });
+    billingRequest(`?${query}`)
+      .then((response) => response.json())
+      .then((data: BillingQuote) => {
+        if (!cancelled) setQuote({ key: quoteKey, data });
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setQuote({ key: quoteKey, error: err.message });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [creating, createStore, billingMonth, quoteKey]);
+
   async function act(task: () => Promise<void>) {
     setBusy(true);
     setError("");
@@ -160,17 +221,19 @@ export default function SubscriptionBilling() {
     (s) =>
       !lifecycle.some((l) => l.store_id === s.id && l.state === "archived"),
   );
-  const month = today().slice(0, 7),
-    totals = invoiceTotals(invoices, month);
-  const collected = allPayments
-    .filter((p) => p.paid_on.startsWith(month))
-    .reduce((s, p) => s + Number(p.amount), 0);
-  const visible = invoices
+  const month = today().slice(0, 7);
+  const clientInvoices = storeId
+    ? invoices.filter((i) => i.store_id === storeId)
+    : invoices;
+  const totals = invoiceTotals(invoices, month, storeId, allPayments);
+  const visible = clientInvoices
     .filter(
       (i) =>
-        (!storeId || i.store_id === storeId) &&
         (status === "all" || invoiceState(i) === status) &&
-        (!period || i.period.toLowerCase().includes(period.toLowerCase())) &&
+        (!period ||
+          `${invoicePeriodLabel(i)} ${invoicePeriodLabel(i)}`
+            .toLowerCase()
+            .includes(period.toLowerCase())) &&
         (!from || i.issued_on >= from) &&
         (!to || i.issued_on <= to) &&
         (!search ||
@@ -182,18 +245,17 @@ export default function SubscriptionBilling() {
   function newInvoice() {
     requestId.current = crypto.randomUUID();
     const id = storeId || current[0]?.id || "";
+    if (!current.some((store) => store.id === id)) return;
     setCreateStore(id);
-    setDraftAmounts({
-      subtotal: Number(stores.find((s) => s.id === id)?.monthly_price || 0),
-      discount: 0,
-      adjustment: 0,
-      tax: 0,
-    });
+    setBillingMonth(today().slice(0, 7));
+    setQuoteAttempt((attempt) => attempt + 1);
+    setDraftAmounts({ discount: 0, adjustment: 0, tax: 0 });
     setError("");
     setView({ kind: "create" });
   }
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!pricing || pricing.subtotal <= 0) return;
     const f = new FormData(event.currentTarget);
     const submitter = (event.nativeEvent as SubmitEvent)
       .submitter as HTMLButtonElement | null;
@@ -207,7 +269,8 @@ export default function SubscriptionBilling() {
         draft: text("save") === "draft",
         issued_on: text("issued_on"),
         due_on: text("due_on"),
-        period: text("period"),
+        billing_month: `${billingMonth}-01`,
+        quote_revision: pricing.revision,
         client_name: text("client_name"),
         phone: text("phone"),
         email: text("email"),
@@ -368,17 +431,24 @@ export default function SubscriptionBilling() {
           <ArrowLeft size={16} />
           Gestión de tiendas
         </Link>
+        {stores.some((store) => store.id === storeId) && (
+          <Link
+            href={`/admin/stores/${storeId}/edit?section=billing`}
+            className="ml-4 text-sm font-semibold text-indigo-700 hover:underline"
+          >
+            Ficha del cliente
+          </Link>
+        )}
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">
-              Suscripciones de clientes
+              Cuentas de clientes
             </p>
             <h1 className="mt-1 text-3xl font-extrabold text-[#0B1F4D]">
               Facturación SaaS
             </h1>
             <p className="mt-2 text-sm text-slate-500">
-              Facturas, pagos y recordatorios de las mensualidades de Perla
-              Marketplace.
+              Facturas de suscripción y comisiones de Perla Marketplace.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -391,7 +461,13 @@ export default function SubscriptionBilling() {
             </button>
             <button
               className={primary}
-              disabled={!current.length || busy}
+              disabled={
+                busy ||
+                !current.length ||
+                Boolean(
+                  storeId && !current.some((store) => store.id === storeId),
+                )
+              }
               onClick={newInvoice}
             >
               <Plus size={16} />
@@ -420,12 +496,18 @@ export default function SubscriptionBilling() {
             [
               "Mensual contratado",
               money(
-                current.reduce((s, i) => s + Number(i.monthly_price || 0), 0),
+                current
+                  .filter((i) => !storeId || i.id === storeId)
+                  .reduce((s, i) => s + Number(i.monthly_price || 0), 0),
               ),
               "Configuración de las tiendas",
             ],
             ["Facturado este mes", money(totals.billed), month],
-            ["Cobrado este mes", money(collected), "Por fecha real del pago"],
+            [
+              "Cobrado este mes",
+              money(totals.collected),
+              "Por fecha real del pago",
+            ],
             ["Saldo pendiente", money(totals.pending), "Todos los períodos"],
             [
               "Saldo vencido",
@@ -439,7 +521,10 @@ export default function SubscriptionBilling() {
             >
               <p className="text-xs font-semibold text-slate-500">{label}</p>
               <p className="mt-3 text-2xl font-extrabold text-[#0B1F4D]">
-                {loaded ? value : "—"}
+                {loaded &&
+                (!storeId || stores.some((store) => store.id === storeId))
+                  ? value
+                  : "—"}
               </p>
               <p className="mt-2 text-xs text-slate-400">{note}</p>
             </article>
@@ -452,9 +537,27 @@ export default function SubscriptionBilling() {
               <select
                 className={input}
                 value={storeId}
-                onChange={(e) => setStoreId(e.target.value)}
+                onChange={(e) => {
+                  setView(null);
+                  setError("");
+                  setNotice("");
+                  const id = e.target.value;
+                  router.push(
+                    id
+                      ? `?store=${encodeURIComponent(id)}`
+                      : "/admin/stores/billing",
+                    { scroll: false },
+                  );
+                }}
               >
                 <option value="">Todos los clientes</option>
+                {storeId &&
+                  loaded &&
+                  !stores.some((store) => store.id === storeId) && (
+                    <option value={storeId} disabled>
+                      Cliente no disponible
+                    </option>
+                  )}
                 {stores.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -539,7 +642,7 @@ export default function SubscriptionBilling() {
                       <p className="font-bold">{i.number || "Borrador"}</p>
                       <p className="text-xs text-slate-400">{i.store_name}</p>
                     </td>
-                    <td className="p-3">{i.period}</td>
+                    <td className="p-3">{invoicePeriodLabel(i)}</td>
                     <td className="p-3 text-xs">
                       {i.issued_on}
                       <p className="mt-1 text-slate-400">{i.due_on}</p>
@@ -576,7 +679,7 @@ export default function SubscriptionBilling() {
                   {badge(i)}
                 </div>
                 <p className="mt-2 text-sm">
-                  {i.store_name} · {i.period}
+                  {i.store_name} · {invoicePeriodLabel(i)}
                 </p>
                 <p className="mt-2 text-xs text-slate-400">
                   Emisión {i.issued_on} · Vence {i.due_on}
@@ -649,14 +752,11 @@ export default function SubscriptionBilling() {
                   required
                   value={createStore}
                   onChange={(e) => {
+                    requestId.current = crypto.randomUUID();
                     setCreateStore(e.target.value);
-                    setDraftAmounts((a) => ({
-                      ...a,
-                      subtotal: Number(
-                        stores.find((s) => s.id === e.target.value)
-                          ?.monthly_price || 0,
-                      ),
-                    }));
+                    setQuoteAttempt((attempt) => attempt + 1);
+                    setDraftAmounts({ discount: 0, adjustment: 0, tax: 0 });
+                    setError("");
                   }}
                   className={input}
                 >
@@ -703,16 +803,17 @@ export default function SubscriptionBilling() {
                   />
                 </label>
                 <label className="text-sm">
-                  Período
+                  Mes de facturación
                   <input
-                    name="period"
+                    type="month"
+                    value={billingMonth}
+                    max={month}
+                    onChange={(e) => {
+                      setBillingMonth(e.target.value);
+                      setQuoteAttempt((attempt) => attempt + 1);
+                      setError("");
+                    }}
                     required
-                    maxLength={100}
-                    defaultValue={new Intl.DateTimeFormat("es-US", {
-                      month: "long",
-                      year: "numeric",
-                      timeZone: "America/New_York",
-                    }).format(new Date())}
                     className={input}
                   />
                 </label>
@@ -748,14 +849,65 @@ export default function SubscriptionBilling() {
                   name="description"
                   maxLength={500}
                   required
-                  defaultValue="Suscripción mensual Perla Marketplace"
+                  defaultValue="Servicios de Perla Marketplace"
                   className={input}
                 />
               </label>
+              <section
+                className="rounded-xl bg-slate-50 p-4 text-sm"
+                aria-label="Conceptos de facturación"
+              >
+                {pricing ? (
+                  <dl className="space-y-2">
+                    {(
+                      [
+                        ["Suscripción mensual", pricing.subscription],
+                        ["Comisión de pedidos", pricing.orders],
+                        ["Comisión de envíos", pricing.shipping],
+                      ] as const
+                    ).map(([label, amount]) => (
+                      <div key={label} className="flex justify-between gap-4">
+                        <dt>{label}</dt>
+                        <dd className="font-semibold">{money(amount)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : (
+                  <p role="status">
+                    {currentQuote?.error ||
+                      (billingMonth
+                        ? "Calculando conceptos…"
+                        : "Selecciona un mes de facturación.")}
+                  </p>
+                )}
+                {pricing &&
+                  billingMonth !== month &&
+                  pricing.subscription > 0 && (
+                    <p className="mt-2 text-xs text-slate-600">
+                      La mensualidad usa la tarifa configurada actualmente para
+                      este cliente.
+                    </p>
+                  )}
+                {pricing?.subtotal === 0 && (
+                  <p className="mt-2">
+                    No hay conceptos pendientes para este mes.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  disabled={busy || !billingMonth}
+                  className={`${button} mt-3`}
+                  onClick={() => {
+                    setError("");
+                    setQuoteAttempt((attempt) => attempt + 1);
+                  }}
+                >
+                  Actualizar importes
+                </button>
+              </section>
               <div className="grid grid-cols-2 gap-4">
                 {(
                   [
-                    ["subtotal", "Suscripción USD"],
                     ["discount", "Descuento USD"],
                     ["adjustment", "Ajuste / cargo USD"],
                     ["tax", "Impuesto configurado USD"],
@@ -788,12 +940,14 @@ export default function SubscriptionBilling() {
               <div className="flex items-center justify-between rounded-xl bg-indigo-50 p-4">
                 <b>Total USD</b>
                 <b className="text-xl text-indigo-700">
-                  {money(
-                    draftAmounts.subtotal -
-                      draftAmounts.discount +
-                      draftAmounts.adjustment +
-                      draftAmounts.tax,
-                  )}
+                  {pricing
+                    ? money(
+                        Number(pricing.subtotal) -
+                          draftAmounts.discount +
+                          draftAmounts.adjustment +
+                          draftAmounts.tax,
+                      )
+                    : "—"}
                 </b>
               </div>
               <div className="flex flex-wrap justify-end gap-2">
@@ -801,7 +955,7 @@ export default function SubscriptionBilling() {
                   type="submit"
                   name="save"
                   value="draft"
-                  disabled={busy}
+                  disabled={busy || !pricing || pricing.subtotal <= 0}
                   className={button}
                 >
                   Guardar borrador
@@ -810,7 +964,7 @@ export default function SubscriptionBilling() {
                   type="submit"
                   name="save"
                   value="issue"
-                  disabled={busy}
+                  disabled={busy || !pricing || pricing.subtotal <= 0}
                   className={primary}
                 >
                   {busy ? "Guardando..." : "Emitir factura pendiente"}
@@ -883,11 +1037,19 @@ export default function SubscriptionBilling() {
               </div>
               <div className="rounded-xl bg-slate-50 p-4 text-sm">
                 <p>{view.invoice.description}</p>
-                <p className="mt-2">Período: {view.invoice.period}</p>
+                <p className="mt-2">
+                  Período: {invoicePeriodLabel(view.invoice)}
+                </p>
                 <p className="mt-2">
                   Emisión: {view.invoice.issued_on} · Vencimiento:{" "}
                   {view.invoice.due_on}
                 </p>
+                {invoiceLineItems(view.invoice).map(([label, amount]) => (
+                  <p className="mt-2 flex justify-between gap-4" key={label}>
+                    <span>{label}</span>
+                    <strong>{money(amount)}</strong>
+                  </p>
+                ))}
                 <p className="mt-3">
                   Subtotal {money(view.invoice.subtotal)} · Descuento{" "}
                   {money(view.invoice.discount)} · Ajuste{" "}
