@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import { LUXURY_PICKUP_STORE_SLUG, splitPickupArea } from "@/lib/pickups/luxury-coverage";
 import Link from "next/link";
 import { ArrowDown, ArrowUp, CheckCircle2, ExternalLink, Loader2, MapPin, MessageCircle, Navigation, Pencil, PlayCircle, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { useStore } from "@/hooks/useStore";
@@ -35,6 +36,8 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
   const { store: selectedStore, loading: storeLoading } = useStore() as any;
   const { store: accessStore, isSuperAdmin, loading: accessLoading } = useAdminAccess();
   const store = isSuperAdmin ? selectedStore || accessStore : accessStore;
+  const isLuxury = store?.slug === LUXURY_PICKUP_STORE_SLUG;
+  const [checkpointArea, setCheckpointArea] = useState("");
   const [route, setRoute] = useState<PickupRoute | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,10 +60,14 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     const result = await getPickupRoute(store.id, id);
     const loaded = result.data;
     if (loaded && !loaded.public_itinerary_managed && !loaded.public_itinerary?.length) {
-      const legacyCities = Array.from(new Set((loaded.stops || []).map((stop) => stop.pickup_request?.city).filter((city): city is string => Boolean(city))));
+      const legacyCities = Array.from(new Set((loaded.stops || []).flatMap(({ pickup_request: pickup }) => {
+        if (!pickup?.city) return [];
+        return [isLuxury && pickup.postal_code ? `${pickup.city} ${pickup.postal_code.slice(0, 5)}` : pickup.city];
+      })));
       loaded.public_itinerary = legacyCities.map((city) => ({ cities: [city], start_time: null, end_time: null }));
     }
     setRoute(loaded);
+    setCheckpointArea(loaded?.public_checkpoint?.area || "");
     setError(result.error?.message || "");
     if (result.data) {
       const eligible = await getEligiblePickupRequestsForRoute(store.id, id);
@@ -136,6 +143,21 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     const { data: savedRoute, error: updateError } = await updatePickupRouteStatus(route.id, store.id, status);
     if (updateError) return setError(updateError.message);
     setRoute({ ...route, status, updated_at: savedRoute?.updated_at || route.updated_at, is_public: status === "published" ? true : route.is_public });
+  }
+
+  async function markCheckpoint(phase: "en_route" | "arrived") {
+    if (!route || !checkpointArea) return;
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    const result = await managePickupRoute({
+      storeId: store.id, routeId: route.id, action: "checkpoint", area: checkpointArea, phase,
+    });
+    setSaving(false);
+    const checkpoint = result.data?.checkpoint;
+    if (!checkpoint) return setError(result.error?.message || "No se pudo actualizar el avance.");
+    setRoute({ ...route, public_checkpoint: checkpoint, updated_at: checkpoint.updated_at });
+    setSuccess("Avance actualizado en el recorrido público.");
   }
 
   async function moveStop(index: number, direction: -1 | 1) {
@@ -251,11 +273,45 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
     {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
     {success && <p role="status" className="rounded-2xl bg-emerald-50 p-4 font-bold text-emerald-800">{success}</p>}
-    <PublicItineraryEditor storeId={store.id} groups={route.public_itinerary || []}
+    <PublicItineraryEditor storeId={store.id} allowZip={isLuxury} groups={route.public_itinerary || []}
       onChange={(groups) => { setRoute({ ...route, public_itinerary: groups }); setSuccess(""); }}
       onSave={saveInfo} saving={saving} isPublic={route.is_public}
       readOnly={["completed", "cancelled"].includes(route.status)} saveError={error} saveSuccess={success} />
 
+
+    {isLuxury && route.status === "in_progress" && route.is_public && (
+      <section className="space-y-4 rounded-3xl border border-blue-100 bg-white p-5">
+        <h2 className="text-xl font-black">Actualizar avance público</h2>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1 font-bold">Próxima zona o parada
+            <select className="rounded-xl border p-2" value={checkpointArea} onChange={(event) => setCheckpointArea(event.target.value)}>
+              <option value="">Selecciona una parada</option>
+              {cities.map((area) => area && <option key={area}>{area}</option>)}
+            </select>
+          </label>
+          <button className="rounded-xl bg-blue-700 px-4 py-2 font-bold text-white disabled:opacity-40" disabled={!checkpointArea || saving} onClick={() => markCheckpoint("en_route")}>En camino</button>
+          <button className="rounded-xl bg-emerald-700 px-4 py-2 font-bold text-white disabled:opacity-40" disabled={!checkpointArea || saving} onClick={() => markCheckpoint("arrived")}>Llegamos</button>
+        </div>
+        {route.public_checkpoint && <p className="text-sm font-semibold">
+          {route.public_checkpoint.phase === "arrived" ? "Llegamos a" : "En camino a"} {route.public_checkpoint.area}
+        </p>}
+        {checkpointArea && <ul className="space-y-2">{(route.stops || []).flatMap((stop) => {
+          const pickup = stop.pickup_request;
+          const { city, zip } = splitPickupArea(checkpointArea);
+          if (!pickup || ["picked_up", "failed", "skipped"].includes(stop.status) ||
+            city.toLowerCase() !== pickup.city?.toLowerCase() ||
+            (zip && pickup.postal_code?.slice(0, 5) !== zip)) return [];
+          const phone = pickup.phone.replace(/\D/g, "");
+          if (!phone) return [];
+          const message = `Hola ${pickup.customer_name}, somos Luxury Travel Point. Vamos en camino para tu recogida ${pickup.request_code} en ${checkpointArea}.`;
+          return [<li key={stop.id}>
+            <a className="font-bold text-emerald-700 underline" href={`https://wa.me/${phone}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">
+              Avisar por WhatsApp a {pickup.customer_name}
+            </a>
+          </li>];
+        })}</ul>}
+      </section>
+    )}
 
     {requestedForThisRoute > 0 && (
       <button onClick={openAddRequests} className="flex w-full items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:bg-amber-100">
@@ -315,7 +371,7 @@ export default function PickupRouteDetailPage({ params }: { params: Promise<{ id
 
       <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl font-black">Recogidas de clientes</h2><p className="text-slate-500">Cada parada de este apartado corresponde a un cliente.</p><div className="mt-3 inline-flex rounded-2xl bg-slate-100 p-1"><button onClick={() => setStopsView("list")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "list" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Lista</button><button onClick={() => setStopsView("map")} className={`rounded-xl px-4 py-2 text-sm font-black ${stopsView === "map" ? "bg-white shadow-sm text-blue-700" : "text-slate-500"}`}>Mapa</button></div></div><div className="flex flex-wrap items-center gap-3"><button onClick={() => { setEditingManualRequest(null); setManualOpen(true); }} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Parada manual</button><button onClick={openAddRequests} disabled={["completed", "cancelled"].includes(route.status)} className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-black text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Plus size={18} /> Solicitudes web</button><button onClick={optimizeOrder} disabled={saving || ["completed", "cancelled"].includes(route.status) || (route.stops?.length || 0) < 3} title="Reordena las paradas por la ruta más corta calculada" className="inline-flex items-center gap-2 rounded-2xl border border-slate-300 px-5 py-3 font-black text-slate-700 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"><Navigation size={18} /> Optimizar orden</button><div className="rounded-2xl bg-blue-50 px-4 py-3 text-center"><p className="text-2xl font-black text-blue-700">{route.stops?.length || 0}</p><p className="text-xs font-black text-blue-500">paradas</p></div></div></div>
-        {stopsView === "map" ? <div className="mt-6"><PickupRouteMap stops={route.stops || []} /></div> : <div className="mt-6 space-y-3">{!route.stops?.length && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"><p className="font-black">No hay recogidas de clientes asignadas</p><p className="mt-2 text-sm text-slate-500">El recorrido por ciudades se muestra arriba. Usa Parada manual o Solicitudes web para añadir clientes.</p></div>}{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const whatsapp = encodeURIComponent(`Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{item.customer_name} · {item.city}</h3><SourceBadge source={item.request_source} /><LocationBadge verified={Boolean(item.address_verified)} hasPoint={item.latitude != null && item.longitude != null} /></div><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a>{item.request_source === "manual" && <button onClick={() => { setEditingManualRequest(item); setManualOpen(true); }} title="Editar parada manual" className="rounded-xl border border-orange-200 p-2 text-orange-600"><Pencil size={17} /></button>}{item.request_source === "manual" ? <button onClick={() => deleteManualStop(item.id)} title="Eliminar parada manual" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button> : <button onClick={() => removeStop(stop.id)} title="Quitar solicitud web de esta ruta" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button>}</div></div></article>; })}</div>}
+        {stopsView === "map" ? <div className="mt-6"><PickupRouteMap stops={route.stops || []} /></div> : <div className="mt-6 space-y-3">{!route.stops?.length && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center"><p className="font-black">No hay recogidas de clientes asignadas</p><p className="mt-2 text-sm text-slate-500">El recorrido por ciudades se muestra arriba. Usa Parada manual o Solicitudes web para añadir clientes.</p></div>}{route.stops?.map((stop, index) => { const item = stop.pickup_request; if (!item) return null; const onTheWay = isLuxury && route.status === "in_progress" && !["picked_up", "failed", "skipped"].includes(stop.status); const whatsapp = encodeURIComponent(onTheWay ? `Hola ${item.customer_name}, somos Luxury Travel Point. Vamos en camino para tu recogida ${item.request_code}.` : `Hola ${item.customer_name}, tu recogida ${item.request_code} está programada para ${route.route_date}. Te avisaremos cuando estemos cerca.`); return <article key={stop.id} className="rounded-2xl border border-slate-200 p-4"><div className="flex flex-col gap-4 lg:flex-row lg:items-center"><div className="flex items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#071d43] text-lg font-black text-white">{index + 1}</div><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-black">{item.customer_name} · {item.city}</h3><SourceBadge source={item.request_source} /><LocationBadge verified={Boolean(item.address_verified)} hasPoint={item.latitude != null && item.longitude != null} /></div><p className="text-sm font-bold text-slate-500">{item.address_line_1}, {item.postal_code} · {item.package_count} paquete(s)</p></div></div><div className="ml-auto flex flex-wrap items-center gap-2"><button onClick={() => moveStop(index, -1)} disabled={index === 0} className="rounded-xl border p-2 disabled:opacity-30"><ArrowUp size={17} /></button><button onClick={() => moveStop(index, 1)} disabled={index === (route.stops?.length || 0) - 1} className="rounded-xl border p-2 disabled:opacity-30"><ArrowDown size={17} /></button><select value={stop.status} onChange={(e) => changeStopStatus(stop.id, e.target.value as PickupRouteStopStatus)} className="rounded-xl border px-3 py-2 font-black">{Object.entries(PICKUP_STOP_STATUS_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.formatted_address || `${item.address_line_1}, ${item.city}, ${item.region} ${item.postal_code}`)}`} target="_blank" rel="noreferrer" className="rounded-xl border p-2 text-blue-700"><ExternalLink size={17} /></a><a aria-label={onTheWay ? "Avisar que vamos en camino por WhatsApp" : "Avisar por WhatsApp"} href={`https://wa.me/${item.phone.replace(/\D/g, "")}?text=${whatsapp}`} target="_blank" rel="noreferrer" className="rounded-xl bg-emerald-500 p-2 text-white"><MessageCircle size={17} /></a>{item.request_source === "manual" && <button onClick={() => { setEditingManualRequest(item); setManualOpen(true); }} title="Editar parada manual" className="rounded-xl border border-orange-200 p-2 text-orange-600"><Pencil size={17} /></button>}{item.request_source === "manual" ? <button onClick={() => deleteManualStop(item.id)} title="Eliminar parada manual" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button> : <button onClick={() => removeStop(stop.id)} title="Quitar solicitud web de esta ruta" className="rounded-xl border border-red-200 p-2 text-red-600"><Trash2 size={17} /></button>}</div></div></article>; })}</div>}
       </section>
     </div>
     </details>

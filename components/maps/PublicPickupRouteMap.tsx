@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, MapPin } from "lucide-react";
 import type * as Leaflet from "leaflet";
 import { progressNames, type ScheduledProgress } from "@/lib/pickups/scheduled-progress";
+import type { RouteCheckpoint } from "@/lib/pickups/luxury-coverage";
 import "leaflet/dist/leaflet.css";
 
 type PublicCity = { name: string; latitude: number | null; longitude: number | null; order: number };
-type PublicRoute = { id: string; name: string; status: "published" | "in_progress"; cities: PublicCity[] };
+type PublicRoute = { id: string; name: string; status: "published" | "in_progress"; cities: PublicCity[]; checkpoint?: RouteCheckpoint | null };
 const van = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 3h14v14H1zM15 8h4l3 4v5h-7"/><circle cx="5.5" cy="18" r="2.5"/><circle cx="18.5" cy="18" r="2.5"/></svg>';
 function valid(value: unknown, kind: "lat" | "lng") {
   if (value === null || value === undefined || value === "") return null;
@@ -19,6 +20,7 @@ function valid(value: unknown, kind: "lat" | "lng") {
 }
 
 export default function PublicPickupRouteMap({ route, progress }: { route: PublicRoute; progress: ScheduledProgress | null }) {
+  const checkpoint = route.checkpoint;
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
   const layersRef = useRef<Leaflet.LayerGroup | null>(null);
@@ -46,7 +48,7 @@ export default function PublicPickupRouteMap({ route, progress }: { route: Publi
         layersRef.current = L.layerGroup().addTo(map);
         const points = extent.split(';').map((pair) => pair.split(',').map(Number) as [number, number]);
         if (points.length === 1) map.setView(points[0], 11);
-        else map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [35, 100], paddingBottomRight: [35, 65], maxZoom: 10 });
+        else map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [35, 100], paddingBottomRight: [35, 65], maxZoom: 12 });
         observer = new ResizeObserver(() => map.invalidateSize());
         observer.observe(ref.current);
         setReady(true);
@@ -92,14 +94,14 @@ export default function PublicPickupRouteMap({ route, progress }: { route: Publi
         }
       }
       cities.forEach((city) => {
-        const active = progress?.currentIndices.includes(city.index), previous = progress?.previousIndices.includes(city.index);
-        const icon = L.divIcon({ className: `public-route-marker ${active ? 'public-route-marker--active' : previous ? 'public-route-marker--previous' : ''}`, html: `<span>${active ? van : city.position}</span>`, iconSize: [38,38], iconAnchor: [19,19] });
-        const label = document.createElement("span"); label.textContent = `${city.name}${active ? ' · Parada prevista según horario' : ''}`;
+        const active = checkpoint ? city.name === checkpoint.area : progress?.currentIndices.includes(city.index), previous = progress?.previousIndices.includes(city.index);
+        const icon = L.divIcon({ className: `public-route-marker ${active ? 'public-route-marker--active' : previous ? 'public-route-marker--previous' : ''}`, html: `<span>${active && checkpoint?.phase !== "en_route" ? van : city.position}</span>`, iconSize: [38,38], iconAnchor: [19,19] });
+        const label = document.createElement("span"); label.textContent = `${city.name}${active ? checkpoint ? ' · Confirmado por la agencia' : ' · Parada prevista según horario' : ''}`;
         L.marker([city.lat, city.lng], { icon, zIndexOffset: active ? 500 : 0 }).addTo(layers).bindTooltip(label, { direction: "top", offset: [0,-20] });
       });
     })();
     return () => { cancelled = true; cancelAnimationFrame(frame); };
-  }, [ready, cities, progress]);
+  }, [ready, cities, progress, checkpoint]);
 
   const current = progress ? progressNames(route.cities, progress.currentIndices) : '';
   const next = progress ? progressNames(route.cities, progress.nextIndices) : '';
@@ -111,14 +113,14 @@ export default function PublicPickupRouteMap({ route, progress }: { route: Publi
         <div ref={ref} className="h-[390px] w-full sm:h-[480px]" aria-label={`Mapa público de ${route.name}. Ubicación estimada según horario, no GPS.`} />
         <div className="pointer-events-none absolute left-3 right-14 top-3 z-[500] w-fit max-w-[calc(100%-4.5rem)] rounded-2xl bg-white/95 px-4 py-3 shadow-lg">
           <p className="text-sm font-black text-[#071d43]">{estimated ? 'Avance según horario' : 'Recorrido programado'}</p>
-          <p className="mt-1 break-words text-xs font-semibold text-slate-500">{estimated ? `${progress.previousIndices.length} de ${route.cities.length} ciudades con horario finalizado` : 'Horarios por coordinar'}</p>
+          <p className="mt-1 break-words text-xs font-semibold text-slate-500">{checkpoint ? "Actualización de la agencia" : estimated ? `${progress.previousIndices.length} de ${route.cities.length} paradas con horario finalizado` : "Horarios por coordinar"}</p>
         </div>
-        <div className="pointer-events-none absolute bottom-6 left-3 right-3 z-[500] rounded-xl bg-white/95 px-3 py-2 text-center text-[11px] font-bold text-slate-600">Ubicación estimada · No es GPS · Centros de ciudades, no direcciones de clientes.</div>
+        <div className="pointer-events-none absolute bottom-6 left-3 right-3 z-[500] rounded-xl bg-white/95 px-3 py-2 text-center text-[11px] font-bold text-slate-600">Ubicación estimada · No es GPS · Puntos aproximados de ciudades o ZIP.</div>
         {!ready && <div className="absolute inset-0 z-[600] flex items-center justify-center bg-white/90 p-5 text-center text-sm font-bold">{mapError ? 'No se pudo cargar el mapa. Consulta las paradas en el listado.' : <><Loader2 className="mr-2 animate-spin" /> Cargando recorrido…</>}</div>}
       </div>
       <div className="grid gap-3 border-t border-slate-200 p-4 sm:grid-cols-3 sm:gap-4">
         <div><p className="text-[10px] font-bold uppercase text-slate-500">Horarios anteriores</p><p className="mt-1 text-sm font-black text-[#071d43]">{estimated ? `${progress.previousIndices.length} ciudades` : 'Por coordinar'}</p></div>
-        <div><p className="text-[10px] font-bold uppercase text-slate-500">{progress?.phase === 'transit' ? 'Trayecto previsto hacia' : 'Parada prevista'}</p><p className="mt-1 break-words text-sm font-black text-emerald-700">{current || (progress?.phase === 'transit' ? next : '') || (progress?.phase === 'finished' ? 'Horario finalizado' : progress?.phase === 'unavailable' ? 'Por coordinar' : 'Todavía no comienza')}</p></div>
+        <div><p className="text-[10px] font-bold uppercase text-slate-500">{checkpoint ? checkpoint.phase === 'arrived' ? 'Llegada confirmada' : 'Destino confirmado' : progress?.phase === 'transit' ? 'Trayecto previsto hacia' : 'Parada prevista'}</p><p className="mt-1 break-words text-sm font-black text-emerald-700">{checkpoint ? checkpoint.area : current || (progress?.phase === 'transit' ? next : '') || (progress?.phase === 'finished' ? 'Horario finalizado' : progress?.phase === 'unavailable' ? 'Por coordinar' : 'Todavía no comienza')}</p></div>
         <div><p className="text-[10px] font-bold uppercase text-slate-500">Próxima parada</p><p className="mt-1 break-words text-sm font-black text-[#071d43]">{next || (progress?.phase === 'unavailable' ? 'Por coordinar' : 'Sin más paradas previstas')}</p></div>
       </div>
       <style jsx global>{`

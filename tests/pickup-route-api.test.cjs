@@ -3,13 +3,20 @@ const {NextRequest,NextResponse}=require('next/server');
 const itineraryModule={exports:{}};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync('lib/pickups/itinerary.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{module:itineraryModule,exports:itineraryModule.exports,Intl,Date,Set});
 const itin=itineraryModule.exports;
+function loadHelper(path) {
+ const module = {exports:{}};
+ vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{module,exports:module.exports});
+ return module.exports;
+}
+const luxuryCoverage = loadHelper('lib/pickups/luxury-coverage.ts');
+const luxuryZipPoints = loadHelper('lib/pickups/luxury-zip-points.ts');
 function database(replies){
  const calls=[];
  return {calls,from(table){const expected=replies.shift();assert.ok(expected,`unexpected query ${table}`);assert.equal(table,expected.table);const call={table,methods:[]};calls.push(call);const builder={};for(const method of ['select','eq','gte','in','order','limit','not','insert','update','delete'])builder[method]=(...args)=>{call.methods.push([method,...args]);return builder;};builder.maybeSingle=builder.single=()=>Promise.resolve(expected.value);builder.then=(resolve,reject)=>Promise.resolve(expected.value).then(resolve,reject);return builder;}};
 }
 function load(path,db,{denied=null,env={},fetcher=()=>{throw Error('unexpected external request')}}={}){
  const module={exports:{}};
- const mocks={'next/server':{NextResponse},'@/lib/supabase-admin':{supabaseAdmin:db},'@/lib/pickups/route-access':{requirePickupRouteWrite:async()=>denied},'@/lib/pickups/itinerary':itin,'@/lib/pickups/luxury-coverage':{LUXURY_PICKUP_STORE_SLUG:'luxury-travel-point'},'@/lib/pickups/route-image':{prepareRouteImage:async()=>Buffer.from('fixture')},'@/lib/geo/location-catalog':{getCityOptions:()=>[{label:'Conway',latitude:'33.836',longitude:'-79.047'},{label:'Little River',latitude:'33.873',longitude:'-78.614'}]}};
+ const mocks={'next/server':{NextResponse},'@/lib/supabase-admin':{supabaseAdmin:db},'@/lib/pickups/route-access':{requirePickupRouteWrite:async()=>denied},'@/lib/pickups/itinerary':itin,'@/lib/pickups/luxury-coverage':luxuryCoverage,'@/lib/pickups/luxury-zip-points':luxuryZipPoints,'@/lib/pickups/route-image':{prepareRouteImage:async()=>Buffer.from('fixture')},'@/lib/geo/location-catalog':{getCityOptions:()=>[{label:'Conway',latitude:'33.836',longitude:'-79.047'},{label:'Little River',latitude:'33.873',longitude:'-78.614'}]}};
  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020}}).outputText,{module,exports:module.exports,require:name=>mocks[name]||require(name),process:{env},Date,Intl,Set,Map,Buffer,FormData,File,AbortSignal,crypto:globalThis.crypto,fetch:fetcher});return module.exports;
 }
 const storeId='11111111-1111-4111-8111-111111111111',id='22222222-2222-4222-8222-222222222222';
@@ -100,4 +107,18 @@ test('route edits reject duplicates and concurrent updates instead of reporting 
 test('clearing announced cities does not republish customer cities as a fallback',async()=>{
   const db=database([{table:'stores',value:{data:{id:storeId,module_pickups_enabled:true}}},{table:'pickup_service_settings',value:{data:{}}},{table:'pickup_routes',value:{data:[{id,name:'Cleared',route_date:'2099-10-26',status:'in_progress',public_itinerary_managed:true,public_itinerary:[],pickup_route_stops:[{stop_order:1,pickup_requests:{city:'Conway'}}]}]}},{table:'pickup_zone_cities',value:{data:[]}}]);
   const {GET}=load('app/api/pickups/routes/public/route.ts',db);const r=await GET(new NextRequest('https://example.test/api/pickups/routes/public?store=yoyo-envios'));assert.equal((await r.json()).routes[0].cities.length,0);
+});
+
+test('Luxury can publish different ZIP stops in one city, with only public points and a confirmed checkpoint', async () => {
+ const itinerary = [{...group, cities:['Lehigh Acres 33936','Lehigh Acres 33971']}];
+ const writerDb = database([...coverage('luxury-travel-point',['Lehigh Acres']),{table:'pickup_routes',value:{data:{id}}}]);
+ const {POST} = load(routePath, writerDb);
+ assert.equal((await POST(request({name:'Luxury',route_date:'2099-10-26',itinerary,publish:true,reviewed:true}))).status,200);
+
+ const checkpoint = {area:'Lehigh Acres 33971',phase:'arrived',updated_at:'2099-10-26T14:00:00Z'};
+ const readerDb = database([{table:'stores',value:{data:{id:storeId,module_pickups_enabled:true}}},{table:'pickup_service_settings',value:{data:{}}},{table:'pickup_routes',value:{data:[{id,status:'in_progress',public_itinerary:itinerary,public_checkpoint:checkpoint}]}},{table:'pickup_zone_cities',value:{data:[]}}]);
+ const {GET} = load('app/api/pickups/routes/public/route.ts',readerDb);
+ const payload = await (await GET(new NextRequest('https://example.test/api/pickups/routes/public?store=luxury-travel-point'))).json();
+ assert.deepEqual(payload.routes[0].checkpoint,checkpoint);
+ assert.notEqual(payload.routes[0].cities[0].latitude,payload.routes[0].cities[1].latitude);
 });

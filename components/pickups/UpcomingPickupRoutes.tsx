@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PublicPickupRouteMap from "@/components/maps/PublicPickupRouteMap";
 import { getScheduledProgress, progressNames, type ScheduledProgress } from "@/lib/pickups/scheduled-progress";
+import { splitPickupArea, LUXURY_PICKUP_STORE_SLUG, type RouteCheckpoint } from "@/lib/pickups/luxury-coverage";
 import { timeWindow } from "@/lib/pickups/itinerary";
 import {
   ArrowRight,
@@ -30,6 +31,7 @@ type PublicRoute = {
   poster_image_url?: string | null;
   color: string | null;
   cities: PublicCity[];
+  checkpoint?: RouteCheckpoint | null;
 };
 type CoverageCity = { name: string; zoneName: string | null; zoneColor: string | null };
 type PublicPayload = { routes: PublicRoute[]; coverageCities: CoverageCity[]; timezone?: string };
@@ -92,6 +94,10 @@ export default function UpcomingPickupRoutes({ storeSlug, hideWhenEmpty = false 
   const activeRoute = payload.routes.find((route) => route.id === selectedRouteId) || preferredRoute;
 
   const progress = useMemo(() => activeRoute && now ? getScheduledProgress(activeRoute, now, payload.timezone) : null, [activeRoute, now, payload.timezone]);
+  const checkpoint = activeRoute?.checkpoint;
+  const checkpointTime = checkpoint && new Date(checkpoint.updated_at);
+  const elapsed = now && checkpointTime ? now.getTime() - checkpointTime.getTime() : Infinity;
+  const recentCheckpoint = elapsed >= 0 && elapsed < 30 * 60 * 1000;
   const currentNames = activeRoute && progress ? progressNames(activeRoute.cities, progress.currentIndices) : "";
   const nextNames = activeRoute && progress ? progressNames(activeRoute.cities, progress.nextIndices) : "";
   const progressTitle = progress?.phase === "stop" ? "Parada prevista ahora" : progress?.phase === "transit" ? "Trayecto previsto hacia" : progress?.phase === "finished" ? "Horario del recorrido finalizado" : progress?.phase === "upcoming" ? "Primera parada prevista" : "Recorrido programado";
@@ -102,10 +108,10 @@ export default function UpcomingPickupRoutes({ storeSlug, hideWhenEmpty = false 
   const match = useMemo(() => {
     if (!searched || !query.trim()) return null;
     const target = normalize(query);
-    const route = payload.routes.find((item) => item.cities.some((city) => normalize(city.name) === target));
+    const route = payload.routes.find((item) => item.cities.some((city) => normalize(city.name) === target || (storeSlug === LUXURY_PICKUP_STORE_SLUG && normalize(splitPickupArea(city.name).city) === target)));
     const coverage = payload.coverageCities.find((city) => normalize(city.name) === target);
     return { route, coverage };
-  }, [payload, query, searched]);
+  }, [payload, query, searched, storeSlug]);
 
   if (hideWhenEmpty && !activeRoute) return null;
   if (loading) return <div className="mx-auto flex max-w-7xl items-center justify-center px-5 py-14 text-slate-500"><Loader2 className="mr-2 animate-spin" size={18} /> Cargando rutas y cobertura...</div>;
@@ -153,7 +159,12 @@ export default function UpcomingPickupRoutes({ storeSlug, hideWhenEmpty = false 
 
         {activeRoute ? (
           <div className="mt-7 grid min-w-0 gap-6 lg:grid-cols-[1.08fr_.92fr] lg:items-start">
-            <RouteMap route={activeRoute} progress={progress} />
+            {checkpoint && checkpointTime && <p className="mb-3 rounded-xl bg-emerald-50 p-3 font-bold text-emerald-900">
+              {recentCheckpoint ? "" : "Última actualización · "}
+              {checkpoint.phase === "arrived" ? "Llegamos a" : "En camino a"} {checkpoint.area}
+              {" · "}{new Intl.DateTimeFormat("es-US", { timeZone: payload.timezone || "America/New_York", hour: "numeric", minute: "2-digit" }).format(checkpointTime)}
+            </p>}
+            <RouteMap route={recentCheckpoint ? activeRoute : { ...activeRoute, checkpoint: null }} progress={recentCheckpoint ? null : progress} />
             <article className="relative min-w-0 overflow-hidden rounded-[2rem] bg-[#071d43] p-6 text-white shadow-[0_25px_80px_rgba(7,29,67,.22)] sm:p-8">
               <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-400/15" />
               <div className="relative">
@@ -169,13 +180,13 @@ export default function UpcomingPickupRoutes({ storeSlug, hideWhenEmpty = false 
                   <div className="flex items-start gap-3">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500"><Truck size={22} /></span>
                     <div className="min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wide text-blue-100/70">{progressTitle}</p>
-                      <p className="mt-1 break-words text-xl font-black">{progress?.phase === "stop" ? currentNames : progress?.phase === "transit" || progress?.phase === "upcoming" ? nextNames : progress?.phase === "finished" ? "Consulta la próxima ruta con tu agencia" : "Horarios por coordinar"}</p>
-                      {progress?.phase === "stop" && <p className="mt-1 text-sm text-blue-100">{timeWindow(activeRoute.cities[progress.currentIndices[0]]?.start_time, activeRoute.cities[progress.currentIndices[0]]?.end_time)}</p>}
+                      <p className="text-xs font-bold uppercase tracking-wide text-blue-100/70">{recentCheckpoint ? "Avance confirmado" : progressTitle}</p>
+                      <p className="mt-1 break-words text-xl font-black">{recentCheckpoint ? checkpoint?.area : progress?.phase === "stop" ? currentNames : progress?.phase === "transit" || progress?.phase === "upcoming" ? nextNames : progress?.phase === "finished" ? "Consulta la próxima ruta con tu agencia" : "Horarios por coordinar"}</p>
+                      {!recentCheckpoint && progress?.phase === "stop" && <p className="mt-1 text-sm text-blue-100">{timeWindow(activeRoute.cities[progress.currentIndices[0]]?.start_time, activeRoute.cities[progress.currentIndices[0]]?.end_time)}</p>}
                     </div>
                   </div>
-                  {progress?.phase === "stop" && nextNames && <p className="mt-3 border-t border-white/10 pt-3 text-sm text-blue-100/80">Próxima parada: <strong>{nextNames}</strong> · {timeWindow(activeRoute.cities[progress.nextIndices[0]]?.start_time, activeRoute.cities[progress.nextIndices[0]]?.end_time)}</p>}
-                  {progress?.phase === "transit" && <p className="mt-3 text-sm text-blue-100/80">Llegada prevista: {timeWindow(activeRoute.cities[progress.nextIndices[0]]?.start_time, activeRoute.cities[progress.nextIndices[0]]?.end_time)}</p>}
+                  {!recentCheckpoint && progress?.phase === "stop" && nextNames && <p className="mt-3 border-t border-white/10 pt-3 text-sm text-blue-100/80">Próxima parada: <strong>{nextNames}</strong> · {timeWindow(activeRoute.cities[progress.nextIndices[0]]?.start_time, activeRoute.cities[progress.nextIndices[0]]?.end_time)}</p>}
+                  {!recentCheckpoint && progress?.phase === "transit" && <p className="mt-3 text-sm text-blue-100/80">Llegada prevista: {timeWindow(activeRoute.cities[progress.nextIndices[0]]?.start_time, activeRoute.cities[progress.nextIndices[0]]?.end_time)}</p>}
                   <p className="mt-3 text-xs leading-5 text-blue-100/65">{progress && <>Hora local: {progress.localTime} · {progress.timezone}<br /></>}Estimación según horario · No es ubicación GPS. Los horarios pueden variar.</p>
                 </div>
 

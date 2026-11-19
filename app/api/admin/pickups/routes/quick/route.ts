@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { requirePickupRouteWrite } from "@/lib/pickups/route-access";
 import { prepareRouteImage } from "@/lib/pickups/route-image";
 import { cityKey, itineraryCities, localDate, validateItinerary, validRouteDate } from "@/lib/pickups/itinerary";
-import { LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
+import { LUXURY_PICKUP_STORE_SLUG, luxuryPickupZipMatchesCity, splitPickupArea } from "@/lib/pickups/luxury-coverage";
 import { getCityOptions } from "@/lib/geo/location-catalog";
 
 export const maxDuration = 60;
@@ -28,7 +28,10 @@ async function getRouteCoverage(storeId: string) {
 function validateRouteCoverage(itinerary: ReturnType<typeof validateItinerary>, coverage: Awaited<ReturnType<typeof getRouteCoverage>>) {
   if (!coverage.restricted) return;
   const allowed = new Set(coverage.cities.map((city) => cityKey(city.label)));
-  const outsideCoverage = itineraryCities(itinerary).filter((city) => !allowed.has(cityKey(city)));
+  const outsideCoverage = itineraryCities(itinerary).filter((label) => {
+    const { city, zip } = splitPickupArea(label);
+    return !allowed.has(cityKey(city)) || Boolean(zip && !luxuryPickupZipMatchesCity(city, zip));
+  });
   if (outsideCoverage.length) throw new Error(`Usa las ciudades configuradas en Luxury Travel Point. Fuera de cobertura: ${outsideCoverage.join(", ")}.`);
 }
 
@@ -145,7 +148,8 @@ export async function PATCH(request: NextRequest) {
     if (!name || !validRouteDate(body.route_date)) return fail("Revisa el nombre y la fecha de la ruta.");
     if (!Array.isArray(body.public_itinerary)) return fail("Revisa las ciudades del recorrido.");
     const itinerary = body.public_itinerary.length ? validateItinerary(body.public_itinerary) : [];
-    validateRouteCoverage(itinerary, await getRouteCoverage(storeId));
+    const coverage = await getRouteCoverage(storeId);
+    validateRouteCoverage(itinerary, coverage);
     const cities = itineraryCities(itinerary);
     const text = (value: unknown, max: number) => typeof value === "string" ? value.trim().slice(0, max) || null : null;
     const values = {
@@ -154,6 +158,7 @@ export async function PATCH(request: NextRequest) {
       driver_name: text(body.driver_name, 120), driver_phone: text(body.driver_phone, 40),
       vehicle_name: text(body.vehicle_name, 120), public_summary: text(body.public_summary, 1000),
       notes: text(body.notes, 2000),
+      ...(coverage.restricted ? { public_checkpoint: null } : {}),
       ...(typeof body.is_public === "boolean" ? { is_public: body.is_public } : {}),
       updated_at: new Date().toISOString(),
     };
