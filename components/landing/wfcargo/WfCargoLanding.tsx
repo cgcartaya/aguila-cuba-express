@@ -7,6 +7,7 @@ import Link from "next/link";
 import { MessageCircle, Phone, ArrowUpRight } from "lucide-react";
 import PromotionSlider from "./PromotionSlider";
 import ShippingCalculator from "./ShippingCalculator";
+import { TrackingButton, TrackingDialog } from "./TrackingDialog";
 import ManagedProcedures from "./ManagedProcedures";
 import PickupForm from "./PickupForm";
 import { wfRemittancesHref } from "./remittances";
@@ -103,6 +104,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
           <div className={s.desktopNav}>
             <a href="#servicios">{t("Servicios", "Services")}</a>
             <a href="#cotizador">{t("Envíos", "Shipping")}</a>
+            <TrackingButton locale={locale} />
             <Link className={s.shopNavLink} href={`/tienda/${wfSlug}`}>{t("Tienda", "Shop")}</Link>
             <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
             <a href="#tramites">{t("Trámites", "Document services")}</a>
@@ -128,6 +130,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
             <div>
               <a href="#servicios">{t("Servicios", "Services")}</a>
               <a href="#cotizador">{t("Cotizar envío", "Get a shipping quote")}</a>
+              <TrackingButton locale={locale} />
               <Link className={s.shopNavLink} href={`/tienda/${wfSlug}`}>{t("Tienda", "Shop")}</Link>
               <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
               <a href="#tramites">{t("Trámites", "Document services")}</a>
@@ -144,6 +147,16 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
         <div className={s.tools}>
           <ShippingCalculator locale={locale} destinations={destinations} />
         </div>
+        <section className={s.trackingEntry} aria-labelledby="wf-tracking-entry">
+          <div>
+            <div>
+              <h3 id="wf-tracking-entry">{t("Rastrea tu envío con ZAI Cargo", "Track your shipment with ZAI Cargo")}</h3>
+              <p>{t("Solo para Colombia, México, Venezuela, Honduras y El Salvador.", "Only for Colombia, Mexico, Venezuela, Honduras, and El Salvador.")}</p>
+            </div>
+            <TrackingButton locale={locale} primary />
+          </div>
+        </section>
+        <TrackingDialog locale={locale} />
         <CatalogSection locale={locale} />
         {procedureStore && <ManagedProcedures locale={locale} />}
         <Benefits locale={locale} />
