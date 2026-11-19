@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight, Clock3, MapPin, MessageCircle, Wallet } from "lucide-react";
-import { isWfCargoHost, wfCargoOrigin } from "@/lib/saas/wfcargo-hosts";
+import { isWfCargoHost } from "@/lib/saas/wfcargo-hosts";
 import { normalizeStoreHost } from "@/lib/saas/store-metadata";
 import { wfCopy, wfLocale } from "@/components/landing/wfcargo/Language";
 import { contact, whatsapp } from "@/components/landing/wfcargo/content";
@@ -14,6 +14,7 @@ import {
   wfRemittanceRates,
   wfRemittancesHref,
 } from "@/components/landing/wfcargo/remittances";
+import { buildWfCargoPageMetadata } from "@/components/landing/wfcargo/metadata";
 import s from "./remesas.module.css";
 
 type Props = { searchParams: Promise<{ lang?: string | string[] }> };
@@ -27,12 +28,12 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   await requireWfCargoHost();
   const locale = wfLocale((await searchParams).lang);
   const t = wfCopy(locale);
-  const languages = { es: wfCargoOrigin + wfRemittancesHref("es"), en: wfCargoOrigin + wfRemittancesHref("en") };
-  return {
-    title: t("Remesas a Cuba | WF Cargo Envíos", "Money transfers to Cuba | WF Cargo Envíos"),
-    description: t("Consulta cómo enviar remesas a Cuba, las tasas de referencia, los cargos de efectivo y la cobertura por municipio.", "See how to send money to Cuba, including reference rates, cash delivery fees, and coverage by municipality."),
-    alternates: { canonical: languages[locale], languages },
-  };
+  return buildWfCargoPageMetadata(
+    "/remesas",
+    t("Remesas a Cuba | WF Cargo Envíos", "Money transfers to Cuba | WF Cargo Envíos"),
+    t("Consulta cómo enviar remesas a Cuba, las tasas de referencia, los cargos de efectivo y la cobertura por municipio.", "See how to send money to Cuba, including reference rates, cash delivery fees, and coverage by municipality."),
+    locale,
+  );
 }
 
 export default async function WfRemittancesPage({ searchParams }: Props) {

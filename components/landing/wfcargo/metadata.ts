@@ -60,3 +60,28 @@ export function buildWfCargoMetadata(store: StoreMetadataRow | null, locale: WfL
     robots: { index: true, follow: true },
   };
 }
+
+export function buildWfCargoPageMetadata(
+  path: "/casillero" | "/remesas",
+  title: string,
+  description: string,
+  locale: WfLocale = "es",
+): Metadata {
+  const brand = buildWfCargoMetadata(null, locale);
+  const es = wfCargoOrigin + path;
+  const en = es + "?lang=en";
+  const url = locale === "en" ? en : es;
+
+  return {
+    ...brand,
+    title: { absolute: title },
+    description,
+    alternates: {
+      canonical: url,
+      ...(path === "/remesas" ? { languages: { es, en, "x-default": es } } : {}),
+    },
+    openGraph: { ...brand.openGraph, title, description, url },
+    twitter: { ...brand.twitter, card: "summary_large_image", title, description },
+    robots: path === "/casillero" ? { index: false, follow: false } : brand.robots,
+  };
+}

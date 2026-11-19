@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
 const PERLA_FAVICON = "/perla-favicon.ico";
-const PERLA_OG_IMAGE = "/og-image.jpg";
+const PERLA_OG_IMAGE = "/perla/perla-shell.png";
 
 export type StoreMetadataRow = {
   id: string;
@@ -218,7 +218,7 @@ export function buildPerlaMetadata(): Metadata {
       type: "website",
     },
     twitter: {
-      card: "summary_large_image",
+      card: "summary",
       title,
       description,
       images: [PERLA_OG_IMAGE],
