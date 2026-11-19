@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { LUXURY_PICKUP_STORE_SLUG } from "@/lib/pickups/luxury-coverage";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -211,6 +212,8 @@ export default function PickupsAdminPage() {
     [rows],
   );
 
+  const groupedByZip = store?.slug === LUXURY_PICKUP_STORE_SLUG && view === "pending";
+  const pickupArea = (row: Row) => `${row.city} ${row.postal_code?.slice(0, 5) || ""}`.trim();
   const filtered = useMemo(
     () =>
       rows.filter((row) => {
@@ -223,7 +226,7 @@ export default function PickupsAdminPage() {
         ) {
           return false;
         }
-        return `${row.customer_name} ${row.city} ${row.request_code} ${row.phone}`
+        return `${row.customer_name} ${row.city} ${row.postal_code || ""} ${row.request_code} ${row.phone}`
           .toLowerCase()
           .includes(search.toLowerCase());
       }),
@@ -358,6 +361,7 @@ export default function PickupsAdminPage() {
     0,
   );
   const unassigned = pendingRows.filter((row) => !row.zone).length;
+  const displayedRows = groupedByZip ? [...filtered].sort((a, b) => pickupArea(a).localeCompare(pickupArea(b))) : filtered;
   const visibleSelectable = filtered.filter((row) =>
     PENDING_STATUSES.has(row.status),
   );
@@ -562,7 +566,7 @@ export default function PickupsAdminPage() {
             </div>
           ) : (
             <div className={s.requestList}>
-              {filtered.map((row) => {
+              {displayedRows.map((row, index) => {
                 const canSelect = PENDING_STATUSES.has(row.status);
                 const phone = normalizePhone(row.phone);
                 const initials =
@@ -574,8 +578,10 @@ export default function PickupsAdminPage() {
                     .join("")
                     .toUpperCase() || "?";
                 return (
+                  <Fragment key={row.id}>
+                  {groupedByZip && (index === 0 || pickupArea(displayedRows[index - 1]) !== pickupArea(row)) &&
+                    <h3 className="rounded-xl bg-blue-50 px-4 py-2 font-bold text-blue-900">{pickupArea(row)}</h3>}
                   <article
-                    key={row.id}
                     className={`${s.requestCard} ${selected.includes(row.id) ? s.selectedCard : ""}`}
                   >
                     <div className={s.requestTop}>
@@ -697,6 +703,7 @@ export default function PickupsAdminPage() {
                       )}
                     </div>
                   </article>
+                  </Fragment>
                 );
               })}
             </div>

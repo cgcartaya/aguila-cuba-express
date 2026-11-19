@@ -459,19 +459,24 @@ export type PickupRouteManagementAction =
 export async function managePickupRoute(input: {
   storeId: string;
   routeId: string;
-  action: PickupRouteManagementAction;
+  action: PickupRouteManagementAction | "checkpoint";
+  area?: string;
+  phase?: "en_route" | "arrived";
 }) {
   const result = await pickupAdminApi<{
     ok: true;
     route_id?: string;
     duplicated_route_id?: string;
     restored_requests?: number;
+    checkpoint?: import("@/lib/pickups/luxury-coverage").RouteCheckpoint;
   }>("/api/admin/pickups/routes/manage", {
     method: "POST",
     body: JSON.stringify({
       store_id: input.storeId,
       route_id: input.routeId,
       action: input.action,
+      area: input.area,
+      phase: input.phase,
     }),
   });
 

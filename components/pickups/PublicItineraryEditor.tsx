@@ -7,6 +7,7 @@ import { cityKey, type ItineraryGroup } from "@/lib/pickups/itinerary";
 
 type Props = {
   storeId: string;
+  allowZip?: boolean;
   groups: ItineraryGroup[];
   onChange: (groups: ItineraryGroup[]) => void;
   onSave: () => void;
@@ -17,7 +18,7 @@ type Props = {
   saveSuccess?: string;
 };
 
-export default function PublicItineraryEditor({ storeId, groups, onChange, onSave, saving, readOnly, isPublic, saveError, saveSuccess }: Props) {
+export default function PublicItineraryEditor({ storeId, allowZip, groups, onChange, onSave, saving, readOnly, isPublic, saveError, saveSuccess }: Props) {
   const [options, setOptions] = useState<string[]>([]);
   const [city, setCity] = useState("");
   const [message, setMessage] = useState("");
@@ -70,8 +71,8 @@ export default function PublicItineraryEditor({ storeId, groups, onChange, onSav
       <span className="shrink-0 self-start rounded-full bg-blue-50 px-4 py-2 text-sm font-black text-blue-700">{groups.length} {groups.length === 1 ? "parada" : "paradas"}</span>
     </div>
     {!readOnly && <form onSubmit={(event) => { event.preventDefault(); addCity(); }} className="mt-5 flex min-w-0 flex-col gap-3 sm:flex-row">
-      <label className="min-w-0 flex-1"><span className="mb-1.5 block text-sm font-bold text-slate-600">Ciudad que quieres añadir</span>
-        <input aria-label="Ciudad que quieres añadir" list={listId} value={city} maxLength={100} disabled={disabled} onChange={(event) => setCity(event.target.value)} placeholder="Ej. Okatie" className="h-12 w-full min-w-0 rounded-xl border border-slate-300 px-4 text-base outline-none focus:border-blue-500" />
+      <label className="min-w-0 flex-1"><span className="mb-1.5 block text-sm font-bold text-slate-600">{allowZip ? "Ciudad o ciudad + ZIP" : "Ciudad que quieres añadir"}</span>
+        <input aria-label="Ciudad que quieres añadir" list={listId} value={city} maxLength={100} disabled={disabled} onChange={(event) => setCity(event.target.value)} placeholder={allowZip ? "Ej. Lehigh Acres 33936" : "Ej. Okatie"} className="h-12 w-full min-w-0 rounded-xl border border-slate-300 px-4 text-base outline-none focus:border-blue-500" />
         <datalist id={listId}>{options.map((name) => <option key={name} value={name} />)}</datalist>
       </label>
       <button disabled={disabled} className="inline-flex min-h-12 items-center justify-center gap-2 self-stretch rounded-xl bg-blue-700 px-5 font-black text-white disabled:opacity-40 sm:self-end"><Plus size={18} /> Añadir parada</button>

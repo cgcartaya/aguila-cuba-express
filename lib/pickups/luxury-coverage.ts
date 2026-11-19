@@ -53,3 +53,14 @@ export function luxuryPickupZipMatchesCity(city: string, postalCode: string): bo
   const selected = LUXURY_PICKUP_CITIES.find(name => name.toLowerCase() === city.trim().toLowerCase());
   return Boolean(zip && selected && LUXURY_PICKUP_CITY_ZIPS[selected].includes(zip));
 }
+
+export function splitPickupArea(label: string) {
+  const match = label.trim().match(/^(.+?)\s+(\d{5})$/);
+  return { city: match?.[1] || label.trim(), zip: match?.[2] || null };
+}
+
+export type RouteCheckpoint = {
+  area: string;
+  phase: "en_route" | "arrived";
+  updated_at: string;
+};

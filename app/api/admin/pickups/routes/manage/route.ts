@@ -4,6 +4,9 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 
+import { cityKey, itineraryCities, validateItinerary } from "@/lib/pickups/itinerary";
+import { LUXURY_PICKUP_STORE_SLUG, splitPickupArea } from "@/lib/pickups/luxury-coverage";
+
 const WRITE_ROLES = new Set(["OWNER", "ADMIN", "OPERATIONS", "DISPATCHER"]);
 const TERMINAL_STOP_STATUSES = new Set(["picked_up", "failed", "skipped"]);
 
@@ -159,9 +162,10 @@ export async function GET(request: NextRequest) {
         .in("id", Array.from(routeRequestIds))
     : { data: [] as Array<{ city: string }> };
 
+  const publicAreas = ((route.public_itinerary || []) as Array<{ cities: string[] }>).flatMap((group) => group.cities);
   const routeCities = new Set(
     [...(routeRequests || []).map((item) => clean(item.city).toLowerCase()),
-      ...((route.public_itinerary || []) as Array<{ cities: string[] }>).flatMap((group) => group.cities.map((city) => clean(city).toLowerCase()))].filter(Boolean)
+      ...publicAreas.map((city) => clean(city).toLowerCase())].filter(Boolean)
   );
 
   const eligible = (requests || [])
@@ -171,7 +175,10 @@ export async function GET(request: NextRequest) {
       preferred_dates: (item.pickup_request_dates || [])
         .sort((a: any, b: any) => a.priority - b.priority)
         .map((date: any) => date.preferred_date),
-      compatible_city: routeCities.size === 0 || routeCities.has(clean(item.city).toLowerCase()),
+      compatible_city: routeCities.size === 0 || routeCities.has(clean(item.city).toLowerCase()) || publicAreas.some((label) => {
+        const { city, zip } = splitPickupArea(label);
+        return zip && cityKey(city) === cityKey(clean(item.city)) && clean(item.postal_code).slice(0, 5) === zip;
+      }),
     }))
     .sort((a, b) => {
       if (a.compatible_city !== b.compatible_city) return a.compatible_city ? -1 : 1;
@@ -209,6 +216,37 @@ export async function POST(request: NextRequest) {
     stop_order: number;
   }>;
 
+
+  if (action === "checkpoint") {
+    const { data: store } = await supabaseAdmin.from("stores")
+      .select("slug,module_pickups_enabled").eq("id", storeId).maybeSingle();
+    if (store?.slug !== LUXURY_PICKUP_STORE_SLUG || !store.module_pickups_enabled) {
+      return fail("Los avisos de avance no están disponibles para esta tienda.", 403);
+    }
+    if (route.status !== "in_progress" || !route.is_public) {
+      return fail("La ruta debe estar publicada y en recorrido.", 409);
+    }
+    const area = clean(body.area, 100);
+    const phase = body.phase;
+    let areas: string[];
+    try {
+      areas = itineraryCities(validateItinerary(route.public_itinerary));
+    } catch {
+      return fail("Guarda el itinerario público antes de marcar el avance.");
+    }
+    if (!areas.includes(area) || (phase !== "en_route" && phase !== "arrived")) {
+      return fail("Selecciona una parada del itinerario guardado.");
+    }
+    const updatedAt = new Date().toISOString();
+    const checkpoint = { area, phase, updated_at: updatedAt };
+    const { data, error } = await supabaseAdmin.from("pickup_routes")
+      .update({ public_checkpoint: checkpoint, updated_at: updatedAt })
+      .eq("id", routeId).eq("store_id", storeId).eq("status", "in_progress")
+      .eq("updated_at", route.updated_at).select("id").maybeSingle();
+    if (error) return fail(error.message, 500);
+    if (!data) return fail("La ruta cambió. Recarga antes de actualizar el avance.", 409);
+    return NextResponse.json({ ok: true, checkpoint });
+  }
 
   if (action === "add_requests") {
     if (["completed", "cancelled"].includes(route.status)) {
