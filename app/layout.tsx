@@ -12,25 +12,14 @@ import RecoveryRedirect from "@/components/shareapp/RecoveryRedirect";
 import ReferralTracker from "@/components/shareapp/ReferralTracker";
 import InternalAnalyticsTracker from "@/components/analytics/InternalAnalyticsTracker";
 
-/*
- * Metadata por defecto/estática para todo el sitio.
- *
- * IMPORTANTE: este layout ya NO usa headers() para resolver la tienda
- * por dominio. Antes eso obligaba a Next.js a renderizar TODAS las
- * páginas de la plataforma de forma 100% dinámica en cada visita
- * (sin poder cachear nada), porque cualquier uso de headers()/cookies()
- * en el layout raíz "contamina" a todas las rutas hijas.
- *
- * El branding por tienda ahora vive donde realmente corresponde y sin
- * necesitar headers():
- * - /tienda/[slug]/layout.tsx y page.tsx -> generan su metadata a
- *   partir de params.slug (compatible con caché/ISR).
- * - / (home) -> app/page.tsx ya resuelve su propio landing por host
- *   (Águila, YOYO, De Paris) con su propio generateMetadata acotado.
- * - /contacto, /servicios, /salidas, /yoyo-envios, /deparis -> tienen
- *   su propia metadata estática.
- */
-export const metadata: Metadata = buildPerlaMetadata();
+// Public pages set their own sharing cards and canonical URLs. Keeping these
+// out of the root prevents one tenant's links from inheriting platform branding.
+const platformMetadata = buildPerlaMetadata();
+export const metadata: Metadata = {
+  metadataBase: platformMetadata.metadataBase,
+  title: platformMetadata.title,
+  icons: platformMetadata.icons,
+};
 
 export default function RootLayout({
   children,

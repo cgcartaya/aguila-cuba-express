@@ -7,6 +7,7 @@ import LuxuryLanding from "@/components/landing/luxury/LuxuryLanding";
 import { buildLuxuryMetadata } from "@/components/landing/luxury/metadata";
 import { headers } from "next/headers";
 
+import { buildLandingMetadata, landingProfiles } from "@/components/landing/metadata";
 import { buildWfCargoMetadata } from "@/components/landing/wfcargo/metadata";
 import PublicProcedures from "@/components/procedures/PublicProcedures";
 import { wfLocale } from "@/components/landing/wfcargo/Language";
@@ -23,7 +24,6 @@ import { getFeaturedMenuItems, isMenuModuleEnabled } from "@/lib/services/menu";
 import { isReservasModuleEnabled } from "@/lib/services/reservas";
 import {
   buildPerlaMetadata,
-  buildStoreMetadata,
   getStorePublicBaseUrl,
   normalizeStoreHost,
   resolveStoreByHost,
@@ -145,141 +145,35 @@ async function getCurrentLanding(): Promise<LandingType> {
   return resolveLanding(await getCurrentHost());
 }
 
-function buildLandingFallbackMetadata(
-  title: string,
-  description: string,
-  canonicalUrl: string,
-  siteName: string
-): Metadata {
-  return {
-    metadataBase: new URL(canonicalUrl),
-    title,
-    description,
-    alternates: { canonical: canonicalUrl },
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      siteName,
-      locale: "es_US",
-      type: "website",
-      images: [],
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-      images: [],
-    },
-    icons: { icon: [], shortcut: [], apple: [] },
-    robots: { index: true, follow: true },
-  };
-}
-
 export async function generateMetadata({ searchParams }: HomeProps): Promise<Metadata> {
   const host = await getCurrentHost();
+  const landing = resolveLanding(host);
 
-  if (resolveLanding(host) === "luxury") {
-    const store = await resolveStoreByHost(host);
-    return buildLuxuryMetadata(store);
+  if (landing === "luxury") {
+    return buildLuxuryMetadata(await resolveStoreByHost(host));
   }
 
-  if (resolveLanding(host) === "wfcargo") {
-    // This existing tenant was registered with the legacy slug "wf-cago".
-    // Read its editable SEO settings without renaming any tenant identifiers.
+  if (landing === "wfcargo") {
     const store = await resolveStoreByHost(host) || await resolveStoreBySlug("wf-cago");
     return buildWfCargoMetadata(store, wfLocale((await searchParams).lang));
   }
 
-
-  if (
-    host &&
-    host !== PLATFORM_DOMAIN &&
-    host !== "localhost" &&
-    host !== "127.0.0.1" &&
-    !host.endsWith(".vercel.app")
-  ) {
-    const store = await resolveStoreByHost(host);
-
-    if (store) {
-      return buildStoreMetadata(
-        store.slug === "alvarez-travel" ? { ...store, store_og_image_url: store.og_image_url || store.store_og_image_url } : store,
-        store.slug === "alvarez-travel" ? getStorePublicBaseUrl(store) : `https://${host}`
-      );
-    }
+  const store = await resolveStoreByHost(host);
+  if (landing !== "perla") {
+    const profile = landingProfiles[landing];
+    const landingStore = store || await resolveStoreBySlug(profile.slug);
+    const canonicalUrl = landing === "alvarez" && store?.slug === "alvarez-travel"
+      ? getStorePublicBaseUrl(store)
+      : `https://${host}`;
+    return buildLandingMetadata(canonicalUrl, profile, landingStore);
   }
 
-  const landing = resolveLanding(host);
-
-  if (landing === "aguila") {
-    const canonicalUrl = host ? `https://${host}` : "https://aguilacubaexpress.com";
-    const store = await resolveStoreBySlug("aguila");
-
-    if (store) return buildStoreMetadata(store, canonicalUrl);
-
-    return buildLandingFallbackMetadata(
-      "Aguila Express USA | Paquetería, compras y envíos",
-      "Envíos puerta a puerta, compras y rastreo en tiempo real, con atención personalizada.",
-      canonicalUrl,
-      "Aguila Express USA"
-    );
-  }
-
-  if (landing === "alvarez") {
-    const canonicalUrl = host ? `https://${host}` : `https://alvarez-travel.${PLATFORM_DOMAIN}`;
-    const store = await resolveStoreBySlug("alvarez-travel");
-
-    if (store) return buildStoreMetadata(store, canonicalUrl);
-
-    return buildLandingFallbackMetadata(
-      "Alvarez Travel | Envíos y viajes entre Hialeah y Cuba",
-      "Envíos, remesas, viajes y atención personalizada desde Hialeah hacia Cuba.",
-      canonicalUrl,
-      "Alvarez Travel"
-    );
-  }
-
-  if (landing === "yoyo") {
-    const canonicalUrl = host ? `https://${host}` : `https://yoyo.${PLATFORM_DOMAIN}`;
-
-    return buildLandingFallbackMetadata(
-      "YOYO Envíos | Envíos seguros a Cuba",
-      "Envíos express, aéreos y marítimos a Cuba con rastreo y atención personalizada.",
-      canonicalUrl,
-      "YOYO Envíos"
-    );
-  }
-
-  if (landing === "deparis") {
-    const canonicalUrl = host ? `https://${host}` : "https://depariscienfuegos.com";
-
-    // Si el dominio no pudo resolverse temporalmente, intentamos por slug
-    // antes de usar un fallback sin imagen. Así el SEO configurado en el
-    // admin sigue siendo la fuente de verdad para DeParis.
-    const store = await resolveStoreBySlug("deparis");
-
-    if (store) return buildStoreMetadata(store, canonicalUrl);
-
-    return buildLandingFallbackMetadata(
-      "DeParis | Restaurante en Cienfuegos",
-      "Restaurante en Cienfuegos con comida cubana, bar, reservas y pedidos en línea.",
-      canonicalUrl,
-      "DeParis"
-    );
-  }
-
-  if (landing === "jotajota") {
-    const canonicalUrl = host ? `https://${host}` : `https://jotajota.${PLATFORM_DOMAIN}`;
-    const store = await resolveStoreBySlug("jotajota");
-
-    if (store) return buildStoreMetadata(store, canonicalUrl);
-
-    return buildLandingFallbackMetadata(
-      "Jota Jota | Snack Bar Napolitano",
-      "Snack bar napolitano: pizza al horno de leña, masa madre y postres — pide en línea o reserva tu mesa.",
-      canonicalUrl,
-      "Jota Jota"
-    );
+  if (store) {
+    return buildLandingMetadata(`https://${host}`, {
+      name: store.name,
+      title: `${store.name} | Tienda online`,
+      description: `Compra productos disponibles en ${store.name}.`,
+    }, store);
   }
 
   return buildPerlaMetadata();
