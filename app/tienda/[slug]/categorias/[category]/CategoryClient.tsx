@@ -155,7 +155,7 @@ export default function CategoryClient({ slug, category }: Props) {
         </h1>
 
         <p className="mt-2 text-sm font-medium text-slate-500">
-          {needsProvince ? "Transporte incluido en las ofertas disponibles." : "Todos los productos disponibles en esta categoría."}
+          {needsProvince ? "Consulta las condiciones de domicilio de cada oferta." : "Todos los productos disponibles en esta categoría."}
         </p>
       </div>
 

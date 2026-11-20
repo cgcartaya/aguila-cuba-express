@@ -42,6 +42,7 @@
 //   discount_campaign_customers quede "used" con el order_id).
 // - Un pedido que no alcance el mínimo de la zona — debe rechazarse.
 
+import { getWfCargoComboDeliveryFee } from "@/lib/checkout/wfcargo-delivery";
 import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createLymRequest } from "@/lib/lym/checkout";
@@ -603,7 +604,8 @@ export async function POST(request: Request) {
 
     let productShippingQuote: Awaited<ReturnType<typeof quoteCartShipping>> | null = null;
     if (wfComboDelivery) {
-      zoneName = "Combos de alimentos · Transporte incluido";
+      deliveryFee = getWfCargoComboDeliveryFee(preparedItems);
+      zoneName = deliveryFee > 0 ? "Combos de alimentos · Domicilio" : "Combos de alimentos · Transporte incluido";
     } else if (boxProductsOnly) {
       zoneName = "Productos para completar caja";
     } else if (body.productShipping) {
@@ -1069,7 +1071,7 @@ export async function POST(request: Request) {
           unit_price: item.price,
           subtotal: item.subtotal,
         })),
-        deliveryLabel: wfComboDelivery ? "Combos de alimentos · Transporte incluido" : boxProductsOnly ? "Productos para completar caja" : productShippingQuote
+        deliveryLabel: wfComboDelivery ? zoneName : boxProductsOnly ? "Productos para completar caja" : productShippingQuote
           ? `Envío — ${productShippingQuote.service_name}`
           : isLocalDelivery || isDistanceDelivery
             ? "Entrega local"
