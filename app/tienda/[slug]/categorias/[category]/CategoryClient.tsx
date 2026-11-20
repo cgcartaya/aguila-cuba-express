@@ -61,6 +61,8 @@ export default function CategoryClient({ slug, category }: Props) {
   const tiendaUrl = `/tienda/${storeSlug}`;
 
   useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("provincia");
+    setProvince(CUBA_PROVINCES.find((option) => option === requested) ?? "");
     let mounted = true;
 
     async function cargarProductos() {
