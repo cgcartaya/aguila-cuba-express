@@ -3,8 +3,8 @@ import LymCheckout from "@/components/lym/LymCheckout";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { getWfCargoComboDeliveryFee } from "@/lib/checkout/wfcargo-delivery";
-import { CUBA_PROVINCES, HAVANA_MUNICIPALITIES } from "@/lib/checkout/cuba-provinces";
+import { getWfCargoComboDeliveryFee, getWfCargoComboMunicipalities } from "@/lib/checkout/wfcargo-delivery";
+import { CUBA_PROVINCES } from "@/lib/checkout/cuba-provinces";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -166,7 +166,7 @@ export default function CheckoutPage() {
   const wfComboDelivery = wfDeliveryItems.length > 0;
   const wfMixedCart = wfComboDelivery && wfDeliveryItems.length !== cart.length;
   const boxProductsOnly = isWfCargo && !wfComboDelivery;
-  const comboProvinces = CUBA_PROVINCES.filter((province) => wfDeliveryItems.every((item) =>
+  const comboProvinces = CUBA_PROVINCES.filter((province) => getWfCargoComboMunicipalities(province).length > 0 && wfDeliveryItems.every((item) =>
     checkoutRuleMap[getOriginalCartItemId(item.id)].delivery_provinces?.includes(province)
   ));
   const cartUrl = store?.slug ? `/tienda/${store.slug}/cart` : "/tienda/cart";
@@ -480,7 +480,8 @@ export default function CheckoutPage() {
     [isWfCargo, checkoutCart, selectedZone]
   );
 
-  const wfComboDeliveryFee = wfComboDelivery ? getWfCargoComboDeliveryFee(checkoutCart) : 0;
+  const comboMunicipalities = getWfCargoComboMunicipalities(form.province);
+  const wfComboDeliveryFee = wfComboDelivery ? getWfCargoComboDeliveryFee(checkoutCart, form.province) : 0;
   const totals = useMemo<CheckoutTotals>(() => {
     if (wfComboDelivery) {
       return {
@@ -603,7 +604,7 @@ export default function CheckoutPage() {
     );
     if (wfComboDelivery) return !wfMixedCart && customerComplete &&
       Boolean(form.recipient_name.trim() && form.recipient_phone.trim() &&
-        form.municipality.trim() && form.exact_address.trim()) &&
+        form.exact_address.trim()) && comboMunicipalities.includes(form.municipality) &&
       comboProvinces.some((province) => province === form.province);
     if (boxProductsOnly) return cart.length > 0 && customerComplete;
     if (productShipping.enabled) return cart.length > 0 && customerComplete && productShipping.ready && Boolean(form.recipient_name.trim()) && Boolean(form.recipient_phone.trim()) && Boolean(form.exact_address.trim());
@@ -622,7 +623,7 @@ export default function CheckoutPage() {
     }
     return cart.length > 0 && customerComplete &&
       Boolean(form.city.trim()) && Boolean(form.exact_address.trim());
-  }, [boxProductsOnly, isWfCargo, wfComboDelivery, wfMixedCart, comboProvinces, productShipping.enabled, productShipping.ready, cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, isWfCargo, wfComboDelivery, wfMixedCart, comboProvinces, comboMunicipalities, productShipping.enabled, productShipping.ready, cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   const missingCheckoutFields = useMemo(() => {
     const missing: Array<{ name: keyof CheckoutForm; label: string }> = [];
@@ -644,7 +645,9 @@ export default function CheckoutPage() {
       if (!comboProvinces.some((province) => province === form.province)) {
         missing.push({ name: "province", label: "provincia de entrega disponible" });
       }
-      requireField("municipality", "municipio");
+      if (!comboMunicipalities.includes(form.municipality)) {
+        missing.push({ name: "municipality", label: "municipio de entrega disponible" });
+      }
       requireField("exact_address", "dirección de entrega");
     } else if (productShipping.enabled) {
       requireField("recipient_name", "nombre del destinatario");
@@ -670,7 +673,7 @@ export default function CheckoutPage() {
     }
 
     return missing;
-  }, [boxProductsOnly, isWfCargo, wfComboDelivery, comboProvinces, productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, isWfCargo, wfComboDelivery, comboProvinces, comboMunicipalities, productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   // Mismo array de missingCheckoutFields, solo separado por a qué paso
   // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
@@ -1205,7 +1208,9 @@ ${orderUrl}`);
 
                     {wfComboDelivery ? (
                       <div className="grid gap-4 rounded-2xl border bg-white p-5">
-                        <p className="font-semibold">{wfComboDeliveryFee > 0 ? `Domicilio: $${wfComboDeliveryFee.toFixed(2)} por pedido` : "Transporte incluido"}</p>
+                        <p className="font-semibold">{comboProvinces.some((province) => province === form.province)
+                          ? (wfComboDeliveryFee > 0 ? `Domicilio: $${wfComboDeliveryFee.toFixed(2)} por pedido` : "Transporte incluido")
+                          : "Selecciona una provincia para consultar el domicilio."}</p>
                         <label>Provincia de entrega
                           <select name="province" value={comboProvinces.some((province) => province === form.province) ? form.province : ""} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3">
                             <option value="">Selecciona una provincia</option>
@@ -1213,14 +1218,10 @@ ${orderUrl}`);
                           </select>
                         </label>
                         <label>Municipio
-                          {form.province === "La Habana" ? (
-                            <select name="municipality" value={form.municipality} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3">
-                              <option value="">Selecciona un municipio</option>
-                              {HAVANA_MUNICIPALITIES.map((municipality) => <option key={municipality}>{municipality}</option>)}
-                            </select>
-                          ) : (
-                            <input name="municipality" value={form.municipality} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3" />
-                          )}
+                          <select name="municipality" value={comboMunicipalities.includes(form.municipality) ? form.municipality : ""} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3">
+                            <option value="">Selecciona un municipio</option>
+                            {comboMunicipalities.map((municipality) => <option key={municipality}>{municipality}</option>)}
+                          </select>
                         </label>
                         <label>Dirección completa
                           <textarea name="exact_address" value={form.exact_address} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3" />

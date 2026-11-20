@@ -42,14 +42,13 @@
 //   discount_campaign_customers quede "used" con el order_id).
 // - Un pedido que no alcance el mínimo de la zona — debe rechazarse.
 
-import { getWfCargoComboDeliveryFee } from "@/lib/checkout/wfcargo-delivery";
+import { getWfCargoComboDeliveryFee, getWfCargoComboMunicipalities } from "@/lib/checkout/wfcargo-delivery";
 import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createLymRequest } from "@/lib/lym/checkout";
 import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
-import { HAVANA_MUNICIPALITIES } from "@/lib/checkout/cuba-provinces";
 import { quoteCartShipping, type CartShippingSelection } from "@/lib/shipping/cart-shipping";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
@@ -443,8 +442,8 @@ export async function POST(request: Request) {
           !municipality || !clean(form.exact_address, 300)) {
         return fail("Completa destinatario, teléfono, municipio y dirección de entrega.", 422);
       }
-      if (province === "La Habana" && !HAVANA_MUNICIPALITIES.some((name) => name === municipality)) {
-        return fail("Selecciona un municipio válido de La Habana.", 422);
+      if (!getWfCargoComboMunicipalities(province).includes(municipality)) {
+        return fail("El municipio seleccionado está fuera de la cobertura de estos combos.", 422);
       }
     }
 
@@ -604,7 +603,7 @@ export async function POST(request: Request) {
 
     let productShippingQuote: Awaited<ReturnType<typeof quoteCartShipping>> | null = null;
     if (wfComboDelivery) {
-      deliveryFee = getWfCargoComboDeliveryFee(preparedItems);
+      deliveryFee = getWfCargoComboDeliveryFee(preparedItems, clean(form.province, 120));
       zoneName = deliveryFee > 0 ? "Combos de alimentos · Domicilio" : "Combos de alimentos · Transporte incluido";
     } else if (boxProductsOnly) {
       zoneName = "Productos para completar caja";
