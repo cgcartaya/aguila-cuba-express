@@ -111,8 +111,10 @@ export function buildWhatsappOrderMessageFromDbOrder({
   orderItems,
   orderUrl,
   storeName,
+  storeSlug,
 }: {
   storeName?: string;
+  storeSlug?: string;
   order: {
     order_number?: string | null;
     id: string;
@@ -131,6 +133,7 @@ export function buildWhatsappOrderMessageFromDbOrder({
     total?: number | null;
     payment_status?: string | null;
     payment_method?: string | null;
+    checkout_payment_provider?: string | null;
     notes?: string | null;
   };
   customer?: { name?: string | null; phone?: string | null; email?: string | null } | null;
@@ -164,14 +167,16 @@ export function buildWhatsappOrderMessageFromDbOrder({
     Number(order.discount_amount || 0);
   const storedTotal = Number(order.total || 0);
   const inferredCardSurcharge = Math.round(baseTotal * CARD_SURCHARGE_RATE * 100) / 100;
+  const surchargeApplies = order.payment_method === "card" &&
+    !(storeSlug === "wf-cago" && order.checkout_payment_provider === "square");
   const cardSurcharge =
-    order.payment_method === "card"
+    surchargeApplies
       ? storedTotal > baseTotal
         ? Math.round((storedTotal - baseTotal) * 100) / 100
         : inferredCardSurcharge
       : 0;
   const displayedTotal =
-    order.payment_method === "card"
+    surchargeApplies
       ? Math.round((baseTotal + cardSurcharge) * 100) / 100
       : storedTotal;
 
@@ -245,7 +250,7 @@ RESUMEN
 Subtotal: $${Number(order.subtotal || 0).toFixed(2)}
 Domicilio: $${Number(order.delivery_fee || 0).toFixed(2)}
 ${order.discount_code ? `Descuento (${order.discount_code}): -${Number(order.discount_amount || 0).toFixed(2)}` : ""}
-${order.payment_method === "card" ? `Recargo por tarjeta (${(CARD_SURCHARGE_RATE * 100).toFixed(1)}%): ${cardSurcharge.toFixed(2)}` : ""}
+${cardSurcharge > 0 ? `Recargo por tarjeta (${(CARD_SURCHARGE_RATE * 100).toFixed(1)}%): ${cardSurcharge.toFixed(2)}` : ""}
 
 TOTAL FINAL: ${displayedTotal.toFixed(2)}
 

@@ -573,6 +573,7 @@ export default function OrdersManager({
 
     const message = buildWhatsappOrderMessageFromDbOrder({
       order,
+      storeSlug,
       customer: getCustomer(order),
       orderItems: normalizeOrderItems(order),
       orderUrl,

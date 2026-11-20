@@ -13,15 +13,18 @@ const getCachedPaymentAvailability = unstable_cache(
       .eq("id", storeId)
       .maybeSingle();
 
-    if (!store || store.slug === "lym") return false;
-    if (store.active_payment_provider === "square") return squareCheckoutAvailable(storeId).catch(() => false);
-    if (store.active_payment_provider === "stripe") return Boolean(getStoreStripeContext(store));
+    if (!store || store.slug === "lym") return { available: false };
+    if (store.active_payment_provider === "square") return {
+      available: await squareCheckoutAvailable(storeId).catch(() => false),
+      ...(store.slug === "wf-cago" ? { cardSurchargeRate: 0 } : {}),
+    };
+    if (store.active_payment_provider === "stripe") return { available: Boolean(getStoreStripeContext(store)) };
     const clover = await getCloverSettings(storeId);
     const cloverAvailable = Boolean(clover?.enabled && clover.private_token && clover.webhook_secret);
-    if (store.active_payment_provider === "clover") return cloverAvailable;
-    return cloverAvailable || Boolean(getStoreStripeContext(store));
+    if (store.active_payment_provider === "clover") return { available: cloverAvailable };
+    return { available: cloverAvailable || Boolean(getStoreStripeContext(store)) };
   },
-  ["payment-availability-v4"],
+  ["payment-availability-v5"],
   { revalidate: 60, tags: ["payment-availability"] },
 );
 
@@ -29,9 +32,9 @@ export async function GET(request: NextRequest) {
   const storeId = String(request.nextUrl.searchParams.get("storeId") || "").trim();
   if (!storeId) return NextResponse.json({ available: false }, { headers: { "Cache-Control": "no-store" } });
 
-  const available = await getCachedPaymentAvailability(storeId);
+  const availability = await getCachedPaymentAvailability(storeId);
   return NextResponse.json(
-    { available },
+    availability,
     { headers: { "Cache-Control": "no-store" } },
   );
 }
