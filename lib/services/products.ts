@@ -31,6 +31,7 @@ const PRODUCT_PUBLIC_SELECT = `
   home_featured_label,
   minimum_order_exempt,
   delivery_included,
+  delivery_provinces,
   max_quantity_per_order,
   rating_avg,
   rating_count,

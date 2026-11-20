@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+import { CUBA_PROVINCES } from "@/lib/checkout/cuba-provinces";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
 import { getStoreBySlug } from "@/lib/services/stores";
@@ -48,12 +49,14 @@ const normalizarTexto = (texto: string = "") =>
 export default function CategoryClient({ slug, category }: Props) {
   const { addToCart } = useCart();
 
+  const [province, setProvince] = useState("");
   const [busqueda] = useState("");
   const [productos, setProductos] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   const categoryName = decodeURIComponent(category);
   const storeSlug = decodeURIComponent(slug);
+  const needsProvince = storeSlug === "wf-cago" && normalizarTexto(categoryName) === "combos";
   const tiendaUrl = `/tienda/${storeSlug}`;
 
   useEffect(() => {
@@ -121,9 +124,10 @@ export default function CategoryClient({ slug, category }: Props) {
 
       const coincideBusqueda = productMatchesSearch(producto, busqueda);
 
-      return mismaCategoria && coincideBusqueda;
+      return mismaCategoria && coincideBusqueda &&
+        (!needsProvince || Boolean(province && producto.delivery_provinces?.includes(province)));
     });
-  }, [productos, categoryName, busqueda]);
+  }, [productos, categoryName, busqueda, needsProvince, province]);
 
   return (
     <main className="pb-28">
@@ -151,18 +155,27 @@ export default function CategoryClient({ slug, category }: Props) {
         </h1>
 
         <p className="mt-2 text-sm font-medium text-slate-500">
-          Todos los productos disponibles en esta categoría.
+          {needsProvince ? "Transporte incluido en las ofertas disponibles." : "Todos los productos disponibles en esta categoría."}
         </p>
       </div>
 
       <section className="px-4 pt-4">
-        {loading ? (
+        {needsProvince && (
+          <label className="mb-5 block max-w-md rounded-2xl border border-slate-200 bg-white p-4 font-semibold text-slate-900">
+            Provincia de entrega
+            <select value={province} onChange={(event) => setProvince(event.target.value)} className="mt-2 block w-full rounded-xl border border-slate-300 p-3">
+              <option value="">Selecciona la provincia de entrega</option>
+              {CUBA_PROVINCES.map((option) => <option key={option}>{option}</option>)}
+            </select>
+          </label>
+        )}
+        {needsProvince && !province ? null : loading ? (
           <p className="py-10 text-center text-sm font-semibold text-slate-500">
             Cargando productos...
           </p>
         ) : productosFiltrados.length > 0 ? (
           <CatalogFilters
-            key={`${storeSlug}:${categoryName}`}
+            key={`${storeSlug}:${categoryName}:${province}`}
             products={productosFiltrados}
             onAddToCart={addToCart}
           />
@@ -172,7 +185,7 @@ export default function CategoryClient({ slug, category }: Props) {
               No hay productos disponibles
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              No encontramos productos activos para esta categoría.
+              {needsProvince ? "Por el momento no hay combos disponibles para esta provincia." : "No encontramos productos activos para esta categoría."}
             </p>
           </div>
         )}
