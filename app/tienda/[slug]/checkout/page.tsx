@@ -43,7 +43,7 @@ import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CheckoutContinueBar } from "@/components/checkout/CheckoutContinueBar";
 import type { CheckoutForm, CheckoutTotals } from "@/components/checkout/types";
 import type { AppliedDiscount } from "@/components/checkout/DiscountCouponBox";
-import { CARD_PAYMENTS_ENABLED } from "@/lib/config/features";
+import { CARD_PAYMENTS_ENABLED, CARD_SURCHARGE_RATE } from "@/lib/config/features";
 
 import {
   buildWhatsappOrderMessage,
@@ -201,6 +201,7 @@ export default function CheckoutPage() {
   // quitarlo (y avisar), en vez de dejarlo aplicado en silencio.
   const [discountAppliedForPhone, setDiscountAppliedForPhone] = useState<string | null>(null);
   const [loadingRules, setLoadingRules] = useState(false);
+  const [cardSurchargeRate, setCardSurchargeRate] = useState(CARD_SURCHARGE_RATE);
   const [cardPaymentAvailable, setCardPaymentAvailable] = useState(false);
   const [payWith, setPayWith] = useState<"whatsapp" | "card">("whatsapp");
   const [draftReady, setDraftReady] = useState(false);
@@ -262,6 +263,7 @@ export default function CheckoutPage() {
           normalizeStoreWhatsapp(storeSettingsResponse.data?.whatsapp) || ""
         );
         const cardAvailable = Boolean(paymentAvailabilityResponse?.available) && CARD_PAYMENTS_ENABLED;
+        setCardSurchargeRate(paymentAvailabilityResponse?.cardSurchargeRate ?? CARD_SURCHARGE_RATE);
         setCardPaymentAvailable(cardAvailable);
         // Tarjeta es el método preferido cuando está disponible; WhatsApp
         // queda como segunda opción, no como la que viene marcada.
@@ -1300,6 +1302,7 @@ ${orderUrl}`);
                       : undefined
                   }
                   cardPaymentAvailable={cardPaymentAvailable}
+                  cardSurchargeRate={cardSurchargeRate}
                   payWith={payWith}
                   onChangePayWith={setPayWith}
                   onAddProducts={

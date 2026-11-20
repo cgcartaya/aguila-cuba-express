@@ -43,6 +43,7 @@ type Props = {
   deliveryRequiresZone?: boolean;
   locationLabel?: string;
   cardPaymentAvailable?: boolean;
+  cardSurchargeRate?: number;
   payWith?: "whatsapp" | "card";
   onChangePayWith?: (value: "whatsapp" | "card") => void;
   /** Correo o teléfono de Zelle del negocio, para mostrarlo en las instrucciones de pago. */
@@ -71,6 +72,7 @@ export function OrderSummary({
   deliveryRequiresZone = true,
   locationLabel,
   cardPaymentAvailable = false,
+  cardSurchargeRate = CARD_SURCHARGE_RATE,
   payWith = "whatsapp",
   onChangePayWith,
   zelleInfo,
@@ -80,7 +82,7 @@ export function OrderSummary({
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
   const cardSurcharge = payWith === "card"
-    ? Math.round(finalTotal * CARD_SURCHARGE_RATE * 100) / 100
+    ? Math.round(finalTotal * cardSurchargeRate * 100) / 100
     : 0;
   const amountToPay = finalTotal + cardSurcharge;
 
@@ -210,9 +212,9 @@ export function OrderSummary({
           </div>
         )}
 
-        {payWith === "card" && (
+        {cardSurcharge > 0 && (
           <div className="flex items-center justify-between font-semibold text-blue-700">
-            <span>Recargo por tarjeta ({(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)</span>
+            <span>Recargo por tarjeta ({(cardSurchargeRate * 100).toFixed(1)}%)</span>
             <span>+<Price usd={cardSurcharge} /></span>
           </div>
         )}
@@ -332,7 +334,7 @@ export function OrderSummary({
             <div className="mt-3 flex items-start gap-2.5 rounded-2xl bg-blue-50 px-3.5 py-3">
               <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white"><Zap size={12} /></span>
               <p className="text-xs font-semibold leading-relaxed text-blue-900">
-                Se añadirá un recargo de {(CARD_SURCHARGE_RATE * 100).toFixed(1)}% por tarjeta.
+                {cardSurcharge > 0 && `Se añadirá un recargo de ${(cardSurchargeRate * 100).toFixed(1)}% por tarjeta. ` }
                 Pagarás exactamente <strong>${amountToPay.toFixed(2)} USD</strong> de forma segura.
                 En cuanto confirmes verás tu pedido aprobado al instante.
               </p>

@@ -85,7 +85,7 @@ function roundMoney(value: number) {
   return Math.round(value * 100) / 100;
 }
 
-function getOrderPaymentTotals(order: Order) {
+function getOrderPaymentTotals(order: Order, storeSlug?: string | null) {
   const baseTotal = roundMoney(
     Number(order.subtotal || 0) +
       Number(order.delivery_fee || 0) -
@@ -93,7 +93,7 @@ function getOrderPaymentTotals(order: Order) {
   );
   const storedTotal = Number(order.total || 0);
 
-  if (order.payment_method !== "card") {
+  if (order.payment_method !== "card" || (storeSlug === "wf-cago" && order.checkout_payment_provider === "square")) {
     return { baseTotal, cardSurcharge: 0, displayedTotal: storedTotal };
   }
 
@@ -162,11 +162,13 @@ function buildShareMessage({
   order,
   items,
   storeName,
+  displayedTotal,
   pageUrl,
 }: {
   order: Order;
   items: OrderItem[];
   storeName: string;
+  displayedTotal: number;
   pageUrl: string;
 }) {
   const publicNumber = order.order_number || order.id;
@@ -180,7 +182,7 @@ function buildShareMessage({
     `Número de orden: *${publicNumber}*`,
     ...(itemLines.length ? ["", ...itemLines] : []),
     "",
-    `Total final: *${getOrderPaymentTotals(order).displayedTotal.toFixed(2)}*`,
+    `Total final: *${displayedTotal.toFixed(2)}*`,
     "",
     "Ver el pedido:",
     pageUrl,
@@ -191,11 +193,13 @@ function ShareOrderButton({
   order,
   items,
   storeName,
+  displayedTotal,
   pageUrl,
 }: {
   order: Order;
   items: OrderItem[];
   storeName: string;
+  displayedTotal: number;
   pageUrl: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -203,7 +207,7 @@ function ShareOrderButton({
   function share(app: "personal" | "business") {
     openWhatsAppShare({
       app,
-      message: buildShareMessage({ order, items, storeName, pageUrl }),
+      message: buildShareMessage({ order, items, storeName, displayedTotal, pageUrl }),
     });
     setOpen(false);
   }
@@ -323,7 +327,7 @@ export function PublicOrderClient({
   const storeName = store?.name?.trim() || "Perla Marketplace";
   const storeUrl = store?.slug ? `/tienda/${store.slug}` : "/tienda";
   const publicNumber = order.order_number || order.id;
-  const { cardSurcharge, displayedTotal } = getOrderPaymentTotals(order);
+  const { cardSurcharge, displayedTotal } = getOrderPaymentTotals(order, store?.slug);
   const deliveryLocation = [order.municipality, order.zone_name]
     .filter(Boolean)
     .join(" / ");
@@ -447,7 +451,7 @@ export function PublicOrderClient({
             {Number(order.discount_amount || 0) > 0 && (
               <div className="flex justify-between text-green-600"><span>Descuento</span><strong>-${Number(order.discount_amount).toFixed(2)}</strong></div>
             )}
-            {order.payment_method === "card" && (
+            {cardSurcharge > 0 && (
               <div className="flex justify-between text-blue-700"><span>Recargo por tarjeta ({(CARD_SURCHARGE_RATE * 100).toFixed(1)}%)</span><strong>+${cardSurcharge.toFixed(2)}</strong></div>
             )}
             <div className="flex justify-between border-t pt-3 text-xl"><span className="font-black">{isLym ? "Total de la solicitud" : order.source_shipment_id ? "Productos incluidos en el envío" : order.payment_status === "paid" ? "Total pagado" : "Total a pagar"}</span><span className="font-black">${displayedTotal.toFixed(2)}</span></div>
@@ -468,6 +472,7 @@ export function PublicOrderClient({
 
         <div className="mt-5">
           <ShareOrderButton
+            displayedTotal={displayedTotal}
             order={order}
             items={items}
             storeName={storeName}
