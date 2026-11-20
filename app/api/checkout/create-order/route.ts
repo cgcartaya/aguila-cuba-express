@@ -48,6 +48,7 @@ import { createLymRequest } from "@/lib/lym/checkout";
 import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
+import { HAVANA_MUNICIPALITIES } from "@/lib/checkout/cuba-provinces";
 import { quoteCartShipping, type CartShippingSelection } from "@/lib/shipping/cart-shipping";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
@@ -245,8 +246,8 @@ export async function POST(request: Request) {
       .eq("store_id", storeId)
       .maybeSingle();
     if (checkoutConfigError) return fail("No se pudo validar la configuración del checkout.", 500);
-    const boxProductsOnly = store.slug === "wf-cago";
-    const customerRequired = boxProductsOnly || checkoutConfig?.blocks?.customer !== false;
+    const isWfCargo = store.slug === "wf-cago";
+    const customerRequired = isWfCargo || checkoutConfig?.blocks?.customer !== false;
     if (customerRequired && (!customerName || !customerPhone || !email)) {
       return fail("Faltan datos obligatorios del cliente.");
     }
@@ -266,7 +267,7 @@ export async function POST(request: Request) {
     }
 
     const isYoyo = store.slug === YOYO_SLUG;
-    const isLocalDelivery = !boxProductsOnly && !body.productShipping && Boolean(body.isLocalDelivery);
+    const isLocalDelivery = !isWfCargo && !body.productShipping && Boolean(body.isLocalDelivery);
 
     // Fee de plataforma (Perla): se calcula SIEMPRE en el servidor a
     // partir de la configuración real de la tienda, nunca confiando en
@@ -407,7 +408,7 @@ export async function POST(request: Request) {
         ? await supabaseAdmin
             .from("products")
             .select(
-              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, platform_fee_exempt, is_active, deleted_at, combo_only"
+              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, platform_fee_exempt, is_active, deleted_at, combo_only, delivery_provinces"
             )
             .eq("store_id", storeId)
             .eq("is_active", true)
@@ -420,6 +421,32 @@ export async function POST(request: Request) {
     }
 
     const productMap = new Map((productRows || []).map((row) => [row.id, row]));
+    const wfDeliveryProducts = isWfCargo
+      ? (productRows || []).filter((product) => directProductIds.has(product.id) && product.delivery_provinces?.length)
+      : [];
+    const wfComboDelivery = wfDeliveryProducts.length > 0;
+    const boxProductsOnly = isWfCargo && !wfComboDelivery;
+
+    if (wfComboDelivery) {
+      if (requestedItems.some((item) => item.item_type !== "product" ||
+          !productMap.get(clean(item.product_id, 64))?.delivery_provinces?.length)) {
+        return fail("Haz un pedido separado para los combos de alimentos y los artículos para completar caja.", 422);
+      }
+
+      const province = clean(form.province, 120);
+      if (!province || wfDeliveryProducts.some((product) => !product.delivery_provinces.includes(province))) {
+        return fail("Hay combos que no están disponibles en la provincia de entrega elegida.", 422);
+      }
+      const municipality = clean(form.municipality, 120);
+      if (!clean(form.recipient_name, 150) || !clean(form.recipient_phone, 40) ||
+          !municipality || !clean(form.exact_address, 300)) {
+        return fail("Completa destinatario, teléfono, municipio y dirección de entrega.", 422);
+      }
+      if (province === "La Habana" && !HAVANA_MUNICIPALITIES.some((name) => name === municipality)) {
+        return fail("Selecciona un municipio válido de La Habana.", 422);
+      }
+    }
+
     const tiersByProduct = new Map<string, PriceTierRow[]>();
 
     for (const row of tierRows || []) {
@@ -572,10 +599,12 @@ export async function POST(request: Request) {
       .eq("store_id", storeId)
       .maybeSingle();
     const isDistanceDelivery =
-      !boxProductsOnly && !body.productShipping && body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
+      !isWfCargo && !body.productShipping && body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
 
     let productShippingQuote: Awaited<ReturnType<typeof quoteCartShipping>> | null = null;
-    if (boxProductsOnly) {
+    if (wfComboDelivery) {
+      zoneName = "Combos de alimentos · Transporte incluido";
+    } else if (boxProductsOnly) {
       zoneName = "Productos para completar caja";
     } else if (body.productShipping) {
       if (!clean(form.recipient_name, 150) || !clean(form.recipient_phone, 40) || !clean(form.exact_address, 300)) return fail("Completa destinatario, teléfono y dirección para el envío.");
@@ -1040,7 +1069,7 @@ export async function POST(request: Request) {
           unit_price: item.price,
           subtotal: item.subtotal,
         })),
-        deliveryLabel: boxProductsOnly ? "Productos para completar caja" : productShippingQuote
+        deliveryLabel: wfComboDelivery ? "Combos de alimentos · Transporte incluido" : boxProductsOnly ? "Productos para completar caja" : productShippingQuote
           ? `Envío — ${productShippingQuote.service_name}`
           : isLocalDelivery || isDistanceDelivery
             ? "Entrega local"

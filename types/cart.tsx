@@ -23,6 +23,7 @@ export type Product = {
 
   minimum_order_exempt?: boolean | null;
   delivery_included?: boolean | null;
+  delivery_provinces?: string[] | null;
 
   /* =======================================================
      FASE 7 - REGLAS DE COMPRA

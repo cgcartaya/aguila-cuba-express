@@ -3,6 +3,7 @@ import LymCheckout from "@/components/lym/LymCheckout";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { CUBA_PROVINCES, HAVANA_MUNICIPALITIES } from "@/lib/checkout/cuba-provinces";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 
@@ -152,7 +153,21 @@ export default function CheckoutPage() {
   const { store } = useStore();
 
   const isYoyo = store?.slug === YOYO_SLUG;
-  const boxProductsOnly = store?.slug === "wf-cago";
+  const isWfCargo = store?.slug === "wf-cago";
+  const [checkoutRuleMap, setCheckoutRuleMap] = useState<Record<string, {
+    minimum_order_exempt: boolean;
+    delivery_included: boolean;
+    delivery_provinces?: string[] | null;
+  }>>({});
+  const wfDeliveryItems = isWfCargo ? cart.filter((item) =>
+    item.type === "product" && checkoutRuleMap[getOriginalCartItemId(item.id)]?.delivery_provinces?.length
+  ) : [];
+  const wfComboDelivery = wfDeliveryItems.length > 0;
+  const wfMixedCart = wfComboDelivery && wfDeliveryItems.length !== cart.length;
+  const boxProductsOnly = isWfCargo && !wfComboDelivery;
+  const comboProvinces = CUBA_PROVINCES.filter((province) => wfDeliveryItems.every((item) =>
+    checkoutRuleMap[getOriginalCartItemId(item.id)].delivery_provinces?.includes(province)
+  ));
   const cartUrl = store?.slug ? `/tienda/${store.slug}/cart` : "/tienda/cart";
   const orderUrlBase = "/pedido";
 
@@ -174,18 +189,17 @@ export default function CheckoutPage() {
   const submittingRef = useRef(false);
   const [loadingCheckout, setLoadingCheckout] = useState(true);
   useEffect(() => {
-    if (!boxProductsOnly && !loadingCheckout && checkoutSettings?.blocks.customer === false) {
+    if (!isWfCargo && !loadingCheckout && checkoutSettings?.blocks.customer === false) {
       setStep((current) => current === 1 ? 2 : current);
     }
-  }, [boxProductsOnly, loadingCheckout, checkoutSettings?.blocks.customer]);
+  }, [isWfCargo, loadingCheckout, checkoutSettings?.blocks.customer]);
   const shippingItems = useMemo(() => cart.map(item => ({ item_type: item.type, product_id: item.type === "product" ? getOriginalCartItemId(item.id) : null, combo_id: item.type === "combo" ? getOriginalCartItemId(item.id) : null, quantity: item.quantity })), [cart]);
-  const productShipping = useProductShipping(boxProductsOnly ? undefined : store?.id, shippingItems);
+  const productShipping = useProductShipping(isWfCargo ? undefined : store?.id, shippingItems);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   // Telefono con el que se valido el bono. Si el cliente lo cambia despues
   // de aplicarlo, el bono deja de ser valido para ese numero y hay que
   // quitarlo (y avisar), en vez de dejarlo aplicado en silencio.
   const [discountAppliedForPhone, setDiscountAppliedForPhone] = useState<string | null>(null);
-  const [checkoutRuleMap, setCheckoutRuleMap] = useState<Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }>>({});
   const [loadingRules, setLoadingRules] = useState(false);
   const [cardPaymentAvailable, setCardPaymentAvailable] = useState(false);
   const [payWith, setPayWith] = useState<"whatsapp" | "card">("whatsapp");
@@ -243,7 +257,7 @@ export default function CheckoutPage() {
 
         const activeZones = zonesResponse.data || [];
         setZones(activeZones);
-        setForm((current) => alignDeliveryProvince(current, activeZones));
+        if (store.slug !== "wf-cago") setForm((current) => alignDeliveryProvince(current, activeZones));
         setBusinessWhatsapp(
           normalizeStoreWhatsapp(storeSettingsResponse.data?.whatsapp) || ""
         );
@@ -294,7 +308,10 @@ export default function CheckoutPage() {
         };
         const fresh = Number(draft.savedAt || 0) > Date.now() - 24 * 60 * 60 * 1000;
         if (fresh) {
-          if (draft.form) setForm((current) => alignDeliveryProvince({ ...current, ...draft.form }, zones));
+          if (draft.form) setForm((current) => {
+            const restored = { ...current, ...draft.form };
+            return store.slug === "wf-cago" ? restored : alignDeliveryProvince(restored, zones);
+          });
           if (draft.step === 1 || draft.step === 2 || draft.step === 3) setStep(draft.step);
           if (draft.method === "cuba" || draft.method === "delivery") setMethod(draft.method);
           if (draft.payWith === "whatsapp" || (draft.payWith === "card" && cardPaymentAvailable)) setPayWith(draft.payWith);
@@ -412,18 +429,19 @@ export default function CheckoutPage() {
       setLoadingRules(true);
       try {
         const [{ data: products, error: productsError }, { data: categories, error: categoriesError }] = await Promise.all([
-          supabase.from("products").select("id, category, minimum_order_exempt, delivery_included").eq("store_id", store.id).in("id", productIds),
+          supabase.from("products").select("id, category, minimum_order_exempt, delivery_included, delivery_provinces").eq("store_id", store.id).in("id", productIds),
           supabase.from("categories").select("name, minimum_order_exempt, delivery_included").eq("store_id", store.id),
         ]);
         if (productsError) throw productsError;
         if (categoriesError) throw categoriesError;
         const categoryMap = new Map((categories || []).map((category) => [String(category.name).trim().toLowerCase(), category]));
-        const nextMap: Record<string, { minimum_order_exempt: boolean; delivery_included: boolean }> = {};
+        const nextMap: typeof checkoutRuleMap = {};
         for (const product of products || []) {
           const category = categoryMap.get(String(product.category || "").trim().toLowerCase());
           nextMap[String(product.id)] = {
             minimum_order_exempt: product.minimum_order_exempt ?? category?.minimum_order_exempt ?? false,
             delivery_included: product.delivery_included ?? category?.delivery_included ?? false,
+            delivery_provinces: product.delivery_provinces,
           };
         }
         setCheckoutRuleMap(nextMap);
@@ -455,8 +473,8 @@ export default function CheckoutPage() {
     !boxProductsOnly && method === "delivery" && checkoutSettings?.delivery_address_mode === "distance";
 
   const cubaTotals = useMemo(
-    () => calculateCheckoutTotals(checkoutCart, boxProductsOnly ? null : selectedZone),
-    [boxProductsOnly, checkoutCart, selectedZone]
+    () => calculateCheckoutTotals(checkoutCart, isWfCargo ? null : selectedZone),
+    [isWfCargo, checkoutCart, selectedZone]
   );
 
   const totals = useMemo<CheckoutTotals>(() => {
@@ -564,12 +582,16 @@ export default function CheckoutPage() {
     Boolean(form.municipality) && !loadingCheckout && availableZones.length === 0;
 
   const canCheckout = useMemo(() => {
-    const customerRequired = boxProductsOnly || checkoutSettings?.blocks.customer !== false;
+    const customerRequired = isWfCargo || checkoutSettings?.blocks.customer !== false;
     const customerComplete = !customerRequired || (
       Boolean(form.name.trim()) &&
       Boolean(form.email.trim()) &&
       Boolean(form.phone.trim())
     );
+    if (wfComboDelivery) return !wfMixedCart && customerComplete &&
+      Boolean(form.recipient_name.trim() && form.recipient_phone.trim() &&
+        form.municipality.trim() && form.exact_address.trim()) &&
+      comboProvinces.some((province) => province === form.province);
     if (boxProductsOnly) return cart.length > 0 && customerComplete;
     if (productShipping.enabled) return cart.length > 0 && customerComplete && productShipping.ready && Boolean(form.recipient_name.trim()) && Boolean(form.recipient_phone.trim()) && Boolean(form.exact_address.trim());
     if (usesDistanceDelivery) {
@@ -587,7 +609,7 @@ export default function CheckoutPage() {
     }
     return cart.length > 0 && customerComplete &&
       Boolean(form.city.trim()) && Boolean(form.exact_address.trim());
-  }, [boxProductsOnly, productShipping.enabled, productShipping.ready, cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, isWfCargo, wfComboDelivery, wfMixedCart, comboProvinces, productShipping.enabled, productShipping.ready, cart, form, isYoyo, method, selectedZone, totals, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   const missingCheckoutFields = useMemo(() => {
     const missing: Array<{ name: keyof CheckoutForm; label: string }> = [];
@@ -595,7 +617,7 @@ export default function CheckoutPage() {
       if (!String(form[name] || "").trim()) missing.push({ name, label });
     };
 
-    if (boxProductsOnly || checkoutSettings?.blocks.customer !== false) {
+    if (isWfCargo || checkoutSettings?.blocks.customer !== false) {
       requireField("name", "nombre del cliente");
       requireField("email", "email");
       requireField("phone", "teléfono del cliente");
@@ -603,7 +625,15 @@ export default function CheckoutPage() {
 
     if (boxProductsOnly) return missing;
 
-    if (productShipping.enabled) {
+    if (wfComboDelivery) {
+      requireField("recipient_name", "nombre del destinatario");
+      requireField("recipient_phone", "teléfono del destinatario");
+      if (!comboProvinces.some((province) => province === form.province)) {
+        missing.push({ name: "province", label: "provincia de entrega disponible" });
+      }
+      requireField("municipality", "municipio");
+      requireField("exact_address", "dirección de entrega");
+    } else if (productShipping.enabled) {
       requireField("recipient_name", "nombre del destinatario");
       requireField("recipient_phone", "teléfono del destinatario");
       requireField("exact_address", "dirección completa del destinatario");
@@ -627,7 +657,7 @@ export default function CheckoutPage() {
     }
 
     return missing;
-  }, [boxProductsOnly, productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+  }, [boxProductsOnly, isWfCargo, wfComboDelivery, comboProvinces, productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
 
   // Mismo array de missingCheckoutFields, solo separado por a qué paso
   // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
@@ -642,8 +672,12 @@ export default function CheckoutPage() {
   );
 
   function goToStep(nextStep: 1 | 2 | 3) {
+    if (nextStep > step && wfMixedCart) {
+      showCheckoutError("Haz un pedido separado para los combos de alimentos y los artículos para completar caja.");
+      return;
+    }
     if (boxProductsOnly && nextStep === 2) nextStep = 3;
-    if (!boxProductsOnly && checkoutSettings?.blocks.customer === false && nextStep === 1) nextStep = 2;
+    if (!isWfCargo && checkoutSettings?.blocks.customer === false && nextStep === 1) nextStep = 2;
     // Retroceder nunca necesita validación.
     if (nextStep < step) {
       setError("");
@@ -946,7 +980,8 @@ ${orderUrl}`);
     if (payWith === "whatsapp" && !businessWhatsapp) return showCheckoutError("Esta tienda todavía no tiene WhatsApp configurado.");
     if (cart.length === 0) return showCheckoutError("Tu carrito está vacío.");
     if (productShipping.enabled && !productShipping.ready) return showCheckoutError(productShipping.error || "Selecciona servicio, modalidad y destino y espera el cálculo del envío.");
-    if (!boxProductsOnly && loadingRules) return showCheckoutError("Espera un momento mientras verificamos las reglas de entrega.");
+    if (wfMixedCart) return showCheckoutError("Haz un pedido separado para los combos de alimentos y los artículos para completar caja.");
+    if ((!boxProductsOnly || isWfCargo) && loadingRules) return showCheckoutError("Espera un momento mientras verificamos las reglas de entrega.");
 
     if (missingCheckoutFields.length > 0) {
       const firstMissing = missingCheckoutFields[0];
@@ -1017,7 +1052,13 @@ ${orderUrl}`);
       }
 
       const orderUrl = `${window.location.origin}${orderUrlBase}/${orderNumber}`;
-      const whatsappMessage = boxProductsOnly
+      const whatsappMessage = wfComboDelivery
+        ? encodeURIComponent([store.name, `Pedido ${orderNumber} · Combos de alimentos`, form.name, form.phone,
+            `Destinatario: ${form.recipient_name} · ${form.recipient_phone}`,
+            `${form.province}, ${form.municipality} · ${form.exact_address}`,
+            ...cart.map((item) => `${item.quantity}x ${item.name}`),
+            "Transporte incluido", `Total $${Number(order.total).toFixed(2)}`, orderUrl].join("\n"))
+        : boxProductsOnly
         ? encodeURIComponent([store.name, `Pedido ${orderNumber} · Productos para completar caja`, form.name,
             form.phone, ...cart.map((item) => `${item.quantity}x ${item.name}`),
             `Total $${Number(order.total).toFixed(2)}`, orderUrl].join("\n"))
@@ -1111,6 +1152,9 @@ ${orderUrl}`);
         ) : (
           <>
             <CheckoutSteps step={step} onStepClick={goToStep} includeDelivery={!boxProductsOnly} />
+            {wfMixedCart && <p role="alert" className="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
+              Los combos de alimentos y los artículos para completar caja se piden por separado. <Link href={cartUrl} className="font-bold underline">Editar carrito</Link>
+            </p>}
             {boxProductsOnly && <p className="mb-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">Estos productos son para completar tu caja con WF Cargo.</p>}
 
             {step < 3 ? (
@@ -1135,7 +1179,7 @@ ${orderUrl}`);
                       />
                     )}
 
-                    {(boxProductsOnly || checkoutSettings?.blocks.customer !== false) && (
+                    {(isWfCargo || checkoutSettings?.blocks.customer !== false) && (
                       <CustomerInfoForm form={form} onChange={handleChange} />
                     )}
                   </>
@@ -1146,7 +1190,30 @@ ${orderUrl}`);
                   <>
                     {(productShipping.enabled || showRecipient) && <RecipientInfoForm title={productShipping.enabled ? "Persona que recibe el envío" : undefined} form={form} onChange={handleChange} />}
 
-                    {productShipping.enabled ? (<label className="block rounded-2xl border bg-white p-5 font-semibold">Dirección completa del destinatario<textarea name="exact_address" value={form.exact_address} onChange={handleChange} className="mt-2 w-full rounded-xl border p-3" placeholder="Calle, número, reparto, municipio y provincia del destino seleccionado" /></label>) : showAddress && usesDistanceDelivery ? (
+                    {wfComboDelivery ? (
+                      <div className="grid gap-4 rounded-2xl border bg-white p-5">
+                        <p className="font-semibold">Transporte incluido</p>
+                        <label>Provincia de entrega
+                          <select name="province" value={comboProvinces.some((province) => province === form.province) ? form.province : ""} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3">
+                            <option value="">Selecciona una provincia</option>
+                            {comboProvinces.map((province) => <option key={province}>{province}</option>)}
+                          </select>
+                        </label>
+                        <label>Municipio
+                          {form.province === "La Habana" ? (
+                            <select name="municipality" value={form.municipality} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3">
+                              <option value="">Selecciona un municipio</option>
+                              {HAVANA_MUNICIPALITIES.map((municipality) => <option key={municipality}>{municipality}</option>)}
+                            </select>
+                          ) : (
+                            <input name="municipality" value={form.municipality} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3" />
+                          )}
+                        </label>
+                        <label>Dirección completa
+                          <textarea name="exact_address" value={form.exact_address} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3" />
+                        </label>
+                      </div>
+                    ) : productShipping.enabled ? (<label className="block rounded-2xl border bg-white p-5 font-semibold">Dirección completa del destinatario<textarea name="exact_address" value={form.exact_address} onChange={handleChange} className="mt-2 w-full rounded-xl border p-3" placeholder="Calle, número, reparto, municipio y provincia del destino seleccionado" /></label>) : showAddress && usesDistanceDelivery ? (
                       <DistanceDeliveryAddressForm
                         form={form}
                         storeId={store?.id || ""}
@@ -1226,7 +1293,7 @@ ${orderUrl}`);
                   showCoupon={showCoupon}
                   showDelivery={!boxProductsOnly && (productShipping.enabled || showDelivery)}
                   deliveryLabel={productShipping.enabled ? "Envío por peso" : "Delivery"}
-                  deliveryRequiresZone={!boxProductsOnly && !productShipping.enabled && method === "cuba"}
+                  deliveryRequiresZone={!isWfCargo && !productShipping.enabled && method === "cuba"}
                   locationLabel={
                     !boxProductsOnly && method === "delivery" && form.city
                       ? `Entrega en ${form.city}`

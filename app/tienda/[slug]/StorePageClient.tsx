@@ -11,6 +11,7 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { catalogWeightLb } from "@/lib/storefront/catalog-filters";
 import { searchProducts } from "@/lib/utils/search";
@@ -144,11 +145,18 @@ export default function StoreSlugTiendaPage() {
     };
   }, [slug, retry]);
 
-  const productosBuscados = useMemo(() => {
-    if (!hayBusqueda) return productos;
+  const combosCategory = slug === "wf-cago"
+    ? categorias.find((category) => category.name.trim().toLowerCase() === "combos")
+    : undefined;
+  const catalogProducts = useMemo(() => productos.filter(
+    (product) => !combosCategory || product.category !== combosCategory.name,
+  ), [productos, combosCategory]);
 
-    return searchProducts(productos, busqueda);
-  }, [productos, busqueda, hayBusqueda]);
+  const productosBuscados = useMemo(() => {
+    if (!hayBusqueda) return catalogProducts;
+
+    return searchProducts(catalogProducts, busqueda);
+  }, [catalogProducts, busqueda, hayBusqueda]);
 
   const showWeightFilter = useMemo(
     () => productos.some((product) => catalogWeightLb(product) !== null),
@@ -156,26 +164,26 @@ export default function StoreSlugTiendaPage() {
   );
 
   const productosDestacados = useMemo(() => {
-    return productos
+    return catalogProducts
       .filter((producto) => producto.is_home_featured)
       .sort((a, b) => {
         const orderA = a.home_featured_order ?? Number.MAX_SAFE_INTEGER;
         const orderB = b.home_featured_order ?? Number.MAX_SAFE_INTEGER;
         return orderA - orderB;
       });
-  }, [productos]);
+  }, [catalogProducts]);
 
   const productosPorCategoria = useMemo(() => {
     return categorias
       .map((categoria) => ({
         categoria: categoria.name,
         color: categoria.color,
-        productos: productos.filter(
+        productos: catalogProducts.filter(
           (producto) => producto.category === categoria.name
         ),
       }))
       .filter((grupo) => grupo.productos.length > 0);
-  }, [categorias, productos]);
+  }, [categorias, catalogProducts]);
 
   return (
     <>
@@ -218,6 +226,16 @@ export default function StoreSlugTiendaPage() {
             />
           )}
 
+          {combosCategory && (
+            <section id={combosCategory.name} className="mx-4 my-5 scroll-mt-44 rounded-2xl border border-slate-200 bg-white p-5">
+              <h2 className="text-xl font-bold text-slate-900">Combos de alimentos</h2>
+              <p className="my-2 text-sm text-slate-600">Consulta las ofertas para tu provincia de entrega en Cuba.</p>
+              <Link href={`/tienda/${slug}/categorias/combos`} className="inline-block rounded-xl bg-[#061b3a] px-4 py-2.5 font-semibold text-white">
+                Ver combos por provincia
+              </Link>
+            </section>
+          )}
+
           {sectionEnabled(storeSettings?.show_combos) && (
             <div className="-mt-2 md:-mt-3">
               {storeLoaded && storeId && (
@@ -228,7 +246,7 @@ export default function StoreSlugTiendaPage() {
 
           {sectionEnabled(storeSettings?.show_products) && productos.length > 0 && (
             <div className="mt-2">
-              <CatalogFilters key={store?.id} products={productos} onAddToCart={addToCart} showWeightFilter={showWeightFilter} inset>
+              <CatalogFilters key={store?.id} products={catalogProducts} onAddToCart={addToCart} showWeightFilter={showWeightFilter} inset>
                 {productosPorCategoria.map((grupo) => (
                   <CategoryProductsSection
                     key={grupo.categoria}
