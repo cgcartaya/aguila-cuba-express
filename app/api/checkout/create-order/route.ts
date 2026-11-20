@@ -1071,7 +1071,7 @@ export async function POST(request: Request) {
           unit_price: item.price,
           subtotal: item.subtotal,
         })),
-        deliveryLabel: wfComboDelivery ? zoneName : boxProductsOnly ? "Productos para completar caja" : productShippingQuote
+        deliveryLabel: wfComboDelivery ? (zoneName ?? "Domicilio") : boxProductsOnly ? "Productos para completar caja" : productShippingQuote
           ? `Envío — ${productShippingQuote.service_name}`
           : isLocalDelivery || isDistanceDelivery
             ? "Entrega local"
