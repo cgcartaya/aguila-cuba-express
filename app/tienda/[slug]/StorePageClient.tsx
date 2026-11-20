@@ -11,7 +11,7 @@
 ========================================================= */
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import ProvinceCarousel from "@/components/tienda/ProvinceCarousel";
 import { useParams } from "next/navigation";
 import { catalogWeightLb } from "@/lib/storefront/catalog-filters";
 import { searchProducts } from "@/lib/utils/search";
@@ -227,13 +227,7 @@ export default function StoreSlugTiendaPage() {
           )}
 
           {combosCategory && (
-            <section id={combosCategory.name} className="mx-4 my-5 scroll-mt-44 rounded-2xl border border-slate-200 bg-white p-5">
-              <h2 className="text-xl font-bold text-slate-900">Combos de alimentos</h2>
-              <p className="my-2 text-sm text-slate-600">Consulta las ofertas para tu provincia de entrega en Cuba.</p>
-              <Link href={`/tienda/${slug}/categorias/combos`} className="inline-block rounded-xl bg-[#061b3a] px-4 py-2.5 font-semibold text-white">
-                Ver combos por provincia
-              </Link>
-            </section>
+            <ProvinceCarousel products={productos} category={combosCategory.name} slug={slug} />
           )}
 
           {sectionEnabled(storeSettings?.show_combos) && (
