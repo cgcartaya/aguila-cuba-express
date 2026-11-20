@@ -189,7 +189,8 @@
   gap: 3px;
 }
 
-.root .footerBrand img { height: 82px; }
+.root .footerBrand { max-width: 100%; }
+.root .footerBrand img { width: 280px; max-width: 100%; height: auto; }
 
 .root .brandSlogan {
   color: #cf9d14;
@@ -198,8 +199,6 @@
 }
 
 .root .brand .brandSlogan { white-space: nowrap; }
-
-.root .footerBrand .brandSlogan { font-size: .9rem; }
 
 @media (max-width: 600px) {
   .root .brand { gap: 6px; }
