@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
+import { getWfCargoComboMunicipalities, getWfCargoComboDeliveryFee } from "@/lib/checkout/wfcargo-delivery";
 import { CUBA_PROVINCES } from "@/lib/checkout/cuba-provinces";
 import { productMatchesSearch } from "@/lib/utils/search";
 import { getStoreProductsByStoreId } from "@/lib/services/products";
@@ -129,6 +130,8 @@ export default function CategoryClient({ slug, category }: Props) {
     });
   }, [productos, categoryName, busqueda, needsProvince, province]);
 
+  const deliveryMunicipalities = getWfCargoComboMunicipalities(province);
+
   return (
     <main className="pb-28">
       <div className="px-4 pt-5">
@@ -168,6 +171,11 @@ export default function CategoryClient({ slug, category }: Props) {
               {CUBA_PROVINCES.map((option) => <option key={option}>{option}</option>)}
             </select>
           </label>
+        )}
+        {needsProvince && province !== "La Habana" && deliveryMunicipalities.length === 1 && productosFiltrados.length > 0 && (
+          <p className="mb-5 text-sm font-semibold text-slate-700">
+            Entrega solo en el municipio {deliveryMunicipalities[0]}. Domicilio: ${getWfCargoComboDeliveryFee(productosFiltrados, province)} USD por pedido.
+          </p>
         )}
         {needsProvince && !province ? null : loading ? (
           <p className="py-10 text-center text-sm font-semibold text-slate-500">
