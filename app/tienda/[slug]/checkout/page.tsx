@@ -3,6 +3,7 @@ import LymCheckout from "@/components/lym/LymCheckout";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { getWfCargoComboDeliveryFee } from "@/lib/checkout/wfcargo-delivery";
 import { CUBA_PROVINCES, HAVANA_MUNICIPALITIES } from "@/lib/checkout/cuba-provinces";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
@@ -479,7 +480,17 @@ export default function CheckoutPage() {
     [isWfCargo, checkoutCart, selectedZone]
   );
 
+  const wfComboDeliveryFee = wfComboDelivery ? getWfCargoComboDeliveryFee(checkoutCart) : 0;
   const totals = useMemo<CheckoutTotals>(() => {
+    if (wfComboDelivery) {
+      return {
+        ...cubaTotals,
+        shippingCost: wfComboDeliveryFee,
+        baseDeliveryFee: wfComboDeliveryFee,
+        finalTotal: cubaTotals.subtotal + wfComboDeliveryFee,
+        hasFreeDelivery: wfComboDeliveryFee === 0,
+      };
+    }
     if (productShipping.enabled) {
       const subtotal = cart.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
       const shippingCost = productShipping.quote?.amount || 0;
@@ -526,7 +537,7 @@ export default function CheckoutPage() {
       minimumOrderExempt: false,
       deliveryIncludedForAllItems: false,
     };
-  }, [productShipping.enabled, productShipping.quote, cart, checkoutSettings, cubaTotals, form.delivery_quoted_fee, isYoyo, method, usesDistanceDelivery]);
+  }, [wfComboDelivery, wfComboDeliveryFee, productShipping.enabled, productShipping.quote, cart, checkoutSettings, cubaTotals, form.delivery_quoted_fee, isYoyo, method, usesDistanceDelivery]);
 
   const discountAmount = appliedDiscount?.discountAmount || 0;
   const finalTotalWithDiscount = Math.max(totals.finalTotal - discountAmount, 0);
@@ -1059,7 +1070,7 @@ ${orderUrl}`);
             `Destinatario: ${form.recipient_name} · ${form.recipient_phone}`,
             `${form.province}, ${form.municipality} · ${form.exact_address}`,
             ...cart.map((item) => `${item.quantity}x ${item.name}`),
-            "Transporte incluido", `Total $${Number(order.total).toFixed(2)}`, orderUrl].join("\n"))
+            Number(order.delivery_fee) > 0 ? `Domicilio: $${Number(order.delivery_fee).toFixed(2)}` : "Transporte incluido", `Total $${Number(order.total).toFixed(2)}`, orderUrl].join("\n"))
         : boxProductsOnly
         ? encodeURIComponent([store.name, `Pedido ${orderNumber} · Productos para completar caja`, form.name,
             form.phone, ...cart.map((item) => `${item.quantity}x ${item.name}`),
@@ -1194,7 +1205,7 @@ ${orderUrl}`);
 
                     {wfComboDelivery ? (
                       <div className="grid gap-4 rounded-2xl border bg-white p-5">
-                        <p className="font-semibold">Transporte incluido</p>
+                        <p className="font-semibold">{wfComboDeliveryFee > 0 ? `Domicilio: $${wfComboDeliveryFee.toFixed(2)} por pedido` : "Transporte incluido"}</p>
                         <label>Provincia de entrega
                           <select name="province" value={comboProvinces.some((province) => province === form.province) ? form.province : ""} onChange={handleChange} className="mt-1 block w-full rounded-xl border p-3">
                             <option value="">Selecciona una provincia</option>
@@ -1294,7 +1305,7 @@ ${orderUrl}`);
                   onRemoveDiscount={removeDiscount}
                   showCoupon={showCoupon}
                   showDelivery={!boxProductsOnly && (productShipping.enabled || showDelivery)}
-                  deliveryLabel={productShipping.enabled ? "Envío por peso" : "Delivery"}
+                  deliveryLabel={wfComboDelivery ? "Domicilio" : productShipping.enabled ? "Envío por peso" : "Delivery"}
                   deliveryRequiresZone={!isWfCargo && !productShipping.enabled && method === "cuba"}
                   locationLabel={
                     !boxProductsOnly && method === "delivery" && form.city
