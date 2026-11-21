@@ -1,3 +1,5 @@
+import XpressLanding from "@/components/landing/xpress/XpressLanding";
+import { isXpressLanding, xpress } from "@/components/landing/xpress/content";
 import { isWfCargoHost } from "@/lib/saas/wfcargo-hosts";
 import type { Metadata } from "next";
 import { getPublicTravelPackages } from "@/lib/services/travel-public";
@@ -159,6 +161,15 @@ export async function generateMetadata({ searchParams }: HomeProps): Promise<Met
   }
 
   const store = await resolveStoreByHost(host);
+  if (store && isXpressLanding(store)) {
+    return buildLandingMetadata(getStorePublicBaseUrl(store), xpress, {
+      ...store,
+      meta_title: xpress.title,
+      meta_description: xpress.description,
+      favicon_url: store.favicon_url || xpress.favicon,
+    });
+  }
+
   if (landing !== "perla") {
     const profile = landingProfiles[landing];
     const landingStore = store || await resolveStoreBySlug(profile.slug);
@@ -282,6 +293,10 @@ async function LandingContent({ searchParams }: HomeProps) {
 export default async function HomePage({ searchParams }: HomeProps) {
   const host = (await headers()).get("host") || "";
   const store = await resolveStoreByHost(host);
+  if (store && isXpressLanding(store)) {
+    return <XpressLanding logoUrl={store.logo_url} storeSlug={store.slug} canonicalUrl={getStorePublicBaseUrl(store)} />;
+  }
+
   const showProcedures = resolveLanding(host) !== "wfcargo" && store?.module_procedures_enabled && store.procedures_public_enabled;
   return <><LandingContent searchParams={searchParams} />{showProcedures && <PublicProcedures name={store.name} color={store.primary_color} />}</>;
 }
