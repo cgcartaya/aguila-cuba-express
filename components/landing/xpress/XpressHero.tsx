@@ -101,11 +101,13 @@ export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: strin
                     <li><House aria-hidden /> Entrega a domicilio en Cuba</li>
                   </ul>
                 ) : <p className={styles.heroDescription}>{item.description}</p>}
-                <Link className={styles.primary} href={item.href}><Calculator size={19} aria-hidden />{item.action}</Link>
+                <div className={styles.heroActions}>
+                  <Link className={styles.primary} href={item.href}><Calculator size={17} aria-hidden />{item.action}</Link>
+                  <Link className={styles.heroTrack} href="#rastreo"><PackageSearch size={17} aria-hidden />Rastrear paquete</Link>
+                </div>
               </div>
             ))}
           </div>
-          <a className={styles.heroTrack} href="#rastreo"><PackageSearch size={19} aria-hidden />Rastrear paquete</a>
         </div>
         <div className={styles.controls}>
           <button className={styles.direction} type="button" onClick={() => select(active - 1)} aria-label="Banner anterior"><ChevronLeft size={20} /></button>
