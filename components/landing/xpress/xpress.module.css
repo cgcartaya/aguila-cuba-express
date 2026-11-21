@@ -20,8 +20,36 @@
 .top a, .top span { display: flex; align-items: center; gap: .45rem; }
 .top svg { color: var(--cyan); flex: none; }
 .header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 5.25rem; }
-.brand { display: block; width: clamp(9rem, 17vw, 13rem); flex: none; color: var(--indigo); font-size: 1.125rem; font-weight: 850; line-height: 1.1; }
-.brand img { width: 100%; height: 4rem; object-fit: contain; object-position: left; }
+.brand {
+  display: block;
+  position: relative;
+  width: clamp(9.5rem, 16vw, 12rem);
+  aspect-ratio: 938 / 384;
+  flex: none;
+}
+.brand img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: assembleBrand .48s ease-out backwards;
+}
+.brandSymbol { clip-path: polygon(0 0, 35% 0, 35% 35%, 55% 54%, 49% 100%, 0 100%); --entry-x: -.7rem; }
+.brand img.brandName {
+  clip-path: polygon(35% 0, 100% 0, 100% 34%, 55% 34%, 55% 54%, 35% 35%);
+  --entry-x: .8rem;
+  animation-delay: .13s;
+}
+.brand img.brandCaption {
+  clip-path: polygon(55% 34%, 100% 34%, 100% 100%, 49% 100%, 55% 54%);
+  --entry-y: .65rem;
+  animation-delay: .25s;
+}
+@keyframes assembleBrand {
+  from { opacity: 0; transform: translate(var(--entry-x, 0), var(--entry-y, 0)); }
+  to { opacity: 1; transform: translate(0, 0); }
+}
 .desktopNav { display: flex; align-items: center; gap: clamp(.65rem, 1.4vw, 1.4rem); font-size: .875rem; font-weight: 750; }
 .desktopNav > a:not(.primary):hover, .contact a:hover, .footer a:hover { text-decoration: underline; text-underline-offset: .2em; }
 .mobileNav { display: none; }
@@ -81,15 +109,6 @@
 }
 .heroPhoto[data-active="true"] { opacity: 1; z-index: 1; }
 .heroContent { width: min(100%, 37rem); }
-.heroLogo {
-  width: 9rem;
-  height: 3rem;
-  object-fit: contain;
-  object-position: left;
-  margin-bottom: .75rem;
-  animation: reveal 1.4s ease both;
-}
-@keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 /* Overlaid copy contributes to the same grid row at every slide. */
 .heroCopy { display: grid; }
 .heroSlide {
@@ -295,7 +314,6 @@
   .heroMedia { height: clamp(12rem, 59vw, 22rem); }
   .heroMedia::after { background: linear-gradient(0deg, #081d42, transparent 42%); }
   .heroContent { grid-row: 2; }
-  .heroLogo { display: none; }
   .heroTitle { font-size: clamp(1.9rem, 7vw, 2.75rem); }
   .benefits { gap: .45rem .85rem; font-size: .875rem; }
   .controls {
@@ -328,7 +346,7 @@
   .store { background-image: linear-gradient(90deg, #081d42 13%, #081d42f2 45%, #081d4270), url('/xpress/store.webp'); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .heroLogo { animation: none; }
+  .brand img { animation: none; }
   .heroPhoto { transition: none; }
 }
 
