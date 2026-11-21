@@ -1,6 +1,23 @@
 -- Apply after publishing the corresponding storefront assets.
 with photos(sku, old_notice) as (
   values
+    ('60278', 'Imagen ilustrativa generada. La presentación, el color o el empaque real pueden variar.'),
+    ('87941', null),
+    ('19637', null),
+    ('33579', null),
+    ('70838', null),
+    ('72387', 'Imagen ilustrativa generada. El empaque real puede variar.'),
+    ('73137', null),
+    ('36647', null),
+    ('65707', null),
+    ('61691', null),
+    ('48113', null),
+    ('95237', null),
+    ('5816', null),
+    ('4812', null),
+    ('5378', null),
+    ('59069', null),
+    ('55675', null),
     ('14182', null),
     ('14440', null),
     ('14516', 'Imagen ilustrativa generada. La presentación, el color o el empaque real pueden variar.'),
