@@ -2,6 +2,9 @@ import { HAVANA_MUNICIPALITIES } from "./cuba-provinces";
 
 const provincialDelivery: Record<string, { municipality: string; fee: number }> = {
   "Pinar del Río": { municipality: "Pinar del Río", fee: 5 },
+  "Santiago de Cuba": { municipality: "Santiago de Cuba", fee: 5 },
+  "Holguín": { municipality: "Holguín", fee: 5 },
+  Granma: { municipality: "Bayamo", fee: 5 },
   Cienfuegos: { municipality: "Cienfuegos", fee: 5 },
 };
 
