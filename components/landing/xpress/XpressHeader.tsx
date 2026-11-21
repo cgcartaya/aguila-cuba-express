@@ -21,7 +21,7 @@ export default function XpressHeader({ lockersEnabled }: { lockersEnabled: boole
       <header className={styles.header}>
         <div className={styles.wrap}>
           <a href="#inicio" className={styles.brand} aria-label="Xpress Multiservices Solutions, inicio">
-            {[styles.brandSymbol, styles.brandName, styles.brandCaption].map((piece) => (
+            {[styles.brandComplete, styles.brandLeft, styles.brandRight, styles.brandLid, styles.brandName, styles.brandCaption].map((piece) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img key={piece} className={piece} src="/xpress/logo-transparent.webp" alt="" width={938} height={384} />
             ))}

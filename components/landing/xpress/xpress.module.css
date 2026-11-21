@@ -33,23 +33,49 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  animation: assembleBrand .48s ease-out backwards;
 }
-.brandSymbol { clip-path: polygon(0 0, 35% 0, 35% 35%, 55% 54%, 49% 100%, 0 100%); --entry-x: -.7rem; }
-.brand img.brandName {
-  clip-path: polygon(35% 0, 100% 0, 100% 34%, 55% 34%, 55% 54%, 35% 35%);
+.brand img:not(.brandComplete) {
+  animation: assembleBrandPiece 5s ease-out var(--piece-delay, 0s) infinite backwards;
+}
+.brandLeft {
+  clip-path: polygon(0 43%, 10% 42%, 22.4% 25%, 22.4% 100%, 0 100%);
+  --entry-x: -.7rem;
+  --entry-y: .35rem;
+}
+.brandRight {
+  clip-path: polygon(22.4% 55%, 39.5% 35%, 39.5% 100%, 22.4% 100%);
+  --entry-x: .7rem;
+  --entry-y: .35rem;
+  --piece-delay: .08s;
+}
+.brandLid {
+  clip-path: polygon(16.5% 0, 27.5% 0, 27.5% 8%, 22.5% 13.6%, 16.5% 8%);
+  --entry-y: -.55rem;
+  --piece-delay: .18s;
+}
+.brandName {
+  clip-path: polygon(0 6.3%, 16% 6.3%, 22.5% 14%, 28% 6.3%, 100% 0, 100% 35%, 55% 35%, 55% 55%, 40% 55%, 22.4% 25%, 0 43%);
   --entry-x: .8rem;
-  animation-delay: .13s;
+  --piece-delay: .28s;
 }
-.brand img.brandCaption {
-  clip-path: polygon(55% 34%, 100% 34%, 100% 100%, 49% 100%, 55% 54%);
-  --entry-y: .65rem;
-  animation-delay: .25s;
+.brandCaption {
+  clip-path: inset(35% 0 0 55%);
+  --entry-y: .5rem;
+  --piece-delay: .4s;
 }
-@keyframes assembleBrand {
-  from { opacity: 0; transform: translate(var(--entry-x, 0), var(--entry-y, 0)); }
-  to { opacity: 1; transform: translate(0, 0); }
+.brandComplete { animation: holdAssembledBrand 5s linear infinite; }
+@keyframes assembleBrandPiece {
+  0% { opacity: 0; transform: translate(var(--entry-x, 0), var(--entry-y, 0)); }
+  9%, 19% { opacity: 1; transform: translate(0, 0); }
+  25%, 100% { opacity: 0; transform: translate(0, 0); }
 }
+@keyframes holdAssembledBrand {
+  0%, 19% { opacity: 0; }
+  23%, 96% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.brand:focus-visible img { animation: none; }
+.brand:focus-visible img:not(.brandComplete) { animation: none; visibility: hidden; }
 .desktopNav { display: flex; align-items: center; gap: clamp(.65rem, 1.4vw, 1.4rem); font-size: .875rem; font-weight: 750; }
 .desktopNav > a:not(.primary):hover, .contact a:hover, .footer a:hover { text-decoration: underline; text-underline-offset: .2em; }
 .mobileNav { display: none; }
@@ -347,6 +373,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .brand img { animation: none; }
+  .brand img:not(.brandComplete) { animation: none; visibility: hidden; }
   .heroPhoto { transition: none; }
 }
 
