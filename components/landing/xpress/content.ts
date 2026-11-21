@@ -66,3 +66,15 @@ export const transportRates = [
     ],
   },
 ];
+
+export const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(xpress.address)}`;
+export const contactWhatsApp = xpressWhatsApp("Hola, quisiera información sobre los envíos a Cuba.");
+export const navigation = [
+  ["Inicio", "#inicio"],
+  ["Servicios", "#servicios"],
+  ["Cotizador", "#cotizador"],
+  ["Tienda virtual", "#tienda"],
+  ["Casillero virtual", "#casillero"],
+  ["Rastreo", "#rastreo"],
+  ["Contacto", "#contacto"],
+];
