@@ -8,9 +8,9 @@ import styles from "./xpress.module.css";
 
 const banners = [
   { title: "Tus envíos a Cuba, más rápidos, seguros y confiables.", description: "", image: xpress.hero, href: "#cotizador", action: "Cotizar envío ahora" },
-  { title: "Cajas marítimas de precio fijo", description: "Cinco tamaños desde $45. Consulta el precio según el tamaño y la cantidad de cajas.", image: "/xpress/boxes.webp", href: "#cajas", action: "Ver tamaños y precios" },
+  { title: "Cajas marítimas de precio fijo", description: "Cinco tamaños desde $45. Consulta el precio según el tamaño y la cantidad de cajas.", image: xpress.boxesPhoto, href: "#cajas", action: "Ver tamaños y precios" },
   { title: "Frutas frescas y congelados", description: "Servicio Express prioritario con preparación y conservación refrigerada. La Habana en 24 h y provincias en 48–72 h.", image: "/xpress/fresh.webp", href: "#cotizador", action: "Consultar servicio prioritario" },
-  { title: "Compra en línea. Recibe con Xpress.", description: "Abre tu casillero desde cualquier estado de EE. UU. y coordina el envío a Cuba de tus compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "/casillero", action: "Ver casillero virtual" },
+  { title: "Compra en línea. Recibe con Xpress.", description: "Abre tu casillero desde cualquier estado de EE. UU. y coordina el envío a Cuba de tus compras de Amazon, Walmart y otras tiendas.", image: xpress.lockerPhoto, href: "/casillero", action: "Ver casillero virtual" },
 ];
 
 export default function XpressHero({ lockersEnabled }: { lockersEnabled: boolean }) {
@@ -79,6 +79,7 @@ export default function XpressHero({ lockersEnabled }: { lockersEnabled: boolean
               className={styles.heroPhoto}
               src={item.image}
               alt=""
+              data-boxes-photo={item.image === xpress.boxesPhoto || undefined}
               data-active={index === active}
               fetchPriority={index === 0 ? "high" : "low"}
               decoding="async"

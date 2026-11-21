@@ -244,7 +244,7 @@
   border-radius: .9rem;
   color: white;
   background: linear-gradient(90deg, #081d42 0%, #081d42f0 24%, #081d426e 62%, transparent 100%),
-    #081d42 url("/xpress/delivery-havana.webp") center 53% / cover no-repeat;
+    #081d42 url("/xpress/delivery-havana.webp?v=marca-1") center 53% / cover no-repeat;
 }
 .deliveryCopy { max-width: 27rem; padding: clamp(1.25rem, 3vw, 2.75rem); }
 .delivery h2 { font-size: clamp(1.85rem, 4vw, 3rem); text-wrap: balance; }
@@ -338,7 +338,8 @@
     grid-template-rows: auto auto;
   }
   .heroMedia { height: clamp(12rem, 59vw, 22rem); }
-  .heroMedia::after { background: linear-gradient(0deg, #081d42, transparent 42%); }
+  .heroMedia::after { background: linear-gradient(0deg, #081d42, #081d4260 15%, transparent 33%); }
+  .heroPhoto[data-boxes-photo], .serviceImage img[data-boxes-photo] { object-position: center 57%; }
   .heroContent { grid-row: 2; }
   .heroTitle { font-size: clamp(1.9rem, 7vw, 2.75rem); }
   .benefits { gap: .45rem .85rem; font-size: .875rem; }
@@ -355,7 +356,7 @@
     align-items: end;
     min-height: 22rem;
     background-image: linear-gradient(0deg, #081d42 0%, #081d42f5 35%, #081d4280 64%, transparent 88%),
-      url("/xpress/delivery-havana.webp");
+      url("/xpress/delivery-havana.webp?v=marca-1");
     background-position: 69% center;
   }
   .supportActions { grid-template-rows: none; }

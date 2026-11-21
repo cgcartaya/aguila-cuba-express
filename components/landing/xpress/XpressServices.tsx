@@ -1,11 +1,11 @@
 import { ArrowUpRight, Box, ChevronDown, Container, Plane, Snowflake, Truck, Warehouse } from "lucide-react";
 import type { XpressRate } from "@/lib/shipping/xpress-quote";
-import { transportRates, xpressWhatsApp } from "./content";
+import { transportRates, xpress, xpressWhatsApp } from "./content";
 import XpressQuoteInquiry from "./XpressQuoteInquiry";
 import styles from "./xpress.module.css";
 
 const transportIcons = [Truck, Plane, Container];
-const transportImages = ["/xpress/plane.webp", "/xpress/hero.webp", "/xpress/ship.webp"];
+const transportImages = ["/xpress/plane.webp", xpress.hero, "/xpress/ship.webp"];
 
 export default function XpressServices({ lockersEnabled, rates }: { lockersEnabled: boolean; rates: XpressRate[] }) {
   return (
@@ -17,14 +17,14 @@ export default function XpressServices({ lockersEnabled, rates }: { lockersEnabl
           <div className={styles.serviceCards}>
             {[
               ...transportRates.map((item, index) => ({ ...item, image: transportImages[index], href: `#${item.id}`, icon: transportIcons[index] })),
-              { id: "cajas", name: "Cajas marítimas", price: "Desde $45", image: "/xpress/boxes.webp", href: "#cajas", icon: Box },
+              { id: "cajas", name: "Cajas marítimas", price: "Desde $45", image: xpress.boxesPhoto, href: "#cajas", icon: Box },
               { id: "frutas", name: "Frutas y congelados", price: "Servicio prioritario", image: "/xpress/fresh.webp", href: "#cotizador", icon: Snowflake },
-              { id: "casillero", name: "Casillero virtual", price: lockersEnabled ? "Recibe tus compras" : "Consulta disponibilidad", image: "/xpress/locker.webp", href: lockersEnabled ? "/casillero" : xpressWhatsApp("Hola, quisiera información sobre el casillero para compras de Amazon, Walmart y otras tiendas desde Estados Unidos."), icon: Warehouse },
+              { id: "casillero", name: "Casillero virtual", price: lockersEnabled ? "Recibe tus compras" : "Consulta disponibilidad", image: xpress.lockerPhoto, href: lockersEnabled ? "/casillero" : xpressWhatsApp("Hola, quisiera información sobre el casillero para compras de Amazon, Walmart y otras tiendas desde Estados Unidos."), icon: Warehouse },
             ].map(({ id, name, price, image, href, icon: Icon }) => (
               <a className={styles.serviceCard} key={id} href={href}>
                 <div className={styles.serviceImage}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt="" loading="lazy" width={320} height={180} />
+                  <img data-boxes-photo={id === "cajas" || undefined} src={image} alt="" loading="lazy" width={320} height={180} />
                 </div>
                 <div className={styles.serviceLabel}>
                   <Icon size={19} aria-hidden />
