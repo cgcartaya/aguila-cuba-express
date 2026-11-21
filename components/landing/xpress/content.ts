@@ -3,7 +3,7 @@ import type { StoreMetadataRow } from "@/lib/saas/store-metadata";
 export const xpress = {
   name: "Xpress Multiservices Solutions Inc.",
   title: "Xpress Multiservices Solutions | Envíos a Cuba desde Hialeah",
-  description: "Envíos Express, aéreos y marítimos a Cuba, cajas de precio fijo, frutas, congelados, casillero virtual y productos para enviar desde Hialeah, Florida.",
+  description: "Envíos Express, aéreos y marítimos a Cuba, cajas de precio fijo, frutas, congelados y productos para enviar desde Hialeah, Florida.",
   address: "4175 East 8th Ave, Hialeah, FL",
   hours: "Lunes a domingo, 9:00 a. m. – 6:00 p. m.",
   phones: [
@@ -66,3 +66,19 @@ export const transportRates = [
     ],
   },
 ];
+
+export const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(xpress.address)}`;
+export const contactWhatsApp = xpressWhatsApp("Hola, quisiera información sobre los envíos a Cuba.");
+const navigation = [
+  ["Inicio", "#inicio"],
+  ["Servicios", "#servicios"],
+  ["Cotizador", "#cotizador"],
+  ["Tienda virtual", "#tienda"],
+  ["Casillero virtual", "/casillero"],
+  ["Rastreo", "#rastreo"],
+  ["Contacto", "#contacto"],
+];
+
+export function xpressNavigation(lockersEnabled: boolean) {
+  return navigation.filter(([, href]) => lockersEnabled || href !== "/casillero");
+}

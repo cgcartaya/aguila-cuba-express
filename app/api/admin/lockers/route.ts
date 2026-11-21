@@ -2,9 +2,11 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { normalizeIdentification } from "@/lib/lockers/identity";
-import { response, staff } from "@/lib/procedures/server";
+import { response } from "@/lib/procedures/server";
 
-const code = z.string().trim().toUpperCase().regex(/^WF-\d{4,14}$/);
+import { lockerRegistration, lockerStaff } from "@/lib/lockers/server";
+
+const code = z.string().trim().toUpperCase().regex(/^(?:WF|CV)-\d{4,14}$/);
 const listing = z.object({
   action: z.literal("list"),
   code: z.string().trim().max(30),
@@ -33,7 +35,7 @@ const mutation = z.discriminatedUnion("action", [
     email_checked: z.literal(true),
   }),
   z.object({ action: z.literal("verify"), code, identity_revision: z.uuid() }),
-  z.object({ action: z.literal("receive"), code, label_checked: z.literal(true), prealert_id: z.uuid().nullish(), branch: z.enum(["US 1", "Bayshore"]),
+  z.object({ action: z.literal("receive"), code, label_checked: z.literal(true), prealert_id: z.uuid().nullish(), branch: z.string().trim().min(1).max(80),
     tracking: z.string().trim().toUpperCase().min(3).max(120).nullish(), weight_lb: z.number().positive().max(10000),
     dimensions: z.string().trim().regex(/^\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?$/i).max(60) }),
   z.object({ action: z.literal("dispatch"), code, package_id: z.uuid(),
@@ -47,8 +49,8 @@ async function findLocker(store: string, value: string) {
 }
 
 export async function GET(request: Request) {
-  const user = await staff(request);
-  if (!user) return response({ error: "Acceso restringido a WF Cargo." }, 403);
+  const user = await lockerStaff(request);
+  if (!user) return response({ error: "Acceso restringido al personal autorizado de la tienda." }, 403);
   const input = code.safeParse(new URL(request.url).searchParams.get("code"));
   if (!input.success) return response({ error: "Introduce un código de casillero válido." }, 400);
   const { data: locker, error } = await findLocker(user.store, input.data);
@@ -72,13 +74,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const user = await staff(request);
-  if (!user) return response({ error: "Acceso restringido a WF Cargo." }, 403);
+  const user = await lockerStaff(request);
+  if (!user) return response({ error: "Acceso restringido al personal autorizado de la tienda." }, 403);
   const input = mutation.safeParse(await request.json().catch(() => null));
   if (!input.success) return response({ error: "Revisa los datos ingresados." }, 400);
   const action = input.data;
   if (action.action === "create") {
-    if (!user.supervisor) return response({ error: "El alta manual requiere un administrador de WF Cargo." }, 403);
+    if (!user.supervisor) return response({ error: "El alta manual requiere un administrador de la tienda." }, 403);
     const { customer_name, email, phone, destination, identification } = action;
     const existing = await db.from("virtual_lockers").select("id")
       .eq("store_id", user.store).eq("email_normalized", email).maybeSingle();
@@ -92,7 +94,7 @@ export async function POST(request: Request) {
     }
     const created = await db.from("virtual_lockers").insert({
       customer_name, email, phone, destination, identification,
-      store_id: user.store, customer_user_id: account.data.user.id, code: "WF", rules_version: "WF-2026-11",
+      store_id: user.store, customer_user_id: account.data.user.id, ...lockerRegistration(user.slug),
     }).select("code").single();
     if (created.error || !created.data) {
       const cleanup = await db.auth.admin.deleteUser(account.data.user.id);
@@ -137,7 +139,7 @@ export async function POST(request: Request) {
   if (error) return response({ error: "No se pudo consultar el casillero." }, 503);
   if (!locker) return response({ error: "Casillero no encontrado." }, 404);
   if (action.action === "verify") {
-    if (!user.supervisor) return response({ error: "La verificación requiere un administrador de WF Cargo." }, 403);
+    if (!user.supervisor) return response({ error: "La verificación requiere un administrador de la tienda." }, 403);
     const result = await db.from("virtual_lockers").update({ verified_by: user.id, verified_at: new Date().toISOString() })
       .eq("store_id", user.store).eq("id", locker.id).eq("identity_revision", action.identity_revision)
       .is("verified_at", null).select("id").maybeSingle();

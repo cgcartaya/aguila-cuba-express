@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { purchaseDate, purchaseStatus, type Purchase } from "@/lib/lockers/purchase";
 import LockerDialog from "@/components/lockers/LockerDialog";
+import type { Store } from "@/lib/saas/store-types";
+import { useStore } from "@/hooks/useStore";
+import { getCurrentAdminAccessCached } from "@/lib/admin/access-service";
+import { getStorePublicBaseUrl } from "@/lib/saas/store-metadata";
 import { supabase } from "@/lib/supabase";
 
 type LockerResult = {
@@ -19,13 +23,16 @@ type LockerResult = {
 const field = "block w-full rounded border border-slate-300 bg-white p-2 text-slate-900";
 const button = "rounded bg-blue-800 px-3 py-2 text-white disabled:opacity-50";
 
-async function api(code: string, body?: object) {
+async function requestLocker(storeId: string | undefined, code: string, body?: object) {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) throw new Error("Inicia sesión para continuar.");
+  const access = await getCurrentAdminAccessCached();
+  const activeId = access.data?.isSuperAdmin ? storeId : access.data?.store?.id;
+  if (!activeId) throw new Error("Selecciona una tienda.");
   const result = await fetch(`/api/admin/lockers?code=${encodeURIComponent(code)}`, {
     method: body ? "POST" : "GET",
-    headers: { Authorization: `Bearer ${token}`, ...(body && { "Content-Type": "application/json" }) },
+    headers: { "x-store-id": activeId, Authorization: `Bearer ${token}`, ...(body && { "Content-Type": "application/json" }) },
     body: body ? JSON.stringify({ code, ...body }) : undefined,
   });
   const json = await result.json();
@@ -43,6 +50,16 @@ type LockerList = {
 const emptyFilters = { code: "", name: "", identification: "", pending: false };
 
 export default function LockerAdmin() {
+  const { store } = useStore();
+  if (!store) return <p className="p-6">Selecciona una tienda para abrir el casillero.</p>;
+  if (!store.module_lockers_enabled) return <p className="p-6">El casillero virtual está desactivado para esta tienda.</p>;
+  return <LockerOffice key={store.id} store={store} />;
+}
+
+function LockerOffice({ store }: { store: Store }) {
+  const accessUrl = store.domain || store.subdomain ? new URL("/casillero", getStorePublicBaseUrl(store)).href : null;
+  const legacyWf = store?.slug === "wf-cago";
+  const api = useCallback((code: string, body?: object) => requestLocker(store.id, code, body), [store.id]);
   const [filters, setFilters] = useState(emptyFilters);
   const [{ query, page }, setSearch] = useState({ query: emptyFilters, page: 0 });
   const [list, setList] = useState<LockerList>();
@@ -59,7 +76,7 @@ export default function LockerAdmin() {
       if (current) setListMessage(error instanceof Error ? error.message : "No se pudieron cargar los casilleros.");
     });
     return () => { current = false; };
-  }, [query, page, refresh]);
+  }, [api, query, page, refresh]);
   const [result, setResult] = useState<LockerResult | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -114,7 +131,8 @@ export default function LockerAdmin() {
 
   return <main className="mx-auto grid max-w-6xl gap-5 px-4 py-6 sm:p-8">
     <header className="flex flex-wrap items-center justify-between gap-4">
-      <div><p className="text-sm text-slate-600">WF Cargo · Administración</p><h1 className="text-3xl font-bold tracking-tight">Casilleros abiertos</h1></div>
+      <div><p className="text-sm text-slate-600">{store?.name || "Casillero virtual"} · Administración</p><h1 className="text-3xl font-bold tracking-tight">Casilleros abiertos</h1>
+        {accessUrl && <a className="mt-2 inline-block text-sm font-semibold underline" href={accessUrl}>Abrir portal de clientes</a>}</div>
       {list?.canSearchIdentification && <LockerDialog label="+ Crear casillero" title="Crear casillero manualmente">
       <form className="grid gap-3 sm:grid-cols-2" onSubmit={createLocker}>
         <label>Nombre completo <input className={field} name="customer_name" maxLength={120} required /></label>
@@ -131,12 +149,12 @@ export default function LockerAdmin() {
         <p>Correo · {credentials.email}</p>
         <p>Contraseña · <code>{credentials.password}</code></p>
         <p>Comparte el acceso en privado con el titular. La contraseña se muestra solo en esta pantalla.</p>
-        <button type="button" className={button} onClick={async () => {
+        {accessUrl && <button type="button" className={button} onClick={async () => {
           try {
-            await navigator.clipboard.writeText(`Entra a https://wfcargoenviospsl.com/casillero y selecciona Entrar con una cuenta de correo existente.\nCasillero: ${credentials.code}\nCorreo: ${credentials.email}\nContraseña: ${credentials.password}`);
+            await navigator.clipboard.writeText(`Entra a ${accessUrl} y selecciona Entrar con una cuenta de correo existente.\nCasillero: ${credentials.code}\nCorreo: ${credentials.email}\nContraseña: ${credentials.password}`);
             setCreateMessage("Acceso copiado.");
           } catch { setCreateMessage("Selecciona y copia los datos de acceso de esta pantalla."); }
-        }}>Copiar datos de acceso</button>
+        }}>Copiar datos de acceso</button>}
         <button type="button" className="underline" onClick={() => { setCredentials(undefined); setCreateMessage(""); }}>Ocultar credenciales</button>
       </div>}
       <p role="status">{createMessage}</p>
@@ -148,7 +166,7 @@ export default function LockerAdmin() {
         event.preventDefault();
         setSearch({ query: { ...filters }, page: 0 });
       }}>
-        <label className="grid gap-1">Código<input className={field} value={filters.code} onChange={event => setFilters({ ...filters, code: event.target.value })} placeholder="WF-1001" maxLength={30} /></label>
+        <label className="grid gap-1">Código<input className={field} value={filters.code} onChange={event => setFilters({ ...filters, code: event.target.value })} placeholder={legacyWf ? "WF-1001" : "CV-1001"} maxLength={30} /></label>
         <label className="grid gap-1">Nombre<input className={field} value={filters.name} onChange={event => setFilters({ ...filters, name: event.target.value })} placeholder="Nombre o apellido" maxLength={120} /></label>
         {list?.canSearchIdentification && <label className="grid gap-1">ID o licencia<input className={field} value={filters.identification} onChange={event => setFilters({ ...filters, identification: event.target.value })} placeholder="Número o últimos 4" maxLength={60} autoComplete="off" /></label>}
         <label><input type="checkbox" checked={filters.pending} onChange={event => setFilters({ ...filters, pending: event.target.checked })} /> Con prealertas pendientes</label>
@@ -240,7 +258,7 @@ export default function LockerAdmin() {
       <form onSubmit={receive} className="grid gap-3 sm:grid-cols-2">
         <label className="sm:col-span-2"><input type="checkbox" name="label_checked" required /> Confirmé el titular y código de la etiqueta física · {result.locker.customer_name} · {result.locker.code}</label>
         <label>Compra asociada<select name="prealert_id" className={field}><option value="">Sin prealerta</option>{result.prealerts.filter(alert => !alert.completed_at).map(alert => <option key={alert.id} value={alert.id}>{alert.merchant} · {alert.tracking || alert.contents}</option>)}</select></label>
-        <label>Sucursal<select name="branch" className={field} required><option value="">Selecciona</option><option>US 1</option><option>Bayshore</option></select></label>
+        <label>Sucursal{legacyWf ? <select name="branch" className={field} required><option value="">Selecciona</option><option>US 1</option><option>Bayshore</option></select> : <input name="branch" className={field} defaultValue="Principal" maxLength={80} required />}</label>
         <label>Rastreo del transportista (opcional)<input name="tracking" className={field} /></label>
         <label>Peso en libras <input name="weight_lb" type="number" min="0.01" step="0.01" className={field} required /></label>
         <label>Dimensiones en pulgadas <input name="dimensions" placeholder="24x24x24" className={field} required /></label>
@@ -255,7 +273,7 @@ export default function LockerAdmin() {
           <p>{pkg.tracking || "Paquete sin rastreo"} · {pkg.weight_lb} lb · {pkg.dimensions} pulg</p>
           <p>Recepción: {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}</p>
           {/^\+?1?\d{10}$/.test(result.locker.phone.replace(/[ ()-]/g, "")) && <a className="underline" target="_blank" rel="noreferrer"
-            href={`https://wa.me/${result.locker.phone.replace(/\D/g, "").padStart(11, "1")}?text=${encodeURIComponent(`Hola, WF Cargo recibió un paquete${pkg.tracking ? ` (${pkg.tracking})` : ""} en tu casillero ${result.locker.code}.`)}`}>Avisar por WhatsApp</a>}
+            href={`https://wa.me/${result.locker.phone.replace(/\D/g, "").padStart(11, "1")}?text=${encodeURIComponent(`Hola, ${store?.name || "la agencia"} recibió un paquete${pkg.tracking ? ` (${pkg.tracking})` : ""} en tu casillero ${result.locker.code}.`)}`}>Avisar por WhatsApp</a>}
           <p>{pkg.shipment_reference ? `Despachado · ${pkg.shipment_reference}` : "Recibido en almacén"}</p>
         </article>)}
       </section>

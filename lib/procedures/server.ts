@@ -61,7 +61,7 @@ export async function procedurePublicStore(request: Request) {
   return data;
 }
 
-export async function procedureStaff(request: Request) {
+export async function storeModuleStaff(request: Request, module: "module_procedures_enabled" | "module_lockers_enabled") {
   const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
   if (!token) return null;
   const { data: auth } = await db.auth.getUser(token);
@@ -83,8 +83,12 @@ export async function procedureStaff(request: Request) {
   const role = String(membership?.role || "").toUpperCase();
   if (profile.role !== "super_admin" && !["OWNER", "ADMIN", "OPERATIONS"].includes(role)) return null;
   const { data: store } = await db.from("stores").select("id,slug,name,primary_color")
-    .eq("id", storeId).eq("is_active", true).eq("module_procedures_enabled", true).maybeSingle();
+    .eq("id", storeId).eq("is_active", true).eq(module, true).maybeSingle();
   if (!store) return null;
   return { id: auth.user.id, store: store.id, slug: store.slug, name: store.name,
     color: store.primary_color, supervisor: profile.role === "super_admin" || role !== "OPERATIONS" };
+}
+
+export function procedureStaff(request: Request) {
+  return storeModuleStaff(request, "module_procedures_enabled");
 }

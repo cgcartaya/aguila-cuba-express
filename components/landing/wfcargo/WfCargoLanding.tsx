@@ -65,7 +65,7 @@ async function loadBoxRates() {
   });
 }
 
-export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
+export default async function WfCargoLanding({ locale, lockersEnabled = true }: { locale: WfLocale; lockersEnabled?: boolean }) {
   const t = wfCopy(locale);
   const host = (await headers()).get("host") || "invalid.local";
   const [procedureStore, destinations] = await Promise.all([
@@ -108,7 +108,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
             <Link className={s.shopNavLink} href={`/tienda/${wfSlug}`}>{t("Tienda", "Shop")}</Link>
             <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
             <a href="#tramites">{t("Trámites", "Document services")}</a>
-            <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
+            {lockersEnabled && <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>}
             <a href="#sucursales">{t("Sucursales", "Locations")}</a>
             <a href="#quienes-somos">{t("Quiénes somos", "About us")}</a>
           </div>
@@ -134,7 +134,7 @@ export default async function WfCargoLanding({ locale }: { locale: WfLocale }) {
               <Link className={s.shopNavLink} href={`/tienda/${wfSlug}`}>{t("Tienda", "Shop")}</Link>
               <Link href={wfRemittancesHref(locale)}>{t("Remesas", "Money transfers")}</Link>
               <a href="#tramites">{t("Trámites", "Document services")}</a>
-              <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>
+              {lockersEnabled && <Link href="/casillero">{t("Casillero Virtual", "Virtual locker")}</Link>}
               <a href="#sucursales">{t("Sucursales", "Locations")}</a>
               <a href="#quienes-somos">{t("Quiénes somos", "About us")}</a>
             </div>

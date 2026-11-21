@@ -1,18 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Calculator, ChevronLeft, ChevronRight, Clock, House, PackageSearch, Pause, Play, ShieldCheck } from "lucide-react";
-import { transportRates, xpress, xpressWhatsApp } from "./content";
+import { xpress } from "./content";
 import styles from "./xpress.module.css";
 
-const slides = [
+const banners = [
   { title: "Tus envíos a Cuba, más rápidos, seguros y confiables.", description: "", image: xpress.hero, href: "#cotizador", action: "Cotizar envío ahora" },
   { title: "Cajas marítimas de precio fijo", description: "Cinco tamaños desde $45. Consulta el precio según el tamaño y la cantidad de cajas.", image: "/xpress/boxes.webp", href: "#cajas", action: "Ver tamaños y precios" },
-  { title: "Frutas frescas y congelados", description: "Servicio Express prioritario con preparación y conservación refrigerada.", image: "/xpress/fresh.webp", href: "#frutas", action: "Ver servicio prioritario" },
-  { title: "Compra en línea. Recibe con Xpress.", description: "Consulta cómo recibir compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "#casillero", action: "Ver casillero virtual" },
+  { title: "Frutas frescas y congelados", description: "Servicio Express prioritario con preparación y conservación refrigerada. La Habana en 24 h y provincias en 48–72 h.", image: "/xpress/fresh.webp", href: "#cotizador", action: "Consultar servicio prioritario" },
+  { title: "Compra en línea. Recibe con Xpress.", description: "Consulta cómo recibir compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "/casillero", action: "Ver casillero virtual" },
 ];
 
-export function XpressHero({ logoUrl }: { logoUrl?: string | null }) {
+export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
+  const slides = lockersEnabled ? banners : banners.slice(0, -1);
+  const slideCount = slides.length;
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const [interacting, setInteracting] = useState(false);
@@ -31,16 +34,15 @@ export function XpressHero({ logoUrl }: { logoUrl?: string | null }) {
   const rotating = !paused && !interacting && !focused && !reducedMotion;
   useEffect(() => {
     if (!rotating) return;
-    const timer = window.setInterval(() => setActive((index) => (index + 1) % slides.length), 7500);
+    const timer = window.setInterval(() => setActive((index) => (index + 1) % slideCount), 7500);
     return () => window.clearInterval(timer);
-  }, [rotating, active]);
+  }, [rotating, active, slideCount]);
 
   function select(index: number) {
     setPaused(true);
-    setActive((index + slides.length) % slides.length);
+    setActive((index + slideCount) % slideCount);
   }
 
-  const slide = slides[active];
   return (
     <section
       className={styles.hero}
@@ -56,6 +58,7 @@ export function XpressHero({ logoUrl }: { logoUrl?: string | null }) {
         const touch = event.touches[0];
         touchStart.current = { x: touch.clientX, y: touch.clientY };
       }}
+      onTouchCancel={() => { touchStart.current = null; }}
       onTouchEnd={(event) => {
         const start = touchStart.current;
         touchStart.current = null;
@@ -67,27 +70,42 @@ export function XpressHero({ logoUrl }: { logoUrl?: string | null }) {
         }
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img key={slide.image} className={styles.heroPhoto} src={slide.image} alt="" fetchPriority={active === 0 ? "high" : "auto"} />
       <div className={styles.heroInside}>
-        {logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
+        <div className={styles.heroMedia}>
+          {slides.map((item, index) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={item.image}
+              className={styles.heroPhoto}
+              src={item.image}
+              alt=""
+              data-active={index === active}
+              fetchPriority={index === 0 ? "high" : "low"}
+              decoding="async"
+            />
+          ))}
+        </div>
+        <div className={styles.heroContent}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img className={styles.heroLogo} src={logoUrl} alt={xpress.name} />
-        )}
-        <div className={styles.heroCopy} aria-live={rotating ? "off" : "polite"}>
-          <h1 className={styles.visuallyHidden}>Tus envíos a Cuba, más rápidos, seguros y confiables.</h1>
-          <p className={styles.heroTitle} aria-hidden={active === 0 ? true : undefined}>{slide.title}</p>
-          {active === 0 ? (
-            <ul className={styles.benefits}>
-              <li><Clock aria-hidden /> Express en La Habana en 24–48 h</li>
-              <li><ShieldCheck aria-hidden /> Seguridad y seguimiento</li>
-              <li><House aria-hidden /> Entrega a domicilio en Cuba</li>
-            </ul>
-          ) : <p className={styles.heroDescription}>{slide.description}</p>}
-          <div className={styles.actions}>
-            <a className={styles.primary} href={slide.href}><Calculator size={19} aria-hidden />{slide.action}</a>
-            <a className={styles.outline} href="#rastreo"><PackageSearch size={19} aria-hidden />Rastrear paquete</a>
+          <div className={styles.heroCopy} aria-live={rotating ? "off" : "polite"}>
+            {slides.map((item, index) => (
+              <div className={styles.heroSlide} key={item.title} aria-hidden={index !== active} inert={index !== active}>
+                {index === 0
+                  ? <h1 className={styles.heroTitle}>{item.title}</h1>
+                  : <p className={styles.heroTitle}>{item.title}</p>}
+                {index === 0 ? (
+                  <ul className={styles.benefits}>
+                    <li><Clock aria-hidden /> Express en La Habana en 24–48 h</li>
+                    <li><ShieldCheck aria-hidden /> Seguridad y seguimiento</li>
+                    <li><House aria-hidden /> Entrega a domicilio en Cuba</li>
+                  </ul>
+                ) : <p className={styles.heroDescription}>{item.description}</p>}
+                <Link className={styles.primary} href={item.href}><Calculator size={19} aria-hidden />{item.action}</Link>
+              </div>
+            ))}
           </div>
+          <a className={styles.heroTrack} href="#rastreo"><PackageSearch size={19} aria-hidden />Rastrear paquete</a>
         </div>
         <div className={styles.controls}>
           <button className={styles.direction} type="button" onClick={() => select(active - 1)} aria-label="Banner anterior"><ChevronLeft size={20} /></button>
@@ -99,27 +117,5 @@ export function XpressHero({ logoUrl }: { logoUrl?: string | null }) {
         </div>
       </div>
     </section>
-  );
-}
-
-export function XpressQuoteInquiry() {
-  const [service, setService] = useState("");
-  return (
-    <div className={styles.quote}>
-      <h2><Calculator aria-hidden /> Cotiza tu envío</h2>
-      <div className={styles.quoteBody}>
-        <label htmlFor="xpress-service">Modalidad de envío</label>
-        <select id="xpress-service" value={service} onChange={(event) => setService(event.target.value)}>
-          <option value="">Selecciona la modalidad</option>
-          {transportRates.map(({ name }) => <option key={name}>{name}</option>)}
-          <option>Cajas marítimas</option>
-          <option>Frutas y congelados</option>
-        </select>
-        <p>Indícanos el municipio de entrega y el peso o la cantidad para confirmar el precio.</p>
-        <a className={styles.primary} href={xpressWhatsApp(service ? `Hola, quisiera cotizar: ${service}.` : "Hola, quisiera cotizar un envío a Cuba.")}>
-          Solicitar cotización
-        </a>
-      </div>
-    </div>
   );
 }

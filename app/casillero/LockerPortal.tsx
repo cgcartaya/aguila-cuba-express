@@ -56,7 +56,6 @@ const panel = "min-w-0 rounded-2xl border border-blue-100 bg-white p-5 shadow-sm
 const field = "block w-full rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-base";
 const primary = "inline-flex rounded-lg bg-gradient-to-b from-blue-700 to-blue-900 px-4 py-2.5 font-semibold text-white disabled:opacity-50";
 const secondary = "inline-flex rounded-lg border border-slate-300 px-4 py-2 font-semibold";
-const addressLines = [lockerWarehouse.street, lockerWarehouse.cityLine, `Tel. ${lockerWarehouse.phone}`];
 const states = State.getStatesOfCountry("US").filter(state => !["AS", "GU", "MP", "PR", "UM", "VI"].includes(state.isoCode));
 const countryNames = new Intl.DisplayNames(["es"], { type: "region" });
 const countries = Country.getAllCountries()
@@ -117,7 +116,7 @@ function ProfileFields({ profile }: { profile?: Profile }) {
         </select>
       </label>}
       <label>Número de identificación<input name="identification" className={field} autoComplete="off" required minLength={3} maxLength={60} defaultValue={profile?.identification} /></label>
-      <p className="text-sm text-slate-600">WF Cargo verifica el documento antes del despacho. Si cambias el nombre o el documento, la agencia deberá verificarlo de nuevo.</p>
+      <p className="text-sm text-slate-600">La agencia verifica el documento antes del despacho. Si cambias el nombre o el documento, la agencia deberá verificarlo de nuevo.</p>
     </fieldset>
   </>;
 }
@@ -138,7 +137,19 @@ async function api(session: Session, method: string, body?: object) {
   return data;
 }
 
-export default function LockerPortal() {
+export default function LockerPortal({ name, logoUrl, receivingAddress, whatsappNumber, legacyWf }: {
+  name: string;
+  logoUrl: string | null;
+  receivingAddress: string | null;
+  whatsappNumber: string | null;
+  legacyWf: boolean;
+}) {
+  const phone = whatsappNumber?.replace(/\D/g, "");
+  const supportLink = (message: string) => phone
+    ? `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
+    : legacyWf ? whatsapp(message) : null;
+  const rules = legacyWf ? <><LockerRules /><Link className="mt-2 inline-block underline" href="/condiciones">Ver condiciones del servicio</Link></>
+    : <p>Usa tu nombre y código al hacer compras. Prealerta cada paquete y conserva la factura. La agencia verifica al titular y confirma el costo y las condiciones antes del despacho.</p>;
   const [session, setSession] = useState<Session | null | undefined>();
   const [account, setAccount] = useState<{ userId: string; result: Result }>();
   const result = account?.userId === session?.user.id ? account?.result : undefined;
@@ -227,7 +238,7 @@ export default function LockerPortal() {
       const { error } = await auth.updateUser({ password });
       if (error) throw error;
       const logout = await auth.signOut({ scope: "others" });
-      if (logout.error) console.warn("WF Cargo could not revoke other sessions.");
+      if (logout.error) console.warn("Locker portal could not revoke other sessions.");
       setResetting(false);
       setMessage("Tu contraseña fue actualizada.");
     } catch {
@@ -371,7 +382,7 @@ export default function LockerPortal() {
       form.reset();
       setItems([{ name: "", quantity: 1 }]);
       setAccount({ userId: session.user.id, result: await load(session) });
-      setPrealertMessage("Prealerta enviada a WF Cargo.");
+      setPrealertMessage("Prealerta enviada a la agencia.");
     } catch (error) {
       setPrealertMessage(error instanceof Error ? error.message : "No se pudo guardar la prealerta.");
     } finally {
@@ -380,27 +391,36 @@ export default function LockerPortal() {
   }
 
   const locker = session && result?.locker;
-  const address = locker ? [`${locker.customer_name} – ${locker.code}`, addressLines[0], locker.code, ...addressLines.slice(1)].join("\n") : "";
+  const warehouseAddress = receivingAddress?.trim() || (legacyWf
+    ? [lockerWarehouse.street, lockerWarehouse.cityLine, `Tel. ${lockerWarehouse.phone}`].join("\n")
+    : "");
+  const address = locker && warehouseAddress
+    ? [`${locker.customer_name} – ${locker.code}`, ...(legacyWf && !receivingAddress
+      ? [lockerWarehouse.street, locker.code, lockerWarehouse.cityLine, `Tel. ${lockerWarehouse.phone}`]
+      : [warehouseAddress, `Dirección 2: ${locker.code}`])].join("\n") : "";
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>();
   const purchases = result?.prealerts ?? [];
   const selectedPurchase = purchases.find(purchase => purchase.id === selectedPurchaseId) ?? purchases[0];
   const activeStep = selectedPurchase?.delivered_at ? 3 : selectedPurchase?.dispatched_at ? 2 :
     selectedPurchase?.completed_at || (selectedPurchase && result?.packages.some(pkg => pkg.prealert_id === selectedPurchase.id)) ? 1 : 0;
   const showDashboard = Boolean(locker && !mailLink && !resetting);
-  const supportUrl = whatsapp(locker
+  const supportUrl = supportLink(locker
     ? `Hola, quisiera ayuda con mi casillero ${locker.code}.`
     : "Hola, quisiera información sobre el casillero virtual.");
 
   return <div className="min-h-screen bg-[#edf4fe] text-[#092457]">
     <header className="border-b border-slate-200 bg-white">
       <div className="mx-auto flex max-w-[100rem] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-7">
-        <Link href="/" className="flex items-center gap-3 font-bold"><Image src="/wfcargo/logo.webp" alt="WF Cargo" width={56} height={56} className="rounded-full object-contain" /><span>WF Cargo Envíos<span className="block text-xs font-medium sm:text-sm">Envíos · Casillero Virtual · Trámites</span></span></Link>
+        <Link href="/" className="flex items-center gap-3 font-bold">
+          {(logoUrl || legacyWf) && <Image src={logoUrl || "/wfcargo/logo.webp"} alt="" width={56} height={56} unoptimized className="rounded-lg object-contain" />}
+          <span>{name}<span className="block text-xs font-medium sm:text-sm">Casillero virtual</span></span>
+        </Link>
         {showDashboard && <span className="flex max-w-full items-center gap-2 break-all text-sm font-semibold"><UserRound size={19} />{locker?.customer_name}</span>}
         {session ? <button className={secondary} onClick={async () => {
           const { error } = await auth.signOut({ scope: "local" });
           if (error) { setMessage("No se pudo cerrar la sesión. Intenta nuevamente."); return; }
           setAccount(undefined); setMessage(""); window.history.replaceState(null, "", "/casillero");
-        }}>Cerrar sesión</button> : <Link href="/" className="inline-flex items-center gap-2 font-semibold text-blue-800"><ArrowLeft size={18} />Volver a WF Cargo</Link>}
+        }}>Cerrar sesión</button> : <Link href="/" className="inline-flex items-center gap-2 font-semibold text-blue-800"><ArrowLeft size={18} />Volver a la tienda</Link>}
       </div>
     </header>
     <div className={showDashboard ? "mx-auto max-w-[100rem] lg:grid lg:grid-cols-[13.5rem_minmax(0,1fr)]" : ""}>
@@ -412,7 +432,7 @@ export default function LockerPortal() {
           { href: "#prealertar", label: "Prealertar compra", Icon: ShoppingCart },
           { href: "#mi-perfil", label: "Mi perfil", Icon: UserRound },
           { href: "#como-funciona", label: "Cómo funciona", Icon: BookOpen },
-          { href: supportUrl, label: "Ayuda / Soporte", Icon: CircleHelp },
+          ...(supportUrl ? [{ href: supportUrl, label: "Ayuda / Soporte", Icon: CircleHelp }] : []),
         ].map(({ href, label, Icon }, index) => <a key={href} href={href}
           onClick={href === "#mi-perfil" ? () => {
             const profile = document.querySelector<HTMLDetailsElement>("#mi-perfil");
@@ -461,9 +481,9 @@ export default function LockerPortal() {
           </ol>
           <details className="mt-6 rounded-xl bg-white/10 p-3 text-sm">
             <summary className="cursor-pointer font-semibold">Conoce las reglas del casillero</summary>
-            <div className="mt-3 rounded-lg bg-white p-3 text-blue-950"><LockerRules /><Link className="mt-2 inline-block underline" href="/condiciones">Ver condiciones del servicio</Link></div>
+            <div className="mt-3 rounded-lg bg-white p-3 text-blue-950">{rules}</div>
           </details>
-          <a className="mt-4 inline-block text-sm text-blue-100 underline" href={whatsapp("Hola, quisiera consultar la tarifa por libra para mi destino desde el casillero.")}>Consultar tarifas desde USD {shipping.perPound.sea.toFixed(2)}/lb por marítimo a Cuba</a>
+          {legacyWf && <a className="mt-4 inline-block text-sm text-blue-100 underline" href={whatsapp("Hola, quisiera consultar la tarifa por libra para mi destino desde el casillero.")}>Consultar tarifas desde USD {shipping.perPound.sea.toFixed(2)}/lb por marítimo a Cuba</a>}
         </section>
         <section className={panel}>
           <h1 className="flex items-center gap-3 text-2xl font-bold sm:text-3xl"><Package className="shrink-0 text-blue-800" aria-hidden="true" />Accede a tu Casillero Virtual</h1>
@@ -508,21 +528,20 @@ export default function LockerPortal() {
           ].map(({ Icon, title, copy }) => <div key={title} className="flex gap-3">
             <Icon size={27} className="shrink-0 text-blue-800" aria-hidden="true" />
             <div><strong>{title}</strong><p className="text-sm text-slate-600">{copy}</p>
-              {Icon === CircleHelp && <a href={supportUrl} className="text-sm font-semibold text-blue-800 underline">Abrir WhatsApp</a>}
+              {Icon === CircleHelp && supportUrl && <a href={supportUrl || undefined} className="text-sm font-semibold text-blue-800 underline">Abrir WhatsApp</a>}
             </div>
           </div>)}
         </section>
       </div>}
       {!mailLink && !resetting && session && result && !locker && <section className={`${panel} mx-auto w-full max-w-2xl`}>
         <h1 className="mb-2 text-3xl font-bold">Abre tu casillero</h1>
-        <p className="mb-5 text-slate-600">Completa tus datos para recibir tu código WF.</p>
+        <p className="mb-5 text-slate-600">Completa tus datos para recibir tu código de casillero.</p>
         <p className="mb-4 break-all">Correo de la cuenta · {session.user.email}</p>
         <form onSubmit={register} className="grid gap-4">
           <ProfileFields />
           <details className="space-y-2 text-sm text-slate-700">
             <summary className="font-semibold">Reglas del casillero</summary>
-            <LockerRules />
-            <Link className="underline" href="/condiciones">Ver condiciones del servicio</Link>
+            {rules}
           </details>
           <label className="flex gap-2"><input type="checkbox" name="accepted" required checked={acceptedRulesFor === session.user.id}
             onChange={event => setAcceptedRulesFor(event.target.checked ? session.user.id : null)} /> Leí y acepto las reglas del casillero.</label>
@@ -541,17 +560,13 @@ export default function LockerPortal() {
               <div><h2 className="flex items-center gap-2 text-sm text-blue-100"><MapPin size={16} aria-hidden="true" />Tu código de casillero</h2><p className="text-4xl font-extrabold text-[#ffce06]">{locker.code}</p></div>
               <span className={`rounded-full px-3 py-1 text-sm font-semibold ${locker.verified_at ? "bg-green-700 text-white" : "bg-white/15 text-white"}`}>{locker.verified_at ? "Titular verificado" : "Verificación pendiente"}</span>
             </div>
-            <dl className="my-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 break-words text-sm">
-              <dt>Nombre</dt><dd>{locker.customer_name} {locker.code}</dd>
-              <dt>Dirección 1</dt><dd>{lockerWarehouse.street}</dd>
-              <dt>Dirección 2</dt><dd className="font-semibold">{locker.code}</dd>
-              <dt>Ciudad y ZIP</dt><dd>{lockerWarehouse.cityLine}</dd>
-              <dt>Teléfono</dt><dd>{lockerWarehouse.phone}</dd>
-            </dl>
-            <button className={`${secondary} bg-white text-blue-950`} onClick={async () => {
-              try { await navigator.clipboard.writeText(address); setMessage("Dirección copiada."); }
-              catch { setMessage("Selecciona la dirección para copiarla."); }
-            }}><Copy size={17} className="mr-2 self-center" aria-hidden="true" />Copiar dirección</button>
+            {address ? <>
+              <p className="my-5 whitespace-pre-line break-words text-sm">{address}</p>
+              <button className={`${secondary} bg-white text-blue-950`} onClick={async () => {
+                try { await navigator.clipboard.writeText(address); setMessage("Dirección copiada."); }
+                catch { setMessage("Selecciona la dirección para copiarla."); }
+              }}><Copy size={17} className="mr-2 self-center" aria-hidden="true" />Copiar dirección</button>
+            </> : <p className="mt-4 text-sm">La agencia aún tiene pendiente publicar la dirección de recepción.</p>}
             </div>
             <div className="mx-auto w-full max-w-40 sm:max-w-none"><LockerParcelArt variant="dashboard" /></div>
           </section>
@@ -574,7 +589,7 @@ export default function LockerPortal() {
             <label>Valor pagado (USD)<input className={field} name="declared_value" type="number" min="0" max="999999" step="0.01" required /></label>
             <button className={primary} disabled={busy}>Enviar prealerta</button>
           </form>
-            <a className="mt-3 inline-block text-blue-800 underline" href={whatsapp(`Hola, adjunto la factura de una prealerta de ${locker.code}. Rastreo: `)} target="_blank" rel="noreferrer">Enviar factura por WhatsApp</a>
+            {supportUrl && <a className="mt-3 inline-block text-blue-800 underline" href={supportLink(`Hola, adjunto la factura de una prealerta de ${locker.code}. Rastreo: `) || undefined} target="_blank" rel="noreferrer">Enviar factura por WhatsApp</a>}
             <p className="mt-2 text-sm" role="status">{prealertMessage}</p>
             </LockerDialog>
           </section>
@@ -614,7 +629,7 @@ export default function LockerPortal() {
                 {alert.delivered_at && <p>Entregada · {purchaseDate(alert.delivered_at)}</p>}
                 {alert.external_tracking && <p>Rastreo final · {alert.external_tracking}</p>}
                 {alert.external_url && <a className="underline" href={alert.external_url} target="_blank" rel="noreferrer">Rastrear envío final</a>}
-                {alert.invoice_url && <a className="underline" href={alert.invoice_url} target="_blank" rel="noreferrer">Ver factura de WF Cargo</a>}
+                {alert.invoice_url && <a className="underline" href={alert.invoice_url} target="_blank" rel="noreferrer">Ver factura</a>}
               </div>
             </details>;
           })}
@@ -624,8 +639,8 @@ export default function LockerPortal() {
               <strong>{pkg.tracking || "Paquete sin rastreo"}</strong> {pkg.branch && `· ${pkg.branch}`} · {pkg.weight_lb} lb · {new Date(pkg.received_at).toLocaleDateString("es-US", { timeZone: "America/New_York" })}
               <p>{pkg.guide?.status === "delivered" ? "Entregado" : ["in_transit", "out_for_delivery", "received_cuba"].includes(pkg.guide?.status ?? "") ? "En tránsito" : pkg.shipment_reference ? "Despachado" : "Recibido en almacén"}
               {pkg.shipment_reference && ` · Guía ${pkg.shipment_reference}`}</p>
-              {pkg.guide?.public_tracking_enabled && pkg.shipment_reference && <Link className="underline" href={`/rastrear/${encodeURIComponent(pkg.shipment_reference)}`}>Rastrear envío de WF Cargo</Link>}
-              {pkg.guide?.public_tracking_enabled && pkg.shipment_reference && <Link className="ml-3 underline" href={`/factura/${encodeURIComponent(pkg.shipment_reference)}`}>Ver factura de WF Cargo</Link>}
+              {pkg.guide?.public_tracking_enabled && pkg.shipment_reference && <Link className="underline" href={`/rastrear/${encodeURIComponent(pkg.shipment_reference)}`}>Rastrear envío</Link>}
+              {pkg.guide?.public_tracking_enabled && pkg.shipment_reference && <Link className="ml-3 underline" href={`/factura/${encodeURIComponent(pkg.shipment_reference)}`}>Ver factura</Link>}
               {pkg.guide?.service_price != null && <p>Costo de la guía · {new Intl.NumberFormat("es-US", { style: "currency", currency: "USD" }).format(pkg.guide.service_price)}</p>}
             </li>)}
           </ul> : <p>Aún no tienes paquetes registrados.</p>}
@@ -653,7 +668,7 @@ export default function LockerPortal() {
                 ["Compra en línea", "Elige tus productos en tus tiendas favoritas."],
                 ["Usa tu código", "Ponlo junto a tu nombre y en Dirección 2."],
                 ["Prealerta tu compra", "Registra los artículos y añade el rastreo cuando lo tengas."],
-                ["Recibe tu envío", "Consulta el estado y coordina el envío final con WF Cargo."],
+                ["Recibe tu envío", "Consulta el estado y coordina el envío final con la agencia."],
               ].map(([title, description], index) => <li key={title} className="text-sm">
                 <span className="mb-2 grid size-7 place-items-center rounded-full bg-[#ffce06] font-bold">{index + 1}</span>
                 <strong>{title}</strong><p className="mt-1 text-slate-600">{description}</p>
@@ -663,7 +678,7 @@ export default function LockerPortal() {
           <section className={panel}>
             <h2 className="flex items-center gap-2 text-xl font-bold"><CircleHelp className="text-green-700" aria-hidden="true" />¿Necesitas ayuda?</h2>
             <p className="mt-2 text-sm text-slate-600">Escríbenos si necesitas ayuda con tu casillero o un envío.</p>
-            <a className="mt-4 inline-flex rounded-lg bg-green-700 px-4 py-2.5 font-semibold text-white" href={supportUrl} target="_blank" rel="noreferrer">Chatear por WhatsApp</a>
+            {supportUrl && <a className="mt-4 inline-flex rounded-lg bg-green-700 px-4 py-2.5 font-semibold text-white" href={supportUrl} target="_blank" rel="noreferrer">Chatear por WhatsApp</a>}
           </section>
         </div>
         <details id="mi-perfil" className={panel} key={locker.code}>

@@ -1,3 +1,4 @@
+import { resolveLockerStore } from "@/lib/lockers/server";
 import XpressLanding from "@/components/landing/xpress/XpressLanding";
 import { isXpressLanding, xpress } from "@/components/landing/xpress/content";
 import { isWfCargoHost } from "@/lib/saas/wfcargo-hosts";
@@ -204,7 +205,10 @@ async function LandingContent({ searchParams }: HomeProps) {
     />;
   }
 
-  if (landing === "wfcargo") return <WfCargoLanding locale={wfLocale((await searchParams).lang)} />;
+  if (landing === "wfcargo") {
+    const store = await resolveLockerStore(await getCurrentHost());
+    return <WfCargoLanding locale={wfLocale((await searchParams).lang)} lockersEnabled={Boolean(store)} />;
+  }
 
   if (landing === "tumercadolajero") {
     const store = await resolveStoreBySlug("tumercadolajero");
@@ -294,7 +298,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
   const host = (await headers()).get("host") || "";
   const store = await resolveStoreByHost(host);
   if (store && isXpressLanding(store)) {
-    return <XpressLanding logoUrl={store.logo_url} storeSlug={store.slug} canonicalUrl={getStorePublicBaseUrl(store)} />;
+    const lockerStore = await resolveLockerStore(host);
+    return <XpressLanding lockersEnabled={Boolean(lockerStore)} logoUrl={store.logo_url} storeSlug={store.slug} canonicalUrl={getStorePublicBaseUrl(store)} />;
   }
 
   const showProcedures = resolveLanding(host) !== "wfcargo" && store?.module_procedures_enabled && store.procedures_public_enabled;

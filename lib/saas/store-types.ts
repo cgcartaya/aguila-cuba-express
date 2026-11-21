@@ -26,6 +26,9 @@ export interface Store {
   module_shipping_enabled: boolean
   module_pickups_enabled: boolean
   module_menu_enabled: boolean
+  module_lockers_enabled: boolean
+  locker_receiving_address: string | null
+  locker_whatsapp: string | null
   module_procedures_enabled: boolean
   procedures_public_enabled: boolean
   module_reservas_enabled: boolean

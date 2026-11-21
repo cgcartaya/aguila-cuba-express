@@ -92,6 +92,9 @@ type StoreForm = {
   module_shipping_enabled: boolean
   module_pickups_enabled: boolean
   module_menu_enabled: boolean
+  module_lockers_enabled: boolean
+  locker_receiving_address: string
+  locker_whatsapp: string
   module_procedures_enabled: boolean
   procedures_public_enabled: boolean
   module_reservas_enabled: boolean
@@ -134,6 +137,9 @@ const EMPTY_FORM: StoreForm = {
   module_shipping_enabled: false,
   module_pickups_enabled: false,
   module_menu_enabled: false,
+  module_lockers_enabled: false,
+  locker_receiving_address: "",
+  locker_whatsapp: "",
   module_procedures_enabled: false,
   procedures_public_enabled: false,
   module_reservas_enabled: false,
@@ -373,6 +379,9 @@ export default function EditStorePage() {
         module_shipping_enabled: Boolean(store.module_shipping_enabled),
         module_pickups_enabled: Boolean(store.module_pickups_enabled),
         module_menu_enabled: Boolean(store.module_menu_enabled),
+        module_lockers_enabled: Boolean(store.module_lockers_enabled),
+        locker_receiving_address: store.locker_receiving_address || "",
+        locker_whatsapp: store.locker_whatsapp || "",
         module_procedures_enabled: Boolean(store.module_procedures_enabled),
         procedures_public_enabled: Boolean(store.procedures_public_enabled),
         module_reservas_enabled: Boolean(store.module_reservas_enabled),
@@ -506,6 +515,9 @@ export default function EditStorePage() {
         module_shipping_enabled: form.module_shipping_enabled,
         module_pickups_enabled: form.module_pickups_enabled,
         module_menu_enabled: form.module_menu_enabled,
+        module_lockers_enabled: form.module_lockers_enabled,
+        locker_receiving_address: form.locker_receiving_address.trim() || null,
+        locker_whatsapp: form.locker_whatsapp.trim() || null,
         module_procedures_enabled: form.module_procedures_enabled,
         procedures_public_enabled: form.procedures_public_enabled,
         module_reservas_enabled: form.module_reservas_enabled,
@@ -700,6 +712,20 @@ export default function EditStorePage() {
                       checked={form.module_menu_enabled}
                       onChange={(value) => setValue("module_menu_enabled", value)}
                     />
+                    <ModuleCard icon={CalendarDays} iconClass="bg-blue-50 text-blue-600"
+                      title="Casillero virtual" description="Portal de clientes, prealertas, recepción y despacho."
+                      helper="Activa /casillero en el dominio de la tienda. Desactivar conserva los registros."
+                      checked={form.module_lockers_enabled} onChange={(value) => setValue("module_lockers_enabled", value)} />
+                    {form.module_lockers_enabled && <div className="grid gap-3 rounded-xl border border-slate-200 p-4">
+                      <label className="text-sm font-semibold">Dirección de recepción del casillero
+                        <textarea className={inputClass} rows={2} maxLength={400} value={form.locker_receiving_address}
+                          onChange={(event) => setValue("locker_receiving_address", event.target.value)} />
+                      </label>
+                      <label className="text-sm font-semibold">WhatsApp del casillero con código de país
+                        <input className={inputClass} type="tel" maxLength={24} value={form.locker_whatsapp}
+                          onChange={(event) => setValue("locker_whatsapp", event.target.value)} />
+                      </label>
+                    </div>}
                     <ModuleCard icon={CalendarDays} iconClass="bg-indigo-50 text-indigo-600"
                       title="Gestión de Trámites" description="Catálogo, solicitudes, responsables y seguimiento."
                       helper="Desactivar conserva solicitudes y configuraciones."

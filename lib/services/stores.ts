@@ -24,6 +24,9 @@ const STORE_PUBLIC_FIELDS = `
   module_shipping_enabled,
   module_pickups_enabled,
   module_menu_enabled,
+  module_lockers_enabled,
+  locker_receiving_address,
+  locker_whatsapp,
   module_procedures_enabled,
   procedures_public_enabled,
   module_reservas_enabled,
@@ -187,6 +190,9 @@ export async function updateStore(
     module_shipping_enabled?: boolean
     module_pickups_enabled?: boolean
     module_menu_enabled?: boolean
+    module_lockers_enabled?: boolean
+    locker_receiving_address?: string | null
+    locker_whatsapp?: string | null
     module_procedures_enabled?: boolean
     procedures_public_enabled?: boolean
     module_reservas_enabled?: boolean

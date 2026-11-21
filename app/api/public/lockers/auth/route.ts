@@ -1,7 +1,9 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { publicStore, response } from "@/lib/procedures/server";
+import { response, wfSlug } from "@/lib/procedures/server";
+
+import { resolveLockerStore } from "@/lib/lockers/server";
 
 const email = z.email().trim().toLowerCase().max(254);
 const input = z.discriminatedUnion("action", [
@@ -12,13 +14,17 @@ const input = z.discriminatedUnion("action", [
 
 export async function POST(request: Request) {
   const origin = new URL(request.url).origin;
-  if (request.headers.get("origin") !== origin || !await publicStore(request)) {
+  if (request.headers.get("origin") !== origin) {
     return response({ error: "Casillero no disponible." }, 404);
   }
+  const store = await resolveLockerStore(new URL(origin).host);
+  if (!store) return response({ error: "Casillero no disponible." }, 404);
+  const legacyWf = store.slug === wfSlug;
   const parsed = input.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return response({ error: "Revisa el correo y la contraseña." }, 400);
-  const key = process.env.WF_CARGO_RESEND_API_KEY;
-  if (!key) return response({ error: "El envío de correos no está disponible." }, 503);
+  const key = legacyWf ? process.env.WF_CARGO_RESEND_API_KEY : process.env.RESEND_API_KEY;
+  const from = legacyWf ? "WF Cargo Envíos <no-reply@wfcargoenviospsl.com>" : process.env.RESEND_FROM_EMAIL;
+  if (!key || !from) return response({ error: "El envío de correos no está disponible." }, 503);
 
   const details = parsed.data;
   const ip = request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -57,7 +63,7 @@ export async function POST(request: Request) {
       return response({ ok: true });
     }
     if (error.code === "weak_password") return response({ error: "Elige una contraseña más segura." }, 400);
-    console.error("WF Cargo auth link failed", error.code, error.status);
+    console.error("Locker auth link failed", error.code, error.status);
     return response({ error: "No se pudo procesar la solicitud. Intenta de nuevo." }, 503);
   }
   // Recovery must not verify an account whose original signup is still pending.
@@ -65,7 +71,7 @@ export async function POST(request: Request) {
   const url = new URL("/casillero", origin);
   url.hash = new URLSearchParams({ wf_token: data.properties.hashed_token, wf_action: details.action }).toString();
   const signup = details.action === "signup";
-  const subject = signup ? "Confirma tu cuenta de WF Cargo Envíos" : "Restablece tu contraseña de WF Cargo";
+  const subject = signup ? `Confirma tu cuenta de ${store.name}` : `Restablece tu contraseña de ${store.name}`;
   const button = signup ? "Confirmar mi cuenta" : "Restablecer mi contraseña";
   const intro = signup
     ? "Gracias por registrarte en nuestro casillero virtual. Confirma tu correo para activar tu cuenta y obtener tu código personal de compras en Estados Unidos."
@@ -75,18 +81,18 @@ export async function POST(request: Request) {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "WF Cargo Envíos <no-reply@wfcargoenviospsl.com>",
+        from,
         to: [details.email],
         subject,
         text: `${intro}\n\n${button}: ${url.href}\n\nSi no solicitaste este correo, puedes ignorarlo.`,
-        html: `<img src="https://wfcargoenviospsl.com/wfcargo/logo.webp" width="64" alt="WF Cargo Envíos"><h1>${subject}</h1><p>${intro}</p><p><a style="background:#1e40af;color:#fff;padding:12px 16px" href="${url.href.replaceAll("&", "&amp;")}">${button}</a></p><p>Si no solicitaste este correo, puedes ignorarlo.</p>`,
+        html: `${legacyWf ? '<img src="https://wfcargoenviospsl.com/wfcargo/logo.webp" width="64" alt="WF Cargo Envíos">' : ""}<h1>${button}</h1><p>${intro}</p><p><a style="background:#1e40af;color:#fff;padding:12px 16px" href="${url.href.replaceAll("&", "&amp;")}">${button}</a></p><p>Si no solicitaste este correo, puedes ignorarlo.</p>`,
       }),
       signal: AbortSignal.timeout(10000),
     });
     if (result.ok) return response({ ok: true });
-    console.error("WF Cargo auth mail rejected", result.status);
+    console.error("Locker auth mail rejected", result.status);
   } catch {
-    console.error("WF Cargo auth mail request failed");
+    console.error("Locker auth mail request failed");
   }
   return response({ error: "No se pudo enviar el correo. Puedes volver a intentarlo." }, 503);
 }

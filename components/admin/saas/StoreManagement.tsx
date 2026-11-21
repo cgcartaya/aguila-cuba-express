@@ -32,6 +32,7 @@ const modules = [
   ["module_pickups_enabled", "Recogidas", Package],
   ["module_menu_enabled", "Restaurante", Utensils],
   ["module_reservas_enabled", "Reservas", CalendarDays],
+  ["module_lockers_enabled", "Casillero virtual", Package],
   ["module_procedures_enabled", "Trámites", FileText],
   ["module_marketing_posts_enabled", "Publicaciones", FileText],
   ["module_marketing_catalogs_enabled", "Catálogos", ShoppingBag],
