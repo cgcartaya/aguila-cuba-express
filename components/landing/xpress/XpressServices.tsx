@@ -1,63 +1,62 @@
-import { House, Package, Plane, Ship, ShoppingCart, Snowflake, Truck, Warehouse } from "lucide-react";
+import { ArrowUpRight, Box, ChevronDown, Container, Plane, Snowflake, Truck, Warehouse } from "lucide-react";
+import type { XpressRate } from "@/lib/shipping/xpress-quote";
 import { transportRates, xpressWhatsApp } from "./content";
 import XpressQuoteInquiry from "./XpressQuoteInquiry";
 import styles from "./xpress.module.css";
 
-const shortcuts = [
-  { label: "Express a Cuba", href: "#express", icon: Truck },
-  { label: "Carga aérea", href: "#aereo", icon: Plane },
-  { label: "Marítimos", href: "#maritimo", icon: Ship },
-  { label: "Cajas precio fijo", href: "#cajas", icon: Package },
-  { label: "Frutas y congelados", href: "#cotizador", icon: Snowflake },
-  { label: "Casillero virtual", href: "/casillero", icon: Warehouse },
-  { label: "Tienda virtual", href: "#tienda", icon: ShoppingCart },
-  { label: "Entrega a domicilio", href: "#domicilio", icon: House },
-];
+const transportIcons = [Truck, Plane, Container];
+const transportImages = ["/xpress/plane.webp", "/xpress/hero.webp", "/xpress/ship.webp"];
 
-const serviceImages = ["/xpress/plane.webp", "/xpress/hero.webp", "/xpress/ship.webp"];
-
-export default function XpressServices({ lockersEnabled }: { lockersEnabled: boolean }) {
+export default function XpressServices({ lockersEnabled, rates }: { lockersEnabled: boolean; rates: XpressRate[] }) {
   return (
-    <>
-      <nav className={styles.shortcuts} aria-label="Accesos a servicios">
-        {shortcuts.filter(({ href }) => lockersEnabled || href !== "/casillero").map(({ label, href, icon: Icon }) => <a key={href} href={href}><Icon aria-hidden />{label}</a>)}
-      </nav>
-
-      <div className={styles.wrap}>
-        <div className={styles.servicesLayout}>
-          <section id="cotizador"><XpressQuoteInquiry /></section>
-          <section id="servicios">
-            <h2 className={styles.sectionTitle}>Nuestros servicios</h2>
-            <div className={styles.serviceCards}>
-              {[
-                ...transportRates.map((rate, index) => ({ ...rate, image: serviceImages[index] })),
-                { id: "cajas", name: "Cajas marítimas", image: "/xpress/boxes.webp", price: "Desde $45" },
-                { id: "frutas", name: "Frutas y congelados", image: "/xpress/fresh.webp", price: "Servicio prioritario" },
-                ...(lockersEnabled ? [{ id: "casillero", name: "Casillero virtual", image: "/xpress/locker.webp", price: "Recibe tus compras" }] : []),
-              ].map(({ id, name, image, price }) => (
-                <a className={styles.serviceCard} key={id} href={id === "frutas" ? "#cotizador" : id === "casillero" ? "/casillero" : `#${id}`}>
-                  <strong>{name}</strong>
+    <div className={styles.wrap}>
+      <div className={styles.servicesLayout}>
+        <section id="cotizador" className={styles.reveal}><XpressQuoteInquiry rates={rates} /></section>
+        <section id="servicios" className={styles.reveal}>
+          <h2 className={styles.sectionTitle}>Nuestros servicios</h2>
+          <div className={styles.serviceCards}>
+            {[
+              ...transportRates.map((item, index) => ({ ...item, image: transportImages[index], href: `#${item.id}`, icon: transportIcons[index] })),
+              { id: "cajas", name: "Cajas marítimas", price: "Desde $45", image: "/xpress/boxes.webp", href: "#cajas", icon: Box },
+              { id: "frutas", name: "Frutas y congelados", price: "Servicio prioritario", image: "/xpress/fresh.webp", href: "#cotizador", icon: Snowflake },
+              { id: "casillero", name: "Casillero virtual", price: lockersEnabled ? "Recibe tus compras" : "Consulta disponibilidad", image: "/xpress/locker.webp", href: lockersEnabled ? "/casillero" : xpressWhatsApp("Hola, quisiera información sobre el casillero para compras de Amazon, Walmart y otras tiendas desde Estados Unidos."), icon: Warehouse },
+            ].map(({ id, name, price, image, href, icon: Icon }) => (
+              <a className={styles.serviceCard} key={id} href={href}>
+                <div className={styles.serviceImage}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt="" loading="lazy" />
-                  <span>{price}</span>
-                </a>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <div className={styles.rates} aria-label="Tarifas y tiempos de entrega">
-          {transportRates.map(({ id, name, time, rates }) => (
-            <details key={id} name="xpress-rates">
-              <summary>{name}</summary>
-              <p id={id}>{time}</p>
-              <dl>{rates.map(([category, price]) => <div key={category}><dt>{category}</dt><dd>{price}</dd></div>)}</dl>
-              <a href={xpressWhatsApp(`Hola, quisiera confirmar una cotización de ${name.toLowerCase()}.`)}>Consultar tarifa de entrega</a>
-            </details>
-          ))}
-        </div>
-
+                  <img src={image} alt="" loading="lazy" width={320} height={180} />
+                </div>
+                <div className={styles.serviceLabel}>
+                  <Icon size={19} aria-hidden />
+                  <span><strong>{name}</strong><small>{price}</small></span>
+                  <ArrowUpRight size={16} aria-hidden />
+                </div>
+              </a>
+            ))}
+          </div>
+          <div className={styles.serviceList}>
+            {transportRates.map(({ id, name, price, time, rates }, index) => {
+              const Icon = transportIcons[index];
+              return (
+                <details key={id} name="xpress-rates" className={styles.service}>
+                  <summary className={styles.serviceRow}>
+                    <Icon size={22} aria-hidden />
+                    <span><strong>{name}</strong><small>{price}</small></span>
+                    <ChevronDown className={styles.disclosure} size={18} aria-hidden />
+                  </summary>
+                  <div className={styles.rateContent}>
+                    <p id={id}>{time}</p>
+                    <dl>
+                      {rates.map(([category, amount]) => <div key={category}><dt>{category}</dt><dd>{amount}</dd></div>)}
+                    </dl>
+                    <a href={xpressWhatsApp(`Hola, quisiera confirmar una cotización de ${name.toLowerCase()}.`)}>Consultar tarifa de entrega</a>
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        </section>
       </div>
-    </>
+    </div>
   );
 }

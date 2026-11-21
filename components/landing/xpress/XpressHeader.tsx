@@ -1,10 +1,12 @@
 "use client";
 
-import { Clock, MapPin, Menu, MessageCircle, Phone, Truck } from "lucide-react";
+import { useRef } from "react";
+import { Clock, MapPin, Menu, MessageCircle, Phone, Truck, X } from "lucide-react";
 import { contactWhatsApp, mapUrl, xpressNavigation, xpress } from "./content";
 import styles from "./xpress.module.css";
 
 export default function XpressHeader({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
+  const menu = useRef<HTMLDialogElement>(null);
   const navigation = xpressNavigation(lockersEnabled);
   return (
     <>
@@ -29,13 +31,19 @@ export default function XpressHeader({ logoUrl, lockersEnabled }: { logoUrl: str
           <div className={styles.mobileNav}>
             <a href={`tel:${xpress.phones[0].number}`} aria-label="Llamar a Xpress"><Phone size={21} /></a>
             <a href={contactWhatsApp} aria-label="Contactar por WhatsApp"><MessageCircle size={22} /></a>
-            <details onClick={(event) => { if ((event.target as HTMLElement).closest("nav a")) event.currentTarget.open = false; }}>
-              <summary aria-label="Menú"><Menu size={27} /></summary>
-              <nav aria-label="Navegación móvil">
-                {navigation.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
-                <a href="#recogida">Solicitar recogida</a>
+            <button type="button" aria-label="Abrir menú" aria-haspopup="dialog" onClick={() => menu.current?.showModal()}>
+              <Menu size={22} aria-hidden />
+            </button>
+            <dialog ref={menu} className={styles.menuSheet} aria-label="Navegación móvil">
+              <div className={styles.menuHeading}>
+                <strong>Menú</strong>
+                <button type="button" aria-label="Cerrar menú" onClick={() => menu.current?.close()}><X size={22} aria-hidden /></button>
+              </div>
+              <nav aria-label="Secciones de Xpress">
+                {navigation.map(([label, href]) => <a key={href} href={href} onClick={() => menu.current?.close()}>{label}</a>)}
+                <a href="#recogida" onClick={() => menu.current?.close()}>Solicitar recogida</a>
               </nav>
-            </details>
+            </dialog>
           </div>
         </div>
       </header>

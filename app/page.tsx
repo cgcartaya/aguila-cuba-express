@@ -1,3 +1,4 @@
+import { getXpressQuoteRates } from "@/lib/shipping/xpress-quote-server";
 import { resolveLockerStore } from "@/lib/lockers/server";
 import XpressLanding from "@/components/landing/xpress/XpressLanding";
 import { isXpressLanding, xpress } from "@/components/landing/xpress/content";
@@ -298,8 +299,8 @@ export default async function HomePage({ searchParams }: HomeProps) {
   const host = (await headers()).get("host") || "";
   const store = await resolveStoreByHost(host);
   if (store && isXpressLanding(store)) {
-    const lockerStore = await resolveLockerStore(host);
-    return <XpressLanding lockersEnabled={Boolean(lockerStore)} logoUrl={store.logo_url} storeSlug={store.slug} canonicalUrl={getStorePublicBaseUrl(store)} />;
+    const [lockerStore, rates] = await Promise.all([resolveLockerStore(host), getXpressQuoteRates(store.id)]);
+    return <XpressLanding rates={rates} lockersEnabled={Boolean(lockerStore)} logoUrl={store.logo_url} storeSlug={store.slug} canonicalUrl={getStorePublicBaseUrl(store)} />;
   }
 
   const showProcedures = resolveLanding(host) !== "wfcargo" && store?.module_procedures_enabled && store.procedures_public_enabled;

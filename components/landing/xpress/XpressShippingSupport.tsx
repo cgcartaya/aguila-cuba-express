@@ -5,7 +5,7 @@ import styles from "./xpress.module.css";
 export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabled: boolean }) {
   return (
     <>
-      <section className={styles.advantages}>
+      <section className={`${styles.advantages} ${styles.reveal}`}>
         <h2>¿Por qué elegir Xpress?</h2>
         <p><Plane aria-hidden />Varias modalidades de envío</p>
         <p><Package aria-hidden />Empaque especializado</p>
@@ -15,18 +15,18 @@ export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabl
       </section>
 
       <div className={styles.twoCol}>
-        <section id="domicilio" className={styles.block}>
+        <section id="domicilio" className={`${styles.block} ${styles.reveal}`}>
           <h2>Entrega a domicilio en Cuba</h2>
           <p>El cargo de entrega depende del municipio y la modalidad. Confirma el total con la agencia antes de enviar.</p>
         </section>
-        <section id="rastreo" className={styles.block}>
+        <section id="rastreo" className={`${styles.block} ${styles.reveal}`}>
           <h2>Rastreo de paquetes</h2>
           <p>Ten a mano el número de seguimiento que aparece en tu comprobante.</p>
           <a href={xpressWhatsApp("Hola, quisiera consultar el estado de un envío. Mi número de seguimiento es: ")}><PackageSearch size={19} aria-hidden />Consultar seguimiento</a>
         </section>
       </div>
 
-      <section id="recogida" className={styles.block}>
+      <section id="recogida" className={`${styles.block} ${styles.reveal}`}>
         <h2>Recogidas locales y envíos desde otros estados</h2>
         <div className={styles.twoCol}>
           <div>
@@ -36,7 +36,7 @@ export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabl
           </div>
           <div>
             <h3>Paquetes desde otro estado</h3>
-            <p>Pide las instrucciones de recepción antes de enviar tu paquete a la agencia.</p>
+            <p>Coordinamos a distancia el envío de frutas, alimentos, medicinas y otros artículos. Pide las instrucciones para enviar paquetes o recibir compras en línea.</p>
             <a href={xpressWhatsApp("Hola, quiero enviar un paquete a Xpress desde otro estado. ¿Qué instrucciones debo seguir?")}>Pedir instrucciones de envío</a>
           </div>
         </div>

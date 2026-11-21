@@ -10,7 +10,7 @@ const banners = [
   { title: "Tus envíos a Cuba, más rápidos, seguros y confiables.", description: "", image: xpress.hero, href: "#cotizador", action: "Cotizar envío ahora" },
   { title: "Cajas marítimas de precio fijo", description: "Cinco tamaños desde $45. Consulta el precio según el tamaño y la cantidad de cajas.", image: "/xpress/boxes.webp", href: "#cajas", action: "Ver tamaños y precios" },
   { title: "Frutas frescas y congelados", description: "Servicio Express prioritario con preparación y conservación refrigerada. La Habana en 24 h y provincias en 48–72 h.", image: "/xpress/fresh.webp", href: "#cotizador", action: "Consultar servicio prioritario" },
-  { title: "Compra en línea. Recibe con Xpress.", description: "Consulta cómo recibir compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "/casillero", action: "Ver casillero virtual" },
+  { title: "Compra en línea. Recibe con Xpress.", description: "Abre tu casillero desde cualquier estado de EE. UU. y coordina el envío a Cuba de tus compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "/casillero", action: "Ver casillero virtual" },
 ];
 
 export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
@@ -101,11 +101,13 @@ export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: strin
                     <li><House aria-hidden /> Entrega a domicilio en Cuba</li>
                   </ul>
                 ) : <p className={styles.heroDescription}>{item.description}</p>}
-                <Link className={styles.primary} href={item.href}><Calculator size={19} aria-hidden />{item.action}</Link>
+                <div className={styles.heroActions}>
+                  <Link className={styles.primary} href={item.href}><Calculator size={17} aria-hidden />{item.action}</Link>
+                  <Link className={styles.heroTrack} href="#rastreo"><PackageSearch size={17} aria-hidden />Rastrear paquete</Link>
+                </div>
               </div>
             ))}
           </div>
-          <a className={styles.heroTrack} href="#rastreo"><PackageSearch size={19} aria-hidden />Rastrear paquete</a>
         </div>
         <div className={styles.controls}>
           <button className={styles.direction} type="button" onClick={() => select(active - 1)} aria-label="Banner anterior"><ChevronLeft size={20} /></button>

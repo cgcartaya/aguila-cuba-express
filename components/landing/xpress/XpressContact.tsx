@@ -4,7 +4,7 @@ import styles from "./xpress.module.css";
 
 export default function XpressContact() {
   return (
-    <section id="contacto" className={`${styles.block} ${styles.contact}`}>
+    <section id="contacto" className={`${styles.block} ${styles.contact} ${styles.reveal}`}>
       <div>
         <h2>Contáctanos</h2>
         <a href={mapUrl}><MapPin size={19} aria-hidden />{xpress.address}</a>
