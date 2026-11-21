@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
+import { getWfCargoComboMunicipalities } from "@/lib/checkout/wfcargo-delivery";
 import type { Product } from "@/types/cart";
 
 export default function ProvinceCarousel({ products, category, slug }: { products: Product[]; category: string; slug: string }) {
@@ -43,7 +44,7 @@ export default function ProvinceCarousel({ products, category, slug }: { product
                 {image && <img src={image} alt="" draggable={false} className="absolute inset-y-0 right-0 -z-20 h-full w-2/3 object-cover object-center" />}
                 <div className="absolute inset-0 -z-10 bg-gradient-to-r from-[#081e40] via-[#081e40]/85 to-transparent" />
                 <h3 className="text-3xl font-bold">{province}</h3>
-                {["Pinar del Río", "Cienfuegos"].includes(province) && <p className="mt-1 text-sm">Entrega solo en el municipio cabecera</p>}
+                {getWfCargoComboMunicipalities(province).length === 1 && <p className="mt-1 text-sm">Entrega solo en {getWfCargoComboMunicipalities(province)[0]}</p>}
                 <Link href={`/tienda/${slug}/categorias/combos?provincia=${encodeURIComponent(province)}`} aria-label={`Ver combos de ${province}`} className="mt-3 rounded-full bg-white px-5 py-2.5 font-bold text-[#081e40]">Ver combos →</Link>
               </article>
             </div>
