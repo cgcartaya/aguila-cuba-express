@@ -34,6 +34,7 @@ import { canAccessAdminPath } from "@/lib/admin/navigation-access";
 import type { AccessStore, StoreMembership } from "@/lib/admin/access";
 
 export type AdminModuleKey =
+  | "lockers"
   | "procedures"
   | "store"
   | "pickups"
@@ -59,8 +60,8 @@ export type AdminSection = {
 };
 
 export const adminNavSections: AdminSection[] = [
-  { title: "Casillero Virtual", links: [
-    { href: "/admin/casillero", label: "Recepción y despacho", icon: ClipboardCheck, storeSlugs: ["wf-cago"] },
+  { title: "Casillero Virtual", module: "lockers", links: [
+    { href: "/admin/casillero", label: "Recepción y despacho", icon: ClipboardCheck },
   ] },
   {
     title: "Trámites",
@@ -208,6 +209,7 @@ export function isModuleEnabled(
         | "module_pickups_enabled"
         | "module_menu_enabled"
         | "module_procedures_enabled"
+        | "module_lockers_enabled"
         | "module_reservas_enabled"
         | "module_economy_enabled"
         | "module_marketing_posts_enabled"
@@ -221,6 +223,8 @@ export function isModuleEnabled(
   if (!moduleKey) return true;
 
   switch (moduleKey) {
+    case "lockers":
+      return store?.module_lockers_enabled === true;
     case "procedures":
       return store?.module_procedures_enabled === true;
     case "store":
@@ -256,6 +260,7 @@ export function getVisibleAdminSections(
         | "module_pickups_enabled"
         | "module_menu_enabled"
         | "module_procedures_enabled"
+        | "module_lockers_enabled"
         | "module_reservas_enabled"
         | "module_economy_enabled"
       >
@@ -265,7 +270,7 @@ export function getVisibleAdminSections(
   membership?: StoreMembership | null,
 ): AdminSection[] {
   const visible = adminNavSections
-    .filter((section) => section.module === "procedures" ? isModuleEnabled(store, section.module) : isSuperAdmin || isModuleEnabled(store, section.module))
+    .filter((section) => (section.module === "procedures" || section.module === "lockers") ? isModuleEnabled(store, section.module) : isSuperAdmin || isModuleEnabled(store, section.module))
     .map((section) => ({
       ...section,
       links: section.links.filter((link) => (!link.storeSlugs || link.storeSlugs.includes(store?.slug || "")) && (membership === undefined || canAccessAdminPath(link.href, membership, isSuperAdmin))),

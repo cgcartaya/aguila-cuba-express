@@ -1,7 +1,8 @@
 import { Country, State } from "country-state-city";
 import { z } from "zod";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
-import { publicStore, response } from "@/lib/procedures/server";
+import { response } from "@/lib/procedures/server";
+import { lockerRegistration, resolveLockerStore } from "@/lib/lockers/server";
 import { identificationPattern, normalizeIdentification, validIdentification } from "@/lib/lockers/identity";
 
 const prealert = z.object({
@@ -47,7 +48,7 @@ const profile = z.object({
 const profileFields = "customer_name,phone,destination,destination_country,identification,identification_country,identification_state,identification_type";
 
 async function customer(request: Request) {
-  const store = await publicStore(request);
+  const store = await resolveLockerStore(new URL(request.url).host);
   if (!store) return { error: response({ error: "Casillero no disponible." }, 404) };
   const token = request.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
   if (!token) return { error: response({ error: "Inicia sesión para continuar." }, 401) };
@@ -56,7 +57,7 @@ async function customer(request: Request) {
   if (!user?.email || !user.email_confirmed_at || user.is_anonymous) {
     return { error: response({ error: "Confirma tu correo e inicia sesión." }, 401) };
   }
-  return { store: store.id, user: user.id, email: user.email.toLowerCase() };
+  return { store: store.id, slug: store.slug, user: user.id, email: user.email.toLowerCase() };
 }
 
 const lockerFields = `id,code,verified_at,${profileFields}` as const;
@@ -135,7 +136,7 @@ export async function POST(request: Request) {
   }
   const { error } = await db.from("virtual_lockers").insert({
     ...input.data, email: auth.email, customer_user_id: auth.user,
-    store_id: auth.store, code: "WF", rules_version: "WF-2026-11",
+    store_id: auth.store, ...lockerRegistration(auth.slug),
   });
   if (error?.code === "23505") {
     const existing = await db.from("virtual_lockers").select("id")

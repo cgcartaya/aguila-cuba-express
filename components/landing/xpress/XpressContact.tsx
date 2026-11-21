@@ -1,5 +1,5 @@
 import { Clock, MapPin, MessageCircle, Phone } from "lucide-react";
-import { contactWhatsApp, mapUrl, navigation, xpress } from "./content";
+import { contactWhatsApp, mapUrl, xpressNavigation, xpress } from "./content";
 import styles from "./xpress.module.css";
 
 export default function XpressContact() {
@@ -17,12 +17,12 @@ export default function XpressContact() {
   );
 }
 
-export function XpressFooter() {
+export function XpressFooter({ lockersEnabled }: { lockersEnabled: boolean }) {
   return (
     <footer className={styles.footer}>
       <div className={styles.wrap}>
         <strong>{xpress.name}</strong>
-        <nav aria-label="Enlaces del pie de página">{navigation.map(([label, href]) => <a key={href} href={href}>{label}</a>)}</nav>
+        <nav aria-label="Enlaces del pie de página">{xpressNavigation(lockersEnabled).map(([label, href]) => <a key={href} href={href}>{label}</a>)}</nav>
       </div>
     </footer>
   );

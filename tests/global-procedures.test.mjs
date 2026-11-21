@@ -171,11 +171,21 @@ test('public submission cannot set notes, assignee, state or another tenant; res
   const result=await route.POST(req('POST',input));assert.equal(result.status,201);assert.deepEqual(await result.json(),{reference:id});
 });
 test('module navigation is tenant-independent and disappears when disabled, including selected superadmin store', () => {
-  const nav=load('lib/admin/nav-config.ts');
+  const access = load('lib/admin/access.ts');
+  const permissions = load('lib/shipping/permissions.ts');
+  const navigation = load('lib/admin/navigation-access.ts', {
+    '@/lib/admin/access': access,
+    '@/lib/shipping/permissions': permissions,
+  });
+  const nav = load('lib/admin/nav-config.ts', { '@/lib/admin/navigation-access': navigation });
   for(const isSuper of [false,true]) for(const slug of ['wf-cago','example']) {
     const links=enabled=>nav.getVisibleAdminSections({slug,module_procedures_enabled:enabled},isSuper).flatMap(section=>section.links);
     assert.equal(links(true).some(link=>link.href==='/admin/tramites'),true);
     assert.equal(links(false).some(link=>link.href==='/admin/tramites'),false);
+    const lockerVisible = enabled => nav.getVisibleAdminSections({slug,module_lockers_enabled:enabled},isSuper)
+      .flatMap(section => section.links).some(link => link.href === '/admin/casillero');
+    assert.equal(lockerVisible(true), true);
+    assert.equal(lockerVisible(false), false);
   }
 });
 test('column-level grants support public stores and authenticated admin membership without allowing owners to enable modules', async () => {
@@ -201,15 +211,30 @@ test('column-level grants support public stores and authenticated admin membersh
       await db.exec('reset role');
     }
     await db.exec(readFileSync('supabase/migrations/20261117193456_fix_procedures_store_column_reads.sql','utf8'));
+    await db.exec(`insert into stores(id,slug) values ('${other}', 'xpress')`);
+    await db.exec(readFileSync('supabase/migrations/20261121163000_store_locker_module.sql','utf8'));
+    assert.deepEqual((await db.query('select slug,module_lockers_enabled from stores order by slug')).rows, [
+      { slug: 'wf-cago', module_lockers_enabled: true },
+      { slug: 'xpress', module_lockers_enabled: false },
+    ]);
     for(const role of ['anon','authenticated']) {
       await db.exec(`set role ${role}`);
-      assert.equal((await db.query('select id,slug,module_procedures_enabled,procedures_public_enabled from stores')).rows.length,1);
+      assert.equal((await db.query('select id,slug,module_procedures_enabled,procedures_public_enabled from stores')).rows.length,2);
+      assert.equal((await db.query('select module_lockers_enabled from stores')).rows.length, 2);
       await assert.rejects(db.query('select private_field from stores'),/permission denied/);
       await assert.rejects(db.query('select * from procedure_requests'),/permission denied/);
-      if(role==='authenticated') await assert.rejects(db.query('update stores set module_procedures_enabled=false'),/Solo el superadministrador/);
+      if (role === 'authenticated') {
+        await assert.rejects(db.query('update stores set module_procedures_enabled=false'), /Solo el superadministrador/);
+        await assert.rejects(db.query("update stores set module_lockers_enabled=true where slug='xpress'"), /Solo el superadministrador/);
+        await assert.rejects(db.query("update stores set locker_receiving_address='Otra dirección' where slug='xpress'"), /Solo el superadministrador/);
+      }
       await db.exec('reset role');
     }
     await db.exec(`select set_config('test.uid','${actor}',false); set role authenticated; update stores set module_procedures_enabled=false;`);
     assert.equal((await db.query('select module_procedures_enabled from stores')).rows[0].module_procedures_enabled,false);
+    await db.query("update stores set module_lockers_enabled=true, locker_receiving_address='Dirección de prueba' where slug='xpress'");
+    assert.deepEqual((await db.query("select module_lockers_enabled,locker_receiving_address from stores where slug='xpress'")).rows, [
+      { module_lockers_enabled: true, locker_receiving_address: 'Dirección de prueba' },
+    ]);
   } finally { await db.close(); }
 });

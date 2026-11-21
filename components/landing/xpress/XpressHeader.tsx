@@ -1,10 +1,11 @@
 "use client";
 
 import { Clock, MapPin, Menu, MessageCircle, Phone, Truck } from "lucide-react";
-import { contactWhatsApp, mapUrl, navigation, xpress } from "./content";
+import { contactWhatsApp, mapUrl, xpressNavigation, xpress } from "./content";
 import styles from "./xpress.module.css";
 
-export default function XpressHeader({ logoUrl }: { logoUrl: string }) {
+export default function XpressHeader({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
+  const navigation = xpressNavigation(lockersEnabled);
   return (
     <>
       <div className={styles.top}>

@@ -7,9 +7,9 @@ import XpressShippingSupport from "./XpressShippingSupport";
 import XpressSpecialServices from "./XpressSpecialServices";
 import styles from "./xpress.module.css";
 
-type Props = { logoUrl?: string | null; storeSlug?: string; canonicalUrl?: string };
+type Props = { logoUrl?: string | null; storeSlug?: string; lockersEnabled?: boolean; canonicalUrl?: string };
 
-export default function XpressLanding({ logoUrl, storeSlug, canonicalUrl }: Props) {
+export default function XpressLanding({ logoUrl, storeSlug, canonicalUrl, lockersEnabled = false }: Props) {
   const logo = logoUrl || xpress.logo;
   const structuredData = {
     "@context": "https://schema.org",
@@ -26,15 +26,15 @@ export default function XpressLanding({ logoUrl, storeSlug, canonicalUrl }: Prop
   return (
     <main id="inicio" className={styles.page}>
       {canonicalUrl && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
-      <XpressHeader logoUrl={logo} />
-      <XpressHero logoUrl={logo} />
-      <XpressServices />
+      <XpressHeader logoUrl={logo} lockersEnabled={lockersEnabled} />
+      <XpressHero logoUrl={logo} lockersEnabled={lockersEnabled} />
+      <XpressServices lockersEnabled={lockersEnabled} />
       <div className={styles.wrap}>
         <XpressSpecialServices hasStore={Boolean(storeSlug)} />
-        <XpressShippingSupport />
+        <XpressShippingSupport lockersEnabled={lockersEnabled} />
         <XpressContact />
       </div>
-      <XpressFooter />
+      <XpressFooter lockersEnabled={lockersEnabled} />
     </main>
   );
 }

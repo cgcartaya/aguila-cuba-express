@@ -2,7 +2,7 @@ import { Headset, MapPin, Package, PackageSearch, Plane, Warehouse } from "lucid
 import { xpressWhatsApp } from "./content";
 import styles from "./xpress.module.css";
 
-export default function XpressShippingSupport() {
+export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabled: boolean }) {
   return (
     <>
       <section className={styles.advantages}>
@@ -11,7 +11,7 @@ export default function XpressShippingSupport() {
         <p><Package aria-hidden />Empaque especializado</p>
         <p><MapPin aria-hidden />La Habana y provincias</p>
         <p><Headset aria-hidden />Atención personalizada</p>
-        <p><Warehouse aria-hidden />Casillero para compras online</p>
+        {lockersEnabled && <p><Warehouse aria-hidden />Casillero para compras online</p>}
       </section>
 
       <div className={styles.twoCol}>

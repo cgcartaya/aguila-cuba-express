@@ -155,10 +155,6 @@
 .rates dd, .boxes strong { margin: 0; font-weight: 800; white-space: nowrap; }
 .rates a, .block a { display: inline-flex; align-items: center; gap: .4rem; margin-top: .65rem; color: var(--indigo); font-weight: 800; text-decoration: underline; text-underline-offset: .19em; }
 .block { margin-bottom: 1.25rem; padding: clamp(1rem, 2.5vw, 1.75rem); }
-.feature { overflow: hidden; }
-.featurePhoto { aspect-ratio: 2.5; margin-bottom: 1rem; border-radius: .65rem; background: #d5e7f6 center / cover no-repeat; }
-.featurePhoto[data-image="fresh"] { background-image: url("/xpress/fresh.webp"); }
-.featurePhoto[data-image="locker"] { background-image: url("/xpress/locker.webp"); }
 .block h2, .block h3 { margin: 0 0 .55rem; }
 .block h3 { font-weight: 800; }
 .block p { margin: .4rem 0; }

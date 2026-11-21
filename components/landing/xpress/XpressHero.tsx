@@ -1,18 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Calculator, ChevronLeft, ChevronRight, Clock, House, PackageSearch, Pause, Play, ShieldCheck } from "lucide-react";
 import { xpress } from "./content";
 import styles from "./xpress.module.css";
 
-const slides = [
+const banners = [
   { title: "Tus envíos a Cuba, más rápidos, seguros y confiables.", description: "", image: xpress.hero, href: "#cotizador", action: "Cotizar envío ahora" },
   { title: "Cajas marítimas de precio fijo", description: "Cinco tamaños desde $45. Consulta el precio según el tamaño y la cantidad de cajas.", image: "/xpress/boxes.webp", href: "#cajas", action: "Ver tamaños y precios" },
-  { title: "Frutas frescas y congelados", description: "Servicio Express prioritario con preparación y conservación refrigerada.", image: "/xpress/fresh.webp", href: "#frutas", action: "Ver servicio prioritario" },
-  { title: "Compra en línea. Recibe con Xpress.", description: "Consulta cómo recibir compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "#casillero", action: "Ver casillero virtual" },
+  { title: "Frutas frescas y congelados", description: "Servicio Express prioritario con preparación y conservación refrigerada. La Habana en 24 h y provincias en 48–72 h.", image: "/xpress/fresh.webp", href: "#cotizador", action: "Consultar servicio prioritario" },
+  { title: "Compra en línea. Recibe con Xpress.", description: "Consulta cómo recibir compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "/casillero", action: "Ver casillero virtual" },
 ];
 
-export default function XpressHero({ logoUrl }: { logoUrl: string }) {
+export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
+  const slides = lockersEnabled ? banners : banners.slice(0, -1);
+  const slideCount = slides.length;
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const [interacting, setInteracting] = useState(false);
@@ -31,13 +34,13 @@ export default function XpressHero({ logoUrl }: { logoUrl: string }) {
   const rotating = !paused && !interacting && !focused && !reducedMotion;
   useEffect(() => {
     if (!rotating) return;
-    const timer = window.setInterval(() => setActive((index) => (index + 1) % slides.length), 7500);
+    const timer = window.setInterval(() => setActive((index) => (index + 1) % slideCount), 7500);
     return () => window.clearInterval(timer);
-  }, [rotating, active]);
+  }, [rotating, active, slideCount]);
 
   function select(index: number) {
     setPaused(true);
-    setActive((index + slides.length) % slides.length);
+    setActive((index + slideCount) % slideCount);
   }
 
   return (
@@ -98,7 +101,7 @@ export default function XpressHero({ logoUrl }: { logoUrl: string }) {
                     <li><House aria-hidden /> Entrega a domicilio en Cuba</li>
                   </ul>
                 ) : <p className={styles.heroDescription}>{item.description}</p>}
-                <a className={styles.primary} href={item.href}><Calculator size={19} aria-hidden />{item.action}</a>
+                <Link className={styles.primary} href={item.href}><Calculator size={19} aria-hidden />{item.action}</Link>
               </div>
             ))}
           </div>

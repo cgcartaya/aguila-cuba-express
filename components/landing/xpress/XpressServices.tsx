@@ -8,19 +8,19 @@ const shortcuts = [
   { label: "Carga aérea", href: "#aereo", icon: Plane },
   { label: "Marítimos", href: "#maritimo", icon: Ship },
   { label: "Cajas precio fijo", href: "#cajas", icon: Package },
-  { label: "Frutas y congelados", href: "#frutas", icon: Snowflake },
-  { label: "Casillero virtual", href: "#casillero", icon: Warehouse },
+  { label: "Frutas y congelados", href: "#cotizador", icon: Snowflake },
+  { label: "Casillero virtual", href: "/casillero", icon: Warehouse },
   { label: "Tienda virtual", href: "#tienda", icon: ShoppingCart },
   { label: "Entrega a domicilio", href: "#domicilio", icon: House },
 ];
 
 const serviceImages = ["/xpress/plane.webp", "/xpress/hero.webp", "/xpress/ship.webp"];
 
-export default function XpressServices() {
+export default function XpressServices({ lockersEnabled }: { lockersEnabled: boolean }) {
   return (
     <>
       <nav className={styles.shortcuts} aria-label="Accesos a servicios">
-        {shortcuts.map(({ label, href, icon: Icon }) => <a key={href} href={href}><Icon aria-hidden />{label}</a>)}
+        {shortcuts.filter(({ href }) => lockersEnabled || href !== "/casillero").map(({ label, href, icon: Icon }) => <a key={href} href={href}><Icon aria-hidden />{label}</a>)}
       </nav>
 
       <div className={styles.wrap}>
@@ -33,9 +33,9 @@ export default function XpressServices() {
                 ...transportRates.map((rate, index) => ({ ...rate, image: serviceImages[index] })),
                 { id: "cajas", name: "Cajas marítimas", image: "/xpress/boxes.webp", price: "Desde $45" },
                 { id: "frutas", name: "Frutas y congelados", image: "/xpress/fresh.webp", price: "Servicio prioritario" },
-                { id: "casillero", name: "Casillero virtual", image: "/xpress/locker.webp", price: "Recibe tus compras" },
+                ...(lockersEnabled ? [{ id: "casillero", name: "Casillero virtual", image: "/xpress/locker.webp", price: "Recibe tus compras" }] : []),
               ].map(({ id, name, image, price }) => (
-                <a className={styles.serviceCard} key={id} href={`#${id}`}>
+                <a className={styles.serviceCard} key={id} href={id === "frutas" ? "#cotizador" : id === "casillero" ? "/casillero" : `#${id}`}>
                   <strong>{name}</strong>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={image} alt="" loading="lazy" />
