@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { ArrowUpRight, Box, ChevronDown, Container, Plane, Snowflake, Truck, Warehouse } from "lucide-react";
 import type { XpressRate } from "@/lib/shipping/xpress-quote";
 import { transportRates, xpressWhatsApp } from "./content";
@@ -22,7 +21,7 @@ export default function XpressServices({ lockersEnabled, rates }: { lockersEnabl
               { id: "frutas", name: "Frutas y congelados", price: "Servicio prioritario", image: "/xpress/fresh.webp", href: "#cotizador", icon: Snowflake },
               { id: "casillero", name: "Casillero virtual", price: lockersEnabled ? "Recibe tus compras" : "Consulta disponibilidad", image: "/xpress/locker.webp", href: lockersEnabled ? "/casillero" : xpressWhatsApp("Hola, quisiera información sobre el casillero para compras de Amazon, Walmart y otras tiendas desde Estados Unidos."), icon: Warehouse },
             ].map(({ id, name, price, image, href, icon: Icon }) => (
-              <Link className={styles.serviceCard} key={id} href={href}>
+              <a className={styles.serviceCard} key={id} href={href}>
                 <div className={styles.serviceImage}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={image} alt="" loading="lazy" width={320} height={180} />
@@ -32,7 +31,7 @@ export default function XpressServices({ lockersEnabled, rates }: { lockersEnabl
                   <span><strong>{name}</strong><small>{price}</small></span>
                   <ArrowUpRight size={16} aria-hidden />
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
           <div className={styles.serviceList}>
