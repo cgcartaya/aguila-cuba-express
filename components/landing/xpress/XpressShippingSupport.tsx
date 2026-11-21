@@ -36,7 +36,7 @@ export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabl
           </div>
           <div>
             <h3>Paquetes desde otro estado</h3>
-            <p>Pide las instrucciones de recepción antes de enviar tu paquete a la agencia.</p>
+            <p>Coordinamos a distancia el envío de frutas, alimentos, medicinas y otros artículos. Pide las instrucciones para enviar paquetes o recibir compras en línea.</p>
             <a href={xpressWhatsApp("Hola, quiero enviar un paquete a Xpress desde otro estado. ¿Qué instrucciones debo seguir?")}>Pedir instrucciones de envío</a>
           </div>
         </div>

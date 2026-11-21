@@ -1,3 +1,5 @@
+import { resolveStoreBySlug } from "@/lib/saas/store-metadata";
+import { getXpressQuoteRates } from "@/lib/shipping/xpress-quote-server";
 import type { Metadata } from "next";
 import XpressLanding from "@/components/landing/xpress/XpressLanding";
 
@@ -6,6 +8,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function XpressPreviewPage() {
-  return <XpressLanding />;
+export default async function XpressPreviewPage() {
+  const store = await resolveStoreBySlug("xpress");
+  return <XpressLanding rates={store ? await getXpressQuoteRates(store.id) : []} />;
 }

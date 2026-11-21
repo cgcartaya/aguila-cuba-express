@@ -1,30 +1,52 @@
 import Link from "next/link";
 import { ArrowUpRight, Box, ChevronDown, Container, Plane, Snowflake, Truck, Warehouse } from "lucide-react";
+import type { XpressRate } from "@/lib/shipping/xpress-quote";
 import { transportRates, xpressWhatsApp } from "./content";
 import XpressQuoteInquiry from "./XpressQuoteInquiry";
 import styles from "./xpress.module.css";
 
 const transportIcons = [Truck, Plane, Container];
+const transportImages = ["/xpress/plane.webp", "/xpress/hero.webp", "/xpress/ship.webp"];
 
-export default function XpressServices({ lockersEnabled }: { lockersEnabled: boolean }) {
+export default function XpressServices({ lockersEnabled, rates }: { lockersEnabled: boolean; rates: XpressRate[] }) {
   return (
     <div className={styles.wrap}>
       <div className={styles.servicesLayout}>
-        <section id="cotizador" className={styles.reveal}><XpressQuoteInquiry /></section>
+        <section id="cotizador" className={styles.reveal}><XpressQuoteInquiry rates={rates} /></section>
         <section id="servicios" className={styles.reveal}>
-          <h2 className={styles.sectionTitle}>Servicios de envío</h2>
+          <h2 className={styles.sectionTitle}>Nuestros servicios</h2>
+          <div className={styles.serviceCards}>
+            {[
+              ...transportRates.map((item, index) => ({ ...item, image: transportImages[index], href: `#${item.id}`, icon: transportIcons[index] })),
+              { id: "cajas", name: "Cajas marítimas", price: "Desde $45", image: "/xpress/boxes.webp", href: "#cajas", icon: Box },
+              { id: "frutas", name: "Frutas y congelados", price: "Servicio prioritario", image: "/xpress/fresh.webp", href: "#cotizador", icon: Snowflake },
+              { id: "casillero", name: "Casillero virtual", price: lockersEnabled ? "Recibe tus compras" : "Consulta disponibilidad", image: "/xpress/locker.webp", href: lockersEnabled ? "/casillero" : xpressWhatsApp("Hola, quisiera información sobre el casillero para compras de Amazon, Walmart y otras tiendas desde Estados Unidos."), icon: Warehouse },
+            ].map(({ id, name, price, image, href, icon: Icon }) => (
+              <Link className={styles.serviceCard} key={id} href={href}>
+                <div className={styles.serviceImage}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="" loading="lazy" width={320} height={180} />
+                </div>
+                <div className={styles.serviceLabel}>
+                  <Icon size={19} aria-hidden />
+                  <span><strong>{name}</strong><small>{price}</small></span>
+                  <ArrowUpRight size={16} aria-hidden />
+                </div>
+              </Link>
+            ))}
+          </div>
           <div className={styles.serviceList}>
             {transportRates.map(({ id, name, price, time, rates }, index) => {
               const Icon = transportIcons[index];
               return (
-                <details key={id} id={id} name="xpress-rates" className={styles.service}>
+                <details key={id} name="xpress-rates" className={styles.service}>
                   <summary className={styles.serviceRow}>
                     <Icon size={22} aria-hidden />
                     <span><strong>{name}</strong><small>{price}</small></span>
                     <ChevronDown className={styles.disclosure} size={18} aria-hidden />
                   </summary>
                   <div className={styles.rateContent}>
-                    <p>{time}</p>
+                    <p id={id}>{time}</p>
                     <dl>
                       {rates.map(([category, amount]) => <div key={category}><dt>{category}</dt><dd>{amount}</dd></div>)}
                     </dl>
@@ -33,23 +55,6 @@ export default function XpressServices({ lockersEnabled }: { lockersEnabled: boo
                 </details>
               );
             })}
-            <Link className={styles.serviceRow} href="#cajas">
-              <Box size={22} aria-hidden />
-              <span><strong>Cajas marítimas</strong><small>Desde $45</small></span>
-              <ArrowUpRight size={18} aria-hidden />
-            </Link>
-            <Link className={styles.serviceRow} href="#cotizador">
-              <Snowflake size={22} aria-hidden />
-              <span><strong>Frutas y congelados</strong><small>Servicio prioritario</small></span>
-              <ArrowUpRight size={18} aria-hidden />
-            </Link>
-            {lockersEnabled && (
-              <Link className={styles.serviceRow} href="/casillero">
-                <Warehouse size={22} aria-hidden />
-                <span><strong>Casillero virtual</strong><small>Recibe tus compras</small></span>
-                <ArrowUpRight size={18} aria-hidden />
-              </Link>
-            )}
           </div>
         </section>
       </div>

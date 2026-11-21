@@ -15,7 +15,7 @@ export default function XpressSpecialServices({ hasStore }: { hasStore: boolean 
       <section id="tienda" className={`${styles.store} ${styles.reveal}`}>
         <div>
           <h2>Tienda virtual</h2>
-          <p>Alimentos, café, leche, azúcar, condimentos y productos de aseo para enviar a Cuba.</p>
+          <p>Encuentra alimentos, café, leche, azúcar, condimentos y productos de aseo. También puedes comprar en nuestra oficina y pedir que preparemos tu caja con esos productos.</p>
           {hasStore ? <Link className={styles.primary} href="/tienda"><ShoppingCart size={20} aria-hidden />Ver tienda</Link>
             : <a className={styles.primary} href={xpressWhatsApp("Hola, quisiera consultar por los productos de la tienda.")}>Consultar productos</a>}
         </div>

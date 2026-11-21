@@ -2585,8 +2585,10 @@ function CollapsibleRateList({
 
               <div className="flex shrink-0 items-center gap-2">
                 <span className="rounded-full bg-emerald-50 px-3 py-1.5 font-extrabold text-emerald-700">
-                  ${Number(rate.rate_per_lb).toFixed(2)}/lb
-                  {rate.weight_threshold_lb != null && <span className="block text-xs">Desde {rate.weight_threshold_lb} lb: ${Number(rate.rate_at_or_above_threshold).toFixed(2)}/lb</span>}
+                  {service?.billing_mode === "fixed"
+                    ? `$${Number(rate.fixed_fee).toFixed(2)} fijo`
+                    : `$${Number(rate.rate_per_lb).toFixed(2)}/lb`}
+                  {service?.billing_mode !== "fixed" && rate.weight_threshold_lb != null && <span className="block text-xs">Desde {rate.weight_threshold_lb} lb: ${Number(rate.rate_at_or_above_threshold).toFixed(2)}/lb</span>}
                 </span>
                 <button
                   type="button"
