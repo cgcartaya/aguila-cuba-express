@@ -13,7 +13,9 @@ export const xpress = {
   whatsapp: "+13057646865",
   whatsappLabel: "305-764-6865",
   image: "/xpress/og.jpg",
-  hero: "/xpress/hero.webp",
+  hero: "/xpress/hero.webp?v=marca-1",
+  boxesPhoto: "/xpress/boxes.webp?v=marca-1",
+  lockerPhoto: "/xpress/locker.webp?v=marca-1",
   logo: "/xpress/logo.jpeg",
   favicon: "/xpress/favicon.png",
 };
