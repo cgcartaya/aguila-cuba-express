@@ -15,6 +15,8 @@ with photos(sku, old_notice) as (
     ('71193', null),
     ('7355', null),
     ('73614', null),
+    ('78364', null),
+    ('79050', null),
     ('81250', null),
     ('90181', null),
     ('90255', 'Imagen ilustrativa generada. El empaque real puede variar.'),
