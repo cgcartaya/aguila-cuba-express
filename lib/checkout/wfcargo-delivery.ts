@@ -8,6 +8,7 @@ const provincialDelivery: Record<string, { municipality: string; fee: number }> 
   "Guantánamo": { municipality: "Guantánamo", fee: 5 },
   "Las Tunas": { municipality: "Las Tunas", fee: 5 },
   Matanzas: { municipality: "Matanzas", fee: 5 },
+  "Ciego de Ávila": { municipality: "Ciego de Ávila", fee: 5 },
   Cienfuegos: { municipality: "Cienfuegos", fee: 5 },
 };
 
