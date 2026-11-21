@@ -5,7 +5,7 @@ import { Clock, MapPin, Menu, MessageCircle, Phone, Truck, X } from "lucide-reac
 import { contactWhatsApp, mapUrl, xpressNavigation, xpress } from "./content";
 import styles from "./xpress.module.css";
 
-export default function XpressHeader({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
+export default function XpressHeader({ lockersEnabled }: { lockersEnabled: boolean }) {
   const menu = useRef<HTMLDialogElement>(null);
   const navigation = xpressNavigation(lockersEnabled);
   return (
@@ -20,9 +20,11 @@ export default function XpressHeader({ logoUrl, lockersEnabled }: { logoUrl: str
       </div>
       <header className={styles.header}>
         <div className={styles.wrap}>
-          <a href="#inicio" className={styles.brand}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoUrl} alt={xpress.name} />
+          <a href="#inicio" className={styles.brand} aria-label="Xpress Multiservices Solutions, inicio">
+            {[styles.brandComplete, styles.brandLeft, styles.brandRight, styles.brandLid, styles.brandName, styles.brandCaption].map((piece) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={piece} className={piece} src="/xpress/logo-transparent.webp" alt="" width={938} height={384} />
+            ))}
           </a>
           <nav className={styles.desktopNav} aria-label="Navegación principal">
             {navigation.map(([label, href]) => <a key={href} href={href}>{label}</a>)}

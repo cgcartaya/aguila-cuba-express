@@ -27,8 +27,8 @@ export default function XpressLanding({ rates, logoUrl, storeSlug, canonicalUrl,
   return (
     <main id="inicio" className={styles.page}>
       {canonicalUrl && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />}
-      <XpressHeader logoUrl={logo} lockersEnabled={lockersEnabled} />
-      <XpressHero logoUrl={logo} lockersEnabled={lockersEnabled} />
+      <XpressHeader lockersEnabled={lockersEnabled} />
+      <XpressHero lockersEnabled={lockersEnabled} />
       <XpressServices rates={rates} lockersEnabled={lockersEnabled} />
       <div className={styles.wrap}>
         <XpressSpecialServices hasStore={Boolean(storeSlug)} />

@@ -13,7 +13,7 @@ const banners = [
   { title: "Compra en línea. Recibe con Xpress.", description: "Abre tu casillero desde cualquier estado de EE. UU. y coordina el envío a Cuba de tus compras de Amazon, Walmart y otras tiendas.", image: "/xpress/locker.webp", href: "/casillero", action: "Ver casillero virtual" },
 ];
 
-export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: string; lockersEnabled: boolean }) {
+export default function XpressHero({ lockersEnabled }: { lockersEnabled: boolean }) {
   const slides = lockersEnabled ? banners : banners.slice(0, -1);
   const slideCount = slides.length;
   const [active, setActive] = useState(0);
@@ -86,8 +86,6 @@ export default function XpressHero({ logoUrl, lockersEnabled }: { logoUrl: strin
           ))}
         </div>
         <div className={styles.heroContent}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className={styles.heroLogo} src={logoUrl} alt={xpress.name} />
           <div className={styles.heroCopy} aria-live={rotating ? "off" : "polite"}>
             {slides.map((item, index) => (
               <div className={styles.heroSlide} key={item.title} aria-hidden={index !== active} inert={index !== active}>

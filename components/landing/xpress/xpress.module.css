@@ -20,8 +20,62 @@
 .top a, .top span { display: flex; align-items: center; gap: .45rem; }
 .top svg { color: var(--cyan); flex: none; }
 .header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 5.25rem; }
-.brand { display: block; width: clamp(9rem, 17vw, 13rem); flex: none; color: var(--indigo); font-size: 1.125rem; font-weight: 850; line-height: 1.1; }
-.brand img { width: 100%; height: 4rem; object-fit: contain; object-position: left; }
+.brand {
+  display: block;
+  position: relative;
+  width: clamp(9.5rem, 16vw, 12rem);
+  aspect-ratio: 938 / 384;
+  flex: none;
+}
+.brand img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.brand img:not(.brandComplete) {
+  animation: assembleBrandPiece 5s ease-out var(--piece-delay, 0s) infinite backwards;
+}
+.brandLeft {
+  clip-path: polygon(0 43%, 10% 42%, 22.4% 25%, 22.4% 100%, 0 100%);
+  --entry-x: -.7rem;
+  --entry-y: .35rem;
+}
+.brandRight {
+  clip-path: polygon(22.4% 55%, 39.5% 35%, 39.5% 100%, 22.4% 100%);
+  --entry-x: .7rem;
+  --entry-y: .35rem;
+  --piece-delay: .08s;
+}
+.brandLid {
+  clip-path: polygon(16.5% 0, 27.5% 0, 27.5% 8%, 22.5% 13.6%, 16.5% 8%);
+  --entry-y: -.55rem;
+  --piece-delay: .18s;
+}
+.brandName {
+  clip-path: polygon(0 6.3%, 16% 6.3%, 22.5% 14%, 28% 6.3%, 100% 0, 100% 35%, 55% 35%, 55% 55%, 40% 55%, 22.4% 25%, 0 43%);
+  --entry-x: .8rem;
+  --piece-delay: .28s;
+}
+.brandCaption {
+  clip-path: inset(35% 0 0 55%);
+  --entry-y: .5rem;
+  --piece-delay: .4s;
+}
+.brandComplete { animation: holdAssembledBrand 5s linear infinite; }
+@keyframes assembleBrandPiece {
+  0% { opacity: 0; transform: translate(var(--entry-x, 0), var(--entry-y, 0)); }
+  9%, 19% { opacity: 1; transform: translate(0, 0); }
+  25%, 100% { opacity: 0; transform: translate(0, 0); }
+}
+@keyframes holdAssembledBrand {
+  0%, 19% { opacity: 0; }
+  23%, 96% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.brand:focus-visible img { animation: none; }
+.brand:focus-visible img:not(.brandComplete) { animation: none; visibility: hidden; }
 .desktopNav { display: flex; align-items: center; gap: clamp(.65rem, 1.4vw, 1.4rem); font-size: .875rem; font-weight: 750; }
 .desktopNav > a:not(.primary):hover, .contact a:hover, .footer a:hover { text-decoration: underline; text-underline-offset: .2em; }
 .mobileNav { display: none; }
@@ -81,15 +135,6 @@
 }
 .heroPhoto[data-active="true"] { opacity: 1; z-index: 1; }
 .heroContent { width: min(100%, 37rem); }
-.heroLogo {
-  width: 9rem;
-  height: 3rem;
-  object-fit: contain;
-  object-position: left;
-  margin-bottom: .75rem;
-  animation: reveal 1.4s ease both;
-}
-@keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 /* Overlaid copy contributes to the same grid row at every slide. */
 .heroCopy { display: grid; }
 .heroSlide {
@@ -295,7 +340,6 @@
   .heroMedia { height: clamp(12rem, 59vw, 22rem); }
   .heroMedia::after { background: linear-gradient(0deg, #081d42, transparent 42%); }
   .heroContent { grid-row: 2; }
-  .heroLogo { display: none; }
   .heroTitle { font-size: clamp(1.9rem, 7vw, 2.75rem); }
   .benefits { gap: .45rem .85rem; font-size: .875rem; }
   .controls {
@@ -328,7 +372,8 @@
   .store { background-image: linear-gradient(90deg, #081d42 13%, #081d42f2 45%, #081d4270), url('/xpress/store.webp'); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .heroLogo { animation: none; }
+  .brand img { animation: none; }
+  .brand img:not(.brandComplete) { animation: none; visibility: hidden; }
   .heroPhoto { transition: none; }
 }
 
