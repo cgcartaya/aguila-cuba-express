@@ -17,7 +17,7 @@
 .wrap { width: min(100% - 2rem, 82rem); margin-inline: auto; }
 .top, .footer { background: var(--navy); color: #fff; }
 .top .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; padding-block: .45rem; font-size: .875rem; }
-.top a, .top span, .contact a, .contact p { display: flex; align-items: center; gap: .45rem; }
+.top a, .top span { display: flex; align-items: center; gap: .45rem; }
 .top svg { color: var(--cyan); flex: none; }
 .header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 5.25rem; }
 .brand { display: block; width: clamp(9rem, 17vw, 13rem); flex: none; color: var(--indigo); font-size: 1.125rem; font-weight: 850; line-height: 1.1; }
@@ -128,7 +128,7 @@
 }
 .servicesLayout > :first-child { grid-column: 1; grid-row: 1; }
 .servicesLayout > :last-child { grid-column: 2; grid-row: 1; }
-.servicesLayout > *, .twoCol > *, .contact > * { min-inline-size: 0; }
+.servicesLayout > *, .contact > * { min-inline-size: 0; }
 .sectionTitle { margin: 0 0 1rem; }
 .page h2 { font-size: clamp(1.4rem, 3vw, 2.15rem); line-height: 1.13; letter-spacing: -.035em; font-weight: 760; }
 .quote { min-inline-size: 0; border: 1px solid var(--line); border-radius: .8rem; background: white; }
@@ -172,7 +172,6 @@
 .rateContent dl > div { display: flex; justify-content: space-between; gap: .5rem; padding: .4rem 0; border-bottom: 1px solid var(--line); }
 .rateContent dd, .boxes strong { margin: 0; font-weight: 750; white-space: nowrap; }
 .rateContent a, .block a { display: inline-flex; align-items: center; gap: .4rem; margin-top: .65rem; color: var(--indigo); font-weight: 700; text-decoration: underline; text-underline-offset: .19em; }
-.twoCol { display: grid; gap: 1rem; }
 .block { border: 1px solid var(--line); border-radius: .8rem; }
 .block { margin-bottom: 1.25rem; padding: clamp(1rem, 2.5vw, 1.75rem); }
 .block h2, .block h3 { margin: 0 0 .55rem; }
@@ -181,17 +180,81 @@
 .boxes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .7rem; padding: 0; list-style: none; margin: 1rem 0 0; }
 .boxes li { display: grid; justify-items: center; gap: .3rem; background: var(--pale); border-radius: .6rem; padding: .65rem .2rem; }
 .boxes svg { color: var(--indigo); }
-.twoCol { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .store { min-height: 14rem; display: flex; align-items: center; border-radius: 1.15rem; background: linear-gradient(90deg, #081d42 13%, #081d42ed 38%, #081d4214 100%) center / cover no-repeat, url("/xpress/store.webp") right center / auto 100% no-repeat, var(--navy); color: white; padding: clamp(1.2rem, 4vw, 2.7rem); margin-block: 0 1rem; }
 .store div { max-width: 27rem; }
 .store p { margin: .6rem 0 .85rem; }
 .advantages { display: grid; grid-template-columns: 1.35fr repeat(5, 1fr); align-items: center; border-radius: 1rem; padding: 1rem; gap: .65rem; background: var(--pale); margin-bottom: 1rem; }
 .advantages p { text-align: center; font-weight: 750; font-size: .875rem; line-height: 1.2; }
 .advantages svg { display: block; color: var(--indigo); margin: 0 auto .45rem; }
-.contact { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; background: var(--pale); }
-.contact p { margin-top: .6rem; }
-.contact a { display: flex; width: fit-content; min-height: 2.5rem; margin-top: .2rem; }
-.contact iframe { width: 100%; height: 15rem; border: 0; border-radius: .65rem; }
+.supportGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-block: 1.25rem;
+}
+.delivery {
+  display: flex;
+  align-items: center;
+  min-height: 23rem;
+  border-radius: .9rem;
+  color: white;
+  background: linear-gradient(90deg, #081d42 0%, #081d42f0 24%, #081d426e 62%, transparent 100%),
+    #081d42 url("/xpress/delivery-havana.webp") center 53% / cover no-repeat;
+}
+.deliveryCopy { max-width: 27rem; padding: clamp(1.25rem, 3vw, 2.75rem); }
+.delivery h2 { font-size: clamp(1.85rem, 4vw, 3rem); text-wrap: balance; }
+.delivery p { margin: .9rem 0 1.45rem; max-width: 28ch; color: #eef5ff; }
+.supportActions { display: grid; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.supportAction {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .8rem;
+  background: white;
+  transition: border-color .2s, background-color .2s;
+}
+.supportAction:hover, .supportAction:focus-visible { background: var(--pale); border-color: var(--indigo); }
+.supportAction > span { display: grid; gap: .25rem; }
+.supportAction strong { font-size: clamp(1rem, 1.6vw, 1.2rem); line-height: 1.2; }
+.supportAction span span { color: var(--indigo); font-weight: 650; }
+.supportAction > svg { color: var(--indigo); }
+.supportAction > svg:last-child { transition: transform .2s; }
+.supportAction:hover > svg:last-child { transform: translateX(3px); }
+.contact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  margin-bottom: 1.5rem;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  border-radius: .9rem;
+  background: var(--pale);
+}
+.contactDetails { display: grid; justify-items: start; gap: .25rem; }
+.contactDetails h2 { margin-bottom: .55rem; }
+.contactDetails > a, .contactDetails > p, .contactPhones { display: flex; align-items: center; gap: .65rem; min-height: 2.75rem; }
+.contactDetails > a, .contactPhones a { font-weight: 650; }
+.contactDetails svg { color: var(--indigo); }
+.contactPhones > div { display: flex; flex-wrap: wrap; gap: 0 .7rem; }
+.contactPhones a { display: inline-flex; min-height: 2.75rem; align-items: center; }
+.contactMap { position: relative; border: 2px solid white; border-radius: .8rem; overflow: hidden; }
+.contactMap iframe { display: block; width: 100%; height: clamp(14rem, 24vw, 20rem); border: 0; }
+.directions {
+  position: absolute;
+  inset: auto .65rem 1.65rem auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 2.75rem;
+  padding: .5rem .8rem;
+  border-radius: .45rem;
+  background: var(--indigo);
+  color: white;
+  font-weight: 700;
+}
 .footer { padding-block: 1.6rem; }
 .footer .wrap, .footer nav { display: flex; flex-wrap: wrap; gap: .65rem 1.2rem; justify-content: space-between; }
 .footer nav { font-size: .875rem; }
@@ -243,7 +306,16 @@
     gap: .14rem;
     padding: 0 0 .75rem;
   }
-  .servicesLayout, .twoCol, .contact { grid-template-columns: minmax(0, 1fr); }
+  .servicesLayout, .supportGrid, .contact { grid-template-columns: minmax(0, 1fr); }
+  .delivery {
+    align-items: end;
+    min-height: 22rem;
+    background-image: linear-gradient(0deg, #081d42 0%, #081d42f5 35%, #081d4280 64%, transparent 88%),
+      url("/xpress/delivery-havana.webp");
+    background-position: 69% center;
+  }
+  .supportActions { grid-template-rows: none; }
+  .contactMap iframe { height: 15rem; }
   .servicesLayout > :first-child, .servicesLayout > :last-child { grid-column: auto; grid-row: auto; }
   .controls button, .controls .dot { width: clamp(2.125rem, 10vw, 2.5rem); }
   .brand { width: clamp(6.5rem, 32vw, 9rem); }
@@ -318,3 +390,5 @@
 @media (prefers-reduced-motion: reduce) {
   .serviceImage img { transition: none; transform: none !important; }
 }
+
+@media (prefers-reduced-motion: reduce) { .supportAction, .supportAction > svg:last-child { transition: none; } }

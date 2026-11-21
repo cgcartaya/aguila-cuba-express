@@ -1,6 +1,30 @@
-import { Headset, MapPin, Package, PackageSearch, Plane, Warehouse } from "lucide-react";
+import { ChevronRight, Headset, MapPin, Package, PackageSearch, Plane, Truck, Warehouse } from "lucide-react";
 import { xpressWhatsApp } from "./content";
 import styles from "./xpress.module.css";
+
+const supportActions = [
+  {
+    id: "rastreo",
+    title: "Rastreo de paquetes",
+    action: "Consultar seguimiento",
+    message: "Hola, quisiera consultar el estado de un envío. Mi número de seguimiento es: ",
+    icon: PackageSearch,
+  },
+  {
+    id: "recogida",
+    title: "Recogida local",
+    action: "Consultar cobertura",
+    message: "Hola, quisiera coordinar una recogida local.",
+    icon: MapPin,
+  },
+  {
+    id: "otros-estados",
+    title: "Envíos desde otros estados",
+    action: "Pedir instrucciones",
+    message: "Hola, quiero enviar un paquete a Xpress desde otro estado. ¿Qué instrucciones debo seguir?",
+    icon: Truck,
+  },
+];
 
 export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabled: boolean }) {
   return (
@@ -14,33 +38,26 @@ export default function XpressShippingSupport({ lockersEnabled }: { lockersEnabl
         {lockersEnabled && <p><Warehouse aria-hidden />Casillero para compras online</p>}
       </section>
 
-      <div className={styles.twoCol}>
-        <section id="domicilio" className={`${styles.block} ${styles.reveal}`}>
-          <h2>Entrega a domicilio en Cuba</h2>
-          <p>El cargo de entrega depende del municipio y la modalidad. Confirma el total con la agencia antes de enviar.</p>
-        </section>
-        <section id="rastreo" className={`${styles.block} ${styles.reveal}`}>
-          <h2>Rastreo de paquetes</h2>
-          <p>Ten a mano el número de seguimiento que aparece en tu comprobante.</p>
-          <a href={xpressWhatsApp("Hola, quisiera consultar el estado de un envío. Mi número de seguimiento es: ")}><PackageSearch size={19} aria-hidden />Consultar seguimiento</a>
-        </section>
-      </div>
-
-      <section id="recogida" className={`${styles.block} ${styles.reveal}`}>
-        <h2>Recogidas locales y envíos desde otros estados</h2>
-        <div className={styles.twoCol}>
-          <div>
-            <h3>Recogida local</h3>
-            <p>Consulta la cobertura y disponibilidad en tu dirección.</p>
-            <a href={xpressWhatsApp("Hola, quisiera coordinar una recogida local.")}>Consultar recogida</a>
+      <div className={`${styles.supportGrid} ${styles.reveal}`}>
+        <section id="domicilio" className={styles.delivery}>
+          <div className={styles.deliveryCopy}>
+            <h2>Entrega a domicilio en Cuba</h2>
+            <p>Consulta el cargo según el municipio y la modalidad.</p>
+            <a className={styles.primary} href={xpressWhatsApp("Hola, quisiera consultar el cargo de entrega a domicilio en Cuba para mi municipio y modalidad de envío.")}>
+              Consultar entrega
+            </a>
           </div>
-          <div>
-            <h3>Paquetes desde otro estado</h3>
-            <p>Coordinamos a distancia el envío de frutas, alimentos, medicinas y otros artículos. Pide las instrucciones para enviar paquetes o recibir compras en línea.</p>
-            <a href={xpressWhatsApp("Hola, quiero enviar un paquete a Xpress desde otro estado. ¿Qué instrucciones debo seguir?")}>Pedir instrucciones de envío</a>
-          </div>
+        </section>
+        <div className={styles.supportActions}>
+          {supportActions.map(({ id, title, action, message, icon: Icon }) => (
+            <a key={id} id={id} className={styles.supportAction} href={xpressWhatsApp(message)}>
+              <Icon size={24} aria-hidden />
+              <span><strong>{title}</strong><span>{action}</span></span>
+              <ChevronRight size={18} aria-hidden />
+            </a>
+          ))}
         </div>
-      </section>
+      </div>
     </>
   );
 }
