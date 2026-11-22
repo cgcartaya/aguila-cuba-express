@@ -29,6 +29,7 @@ import {
   type CheckoutSettings,
 } from "@/lib/checkout/types";
 
+import { isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
 import ProductShipping, { useProductShipping, type ProductShippingQuote } from "@/components/checkout/ProductShipping";
 import { CustomerInfoForm } from "@/components/checkout/CustomerInfoForm";
 import { RecipientInfoForm } from "@/components/checkout/RecipientInfoForm";
@@ -159,6 +160,7 @@ export default function CheckoutPage() {
     minimum_order_exempt: boolean;
     delivery_included: boolean;
     delivery_provinces?: string[] | null;
+    category?: string | null;
   }>>({});
   const wfDeliveryItems = isWfCargo ? cart.filter((item) =>
     item.type === "product" && checkoutRuleMap[getOriginalCartItemId(item.id)]?.delivery_provinces?.length
@@ -195,7 +197,11 @@ export default function CheckoutPage() {
     }
   }, [isWfCargo, loadingCheckout, checkoutSettings?.blocks.customer]);
   const shippingItems = useMemo(() => cart.map(item => ({ item_type: item.type, product_id: item.type === "product" ? getOriginalCartItemId(item.id) : null, combo_id: item.type === "combo" ? getOriginalCartItemId(item.id) : null, quantity: item.quantity })), [cart]);
-  const productShipping = useProductShipping(isWfCargo ? undefined : store?.id, shippingItems);
+  const freshExpressRequired = store?.slug === "xpress" && cart.some((item) =>
+    item.type === "product" &&
+    isXpressFreshProduct(checkoutRuleMap[getOriginalCartItemId(item.id)]?.category ?? item.category)
+  );
+  const productShipping = useProductShipping(isWfCargo ? undefined : store?.id, shippingItems, freshExpressRequired);
   const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
   // Telefono con el que se valido el bono. Si el cliente lo cambia despues
   // de aplicarlo, el bono deja de ser valido para ese numero y hay que
@@ -445,6 +451,7 @@ export default function CheckoutPage() {
             minimum_order_exempt: product.minimum_order_exempt ?? category?.minimum_order_exempt ?? false,
             delivery_included: product.delivery_included ?? category?.delivery_included ?? false,
             delivery_provinces: product.delivery_provinces,
+            category: product.category,
           };
         }
         setCheckoutRuleMap(nextMap);

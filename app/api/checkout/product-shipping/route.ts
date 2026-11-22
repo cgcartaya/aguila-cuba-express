@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { isCartShippingEnabled, quoteCartShipping } from "@/lib/shipping/cart-shipping";
+import { isXpressCheckoutRate } from "@/lib/shipping/xpress-checkout";
+
 export async function GET(request: NextRequest) {
   const storeId = request.nextUrl.searchParams.get("storeId") || "";
   const { data: store } = await db
     .from("stores")
-    .select("id")
+    .select("id,slug")
     .eq("id", storeId)
     .eq("is_active", true)
     .eq("module_shipping_enabled", true)
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
       .order("priority", { ascending: false }),
     db
       .from("shipping_service_types")
-      .select("id,name")
+      .select("id,name,code")
       .eq("store_id", storeId)
       .eq("is_active", true)
       .eq("billing_mode", "per_lb"),
@@ -55,6 +57,9 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   const options = (r.data || []).flatMap((rate) => {
+    if (store.slug === "xpress" && !isXpressCheckoutRate(rate.transport_mode, rate.scope_type)) {
+      return [];
+    }
     const service = s.data?.find((x) => x.id === rate.service_type_id);
     const location = l.data?.find((x) => x.id === rate.location_id);
     const municipality = m.data?.find(
@@ -79,6 +84,7 @@ export async function GET(request: NextRequest) {
           {
             id: rate.id,
             service: service.name,
+            serviceCode: service.code,
             mode: rate.transport_mode,
             destination,
             rate_per_lb: rate.rate_per_lb,

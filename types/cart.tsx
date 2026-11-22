@@ -59,6 +59,7 @@ export type Combo = {
 ========================================================= */
 
 export type CartItem = {
+  category?: string | null;
   id: string;
   name: string;
 
