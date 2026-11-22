@@ -1,6 +1,19 @@
 -- Apply after the storefront assets are available in production.
 with photos(sku, old_image_url, old_notice) as (
   values
+    ('36897', null, null),
+    ('66542', null, null),
+    ('60130', null, null),
+    ('30127', null, null),
+    ('77130', null, null),
+    ('9305', 'https://xpress.perlamarketplace.com/xpress/catalogo/9305.webp', 'Imagen ilustrativa generada. La presentación, el color o el empaque real pueden variar.'),
+    ('11640', null, null),
+    ('33407', 'https://xpress.perlamarketplace.com/xpress/catalogo/33407.webp', 'Imagen ilustrativa generada. La presentación, el color o el empaque real pueden variar.'),
+    ('74836', null, null),
+    ('29951', null, null),
+    ('61674', 'https://xpress.perlamarketplace.com/xpress/catalogo/61674.webp', 'Imagen ilustrativa generada. La presentación, el color o el empaque real pueden variar.'),
+    ('40141', null, null),
+    ('59197', null, null),
     ('45920', null, null),
     ('71978', null, null),
     ('10709', null, null),
