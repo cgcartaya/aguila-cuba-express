@@ -11,3 +11,10 @@ export function isXpressCheckoutRate(mode: string, scope: string) {
   if (mode === "air" || mode === "sea") return scope === "province";
   return true;
 }
+
+export const XPRESS_PACKAGING_NOTICE =
+  "Las frutas se embalan en cajitas para el envío. El costo adicional es de aproximadamente $2 USD por cajita. Xpress confirma el importe según la cantidad de cajitas necesarias.";
+
+export function customerManagementFee(storeSlug: string | null | undefined) {
+  return storeSlug === "xpress" ? 1.50 : 0;
+}

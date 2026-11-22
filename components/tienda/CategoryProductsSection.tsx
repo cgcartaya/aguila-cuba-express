@@ -10,6 +10,7 @@
 ========================================================= */
 
 import Link from "next/link";
+import { isXpressFreshProduct, XPRESS_PACKAGING_NOTICE } from "@/lib/shipping/xpress-checkout";
 import {
   ArrowRight,
   Baby,
@@ -194,7 +195,7 @@ export default function CategoryProductsSection({
               </h2>
 
               <p className="mt-1 max-w-[320px] text-xs font-medium leading-snug text-slate-500 md:text-sm">
-                {meta.description}
+                {storeSlug === "xpress" && isXpressFreshProduct(title) ? XPRESS_PACKAGING_NOTICE : meta.description}
               </p>
 
               <div className="mt-2 inline-flex rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600 shadow-sm">

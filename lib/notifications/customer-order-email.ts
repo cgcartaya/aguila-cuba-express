@@ -27,6 +27,7 @@ type CustomerOrderEmailParams = {
   items: OrderItemLine[];
   subtotal: number;
   deliveryFee: number;
+  managementFee?: number;
   discountAmount: number;
   total: number;
 };
@@ -34,6 +35,7 @@ type CustomerOrderEmailParams = {
 export async function sendCustomerOrderConfirmationEmail(
   params: CustomerOrderEmailParams
 ) {
+  const managementFee = params.managementFee ?? 0;
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM_EMAIL;
 
@@ -68,6 +70,11 @@ export async function sendCustomerOrderConfirmationEmail(
         ${itemsRows}
         <tr><td style="padding: 8px 0; border-top: 1px solid #e2e8f0; color: #334155;">Productos</td><td style="text-align: right; padding: 8px 0; border-top: 1px solid #e2e8f0; color: #334155;">$${params.subtotal.toFixed(2)}</td></tr>
         <tr><td style="padding: 4px 0; color: #334155;">Envío</td><td style="text-align: right; color: #334155;">$${params.deliveryFee.toFixed(2)}</td></tr>
+        ${
+          managementFee > 0
+            ? `<tr><td style="padding: 4px 0; color: #334155;">Cargo de gestión</td><td style="text-align: right; color: #334155;">$${managementFee.toFixed(2)}</td></tr>`
+            : ""
+        }
         ${
           params.discountAmount > 0
             ? `<tr><td style="padding: 4px 0; color: #16a34a;">Descuento</td><td style="text-align: right; color: #16a34a;">-$${params.discountAmount.toFixed(2)}</td></tr>`

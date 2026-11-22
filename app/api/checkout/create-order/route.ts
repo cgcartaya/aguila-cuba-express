@@ -50,7 +50,7 @@ import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
 import { quoteCartShipping, type CartShippingSelection } from "@/lib/shipping/cart-shipping";
-import { isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
+import { customerManagementFee, isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
@@ -755,7 +755,8 @@ export async function POST(request: Request) {
       discountCode = campaign.code;
     }
 
-    const total = money(Math.max(subtotal + deliveryFee - discountAmount, 0));
+    const managementFee = customerManagementFee(store.slug);
+    const total = money(Math.max(subtotal + deliveryFee - discountAmount, 0) + managementFee);
 
     const customerIsRecipient = isLocalDelivery || isDistanceDelivery;
     const city = boxProductsOnly ? "" : customerIsRecipient
@@ -830,6 +831,7 @@ export async function POST(request: Request) {
       subtotal,
       shipping_details: productShippingQuote,
       delivery_fee: deliveryFee,
+      customer_management_fee: managementFee,
       platform_fee_amount: platformFeeAmount,
       platform_fixed_fee_amount: platformFixedFee,
       discount_campaign_id: discountCampaignId,
@@ -1102,6 +1104,7 @@ export async function POST(request: Request) {
           })),
           subtotal,
           deliveryFee,
+          managementFee,
           discountAmount,
           total,
         });
@@ -1117,6 +1120,7 @@ export async function POST(request: Request) {
         shipping_details: productShippingQuote,
         subtotal,
         delivery_fee: deliveryFee,
+        customer_management_fee: managementFee,
         platform_fee_amount: platformFeeAmount,
         discount_amount: discountAmount,
         total,

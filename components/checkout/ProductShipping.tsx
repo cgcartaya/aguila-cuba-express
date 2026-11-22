@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import type { ShippingCartItem } from "@/lib/shipping/cart-shipping";
-import { XPRESS_FRESH_DELIVERY, XPRESS_FRESH_SERVICE } from "@/lib/shipping/xpress-checkout";
+import { XPRESS_FRESH_DELIVERY, XPRESS_FRESH_SERVICE, XPRESS_PACKAGING_NOTICE } from "@/lib/shipping/xpress-checkout";
 export type ProductShippingQuote = {
   amount: number;
   weight_lb: number;
@@ -197,6 +197,7 @@ export default function ProductShipping({
         <div>
           <p className="font-bold">Envío Express de frutas</p>
           <p className="text-sm text-slate-600">{XPRESS_FRESH_DELIVERY}</p>
+          <p className="mt-2 text-sm text-slate-700">{XPRESS_PACKAGING_NOTICE}</p>
         </div>
       ) : (
         <label className="flex items-center gap-3 font-bold">
