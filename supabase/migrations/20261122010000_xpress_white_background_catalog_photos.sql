@@ -1,6 +1,8 @@
 -- Apply after the storefront assets are available in production.
 with photos(sku, old_image_url, old_notice) as (
   values
+    ('45920', null, null),
+    ('71978', null, null),
     ('10709', null, null),
     ('13092', 'https://xpress.perlamarketplace.com/xpress/catalogo/13092.webp', 'Imagen ilustrativa generada. La presentación, el color o el empaque real pueden variar.'),
     ('15595', null, null),
