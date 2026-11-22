@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
   const { data: order, error } = await supabaseAdmin
     .from("orders")
-    .select("id, store_id, order_number, total, payment_status, platform_fixed_fee_amount, customer_name, source_shipment_id, checkout_payment_provider, status, stock_restored, payment_method")
+    .select("id, store_id, order_number, total, customer_management_fee, payment_status, platform_fixed_fee_amount, customer_name, source_shipment_id, checkout_payment_provider, status, stock_restored, payment_method")
     .eq("id", orderId)
     .eq("store_id", storeId)
     .is("deleted_at", null)
@@ -106,14 +106,15 @@ export async function POST(request: NextRequest) {
   // del pedido, no sobre el recargo (el recargo es de Frank, no se reparte
   // con la plataforma). En modo "direct" no hay application_fee_amount: la
   // comisión ya va incluida en el precio.
-  const PLATFORM_FEE_RATE = 0.02;
+  const managementFeeCents = Math.round(Number(order.customer_management_fee || 0) * 100);
+  const platformFeeRate = store.slug === "xpress" && managementFeeCents > 0 ? 0 : 0.02;
   // Al retomar el pago se respeta el fijo registrado en esa orden.
   const fixedPlatformFeeCents = Math.round(
     Number(order.platform_fixed_fee_amount ?? PLATFORM_ORDER_FIXED_FEE) * 100
   );
   const applicationFeeCents = Math.min(
     amountCents,
-    Math.round(amountCents * PLATFORM_FEE_RATE) + fixedPlatformFeeCents
+    Math.round(amountCents * platformFeeRate) + fixedPlatformFeeCents
   );
 
   const session = await stripeCtx.stripe.checkout.sessions.create(
@@ -125,10 +126,18 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: { name: `Pedido ${order.order_number || order.id.slice(0, 8)}` },
-            unit_amount: amountCents,
+            unit_amount: amountCents - managementFeeCents,
           },
           quantity: 1,
         },
+        ...(managementFeeCents > 0 ? [{
+          price_data: {
+            currency: "usd",
+            product_data: { name: "Cargo de gestión" },
+            unit_amount: managementFeeCents,
+          },
+          quantity: 1,
+        }] : []),
         {
           price_data: {
             currency: "usd",

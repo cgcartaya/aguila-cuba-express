@@ -27,6 +27,7 @@ type Props = {
   selectedZone: DeliveryZone | null;
   municipality: string;
   totals: CheckoutTotals;
+  managementFee?: number;
   error: string;
   loading: boolean;
   canCheckout: boolean;
@@ -56,6 +57,7 @@ export function OrderSummary({
   selectedZone,
   municipality,
   totals,
+  managementFee = 0,
   error,
   loading,
   canCheckout,
@@ -79,8 +81,8 @@ export function OrderSummary({
   onAddProducts,
 }: Props) {
   const { currency, format } = useCurrency();
-  const discountAmount = appliedDiscount?.discountAmount || 0;
-  const finalTotal = Math.max(totals.finalTotal - discountAmount, 0);
+  const discountAmount = Math.min(appliedDiscount?.discountAmount || 0, totals.finalTotal);
+  const finalTotal = Math.max(totals.finalTotal - discountAmount, 0) + managementFee;
   const cardSurcharge = payWith === "card"
     ? Math.round(finalTotal * cardSurchargeRate * 100) / 100
     : 0;
@@ -209,6 +211,13 @@ export function OrderSummary({
           <div className="flex items-center justify-between font-bold text-green-700">
             <span>Descuento ({appliedDiscount.code})</span>
             <span>-<Price usd={discountAmount} /></span>
+          </div>
+        )}
+
+        {managementFee > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-500">Cargo de gestión</span>
+            <span className="font-bold"><Price usd={managementFee} /></span>
           </div>
         )}
 

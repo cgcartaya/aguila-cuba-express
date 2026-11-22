@@ -12,6 +12,7 @@
    - Los botones vuelven a /tienda.
 ========================================================= */
 
+import { isXpressFreshProduct, XPRESS_PACKAGING_NOTICE } from "@/lib/shipping/xpress-checkout";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -165,6 +166,9 @@ export default function CategoryClient({ slug, category }: Props) {
       </div>
 
       <section className="px-4 pt-4">
+        {storeSlug === "xpress" && isXpressFreshProduct(categoryName) && (
+          <p className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-800">{XPRESS_PACKAGING_NOTICE}</p>
+        )}
         {needsProvince && (
           <label className="mb-5 block max-w-md rounded-2xl border border-slate-200 bg-white p-4 font-semibold text-slate-900">
             Provincia de entrega

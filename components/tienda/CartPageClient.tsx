@@ -1,5 +1,6 @@
 "use client";
 
+import { isXpressFreshProduct, XPRESS_PACKAGING_NOTICE } from "@/lib/shipping/xpress-checkout";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -342,6 +343,9 @@ export default function CartPageClient() {
                 </div>
               </div>
 
+              {store?.slug === "xpress" && cart.some((item) => isXpressFreshProduct(item.category)) && (
+                <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-800">{XPRESS_PACKAGING_NOTICE}</p>
+              )}
               <section className="mt-5 space-y-3">
                 {cart.map((item) => (
                   <article

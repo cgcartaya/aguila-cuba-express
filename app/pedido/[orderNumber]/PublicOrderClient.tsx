@@ -33,6 +33,7 @@ type Order = {
   payment_method?: string | null;
   subtotal: number | null;
   delivery_fee: number | null;
+  customer_management_fee?: number | null;
   discount_amount?: number | null;
   total: number | null;
   country?: string | null;
@@ -88,7 +89,8 @@ function roundMoney(value: number) {
 function getOrderPaymentTotals(order: Order, storeSlug?: string | null) {
   const baseTotal = roundMoney(
     Number(order.subtotal || 0) +
-      Number(order.delivery_fee || 0) -
+      Number(order.delivery_fee || 0) +
+      Number(order.customer_management_fee || 0) -
       Number(order.discount_amount || 0)
   );
   const storedTotal = Number(order.total || 0);
@@ -448,6 +450,9 @@ export function PublicOrderClient({
           <div className="space-y-3 text-sm">
             <div className="flex justify-between"><span className="text-gray-500">Productos</span><strong>${Number(order.subtotal || 0).toFixed(2)}</strong></div>
             <div className="flex justify-between"><span className="text-gray-500">Envío</span><strong>${Number(order.delivery_fee || 0).toFixed(2)}</strong></div>
+            {Number(order.customer_management_fee || 0) > 0 && (
+              <div className="flex justify-between"><span className="text-gray-500">Cargo de gestión</span><strong>${Number(order.customer_management_fee).toFixed(2)}</strong></div>
+            )}
             {Number(order.discount_amount || 0) > 0 && (
               <div className="flex justify-between text-green-600"><span>Descuento</span><strong>-${Number(order.discount_amount).toFixed(2)}</strong></div>
             )}

@@ -29,7 +29,7 @@ import {
   type CheckoutSettings,
 } from "@/lib/checkout/types";
 
-import { isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
+import { customerManagementFee, isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
 import ProductShipping, { useProductShipping, type ProductShippingQuote } from "@/components/checkout/ProductShipping";
 import { CustomerInfoForm } from "@/components/checkout/CustomerInfoForm";
 import { RecipientInfoForm } from "@/components/checkout/RecipientInfoForm";
@@ -547,8 +547,9 @@ export default function CheckoutPage() {
     };
   }, [wfComboDelivery, wfComboDeliveryFee, productShipping.enabled, productShipping.quote, cart, checkoutSettings, cubaTotals, form.delivery_quoted_fee, isYoyo, method, usesDistanceDelivery]);
 
-  const discountAmount = appliedDiscount?.discountAmount || 0;
-  const finalTotalWithDiscount = Math.max(totals.finalTotal - discountAmount, 0);
+  const managementFee = customerManagementFee(store?.slug);
+  const discountAmount = Math.min(appliedDiscount?.discountAmount || 0, totals.finalTotal);
+  const finalTotalWithDiscount = Math.max(totals.finalTotal - discountAmount, 0) + managementFee;
 
   useEffect(() => {
     if (!store?.id || cart.length === 0) return;
@@ -881,6 +882,7 @@ export default function CheckoutPage() {
       zelle_info?: string | null;
       subtotal: number;
       delivery_fee: number;
+      customer_management_fee?: number;
       shipping_details: ProductShippingQuote | null;
       discount_amount: number;
       total: number;
@@ -924,7 +926,7 @@ ${products}
 RESUMEN
 Subtotal: $${totals.subtotal.toFixed(2)}${
       totals.shippingCost > 0 ? `\nDelivery: $${totals.shippingCost.toFixed(2)}` : ""
-    }${
+    }${managementFee > 0 ? `\nCargo de gestión: $${managementFee.toFixed(2)}` : ""}${
       appliedDiscount
         ? `\nDescuento (${appliedDiscount.code}): -$${discountAmount.toFixed(2)}`
         : ""
@@ -1086,7 +1088,7 @@ ${orderUrl}`);
             form.phone, ...cart.map((item) => `${item.quantity}x ${item.name}`),
             `Total $${Number(order.total).toFixed(2)}`, orderUrl].join("\n"))
         : order.shipping_details
-        ? encodeURIComponent(`${store.name}\nPEDIDO NUEVO\nOrden: ${orderNumber}\n\nCLIENTE\n${form.name}\n${form.phone}\n${form.email}\n\nDESTINATARIO\n${form.recipient_name}\n${form.recipient_phone}\n${form.exact_address}\n\nENVÍO POR PESO\n${order.shipping_details.service_name} · ${order.shipping_details.transport_mode}\nDestino: ${order.shipping_details.destination}\nPeso: ${order.shipping_details.weight_lb.toFixed(3)} lb\n\nPRODUCTOS\n${cart.map(item => `${item.quantity}x ${item.name}`).join("\n")}\n\nSubtotal: $${Number(order.subtotal).toFixed(2)}\nEnvío: $${Number(order.delivery_fee).toFixed(2)}\nDescuento: $${Number(order.discount_amount).toFixed(2)}\nTOTAL: $${Number(order.total).toFixed(2)}\nVer pedido: ${orderUrl}`)
+        ? encodeURIComponent(`${store.name}\nPEDIDO NUEVO\nOrden: ${orderNumber}\n\nCLIENTE\n${form.name}\n${form.phone}\n${form.email}\n\nDESTINATARIO\n${form.recipient_name}\n${form.recipient_phone}\n${form.exact_address}\n\nENVÍO POR PESO\n${order.shipping_details.service_name} · ${order.shipping_details.transport_mode}\nDestino: ${order.shipping_details.destination}\nPeso: ${order.shipping_details.weight_lb.toFixed(3)} lb\n\nPRODUCTOS\n${cart.map(item => `${item.quantity}x ${item.name}`).join("\n")}\n\nSubtotal: $${Number(order.subtotal).toFixed(2)}\nEnvío: $${Number(order.delivery_fee).toFixed(2)}${Number(order.customer_management_fee) > 0 ? `\nCargo de gestión: $${Number(order.customer_management_fee).toFixed(2)}` : ""}\nDescuento: $${Number(order.discount_amount).toFixed(2)}\nTOTAL: $${Number(order.total).toFixed(2)}\nVer pedido: ${orderUrl}`)
         : usesDistanceDelivery
         ? buildDistanceWhatsappMessage(orderNumber, orderUrl)
         : isYoyo
@@ -1301,6 +1303,7 @@ ${orderUrl}`);
                   selectedZone={boxProductsOnly ? null : selectedZone}
                   municipality={boxProductsOnly ? "" : method === "delivery" ? form.city : form.municipality}
                   totals={totals}
+                  managementFee={managementFee}
                   error={error}
                   loading={loading}
                   canCheckout={canCheckout && productShipping.ready}
