@@ -488,3 +488,8 @@
 @media (max-width: 720px) {
   .catalogGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.quoteTotal { margin: 0; }
+.quoteTotal > div { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .3rem .75rem; }
+.quoteTotal > div + div { margin-top: .45rem; }
+.quoteTotal > div:last-child { border-top: 1px solid var(--line); padding-top: .45rem; }
+.quoteTotal dd { margin: 0; }

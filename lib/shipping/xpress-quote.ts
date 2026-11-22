@@ -1,24 +1,38 @@
+import { shippingCharge } from "./product-weight";
+
+type XpressWeightRate = Parameters<typeof shippingCharge>[0];
+
+export type XpressDestination = {
+  id: string;
+  province: string;
+  municipality?: string;
+  pricing: XpressWeightRate;
+};
+
 export type XpressRate = {
   id: string;
   label: string;
   mode: string;
-  fixed: boolean;
-  rate: number;
-  fee: number;
-  minimum: number;
-  minWeight: number;
-  maxWeight: number | null;
-  threshold: number | null;
-  thresholdRate: number | null;
+  unitPrice: number | null;
+  destinations: XpressDestination[];
 };
 
-export function xpressSubtotal(rate: XpressRate, quantity: number) {
+export function xpressQuote(rate: XpressRate, destination: XpressDestination, quantity: number) {
   if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 10000) return null;
-  if (rate.fixed && !Number.isInteger(quantity)) return null;
-  if (!rate.fixed && rate.maxWeight !== null && quantity > rate.maxWeight) return null;
-  const unitPrice = rate.threshold !== null && quantity >= rate.threshold
-    ? rate.thresholdRate ?? rate.rate : rate.rate;
-  const amount = rate.fixed ? rate.fee * quantity
-    : Math.max(Math.max(quantity, rate.minWeight) * unitPrice + rate.fee, rate.minimum);
-  return Math.round((amount + Number.EPSILON) * 100) / 100;
+  const delivery = Number(destination.pricing.fixed_fee);
+  if (!Number.isFinite(delivery) || delivery < 0) return null;
+  const round = (amount: number) => Math.round((amount + Number.EPSILON) * 100) / 100;
+
+  if (rate.unitPrice !== null) {
+    if (!Number.isInteger(quantity)) return null;
+    const transport = round(rate.unitPrice * quantity);
+    return { transport, delivery, total: round(transport + delivery) };
+  }
+
+  try {
+    const { amount: total } = shippingCharge(destination.pricing, quantity);
+    return { transport: round(total - delivery), delivery, total };
+  } catch {
+    return null;
+  }
 }
