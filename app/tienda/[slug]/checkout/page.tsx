@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 14742)
-Total output lines: 1357
-
 "use client";
 import LymCheckout from "@/components/lym/LymCheckout";
 
@@ -652,7 +649,67 @@ export default function CheckoutPage() {
     if (wfComboDelivery) {
       requireField("recipient_name", "nombre del destinatario");
       requireField("recipient_phone", "teléfono del destinatario");
-      if (!comboProvinces.some((province) => province === form.pr…742 tokens truncated…> 0) {
+      if (!comboProvinces.some((province) => province === form.province)) {
+        missing.push({ name: "province", label: "provincia de entrega disponible" });
+      }
+      if (!comboMunicipalities.includes(form.municipality)) {
+        missing.push({ name: "municipality", label: "municipio de entrega disponible" });
+      }
+      requireField("exact_address", "dirección de entrega");
+    } else if (productShipping.enabled) {
+      requireField("recipient_name", "nombre del destinatario");
+      requireField("recipient_phone", "teléfono del destinatario");
+      requireField("exact_address", "dirección completa del destinatario");
+    } else if (isYoyo && method === "delivery" && !usesDistanceDelivery) {
+      requireField("city", "ciudad");
+      requireField("exact_address", "dirección de entrega");
+    } else if (usesDistanceDelivery) {
+      requireField("city", "ciudad");
+      requireField("exact_address", "dirección de entrega");
+      if (form.delivery_latitude == null || form.delivery_longitude == null || form.delivery_distance_meters == null) {
+        missing.push({ name: "exact_address", label: "ubicación confirmada en el mapa" });
+      }
+    } else {
+      requireField("recipient_name", "nombre del destinatario");
+      requireField("recipient_phone", "teléfono del destinatario");
+      requireField("municipality", "municipio");
+      if (!selectedZone) {
+        missing.push({ name: "delivery_zone_id", label: "zona de entrega" });
+      }
+      requireField("exact_address", "dirección de entrega");
+    }
+
+    return missing;
+  }, [boxProductsOnly, isWfCargo, wfComboDelivery, comboProvinces, comboMunicipalities, productShipping.enabled, form, isYoyo, method, selectedZone, usesDistanceDelivery, checkoutSettings?.blocks.customer]);
+
+  // Mismo array de missingCheckoutFields, solo separado por a qué paso
+  // pertenece cada campo — así el paso 1 (datos del cliente) y el paso 2
+  // (destinatario/dirección) se validan cada uno con sus propios campos,
+  // sin duplicar la lógica de qué es obligatorio.
+  const CUSTOMER_STEP_FIELDS: Array<keyof CheckoutForm> = ["name", "email", "phone"];
+  const step1MissingFields = missingCheckoutFields.filter((field) =>
+    CUSTOMER_STEP_FIELDS.includes(field.name)
+  );
+  const step2MissingFields = missingCheckoutFields.filter(
+    (field) => !CUSTOMER_STEP_FIELDS.includes(field.name)
+  );
+
+  function goToStep(nextStep: 1 | 2 | 3) {
+    if (nextStep > step && wfMixedCart) {
+      showCheckoutError("Haz un pedido separado para los combos de alimentos y los artículos para completar caja.");
+      return;
+    }
+    if (boxProductsOnly && nextStep === 2) nextStep = 3;
+    if (!isWfCargo && checkoutSettings?.blocks.customer === false && nextStep === 1) nextStep = 2;
+    // Retroceder nunca necesita validación.
+    if (nextStep < step) {
+      setError("");
+      setStep(nextStep);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    if (step === 1 && nextStep >= 2 && step1MissingFields.length > 0) {
       const first = step1MissingFields[0];
       showCheckoutError(
         `Falta completar: ${step1MissingFields.map((f) => f.label).join(", ")}.`,
