@@ -1318,6 +1318,11 @@ ${orderUrl}`);
                   showDelivery={!boxProductsOnly && (productShipping.enabled || showDelivery)}
                   deliveryLabel={wfComboDelivery ? "Domicilio" : productShipping.enabled ? (store?.slug === "xpress" ? "Envío por peso + delivery" : "Envío por peso") : "Delivery"}
                   deliveryRequiresZone={!isWfCargo && !productShipping.enabled && method === "cuba"}
+                  deliveryPendingMessage={productShipping.enabled && !productShipping.ready
+                    ? productShipping.error ? "Tarifa no disponible"
+                      : productShipping.loading ? "Calculando envío…"
+                      : "Selecciona el destino"
+                    : undefined}
                   locationLabel={
                     !boxProductsOnly && method === "delivery" && form.city
                       ? `Entrega en ${form.city}`
