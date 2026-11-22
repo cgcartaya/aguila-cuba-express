@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import type { ShippingCartItem } from "@/lib/shipping/cart-shipping";
+import { XPRESS_FRESH_DELIVERY, XPRESS_FRESH_SERVICE } from "@/lib/shipping/xpress-checkout";
 export type ProductShippingQuote = {
   amount: number;
   weight_lb: number;
@@ -13,6 +14,7 @@ export type ProductShippingQuote = {
 type Option = {
   id: string;
   service: string;
+  serviceCode: string;
   mode: string;
   destination: string;
   rate_per_lb: number;
@@ -30,17 +32,23 @@ const modes: Record<string, string> = {
 export function useProductShipping(
   storeId: string | undefined,
   items: ShippingCartItem[],
+  freshExpressRequired = false,
 ) {
-  const [enabled, setEnabled] = useState(false);
+  const [requestedShipping, setEnabled] = useState(false);
   const [loadedStoreId, setLoadedStoreId] = useState("");
   const [options, setOptions] = useState<Option[]>([]);
-  const [rateId, setRateId] = useState("");
+  const [selectedRateId, setRateId] = useState("");
   const [configError, setConfigError] = useState("");
   const [result, setResult] = useState<{
     key: string;
     quote?: ProductShippingQuote;
     error?: string;
   } | null>(null);
+  const availableOptions = freshExpressRequired
+    ? options.filter((option) => option.serviceCode === XPRESS_FRESH_SERVICE && option.mode === "express")
+    : options;
+  const rateId = availableOptions.some((option) => option.id === selectedRateId) ? selectedRateId : "";
+  const enabled = freshExpressRequired || requestedShipping;
   const key = JSON.stringify({ storeId, items, rateId, enabled });
   useEffect(() => {
     setLoadedStoreId("");
@@ -90,12 +98,12 @@ export function useProductShipping(
     try {
       sessionStorage.setItem(
         `checkout-product-shipping:${storeId}`,
-        JSON.stringify({ enabled, rateId }),
+        JSON.stringify({ enabled: requestedShipping, rateId: selectedRateId }),
       );
     } catch {
       /* Optional draft persistence. */
     }
-  }, [storeId, loadedStoreId, enabled, rateId]);
+  }, [storeId, loadedStoreId, requestedShipping, selectedRateId]);
   const clearSelection = () => {
     if (storeId)
       try {
@@ -142,7 +150,8 @@ export function useProductShipping(
     clearSelection,
     enabled,
     setEnabled,
-    options,
+    options: availableOptions,
+    freshExpressRequired,
     rateId,
     setRateId,
     quote,
@@ -160,6 +169,7 @@ export default function ProductShipping({
     options,
     enabled,
     setEnabled,
+    freshExpressRequired,
     rateId,
     setRateId,
     quote,
@@ -173,9 +183,9 @@ export default function ProductShipping({
   );
   const [service, setService] = useState("");
   const [mode, setMode] = useState("");
-  const currentService = selected?.service || service;
-  const currentMode = selected?.mode || mode;
-  if (!options.length)
+  const currentService = selected?.service || (freshExpressRequired ? options[0]?.service || "" : service);
+  const currentMode = selected?.mode || (freshExpressRequired ? "express" : mode);
+  if (!options.length && !freshExpressRequired)
     return error ? (
       <p role="alert" className="text-sm text-red-600">
         {error}
@@ -183,61 +193,73 @@ export default function ProductShipping({
     ) : null;
   return (
     <section className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50 p-5">
-      <label className="flex items-center gap-3 font-bold">
-        <input
-          type="checkbox"
-          checked={enabled}
-          onChange={(e) => setEnabled(e.target.checked)}
-        />
-        Estos productos son para enviar
-      </label>
+      {freshExpressRequired ? (
+        <div>
+          <p className="font-bold">Envío Express de frutas</p>
+          <p className="text-sm text-slate-600">{XPRESS_FRESH_DELIVERY}</p>
+        </div>
+      ) : (
+        <label className="flex items-center gap-3 font-bold">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(event) => setEnabled(event.target.checked)}
+          />
+          Estos productos son para enviar
+        </label>
+      )}
       {enabled && (
         <>
           <p className="text-sm text-slate-600">
-            Se suma el envío por peso al precio de los productos. Selecciona el
-            servicio adecuado al contenido y el destino del destinatario.
+            {freshExpressRequired
+              ? "Selecciona el municipio de entrega. El costo se calcula por peso más el cargo del municipio."
+              : "Selecciona el servicio y el destino para calcular el envío por peso."}
           </p>
-          <label className="block text-sm">
-            Servicio
-            <select
-              className="mt-1 w-full rounded-xl border bg-white p-3"
-              value={currentService}
-              onChange={(e) => {
-                setService(e.target.value);
-                setMode("");
-                setRateId("");
-              }}
-            >
-              <option value="">Selecciona el servicio</option>
-              {services.map((s) => (
-                <option key={s}>{s}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            Modalidad
-            <select
-              className="mt-1 w-full rounded-xl border bg-white p-3"
-              value={currentMode}
-              onChange={(e) => {
-                setMode(e.target.value);
-                setRateId("");
-              }}
-            >
-              <option value="">Selecciona la modalidad</option>
-              {[
-                ...new Set(
-                  options
-                    .filter((o) => o.service === currentService)
-                    .map((o) => o.mode),
-                ),
-              ].map((m) => (
-                <option key={m} value={m}>
-                  {modes[m] || m}
-                </option>
-              ))}
-            </select>
-          </label>
+          {!freshExpressRequired && (
+            <>
+              <label className="block text-sm">
+                Servicio
+                <select
+                  className="mt-1 w-full rounded-xl border bg-white p-3"
+                  value={currentService}
+                  onChange={(e) => {
+                    setService(e.target.value);
+                    setMode("");
+                    setRateId("");
+                  }}
+                >
+                  <option value="">Selecciona el servicio</option>
+                  {services.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm">
+                Modalidad
+                <select
+                  className="mt-1 w-full rounded-xl border bg-white p-3"
+                  value={currentMode}
+                  onChange={(e) => {
+                    setMode(e.target.value);
+                    setRateId("");
+                  }}
+                >
+                  <option value="">Selecciona la modalidad</option>
+                  {[
+                    ...new Set(
+                      options
+                        .filter((o) => o.service === currentService)
+                        .map((o) => o.mode),
+                    ),
+                  ].map((m) => (
+                    <option key={m} value={m}>
+                      {modes[m] || m}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
+          )}
           <label className="block text-sm">
             Destino y tarifa
             <select
@@ -252,7 +274,7 @@ export default function ProductShipping({
                 )
                 .map((o) => (
                   <option key={o.id} value={o.id}>
-                    {o.destination} · ${Number(o.rate_per_lb).toFixed(2)}/lb
+                    {o.destination} · ${Number(o.rate_per_lb).toFixed(2)}/lb{Number(o.fixed_fee) > 0 ? ` + $${Number(o.fixed_fee).toFixed(2)}` : ""}
                   </option>
                 ))}
             </select>

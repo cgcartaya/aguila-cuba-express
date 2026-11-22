@@ -50,6 +50,7 @@ import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
 import { quoteCartShipping, type CartShippingSelection } from "@/lib/shipping/cart-shipping";
+import { isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
 import { sendCustomerOrderConfirmationEmail } from "@/lib/notifications/customer-order-email";
@@ -418,6 +419,14 @@ export async function POST(request: Request) {
 
     if (productsError) {
       return fail("No se pudieron validar los productos del carrito.", 500);
+    }
+
+    if (
+      store.slug === "xpress" &&
+      !body.productShipping &&
+      productRows?.some((product) => isXpressFreshProduct(product.category))
+    ) {
+      return fail("Selecciona el destino del envío Express de frutas.", 422);
     }
 
     const productMap = new Map((productRows || []).map((row) => [row.id, row]));

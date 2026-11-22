@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin as db } from "@/lib/supabase-admin";
 import { weightInPounds, shippingCharge } from "./product-weight";
 import { ALVAREZ_STORE_ID, alvarezShippingPolicy } from "./alvarez-policy";
+import { isXpressCheckoutRate, isXpressFreshProduct, XPRESS_FRESH_SERVICE } from "./xpress-checkout";
 export type CartShippingSelection = { rate_id: string };
 export type ShippingCartItem = {
   item_type: string;
@@ -25,7 +26,7 @@ export async function quoteCartShipping(
 ) {
   const { data: store, error: se } = await db
     .from("stores")
-    .select("id,module_shipping_enabled,is_active")
+    .select("id,slug,module_shipping_enabled,is_active")
     .eq("id", storeId)
     .eq("is_active", true)
     .maybeSingle();
@@ -76,7 +77,7 @@ export async function quoteCartShipping(
   }
   const { data: products, error: pe } = await db
     .from("products")
-    .select("id,name,weight,weight_unit,is_active")
+    .select("id,name,category,weight,weight_unit,is_active")
     .eq("store_id", storeId)
     .is("deleted_at", null)
     .in("id", [...needs.keys()]);
@@ -114,6 +115,17 @@ export async function quoteCartShipping(
     .maybeSingle();
   if (!service || service.billing_mode !== "per_lb")
     throw new Error("Selecciona un servicio con tarifa por peso.");
+  if (store.slug === "xpress") {
+    if (!isXpressCheckoutRate(rate.transport_mode, rate.scope_type)) {
+      throw new Error("Selecciona una tarifa para el destino del envío.");
+    }
+    if (
+      products?.some((product) => isXpressFreshProduct(product.category)) &&
+      (rate.transport_mode !== "express" || service.code !== XPRESS_FRESH_SERVICE)
+    ) {
+      throw new Error("Las frutas frescas requieren el servicio Express de frutas.");
+    }
+  }
   const targets = {
     country: ["shipping_countries", rate.country_id],
     province: ["shipping_provinces", rate.province_id],

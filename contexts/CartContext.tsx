@@ -356,6 +356,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         {
           id: cartId,
           name: product.name,
+          category: product.category,
           price: effectivePrice,
           base_price: basePrice,
           platform_fee_exempt: product.platform_fee_exempt ?? false,
