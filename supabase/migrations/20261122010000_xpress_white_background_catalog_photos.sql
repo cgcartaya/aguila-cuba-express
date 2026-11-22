@@ -1,6 +1,8 @@
 -- Apply after the storefront assets are available in production.
 with photos(sku, old_image_url, old_notice) as (
   values
+    ('19105', null, null),
+    ('24520', null, null),
     ('36897', null, null),
     ('66542', null, null),
     ('60130', null, null),
