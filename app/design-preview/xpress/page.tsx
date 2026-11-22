@@ -10,5 +10,5 @@ export const metadata: Metadata = {
 
 export default async function XpressPreviewPage() {
   const store = await resolveStoreBySlug("xpress");
-  return <XpressLanding rates={store ? await getXpressQuoteRates(store.id) : []} />;
+  return <XpressLanding storeSlug={store?.slug} rates={store ? await getXpressQuoteRates(store.id) : []} />;
 }

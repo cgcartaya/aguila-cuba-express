@@ -1,5 +1,6 @@
 import type { XpressRate } from "@/lib/shipping/xpress-quote";
 import { mapUrl, xpress } from "./content";
+import XpressCatalog from "./XpressCatalog";
 import XpressContact, { XpressFooter } from "./XpressContact";
 import XpressHeader from "./XpressHeader";
 import XpressHero from "./XpressHero";
@@ -31,7 +32,8 @@ export default function XpressLanding({ rates, logoUrl, storeSlug, canonicalUrl,
       <XpressHero lockersEnabled={lockersEnabled} />
       <XpressServices rates={rates} lockersEnabled={lockersEnabled} />
       <div className={styles.wrap}>
-        <XpressSpecialServices hasStore={Boolean(storeSlug)} />
+        <XpressSpecialServices />
+        <XpressCatalog storeSlug={storeSlug} canonicalUrl={canonicalUrl} />
         <XpressShippingSupport lockersEnabled={lockersEnabled} />
         <XpressContact />
       </div>
