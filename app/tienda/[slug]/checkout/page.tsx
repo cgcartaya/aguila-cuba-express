@@ -1316,7 +1316,7 @@ ${orderUrl}`);
                   onRemoveDiscount={removeDiscount}
                   showCoupon={showCoupon}
                   showDelivery={!boxProductsOnly && (productShipping.enabled || showDelivery)}
-                  deliveryLabel={wfComboDelivery ? "Domicilio" : productShipping.enabled ? "Envío por peso" : "Delivery"}
+                  deliveryLabel={wfComboDelivery ? "Domicilio" : productShipping.enabled ? (store?.slug === "xpress" ? "Envío por peso + delivery" : "Envío por peso") : "Delivery"}
                   deliveryRequiresZone={!isWfCargo && !productShipping.enabled && method === "cuba"}
                   locationLabel={
                     !boxProductsOnly && method === "delivery" && form.city
