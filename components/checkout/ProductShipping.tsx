@@ -72,8 +72,9 @@ export function useProductShipping(
             sessionStorage.getItem(`checkout-product-shipping:${storeId}`) ||
               "null",
           );
-          if (saved?.enabled && nextOptions.length) {
-            setEnabled(true);
+          if (saved) {
+            setEnabled(saved.enabled === true && nextOptions.length > 0);
+            // Mandatory Express can have a rate without the optional shipping toggle.
             setRateId(
               nextOptions.some((option) => option.id === saved.rateId)
                 ? saved.rateId

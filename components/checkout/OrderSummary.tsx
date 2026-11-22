@@ -42,6 +42,7 @@ type Props = {
   showDelivery?: boolean;
   deliveryLabel?: string;
   deliveryRequiresZone?: boolean;
+  deliveryPendingMessage?: string;
   locationLabel?: string;
   cardPaymentAvailable?: boolean;
   cardSurchargeRate?: number;
@@ -72,6 +73,7 @@ export function OrderSummary({
   showDelivery = true,
   deliveryLabel = "Domicilio",
   deliveryRequiresZone = true,
+  deliveryPendingMessage,
   locationLabel,
   cardPaymentAvailable = false,
   cardSurchargeRate = CARD_SURCHARGE_RATE,
@@ -196,7 +198,9 @@ export function OrderSummary({
               {deliveryLabel}
             </span>
             <span className="font-bold">
-              {deliveryRequiresZone && !selectedZone ? (
+              {deliveryPendingMessage ? (
+                <span role="status">{deliveryPendingMessage}</span>
+              ) : deliveryRequiresZone && !selectedZone ? (
                 "Selecciona zona"
               ) : totals.shippingCost === 0 ? (
                 "Gratis"
@@ -221,7 +225,7 @@ export function OrderSummary({
           </div>
         )}
 
-        {cardSurcharge > 0 && (
+        {cardSurcharge > 0 && !deliveryPendingMessage && (
           <div className="flex items-center justify-between font-semibold text-blue-700">
             <span>Recargo por tarjeta ({(cardSurchargeRate * 100).toFixed(1)}%)</span>
             <span>+<Price usd={cardSurcharge} /></span>
@@ -265,10 +269,10 @@ export function OrderSummary({
 
       <div className="flex items-center justify-between text-lg font-bold">
         <span>{payWith === "card" ? "Total a pagar" : "Total"}</span>
-        <span><Price usd={amountToPay} /></span>
+        <span>{deliveryPendingMessage ? "Pendiente de envío" : <Price usd={amountToPay} />}</span>
       </div>
 
-      {currency !== "USD" && (
+      {currency !== "USD" && !deliveryPendingMessage && (
         <p className="mt-1 text-right text-[11px] font-semibold text-gray-400">
           ≈ ${amountToPay.toFixed(2)} USD — el cobro se hace en dólares
         </p>
