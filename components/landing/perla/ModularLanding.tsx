@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, Menu, Play, ShoppingBag, Truck, UtensilsCrossed, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Menu, Play, ShoppingBag, Truck, UtensilsCrossed, X } from "lucide-react";
 import type { PerlaClient } from "@/lib/services/perla-showcase";
 import PerlaLogo from "@/components/perla/PerlaLogo";
 import { CONTACT_EMAIL, buildWhatsAppUrl } from "@/components/perla/links";
 import s from "./modular.module.css";
-import HeroShowcase from "./HeroShowcase";
+import OrderJourneyHero from "./OrderJourneyHero";
 import { ModulesSection, ClientsAndPlans } from "./ReferenceSections";
 
 const faqs = [
@@ -27,8 +27,7 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
       {mobileOpen && <nav id="perla-mobile-nav" aria-label="Navegación móvil" className={s.mobileNav}>{nav.map(([label, href]) => <a key={label} href={href} onClick={() => setMobileOpen(false)}>{label}<ArrowUpRight size={16} /></a>)}<a href="/admin">Iniciar sesión</a><a href="/gestores">Entrar a ShareApp</a><a href="/demo" className={s.primary}>Solicitar demo</a></nav>}
     </header>
     <main id="contenido-perla">
-      <section className={s.hero}><div className={s.heroInner}><div className={s.heroCopy}><p className={s.eyebrow}><span /> TIENDAS · RESTAURANTES · ENVÍOS</p><h1>Tu negocio<br />conectado.<br /><span>Todo en Perla.</span></h1><p className={s.heroDescription}>Vende online, organiza tus envíos y administra tu negocio desde una sola plataforma.</p><div className={s.heroButtons}><a href="#modulos" className={s.primary}>Explorar módulos <ArrowRight size={18} /></a><a href="#demos" className={s.outline}><Play size={17} /> Ver demos</a></div><div className={s.heroNotes}><span><Check />Tu marca y dominio</span><span><Check />Soporte cercano</span></div></div>
-      <HeroShowcase /></div></section>
+      <OrderJourneyHero />
 
       {clients.length > 0 && <section className={s.trust}><div className={s.container}><p>NEGOCIOS QUE YA TRABAJAN CON PERLA</p><div>{clients.slice(0, 5).map(client => <a key={client.id} href={client.url} target="_blank" rel="noopener noreferrer">{client.name}</a>)}</div></div></section>}
 
