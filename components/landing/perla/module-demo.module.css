@@ -71,3 +71,22 @@
   color: #fff;
 }
 .action:hover { background: #0646eb; }
+
+.dialog {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.header p, .intro { color: var(--muted); }
+.close { background: var(--raised); color: var(--text); }
+.choices label { border-color: var(--border); }
+.choices label:has(:checked), .result:not(:empty) {
+  background: #173b36;
+  border-color: #527f72;
+  color: var(--text);
+}
+.choices input { accent-color: var(--accent); }
+.choices label:focus-within { outline-color: var(--accent); }
+.action { background: var(--accent); color: var(--ink); }
+.action:hover { background: #bfffe0; }

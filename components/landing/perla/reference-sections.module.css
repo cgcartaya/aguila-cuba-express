@@ -69,3 +69,59 @@
     }
   }
 }
+
+.modulesSection {
+  color: var(--text);
+  background-image:
+    radial-gradient(ellipse at 10% 0%, #153044 0, transparent 46%),
+    radial-gradient(ellipse at 90% 48%, #12372f 0, transparent 55%);
+  background-color: var(--ink);
+}
+
+.clientsSection { background: var(--ink); color: var(--text); }
+.plansSection { background: radial-gradient(ellipse at 55% 110%, #17463f, transparent 65%), var(--surface); }
+.plansSection > .waves { opacity: .23; }
+
+.moduleCard, .featuredClient, .clientStrip, .planCard, .filters button {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.planCard { border: 1px solid var(--border); }
+.moduleCard:hover, .featuredClient:hover, .clientStrip:hover { border-color: #517887; }
+.moduleCard::after {
+  background: radial-gradient(230px circle at var(--spot-x, 50%) var(--spot-y, 25%), #98f4cc24, transparent 72%);
+}
+
+.previewWindow {
+  color-scheme: light;
+  color: #071a3d;
+}
+
+.moduleHeading > div > span, .moduleBody p, .moduleDetail, .clientsHeading p,
+.emptyClients, .planTop p, .plansHeading > span, .planNote { color: var(--muted); }
+
+.moduleLinks button:not(.demoButton), .visit, .clientTitle > svg,
+.clientStrip > svg, .clientsHeading h2 > span, .plansHeading > p {
+  color: var(--accent);
+}
+
+.moduleDetail, .planPrice {
+  background: var(--raised);
+  border-color: var(--border);
+}
+
+.combine { background: linear-gradient(115deg, var(--surface), var(--raised)); }
+.combine .waves { opacity: .2; }
+
+.moduleLinks > .demoButton, .filters .selectedFilter, .planCard > a, .combine > a {
+  background: var(--accent);
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.moduleLinks > .demoButton:hover, .planCard > a:hover, .combine > a:hover {
+  background: #bfffe0;
+  color: var(--ink);
+}
