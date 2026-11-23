@@ -7,7 +7,8 @@ import PerlaLogo from "@/components/perla/PerlaLogo";
 import { CONTACT_EMAIL, buildWhatsAppUrl } from "@/components/perla/links";
 import s from "./modular.module.css";
 import OrderJourneyHero from "./OrderJourneyHero";
-import { ModulesSection, ClientsAndPlans } from "./ReferenceSections";
+import { ClientsAndPlans } from "./ReferenceSections";
+import ModuleExplorer from "./ModuleExplorer";
 
 const faqs = [
   ["¿Puedo contratar solo un módulo?", "Sí. Podemos comenzar con una landing page, tienda online, menú digital o módulo de envíos y conectar más herramientas según las necesidades de tu negocio."],
@@ -31,7 +32,7 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
 
       {clients.length > 0 && <section className={s.trust}><div className={s.container}><p>NEGOCIOS QUE YA TRABAJAN CON PERLA</p><div>{clients.slice(0, 5).map(client => <a key={client.id} href={client.url} target="_blank" rel="noopener noreferrer">{client.name}</a>)}</div></div></section>}
 
-      <ModulesSection />
+      <ModuleExplorer />
 
       <section id="demos" className={`${s.section} ${s.demosSection}`}><div className={s.container}><div className={s.demoGrid}><div><p className={s.eyebrow}>EXPLORA PERLA</p><h2>Conoce la experiencia.<br /><span>Imagina tu negocio.</span></h2><p className={s.sectionDescription}>Visita tiendas, menús y agencias que ya utilizan Perla. Para descubrir la administración, te acompañamos en una demostración personalizada.</p><a href="/demo" className={s.primary}><Play size={16} /> Solicitar demo guiada</a><p className={s.smallNote}>Los enlaces públicos corresponden a negocios reales.</p></div><div className={s.demoLinks}>{[{ title: "Comprar online", label: "Explora un catálogo y sus productos", href: "https://tumercadolajero.com/tienda", icon: ShoppingBag }, { title: "Descubrir un menú", label: "Platos, bebidas y reservas", href: "https://depariscienfuegos.com", icon: UtensilsCrossed }, { title: "Conocer una agencia", label: "Servicios, cotización y rastreo", href: "https://alvarez-travel.com", icon: Truck }].map(d => <a key={d.title} href={d.href} target="_blank" rel="noopener noreferrer"><span className={s.demoLinkIcon}><d.icon /></span><div><h3>{d.title}</h3><p>{d.label}</p></div><ArrowUpRight /></a>)}</div></div></div></section>
 

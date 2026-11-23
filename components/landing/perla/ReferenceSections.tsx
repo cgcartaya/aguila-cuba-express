@@ -1,69 +1,10 @@
 "use client";
-
-import { useState, type PointerEvent } from "react";
-import ModuleDemo from "./ModuleDemo";
 import Image from "next/image";
-import { ArrowRight, ArrowUpRight, BarChart3, ChevronDown, Layers3, Monitor, Search, ShoppingCart, Truck, Users, UtensilsCrossed } from "lucide-react";
+import { ArrowUpRight, Layers3, Monitor, ShoppingCart } from "lucide-react";
 import { buildWhatsAppUrl } from "@/components/perla/links";
 import type { PerlaClient } from "@/lib/services/perla-showcase";
 import { layoutClients } from "./client-layout";
 import s from "./reference-sections.module.css";
-
-const modules = [
-  { id: "tienda", title: "Tienda online", category: "Comercio", icon: ShoppingCart, tone: "blue", description: "Catálogo, combos, pedidos e inventario.", menu: ["Catálogo", "Pedidos", "Inventario", "Combos", "Configuración"], details: "Organiza tus productos y combos, controla existencias y recibe pedidos desde móviles y computadoras. Configura zonas de entrega, límites de compra y medios de pago según tu operación." },
-  { id: "envios", title: "Envíos y remesas", category: "Agencias", icon: Truck, tone: "mint", description: "Cotizaciones, recogidas, facturas y rastreo.", menu: ["Cotizaciones", "Recogidas", "Remesas", "Facturas", "Rastreo"], details: "Gestiona paquetería y operaciones de dinero, organiza recogidas y viajes y emite facturas y etiquetas con QR. Tus clientes pueden consultar el estado de su envío." },
-  { id: "restaurante", title: "Restaurantes y bares", category: "Gastronomía", icon: UtensilsCrossed, tone: "peach", description: "Menú digital, modificadores y reservas.", menu: ["Menú", "Modificadores", "Reservas", "Salas", "Configuración"], details: "Presenta platos y bebidas por categorías, configura extras y modificadores y administra disponibilidad, pedidos y reservas con los módulos que actives." },
-  { id: "landing", title: "Landing page", category: "Todos", icon: Monitor, tone: "violet", description: "Tu marca con dominio y diseño propio.", menu: ["Páginas", "Diseño", "Dominio", "Formularios", "Publicar"], details: "Reúne tu propuesta, servicios y contacto en una página adaptada a tu negocio, con tu identidad visual y dominio. Conecta la landing con tu tienda, menú o cotizadores." },
-  { id: "shareapp", title: "ShareApp", category: "Comercio", icon: Users, tone: "blue", description: "Gestores, publicaciones y medición de alcance.", menu: ["Gestores", "Publicaciones", "Enlaces", "Alcance", "Configuración"], details: "Tus gestores comparten productos y campañas con enlaces identificados. Consulta visitas y compras atribuidas. Solicita una demo guiada para conocer el panel de administración." },
-  { id: "economia", title: "Economía", category: "Todos", icon: BarChart3, tone: "mint", description: "Costos, márgenes y control del negocio.", menu: ["Costos", "Márgenes", "Productos", "Reportes", "Configuración"], details: "Registra costos y gastos, consulta márgenes y analiza la rentabilidad de tu catálogo. Solicita una demostración guiada para explorar estas herramientas." },
-] as const;
-
-function ProductPreview({ restaurant = false }: { restaurant?: boolean }) {
-  const products = restaurant
-    ? [{ name: "Especial de la casa", image: "especial" }, { name: "Desayuno", image: "desayuno" }, { name: "Pan artesanal", image: "pan" }]
-    : [{ name: "Galletas", image: "galletas" }, { name: "Olla eléctrica", image: "olla" }, { name: "Energía portátil", image: "energia" }];
-  return <div className={`${s.previewProducts} ${restaurant ? s.foodProducts : ""}`}>{products.map(item => <div key={item.image}><Image src={`/perla/demo/${item.image}.webp`} alt="" width={110} height={90} /><strong>{item.name}</strong>{restaurant ? <i>+</i> : <span>Agregar</span>}</div>)}</div>;
-}
-
-function ModulePreview({ module }: { module: typeof modules[number] }) {
-  const Icon = module.icon;
-  const titles: Record<string, string> = { tienda: "Catálogo de productos", envios: "Envíos y remesas", restaurante: "Menú digital", landing: "Viajes", shareapp: "Publicaciones", economia: "Costos de productos" };
-  return <div className={s.previewWrap} aria-label={`Vista ilustrativa de ${module.title}`}>
-    <div className={s.previewWindow}>
-      <aside className={s.previewSidebar}><strong><Icon size={13} />{module.id === "restaurante" ? "Restaurante" : module.id === "envios" ? "Envíos" : module.id === "tienda" ? "Tienda" : module.id === "landing" ? "Landing" : module.title}</strong>{module.menu.map((label, index) => <span key={label} className={index === 0 ? s.sidebarSelected : ""}><Icon size={9} />{label}</span>)}</aside>
-      <div className={s.previewContent}><div className={s.previewToolbar}><strong>{titles[module.id]}</strong>{module.id === "envios" ? <span className={s.newQuote}>Nueva cotización</span> : module.id === "landing" ? <span>Inicio · Destinos · Contacto</span> : module.id === "restaurante" ? <span>Salón <ChevronDown size={7} /></span> : <Search size={10} />}</div>
-        {(module.id === "tienda" || module.id === "restaurante") && <ProductPreview restaurant={module.id === "restaurante"} />}
-        {module.id === "envios" && <div className={s.shippingPreview}><div><div className={s.tableRow}><b>Envío</b><b>Destino</b><b>Estado</b></div>{["En tránsito", "Por recoger", "Entregado"].map((label, index) => <div className={s.tableRow} key={label}><span>EV–1048{index}</span><span>{["Habana", "Matanzas", "Cienfuegos"][index]}</span><em data-tone={index}>{label}</em></div>)}</div><div className={s.invoice}><strong>Factura</strong><Image src="/perla/modules/invoice-demo.svg" width={72} height={72} alt="" /><small>Demo</small><i /><i /></div></div>}
-        {module.id === "landing" && <div className={s.travelPreview}><Image src="/perla/modules/travel.webp" alt="" width={300} height={170} /><div><strong>Descubre<br />nuevos destinos.</strong><span>Explorar viajes →</span></div></div>}
-        {module.id === "shareapp" && <div className={s.campaignPreview}><div className={s.campaignList}>{["Promo de temporada", "Escapada de fin de semana"].map(title => <div key={title}><Image src="/perla/modules/travel.webp" alt="" width={64} height={45} /><div><strong>{title}</strong><span>Lista</span></div></div>)}</div><div className={s.miniPhone}><span className={s.miniNotch} /><div className={s.miniPhoneBar}>ShareApp <Users size={7} /></div><Image src="/perla/modules/travel.webp" alt="" width={80} height={65} /><strong>Comparte y llega<br />a más clientes</strong><span>Compartir →</span></div></div>}
-        {module.id === "economia" && <div className={s.costPreview}><div className={s.costRow}><b>Producto</b><b>Costo</b><b>Margen</b></div>{[["Especial de la casa", "8.50", "42%"], ["Desayuno", "5.00", "38%"], ["Pan artesanal", "2.20", "47%"]].map(([name, cost, margin]) => <div className={s.costRow} key={name}><span>{name}</span><span>${cost}</span><em>{margin}</em></div>)}<small>Datos ilustrativos</small></div>}
-      </div>
-    </div>
-  </div>;
-}
-
-function moveSpotlight(event: PointerEvent<HTMLElement>) {
-  if (event.pointerType !== "mouse") return;
-  const card = event.currentTarget;
-  const bounds = card.getBoundingClientRect();
-  card.style.setProperty("--spot-x", `${event.clientX - bounds.left}px`);
-  card.style.setProperty("--spot-y", `${event.clientY - bounds.top}px`);
-}
-
-export function ModulesSection() {
-  const [demo, setDemo] = useState<(typeof modules)[number] | null>(null);
-  const [filter, setFilter] = useState("Todos");
-  const [detail, setDetail] = useState<string | null>(null);
-  return <section id="modulos" className={s.modulesSection}><div className={s.container}>
-    <div className={s.moduleHeading}><div><p>MÓDULOS CONECTADOS</p><h2>Elige lo que tu negocio necesita.</h2><span>Empieza con un módulo y amplía tu operación cuando lo necesites.</span></div><div className={s.filters} aria-label="Filtrar módulos">{["Todos", "Comercio", "Gastronomía", "Agencias"].map(label => <button key={label} type="button" aria-pressed={filter === label} onClick={() => { setFilter(label); setDetail(null); }} className={filter === label ? s.selectedFilter : ""}>{label}</button>)}</div></div>
-    <div className={s.moduleGrid}>{modules.filter(item => filter === "Todos" || item.category === "Todos" || item.category === filter).map(module => {
-      const Icon = module.icon;
-      return <article className={`${s.moduleCard} ${s[module.tone]}`} key={module.id} onPointerMove={moveSpotlight}><ModulePreview module={module} /><div className={s.moduleBody}><span className={s.moduleIcon}><Icon size={27} /></span><div className={s.moduleCopy}><h3>{module.title}</h3><p>{module.description}</p><div className={s.moduleLinks}><button type="button" className={s.demoButton} aria-haspopup="dialog" aria-label={`Ver demo de ${module.title}`} onClick={() => setDemo(module)}>Ver demo <ArrowRight size={14} /></button><button type="button" onClick={() => setDetail(detail === module.id ? null : module.id)} aria-expanded={detail === module.id} aria-controls={`module-detail-${module.id}`}>Conocer módulo</button></div></div></div>{detail === module.id && <div id={`module-detail-${module.id}`} className={s.moduleDetail}>{module.details}</div>}</article>;
-    })}</div>
-    {demo && <ModuleDemo id={demo.id} title={demo.title} onClose={() => setDemo(null)} />}
-    <div className={s.combine}><Layers3 size={34} /><h3>¿Necesitas varios módulos?</h3><a href="/demo">Armar mi solución <ArrowRight size={18} /></a><Waves /></div>
-  </div></section>;
-}
 
 function Waves() {
   return <svg className={s.waves} viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true"><path fill="#1960e8" d="M0 130C80 150 100 280 380 300H0Z" /><path fill="#1044ad" d="M0 210C90 200 160 290 380 300H0Z" /><path fill="#02c8c7" d="M1440 60C1310 100 1360 230 1190 255S1040 270 930 300H1440Z" /><path fill="#009fb7" d="M1440 120C1320 190 1390 230 1180 300H1440Z" /><path fill="#087a9d" d="M1440 225C1350 220 1320 280 1260 300H1440Z" /></svg>;
