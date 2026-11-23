@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type PointerEvent } from "react";
+import ModuleDemo from "./ModuleDemo";
 import Image from "next/image";
 import { ArrowRight, ArrowUpRight, BarChart3, ChevronDown, Layers3, Monitor, Search, ShoppingCart, Truck, Users, UtensilsCrossed } from "lucide-react";
 import { buildWhatsAppUrl } from "@/components/perla/links";
@@ -9,12 +10,12 @@ import { layoutClients } from "./client-layout";
 import s from "./reference-sections.module.css";
 
 const modules = [
-  { id: "tienda", title: "Tienda online", category: "Comercio", icon: ShoppingCart, tone: "blue", description: "Catálogo, combos, pedidos e inventario.", demo: "https://tumercadolajero.com/tienda", menu: ["Catálogo", "Pedidos", "Inventario", "Combos", "Configuración"], details: "Organiza tus productos y combos, controla existencias y recibe pedidos desde móviles y computadoras. Configura zonas de entrega, límites de compra y medios de pago según tu operación." },
-  { id: "envios", title: "Envíos y remesas", category: "Agencias", icon: Truck, tone: "mint", description: "Cotizaciones, recogidas, facturas y rastreo.", demo: "https://alvarez-travel.com", menu: ["Cotizaciones", "Recogidas", "Remesas", "Facturas", "Rastreo"], details: "Gestiona paquetería y operaciones de dinero, organiza recogidas y viajes y emite facturas y etiquetas con QR. Tus clientes pueden consultar el estado de su envío." },
-  { id: "restaurante", title: "Restaurantes y bares", category: "Gastronomía", icon: UtensilsCrossed, tone: "peach", description: "Menú digital, modificadores y reservas.", demo: "https://depariscienfuegos.com", menu: ["Menú", "Modificadores", "Reservas", "Salas", "Configuración"], details: "Presenta platos y bebidas por categorías, configura extras y modificadores y administra disponibilidad, pedidos y reservas con los módulos que actives." },
-  { id: "landing", title: "Landing page", category: "Todos", icon: Monitor, tone: "violet", description: "Tu marca con dominio y diseño propio.", demo: "https://luxury-travel-point.perlamarketplace.com", menu: ["Páginas", "Diseño", "Dominio", "Formularios", "Publicar"], details: "Reúne tu propuesta, servicios y contacto en una página adaptada a tu negocio, con tu identidad visual y dominio. Conecta la landing con tu tienda, menú o cotizadores." },
-  { id: "shareapp", title: "ShareApp", category: "Comercio", icon: Users, tone: "blue", description: "Gestores, publicaciones y medición de alcance.", demo: "/demo", menu: ["Gestores", "Publicaciones", "Enlaces", "Alcance", "Configuración"], details: "Tus gestores comparten productos y campañas con enlaces identificados. Consulta visitas y compras atribuidas. Solicita una demo guiada para conocer el panel de administración." },
-  { id: "economia", title: "Economía", category: "Todos", icon: BarChart3, tone: "mint", description: "Costos, márgenes y control del negocio.", demo: "/demo", menu: ["Costos", "Márgenes", "Productos", "Reportes", "Configuración"], details: "Registra costos y gastos, consulta márgenes y analiza la rentabilidad de tu catálogo. Solicita una demostración guiada para explorar estas herramientas." },
+  { id: "tienda", title: "Tienda online", category: "Comercio", icon: ShoppingCart, tone: "blue", description: "Catálogo, combos, pedidos e inventario.", menu: ["Catálogo", "Pedidos", "Inventario", "Combos", "Configuración"], details: "Organiza tus productos y combos, controla existencias y recibe pedidos desde móviles y computadoras. Configura zonas de entrega, límites de compra y medios de pago según tu operación." },
+  { id: "envios", title: "Envíos y remesas", category: "Agencias", icon: Truck, tone: "mint", description: "Cotizaciones, recogidas, facturas y rastreo.", menu: ["Cotizaciones", "Recogidas", "Remesas", "Facturas", "Rastreo"], details: "Gestiona paquetería y operaciones de dinero, organiza recogidas y viajes y emite facturas y etiquetas con QR. Tus clientes pueden consultar el estado de su envío." },
+  { id: "restaurante", title: "Restaurantes y bares", category: "Gastronomía", icon: UtensilsCrossed, tone: "peach", description: "Menú digital, modificadores y reservas.", menu: ["Menú", "Modificadores", "Reservas", "Salas", "Configuración"], details: "Presenta platos y bebidas por categorías, configura extras y modificadores y administra disponibilidad, pedidos y reservas con los módulos que actives." },
+  { id: "landing", title: "Landing page", category: "Todos", icon: Monitor, tone: "violet", description: "Tu marca con dominio y diseño propio.", menu: ["Páginas", "Diseño", "Dominio", "Formularios", "Publicar"], details: "Reúne tu propuesta, servicios y contacto en una página adaptada a tu negocio, con tu identidad visual y dominio. Conecta la landing con tu tienda, menú o cotizadores." },
+  { id: "shareapp", title: "ShareApp", category: "Comercio", icon: Users, tone: "blue", description: "Gestores, publicaciones y medición de alcance.", menu: ["Gestores", "Publicaciones", "Enlaces", "Alcance", "Configuración"], details: "Tus gestores comparten productos y campañas con enlaces identificados. Consulta visitas y compras atribuidas. Solicita una demo guiada para conocer el panel de administración." },
+  { id: "economia", title: "Economía", category: "Todos", icon: BarChart3, tone: "mint", description: "Costos, márgenes y control del negocio.", menu: ["Costos", "Márgenes", "Productos", "Reportes", "Configuración"], details: "Registra costos y gastos, consulta márgenes y analiza la rentabilidad de tu catálogo. Solicita una demostración guiada para explorar estas herramientas." },
 ] as const;
 
 function ProductPreview({ restaurant = false }: { restaurant?: boolean }) {
@@ -41,15 +42,25 @@ function ModulePreview({ module }: { module: typeof modules[number] }) {
   </div>;
 }
 
+function moveSpotlight(event: PointerEvent<HTMLElement>) {
+  if (event.pointerType !== "mouse") return;
+  const card = event.currentTarget;
+  const bounds = card.getBoundingClientRect();
+  card.style.setProperty("--spot-x", `${event.clientX - bounds.left}px`);
+  card.style.setProperty("--spot-y", `${event.clientY - bounds.top}px`);
+}
+
 export function ModulesSection() {
+  const [demo, setDemo] = useState<(typeof modules)[number] | null>(null);
   const [filter, setFilter] = useState("Todos");
   const [detail, setDetail] = useState<string | null>(null);
   return <section id="modulos" className={s.modulesSection}><div className={s.container}>
     <div className={s.moduleHeading}><div><p>MÓDULOS CONECTADOS</p><h2>Elige lo que tu negocio necesita.</h2><span>Empieza con un módulo y amplía tu operación cuando lo necesites.</span></div><div className={s.filters} aria-label="Filtrar módulos">{["Todos", "Comercio", "Gastronomía", "Agencias"].map(label => <button key={label} type="button" aria-pressed={filter === label} onClick={() => { setFilter(label); setDetail(null); }} className={filter === label ? s.selectedFilter : ""}>{label}</button>)}</div></div>
     <div className={s.moduleGrid}>{modules.filter(item => filter === "Todos" || item.category === "Todos" || item.category === filter).map(module => {
       const Icon = module.icon;
-      return <article className={`${s.moduleCard} ${s[module.tone]}`} key={module.id}><ModulePreview module={module} /><div className={s.moduleBody}><span className={s.moduleIcon}><Icon size={27} /></span><div className={s.moduleCopy}><h3>{module.title}</h3><p>{module.description}</p><div className={s.moduleLinks}><a href={module.demo} target={module.demo.startsWith("https") ? "_blank" : undefined} rel={module.demo.startsWith("https") ? "noopener noreferrer" : undefined} aria-label={`Ver demo${module.demo === "/demo" ? " guiada" : ""} de ${module.title}`}>Ver demo <ArrowRight size={14} /></a><button type="button" onClick={() => setDetail(detail === module.id ? null : module.id)} aria-expanded={detail === module.id} aria-controls={`module-detail-${module.id}`}>Conocer módulo</button></div></div></div>{detail === module.id && <div id={`module-detail-${module.id}`} className={s.moduleDetail}>{module.details}</div>}</article>;
+      return <article className={`${s.moduleCard} ${s[module.tone]}`} key={module.id} onPointerMove={moveSpotlight}><ModulePreview module={module} /><div className={s.moduleBody}><span className={s.moduleIcon}><Icon size={27} /></span><div className={s.moduleCopy}><h3>{module.title}</h3><p>{module.description}</p><div className={s.moduleLinks}><button type="button" className={s.demoButton} aria-haspopup="dialog" aria-label={`Ver demo de ${module.title}`} onClick={() => setDemo(module)}>Ver demo <ArrowRight size={14} /></button><button type="button" onClick={() => setDetail(detail === module.id ? null : module.id)} aria-expanded={detail === module.id} aria-controls={`module-detail-${module.id}`}>Conocer módulo</button></div></div></div>{detail === module.id && <div id={`module-detail-${module.id}`} className={s.moduleDetail}>{module.details}</div>}</article>;
     })}</div>
+    {demo && <ModuleDemo id={demo.id} title={demo.title} onClose={() => setDemo(null)} />}
     <div className={s.combine}><Layers3 size={34} /><h3>¿Necesitas varios módulos?</h3><a href="/demo">Armar mi solución <ArrowRight size={18} /></a><Waves /></div>
   </div></section>;
 }

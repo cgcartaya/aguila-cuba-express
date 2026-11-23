@@ -1,0 +1,92 @@
+.dialog {
+  inset: 0;
+  margin: auto;
+  width: min(540px, calc(100% - 28px));
+  max-height: calc(100dvh - 28px);
+  overflow: auto;
+  border: 1px solid #dbe6f4;
+  border-radius: 20px;
+  padding: clamp(16px, 5vw, 32px);
+  color: #071a3d;
+  background: #fff;
+  box-shadow: 0 30px 100px #071a3d50;
+}
+
+.dialog::backdrop { background: #071a3dab; }
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header p { color: #425879; font-size: 13px; font-weight: 700; }
+.header h2 { margin: 7px 0 0; }
+.intro { margin: 16px 0 20px; line-height: 1.55; }
+.close {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  background: #edf3fc;
+}
+
+.choices { padding: 0; border: 0; }
+.choices legend { margin-bottom: 8px; font-weight: 700; }
+.choices label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 7px 12px;
+  margin-bottom: 6px;
+  border: 1px solid #dbe6f4;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.choices label:has(:checked) { background: #eaf1ff; border-color: #79a4ff; }
+.choices label:focus-within { outline: 2px solid #1557ff; outline-offset: 2px; }
+.choices input { accent-color: #1557ff; }
+
+.result:not(:empty) {
+  margin-top: 15px;
+  padding: 12px;
+  border-radius: 9px;
+  background: #e4f7ef;
+  color: #154936;
+  line-height: 1.45;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  margin-top: 16px;
+  padding: 9px 14px;
+  border-radius: 8px;
+  background: #1557ff;
+  color: #fff;
+}
+.action:hover { background: #0646eb; }
+
+.dialog {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.header p, .intro { color: var(--muted); }
+.close { background: var(--raised); color: var(--text); }
+.choices label { border-color: var(--border); }
+.choices label:has(:checked), .result:not(:empty) {
+  background: #173b36;
+  border-color: #527f72;
+  color: var(--text);
+}
+.choices input { accent-color: var(--accent); }
+.choices label:focus-within { outline-color: var(--accent); }
+.action { background: var(--accent); color: var(--ink); }
+.action:hover { background: #bfffe0; }

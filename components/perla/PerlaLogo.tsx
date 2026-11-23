@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-export default function PerlaLogo() {
+export default function PerlaLogo({ dark = false }: { dark?: boolean }) {
   return (
     <Link
       href="/"
@@ -20,10 +20,10 @@ export default function PerlaLogo() {
       </span>
 
       <span className="leading-none">
-        <span className="block text-[30px] font-black tracking-[-0.045em] text-[#0d1238]">
+        <span className={`block text-[30px] font-black tracking-[-0.045em] ${dark ? "text-[#fff4e4]" : "text-[#0d1238]"}`}>
           Perla
         </span>
-        <span className="mt-1 block text-[14px] font-bold tracking-[0.13em] text-violet-700">
+        <span className={`mt-1 block text-[14px] font-bold tracking-[0.13em] ${dark ? "text-[#98f4cc]" : "text-violet-700"}`}>
           Marketplace
         </span>
       </span>

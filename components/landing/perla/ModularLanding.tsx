@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, ArrowUpRight, Check, ChevronDown, Menu, Play, ShoppingBag, Truck, UtensilsCrossed, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, ChevronDown, Menu, Play, ShoppingBag, Truck, UtensilsCrossed, X } from "lucide-react";
 import type { PerlaClient } from "@/lib/services/perla-showcase";
 import PerlaLogo from "@/components/perla/PerlaLogo";
 import { CONTACT_EMAIL, buildWhatsAppUrl } from "@/components/perla/links";
 import s from "./modular.module.css";
-import HeroShowcase from "./HeroShowcase";
+import OrderJourneyHero from "./OrderJourneyHero";
 import { ModulesSection, ClientsAndPlans } from "./ReferenceSections";
 
 const faqs = [
@@ -23,12 +23,11 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
   const nav = [["Soluciones", "#modulos"], ["Demos", "#demos"], ["Clientes", "#clientes"], ["Precios", "#planes"]];
   return <div className={s.page}>
     <a href="#contenido-perla" className={s.skip}>Saltar al contenido</a>
-    <header className={s.header}><div className={s.headerInner}><PerlaLogo /><nav aria-label="Navegación de Perla" className={s.desktopNav}>{nav.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</nav><div className={s.headerActions}><a href="/admin" className={s.login}>Iniciar sesión</a><a href="/demo" className={s.primary}>Solicitar demo <ArrowUpRight size={16} /></a></div><button className={s.menuButton} aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"} aria-expanded={mobileOpen} aria-controls="perla-mobile-nav" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X /> : <Menu />}</button></div>
+    <header className={s.header}><div className={s.headerInner}><PerlaLogo dark /><nav aria-label="Navegación de Perla" className={s.desktopNav}>{nav.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</nav><div className={s.headerActions}><a href="/admin" className={s.login}>Iniciar sesión</a><a href="/demo" className={s.primary}>Solicitar demo <ArrowUpRight size={16} /></a></div><button className={s.menuButton} aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"} aria-expanded={mobileOpen} aria-controls="perla-mobile-nav" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X /> : <Menu />}</button></div>
       {mobileOpen && <nav id="perla-mobile-nav" aria-label="Navegación móvil" className={s.mobileNav}>{nav.map(([label, href]) => <a key={label} href={href} onClick={() => setMobileOpen(false)}>{label}<ArrowUpRight size={16} /></a>)}<a href="/admin">Iniciar sesión</a><a href="/gestores">Entrar a ShareApp</a><a href="/demo" className={s.primary}>Solicitar demo</a></nav>}
     </header>
     <main id="contenido-perla">
-      <section className={s.hero}><div className={s.heroInner}><div className={s.heroCopy}><p className={s.eyebrow}><span /> TIENDAS · RESTAURANTES · ENVÍOS</p><h1>Tu negocio<br />conectado.<br /><span>Todo en Perla.</span></h1><p className={s.heroDescription}>Vende online, organiza tus envíos y administra tu negocio desde una sola plataforma.</p><div className={s.heroButtons}><a href="#modulos" className={s.primary}>Explorar módulos <ArrowRight size={18} /></a><a href="#demos" className={s.outline}><Play size={17} /> Ver demos</a></div><div className={s.heroNotes}><span><Check />Tu marca y dominio</span><span><Check />Soporte cercano</span></div></div>
-      <HeroShowcase /></div></section>
+      <OrderJourneyHero />
 
       {clients.length > 0 && <section className={s.trust}><div className={s.container}><p>NEGOCIOS QUE YA TRABAJAN CON PERLA</p><div>{clients.slice(0, 5).map(client => <a key={client.id} href={client.url} target="_blank" rel="noopener noreferrer">{client.name}</a>)}</div></div></section>}
 
@@ -44,6 +43,6 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
 
       <section className={s.finalCta}><div className={s.container}><p className={s.eyebrow}>EL SIGUIENTE PASO ES TUYO</p><h2>Tu negocio tiene mucho<br />por delante. <span>Conectémoslo.</span></h2><p>Cuéntanos qué necesitas y descubre lo que podemos construir juntos.</p><div><a className={s.whiteButton} href="/demo">Solicitar una demo <ArrowRight size={18} /></a><a className={s.ctaContact} href={contact} target="_blank" rel="noopener noreferrer">Hablemos por WhatsApp <ArrowUpRight size={17} /></a></div></div></section>
     </main>
-    <footer className={s.footer}><div className={s.footerGrid}><div><PerlaLogo /><p>Tu marca. Tus herramientas.<br />Todo conectado en Perla.</p></div><div><h3>Plataforma</h3><a href="#modulos">Módulos</a><a href="#demos">Demos</a><a href="#clientes">Nuestros clientes</a><a href="#planes">Planes y precios</a></div><div><h3>Accesos</h3><a href="/admin">Administración</a><a href="/gestores">ShareApp para gestores</a><a href="/demo">Solicitar demo</a><a href="#preguntas">Preguntas frecuentes</a></div><div><h3>Hablemos</h3><a href={contact} target="_blank" rel="noopener noreferrer">WhatsApp <ArrowUpRight size={14} /></a><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><p>Miami, Florida</p></div></div><div className={s.footerBottom}><span>© {new Date().getFullYear()} Perla Marketplace</span><span>Tiendas · Restaurantes · Envíos</span></div></footer>
+    <footer className={s.footer}><div className={s.footerGrid}><div><PerlaLogo dark /><p>Tu marca. Tus herramientas.<br />Todo conectado en Perla.</p></div><div><h3>Plataforma</h3><a href="#modulos">Módulos</a><a href="#demos">Demos</a><a href="#clientes">Nuestros clientes</a><a href="#planes">Planes y precios</a></div><div><h3>Accesos</h3><a href="/admin">Administración</a><a href="/gestores">ShareApp para gestores</a><a href="/demo">Solicitar demo</a><a href="#preguntas">Preguntas frecuentes</a></div><div><h3>Hablemos</h3><a href={contact} target="_blank" rel="noopener noreferrer">WhatsApp <ArrowUpRight size={14} /></a><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><p>Miami, Florida</p></div></div><div className={s.footerBottom}><span>© {new Date().getFullYear()} Perla Marketplace</span><span>Tiendas · Restaurantes · Envíos</span></div></footer>
   </div>;
 }
