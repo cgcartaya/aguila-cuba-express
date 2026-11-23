@@ -125,3 +125,146 @@
   background: #bfffe0;
   color: var(--ink);
 }
+
+
+/* Perla Interactive Showcase — scoped to the platform landing only. */
+.explorerSection{position:relative;padding:clamp(65px,7vw,112px) 0 75px;overflow:hidden;background:radial-gradient(ellipse at 85% 15%,#143b40 0,transparent 45%),radial-gradient(ellipse at 10% 75%,#102b49 0,transparent 55%),#061626;color:#f5fffd}
+.explorerHeading{max-width:810px;margin:0 auto 42px;text-align:center}
+.explorerEyebrow{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:15px;color:#81f0d0;font-size:11px;letter-spacing:.14em;font-weight:800}
+.explorerEyebrow span{height:7px;width:7px;border-radius:50%;background:#80f4d2;box-shadow:0 0 15px #80f4d2}
+.explorerHeading h2{margin:0;font-size:clamp(34px,4.1vw,59px)!important;line-height:1.1!important;letter-spacing:-.05em!important;font-weight:850}
+.explorerHeading h2 span{color:#8af4d3}
+.explorerHeading>p{margin:19px auto 0;max-width:650px;color:#c1d1dc;font-size:clamp(14px,1.5vw,17px);line-height:1.6}
+.explorerLayout{display:grid;grid-template-columns:minmax(255px,.75fr) minmax(0,1.65fr);gap:22px;align-items:stretch}
+.explorerTabs{display:flex;flex-direction:column;gap:9px;min-width:0}
+.explorerTab{min-height:76px;display:flex;align-items:center;gap:14px;padding:14px 16px;width:100%;text-align:left;border:1px solid #7097a235;border-radius:15px;background:#ffffff08;color:#edf9fa;cursor:pointer;transition:background .2s,border-color .2s,transform .2s}
+.explorerTab:hover{background:#ffffff13;border-color:#83edc67a}
+.explorerTab[aria-selected="true"]{background:linear-gradient(110deg,#124c4b,#134354a6);border-color:#78ebc7;box-shadow:inset 3px 0 0 #8df6d7,0 9px 28px #0003}
+.explorerTabIcon{width:44px;height:44px;display:grid;place-items:center;flex-shrink:0;border-radius:12px;background:#8af4d31c;color:#8af4d3}
+.explorerTab>span:nth-child(2){min-width:0;font-size:15px;font-weight:800}
+.explorerTab small{display:block;margin-top:4px;color:#adbfce;font-size:11px;font-weight:500;line-height:1.3}
+.explorerTabArrow{margin-left:auto;flex-shrink:0;color:#8af4d3;opacity:0;transform:translateX(-4px);transition:opacity .2s,transform .2s}
+.explorerTab[aria-selected="true"] .explorerTabArrow{opacity:1;transform:translateX(0)}
+.explorerTabsFoot{display:flex;align-items:center;gap:10px;color:#b9d0d5;margin-top:auto;padding:15px 7px 4px;font-size:12px}
+.explorerTabsFoot svg{color:#8af4d3}
+.explorerPanel{min-width:0;overflow:hidden;border-radius:22px;border:1px solid #8af4d359;background:linear-gradient(150deg,#102b3f,#091e30);box-shadow:0 25px 85px #0005;animation:explorerReveal .24s ease-out}
+.explorerPanelHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 19px;background:#ffffff08}
+.explorerBadge{display:flex;align-items:center;gap:8px;color:#a2fbdc;font-size:12px;font-weight:800}
+.explorerExample{font-size:11px;color:#b2cbd6}
+.explorerPreview{padding:18px 23px 0}
+.explorerPreview .previewWrap{border-radius:15px 15px 0 0;padding:22px 24px 0;overflow:hidden}
+.explorerPreview .previewWindow{height:270px;grid-template-columns:130px minmax(0,1fr);border-radius:13px 13px 0 0}
+.explorerPreview .previewSidebar{padding:19px 10px;gap:9px;font-size:10px}
+.explorerPreview .previewSidebar>strong{font-size:11px}
+.explorerPreview .previewSidebar>span{padding:9px 7px}
+.explorerPreview .previewContent{padding:22px}
+.explorerPreview .previewToolbar>strong{font-size:14px}
+.explorerPreview .previewToolbar>span{font-size:9px}
+.explorerPreview .previewToolbar .newQuote{font-size:9px}
+.explorerPreview .previewProducts{gap:11px}
+.explorerPreview .previewProducts img{height:115px}
+.explorerPreview .previewProducts strong{font-size:10px}
+.explorerPreview .previewProducts>div>span{font-size:9px}
+.explorerPreview .foodProducts strong{font-size:9px}
+.explorerPreview .shippingPreview{grid-template-columns:minmax(0,1fr) 80px;gap:12px}
+.explorerPreview .tableRow{font-size:9px;padding:13px 3px}
+.explorerPreview .tableRow em{font-size:8px}
+.explorerPreview .invoice img{width:65px;height:65px}
+.explorerPreview .travelPreview{height:205px}
+.explorerPreview .travelPreview strong{font-size:25px}
+.explorerPreview .campaignList img{width:55px;height:54px}
+.explorerPreview .campaignList strong{font-size:9px}
+.explorerPreview .miniPhone{width:100px;height:204px}
+.explorerPreview .miniPhone>img{height:92px}
+.explorerPreview .costRow{font-size:10px;padding:12px 4px}
+.explorerPreview .costRow em{font-size:9px}
+.explorerPanelBody{padding:25px 30px 28px}
+.explorerCopy h3{margin:0;color:#fff;font-size:clamp(25px,2.6vw,37px);font-weight:850;letter-spacing:-.04em}
+.explorerLead{color:#8af4d3;font-size:16px;line-height:1.5;margin:7px 0 0}
+.explorerDetails{color:#c4d4df;font-size:13px;line-height:1.65;margin:10px 0 0;max-width:790px}
+.explorerBenefits{display:flex;flex-wrap:wrap;gap:9px;margin:18px 0 22px}
+.explorerBenefits span{display:flex;align-items:center;gap:7px;background:#ffffff0b;border:1px solid #c8fce92b;border-radius:50px;padding:8px 12px;color:#d5ece9;font-size:11px}
+.explorerBenefits svg{color:#8af4d3;flex-shrink:0}
+.explorerActions{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
+.explorerDemo,.explorerContact{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:47px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;transition:transform .2s,background .2s}
+.explorerDemo{background:#89f3d2;border:1px solid #89f3d2;color:#062533}
+.explorerDemo:hover{background:#b9ffe9;transform:translateY(-2px)}
+.explorerContact{background:transparent;border:1px solid #a5d8d17c;color:#f1fffa}
+.explorerContact:hover{background:#ffffff15}
+.explorerCombine{display:flex;align-items:center;gap:21px;margin-top:26px;padding:24px 28px;border:1px solid #84dfc247;border-radius:18px;background:linear-gradient(110deg,#102e43,#0e4545)}
+.explorerCombineIcon{display:grid;place-items:center;flex:0 0 50px;height:50px;border:1px solid #8af4d353;border-radius:13px;color:#9afada;background:#94ffda19}
+.explorerCombine h3{margin:0;font-size:clamp(18px,2vw,25px);font-weight:850;line-height:1.25;letter-spacing:-.03em}
+.explorerCombine h3 span{color:#8af4d3}
+.explorerCombine p{margin:6px 0 0;color:#b7d0d5;font-size:12px;line-height:1.5}
+.explorerCombine>a{margin-left:auto;display:flex;align-items:center;justify-content:center;gap:11px;min-height:46px;white-space:nowrap;border-radius:10px;padding:12px 19px;background:#8af4d3;color:#073444;font-weight:800;font-size:13px}
+.explorerCombine>a:hover{background:#c3ffed}
+.explorerSection button:focus-visible,.explorerSection a:focus-visible,.explorerPanel:focus-visible{outline:3px solid #a7ffe5;outline-offset:3px}
+@keyframes explorerReveal{from{opacity:.65;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1000px){
+.explorerLayout{grid-template-columns:minmax(210px,.8fr) minmax(0,1.5fr);gap:14px}
+.explorerTab{padding:12px;gap:9px}
+.explorerTab small{font-size:10px}
+.explorerPanelBody{padding:22px}
+.explorerPreview{padding:12px 12px 0}
+.explorerPreview .previewWindow{grid-template-columns:95px 1fr;height:225px}
+.explorerPreview .previewSidebar{padding:13px 5px;font-size:7px}
+.explorerPreview .previewSidebar>strong{font-size:8px}
+.explorerPreview .previewSidebar>span{padding:7px 3px}
+.explorerPreview .previewContent{padding:14px}
+.explorerPreview .previewProducts img{height:92px}
+.explorerPreview .previewProducts strong{font-size:7px}
+.explorerPreview .tableRow{font-size:6px}
+.explorerPreview .costRow{font-size:7px}
+}
+@media(max-width:760px){
+.explorerSection{padding:54px 0 42px}
+.explorerHeading{text-align:left;margin-bottom:24px}
+.explorerEyebrow{justify-content:flex-start;font-size:10px}
+.explorerHeading h2{font-size:clamp(32px,7vw,44px)!important}
+.explorerHeading>p{font-size:14px}
+.explorerLayout{grid-template-columns:1fr;gap:13px}
+.explorerTabs{display:flex;flex-direction:row;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;padding:3px 2px 10px;gap:9px;scrollbar-width:thin}
+.explorerTab{min-width:158px;max-width:190px;min-height:65px;scroll-snap-align:start;gap:8px;padding:10px;flex-shrink:0;border-radius:12px}
+.explorerTabIcon{width:35px;height:35px;border-radius:9px}
+.explorerTab>span:nth-child(2){font-size:12px}
+.explorerTab small,.explorerTabArrow,.explorerTabsFoot{display:none}
+.explorerPanelHead{padding:13px 15px}
+.explorerPanelBody{padding:20px 16px}
+.explorerPreview{padding:12px 12px 0}
+.explorerCombine{flex-wrap:wrap;padding:21px;gap:12px}
+.explorerCombine>div{flex:1;min-width:220px}
+.explorerCombine>a{width:100%;margin-left:0}
+}
+@media(max-width:420px){
+.explorerPreview{padding:9px 9px 0}
+.explorerPreview .previewWrap{padding:12px 9px 0}
+.explorerPreview .previewWindow{height:180px;grid-template-columns:75px minmax(0,1fr)}
+.explorerPreview .previewSidebar{padding:9px 4px;font-size:5px;gap:4px}
+.explorerPreview .previewSidebar>strong{font-size:6px;gap:3px}
+.explorerPreview .previewSidebar>span{padding:5px 2px;gap:3px}
+.explorerPreview .previewContent{padding:10px 7px}
+.explorerPreview .previewToolbar>strong{font-size:8px}
+.explorerPreview .previewToolbar>span{font-size:5px}
+.explorerPreview .previewToolbar .newQuote{font-size:5px}
+.explorerPreview .previewProducts{gap:4px}
+.explorerPreview .previewProducts img{height:65px}
+.explorerPreview .previewProducts strong{font-size:5px}
+.explorerPreview .previewProducts>div>span{font-size:5px}
+.explorerPreview .shippingPreview{grid-template-columns:1fr 45px;gap:4px}
+.explorerPreview .tableRow{font-size:4px;padding:8px 1px}
+.explorerPreview .tableRow em{font-size:4px}
+.explorerPreview .invoice img{width:35px;height:35px}
+.explorerPreview .travelPreview{height:130px}
+.explorerPreview .travelPreview strong{font-size:16px}
+.explorerPreview .campaignList img{width:36px;height:36px}
+.explorerPreview .miniPhone{height:145px;width:68px}
+.explorerPreview .miniPhone>img{height:55px}
+.explorerPreview .costRow{font-size:5px;padding:9px 2px}
+.explorerPreview .costRow em{font-size:5px}
+.explorerCopy h3{font-size:27px}
+.explorerLead{font-size:14px}
+.explorerDetails{font-size:12px}
+.explorerActions>button,.explorerActions>a{width:100%}
+.explorerExample{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){.explorerPanel{animation:none}.explorerTab,.explorerTabArrow,.explorerDemo{transition:none;transform:none!important}}
