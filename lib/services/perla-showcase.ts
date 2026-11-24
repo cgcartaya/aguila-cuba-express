@@ -1,7 +1,7 @@
 import { publicSupabase } from "@/lib/supabase-public";
 import { getStorePublicBaseUrl } from "@/lib/saas/store-metadata";
 
-export type PerlaClient = { id: string; slug?: string; name: string; url: string; logo: string | null; modules: string[] };
+export type PerlaClient = { id: string; slug?: string; name: string; url: string; logo: string | null; previewImage: string | null; modules: string[] };
 
 export async function getPerlaShowcase(): Promise<PerlaClient[]> {
   const { data: visible, error: visibilityError } = await publicSupabase
@@ -9,11 +9,14 @@ export async function getPerlaShowcase(): Promise<PerlaClient[]> {
   if (visibilityError) { console.error("Perla showcase visibility unavailable", visibilityError); return []; }
   if (!visible?.length) return [];
   const { data, error } = await publicSupabase.from("stores")
-    .select("id,name,slug,domain,subdomain,logo_url,module_store_enabled,module_menu_enabled,module_shipping_enabled")
+    .select("id,name,slug,domain,subdomain,logo_url,og_image_url,store_og_image_url,module_store_enabled,module_menu_enabled,module_shipping_enabled")
     .eq("is_active", true).in("id", visible.map(row => row.store_id)).order("name");
   if (error) { console.error("Perla showcase clients unavailable", error); return []; }
   return (data || []).map(store => ({
     id: store.id, slug: store.slug, name: store.name, url: getStorePublicBaseUrl(store), logo: store.logo_url,
+    // The configured OG image is maintained by each tenant and may be refreshed
+    // without changing this landing. Fall back to their brand logo.
+    previewImage: store.og_image_url?.trim() || store.store_og_image_url?.trim() || store.logo_url?.trim() || null,
     modules: [store.module_store_enabled && "Tienda online", store.module_menu_enabled && "Menú digital", store.module_shipping_enabled && "Envíos"].filter(Boolean) as string[],
   }));
 }
