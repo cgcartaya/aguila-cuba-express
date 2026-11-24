@@ -113,9 +113,14 @@ export default function ShipmentForm(props: Props) {
   const [paymentReceived, setPaymentReceived] = useState(true);
   const prepaidRemittance = !shipment && props.allowMoneyDeliveryOptions && baseForm.contains_money && !baseForm.contains_package && paymentReceived;
   const moneyOnly = !!baseForm.products_only || baseForm.contains_money && !baseForm.contains_package;
+  const selectedService = serviceTypes.find(item => item.id === baseForm.service_type_id);
+  const usesLuxuryRate = props.allowLuxuryPhysicalProducts && selectedService?.code.startsWith("luxury-");
+  const fixedPackage = usesLuxuryRate && selectedService?.billing_mode === "fixed";
+  const legacyLuxuryPackage = props.allowLuxuryPhysicalProducts && selectedService?.code === "packages"
+    && shipment?.service_type_id === selectedService.id;
   const form: ShipmentInput = (() => {
     const location = locations.find(x => x.id === baseForm.shipping_location_id);
-    const service = serviceTypes.find(x => x.id === baseForm.service_type_id);
+    const service = selectedService;
     const matchingRates = rates.filter(
       (item) => item.service_type_id === service?.id && item.is_active
     );
@@ -144,11 +149,14 @@ export default function ShipmentForm(props: Props) {
     const specificRate = rate ? weightRate(rate, Number(baseForm.weight_lb || 0)) : 0;
     const fallbackRate = Number(settings?.default_rate_per_lb || 0);
     const ratePerLb = baseForm.contains_package && !baseForm.products_only && !feesOnly
-      ? specificRate > 0
-        ? specificRate
-        : fallbackRate
+      ? legacyLuxuryPackage ? shipment.rate_per_lb
+        : fixedPackage ? 0
+        : usesLuxuryRate ? specificRate
+        : specificRate > 0 ? specificRate : fallbackRate
       : 0;
-    const packageSubtotal = baseForm.contains_package && !baseForm.products_only && !feesOnly ? Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0)) : 0;
+    const packageSubtotal = baseForm.contains_package && !baseForm.products_only && !feesOnly ? fixedPackage ? Number(rate?.fixed_fee ?? 0)
+        : Math.max(effectiveWeight * ratePerLb, Number(rate?.minimum_charge || 0))
+      : 0;
     const calculatedFees = baseForm.selected_fees.map(fee => calculateExtraFee(
       { ...fee, quantity: Number.isInteger(fee.quantity ?? 1) && (fee.quantity ?? 1) >= 1 && (fee.quantity ?? 1) <= 9999 ? fee.quantity ?? 1 : 1 },
       effectiveWeight, packageSubtotal,
@@ -204,7 +212,10 @@ export default function ShipmentForm(props: Props) {
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError("");
     if (!form.contains_package && !form.contains_money) return setError("Selecciona paquete, dinero o ambos.");
-    if (form.contains_package && !form.products_only && !feesOnly && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
+    if (form.contains_package && !form.products_only && !feesOnly && (!form.service_type_id || (!fixedPackage && form.weight_lb <= 0))) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
+    if (form.contains_package && !form.products_only && !feesOnly && usesLuxuryRate && form.weight_subtotal <= 0) {
+      return setError("Selecciona Cuba para aplicar la tarifa de esta modalidad.");
+    }
     if (form.products_only && !(props.allowLuxuryPhysicalProducts ? form.physical_products?.length : form.store_products?.length)) return setError('Añade al menos un producto de la tienda.');
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (form.contains_money) {
@@ -287,7 +298,7 @@ export default function ShipmentForm(props: Props) {
         <Select label="Provincia" value={form.province_id || ""} onChange={v => { set("province_id", v || null); set("municipality_id", null); set("shipping_location_id", null); }} options={filteredProvinces.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         <Select label="Municipio" value={form.municipality_id || ""} onChange={v => { set("municipality_id", v || null); set("shipping_location_id", null); }} options={filteredMunicipalities.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
         <Select label="Lugar (opcional)" value={form.shipping_location_id || ""} onChange={v => set("shipping_location_id", v || null)} options={filteredLocations.filter(x=>x.is_active).map(x=>[x.id,x.name])} />
-        {form.contains_package && !form.products_only && !feesOnly && <Select label="Tipo de paquete" value={form.service_type_id || ""} onChange={v => set("service_type_id", v || null)} options={serviceTypes.filter(x=>x.is_active && x.code.toLowerCase() !== "money").map(x=>[x.id,x.name])} />}
+        {form.contains_package && !form.products_only && !feesOnly && <Select label="Tipo de paquete" value={form.service_type_id || ""} onChange={v => set("service_type_id", v || null)} options={serviceTypes.filter(x=>(x.is_active || x.id === shipment?.service_type_id) && x.code.toLowerCase() !== "money").map(x=>[x.id,x.name])} />}
         <Input label="Código APK" value={form.location} readOnly />
         <Input label="Destinatario" value={form.recipient_name} onChange={v=>set("recipient_name",v)} />
         <Input label="Teléfono destinatario" value={form.recipient_phone} onChange={v=>set("recipient_phone",phone(v))} inputMode="numeric" />
@@ -326,8 +337,10 @@ export default function ShipmentForm(props: Props) {
         ['fees_only', 'Solo cargos por artículo', 'Teléfonos, laptops u otros artículos con fee fijo'],
       ] as const).map(([mode, title, description]) => <button type="button" key={mode} aria-pressed={(form.package_billing_mode || 'weight') === mode} onClick={() => setForm(current => ({ ...current, package_billing_mode: mode, selected_fees: mode === 'fees_only' ? current.selected_fees.filter(fee => fee.calculation_type === 'fixed') : current.selected_fees }))} className={`rounded-2xl border p-4 text-left ${form.package_billing_mode === mode ? 'border-blue-500 bg-blue-50' : 'border-slate-200'}`}><b className="block">{title}</b><small className="mt-1 block text-slate-500">{description}</small></button>)}</div>
       {feesOnly ? <p className="rounded-2xl bg-blue-50 p-4 text-sm font-bold text-blue-900">No se requiere peso. Selecciona abajo el cargo de cada artículo y su cantidad. Solo se cobrarán esos cargos.</p> : <>
-        <div className="grid gap-4 md:grid-cols-3"><NumberInput label="Peso (lb)" value={form.weight_lb} onChange={v=>set('weight_lb',v)} /><Input label="Tarifa por libra" value={form.rate_per_lb.toFixed(2)} readOnly /><Input label="Subtotal paquete" value={form.weight_subtotal.toFixed(2)} readOnly /></div>
-        {form.rate_per_lb <= 0 && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">No existe una tarifa para este destino y tipo de paquete. Configúrala en Ajustes de envíos.</div>}
+        <div className="grid gap-4 md:grid-cols-3"><NumberInput label={fixedPackage ? "Peso (lb, opcional)" : "Peso (lb)"} value={form.weight_lb} onChange={v=>set('weight_lb',v)} />{fixedPackage
+          ? <Input label="Precio fijo por caja (USD)" value={form.weight_subtotal.toFixed(2)} readOnly />
+          : <Input label="Tarifa por libra" value={form.rate_per_lb.toFixed(2)} readOnly />}<Input label="Subtotal paquete" value={form.weight_subtotal.toFixed(2)} readOnly /></div>
+        {(fixedPackage ? form.weight_subtotal <= 0 : form.rate_per_lb <= 0) && <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800">No existe una tarifa para este destino y tipo de paquete. Configúrala en Ajustes de envíos.</div>}
       </>}
     </Section>}
 
