@@ -23,6 +23,7 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
   const [active, setActive] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [reduced, setReduced] = useState(false);
+  const [motionOverride, setMotionOverride] = useState(false);
   const [visible, setVisible] = useState(true);
   const container = useRef<HTMLElement>(null);
   const touchX = useRef<number | null>(null);
@@ -31,7 +32,7 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => {
       setReduced(media.matches);
-      if (media.matches) setPlaying(false);
+      if (media.matches) { setPlaying(false); setMotionOverride(false); }
     };
     sync();
     media.addEventListener("change", sync);
@@ -46,10 +47,10 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
   }, []);
 
   useEffect(() => {
-    if (!playing || reduced || !visible || items.length <= 1) return;
+    if (!playing || (reduced && !motionOverride) || !visible || items.length <= 1) return;
     const interval = window.setInterval(() => setActive(prev => (prev + 1) % items.length), 4700);
     return () => window.clearInterval(interval);
-  }, [playing, reduced, visible, items.length]);
+  }, [playing, reduced, motionOverride, visible, items.length]);
 
   if (!items.length) {
     return (
@@ -167,7 +168,10 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
         <button type="button" onClick={() => select(active + 1)}
           aria-label="Siguiente negocio"><ArrowRight size={20} aria-hidden="true" /></button>
         <button type="button" className={styles.playButton}
-          onClick={() => setPlaying(value => !value)}
+          onClick={() => {
+            if (!playing) setMotionOverride(true);
+            setPlaying(value => !value);
+          }}
           aria-label={playing ? "Pausar rotación" : "Reproducir rotación"}
           aria-pressed={playing}>
           {playing ? <Pause size={16} aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
