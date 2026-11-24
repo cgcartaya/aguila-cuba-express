@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 const PLATFORM_DOMAIN = "perlamarketplace.com";
-const PERLA_FAVICON = "/perla-favicon.ico";
+const PERLA_FAVICON = "/perla-favicon.ico"; // Legacy fallback for stores without their own icon.
+const PERLA_CORPORATE_FAVICON = "/perla/favicon-64.png";
 const PERLA_OG_IMAGE = "/perla/perla-shell.png";
 
 export type StoreMetadataRow = {
@@ -204,9 +205,9 @@ export function buildPerlaMetadata(): Metadata {
     },
     description,
     icons: {
-      icon: [{ url: PERLA_FAVICON, type: "image/x-icon" }],
-      shortcut: [{ url: PERLA_FAVICON, type: "image/x-icon" }],
-      apple: [{ url: PERLA_FAVICON }],
+      icon: [{ url: PERLA_CORPORATE_FAVICON, sizes: "64x64", type: "image/png" }],
+      shortcut: [{ url: PERLA_CORPORATE_FAVICON, type: "image/png" }],
+      apple: [{ url: PERLA_CORPORATE_FAVICON, sizes: "64x64", type: "image/png" }],
     },
     openGraph: {
       title,
