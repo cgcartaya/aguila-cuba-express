@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type TouchEvent } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ArrowUpRight, Globe2, Pause, Play, Sparkles } from "lucide-react";
@@ -120,7 +120,7 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
               "--x": `${offset * 68}%`,
               "--scale": isFront ? 1 : abs === 1 ? .79 : .62,
               "--angle": `${-offset * 12}deg`,
-            } as React.CSSProperties;
+            } as CSSProperties;
 
             return (
               <article key={item.id} className={styles.orbitCard} style={position}
