@@ -45,3 +45,12 @@
 @media(max-width:680px){.section{padding:55px 0 40px}.eyebrow{font-size:9px;letter-spacing:.14em}.heading h2{font-size:clamp(30px,8vw,40px)!important}.stage{height:390px;margin-top:12px;overflow:hidden}.globe{top:10%;width:255px;opacity:.65}.orbitRing{width:165%;height:42%;top:65%}.orbitRingBack{width:144%;height:37%;top:65%}.orbitCard{width:min(78vw,340px);height:305px;top:55%;padding:12px;border-radius:17px;transform:translate(-50%,-50%) translateX(calc(var(--offset) * 74vw)) scale(calc(1 - var(--abs) * .09));rotate:none;opacity:calc(1 - var(--abs) * .32)}.cardTop h3{font-size:18px}.focusTag{font-size:9px}.screenshot{margin:11px 0 10px}.navigation{gap:11px;margin:0 auto 22px}.counter{min-width:145px;max-width:190px;font-size:11px}.callout{margin:0 16px;border-radius:21px;gap:10px;padding:18px;flex-wrap:wrap;text-align:center}.callout strong{font-size:20px;flex:1 1 calc(100% - 40px)}.callout a{width:100%;margin-top:6px}.section .orbitCard[data-hidden="true"]{visibility:hidden}}
 @media(max-width:360px){.stage{height:360px}.orbitCard{height:278px}.navigation{gap:6px}.counter{min-width:115px;max-width:145px}.navigation button{width:39px;height:39px}.cardTop h3{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.orbitCard{transition:none!important;will-change:auto}.navigation button,.visit,.bringForward{transition:none!important}}
+
+/* Image-first previews: tenant-maintained OG artwork when available; branded fallback otherwise. */
+.logoPreview{object-fit:contain!important;object-position:center!important;padding:18px;background:radial-gradient(circle at center,#15596b,#091e30 75%)}
+.noScreenshot{position:relative;overflow:hidden}
+.noScreenshot>strong,.noScreenshot>span,.noScreenshot>svg{position:relative;z-index:1}
+.noScreenshot:has(img)>strong,.noScreenshot:has(img)>span{display:none}
+.noScreenshot img{z-index:0}
+.orbitCard[data-front="true"] .screenshot{border-color:#d3fff8}
+@media(max-width:680px){.orbitCard{will-change:auto}.orbitCard:not([data-front="true"]){pointer-events:auto}}
