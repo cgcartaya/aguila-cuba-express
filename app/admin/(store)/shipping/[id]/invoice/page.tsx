@@ -350,6 +350,12 @@ export default function ShippingInvoicePage({
                 <ul>{shipment.physical_products.map(item => <li key={item.product_id}>{item.quantity} × {item.name} · {currency(item.quantity * item.unit_price)}</li>)}</ul>
                 <p className="mt-2 font-semibold">Subtotal: {currency(shipment.physical_products_total || 0)}</p>
               </section>}
+              {!!shipment.physical_products?.length && <div>
+                <p className="mt-3 font-bold">Productos de la tienda física</p>
+                <ul className="mt-1 space-y-1">{shipment.physical_products.map(item =>
+                  <li key={item.product_id}>{item.quantity} × {item.name} · {currency(item.quantity * item.unit_price)}</li>
+                )}</ul>
+              </div>}
               {(shipment.contains_money || !!shipment.store_products?.length) && <RemittanceDeliveryDetails value={shipment} />}
               {shipment.contains_package && <><p className="mt-5 text-sm font-bold text-slate-700">N.º de paquete: {packageNumber(shipment.package_number)}</p><PackageContentsList items={shipment.package_contents} /></>}
 
@@ -402,6 +408,11 @@ export default function ShippingInvoicePage({
                       label="Productos de la tienda"
                       value={currency(shipment.store_products_total || 0)}
                       hidden={!shipment.store_products_total}
+                    />
+                    <TotalRow
+                      label="Productos de la tienda física"
+                      value={currency(shipment.physical_products_total || 0)}
+                      hidden={!shipment.physical_products?.length}
                     />
                     <TotalRow
                       label="Fees adicionales"

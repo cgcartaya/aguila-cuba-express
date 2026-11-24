@@ -3,6 +3,7 @@ export type PhysicalProductLine = {
  name: string;
  quantity: number;
  unit_price: number;
+ weight_lb?: number | null;
 };
 export type RemittanceProduct = ({ product_id: string; combo_id?: never } | { combo_id: string; product_id?: never }) & { name: string; quantity: number; unit_price: number; base_price?: number; platform_fee_percent?: number; platform_fee_amount?: number };
 export function remittanceItemKey(item: RemittanceProduct) {

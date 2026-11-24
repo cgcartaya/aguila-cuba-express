@@ -195,7 +195,7 @@ export default function EditShipmentPage({
               </p>
             </div>
 
-            <ShipmentForm hasTrip={!!shipment.trip_id} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel"}
+            <ShipmentForm allowLuxuryPhysicalProducts={activeStore?.slug === "luxury-travel-point"} hasTrip={!!shipment.trip_id} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel"}
           storeId={activeStore?.id || ""}
               shipment={shipment}
               drivers={drivers}

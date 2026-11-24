@@ -89,6 +89,9 @@ export const adminNavSections: AdminSection[] = [
       { href: "/admin/inventory", label: "Inventario", icon: Boxes },
     ],
   },
+  { title: "Tienda", module: "shipping", links: [
+    { href: "/admin/physical-products", label: "Tienda física", icon: Package, storeSlugs: ["luxury-travel-point"] },
+  ] },
   {
     title: "Economía",
     module: "economy",

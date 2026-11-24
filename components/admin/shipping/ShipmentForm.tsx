@@ -25,6 +25,7 @@ import { buildLegacyLocation, calculateMoneyCommission, getShippingStatusLabel, 
 
 type Props = {
   allowRemittanceExtras?: boolean;
+  allowLuxuryPhysicalProducts?: boolean;
   allowMoneyDeliveryOptions?: boolean;
   hasTrip?: boolean;
   operationType?: ShipmentOperationType;
@@ -196,17 +197,21 @@ export default function ShipmentForm(props: Props) {
   const phone = (value: string) => value.replace(/\D/g, "").slice(0, settings?.phone_digits_max || 15);
 
 
+  const canAddPhysicalProducts = props.allowLuxuryPhysicalProducts
+    ? form.products_only || (form.contains_package ? props.hasTrip : form.contains_money)
+    : props.allowRemittanceExtras && props.hasTrip && form.contains_package && !form.products_only;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError("");
     if (!form.contains_package && !form.contains_money) return setError("Selecciona paquete, dinero o ambos.");
     if (form.contains_package && !form.products_only && !feesOnly && (!form.service_type_id || form.weight_lb <= 0)) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
-    if (form.products_only && !form.store_products?.length) return setError('Añade al menos un producto de la tienda.');
+    if (form.products_only && !(props.allowLuxuryPhysicalProducts ? form.physical_products?.length : form.store_products?.length)) return setError('Añade al menos un producto de la tienda.');
     if (form.contains_money && form.money_amount <= 0) return setError("Escribe el monto de dinero enviado.");
     if (form.contains_money) {
       try { deliveryParts(form); }
       catch (cause) { return setError((cause as Error).message); }
     }
-    if (form.physical_products?.length && (!props.hasTrip || !form.contains_package || form.products_only)) return setError("Quita los productos de Hialeah antes de cambiar a una operación sin paquete con viaje.");
+    if (form.physical_products?.length && !canAddPhysicalProducts) return setError("Quita los productos de la tienda física o selecciona una operación compatible.");
     if ([...(form.store_products || []), ...(form.physical_products || [])].some(item => !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 999)) return setError('Las cantidades de productos deben ser enteros entre 1 y 999.');
     if (!form.recipient_name.trim()) return setError("El destinatario es obligatorio.");
     if (form.recipient_phone_alt && form.recipient_phone_alt.length < (settings?.phone_digits_min || 1)) return setError("El teléfono alternativo del destinatario no es válido.");
@@ -270,7 +275,7 @@ export default function ShipmentForm(props: Props) {
 
     {!props.operationType && <Section title="Contenido de la operación">
       <div className="grid gap-3 md:grid-cols-2">
-        {props.allowRemittanceExtras && <Toggle checked={!!form.products_only} onChange={value => setForm(current => ({ ...current, products_only: value, contains_package: true, contains_money: value ? false : current.contains_money }))} icon={<Package />} title="Solo productos de la tienda" />}
+        {(props.allowRemittanceExtras || (props.allowLuxuryPhysicalProducts && !props.hasTrip)) && <Toggle checked={!!form.products_only} onChange={value => setForm(current => ({ ...current, products_only: value, contains_package: true, contains_money: value ? false : current.contains_money }))} icon={<Package />} title="Solo productos de la tienda" />}
         <Toggle checked={form.contains_package} onChange={v => setForm(current => ({ ...current, contains_package: v, products_only: false }))} icon={<Package />} title="Incluye paquete" />
         <Toggle checked={form.contains_money} onChange={v => setForm(current => ({ ...current, contains_money: v, products_only: v ? false : current.products_only }))} icon={<Banknote />} title="Incluye dinero" />
       </div>
@@ -339,9 +344,9 @@ export default function ShipmentForm(props: Props) {
 
     {form.contains_package && !form.products_only && <Section title="Contenido del paquete"><PackageContentsEditor value={form.package_contents || []} onChange={value => set("package_contents", value)} /></Section>}
 
-    {props.allowRemittanceExtras && ((props.hasTrip && form.contains_package && !form.products_only) || !!form.physical_products?.length) &&
+    {(canAddPhysicalProducts || !!form.physical_products?.length) &&
       <Section title="Productos tienda física">
-        <PhysicalProductsEditor key={storeId} storeId={storeId} value={form.physical_products || []} onChange={value => set("physical_products", value)} />
+        <PhysicalProductsEditor key={storeId} storeId={storeId} tracksStock={!props.allowLuxuryPhysicalProducts} value={form.physical_products || []} onChange={value => set("physical_products", value)} />
       </Section>}
 
     {props.allowRemittanceExtras && <Section title="Productos de la tienda virtual"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}

@@ -21,10 +21,10 @@ const filters = [
   ["inactive", "Retirados"],
 ] as const;
 
-function productStatus(product: PhysicalStoreProduct): keyof typeof statuses {
+function productStatus(product: PhysicalStoreProduct, tracksStock: boolean): keyof typeof statuses {
   if (!product.is_active) return "inactive";
   if (product.price === null) return "unpriced";
-  return product.stock === 0 ? "soldOut" : "available";
+  return tracksStock && product.stock === 0 ? "soldOut" : "available";
 }
 
 const pageSize = 8;
@@ -36,11 +36,11 @@ export default function PhysicalProductsPage() {
   const store = access.isSuperAdmin ? selected.store || access.store : access.store;
 
   if (access.loading || selected.loading) return <p>Cargando tienda…</p>;
-  if (!store || store.slug !== "alvarez-travel") return <p>Catálogo físico no disponible para esta tienda.</p>;
-  return <PhysicalCatalog key={store.id} storeId={store.id} />;
+  if (!store || !["alvarez-travel", "luxury-travel-point"].includes(store.slug)) return <p>Catálogo físico no disponible para esta tienda.</p>;
+  return <PhysicalCatalog key={store.id} storeId={store.id} tracksStock={store.slug === "alvarez-travel"} />;
 }
 
-function PhysicalCatalog({ storeId }: { storeId: string }) {
+function PhysicalCatalog({ storeId, tracksStock }: { storeId: string; tracksStock: boolean }) {
   const [products, setProducts] = useState<PhysicalStoreProduct[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<(typeof filters)[number][0]>("all");
@@ -78,7 +78,8 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
 
   const query = search.trim().toLowerCase();
   const matching = products.filter(product =>
-    product.name.toLowerCase().includes(query) && (filter === "all" || productStatus(product) === filter)
+    [product.name, product.category, product.description].some(value => value?.toLowerCase().includes(query)) &&
+    (filter === "all" || productStatus(product, tracksStock) === filter)
   );
   const totalPages = Math.max(1, Math.ceil(matching.length / pageSize));
   const currentPage = Math.min(page, totalPages);
@@ -86,8 +87,8 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
   const visible = matching.slice(offset, offset + pageSize);
   const stats = [
     { label: "Productos", count: products.length, icon: Package },
-    { label: "Disponibles", count: products.filter(product => productStatus(product) === "available").length, icon: CheckCircle2 },
-    { label: "Sin precio", count: products.filter(product => productStatus(product) === "unpriced").length, icon: Tag },
+    { label: "Disponibles", count: products.filter(product => productStatus(product, tracksStock) === "available").length, icon: CheckCircle2 },
+    { label: "Sin precio", count: products.filter(product => productStatus(product, tracksStock) === "unpriced").length, icon: Tag },
   ];
 
   return <main className="space-y-5 rounded-2xl bg-slate-50 p-4 text-slate-950 sm:p-6">
@@ -95,7 +96,7 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
       <div className="space-y-1">
         <p className="text-sm text-slate-500">Tienda / <span className="font-semibold text-slate-800">Inventario</span></p>
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Productos tienda física</h1>
-        <p className="text-sm text-slate-600">Catálogo de Hialeah para paquetes con viaje.</p>
+        <p className="text-sm text-slate-600">{tracksStock ? "Catálogo de Hialeah para paquetes con viaje." : "Catálogo interno para órdenes desde Envíos."}</p>
       </div>
       <button type="button" className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-800 disabled:opacity-50"
         disabled={loading || saving} onClick={() => setEditing("new")}><Plus size={18} aria-hidden="true" />Agregar producto</button>
@@ -108,9 +109,9 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
       </div>)}
     </dl>
     {editing && <ProductForm key={editing === "new" ? editing : editing.id}
-      product={editing === "new" ? undefined : editing} saving={saving}
+      product={editing === "new" ? undefined : editing} saving={saving} tracksStock={tracksStock}
       onCancel={() => setEditing(null)} onSave={save} />}
-    <section aria-label="Catálogo de Hialeah" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <section aria-label="Catálogo de tienda física" className="rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 p-4">
         <label className="relative block w-full max-w-sm">
           <span className="sr-only">Buscar en el catálogo</span>
@@ -119,7 +120,7 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
             className="w-full rounded-lg border border-slate-300 py-2.5 pl-10 pr-3 text-sm" />
         </label>
         <div role="group" aria-label="Filtrar por estado" className="flex flex-wrap gap-2">
-          {filters.map(([key, label]) => <button type="button" key={key} aria-pressed={filter === key}
+          {filters.filter(([key]) => tracksStock || key !== "soldOut").map(([key, label]) => <button type="button" key={key} aria-pressed={filter === key}
             onClick={() => { setFilter(key); setPage(1); }}
             className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${filter === key ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:bg-slate-50"}`}>{label}</button>)}
         </div>
@@ -128,14 +129,14 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="bg-slate-100 text-slate-700"><tr>
-              {["Producto", "Precio USD", "Stock", "Estado", "Acciones"].map(label => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}
+              {["Producto", "Precio USD", tracksStock ? "Stock" : "Peso (lb)", "Estado", "Acciones"].map(label => <th key={label} scope="col" className="px-4 py-3">{label}</th>)}
             </tr></thead>
             <tbody className="divide-y divide-slate-100">{visible.map(product => {
-              const status = statuses[productStatus(product)];
+              const status = statuses[productStatus(product, tracksStock)];
               return <tr key={product.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-semibold">{product.name}</td>
+                <td className="px-4 py-3 font-semibold">{product.name}{!tracksStock && <p className="text-xs font-normal text-slate-600">{[product.category, product.description].filter(Boolean).join(" · ")}</p>}</td>
                 <td className="whitespace-nowrap px-4 py-3 tabular-nums">{product.price === null ? "—" : `$${product.price.toFixed(2)}`}</td>
-                <td className="px-4 py-3 tabular-nums">{product.stock}</td>
+                <td className="px-4 py-3 tabular-nums">{tracksStock ? product.stock : product.weight_lb ?? "—"}</td>
                 <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold ${status.style}`}><span aria-hidden="true" className="size-1.5 rounded-full bg-current" />{status.label}</span></td>
                 <td className="px-4 py-3"><div className="flex gap-2">
                   <button type="button" className={actionStyle} aria-label={`Editar ${product.name}`} disabled={saving} onClick={() => setEditing(product)}>Editar</button>
@@ -162,9 +163,10 @@ function PhysicalCatalog({ storeId }: { storeId: string }) {
   </main>;
 }
 
-function ProductForm({ product, saving, onCancel, onSave }: {
+function ProductForm({ product, saving, tracksStock, onCancel, onSave }: {
   product?: PhysicalStoreProduct;
   saving: boolean;
+  tracksStock: boolean;
   onCancel: () => void;
   onSave: (values: Omit<PhysicalStoreProduct, "id">, previous?: PhysicalStoreProduct) => Promise<void>;
 }) {
@@ -172,7 +174,13 @@ function ProductForm({ product, saving, onCancel, onSave }: {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const price = String(form.get("price"));
+    const weight = form.get("weight_lb");
     void onSave({
+      ...(!tracksStock && {
+        category: String(form.get("category")).trim() || null,
+        description: String(form.get("description")).trim() || null,
+        weight_lb: weight ? Number(weight) : null,
+      }),
       name: String(form.get("name")).trim(),
       price: price === "" ? null : Number(price),
       stock: Number(form.get("stock")),
@@ -183,7 +191,12 @@ function ProductForm({ product, saving, onCancel, onSave }: {
     <div className="grid gap-3 sm:grid-cols-[2fr_1fr_1fr]">
       <label>Nombre<input name="name" required maxLength={200} defaultValue={product?.name} className="block w-full rounded-lg border bg-white p-2" /></label>
       <label>Precio (USD)<input name="price" type="number" min={0} max={99999999.99} step="0.01" defaultValue={product?.price ?? ""} className="block w-full rounded-lg border bg-white p-2" /></label>
-      <label>Stock<input name="stock" type="number" required min={0} max={2147483647} step={1} defaultValue={product?.stock ?? 0} className="block w-full rounded-lg border bg-white p-2" /></label>
+      {tracksStock ? <label>Stock<input name="stock" type="number" required min={0} max={2147483647} step={1} defaultValue={product?.stock ?? 0} className="block w-full rounded-lg border bg-white p-2" /></label> :
+        <>
+          <label>Peso (lb)<input name="weight_lb" type="number" min="0.01" max="9999999.99" step="0.01" defaultValue={product?.weight_lb ?? ""} className="block w-full rounded-lg border bg-white p-2" /></label>
+          <label>Categoría<input name="category" maxLength={100} defaultValue={product?.category ?? ""} className="block w-full rounded-lg border bg-white p-2" /></label>
+          <label>Descripción o presentación<input name="description" maxLength={500} defaultValue={product?.description ?? ""} className="block w-full rounded-lg border bg-white p-2" /></label>
+        </>}
     </div>
     <div className="mt-4 flex gap-3">
       <button type="submit" disabled={saving} className="rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-50">Guardar</button>

@@ -5,13 +5,19 @@ export type PhysicalStoreProduct = {
   name: string;
   price: number | null;
   stock: number;
+  category?: string | null;
+  description?: string | null;
+  weight_lb?: number | null;
   is_active: boolean;
 };
 
-export async function listPhysicalProducts(storeId: string, availableOnly = false) {
-  let query = supabase.from("physical_store_products").select("id,name,price,stock,is_active")
+export async function listPhysicalProducts(storeId: string, availableOnly = false, tracksStock = true) {
+  let query = supabase.from("physical_store_products").select("id,name,price,stock,is_active,category,description,weight_lb")
     .eq("store_id", storeId).order("name");
-  if (availableOnly) query = query.eq("is_active", true).not("price", "is", null).gt("stock", 0);
+  if (availableOnly) {
+    query = query.eq("is_active", true).not("price", "is", null);
+    if (tracksStock) query = query.gt("stock", 0);
+  }
   const { data, error } = await query.returns<PhysicalStoreProduct[]>();
   if (error) throw new Error(error.message);
   return data ?? [];
