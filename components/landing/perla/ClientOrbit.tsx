@@ -24,7 +24,6 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
   const [playing, setPlaying] = useState(true);
   const [reduced, setReduced] = useState(false);
   const [visible, setVisible] = useState(true);
-  const [interacting, setInteracting] = useState(false);
   const container = useRef<HTMLElement>(null);
   const touchX = useRef<number | null>(null);
 
@@ -47,10 +46,10 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
   }, []);
 
   useEffect(() => {
-    if (!playing || reduced || !visible || interacting || items.length <= 1) return;
+    if (!playing || reduced || !visible || items.length <= 1) return;
     const interval = window.setInterval(() => setActive(prev => (prev + 1) % items.length), 4700);
     return () => window.clearInterval(interval);
-  }, [playing, reduced, visible, interacting, items.length]);
+  }, [playing, reduced, visible, items.length]);
 
   if (!items.length) {
     return (
@@ -64,7 +63,6 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
 
   function select(index: number) {
     setActive((index + items.length) % items.length);
-    setPlaying(false);
   }
 
   function onKeys(event: KeyboardEvent<HTMLDivElement>) {
@@ -87,9 +85,6 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
   const current = items[active];
   return (
     <section id="clientes" ref={container} className={styles.section}
-      onMouseEnter={() => setInteracting(true)} onMouseLeave={() => setInteracting(false)}
-      onFocusCapture={() => setInteracting(true)}
-      onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setInteracting(false); }}
       aria-labelledby="orbit-title">
       <div className={styles.heading}>
         <p className={styles.eyebrow}>PERLA MARKETPLACE · NUESTROS CLIENTES</p>
@@ -132,13 +127,16 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
                   {isFront && <span className={styles.focusTag}>En foco</span>}
                 </div>
                 <div className={styles.screenshot}>
-                  {item.screenshot ? (
-                    <Image src={item.screenshot} alt={`Vista del sitio web de ${item.displayName}`} fill
+                  {item.preview ? (
+                    <Image src={item.preview} alt={`Imagen de presentación de ${item.displayName}`} fill
+                      className={item.previewIsLogo ? styles.logoPreview : undefined}
                       sizes="(max-width: 680px) 82vw, (max-width: 1100px) 50vw, 420px"
                       priority={index===0} />
                   ) : (
                     <div className={styles.noScreenshot}>
-                      <Globe2 size={35} aria-hidden="true" />
+                      {item.logo ? (
+                        <Image src={item.logo} alt="" fill className={styles.logoPreview} sizes="(max-width: 680px) 75vw, 350px" />
+                      ) : <Globe2 size={35} aria-hidden="true" />}
                       <strong>{item.displayName}</strong>
                       <span>Negocio en Perla</span>
                     </div>
@@ -165,7 +163,7 @@ export default function ClientOrbit({ clients }: { clients: PerlaClient[] }) {
       <div className={styles.navigation}>
         <button type="button" onClick={() => select(active - 1)}
           aria-label="Negocio anterior"><ArrowLeft size={20} aria-hidden="true" /></button>
-        <span className={styles.counter} aria-live="polite">{active + 1} / {items.length} · {current.displayName}</span>
+        <span className={styles.counter} aria-live="off">{active + 1} / {items.length} · {current.displayName}</span>
         <button type="button" onClick={() => select(active + 1)}
           aria-label="Siguiente negocio"><ArrowRight size={20} aria-hidden="true" /></button>
         <button type="button" className={styles.playButton}
