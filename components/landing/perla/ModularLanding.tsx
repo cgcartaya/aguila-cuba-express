@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ArrowRight, ArrowUpRight, ChevronDown, Menu, Play, ShoppingBag, Truck, UtensilsCrossed, X } from "lucide-react";
 import type { PerlaClient } from "@/lib/services/perla-showcase";
-import PerlaLogo from "@/components/perla/PerlaLogo";
+import AnimatedPerlaBrand from "./AnimatedPerlaBrand";
 import { CONTACT_EMAIL, buildWhatsAppUrl } from "@/components/perla/links";
 import s from "./modular.module.css";
 import OrderJourneyHero from "./OrderJourneyHero";
@@ -24,7 +24,7 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
   const nav = [["Soluciones", "#modulos"], ["Demos", "#demos"], ["Clientes", "#clientes"], ["Precios", "#planes"]];
   return <div className={s.page}>
     <a href="#contenido-perla" className={s.skip}>Saltar al contenido</a>
-    <header className={s.header}><div className={s.headerInner}><PerlaLogo dark /><nav aria-label="Navegación de Perla" className={s.desktopNav}>{nav.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</nav><div className={s.headerActions}><a href="/admin" className={s.login}>Iniciar sesión</a><a href="/demo" className={s.primary}>Solicitar demo <ArrowUpRight size={16} /></a></div><button className={s.menuButton} aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"} aria-expanded={mobileOpen} aria-controls="perla-mobile-nav" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X /> : <Menu />}</button></div>
+    <header className={s.header}><div className={s.headerInner}><AnimatedPerlaBrand animate /><nav aria-label="Navegación de Perla" className={s.desktopNav}>{nav.map(([label, href]) => <a href={href} key={label}>{label}</a>)}</nav><div className={s.headerActions}><a href="/admin" className={s.login}>Iniciar sesión</a><a href="/demo" className={s.primary}>Solicitar demo <ArrowUpRight size={16} /></a></div><button className={s.menuButton} aria-label={mobileOpen ? "Cerrar menú" : "Abrir menú"} aria-expanded={mobileOpen} aria-controls="perla-mobile-nav" onClick={() => setMobileOpen(!mobileOpen)}>{mobileOpen ? <X /> : <Menu />}</button></div>
       {mobileOpen && <nav id="perla-mobile-nav" aria-label="Navegación móvil" className={s.mobileNav}>{nav.map(([label, href]) => <a key={label} href={href} onClick={() => setMobileOpen(false)}>{label}<ArrowUpRight size={16} /></a>)}<a href="/admin">Iniciar sesión</a><a href="/gestores">Entrar a ShareApp</a><a href="/demo" className={s.primary}>Solicitar demo</a></nav>}
     </header>
     <main id="contenido-perla">
@@ -44,6 +44,6 @@ export default function ModularLanding({ clients }: { clients: PerlaClient[] }) 
 
       <section className={s.finalCta}><div className={s.container}><p className={s.eyebrow}>EL SIGUIENTE PASO ES TUYO</p><h2>Tu negocio tiene mucho<br />por delante. <span>Conectémoslo.</span></h2><p>Cuéntanos qué necesitas y descubre lo que podemos construir juntos.</p><div><a className={s.whiteButton} href="/demo">Solicitar una demo <ArrowRight size={18} /></a><a className={s.ctaContact} href={contact} target="_blank" rel="noopener noreferrer">Hablemos por WhatsApp <ArrowUpRight size={17} /></a></div></div></section>
     </main>
-    <footer className={s.footer}><div className={s.footerGrid}><div><PerlaLogo dark /><p>Tu marca. Tus herramientas.<br />Todo conectado en Perla.</p></div><div><h3>Plataforma</h3><a href="#modulos">Módulos</a><a href="#demos">Demos</a><a href="#clientes">Nuestros clientes</a><a href="#planes">Planes y precios</a></div><div><h3>Accesos</h3><a href="/admin">Administración</a><a href="/gestores">ShareApp para gestores</a><a href="/demo">Solicitar demo</a><a href="#preguntas">Preguntas frecuentes</a></div><div><h3>Hablemos</h3><a href={contact} target="_blank" rel="noopener noreferrer">WhatsApp <ArrowUpRight size={14} /></a><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><p>Miami, Florida</p></div></div><div className={s.footerBottom}><span>© {new Date().getFullYear()} Perla Marketplace</span><span>Tiendas · Restaurantes · Envíos</span></div></footer>
+    <footer className={s.footer}><div className={s.footerGrid}><div><AnimatedPerlaBrand /><p>Tu marca. Tus herramientas.<br />Todo conectado en Perla.</p></div><div><h3>Plataforma</h3><a href="#modulos">Módulos</a><a href="#demos">Demos</a><a href="#clientes">Nuestros clientes</a><a href="#planes">Planes y precios</a></div><div><h3>Accesos</h3><a href="/admin">Administración</a><a href="/gestores">ShareApp para gestores</a><a href="/demo">Solicitar demo</a><a href="#preguntas">Preguntas frecuentes</a></div><div><h3>Hablemos</h3><a href={contact} target="_blank" rel="noopener noreferrer">WhatsApp <ArrowUpRight size={14} /></a><a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a><p>Miami, Florida</p></div></div><div className={s.footerBottom}><span>© {new Date().getFullYear()} Perla Marketplace</span><span>Tiendas · Restaurantes · Envíos</span></div></footer>
   </div>;
 }
