@@ -24,6 +24,9 @@ export function layoutClients(clients: PerlaClient[]) {
     const reference = references[index];
     return { ...client, displayName: reference?.name || client.name,
       screenshot: reference?.image ? `/perla/clients/${reference.image}.webp` : null,
+      // Prefer an updated tenant-maintained brand/OG image where configured.
+      preview: client.previewImage || (reference?.image ? `/perla/clients/${reference.image}.webp` : null),
+      previewIsLogo: Boolean(!client.previewImage && !reference?.image && client.logo),
       rank: index < 0 ? references.length : index };
   }).sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
   return { featured: ordered.filter(client => client.screenshot), remaining: ordered.filter(client => !client.screenshot) };
