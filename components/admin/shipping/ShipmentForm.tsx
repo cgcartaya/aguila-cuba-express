@@ -365,7 +365,9 @@ export default function ShipmentForm(props: Props) {
 
     {(canAddPhysicalProducts || !!form.physical_products?.length) &&
       <Section title="Productos tienda física">
-        <PhysicalProductsEditor key={storeId} storeId={storeId} tracksStock={!props.allowLuxuryPhysicalProducts} value={form.physical_products || []} onChange={value => set("physical_products", value)} />
+        <PhysicalProductsEditor key={storeId} storeId={storeId} tracksStock={!props.allowLuxuryPhysicalProducts} value={form.physical_products || []}
+          onUseWeight={props.allowLuxuryPhysicalProducts && form.contains_package && !form.products_only && !feesOnly && !fixedPackage
+            ? weight => set("weight_lb", weight) : undefined} onChange={value => set("physical_products", value)} />
       </Section>}
 
     {props.allowRemittanceExtras && <Section title="Productos de la tienda virtual"><RemittanceProductsEditor key={storeId} storeId={storeId} value={form.store_products || []} onChange={value => set('store_products', value)} /></Section>}

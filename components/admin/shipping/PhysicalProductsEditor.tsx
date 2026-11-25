@@ -8,10 +8,11 @@ type Props = {
   storeId: string;
   tracksStock: boolean;
   value: PhysicalProductLine[];
+  onUseWeight?: (weight: number) => void;
   onChange: (value: PhysicalProductLine[]) => void;
 };
 
-export default function PhysicalProductsEditor({ storeId, tracksStock, value, onChange }: Props) {
+export default function PhysicalProductsEditor({ storeId, tracksStock, value, onChange, onUseWeight }: Props) {
   const [products, setProducts] = useState<PhysicalStoreProduct[]>([]);
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
@@ -30,6 +31,9 @@ export default function PhysicalProductsEditor({ storeId, tracksStock, value, on
   }, [storeId, tracksStock]);
 
   const matches = products.filter(product => [product.name, product.category, product.description].some(field => field?.toLowerCase().includes(search.trim().toLowerCase())));
+
+  const weight = Math.round(value.reduce((sum, item) => sum + item.quantity * (item.weight_lb ?? 0), 0) * 100) / 100;
+  const completeWeight = value.every(item => Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 999 && Number(item.weight_lb) > 0);
 
   return <div className="space-y-3">
     <p className="text-sm text-slate-600">{tracksStock ? "Productos que se compran en la agencia de Hialeah y se colocan dentro del paquete. Pesa el paquete completo y registra el peso arriba." : "El peso del catálogo es por unidad. Si envías un paquete, registra por separado el peso total del paquete."}</p>
@@ -55,6 +59,11 @@ export default function PhysicalProductsEditor({ storeId, tracksStock, value, on
       <span>${(item.quantity * item.unit_price).toFixed(2)}</span>
       <button type="button" className="px-2 py-2 text-red-700" onClick={() => onChange(value.filter(row => row.product_id !== item.product_id))}>Quitar</button>
     </div>)}
+    {onUseWeight && value.length > 0 && <div className="flex flex-wrap items-center gap-3 text-sm">
+      <p>{completeWeight ? `Peso de los productos: ${weight.toFixed(2)} lb` : "Hay productos con peso o cantidad pendiente. Introduce el peso total del paquete manualmente."}</p>
+      {completeWeight && weight > 0 && <button type="button" className="rounded-lg border px-3 py-2 font-bold"
+        onClick={() => onUseWeight(weight)}>Usar peso de los productos</button>}
+    </div>}
     <p className="font-bold">Subtotal tienda física: ${productsTotal(value).toFixed(2)} USD</p>
   </div>;
 }
