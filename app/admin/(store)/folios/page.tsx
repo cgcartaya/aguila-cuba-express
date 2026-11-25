@@ -21,10 +21,6 @@ export default function FoliosPage() {
 
   return <main className="min-h-screen bg-slate-50 p-4 pb-24 md:p-6">
     <div className="mx-auto max-w-6xl space-y-6">
-      <header>
-        <h1 className="text-3xl font-black text-[#061b3a]">Facturas con folio</h1>
-        <p className="mt-1 text-sm text-slate-600">Registra servicios y consulta las facturas de Luxury Travel Point.</p>
-      </header>
       <FolioWorkspace key={agency.id} storeId={agency.id} />
     </div>
   </main>;

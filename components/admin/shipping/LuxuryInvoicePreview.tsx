@@ -1,5 +1,6 @@
 "use client";
 
+import { Eye, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { supabase } from "@/lib/supabase";
 import CustomerRecipientPicker, { type CustomerSelection } from "./CustomerRecipientPicker";
@@ -37,6 +38,22 @@ type Folio = {
   lines: (Omit<Line, "id"> & { cents: number })[];
 };
 
+type HistoryFilters = { search: string; from: string; to: string };
+const emptyFilters: HistoryFilters = { search: "", from: "", to: "" };
+const easternOffset = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York", timeZoneName: "longOffset",
+});
+
+// Eastern midnight uses the offset in effect before the early-morning DST transition.
+function easternMidnight(date: string, nextDay = false) {
+  const midnightUtc = new Date(date + "T00:00:00Z");
+  if (nextDay) midnightUtc.setUTCDate(midnightUtc.getUTCDate() + 1);
+  const day = midnightUtc.toISOString().slice(0, 10);
+  midnightUtc.setUTCHours(5);
+  const offset = easternOffset.formatToParts(midnightUtc).find(part => part.type === "timeZoneName")?.value.slice(3);
+  return day + "T00:00:00" + offset;
+}
+
 const historyPageSize = 15;
 const dateFormat = new Intl.DateTimeFormat("es-US", { dateStyle: "medium", timeZone: "America/New_York" });
 const folioLabel = (number: number) => String(number).padStart(6, "0");
@@ -66,6 +83,8 @@ export default function LuxuryInvoicePreview({
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState<Folio | null>(null);
   const [history, setHistory] = useState<Folio[] | null>([]);
+  const [filters, setFilters] = useState(emptyFilters);
+  const [appliedFilters, setAppliedFilters] = useState(emptyFilters);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -101,18 +120,29 @@ export default function LuxuryInvoicePreview({
     }
   }
 
-  const loadHistory = useCallback(async (nextPage: number) => {
+  const loadHistory = useCallback(async (nextPage: number, criteria = emptyFilters) => {
     setLoadingHistory(true);
     setError("");
     try {
       const start = nextPage * historyPageSize;
-      const { data, error: cause } = await supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines")
-        .eq("store_id", picker.storeId).order("folio", { ascending: false })
+      let query = supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines")
+        .eq("store_id", picker.storeId);
+      const search = criteria.search.trim();
+      if (search) {
+        const folio = Number(search);
+        query = /^\d+$/.test(search) && Number.isSafeInteger(folio)
+          ? query.eq("folio", folio)
+          : query.ilike("customer_name", "%" + search.replace(/[\\%_]/g, "\\$&") + "%");
+      }
+      if (criteria.from) query = query.gte("created_at", easternMidnight(criteria.from));
+      if (criteria.to) query = query.lt("created_at", easternMidnight(criteria.to, true));
+      const { data, error: cause } = await query.order("folio", { ascending: false })
         .range(start, start + historyPageSize).returns<Folio[]>();
       if (cause) throw new Error(cause.message);
       setHistory((data || []).slice(0, historyPageSize));
       setHasMore((data || []).length > historyPageSize);
       setPage(nextPage);
+      setAppliedFilters(criteria);
       setSaved(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No se pudo cargar el historial.");
@@ -157,13 +187,16 @@ export default function LuxuryInvoicePreview({
   }
 
   return <div className="space-y-5">
-    <div className="flex flex-wrap gap-2 print:hidden">
+    <header className="flex flex-wrap items-center justify-between gap-3 print:hidden">
+      <h1 className="text-3xl font-black text-[#061b3a]">Facturas con folio</h1>
+      <div className="flex flex-wrap gap-2">
       {(saved || history) && <button type="button" className={button} onClick={() => { setSaved(null); setHistory(null); setError(""); }}>
-        {lines.length ? "Volver a la factura en curso" : "Agregar factura con folio"}
+        <span className="inline-flex items-center gap-2"><Plus size={18} aria-hidden="true" />{lines.length ? "Volver a la factura en curso" : "Nueva factura"}</span>
       </button>}
-      <button type="button" className={button} disabled={saving || loadingHistory} onClick={() => void loadHistory(0)}>Historial de folios</button>
+      {(!history || saved) && <button type="button" className={button} disabled={saving || loadingHistory} onClick={() => void loadHistory(history ? page : 0, appliedFilters)}>Historial de folios</button>}
       {saved && <button type="button" className={button} onClick={() => window.print()}>Imprimir factura</button>}
-    </div>
+      </div>
+    </header>
     {error && (saved || history) && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
     {saved ? <article id="luxury-folio-print" className={card}>
       <style>{`@media print {
@@ -186,20 +219,69 @@ export default function LuxuryInvoicePreview({
         </li>)}
       </ul>
       <p className="border-t pt-4 text-right text-xl font-black">Total {currency.format(saved.total_cents / 100)}</p>
-    </article> : history ? <section className={card}>
-      <h2 className="text-xl font-black">Historial de folios</h2>
-      {loadingHistory && <p role="status">Cargando historial…</p>}
-      {!loadingHistory && !error && !history.length && <p>Todavía no hay facturas guardadas.</p>}
-      <ul className="divide-y divide-slate-200">
-        {history.map(invoice => <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-          <div><p className="font-bold">Folio {folioLabel(invoice.folio)} · {invoice.customer_name}</p>
-          <p className="text-sm text-slate-600">{dateFormat.format(new Date(invoice.created_at))} · {currency.format(invoice.total_cents / 100)}</p></div>
-          <button type="button" className={button} onClick={() => setSaved(invoice)}>Abrir factura</button>
-        </li>)}
-      </ul>
-      <div className="flex flex-wrap gap-2">
-        {page > 0 && <button type="button" className={button} disabled={loadingHistory} onClick={() => void loadHistory(page - 1)}>Anterior</button>}
-        {hasMore && <button type="button" className={button} disabled={loadingHistory} onClick={() => void loadHistory(page + 1)}>Siguiente</button>}
+    </article> : history ? <section className="space-y-5" aria-label="Historial de folios">
+      <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+        onSubmit={event => { event.preventDefault(); void loadHistory(0, filters); }}>
+        <label className="min-w-0 flex-[1_1_16rem] text-sm font-bold text-slate-700">
+          Folio o cliente
+          <span className="relative mt-1 block">
+            <Search size={18} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-amber-800" />
+            <input type="search" className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3" value={filters.search} maxLength={100}
+              onChange={event => setFilters(current => ({ ...current, search: event.target.value }))}
+              placeholder="Buscar por folio o cliente" />
+          </span>
+        </label>
+        <label className="text-sm font-bold text-slate-700">Desde
+          <input type="date" className={field} value={filters.from} max={filters.to || undefined}
+            onChange={event => setFilters(current => ({ ...current, from: event.target.value }))} />
+        </label>
+        <label className="text-sm font-bold text-slate-700">Hasta
+          <input type="date" className={field} value={filters.to} min={filters.from || undefined}
+            onChange={event => setFilters(current => ({ ...current, to: event.target.value }))} />
+        </label>
+        <button type="submit" disabled={loadingHistory} className="rounded-xl bg-amber-800 px-4 py-2.5 font-bold text-white disabled:opacity-50">Filtrar</button>
+        {(filters.search || filters.from || filters.to || appliedFilters.search || appliedFilters.from || appliedFilters.to) &&
+          <button type="button" disabled={loadingHistory} className="rounded-xl px-3 py-2.5 font-bold text-slate-700 underline"
+            onClick={() => { setFilters(emptyFilters); void loadHistory(0); }}>Limpiar</button>}
+      </form>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white" aria-busy={loadingHistory}>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-left text-sm">
+            <caption className="sr-only">Facturas con folio</caption>
+            <thead className="bg-slate-100 text-slate-900"><tr>
+              <th scope="col" className="px-5 py-3.5">Folio</th>
+              <th scope="col" className="px-5 py-3.5">Cliente</th>
+              <th scope="col" className="px-5 py-3.5">Fecha</th>
+              <th scope="col" className="px-5 py-3.5 text-right">Total (USD)</th>
+              <th scope="col" className="px-5 py-3.5"><span className="sr-only">Acciones</span></th>
+            </tr></thead>
+            <tbody className="divide-y divide-slate-100">
+              {history.map(invoice => <tr key={invoice.id} className="hover:bg-amber-50/40">
+                <th scope="row" className="px-5 py-4 font-black tabular-nums text-[#061b3a]">{folioLabel(invoice.folio)}</th>
+                <td className="px-5 py-4 font-medium text-slate-900">{invoice.customer_name}</td>
+                <td className="whitespace-nowrap px-5 py-4 text-slate-600">{dateFormat.format(new Date(invoice.created_at))}</td>
+                <td className="whitespace-nowrap px-5 py-4 text-right font-black tabular-nums text-[#061b3a]">{currency.format(invoice.total_cents / 100)}</td>
+                <td className="px-5 py-4 text-right">
+                  <button type="button" className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-amber-700 px-3 py-2 font-bold text-slate-900 hover:bg-amber-50"
+                    aria-label={"Ver factura " + folioLabel(invoice.folio)} onClick={() => setSaved(invoice)}>
+                    <Eye size={17} className="text-amber-800" aria-hidden="true" /> Ver factura
+                  </button>
+                </td>
+              </tr>)}
+            </tbody>
+          </table>
+        </div>
+        {loadingHistory && <p role="status" className="p-5 text-sm text-slate-600">Cargando historial…</p>}
+        {!loadingHistory && !error && !history.length && <p className="p-5 text-sm text-slate-600">
+          {appliedFilters.search || appliedFilters.from || appliedFilters.to ? "No hay facturas que coincidan con los filtros." : "Todavía no hay facturas guardadas."}
+        </p>}
+        {(page > 0 || hasMore) && <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-5 py-3">
+          <span className="text-sm text-slate-600">Página {page + 1}</span>
+          <div className="flex flex-wrap gap-2">
+            {page > 0 && <button type="button" className={button} disabled={loadingHistory} onClick={() => void loadHistory(page - 1, appliedFilters)}>Anterior</button>}
+            {hasMore && <button type="button" className={button} disabled={loadingHistory} onClick={() => void loadHistory(page + 1, appliedFilters)}>Siguiente</button>}
+          </div>
+        </div>}
       </div>
     </section> : <fieldset disabled={saving} className="space-y-5">
     <p className="text-sm text-slate-600">Registra los servicios que cobraste. El sistema asigna un folio al guardar la factura.</p>
