@@ -64,6 +64,7 @@ export default function CustomerRecipientPicker({
   initialCustomerId = "",
   initialRecipientId = "",
   onApply,
+  inlineRecipientSelection = false,
 }: {
   storeId: string;
   countries: ShippingCountry[];
@@ -73,7 +74,8 @@ export default function CustomerRecipientPicker({
   initialPhone?: string;
   initialCustomerId?: string;
   initialRecipientId?: string;
-  onApply: (selection: CustomerSelection) => void;
+  onApply: (selection: CustomerSelection, recipients: ShippingRecipient[]) => void;
+  inlineRecipientSelection?: boolean;
 }) {
   const [search, setSearch] = useState(initialPhone);
   const [results, setResults] = useState<ShippingCustomer[]>([]);
@@ -148,16 +150,16 @@ export default function CustomerRecipientPicker({
       setCreatingRecipient(false);
       suppressNextRealtimeSearchRef.current = true;
       setSearch(`${data.customer.customer_code} · ${data.customer.name}`);
-      applyCustomer(data.customer);
+      applyCustomer(data.customer, data.recipients || []);
 
       const selectedRecipient = (data.recipients || []).find(
         (recipient) => recipient.id === initialRecipientId
       );
       if (selectedRecipient) {
-        applyRecipientForCustomer(data.customer, selectedRecipient);
+        applyRecipientForCustomer(data.customer, selectedRecipient, data.recipients || []);
         setMessage(`Cliente y destinatario ${selectedRecipient.name} cargados.`);
       } else {
-        setMessage("Cliente cargado. Selecciona uno de sus destinatarios.");
+        setMessage(inlineRecipientSelection ? "Cliente cargado." : "Cliente cargado. Selecciona uno de sus destinatarios.");
       }
     })();
   }, [initialCustomerId, initialRecipientId, storeId]);
@@ -234,10 +236,10 @@ export default function CustomerRecipientPicker({
     setCreatingRecipient(false);
     suppressNextRealtimeSearchRef.current = true;
     setSearch(`${data.customer.customer_code} · ${data.customer.name}`);
-    applyCustomer(data.customer);
+    applyCustomer(data.customer, data.recipients || []);
   }
 
-  function applyCustomer(selected: ShippingCustomer) {
+  function applyCustomer(selected: ShippingCustomer, customerRecipients: ShippingRecipient[]) {
     onApply({
       customer_id: selected.id,
       recipient_id: null,
@@ -252,7 +254,7 @@ export default function CustomerRecipientPicker({
       municipality_id: null,
       shipping_location_id: null,
       location: "",
-    });
+    }, customerRecipients);
   }
 
   async function createCustomer() {
@@ -304,16 +306,17 @@ export default function CustomerRecipientPicker({
     setCustomer(data);
     setRecipients([]);
     setCreatingCustomer(false);
-    setCreatingRecipient(true);
+    setCreatingRecipient(!inlineRecipientSelection);
     suppressNextRealtimeSearchRef.current = true;
     setSearch(`${data.customer_code} · ${data.name}`);
-    setMessage(`Cliente ${data.customer_code} creado. Ahora agrega o selecciona un destinatario.`);
-    applyCustomer(data);
+    setMessage(inlineRecipientSelection ? `Cliente ${data.customer_code} creado.` : `Cliente ${data.customer_code} creado. Ahora agrega o selecciona un destinatario.`);
+    applyCustomer(data, []);
   }
 
   function applyRecipientForCustomer(
     selectedCustomer: ShippingCustomer,
-    recipient: ShippingRecipient
+    recipient: ShippingRecipient,
+    customerRecipients: ShippingRecipient[]
   ) {
     onApply({
       customer_id: selectedCustomer.id,
@@ -329,12 +332,12 @@ export default function CustomerRecipientPicker({
       municipality_id: recipient.municipality_id,
       shipping_location_id: recipient.shipping_location_id,
       location: recipient.legacy_location || "",
-    });
+    }, customerRecipients);
   }
 
   function applyRecipient(recipient: ShippingRecipient) {
     if (!customer) return;
-    applyRecipientForCustomer(customer, recipient);
+    applyRecipientForCustomer(customer, recipient, recipients);
     setMessage(`Destinatario ${recipient.name} aplicado al envío.`);
   }
 
@@ -377,7 +380,7 @@ export default function CustomerRecipientPicker({
     setRelationship("");
     setCreatingRecipient(false);
     setMessage("Destinatario guardado, asociado al cliente y aplicado al envío.");
-    applyRecipient(data);
+    applyRecipientForCustomer(customer, data, [...recipients, data]);
   }
 
   const recipientQuery = normalizeRecipientName(recipientSearch.trim());
@@ -485,7 +488,7 @@ export default function CustomerRecipientPicker({
           </div>
         )}
 
-        {recipients.length > 0 && !creatingRecipient && (
+        {!inlineRecipientSelection && recipients.length > 0 && !creatingRecipient && (
           <div>
             <h3 className="font-extrabold text-slate-950">Destinatarios guardados</h3>
             <p className="mb-3 text-sm font-medium text-slate-500">El mismo destinatario puede estar asociado con diferentes clientes.</p>

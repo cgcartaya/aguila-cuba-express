@@ -59,7 +59,7 @@ export default function NewShipmentPage() {
   const { access, loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
   const { store: selectedStore, loading: storeLoading } = useStore();
 
-  const [showLuxuryInvoice, setShowLuxuryInvoice] = useState(false);
+  const [showLuxuryInvoice, setShowLuxuryInvoice] = useState(() => !searchParams.has("type"));
   const [drivers, setDrivers] = useState<ShippingDriver[]>([]);
   const [settings, setSettings] = useState<ShippingSettings | null>(null);
   const [countries, setCountries] = useState<ShippingCountry[]>([]);
@@ -210,7 +210,7 @@ export default function NewShipmentPage() {
     {activeStore?.slug === "luxury-travel-point" && <button type="button" aria-expanded={showLuxuryInvoice}
       className="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 font-bold text-blue-900"
       onClick={() => setShowLuxuryInvoice(current => !current)}>
-      {showLuxuryInvoice ? "Volver a operación individual" : "Factura con varios envíos y servicios"}
+      {showLuxuryInvoice ? "Registrar operación individual" : "Abrir vista previa de factura"}
     </button>}
     {activeStore?.slug === "luxury-travel-point" && showLuxuryInvoice ? (
       <LuxuryInvoicePreview key={activeStore.id} storeId={activeStore.id} countries={countries}
