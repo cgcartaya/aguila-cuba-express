@@ -41,3 +41,13 @@ test('grouping does not mutate source sections or duplicate links across renders
  const before=JSON.stringify(nav.adminNavSections);for(let i=0;i<5;i++)nav.getVisibleAdminSections(store,true);assert.equal(JSON.stringify(nav.adminNavSections),before);
  const links=nav.getVisibleAdminSections(store,true).flatMap(s=>s.links.map(l=>l.href));assert.equal(new Set(links).size,links.length);
 });
+
+test('folios has its own Luxury-only menu and follows folio staff permissions', () => {
+ const luxury = {...store,slug:'luxury-travel-point'};
+ const owner = {role:'OWNER',active:true};
+ const section = nav.getVisibleAdminSections(luxury,false,owner).find(item=>item.title==='Folios');
+ assert.equal(section.links[0].href,'/admin/folios');
+ assert.equal(nav.getVisibleAdminSections(store,false,owner).some(item=>item.title==='Folios'),false);
+ assert.equal(nav.getVisibleAdminSections({...luxury,module_shipping_enabled:false},false,owner).some(item=>item.title==='Folios'),false);
+ assert.equal(navigationAccess.canAccessAdminPath('/admin/folios',{role:'ASSIGNER',active:true}),false);
+});
