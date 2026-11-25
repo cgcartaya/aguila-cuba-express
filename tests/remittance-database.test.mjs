@@ -75,6 +75,7 @@ test('products-only shipments create a single sale, stock reservation and WhatsA
   await db.exec("insert into public.stores values(gen_random_uuid(),'luxury-travel-point',true,true);");
   await db.exec(fs.readFileSync('supabase/migrations/20261111200000_aguila_shipment_money_delivery.sql','utf8'));
   await db.exec(fs.readFileSync('supabase/migrations/20261124180000_luxury_physical_store_products.sql','utf8'));
+  await db.exec(fs.readFileSync('supabase/migrations/20261125190000_luxury_remittance_delivery_currency.sql','utf8'));
   await db.exec(fs.readFileSync('tests/luxury-physical-store-products.sql','utf8'));
  } finally { await db.close(); }
 });

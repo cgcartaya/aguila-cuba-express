@@ -111,7 +111,9 @@ export default function ShipmentForm(props: Props) {
   const customsCharges = baseForm.customs_charges || [];
   const feesOnly = baseForm.contains_package && baseForm.package_billing_mode === "fees_only";
   const [paymentReceived, setPaymentReceived] = useState(true);
-  const prepaidRemittance = !shipment && props.allowMoneyDeliveryOptions && baseForm.contains_money && !baseForm.contains_package && paymentReceived;
+  const canMarkRemittancePrepaid = !shipment && props.allowMoneyDeliveryOptions && !props.allowLuxuryPhysicalProducts
+    && baseForm.contains_money && !baseForm.contains_package;
+  const prepaidRemittance = canMarkRemittancePrepaid && paymentReceived;
   const moneyOnly = !!baseForm.products_only || baseForm.contains_money && !baseForm.contains_package;
   const selectedService = serviceTypes.find(item => item.id === baseForm.service_type_id);
   const usesLuxuryRate = props.allowLuxuryPhysicalProducts && selectedService?.code.startsWith("luxury-");
@@ -387,7 +389,7 @@ export default function ShipmentForm(props: Props) {
         <Input label="Subtotal antes de la rebaja (USD)" value={((form.contains_package ? form.weight_subtotal : 0) + (form.contains_money ? form.money_total : 0) + form.extra_fees_total + (form.store_products_total || 0) + (form.physical_products_total || 0)).toFixed(2)} readOnly />
         <Input label="Cargos adicionales (USD)" value={form.extra_fees_total.toFixed(2)} readOnly />
         <Input label="Total final (USD)" value={form.service_price.toFixed(2)} readOnly />
-        {!shipment && props.allowMoneyDeliveryOptions && form.contains_money && !form.contains_package && <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 md:col-span-2">
+        {canMarkRemittancePrepaid && <label className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-950 md:col-span-2">
           <input type="checkbox" checked={paymentReceived} onChange={event => setPaymentReceived(event.target.checked)} className="mt-1" />
           <span><strong>Pago recibido antes de registrar la remesa</strong><span className="mt-1 block">Se guardará pagada por el total de la factura, con saldo cero. Desmarca si necesitas registrar un pago parcial o pendiente.</span></span>
         </label>}
