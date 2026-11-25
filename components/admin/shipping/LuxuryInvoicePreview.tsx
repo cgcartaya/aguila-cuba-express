@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ComponentProps } from "react";
+import { useRef, useState, type ComponentProps } from "react";
+import { supabase } from "@/lib/supabase";
 import CustomerRecipientPicker, { type CustomerSelection } from "./CustomerRecipientPicker";
 import type { ShippingRecipient } from "@/lib/shipping/customer-types";
 import type { ShippingRate, ShippingServiceType, ShippingTrip } from "@/lib/shipping/types";
@@ -13,17 +14,34 @@ type Props = Omit<ComponentProps<typeof CustomerRecipientPicker>, "onApply"> & {
   rates: ShippingRate[];
 };
 
-const lineTypes = { shipment: "Envío", passport: "Pasaporte", remittance: "Remesa registrada en otro sistema" } as const;
+const lineTypes = { shipment: "Envío", passport: "Pasaporte", remittance: "Remesa registrada en otro sistema", other: "Otro servicio" } as const;
 type LineType = keyof typeof lineTypes;
 
 type Line = {
   id: string;
+  kind: LineType;
+  recipientId?: string;
+  serviceId?: string;
+  notes?: string;
   description: string;
   destination?: string;
   units: number;
   unit: string;
   unitPrice: number;
 };
+
+type Folio = {
+  id: string;
+  folio: number;
+  customer_name: string;
+  created_at: string;
+  total_cents: number;
+  lines: (Omit<Line, "id"> & { cents: number })[];
+};
+
+const historyPageSize = 15;
+const dateFormat = new Intl.DateTimeFormat("es-US", { dateStyle: "medium", timeZone: "America/New_York" });
+const folioLabel = (number: number) => String(number).padStart(6, "0");
 
 const currency = new Intl.NumberFormat("es-US", { style: "currency", currency: "USD" });
 const field = "mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5";
@@ -48,13 +66,70 @@ export default function LuxuryInvoicePreview({
   const [units, setUnits] = useState("1");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [saved, setSaved] = useState<Folio | null>(null);
+  const [history, setHistory] = useState<Folio[] | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [error, setError] = useState("");
+  const request = useRef<string | null>(null);
+  const savingRef = useRef(false);
+
+  async function saveFolio() {
+    if (!customer || !lines.length || savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    setError("");
+    request.current ??= crypto.randomUUID();
+    try {
+      const { data, error: cause } = await supabase.rpc("save_luxury_service_folio", {
+        p_id: request.current, p_store: picker.storeId, p_customer: customer.id,
+        p_trip: lines.some(line => line.kind === "shipment") ? tripId || null : null,
+        p_lines: lines, p_total_cents: total,
+      }).single<Folio>();
+      if (cause || !data) throw new Error(cause?.message || "No se pudo guardar la factura.");
+      request.current = null;
+      setSaved(data);
+      setHistory(null);
+      setLines([]);
+      setCustomer(null);
+      setLineType("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo guardar la factura.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
+  }
+
+  async function loadHistory(nextPage: number) {
+    setLoadingHistory(true);
+    setError("");
+    try {
+      const start = nextPage * historyPageSize;
+      const { data, error: cause } = await supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines")
+        .eq("store_id", picker.storeId).order("folio", { ascending: false })
+        .range(start, start + historyPageSize).returns<Folio[]>();
+      if (cause) throw new Error(cause.message);
+      setHistory((data || []).slice(0, historyPageSize));
+      setHasMore((data || []).length > historyPageSize);
+      setPage(nextPage);
+      setSaved(null);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo cargar el historial.");
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
 
   const availableServices = services.filter(service => service.is_active && service.code.startsWith("luxury-"));
   const service = availableServices.find(item => item.id === serviceId);
   const fixed = service?.billing_mode === "fixed";
   const recipient = recipients.find(item => item.id === recipientId && item.is_active);
-  const rate = rates.find(item => item.is_active && item.service_type_id === serviceId
-    && item.scope_type === "country" && item.country_id === recipient?.country_id);
+  const rate = rates.filter(item => item.is_active && item.service_type_id === serviceId
+    && item.scope_type === "country" && item.country_id === recipient?.country_id)
+    .sort((first, second) => first.priority - second.priority || first.id.localeCompare(second.id))[0];
   const price = Number(fixed ? rate?.fixed_fee : rate?.rate_per_lb);
   const total = lines.reduce((sum, line) => sum + lineCents(line), 0);
   const sameCustomer = !customer || contact?.customer_id === customer.id;
@@ -79,9 +154,51 @@ export default function LuxuryInvoicePreview({
   }
 
   return <div className="space-y-5">
-    <p role="status" className="rounded-xl bg-amber-50 p-4 text-sm font-semibold text-amber-900">
-      Vista previa. Los renglones se pierden al salir y todavía no se puede emitir la factura.
-    </p>
+    <div className="flex flex-wrap gap-2 print:hidden">
+      {(saved || history) && <button type="button" className={button} onClick={() => { setSaved(null); setHistory(null); setError(""); }}>
+        {lines.length ? "Volver a la factura en curso" : "Registrar factura"}
+      </button>}
+      <button type="button" className={button} disabled={saving || loadingHistory} onClick={() => void loadHistory(0)}>Historial de folios</button>
+      {saved && <button type="button" className={button} onClick={() => window.print()}>Imprimir factura</button>}
+    </div>
+    {error && (saved || history) && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
+    {saved ? <article id="luxury-folio-print" className={card}>
+      <style>{`@media print {
+        body:has(#luxury-folio-print) :not(:has(#luxury-folio-print)):not(#luxury-folio-print):not(#luxury-folio-print *) { display: none !important; }
+        body:has(#luxury-folio-print) *:has(#luxury-folio-print) { display: block !important; position: static !important; overflow: visible !important; height: auto !important; padding: 0 !important; margin: 0 !important; }
+        #luxury-folio-print { border: 0; }
+        #luxury-folio-print li { break-inside: avoid; }
+      }`}</style>
+      <h2 className="text-xl font-black">Luxury Travel Point</h2>
+      <p className="font-bold">Factura · Folio {folioLabel(saved.folio)}</p>
+      <p>{dateFormat.format(new Date(saved.created_at))} · {saved.customer_name}</p>
+      <ul className="divide-y divide-slate-200">
+        {saved.lines.map((line, index) => <li key={index} className="flex flex-wrap justify-between gap-3 py-3">
+          <div>
+            <p className="font-bold">{line.description}</p>
+            {line.destination && <p>{line.destination}</p>}
+            <p>{line.units} {line.unit} × {currency.format(line.unitPrice)}</p>
+          </div>
+          <strong>{currency.format(line.cents / 100)}</strong>
+        </li>)}
+      </ul>
+      <p className="border-t pt-4 text-right text-xl font-black">Total {currency.format(saved.total_cents / 100)}</p>
+    </article> : history ? <section className={card}>
+      <h2 className="text-xl font-black">Historial de folios</h2>
+      {!history.length && <p>Todavía no hay facturas guardadas.</p>}
+      <ul className="divide-y divide-slate-200">
+        {history.map(invoice => <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+          <div><p className="font-bold">Folio {folioLabel(invoice.folio)} · {invoice.customer_name}</p>
+          <p className="text-sm text-slate-600">{dateFormat.format(new Date(invoice.created_at))} · {currency.format(invoice.total_cents / 100)}</p></div>
+          <button type="button" className={button} onClick={() => setSaved(invoice)}>Abrir factura</button>
+        </li>)}
+      </ul>
+      <div className="flex flex-wrap gap-2">
+        {page > 0 && <button type="button" className={button} disabled={loadingHistory} onClick={() => void loadHistory(page - 1)}>Anterior</button>}
+        {hasMore && <button type="button" className={button} disabled={loadingHistory} onClick={() => void loadHistory(page + 1)}>Siguiente</button>}
+      </div>
+    </section> : <fieldset disabled={saving} className="space-y-5">
+    <p className="text-sm text-slate-600">Registra los servicios que cobraste. El sistema asigna un folio al guardar la factura.</p>
     <div id="luxury-invoice-customer" className="scroll-mt-24"><CustomerRecipientPicker {...picker} inlineRecipientSelection onApply={applyContact} /></div>
     {customer && !sameCustomer && <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
       Vuelve a seleccionar a {customer.name} para añadir renglones a esta factura.
@@ -102,9 +219,9 @@ export default function LuxuryInvoicePreview({
         ))}
       </div>
       {lineType === "shipment" && <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
-        <label className="block text-sm font-bold">Viaje compartido
+        <label className="block text-sm font-bold">Viaje de referencia (opcional)
           <select className={field} value={tripId} disabled={fixedTrip} onChange={event => setTripId(event.target.value)}>
-            <option value="">Selecciona un viaje</option>
+            <option value="">Sin viaje asociado</option>
             {trips.map(trip => <option key={trip.id} value={trip.id}>{trip.trip_number} · {trip.name}</option>)}
           </select>
         </label>
@@ -134,11 +251,11 @@ export default function LuxuryInvoicePreview({
             : "Selecciona un destinatario con país configurado y tarifa disponible."}
         </p>}
         <button type="button" className={button}
-          disabled={!recipient || !sameCustomer || !trips.some(trip => trip.id === tripId)
+          disabled={!recipient || !sameCustomer
             || !service || !Number.isFinite(price) || price <= 0 || !validQuantity}
           onClick={() => {
             if (!service || !recipient) return;
-            addLine({ description: service.name, destination: [recipient.name, recipient.address].filter(Boolean).join(" · "),
+            addLine({ kind: "shipment", recipientId: recipient.id, serviceId: service.id, description: service.name, destination: [recipient.name, recipient.address].filter(Boolean).join(" · "),
               units: quantity, unit: fixed ? "caja" : "lb", unitPrice: price });
           }}>Agregar envío</button>
       </div>}
@@ -146,12 +263,12 @@ export default function LuxuryInvoicePreview({
         <label className="block text-sm font-bold">Importe a facturar (USD)
           <input className={field} type="number" min="0.01" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} />
         </label>
-        <label className="block text-sm font-bold">Detalle o referencia externa (opcional)
+        <label className="block text-sm font-bold">{lineType === "other" ? "Nombre del servicio" : "Detalle o referencia externa (opcional)"}
           <input className={field} value={notes} onChange={event => setNotes(event.target.value)} maxLength={200} />
         </label>
-        <button type="button" className={button} disabled={!contact?.customer_id || !sameCustomer || !Number.isFinite(Number(amount)) || Number(amount) <= 0}
+        <button type="button" className={button} disabled={!contact?.customer_id || !sameCustomer || !Number.isFinite(Number(amount)) || Number(amount) <= 0 || (lineType === "other" && !notes.trim())}
           onClick={() => {
-            addLine({ description: [lineTypes[lineType], notes.trim()].filter(Boolean).join(" · "), units: 1, unit: "servicio", unitPrice: Number(amount) });
+            addLine({ kind: lineType, notes: notes.trim(), description: [lineType === "other" ? "" : lineTypes[lineType], notes.trim()].filter(Boolean).join(" · "), units: 1, unit: "servicio", unitPrice: Number(amount) });
             setAmount("");
             setNotes("");
           }}>Agregar servicio</button>
@@ -182,6 +299,12 @@ export default function LuxuryInvoicePreview({
         </li>)}
       </ul>
       <p aria-live="polite" className="border-t pt-4 text-right text-xl font-black">Total {currency.format(total / 100)}</p>
+      {error && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
+      <button type="button" className={button} disabled={saving || !lines.length || Boolean(lineType)} onClick={() => void saveFolio()}>
+        {saving ? "Guardando…" : "Guardar factura"}
+      </button>
+      {lineType && lines.length > 0 && <p className="text-sm text-slate-600">Agrega el concepto abierto o ciérralo antes de guardar.</p>}
     </section>
+    </fieldset>}
   </div>;
 }

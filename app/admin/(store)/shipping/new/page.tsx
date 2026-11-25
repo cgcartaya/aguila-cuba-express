@@ -210,7 +210,7 @@ export default function NewShipmentPage() {
     {activeStore?.slug === "luxury-travel-point" && <button type="button" aria-expanded={showLuxuryInvoice}
       className="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 font-bold text-blue-900"
       onClick={() => setShowLuxuryInvoice(current => !current)}>
-      {showLuxuryInvoice ? "Registrar operación individual" : "Abrir vista previa de factura"}
+      {showLuxuryInvoice ? "Registrar operación individual" : "Registrar factura por folio"}
     </button>}
     {activeStore?.slug === "luxury-travel-point" && showLuxuryInvoice ? (
       <LuxuryInvoicePreview key={activeStore.id} storeId={activeStore.id} countries={countries}
