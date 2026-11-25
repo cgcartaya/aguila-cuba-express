@@ -34,10 +34,14 @@ type Line = {
   unitPrice: number;
 };
 
+type PrintContact = { name?: string; phone?: string | null; address?: string | null };
+
 type Folio = {
   id: string;
   folio: number;
   customer_name: string;
+  sender_contact?: PrintContact | null;
+  recipient_contacts?: Record<string, PrintContact>;
   created_at: string;
   total_cents: number;
   lines: (Omit<Line, "id"> & { cents: number })[];
@@ -133,7 +137,7 @@ export default function LuxuryInvoicePreview({
     setError("");
     try {
       const start = nextPage * historyPageSize;
-      let query = supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines")
+      let query = supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines,sender_contact,recipient_contacts")
         .eq("store_id", picker.storeId);
       const search = criteria.search.trim();
       if (search) {
@@ -222,28 +226,7 @@ export default function LuxuryInvoicePreview({
       </div>
     </header>
     {error && (saved || history) && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
-    {saved ? <article id="luxury-folio-print" className={card}>
-      <style>{`@media print {
-        body:has(#luxury-folio-print) :not(:has(#luxury-folio-print)):not(#luxury-folio-print):not(#luxury-folio-print *) { display: none !important; }
-        body:has(#luxury-folio-print) *:has(#luxury-folio-print) { display: block !important; position: static !important; overflow: visible !important; height: auto !important; padding: 0 !important; margin: 0 !important; }
-        #luxury-folio-print { border: 0; }
-        #luxury-folio-print li { break-inside: avoid; }
-      }`}</style>
-      <h2 className="text-xl font-black">Luxury Travel Point</h2>
-      <p className="font-bold">Factura · Folio {folioLabel(saved.folio)}</p>
-      <p>{dateFormat.format(new Date(saved.created_at))} · {saved.customer_name}</p>
-      <ul className="divide-y divide-slate-200">
-        {saved.lines.map((line, index) => <li key={index} className="flex flex-wrap justify-between gap-3 py-3">
-          <div>
-            <p className="font-bold">{line.description}</p>
-            {line.destination && <p>{line.destination}</p>}
-            <p>{line.units} {line.unit} × {currency.format(line.unitPrice)}</p>
-          </div>
-          <strong>{currency.format(line.cents / 100)}</strong>
-        </li>)}
-      </ul>
-      <p className="border-t pt-4 text-right text-xl font-black">Total {currency.format(saved.total_cents / 100)}</p>
-    </article> : history ? <section className="space-y-5" aria-label="Historial de folios">
+    {saved ? <CompactInvoice invoice={saved} /> : history ? <section className="space-y-5" aria-label="Historial de folios">
       <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4"
         onSubmit={event => { event.preventDefault(); void loadHistory(0, filters); }}>
         <label className="min-w-0 flex-[1_1_16rem] text-sm font-bold text-slate-700">
@@ -453,4 +436,82 @@ export default function LuxuryInvoicePreview({
     </section>
     </fieldset>}
   </div>;
+}
+
+
+function CompactInvoice({ invoice }: { invoice: Folio }) {
+  const recipients = new Map<string, PrintContact>();
+  const recipientKeys = invoice.lines.map(line => {
+    if (!line.destination) return null;
+    const key = line.recipientId || line.destination;
+    if (!recipients.has(key)) {
+      const [name, ...address] = line.destination.split(" · ");
+      recipients.set(key, {
+        name, address: address.join(" · "),
+        ...(line.recipientId ? invoice.recipient_contacts?.[line.recipientId] : undefined),
+      });
+    }
+    return key;
+  });
+  const recipientList = [...recipients.entries()];
+  const sender = { ...invoice.sender_contact, name: invoice.customer_name };
+  const showRecipientReferences = recipientList.length > 1;
+
+  return <article id="luxury-folio-print" className="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-950 sm:p-6">
+    <style>{`@media print {
+      @page { size: letter; margin: 12mm; }
+      body:has(#luxury-folio-print) :not(:has(#luxury-folio-print)):not(#luxury-folio-print):not(#luxury-folio-print *) { display: none !important; }
+      body:has(#luxury-folio-print) *:has(#luxury-folio-print) { display: block !important; position: static !important; overflow: visible !important; height: auto !important; min-height: 0 !important; padding: 0 !important; margin: 0 !important; }
+      #luxury-folio-print { max-width: none; margin: 0; padding: 0; border: 0; font-size: 10pt; line-height: 1.25; }
+      #luxury-folio-print th, #luxury-folio-print td { padding: 3pt 5pt; }
+      #luxury-folio-print tr, #luxury-folio-print .folio-contact, #luxury-folio-print .folio-total { break-inside: avoid; }
+      #luxury-folio-print thead { display: table-header-group; }
+      #luxury-folio-print .folio-contacts { display: grid; grid-template-columns: 1fr 1fr; }
+    }`}</style>
+    <header className="flex items-start justify-between gap-3 border-b border-slate-400 pb-2">
+      <h2 className="text-xl font-black">Luxury Travel Point</h2>
+      <div className="shrink-0 text-right">
+        <p className="font-black">Factura · Folio {folioLabel(invoice.folio)}</p>
+        <p>{dateFormat.format(new Date(invoice.created_at))}</p>
+      </div>
+    </header>
+    <div className="folio-contacts grid gap-3 border-b border-slate-300 py-2 sm:grid-cols-2">
+      <ContactBlock label="Remitente" contact={sender} />
+      {recipientList.length > 0 && <div className="space-y-2">
+        {recipientList.map(([key, contact], index) => <ContactBlock key={key}
+          label={showRecipientReferences ? `Destinatario ${index + 1}` : "Destinatario"} contact={contact} />)}
+      </div>}
+    </div>
+    <table className="mt-3 w-full border-collapse text-left">
+      <thead><tr className="border-b border-slate-400 bg-slate-100">
+        <th scope="col" className="p-2">Concepto</th>
+        <th scope="col" className="p-2 text-right">Cantidad</th>
+        <th scope="col" className="p-2 text-right">Precio</th>
+        <th scope="col" className="p-2 text-right">Importe</th>
+      </tr></thead>
+      <tbody>
+        {invoice.lines.map((line, index) => <tr key={index} className="border-b border-slate-200">
+          <td className="break-words p-2">
+            {line.description}
+            {showRecipientReferences && recipientKeys[index] && <span className="ml-1 text-xs text-slate-600">
+              (Dest. {recipientList.findIndex(([key]) => key === recipientKeys[index]) + 1})
+            </span>}
+          </td>
+          <td className="whitespace-nowrap p-2 text-right">{line.units} {line.unit === "unidad" ? "ud." : line.unit}</td>
+          <td className="whitespace-nowrap p-2 text-right">{currency.format(line.unitPrice)}</td>
+          <td className="whitespace-nowrap p-2 text-right font-bold">{currency.format(line.cents / 100)}</td>
+        </tr>)}
+      </tbody>
+    </table>
+    <p className="folio-total mt-3 text-right text-base font-black">Total USD {currency.format(invoice.total_cents / 100)}</p>
+  </article>;
+}
+
+function ContactBlock({ label, contact }: { label: string; contact: PrintContact }) {
+  return <section className="folio-contact min-w-0 break-words">
+    <h3 className="text-xs font-black uppercase">{label}</h3>
+    {contact.name && <p className="font-semibold">{contact.name}</p>}
+    {contact.phone && <p>Tel. {contact.phone}</p>}
+    {contact.address && <p>{contact.address}</p>}
+  </section>;
 }
