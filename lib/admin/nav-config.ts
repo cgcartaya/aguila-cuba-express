@@ -152,6 +152,13 @@ export const adminNavSections: AdminSection[] = [
     ],
   },
   {
+    title: "Folios",
+    module: "shipping",
+    links: [
+      { href: "/admin/folios", label: "Facturas con folio", icon: ClipboardCheck, storeSlugs: ["luxury-travel-point"] },
+    ],
+  },
+  {
     title: "Menú",
     module: "menu",
     links: [

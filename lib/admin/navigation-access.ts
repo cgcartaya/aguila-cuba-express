@@ -25,6 +25,8 @@ export function canAccessAdminPath(
     return ["OWNER", "ADMIN"].includes(membership.role);
   if (path === "/admin/casillero" || path.startsWith("/admin/casillero/"))
     return ["OWNER", "ADMIN", "OPERATIONS"].includes(membership.role);
+  if (path === "/admin/folios" || path.startsWith("/admin/folios/"))
+    return ["OWNER", "ADMIN", "OPERATIONS"].includes(membership.role);
   let permission: ShippingPermission | null = null;
   if (path === "/admin/customers" || path.startsWith("/admin/customers/"))
     permission = "shipping.view";

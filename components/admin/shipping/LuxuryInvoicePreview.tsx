@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ComponentProps } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { supabase } from "@/lib/supabase";
 import CustomerRecipientPicker, { type CustomerSelection } from "./CustomerRecipientPicker";
 import type { ShippingRecipient } from "@/lib/shipping/customer-types";
@@ -8,8 +8,6 @@ import type { ShippingRate, ShippingServiceType, ShippingTrip } from "@/lib/ship
 
 type Props = Omit<ComponentProps<typeof CustomerRecipientPicker>, "onApply"> & {
   trips: ShippingTrip[];
-  initialTripId: string;
-  fixedTrip: boolean;
   services: ShippingServiceType[];
   rates: ShippingRate[];
 };
@@ -53,9 +51,9 @@ function lineCents(line: Line) {
 }
 
 export default function LuxuryInvoicePreview({
-  trips, initialTripId, fixedTrip, services, rates, ...picker
+  trips, services, rates, ...picker
 }: Props) {
-  const [tripId, setTripId] = useState(initialTripId);
+  const [tripId, setTripId] = useState("");
   const [contact, setContact] = useState<CustomerSelection | null>(null);
   const [customer, setCustomer] = useState<{ id: string; name: string } | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
@@ -67,11 +65,11 @@ export default function LuxuryInvoicePreview({
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [saved, setSaved] = useState<Folio | null>(null);
-  const [history, setHistory] = useState<Folio[] | null>(null);
+  const [history, setHistory] = useState<Folio[] | null>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const [error, setError] = useState("");
   const request = useRef<string | null>(null);
   const savingRef = useRef(false);
@@ -103,7 +101,7 @@ export default function LuxuryInvoicePreview({
     }
   }
 
-  async function loadHistory(nextPage: number) {
+  const loadHistory = useCallback(async (nextPage: number) => {
     setLoadingHistory(true);
     setError("");
     try {
@@ -121,7 +119,12 @@ export default function LuxuryInvoicePreview({
     } finally {
       setLoadingHistory(false);
     }
-  }
+  }, [picker.storeId]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadHistory(0), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadHistory]);
 
   const availableServices = services.filter(service => service.is_active && service.code.startsWith("luxury-"));
   const service = availableServices.find(item => item.id === serviceId);
@@ -156,7 +159,7 @@ export default function LuxuryInvoicePreview({
   return <div className="space-y-5">
     <div className="flex flex-wrap gap-2 print:hidden">
       {(saved || history) && <button type="button" className={button} onClick={() => { setSaved(null); setHistory(null); setError(""); }}>
-        {lines.length ? "Volver a la factura en curso" : "Registrar factura"}
+        {lines.length ? "Volver a la factura en curso" : "Agregar factura con folio"}
       </button>}
       <button type="button" className={button} disabled={saving || loadingHistory} onClick={() => void loadHistory(0)}>Historial de folios</button>
       {saved && <button type="button" className={button} onClick={() => window.print()}>Imprimir factura</button>}
@@ -185,7 +188,8 @@ export default function LuxuryInvoicePreview({
       <p className="border-t pt-4 text-right text-xl font-black">Total {currency.format(saved.total_cents / 100)}</p>
     </article> : history ? <section className={card}>
       <h2 className="text-xl font-black">Historial de folios</h2>
-      {!history.length && <p>Todavía no hay facturas guardadas.</p>}
+      {loadingHistory && <p role="status">Cargando historial…</p>}
+      {!loadingHistory && !error && !history.length && <p>Todavía no hay facturas guardadas.</p>}
       <ul className="divide-y divide-slate-200">
         {history.map(invoice => <li key={invoice.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div><p className="font-bold">Folio {folioLabel(invoice.folio)} · {invoice.customer_name}</p>
@@ -220,7 +224,7 @@ export default function LuxuryInvoicePreview({
       </div>
       {lineType === "shipment" && <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
         <label className="block text-sm font-bold">Viaje de referencia (opcional)
-          <select className={field} value={tripId} disabled={fixedTrip} onChange={event => setTripId(event.target.value)}>
+          <select className={field} value={tripId} onChange={event => setTripId(event.target.value)}>
             <option value="">Sin viaje asociado</option>
             {trips.map(trip => <option key={trip.id} value={trip.id}>{trip.trip_number} · {trip.name}</option>)}
           </select>
