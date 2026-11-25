@@ -457,6 +457,7 @@ export async function upsertShippingRatesBulk(input: {
       supabase
         .from("shipping_rates")
         .update(row)
+        .eq("store_id", input.store_id)
         .eq(
           "id",
           existingByKey.get(
@@ -504,4 +505,21 @@ export async function updateActiveShipmentsStatusBulk(
     .eq("delivered", false)
     .in("status", mutableStatuses)
     .select("id,tracking_code,status");
+}
+
+export async function updateShippingRatePricing(
+  storeId: string,
+  rateId: string,
+  pricing: Partial<Pick<ShippingRate,
+    "rate_per_lb" | "fixed_fee" | "minimum_weight_lb" | "maximum_weight_lb"
+    | "minimum_charge" | "weight_threshold_lb" | "rate_at_or_above_threshold"
+    | "estimated_days_min" | "estimated_days_max" | "priority"
+  >>,
+) {
+  return supabase.from("shipping_rates")
+    .update({ ...pricing, updated_at: new Date().toISOString() })
+    .eq("store_id", storeId)
+    .eq("id", rateId)
+    .select("id")
+    .single();
 }
