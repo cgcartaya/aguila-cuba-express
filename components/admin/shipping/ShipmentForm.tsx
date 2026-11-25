@@ -44,6 +44,7 @@ type Props = {
   initialCustomerId?: string;
   initialRecipientId?: string;
   submitting: boolean;
+  saveBlocked?: boolean;
   onSubmit: (input: ShipmentInput) => Promise<void>;
 };
 
@@ -212,7 +213,9 @@ export default function ShipmentForm(props: Props) {
     : props.allowRemittanceExtras && props.hasTrip && form.contains_package && !form.products_only;
 
   async function submit(e: React.FormEvent) {
-    e.preventDefault(); setError("");
+    e.preventDefault();
+    if (submitting || props.saveBlocked) return;
+    setError("");
     if (!form.contains_package && !form.contains_money) return setError("Selecciona paquete, dinero o ambos.");
     if (form.contains_package && !form.products_only && !feesOnly && (!form.service_type_id || (!fixedPackage && form.weight_lb <= 0))) return setError("Selecciona el tipo de paquete y un peso mayor que cero.");
     if (form.contains_package && !form.products_only && !feesOnly && usesLuxuryRate && form.weight_subtotal <= 0) {
@@ -250,6 +253,7 @@ export default function ShipmentForm(props: Props) {
     {error && <div ref={errorRef} className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
     <CustomerRecipientPicker
+      key={storeId}
       storeId={storeId}
       countries={countries}
       provinces={provinces}
@@ -402,7 +406,7 @@ export default function ShipmentForm(props: Props) {
 
     {error && <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-bold text-red-700">{error}</div>}
 
-    <button disabled={submitting} className="inline-flex items-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 font-black text-white">{submitting?<Loader2 className="animate-spin"/>:<Save/>}{shipment?"Guardar cambios":"Crear operación"}</button>
+    <button type="submit" disabled={submitting || props.saveBlocked} className="inline-flex items-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 font-black text-white disabled:opacity-50">{submitting?<Loader2 className="animate-spin"/>:<Save/>}{shipment?"Guardar cambios":"Crear operación"}</button>
   </form>;
 }
 

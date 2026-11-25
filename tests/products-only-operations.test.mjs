@@ -43,17 +43,32 @@ test('invoice renders products without displaying zero cash',()=>{
  const html=require('react-dom/server').renderToStaticMarkup(require('react').createElement(Component,{value:{contains_money:false,money_amount:0,store_products:products}}));
  assert.match(html,/Caja de pollo/);assert.match(html,/25\.00/);assert.doesNotMatch(html,/Dinero a entregar/);
 });
-test('the form renders a products-only operation without forcing cash or parcel calculation',()=>{
+function renderShipmentForm(overrides = {}) {
  const empty=()=>null;
  const Component=load('components/admin/shipping/ShipmentForm.tsx',{
   '@/lib/shipping/operation-mode':modes,'@/lib/shipping/package-billing':billing,'@/lib/shipping/invoice-totals':totals,
   './RemittanceProductsEditor':{default:empty},'./PhysicalProductsEditor':{default:empty},'@/lib/shipping/remittance-delivery':delivery,
   '@/components/admin/shipping/ShipmentExtraFees':{default:empty},'@/lib/shipping/extra-fee-calculation':fees,
   '@/components/admin/shipping/PackageContentsEditor':{default:empty},'@/lib/shipping/package-label':load('lib/shipping/package-label.ts'),
-  '@/lib/shipping/weight-rate':load('lib/shipping/weight-rate.ts'),'@/components/admin/shipping/CustomerRecipientPicker':{default:empty},
+  '@/lib/shipping/weight-rate':load('lib/shipping/weight-rate.ts'),'@/components/admin/shipping/CustomerRecipientPicker':{default:()=>require('react').createElement('button',{type:'button'},'Nuevo cliente')},
   '@/lib/shipping/types':load('lib/shipping/types.ts'),
+  '@/lib/shipping/customs-charges':load('lib/shipping/customs-charges.ts'),
  }).default;
  const props={storeId:'store',operationType:'products',allowRemittanceExtras:true,shipment:{store_products:products},drivers:[],settings:null,countries:[],provinces:[],municipalities:[],locations:[],serviceTypes:[],rates:[],extraFees:[],submitting:false,onSubmit:async()=>{}};
- const html=require('react-dom/server').renderToStaticMarkup(require('react').createElement(Component,props));
+ return require('react-dom/server').renderToStaticMarkup(require('react').createElement(Component,{...props,...overrides}));
+}
+test('the form renders a products-only operation without forcing cash or parcel calculation',()=>{
+ const html=renderShipmentForm();
  assert.match(html,/Productos de la tienda/);assert.doesNotMatch(html,/Cálculo del dinero|Cálculo del paquete|Monto enviado \(USD\)/);
+});
+
+test('a shipment without a required trip disables saving, while contact controls stay enabled',()=>{
+ const page=fs.readFileSync('app/admin/(store)/shipping/new/page.tsx','utf8');
+ assert.match(page,/<ShipmentForm saveBlocked=\{requiresTrip && !selectedTrip\}/);
+ assert.doesNotMatch(page,/<fieldset disabled=\{requiresTrip && !selectedTrip\}/);
+ const html=renderShipmentForm({shipment:undefined,operationType:'package',saveBlocked:true});
+ assert.match(html,/<button type="button">Nuevo cliente<\/button>/);
+ assert.match(html,/<button type="submit" disabled=""/);
+ const ready=renderShipmentForm({shipment:undefined,operationType:'package',saveBlocked:false});
+ assert.doesNotMatch(ready,/<button type="submit" disabled=""/);
 });
