@@ -4,15 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   ChevronDown,
-  ChevronRight,
   ChevronUp,
-  CircleDollarSign,
   DollarSign,
   Edit3,
   Globe2,
   Loader2,
   MapPinned,
-  PackageCheck,
   PackageOpen,
   Plus,
   Power,
@@ -22,7 +19,6 @@ import {
   Settings2,
   Tags,
   Trash2,
-  WalletCards,
   Warehouse,
   X,
 } from "lucide-react";
@@ -45,7 +41,7 @@ import {
   setShippingConfigItemActive,
   updateActiveShipmentsStatusBulk,
   updateExtraFee,
-  upsertShippingRate,
+  updateShippingRatePricing,
   upsertShippingRatesBulk,
   upsertShippingSettings,
 } from "@/lib/services/shipping-settings";
@@ -73,6 +69,29 @@ export default function ShippingSettingsPage() {
     [accessStore, isSuperAdmin, selectedStore],
   );
 
+  if (accessLoading || storeLoading) return <p className="p-6" role="status">Cargando ajustes de envíos…</p>;
+  if (!activeStore) return <p className="p-6">Selecciona una empresa.</p>;
+  return <AgencyShippingSettings key={activeStore.id} activeStore={activeStore} />;
+}
+
+const settingsSections = [
+  ["rates", "Tarifas"],
+  ["services", "Modalidades"],
+  ["destinations", "Destinos"],
+  ["general", "General y remesas"],
+  ["fees", "Cargos adicionales"],
+  ["operations", "Estado de envíos"],
+] as const;
+
+const billingLabels = { per_lb: "Por libra", fixed: "Precio fijo", percentage: "Porcentaje" };
+const transportLabels = { air: "Aéreo", sea: "Marítimo", express: "Express", ground: "Terrestre", other: "Otro" };
+
+function AgencyShippingSettings({ activeStore }: { activeStore: { id: string; name: string } }) {
+  const [section, setSection] = useState<(typeof settingsSections)[number][0]>("rates");
+  const [creatingRates, setCreatingRates] = useState(false);
+  const [editingRate, setEditingRate] = useState<ShippingRate | null>(null);
+  const rateServices = (service: ShippingServiceType) =>
+    service.is_active && service.billing_mode !== "percentage" && service.code.toLowerCase() !== "money";
   const isAlvarez = activeStore?.id === ALVAREZ_STORE_ID;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,7 +132,7 @@ export default function ShippingSettingsPage() {
 
   const [rateScope, setRateScope] = useState<
     "country" | "province" | "municipality" | "location"
-  >("province");
+  >("country");
   const [selectedRateCountryIds, setSelectedRateCountryIds] = useState<
     string[]
   >([]);
@@ -144,6 +163,8 @@ export default function ShippingSettingsPage() {
   const [estimatedDaysMin, setEstimatedDaysMin] = useState(7);
   const [estimatedDaysMax, setEstimatedDaysMax] = useState(15);
   const [ratePriority, setRatePriority] = useState(100);
+  const selectedServices = serviceTypes.filter(service => selectedRateServiceIds.includes(service.id));
+  const fixedOnly = selectedServices.length > 0 && selectedServices.every(service => service.billing_mode === "fixed");
   const [showAllRateTerritories, setShowAllRateTerritories] = useState(false);
   const [showAllRateServices, setShowAllRateServices] = useState(false);
   const [updatingGlobalStatus, setUpdatingGlobalStatus] = useState(false);
@@ -272,15 +293,7 @@ export default function ShippingSettingsPage() {
       );
   })();
 
-  async function load() {
-    if (!activeStore?.id) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const result = await getShippingConfiguration(activeStore.id);
-
+  function applyConfiguration(result: Awaited<ReturnType<typeof getShippingConfiguration>>) {
     if (result.error) {
       setMessage(result.error.message || "No se pudo cargar la configuración.");
       setIsError(true);
@@ -335,10 +348,18 @@ export default function ShippingSettingsPage() {
     setLoading(false);
   }
 
+  async function load() {
+    applyConfiguration(await getShippingConfiguration(activeStore.id));
+  }
+
   useEffect(() => {
-    if (!accessLoading && !storeLoading) void load();
+    let current = true;
+    void getShippingConfiguration(activeStore.id).then(result => {
+      if (current) applyConfiguration(result);
+    });
+    return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessLoading, storeLoading, activeStore?.id]);
+  }, [activeStore.id]);
 
   async function runAction(
     action: () => Promise<{ error: { message?: string } | null }>,
@@ -360,6 +381,7 @@ export default function ShippingSettingsPage() {
       }
       setMessage(successMessage);
       await load();
+      return true;
     } catch (error) {
       const readable =
         error instanceof Error
@@ -367,6 +389,7 @@ export default function ShippingSettingsPage() {
           : "No se pudo guardar el cambio.";
       setMessage(readable);
       setIsError(true);
+      return false;
     } finally {
       setSaving(false);
     }
@@ -465,12 +488,18 @@ export default function ShippingSettingsPage() {
       return;
     }
 
+    if (!fixedOnly && selectedServices.some(service => service.billing_mode === "fixed")) {
+      setMessage("Guarda las tarifas de precio fijo y las de precio por libra en operaciones distintas.");
+      setIsError(true);
+      return;
+    }
+
     const confirmed = window.confirm(
       `Se guardarán ${combinations} combinaciones de tarifa.\n\n` +
         `${selectedRateTargetIds.length} territorio(s) × ` +
         `${selectedRateServiceIds.length} tipo(s) de paquete.\n\n` +
         `Método: ${rateTransportMode === "air" ? "Aéreo" : rateTransportMode === "sea" ? "Marítimo" : rateTransportMode}.\n` +
-        `Tarifa: $${ratePerLb.toFixed(2)} por libra.`,
+        (fixedOnly ? `Precio fijo: $${fixedFee.toFixed(2)}.` : `Tarifa: $${ratePerLb.toFixed(2)} por libra.`),
     );
 
     if (!confirmed) return;
@@ -483,9 +512,9 @@ export default function ShippingSettingsPage() {
           target_ids: selectedRateTargetIds,
           service_type_ids: selectedRateServiceIds,
           transport_mode: rateTransportMode,
-          rate_per_lb: ratePerLb,
-          weight_threshold_lb: weightThreshold === "" ? null : Number(weightThreshold),
-          rate_at_or_above_threshold: thresholdRate === "" ? null : Number(thresholdRate),
+          rate_per_lb: fixedOnly ? 0 : ratePerLb,
+          weight_threshold_lb: fixedOnly || weightThreshold === "" ? null : Number(weightThreshold),
+          rate_at_or_above_threshold: fixedOnly || thresholdRate === "" ? null : Number(thresholdRate),
           minimum_weight_lb: minimumWeight,
           maximum_weight_lb:
             maximumWeight === "" ? null : Number(maximumWeight),
@@ -698,7 +727,7 @@ export default function ShippingSettingsPage() {
     }
   }
 
-  if (loading || accessLoading || storeLoading) {
+  if (loading && !settings) {
     return (
       <main className="p-10 text-center font-bold text-slate-500">
         <Loader2 className="mx-auto mb-3 animate-spin" />
@@ -728,49 +757,18 @@ export default function ShippingSettingsPage() {
           </p>
         </header>
 
-        <section className="mb-6 overflow-hidden rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-sm">
-          <div className="grid gap-5 p-5 md:grid-cols-[auto_1fr] md:p-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[#061b3a] text-white shadow-lg">
-              <MapPinned size={27} />
-            </div>
-
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-700">
-                Mapa de configuración
-              </p>
-              <h2 className="mt-1 text-xl font-black text-[#061b3a]">
-                Cómo se organiza un destino
-              </h2>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <StepCard number="1" title="País" icon={<Globe2 size={18} />} />
-                <StepCard
-                  number="2"
-                  title="Provincia"
-                  icon={<MapPinned size={18} />}
-                />
-                <StepCard
-                  number="3"
-                  title="Municipio"
-                  icon={<MapPinned size={18} />}
-                />
-                <StepCard
-                  number="4"
-                  title="Destino para APK"
-                  icon={<PackageCheck size={18} />}
-                />
-              </div>
-
-              <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
-                La APK seguirá usando una lista plana de destinos. País,
-                provincia y municipio sirven únicamente para organizarla.
-              </p>
-            </div>
-          </div>
-        </section>
+        <nav aria-label="Secciones de ajustes de envíos" className="mb-5 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
+          {settingsSections.map(([key, label]) => (
+            <button key={key} type="button" aria-current={section === key ? "page" : undefined}
+              onClick={() => setSection(key)}
+              className={`rounded-xl px-4 py-2.5 text-sm font-bold focus-visible:outline-2 focus-visible:outline-blue-600 ${section === key ? "bg-[#061b3a] text-white" : "text-slate-700 hover:bg-slate-100"}`}>
+              {label}
+            </button>
+          ))}
+        </nav>
 
         {message && (
-          <div
+          <div role={isError ? "alert" : "status"}
             className={`mb-5 rounded-2xl p-4 text-sm font-black ${
               isError
                 ? "border border-red-100 bg-red-50 text-red-700"
@@ -781,8 +779,9 @@ export default function ShippingSettingsPage() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-6">
+        <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-6" aria-busy={loading || saving}>
           <SettingsCard
+            hidden={section !== "general"}
             title="Configuración general"
             icon={<Settings2 />}
             className="order-1 lg:col-span-2 xl:col-span-6"
@@ -1023,6 +1022,7 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
+            hidden={section !== "destinations"}
             title="1. Países"
             icon={<Globe2 />}
             className="order-2 xl:col-span-2"
@@ -1097,6 +1097,7 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
+            hidden={section !== "destinations"}
             title="2. Provincias"
             icon={<MapPinned />}
             className="order-3 xl:col-span-2"
@@ -1192,6 +1193,7 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
+            hidden={section !== "destinations"}
             title="3. Municipios"
             icon={<MapPinned />}
             className="order-4 xl:col-span-2"
@@ -1283,6 +1285,7 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
+            hidden={section !== "destinations"}
             title="Destinos operativos (lista de la APK)"
             icon={<MapPinned />}
             className="order-6 xl:col-span-2"
@@ -1388,84 +1391,108 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
-            title="Tipos de servicio"
+            hidden={section !== "services"}
+            title="Modalidades de envío"
             icon={<Tags />}
-            className="order-7 xl:col-span-2"
+            className="lg:col-span-2 xl:col-span-6"
           >
-            <p className={helpText}>
-              Ejemplos: Paquete normal, Paquete grande y Dinero. El prefijo
-              mantiene compatibilidad con la APK.
-            </p>
-
-            <div className="grid gap-3">
-              <input
-                value={serviceName}
-                onChange={(event) => setServiceName(event.target.value)}
-                className={inputClass}
-                placeholder="Paquete normal"
-              />
-              <input
-                value={serviceCode}
-                onChange={(event) => setServiceCode(event.target.value)}
-                className={inputClass}
-                placeholder="normal"
-              />
-              <input
-                value={legacyPrefix}
-                onChange={(event) => setLegacyPrefix(event.target.value)}
-                className={inputClass}
-                placeholder="Prefijo APK: G_ o Dinero_"
-              />
-              <select
-                value={billingMode}
-                onChange={(event) =>
-                  setBillingMode(
-                    event.target.value as "per_lb" | "fixed" | "percentage",
-                  )
-                }
-                className={inputClass}
-              >
-                <option value="per_lb">Por libra</option>
-                <option value="fixed">Monto fijo</option>
-                <option value="percentage">Porcentaje</option>
-              </select>
-            </div>
-
-            <button
-              disabled={saving || !serviceName.trim() || !serviceCode.trim()}
-              onClick={() =>
-                void runAction(
-                  () =>
-                    createServiceType(
-                      activeStore.id,
-                      serviceName,
-                      serviceCode,
-                      legacyPrefix,
-                      billingMode,
-                    ),
-                  "Tipo de servicio guardado.",
-                )
+            <form className="space-y-4 rounded-2xl border border-slate-200 p-4" onSubmit={async event => {
+              event.preventDefault();
+              const code = serviceCode.trim() || serviceName.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+              if (!code || !serviceName.trim()) {
+                setMessage("Escribe un nombre y un código interno con letras o números.");
+                setIsError(true);
+                return;
               }
-              className={primaryButton}
-            >
-              <Plus size={18} />
-              Guardar tipo de servicio
-            </button>
-
-            <SimpleRows
-              rows={serviceTypes.map((service) => ({
-                left: service.name,
-                right: service.legacy_prefix || "Sin prefijo",
-              }))}
-              empty="No hay tipos de servicio."
-            />
+              const saved = await runAction(
+                () => createServiceType(activeStore.id, serviceName, code, legacyPrefix, billingMode),
+                "Modalidad creada. Ya puedes agregarle una tarifa.",
+              );
+              if (saved) {
+                setServiceName("");
+                setServiceCode("");
+                setLegacyPrefix("");
+              }
+            }}>
+              <h3 className="font-black text-slate-900">Crear modalidad</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Nombre que verá el equipo">
+                  <input required value={serviceName} onChange={event => setServiceName(event.target.value)}
+                    className={inputClass} placeholder="Ej. Marítimo, Express o Caja dorada" />
+                </Field>
+                <Field label="Cómo se cobra">
+                  <select value={billingMode} onChange={event => setBillingMode(event.target.value as typeof billingMode)} className={inputClass}>
+                    {Object.entries(billingLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                </Field>
+              </div>
+              <details>
+                <summary className="cursor-pointer text-sm font-bold text-slate-700">Código interno y prefijo APK</summary>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <Field label="Código interno (opcional)">
+                    <input value={serviceCode} onChange={event => setServiceCode(event.target.value)} className={inputClass} placeholder="Se genera desde el nombre" />
+                  </Field>
+                  <Field label="Prefijo APK (opcional)">
+                    <input value={legacyPrefix} onChange={event => setLegacyPrefix(event.target.value)} className={inputClass} />
+                  </Field>
+                </div>
+              </details>
+              <button type="submit" disabled={saving || !serviceName.trim()} className={primaryButton}><Plus size={18} /> Crear modalidad</button>
+            </form>
+            <h3 className="font-black text-slate-900">Modalidades de {activeStore.name}</h3>
+            {serviceTypes.length === 0 && <p className={helpText}>Todavía no hay modalidades.</p>}
+            <ul className="divide-y divide-slate-200">
+              {serviceTypes.map(service => <li key={service.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div>
+                  <p className="font-bold text-slate-900">{service.name}</p>
+                  <p className="text-sm text-slate-600">{billingLabels[service.billing_mode]} · {service.is_active ? "Activa" : "Inactiva"}{service.legacy_prefix && ` · APK: ${service.legacy_prefix}`}</p>
+                </div>
+                {rateServices(service) && <button type="button" className={smallButton} onClick={() => {
+                  setSelectedRateServiceIds([service.id]);
+                  setCreatingRates(true);
+                  setSection("rates");
+                }}>Configurar tarifa</button>}
+              </li>)}
+            </ul>
           </SettingsCard>
 
           <SettingsCard
-            title="4. Tarifas por libra"
+            hidden={section !== "rates"}
+            title="Tarifas de envío"
             icon={<DollarSign />}
             className="order-5 lg:col-span-2 xl:col-span-6"
           >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className={helpText}>Busca una modalidad o destino y edita el precio en su fila.</p>
+              <button type="button" className={primaryButton} aria-expanded={creatingRates} aria-controls="create-shipping-rates"
+                onClick={() => { setCreatingRates(current => !current); setEditingRate(null); }}>
+                {creatingRates ? <X size={18} /> : <Plus size={18} />}
+                {creatingRates ? "Cerrar formulario" : "Crear tarifas"}
+              </button>
+            </div>
+            {editingRate && <RatePriceEditor key={editingRate.id} rate={editingRate}
+              service={serviceTypes.find(service => service.id === editingRate.service_type_id)}
+              saving={saving} onCancel={() => setEditingRate(null)} onSave={async values => {
+                const saved = await runAction(
+                  () => updateShippingRatePricing(activeStore.id, editingRate.id, values),
+                  "Tarifa actualizada.",
+                );
+                if (saved) setEditingRate(null);
+              }} />}
+            <CollapsibleRateList
+              rates={rates}
+              countries={countries}
+              provinces={provinces}
+              municipalities={municipalities}
+              locations={locations}
+              serviceTypes={serviceTypes}
+              deletingRateId={deletingRateId}
+              onEdit={rate => { setCreatingRates(false); setEditingRate(rate); }}
+              onDelete={(rate) => void removeRate(rate)}
+              onBulkUpdateMinimumWeight={() => void bulkUpdateMinimumWeight()}
+            />
+            <div id="create-shipping-rates" hidden={!creatingRates} className={creatingRates ? "space-y-4" : ""}>
             <p className={helpText}>
               Aplica una misma tarifa a varias provincias, municipios, lugares
               operativos y tipos de paquete. Las tarifas más específicas tienen
@@ -1650,29 +1677,17 @@ export default function ShippingSettingsPage() {
               <MultiSelectPanel
                 title={isAlvarez ? "Modalidades y categorías disponibles" : "Tipos de paquete"}
                 subtitle={`${selectedRateServiceIds.length} seleccionado(s)`}
-                items={serviceTypes
-                  .filter(
-                    (service) =>
-                      service.is_active &&
-                      service.billing_mode === "per_lb" &&
-                      service.code.toLowerCase() !== "money",
-                  )
+                items={serviceTypes.filter(rateServices)
                   .map((service) => ({
                     id: service.id,
                     label: service.name,
-                    description: service.legacy_prefix || "Sin prefijo",
+                    description: billingLabels[service.billing_mode],
                   }))}
                 selectedIds={selectedRateServiceIds}
                 onToggle={toggleRateService}
                 onSelectAll={() =>
                   setSelectedRateServiceIds(
-                    serviceTypes
-                      .filter(
-                        (service) =>
-                          service.is_active &&
-                          service.billing_mode === "per_lb" &&
-                          service.code.toLowerCase() !== "money",
-                      )
+                    serviceTypes.filter(rateServices)
                       .map((service) => service.id),
                   )
                 }
@@ -1701,7 +1716,7 @@ export default function ShippingSettingsPage() {
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field label="Precio por libra">
+                {!fixedOnly && <Field label="Precio por libra">
                   <input
                     type="number"
                     min="0"
@@ -1712,9 +1727,27 @@ export default function ShippingSettingsPage() {
                     }
                     className={inputClass}
                   />
+                </Field>}
+                <Field label={fixedOnly ? "Precio fijo (USD)" : "Cargo fijo adicional (USD)"}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={fixedFee}
+                    onChange={(event) =>
+                      setFixedFee(Number(event.target.value))
+                    }
+                    className={inputClass}
+                  />
                 </Field>
+              </div>
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-bold text-slate-700">Límites, plazos y prioridad</summary>
+                <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {!fixedOnly && <>
                 <Field label="Desde este peso (lb, opcional)"><input type="number" min="0.01" step="0.01" value={weightThreshold} onChange={e => setWeightThreshold(e.target.value)} className={inputClass} placeholder="Ej. 20" /></Field>
                 <Field label="Precio/lb desde ese peso"><input type="number" min="0" step="0.01" value={thresholdRate} onChange={e => setThresholdRate(e.target.value)} className={inputClass} placeholder="Ej. 4" /><p className="mt-1 text-xs text-slate-500">Se aplica al peso completo, incluido el umbral. Deja ambos campos vacíos para tarifa única.</p></Field>
+                </>}
                 <Field label="Peso mínimo facturable">
                   <input
                     type="number"
@@ -1745,18 +1778,6 @@ export default function ShippingSettingsPage() {
                     value={minimumCharge}
                     onChange={(event) =>
                       setMinimumCharge(Number(event.target.value))
-                    }
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Fee fijo adicional">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={fixedFee}
-                    onChange={(event) =>
-                      setFixedFee(Number(event.target.value))
                     }
                     className={inputClass}
                   />
@@ -1794,7 +1815,8 @@ export default function ShippingSettingsPage() {
                     className={inputClass}
                   />
                 </Field>
-              </div>
+                </div>
+              </details>
 
               <div className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -1841,20 +1863,11 @@ export default function ShippingSettingsPage() {
               </div>
             </div>
 
-            <CollapsibleRateList
-              rates={rates}
-              countries={countries}
-              provinces={provinces}
-              municipalities={municipalities}
-              locations={locations}
-              serviceTypes={serviceTypes}
-              deletingRateId={deletingRateId}
-              onDelete={(rate) => void removeRate(rate)}
-              onBulkUpdateMinimumWeight={() => void bulkUpdateMinimumWeight()}
-            />
+            </div>
           </SettingsCard>
 
           <SettingsCard
+            hidden={section !== "operations"}
             title="Estado general de los envíos"
             icon={<Send />}
             className="order-8 xl:col-span-2"
@@ -1919,7 +1932,8 @@ export default function ShippingSettingsPage() {
           </SettingsCard>
 
           <SettingsCard
-            title="Fees adicionales"
+            hidden={section !== "fees"}
+            title="Cargos adicionales"
             icon={<DollarSign />}
             className="order-9 xl:col-span-2"
           >
@@ -2112,14 +2126,16 @@ function SettingsCard({
   icon,
   children,
   className = "",
+  hidden = false,
 }: {
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  hidden?: boolean;
 }) {
   return (
-    <section
+    <section hidden={hidden}
       className={`group overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${className}`}
     >
       <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white p-5 md:p-6">
@@ -2284,26 +2300,6 @@ function ManageableSelectionList({
           )}
         </button>
       )}
-    </div>
-  );
-}
-
-function StepCard({
-  number,
-  title,
-  icon,
-}: {
-  number: string;
-  title: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-blue-100 bg-white p-3 shadow-sm">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 font-black text-blue-800">
-        {number}
-      </div>
-      <div className="text-blue-800">{icon}</div>
-      <span className="text-sm font-black text-[#061b3a]">{title}</span>
     </div>
   );
 }
@@ -2474,6 +2470,7 @@ function CollapsibleRateList({
   locations,
   serviceTypes,
   deletingRateId,
+  onEdit,
   onDelete,
   onBulkUpdateMinimumWeight,
 }: {
@@ -2484,11 +2481,23 @@ function CollapsibleRateList({
   locations: ShippingLocation[];
   serviceTypes: ShippingServiceType[];
   deletingRateId: string | null;
+  onEdit: (rate: ShippingRate) => void;
   onDelete: (rate: ShippingRate) => void;
   onBulkUpdateMinimumWeight: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const visibleRates = expanded ? rates : rates.slice(0, 5);
+  const [search, setSearch] = useState("");
+  const rateRows = rates.map(rate => {
+    const service = serviceTypes.find(item => item.id === rate.service_type_id);
+    const territory = countries.find(item => item.id === rate.country_id)?.name
+      || provinces.find(item => item.id === rate.province_id)?.name
+      || municipalities.find(item => item.id === rate.municipality_id)?.name
+      || locations.find(item => item.id === rate.location_id)?.name;
+    return { rate, service, territory };
+  }).filter(({ rate, service, territory }) =>
+    [service?.name, territory, transportLabels[rate.transport_mode]].join(" ").toLowerCase().includes(search.trim().toLowerCase())
+  );
+  const visibleRates = expanded ? rateRows : rateRows.slice(0, 8);
 
   if (!rates.length) {
     return (
@@ -2506,48 +2515,38 @@ function CollapsibleRateList({
             Tarifas configuradas
           </h3>
           <p className="text-xs font-medium text-slate-500">
-            {rates.length} combinación(es)
+            {rateRows.length} tarifas
           </p>
         </div>
 
-        {rates.length > 5 && (
+        {rateRows.length > 8 && (
           <button
             type="button"
             onClick={() => setExpanded((current) => !current)}
             className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-blue-700 shadow-sm"
           >
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            {expanded ? "Mostrar 5" : `Ver ${rates.length - 5} más`}
+            {expanded ? "Mostrar menos" : `Ver ${rateRows.length - 8} más`}
           </button>
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-2.5">
-        <p className="text-[11px] font-semibold text-slate-400">
-          ¿Cambió la política de peso mínimo? Actualízalo en todas las tarifas de una vez, sin editarlas una por una.
-        </p>
-        <button
-          type="button"
-          onClick={onBulkUpdateMinimumWeight}
-          className="shrink-0 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-        >
-          Aplicar peso mínimo a todas
-        </button>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-100 bg-white p-4">
+        <Field label="Buscar por modalidad o destino">
+          <input type="search" className="w-full rounded-xl border border-slate-300 px-3 py-2" value={search}
+            onChange={event => { setSearch(event.target.value); setExpanded(false); }} placeholder="Ej. Caja dorada o Cuba" />
+        </Field>
+        <details className="text-sm">
+          <summary className="cursor-pointer font-bold text-slate-700">Acciones masivas</summary>
+          <button type="button" onClick={onBulkUpdateMinimumWeight} className="mt-2 rounded-xl border px-3 py-2 font-bold">
+            Aplicar peso mínimo a todas
+          </button>
+        </details>
       </div>
 
       <div className="divide-y divide-slate-100">
-        {visibleRates.map((rate) => {
-          const territory =
-            rate.scope_type === "country"
-              ? countries.find((item) => item.id === rate.country_id)?.name
-              : rate.scope_type === "province"
-                ? provinces.find((item) => item.id === rate.province_id)?.name
-                : rate.scope_type === "municipality"
-                  ? municipalities.find(
-                      (item) => item.id === rate.municipality_id,
-                    )?.name
-                  : locations.find((item) => item.id === rate.location_id)
-                      ?.name;
+        {!visibleRates.length && <p className="p-4 text-sm text-slate-600">No hay tarifas que coincidan con la búsqueda.</p>}
+        {visibleRates.map(({ rate, service, territory }) => {
           const scopeLabel =
             rate.scope_type === "country"
               ? "País"
@@ -2556,26 +2555,17 @@ function CollapsibleRateList({
                 : rate.scope_type === "municipality"
                   ? "Municipio"
                   : "Lugar APK";
-          const service = serviceTypes.find(
-            (item) => item.id === rate.service_type_id,
-          );
-
           return (
             <div
               key={rate.id}
-              className="flex items-center justify-between gap-4 px-4 py-3 text-sm"
+              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm"
             >
               <div className="min-w-0">
                 <p className="truncate font-bold text-slate-900">
-                  {territory || "Territorio"} · {service?.name || "Servicio"} ·{" "}
-                  {rate.transport_mode === "air"
-                    ? "Aéreo"
-                    : rate.transport_mode === "sea"
-                      ? "Marítimo"
-                      : rate.transport_mode}
+                  {service?.name || "Modalidad"} · {territory || "Destino"}
                 </p>
                 <p className="text-xs font-medium text-slate-400">
-                  {scopeLabel} · Mínimo:{" "}
+                  {scopeLabel} · {transportLabels[rate.transport_mode]} · {rate.is_active ? "Activa" : "Inactiva"} · Mínimo:{" "}
                   {Number(rate.minimum_weight_lb || 0).toFixed(2)} lb · Cobro
                   mínimo: ${Number(rate.minimum_charge || 0).toFixed(2)} ·
                   Entrega: {rate.estimated_days_min ?? "?"}-
@@ -2590,6 +2580,11 @@ function CollapsibleRateList({
                     : `$${Number(rate.rate_per_lb).toFixed(2)}/lb`}
                   {service?.billing_mode !== "fixed" && rate.weight_threshold_lb != null && <span className="block text-xs">Desde {rate.weight_threshold_lb} lb: ${Number(rate.rate_at_or_above_threshold).toFixed(2)}/lb</span>}
                 </span>
+                <button type="button" onClick={() => onEdit(rate)}
+                  aria-label={`Editar tarifa de ${service?.name || "modalidad"} para ${territory || "destino"}`}
+                  className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 font-bold text-blue-800 hover:bg-blue-50">
+                  <Edit3 size={16} /> Editar
+                </button>
                 <button
                   type="button"
                   onClick={() => onDelete(rate)}
@@ -2613,32 +2608,83 @@ function CollapsibleRateList({
   );
 }
 
-function SimpleRows({
-  rows,
-  empty,
-}: {
-  rows: Array<{ left: string; right: string }>;
-  empty: string;
-}) {
-  if (!rows.length) {
-    return (
-      <div className="rounded-2xl border border-dashed p-4 text-sm font-semibold text-slate-400">
-        {empty}
-      </div>
-    );
-  }
+type RatePricing = Parameters<typeof updateShippingRatePricing>[2];
 
-  return (
-    <div className="space-y-2">
-      {rows.map((row, index) => (
-        <div
-          key={`${row.left}-${index}`}
-          className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-sm font-bold"
-        >
-          <span>{row.left}</span>
-          <span>{row.right}</span>
-        </div>
-      ))}
+function RatePriceEditor({ rate, service, saving, onCancel, onSave }: {
+  rate: ShippingRate;
+  service?: ShippingServiceType;
+  saving: boolean;
+  onCancel: () => void;
+  onSave: (values: RatePricing) => Promise<void>;
+}) {
+  const fixed = service?.billing_mode === "fixed";
+  const mainField = fixed ? "fixed_fee" : "rate_per_lb";
+  const [error, setError] = useState("");
+  const input = "block w-full rounded-xl border border-slate-300 px-3 py-2";
+  return <form className="space-y-4 rounded-2xl border border-blue-200 bg-blue-50/50 p-4" onSubmit={event => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const value = (name: string) => {
+      const raw = form.get(name);
+      return raw === "" || raw === null ? null : Number(raw);
+    };
+    const threshold = value("weight_threshold_lb");
+    const alternate = value("rate_at_or_above_threshold");
+    if (!fixed && (threshold === null) !== (alternate === null)) {
+      setError("Completa el peso y el precio alternativo o deja ambos vacíos.");
+      return;
+    }
+    setError("");
+    const values: RatePricing = {
+      [mainField]: value(mainField) ?? 0,
+      minimum_weight_lb: value("minimum_weight_lb") ?? 0,
+      maximum_weight_lb: value("maximum_weight_lb"),
+      minimum_charge: value("minimum_charge") ?? 0,
+      ...(!fixed && {
+        fixed_fee: value("fixed_fee") ?? 0,
+        weight_threshold_lb: threshold,
+        rate_at_or_above_threshold: alternate,
+      }),
+      estimated_days_min: value("estimated_days_min"),
+      estimated_days_max: value("estimated_days_max"),
+      priority: value("priority") ?? rate.priority,
+    };
+    const changes = Object.fromEntries(Object.entries(values).filter(([key, next]) => {
+      const previous = rate[key as keyof RatePricing];
+      return next !== (previous == null ? null : Number(previous));
+    }));
+    if (Object.keys(changes).length) void onSave(changes);
+    else onCancel();
+  }}>
+    <h3 className="font-black text-slate-900">Editar tarifa · {service?.name || "Modalidad"}</h3>
+    <Field label={fixed ? "Precio fijo (USD)" : "Precio por libra (USD)"}>
+      <input autoFocus name={mainField} type="number" min="0" step="0.01" required defaultValue={rate[mainField]} className={input} />
+    </Field>
+    <details>
+      <summary className="cursor-pointer text-sm font-bold text-slate-700">Peso, cargos y plazos</summary>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {([
+          ["minimum_weight_lb", "Peso mínimo facturable (lb)", "0.01"],
+          ["maximum_weight_lb", "Peso máximo (lb)", "0.01"],
+          ["minimum_charge", "Cobro mínimo (USD)", "0.01"],
+          ...(!fixed ? [
+            ["fixed_fee", "Cargo fijo adicional (USD)", "0.01"],
+            ["weight_threshold_lb", "Peso para precio alternativo (lb)", "0.01"],
+            ["rate_at_or_above_threshold", "Precio alternativo por libra (USD)", "0.01"],
+          ] as const : []),
+          ["estimated_days_min", "Entrega mínima (días)", "1"],
+          ["estimated_days_max", "Entrega máxima (días)", "1"],
+          ["priority", "Prioridad", "1"],
+        ] as const).map(([name, label, step]) => <Field key={name} label={label}>
+          <input name={name} type="number" step={step} min={name === "weight_threshold_lb" ? "0.01" : "0"}
+            defaultValue={rate[name] ?? ""} className={input} />
+        </Field>)}
+      </div>
+    </details>
+    {error && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
+    <div className="flex flex-wrap gap-2">
+      <button disabled={saving} className="rounded-xl bg-blue-700 px-4 py-2.5 font-bold text-white disabled:opacity-60">Guardar cambios</button>
+      <button type="button" disabled={saving} onClick={onCancel} className="rounded-xl border bg-white px-4 py-2.5 font-bold">Cancelar</button>
     </div>
-  );
+  </form>;
 }
