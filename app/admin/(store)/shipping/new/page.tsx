@@ -236,7 +236,7 @@ export default function NewShipmentPage() {
       {requiresTrip && !selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Selecciona un viaje para habilitar el registro del envío.</p>}
     </>}
     <fieldset disabled={requiresTrip && !selectedTrip} className={requiresTrip && !selectedTrip ? 'opacity-50' : ''}>
-      <ShipmentForm allowLuxuryPhysicalProducts={activeStore?.slug === "luxury-travel-point"} hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
+      <ShipmentForm allowLuxuryPhysicalProducts={activeStore?.slug === "luxury-travel-point"} hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel" || activeStore?.slug === "luxury-travel-point"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
     </fieldset>
   </div></main>;
 }

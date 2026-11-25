@@ -28,6 +28,20 @@ begin
     raise exception 'Luxury remittance invoice mismatch';
   end if;
 
+  update public.shipments set money_delivery_currency='CUP', money_exchange_rate=350
+    where id='luxury-money-test';
+  if not exists(select 1 from public.shipments where id='luxury-money-test'
+    and money_usd_to_cup=100 and money_delivery_amount=35000 and service_price=150) then
+    raise exception 'Luxury CUP remittance mismatch';
+  end if;
+  update public.shipments set money_delivery_currency='MIXED', money_usd_to_cup=40
+    where id='luxury-money-test';
+  if not exists(select 1 from public.shipments where id='luxury-money-test'
+    and money_usd_to_cup=40 and money_delivery_amount=14000 and money_amount-money_usd_to_cup=60
+    and service_price=150) then
+    raise exception 'Luxury mixed remittance mismatch';
+  end if;
+
   perform public.create_remittance_numbered_shipment(tenant,'luxury-package-test','LUX-PACKAGE',jsonb_build_object(
     'trip_id',gen_random_uuid(),'contains_package',true,'contains_money',false,'weight_subtotal',15,'physical_products',lines));
   if not exists(select 1 from public.shipments where id='luxury-package-test' and service_price=55) then
