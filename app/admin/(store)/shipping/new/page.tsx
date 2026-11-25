@@ -13,6 +13,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { resolveOperationTrip, type ShipmentOperationType } from "@/lib/shipping/operation-mode";
+import LuxuryInvoicePreview from "@/components/admin/shipping/LuxuryInvoicePreview";
 import ShipmentForm from "@/components/admin/shipping/ShipmentForm";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useStore } from "@/hooks/useStore";
@@ -58,6 +59,7 @@ export default function NewShipmentPage() {
   const { access, loading: accessLoading, isSuperAdmin, store: accessStore } = useAdminAccess();
   const { store: selectedStore, loading: storeLoading } = useStore();
 
+  const [showLuxuryInvoice, setShowLuxuryInvoice] = useState(false);
   const [drivers, setDrivers] = useState<ShippingDriver[]>([]);
   const [settings, setSettings] = useState<ShippingSettings | null>(null);
   const [countries, setCountries] = useState<ShippingCountry[]>([]);
@@ -205,6 +207,17 @@ export default function NewShipmentPage() {
       <Link href="/admin/shipping/settings" className="inline-flex items-center gap-2 rounded-2xl border bg-white px-4 py-2.5 text-sm font-black"><Settings size={18} /> Ajustes de envíos</Link>
     </div>
     <div className="mb-6"><p className="text-sm font-black text-blue-700">Operaciones</p><h1 className="text-3xl font-black text-[#061b3a]">Crear nuevo envío</h1></div>
+    {activeStore?.slug === "luxury-travel-point" && <button type="button" aria-expanded={showLuxuryInvoice}
+      className="mb-5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 font-bold text-blue-900"
+      onClick={() => setShowLuxuryInvoice(current => !current)}>
+      {showLuxuryInvoice ? "Volver a operación individual" : "Factura con varios envíos y servicios"}
+    </button>}
+    {activeStore?.slug === "luxury-travel-point" && showLuxuryInvoice ? (
+      <LuxuryInvoicePreview key={activeStore.id} storeId={activeStore.id} countries={countries}
+        provinces={provinces} municipalities={municipalities} locations={locations} initialCustomerId={initialCustomerId}
+        initialRecipientId={initialRecipientId} trips={directTripMode ? openTrips.filter(trip => trip.id === requestedTripId) : openTrips}
+        initialTripId={effectiveTripId} fixedTrip={directTripMode} services={serviceTypes} rates={rates} />
+    ) : <>
     <section className="mb-6 rounded-[2rem] border bg-white p-5 shadow-sm">
       <h2 className="text-xl font-black">¿Qué deseas registrar?</h2>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{([
@@ -236,5 +249,6 @@ export default function NewShipmentPage() {
       {requiresTrip && !selectedTrip && <p className="mb-5 rounded-2xl bg-amber-50 p-4 font-bold text-amber-800">Puedes registrar el cliente y el destinatario. Selecciona un viaje antes de guardar el envío.</p>}
     </>}
     <ShipmentForm saveBlocked={requiresTrip && !selectedTrip} allowLuxuryPhysicalProducts={activeStore?.slug === "luxury-travel-point"} hasTrip={!!selectedTrip} allowRemittanceExtras={activeStore?.slug === "alvarez-travel"} allowMoneyDeliveryOptions={activeStore?.slug === "aguila" || activeStore?.slug === "alvarez-travel" || activeStore?.slug === "luxury-travel-point"} operationType={operationType} storeId={activeStore?.id || ''} drivers={drivers} settings={settings} countries={countries} provinces={provinces} municipalities={municipalities} locations={locations} serviceTypes={serviceTypes} rates={rates} extraFees={extraFees} initialCustomerId={initialCustomerId} initialRecipientId={initialRecipientId} submitting={submitting} onSubmit={submit} />
+    </>}
   </div></main>;
 }
