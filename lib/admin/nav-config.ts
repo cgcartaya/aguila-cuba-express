@@ -156,6 +156,7 @@ export const adminNavSections: AdminSection[] = [
     module: "shipping",
     links: [
       { href: "/admin/folios", label: "Facturas con folio", icon: ClipboardCheck, storeSlugs: ["luxury-travel-point"] },
+      { href: "/admin/folios/estadisticas", label: "Estadísticas", icon: ChartNoAxesCombined, storeSlugs: ["luxury-travel-point"] },
       { href: "/admin/folios/proveedores", label: "Proveedores", icon: Users, storeSlugs: ["luxury-travel-point"] },
       { href: "/admin/folios/formas-de-pago", label: "Formas de pago", icon: CircleDollarSign, storeSlugs: ["luxury-travel-point"] },
     ],
