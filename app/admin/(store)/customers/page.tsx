@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Archive,
@@ -12,6 +12,7 @@ import {
   PackagePlus,
   Pencil,
   Phone,
+  Plus,
   RotateCcw,
   Search,
   Trash2,
@@ -76,6 +77,9 @@ export default function ShippingCustomersPage() {
   );
 
   const [customers, setCustomers] = useState<ShippingCustomer[]>([]);
+  const isLuxury = activeStore?.slug === "luxury-travel-point";
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [editError, setEditError] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("active");
   const [loading, setLoading] = useState(true);
@@ -158,6 +162,8 @@ export default function ShippingCustomersPage() {
 
   function beginEdit(customer: ShippingCustomer) {
     setOpenMenuId(null);
+    setCreatingCustomer(false);
+    setEditError("");
     setEditingCustomer(customer);
     setEditForm({
       identity_document: customer.identity_document || "",
@@ -172,17 +178,22 @@ export default function ShippingCustomersPage() {
   }
 
   async function saveEdit() {
-    if (!activeStore?.id || !editingCustomer) return;
+    if (!activeStore?.id || (!editingCustomer && !creatingCustomer) || saving) return;
     const phone = editForm.phone.replace(/\D/g, "");
     if (!editForm.name.trim() || !phone) {
-      setErrorMessage("El nombre y el teléfono son obligatorios.");
+      setEditError("El nombre y el teléfono son obligatorios.");
       return;
     }
 
+    if (creatingCustomer && !editForm.birth_date) {
+      setEditError("Indica la fecha de nacimiento del cliente.");
+      return;
+    }
     setSaving(true);
+    setEditError("");
     setErrorMessage("");
     const { data, error } = await saveShippingCustomer({
-      id: editingCustomer.id,
+      id: editingCustomer?.id,
       store_id: activeStore.id,
       identity_document: editForm.identity_document,
       name: editForm.name.trim(),
@@ -195,7 +206,16 @@ export default function ShippingCustomersPage() {
     setSaving(false);
 
     if (error || !data) {
-      setErrorMessage(error?.message || "No se pudieron guardar los cambios.");
+      setEditError(error?.message || "No se pudieron guardar los cambios.");
+      return;
+    }
+
+    if (!editingCustomer) {
+      setCreatingCustomer(false);
+      setSearch("");
+      setFilter("active");
+      setSuccessMessage("Cliente registrado correctamente.");
+      await loadCustomers();
       return;
     }
 
@@ -266,7 +286,7 @@ export default function ShippingCustomersPage() {
   return (
     <main className="min-h-screen bg-[#f4f7fb] p-3 pb-28 sm:p-5 lg:p-7 lg:pb-10">
       <div className="mx-auto max-w-[1500px] space-y-5">
-        <AdminPageHeader
+        {isLuxury ? <h1 className="text-3xl font-black text-[#061b3a]">Clientes y destinatarios</h1> : <AdminPageHeader
           eyebrow="CRM de envíos"
           icon={UsersRound}
           title="Clientes y destinatarios"
@@ -283,16 +303,16 @@ export default function ShippingCustomersPage() {
             <MiniMetric label="Activos 30 días" value={String(activeThisMonth)} accent="blue" />
             <MiniMetric label="Saldo total" value={money(totalBalance)} alert={totalBalance > 0} />
           </div>}
-        />
+        />}
 
         <section className="sticky top-2 z-20 rounded-[1.6rem] border border-slate-200/80 bg-white/95 p-3 shadow-lg shadow-slate-200/40 backdrop-blur sm:p-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_230px]">
+          <div className={isLuxury ? "grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]" : "grid gap-3 md:grid-cols-[1fr_230px]"}>
             <label className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Buscar por ID, código, nombre o teléfono..." />
+              <input aria-label="Buscar clientes" value={search} onChange={(event) => setSearch(event.target.value)} className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-12 pr-4 text-sm font-bold text-slate-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Buscar por ID, código, nombre o teléfono..." />
             </label>
 
-            <select value={filter} onChange={(event) => setFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 outline-none focus:border-blue-400">
+            <select aria-label="Filtrar clientes" value={filter} onChange={(event) => setFilter(event.target.value)} className="h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 outline-none focus:border-blue-400">
               <option value="active">Clientes activos</option>
               <option value="archived">Clientes archivados</option>
               <option value="all">Todos los clientes</option>
@@ -300,6 +320,14 @@ export default function ShippingCustomersPage() {
               <option value="debt">Con saldo pendiente</option>
               <option value="vip">Clientes VIP</option>
             </select>
+            {isLuxury && <button type="button" disabled={loading || accessLoading || storeLoading} onClick={() => {
+              setEditForm(EMPTY_EDIT_FORM);
+              setEditingCustomer(null);
+              setEditError("");
+              setCreatingCustomer(true);
+            }} className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#061b3a] px-5 text-sm font-bold text-white hover:bg-blue-900 disabled:opacity-50">
+              <Plus size={18} aria-hidden="true" /> Nuevo cliente
+            </button>}
           </div>
         </section>
 
@@ -328,6 +356,64 @@ export default function ShippingCustomersPage() {
             <h2 className="mt-4 text-xl font-black text-slate-900">No encontramos clientes</h2>
             <p className="mt-2 text-sm font-semibold text-slate-500">Prueba otro nombre, código, teléfono o filtro.</p>
           </div>
+        ) : isLuxury ? (
+          <section className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm" aria-label="Directorio de clientes">
+            <table className="w-full min-w-[52rem] text-left text-sm">
+              <caption className="sr-only">{filtered.length} de {customers.length} clientes visibles</caption>
+              <thead className="bg-slate-100 text-[#061b3a]">
+                <tr>
+                  {["Cliente", "Código", "Teléfono", "Envíos", "Destinatarios", "Saldo", "Acciones"].map(label => (
+                    <th key={label} scope="col" className="px-3 py-3 font-black">{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {filtered.map(customer => {
+                  const archived = customer.is_active === false;
+                  const expanded = openMenuId === customer.id;
+                  const code = customer.customer_code || String(customer.customer_number).padStart(4, "0");
+                  return <Fragment key={customer.id}>
+                    <tr className="align-middle hover:bg-amber-50/60">
+                      <th scope="row" className="min-w-44 px-3 py-3">
+                        <div className="flex items-center gap-2">
+                          <UserRound size={18} className="shrink-0 text-amber-800" aria-hidden="true" />
+                          <span className="text-[#061b3a]">{customer.name}{archived && <span className="block text-xs font-medium text-slate-600">Archivado</span>}</span>
+                        </div>
+                      </th>
+                      <td className="whitespace-nowrap px-3 py-3 font-semibold tabular-nums">{code}</td>
+                      <td className="whitespace-nowrap px-3 py-3 tabular-nums">{customer.phone || "—"}</td>
+                      <td className="px-3 py-3 tabular-nums">{Number(customer.operations_count || 0)}</td>
+                      <td className="px-3 py-3 tabular-nums">{Number(customer.recipients_count || 0)}</td>
+                      <td className={`whitespace-nowrap px-3 py-3 font-bold tabular-nums ${Number(customer.total_balance || 0) > 0 ? "text-amber-900" : "text-slate-700"}`}>{money(customer.total_balance)}</td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                          <Link href={`/admin/customers/${customer.id}`} className="rounded-lg border border-slate-300 px-2.5 py-2 font-bold text-[#061b3a] hover:border-amber-700">Ver expediente</Link>
+                          {!archived && <Link href={`/admin/shipping/new?customerId=${customer.id}`} className="inline-flex items-center gap-1 rounded-lg bg-[#061b3a] px-2.5 py-2 font-bold text-white hover:bg-blue-900">
+                            <PackagePlus size={15} aria-hidden="true" /> Nuevo envío
+                          </Link>}
+                          <button type="button" aria-label={`Acciones de ${customer.name}`} aria-expanded={expanded}
+                            onClick={() => setOpenMenuId(expanded ? null : customer.id)} className="rounded-lg border border-slate-200 p-2 hover:bg-slate-100"><MoreVertical size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                    {expanded && <tr className="bg-slate-50"><td colSpan={7} className="px-3 py-3">
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+                        {customer.identity_document && <span>ID {customer.identity_document}</span>}
+                        <span>Última operación · {formatDate(customer.last_operation_at)}</span>
+                        <span>Facturado · {money(customer.total_billed)}</span>
+                        <button type="button" onClick={() => beginEdit(customer)} className="font-bold text-blue-800 underline">Editar cliente</button>
+                        <button type="button" onClick={() => void copyPhone(customer)} className="font-bold text-blue-800 underline">Copiar teléfono</button>
+                        {archived ? <button type="button" onClick={() => void restoreCustomer(customer)} className="font-bold text-emerald-800 underline">Restaurar cliente</button>
+                          : <button type="button" onClick={() => { setOpenMenuId(null); setActionCustomer(customer); }} className="font-bold text-red-800 underline">
+                            {Number(customer.operations_count || 0) > 0 ? "Archivar cliente" : "Eliminar cliente"}
+                          </button>}
+                      </div>
+                    </td></tr>}
+                  </Fragment>;
+                })}
+              </tbody>
+            </table>
+          </section>
         ) : (
           <section className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {filtered.map((customer) => {
@@ -398,27 +484,28 @@ export default function ShippingCustomersPage() {
         )}
       </div>
 
-      {editingCustomer && (
+      {(editingCustomer || (isLuxury && creatingCustomer)) && (
         <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-sm sm:items-center sm:p-5">
           <div className="max-h-[94vh] w-full overflow-y-auto rounded-t-[2rem] bg-white shadow-2xl sm:max-w-2xl sm:rounded-[2rem]">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 p-5 backdrop-blur sm:p-6">
-              <div><p className="text-xs font-black uppercase tracking-[.14em] text-blue-700">Editar expediente</p><h3 className="mt-1 text-2xl font-black text-slate-950">{editingCustomer.name}</h3></div>
-              <button type="button" onClick={() => setEditingCustomer(null)} className="rounded-xl bg-slate-100 p-3 text-slate-600"><X size={20} /></button>
+              <div><p className="text-xs font-black uppercase tracking-[.14em] text-blue-700">Expediente</p><h3 className="mt-1 text-2xl font-black text-slate-950">{editingCustomer?.name || "Nuevo cliente"}</h3></div>
+              <button type="button" disabled={saving} onClick={() => { setEditingCustomer(null); setCreatingCustomer(false); }} className="rounded-xl bg-slate-100 p-3 text-slate-600"><X size={20} /></button>
             </div>
 
             <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
               <Field label="ID del cliente (opcional)" value={editForm.identity_document} onChange={(value) => setEditForm((current) => ({ ...current, identity_document: value.replace(/[^A-Za-z0-9]/g, "").slice(0, 50).toUpperCase() }))} />
               <Field label="Nombre completo *" value={editForm.name} onChange={(value) => setEditForm((current) => ({ ...current, name: value }))} />
               <Field label="Teléfono *" value={editForm.phone} onChange={(value) => setEditForm((current) => ({ ...current, phone: value.replace(/\D/g, "").slice(0, 15) }))} inputMode="numeric" />
-              <Field label="Fecha de nacimiento" value={editForm.birth_date} onChange={(value) => setEditForm((current) => ({ ...current, birth_date: value }))} type="date" />
+              <Field label={creatingCustomer ? "Fecha de nacimiento *" : "Fecha de nacimiento"} value={editForm.birth_date} onChange={(value) => setEditForm((current) => ({ ...current, birth_date: value }))} type="date" />
               <Field label="Correo electrónico" value={editForm.email} onChange={(value) => setEditForm((current) => ({ ...current, email: value }))} type="email" />
               <div className="sm:col-span-2"><Field label="Dirección" value={editForm.address} onChange={(value) => setEditForm((current) => ({ ...current, address: value }))} /></div>
               <label className="sm:col-span-2"><span className="mb-2 block text-sm font-black text-slate-700">Notas</span><textarea value={editForm.notes} onChange={(event) => setEditForm((current) => ({ ...current, notes: event.target.value }))} className="min-h-28 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none focus:border-blue-400 focus:bg-white focus:ring-4 focus:ring-blue-100" /></label>
             </div>
 
+            {editError && <p role="alert" className="px-5 pb-3 text-sm font-bold text-red-700">{editError}</p>}
             <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 p-5 backdrop-blur sm:flex-row sm:justify-end sm:p-6">
-              <button type="button" onClick={() => setEditingCustomer(null)} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700">Cancelar</button>
-              <button type="button" onClick={() => void saveEdit()} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 text-sm font-black text-white disabled:opacity-50">{saving && <Loader2 size={18} className="animate-spin" />} Guardar cambios</button>
+              <button type="button" disabled={saving} onClick={() => { setEditingCustomer(null); setCreatingCustomer(false); }} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-black text-slate-700">Cancelar</button>
+              <button type="button" onClick={() => void saveEdit()} disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#061b3a] px-6 py-3 text-sm font-black text-white disabled:opacity-50">{saving && <Loader2 size={18} className="animate-spin" />} {creatingCustomer ? "Crear cliente" : "Guardar cambios"}</button>
             </div>
           </div>
         </div>
