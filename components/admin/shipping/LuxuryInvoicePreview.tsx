@@ -55,7 +55,14 @@ type Folio = {
   lines: (Omit<Line, "id"> & { cents: number })[];
 };
 
-type HistoryFilters = { search: string; from: string; to: string; providerId?: string; methodId?: string };
+const historyServiceTypes = { ...lineTypes, customs: "Cargo aduanal" };
+const paymentStatuses = {
+  paid: "Pagado", partial: "Pago parcial", pending: "Pendiente", unrecorded: "Sin registro de pago",
+};
+type HistoryFilters = {
+  search: string; from: string; to: string; providerId?: string; methodId?: string;
+  serviceKind?: string; paymentStatus?: string;
+};
 const emptyFilters: HistoryFilters = { search: "", from: "", to: "" };
 const easternOffset = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/New_York", timeZoneName: "longOffset",
@@ -187,6 +194,8 @@ export default function LuxuryInvoicePreview({
       }
       if (criteria.providerId) query = query.contains("lines", JSON.stringify([{ providerId: criteria.providerId }]));
       if (criteria.methodId) query = query.contains("payments", JSON.stringify([{ methodId: criteria.methodId }]));
+      if (criteria.serviceKind) query = query.contains("lines", JSON.stringify([{ kind: criteria.serviceKind }]));
+      if (criteria.paymentStatus) query = query.eq("payment_status", criteria.paymentStatus);
       if (criteria.from) query = query.gte("created_at", easternMidnight(criteria.from));
       if (criteria.to) query = query.lt("created_at", easternMidnight(criteria.to, true));
       const { data, error: cause } = await query.order("folio", { ascending: false })
@@ -305,6 +314,18 @@ export default function LuxuryInvoicePreview({
             <option value="">Todas</option>{methods.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
           </select>
         </label>
+        <label className="text-sm font-bold text-slate-700">Tipo de servicio
+          <select className={field} value={filters.serviceKind || ""} onChange={event => setFilters(current => ({ ...current, serviceKind: event.target.value }))}>
+            <option value="">Todos</option>
+            {Object.entries(historyServiceTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
+        <label className="text-sm font-bold text-slate-700">Estado de pago
+          <select className={field} value={filters.paymentStatus || ""} onChange={event => setFilters(current => ({ ...current, paymentStatus: event.target.value }))}>
+            <option value="">Todos</option>
+            {Object.entries(paymentStatuses).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
         <button type="submit" disabled={loadingHistory} className="rounded-xl bg-amber-800 px-4 py-2.5 font-bold text-white disabled:opacity-50">Filtrar</button>
         {(Object.values(filters).some(Boolean) || Object.values(appliedFilters).some(Boolean)) &&
           <button type="button" disabled={loadingHistory} className="rounded-xl px-3 py-2.5 font-bold text-slate-700 underline"
@@ -312,12 +333,15 @@ export default function LuxuryInvoicePreview({
       </form>
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white" aria-busy={loadingHistory}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[36rem] text-left text-sm">
+          <table className="w-full min-w-[70rem] text-left text-sm">
             <caption className="sr-only">Facturas con folio</caption>
             <thead className="bg-slate-100 text-slate-900"><tr>
               <th scope="col" className="px-5 py-3.5">Folio</th>
               <th scope="col" className="px-5 py-3.5">Cliente</th>
               <th scope="col" className="px-5 py-3.5">Fecha</th>
+              <th scope="col" className="px-3 py-3.5">Conceptos</th>
+              <th scope="col" className="px-3 py-3.5">Proveedores</th>
+              <th scope="col" className="px-3 py-3.5">Formas de pago</th>
               <th scope="col" className="px-5 py-3.5 text-right">Total (USD)</th>
               <th scope="col" className="px-5 py-3.5 text-right">Pagado</th>
               <th scope="col" className="px-5 py-3.5 text-right">Saldo registrado</th>
@@ -328,6 +352,10 @@ export default function LuxuryInvoicePreview({
                 <th scope="row" className="px-5 py-4 font-black tabular-nums text-[#061b3a]">{folioLabel(invoice.folio)}</th>
                 <td className="px-5 py-4 font-medium text-slate-900">{invoice.customer_name}</td>
                 <td className="whitespace-nowrap px-5 py-4 text-slate-600">{dateFormat.format(new Date(invoice.created_at))}</td>
+                <td className="px-3 py-4"><HistoryValues values={invoice.lines.map(line => line.description)} /></td>
+                <td className="px-3 py-4"><HistoryValues values={invoice.lines.map(line => line.providerName)} /></td>
+                <td className="px-3 py-4"><HistoryValues preserveRepeated values={(invoice.payments ?? []).map(payment =>
+                  payment.methodName + " · " + currency.format(payment.cents / 100))} /></td>
                 <td className="whitespace-nowrap px-5 py-4 text-right font-black tabular-nums text-[#061b3a]">{currency.format(invoice.total_cents / 100)}</td>
                 <td className="whitespace-nowrap px-5 py-4 text-right">{invoice.payment_control ? currency.format((invoice.paid_cents ?? 0) / 100) : "—"}</td>
                 <td className="whitespace-nowrap px-5 py-4 text-right">{invoice.payment_control ? currency.format((invoice.total_cents - (invoice.paid_cents ?? 0)) / 100) : "—"}</td>
@@ -615,4 +643,18 @@ function ContactBlock({ label, contact }: { label: string; contact: PrintContact
     {contact.phone && <p>Tel. {contact.phone}</p>}
     {contact.address && <p>{contact.address}</p>}
   </section>;
+}
+
+function HistoryValues({ values, preserveRepeated = false }: { values: (string | null | undefined)[]; preserveRepeated?: boolean }) {
+  const recorded = values.filter((value): value is string => Boolean(value));
+  const distinct = preserveRepeated ? recorded : [...new Set(recorded)];
+  if (!distinct.length) return <span className="text-slate-500">Sin registrar</span>;
+
+  return <div className="min-w-28 max-w-56 space-y-1 break-words text-slate-700">
+    {distinct.slice(0, 2).map((value, index) => <p key={index}>{value}</p>)}
+    {distinct.length > 2 && <details>
+      <summary className="cursor-pointer font-semibold text-blue-900">Ver {distinct.length - 2} más</summary>
+      {distinct.slice(2).map((value, index) => <p key={index} className="mt-1">{value}</p>)}
+    </details>}
+  </div>;
 }
