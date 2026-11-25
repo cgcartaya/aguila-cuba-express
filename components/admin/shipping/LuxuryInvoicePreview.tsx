@@ -3,6 +3,9 @@
 import { Eye, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { supabase } from "@/lib/supabase";
+import PhysicalProductsEditor from "./PhysicalProductsEditor";
+import { normalizeCustomsCharges, type CustomsCharge } from "@/lib/shipping/customs-charges";
+import type { PhysicalProductLine } from "@/lib/shipping/remittance-delivery";
 import CustomerRecipientPicker, { type CustomerSelection } from "./CustomerRecipientPicker";
 import type { ShippingRecipient } from "@/lib/shipping/customer-types";
 import type { ShippingRate, ShippingServiceType, ShippingTrip } from "@/lib/shipping/types";
@@ -13,12 +16,14 @@ type Props = Omit<ComponentProps<typeof CustomerRecipientPicker>, "onApply"> & {
   rates: ShippingRate[];
 };
 
-const lineTypes = { shipment: "Envío", passport: "Pasaporte", remittance: "Remesa registrada en otro sistema", other: "Otro servicio" } as const;
+const lineTypes = { shipment: "Envío", product: "Tienda física", passport: "Pasaporte", remittance: "Remesa registrada en otro sistema", other: "Otro servicio" } as const;
 type LineType = keyof typeof lineTypes;
 
 type Line = {
   id: string;
-  kind: LineType;
+  kind: LineType | "customs";
+  productId?: string;
+  groupId?: string;
   recipientId?: string;
   serviceId?: string;
   notes?: string;
@@ -81,6 +86,9 @@ export default function LuxuryInvoicePreview({
   const [units, setUnits] = useState("1");
   const [amount, setAmount] = useState("");
   const [notes, setNotes] = useState("");
+  const [products, setProducts] = useState<PhysicalProductLine[]>([]);
+  const [customs, setCustoms] = useState<CustomsCharge[]>([]);
+  const [lineError, setLineError] = useState("");
   const [saved, setSaved] = useState<Folio | null>(null);
   const [history, setHistory] = useState<Folio[] | null>([]);
   const [filters, setFilters] = useState(emptyFilters);
@@ -169,10 +177,26 @@ export default function LuxuryInvoicePreview({
   const quantity = Number(units);
   const validQuantity = Number.isFinite(quantity) && quantity > 0 && (!fixed || Number.isInteger(quantity));
 
-  function addLine(line: Omit<Line, "id">) {
+  function productLines(destination?: string, linkedRecipient?: string): Omit<Line, "id">[] {
+    return products.map(item => ({
+      kind: "product", productId: item.product_id, recipientId: linkedRecipient, destination,
+      description: item.name, units: item.quantity, unit: "unidad", unitPrice: item.unit_price,
+    }));
+  }
+
+  const validProducts = products.every(item => Number.isInteger(item.quantity) && item.quantity >= 1 && item.quantity <= 999);
+  function addLines(...entries: Omit<Line, "id">[]) {
     if (!contact?.customer_id || !sameCustomer) return;
+    if (lines.length + entries.length > 100) {
+      setLineError("Puedes añadir hasta 100 conceptos por factura.");
+      return;
+    }
+    const groupId = entries[0]?.kind === "shipment" ? crypto.randomUUID() : undefined;
     setCustomer({ id: contact.customer_id, name: contact.sender_name });
-    setLines(current => [...current, { ...line, id: crypto.randomUUID() }]);
+    setLines(current => [...current, ...entries.map(line => ({ ...line, groupId, id: crypto.randomUUID() }))]);
+    setLineError("");
+    setProducts([]);
+    setCustoms([]);
     setRecipientId("");
     setUnits("1");
     setAmount("");
@@ -292,13 +316,13 @@ export default function LuxuryInvoicePreview({
     <section className={card}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-black text-slate-950">Agregar a la factura</h2>
-        {lineType && <button type="button" className="rounded-lg border px-3 py-2 text-sm font-bold" onClick={() => setLineType("")}>Cerrar</button>}
+        {lineType && <button type="button" className="rounded-lg border px-3 py-2 text-sm font-bold" onClick={() => { setLineType(""); setProducts([]); setCustoms([]); setLineError(""); }}>Cerrar</button>}
       </div>
       {!contact?.customer_id && <p className="text-sm text-slate-600">Selecciona un cliente para agregar envíos o servicios.</p>}
       <div className="flex flex-wrap gap-2">
         {(Object.entries(lineTypes) as [LineType, string][]).map(([type, label]) => (
           <button key={type} type="button" disabled={!contact?.customer_id || !sameCustomer}
-            aria-pressed={lineType === type} onClick={() => setLineType(type)}
+            aria-pressed={lineType === type} onClick={() => { if (type !== lineType) { setProducts([]); setCustoms([]); setLineError(""); setLineType(type); } }}
             className={`rounded-xl border px-4 py-2.5 text-sm font-bold disabled:opacity-40 ${lineType === type ? "border-blue-700 bg-blue-50 text-blue-900" : "border-slate-300 text-slate-700"}`}>
             + {label}
           </button>
@@ -336,16 +360,51 @@ export default function LuxuryInvoicePreview({
           {Number.isFinite(price) ? currency.format(price) + (fixed ? " por caja" : " por libra")
             : "Selecciona un destinatario con país configurado y tarifa disponible."}
         </p>}
+        <details className="space-y-3 rounded-xl border p-4 sm:col-span-2" open={products.length > 0 || undefined}>
+          <summary className="cursor-pointer font-bold">Productos de la tienda física en este envío</summary>
+          <PhysicalProductsEditor storeId={picker.storeId} tracksStock={false} value={products} onChange={setProducts}
+            onUseWeight={fixed ? undefined : weight => setUnits(String(weight))} />
+        </details>
+        <div className="space-y-3 rounded-xl border p-4 sm:col-span-2">
+          <h3 className="font-bold">Cargos aduanales</h3>
+          {customs.map((charge, index) => <div key={index} className="grid gap-2 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+            <label className="text-sm font-bold">Duradero o artículo
+              <input className={field} maxLength={160} value={charge.description}
+                onChange={event => setCustoms(current => current.map((item, i) => i === index ? { ...item, description: event.target.value } : item))} />
+            </label>
+            <label className="text-sm font-bold">Importe (USD)
+              <input className={field} type="number" min="0.01" step="0.01" value={charge.amount || ""}
+                onChange={event => { const amount = Number(event.target.value); setCustoms(current => current.map((item, i) => i === index ? { ...item, amount } : item)); }} />
+            </label>
+            <button type="button" className="rounded-lg border px-3 py-2" onClick={() => setCustoms(current => current.filter((_, i) => i !== index))}>Quitar</button>
+          </div>)}
+          <button type="button" className="rounded-lg border px-3 py-2 font-bold" disabled={customs.length >= 99}
+            onClick={() => setCustoms(current => [...current, { description: "", amount: 0 }])}>Añadir cargo aduanal</button>
+        </div>
         <button type="button" className={button}
           disabled={!recipient || !sameCustomer
-            || !service || !Number.isFinite(price) || price <= 0 || !validQuantity}
+            || !validProducts || !service || !Number.isFinite(price) || price <= 0 || !validQuantity}
           onClick={() => {
             if (!service || !recipient) return;
-            addLine({ kind: "shipment", recipientId: recipient.id, serviceId: service.id, description: service.name, destination: [recipient.name, recipient.address].filter(Boolean).join(" · "),
-              units: quantity, unit: fixed ? "caja" : "lb", unitPrice: price });
+            try {
+              const destination = [recipient.name, recipient.address].filter(Boolean).join(" · ");
+              addLines({ kind: "shipment", recipientId: recipient.id, serviceId: service.id, description: service.name,
+                destination, units: quantity, unit: fixed ? "caja" : "lb", unitPrice: price },
+              ...productLines(destination, recipient.id), ...normalizeCustomsCharges(customs).map(charge => ({
+                kind: "customs" as const, recipientId: recipient.id, destination, notes: charge.description,
+                description: "Aduana · " + charge.description, units: 1, unit: "cargo", unitPrice: charge.amount,
+              })));
+            } catch (cause) {
+              setLineError(cause instanceof Error ? cause.message : "Revisa los cargos aduanales.");
+            }
           }}>Agregar envío</button>
       </div>}
-      {lineType && lineType !== "shipment" && <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
+      {lineType === "product" && <div className="space-y-4 border-t pt-4">
+        <PhysicalProductsEditor storeId={picker.storeId} tracksStock={false} value={products} onChange={setProducts} />
+        <button type="button" className={button} disabled={!contact?.customer_id || !sameCustomer || !products.length || !validProducts}
+          onClick={() => addLines(...productLines())}>Agregar productos</button>
+      </div>}
+      {lineType && lineType !== "shipment" && lineType !== "product" && <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">
         <label className="block text-sm font-bold">Importe a facturar (USD)
           <input className={field} type="number" min="0.01" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} />
         </label>
@@ -354,11 +413,12 @@ export default function LuxuryInvoicePreview({
         </label>
         <button type="button" className={button} disabled={!contact?.customer_id || !sameCustomer || !Number.isFinite(Number(amount)) || Number(amount) <= 0 || (lineType === "other" && !notes.trim())}
           onClick={() => {
-            addLine({ kind: lineType, notes: notes.trim(), description: [lineType === "other" ? "" : lineTypes[lineType], notes.trim()].filter(Boolean).join(" · "), units: 1, unit: "servicio", unitPrice: Number(amount) });
+            addLines({ kind: lineType, notes: notes.trim(), description: [lineType === "other" ? "" : lineTypes[lineType], notes.trim()].filter(Boolean).join(" · "), units: 1, unit: "servicio", unitPrice: Number(amount) });
             setAmount("");
             setNotes("");
           }}>Agregar servicio</button>
       </div>}
+      {lineError && <p role="alert" className="text-sm font-bold text-red-700">{lineError}</p>}
     </section>
     <section className={card} aria-label="Vista previa de la factura">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -378,8 +438,8 @@ export default function LuxuryInvoicePreview({
             <strong>{currency.format(lineCents(line) / 100)}</strong>
             <button type="button" className="rounded-lg border px-3 py-2 text-sm font-bold text-slate-700"
               aria-label={"Quitar " + line.description} onClick={() => {
-                setLines(current => current.filter(item => item.id !== line.id));
-                if (lines.length === 1) setCustomer(null);
+                setLines(current => current.filter(item => item.id !== line.id && !(line.kind === "shipment" && line.groupId && item.groupId === line.groupId)));
+                if (lines.every(item => item.id === line.id || (line.kind === "shipment" && line.groupId && item.groupId === line.groupId))) setCustomer(null);
               }}>Quitar</button>
           </div>
         </li>)}
