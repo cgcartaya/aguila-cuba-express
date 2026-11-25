@@ -81,6 +81,7 @@ export default function CustomerRecipientPicker({
   const [recipients, setRecipients] = useState<ShippingRecipient[]>([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [editorError, setEditorError] = useState("");
   const [creatingCustomer, setCreatingCustomer] = useState(false);
   const [creatingRecipient, setCreatingRecipient] = useState(false);
   const searchRequestRef = useRef(0);
@@ -192,6 +193,7 @@ export default function CustomerRecipientPicker({
   }
 
   useEffect(() => {
+    if (creatingCustomer || creatingRecipient) return;
     if (suppressNextRealtimeSearchRef.current) {
       suppressNextRealtimeSearchRef.current = false;
       return;
@@ -211,7 +213,7 @@ export default function CustomerRecipientPicker({
     }, 350);
 
     return () => window.clearTimeout(timer);
-  }, [search, storeId]);
+  }, [search, storeId, creatingCustomer, creatingRecipient]);
 
   async function selectCustomer(selected: ShippingCustomer) {
     setLoading(true);
@@ -256,13 +258,14 @@ export default function CustomerRecipientPicker({
   async function createCustomer() {
     const normalizedPhone = digits(customerPhone);
     if (!customerName.trim() || !normalizedPhone || !customerBirthDate) {
-      setMessage("Nombre, teléfono y fecha de nacimiento son obligatorios.");
+      setEditorError("Nombre, teléfono y fecha de nacimiento son obligatorios.");
       return;
     }
 
     setLoading(true);
     setMessage("");
 
+    setEditorError("");
     const duplicate = await findShippingCustomerDuplicate(
       storeId,
       normalizedPhone,
@@ -271,7 +274,7 @@ export default function CustomerRecipientPicker({
 
     if (duplicate.error) {
       setLoading(false);
-      setMessage(duplicate.error.message || "No se pudo validar el cliente.");
+      setEditorError(duplicate.error.message || "No se pudo validar el cliente.");
       return;
     }
 
@@ -294,7 +297,7 @@ export default function CustomerRecipientPicker({
     setLoading(false);
 
     if (error || !data) {
-      setMessage(error?.message || "No se pudo crear el cliente.");
+      setEditorError(error?.message || "No se pudo crear el cliente.");
       return;
     }
 
@@ -338,9 +341,10 @@ export default function CustomerRecipientPicker({
   async function createRecipient() {
     if (!customer?.id) return setMessage("Primero selecciona o crea el cliente.");
     if (!recipientName.trim() || !digits(recipientPhone) || !recipientAddress.trim()) {
-      return setMessage("Nombre, teléfono y dirección del destinatario son obligatorios.");
+      return setEditorError("Nombre, teléfono y dirección del destinatario son obligatorios.");
     }
 
+    setEditorError("");
     const selectedLocation = locations.find((item) => item.id === locationId);
     setLoading(true);
     const { data, error } = await saveShippingRecipient({
@@ -361,11 +365,16 @@ export default function CustomerRecipientPicker({
     setLoading(false);
 
     if (error || !data) {
-      setMessage(error?.message || "No se pudo guardar el destinatario.");
+      setEditorError(error?.message || "No se pudo guardar el destinatario.");
       return;
     }
 
     setRecipients((current) => [...current, data]);
+    setRecipientName("");
+    setRecipientPhone("");
+    setRecipientAddress("");
+    setIdentityCard("");
+    setRelationship("");
     setCreatingRecipient(false);
     setMessage("Destinatario guardado, asociado al cliente y aplicado al envío.");
     applyRecipient(data);
@@ -420,10 +429,13 @@ export default function CustomerRecipientPicker({
           <button
             type="button"
             onClick={() => {
+              setEditorError("");
+              setCreatingRecipient(false);
               setCreatingCustomer(true);
-              setCustomerPhone(digits(search));
+              setCustomerPhone(/^\+?[\d\s().-]+$/.test(search.trim()) ? digits(search) : "");
               setResults([]);
             }}
+            disabled={loading}
             className={lightButton}
           >
             <Plus size={18} /> Nuevo cliente
@@ -466,7 +478,7 @@ export default function CustomerRecipientPicker({
                   <p className="text-sm font-medium text-emerald-800/70">{customer.phone}{customer.birth_date ? ` · ${formatDate(customer.birth_date)}` : ""}</p>
                 </div>
               </div>
-              <button type="button" onClick={() => setCreatingRecipient(true)} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm">
+              <button type="button" disabled={loading} onClick={() => { setEditorError(""); setCreatingCustomer(false); setCreatingRecipient(true); }} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm">
                 <Plus size={16} /> Nuevo destinatario
               </button>
             </div>
@@ -512,6 +524,7 @@ export default function CustomerRecipientPicker({
             <div className="rounded-2xl bg-amber-50 p-3 text-xs font-bold text-amber-800">
               La validación de duplicados usa tienda + teléfono normalizado + fecha de nacimiento.
             </div>
+            {editorError && <p role="alert" className="text-sm font-bold text-red-700">{editorError}</p>}
             <button type="button" onClick={() => void createCustomer()} disabled={loading} className={primaryButton}><Plus size={17} /> Validar y crear cliente</button>
           </EditorCard>
         )}
@@ -529,6 +542,7 @@ export default function CustomerRecipientPicker({
               <Field label="Lugar"><select value={locationId} onChange={(e) => setLocationId(e.target.value)} className={inputClass}><option value="">Seleccionar</option>{visibleLocations.filter((x) => x.is_active).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select></Field>
               <div className="md:col-span-2"><Field label="Dirección completa"><textarea value={recipientAddress} onChange={(e) => setRecipientAddress(e.target.value)} className={`${inputClass} min-h-24`} /></Field></div>
             </div>
+            {editorError && <p role="alert" className="text-sm font-bold text-red-700">{editorError}</p>}
             <button type="button" onClick={() => void createRecipient()} disabled={loading} className={primaryButton}><Plus size={17} /> Guardar y usar destinatario</button>
           </EditorCard>
         )}
