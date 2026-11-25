@@ -13,3 +13,10 @@ export function normalizePackageBilling<T extends ShipmentInput>(input: T) {
   if (!fees.some(fee => fee.calculated_amount > 0)) throw new Error('El envío por artículo necesita al menos un cargo mayor que cero.');
   return { ...input, package_billing_mode: 'fees_only' as const, weight_lb: 0, rate_per_lb: 0, weight_subtotal: 0, service_type_id: null, service_type_name: 'Por artículo', selected_fees: fees, extra_fees_total: Number(fees.reduce((sum, fee) => sum + fee.calculated_amount, 0).toFixed(2)) };
 }
+
+export function packageInvoiceUnits(input: { weight_lb: number; rate_per_lb: number; weight_subtotal: number }) {
+  if (input.rate_per_lb === 0 && input.weight_subtotal > 0) {
+    return { quantity: 1, unit: "unidad", unit_price: input.weight_subtotal };
+  }
+  return { quantity: input.weight_lb, unit: "lb", unit_price: input.rate_per_lb };
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { shippingPrintBrand } from "@/lib/shipping/print-branding";
+import { packageInvoiceUnits } from "@/lib/shipping/package-billing";
 import AlvarezInvoice from "@/components/shipping/AlvarezInvoice";
 import { packageNumber } from "@/lib/shipping/package-label";
 import RemittanceDeliveryDetails from "@/components/shipping/RemittanceDeliveryDetails";
@@ -139,9 +140,7 @@ export default function ShippingInvoicePage({
             item_type: "PACKAGE" as const,
             description:
               shipment.service_type_name || "Servicio de paquete",
-            quantity: shipment.weight_lb,
-            unit: "lb",
-            unit_price: shipment.rate_per_lb,
+            ...packageInvoiceUnits(shipment),
             subtotal: shipment.weight_subtotal,
             discount_amount: 0,
             total: shipment.weight_subtotal,
