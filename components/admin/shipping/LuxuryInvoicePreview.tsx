@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Eye, Plus, Search } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from "react";
 import { supabase } from "@/lib/supabase";
@@ -469,7 +470,9 @@ function CompactInvoice({ invoice }: { invoice: Folio }) {
       #luxury-folio-print .folio-contacts { display: grid; grid-template-columns: 1fr 1fr; }
     }`}</style>
     <header className="flex items-start justify-between gap-3 border-b border-slate-400 pb-2">
-      <h2 className="text-xl font-black">Luxury Travel Point</h2>
+      <Image src="/luxury/footer-logo-transparent.webp" alt="Luxury Travel Point"
+        width={1008} height={659} unoptimized loading="eager"
+        className="h-20 w-auto max-w-[50%] object-contain object-left print:h-[16mm]" />
       <div className="shrink-0 text-right">
         <p className="font-black">Factura · Folio {folioLabel(invoice.folio)}</p>
         <p>{dateFormat.format(new Date(invoice.created_at))}</p>
