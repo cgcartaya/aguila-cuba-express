@@ -24,6 +24,8 @@ type Line = {
   id: string;
   kind: LineType | "customs";
   productId?: string;
+  providerId?: string;
+  providerName?: string;
   groupId?: string;
   recipientId?: string;
   serviceId?: string;
@@ -37,7 +39,12 @@ type Line = {
 
 type PrintContact = { name?: string; phone?: string | null; address?: string | null };
 
+type FolioOption = { id: string; name: string; kind: "provider" | "method"; active: boolean };
+type PaymentDraft = { id: string; methodId: string; amount: string; reference: string };
 type Folio = {
+  payment_control?: boolean;
+  paid_cents?: number;
+  payments?: { methodName: string; cents: number }[];
   id: string;
   folio: number;
   customer_name: string;
@@ -48,7 +55,7 @@ type Folio = {
   lines: (Omit<Line, "id"> & { cents: number })[];
 };
 
-type HistoryFilters = { search: string; from: string; to: string };
+type HistoryFilters = { search: string; from: string; to: string; providerId?: string; methodId?: string };
 const emptyFilters: HistoryFilters = { search: "", from: "", to: "" };
 const easternOffset = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/New_York", timeZoneName: "longOffset",
@@ -106,23 +113,54 @@ export default function LuxuryInvoicePreview({
   const request = useRef<string | null>(null);
   const savingRef = useRef(false);
 
+  const [options, setOptions] = useState<FolioOption[]>([]);
+  const [optionsError, setOptionsError] = useState("");
+  const [payments, setPayments] = useState<PaymentDraft[]>([]);
+  const providers = options.filter(option => option.kind === "provider");
+  const methods = options.filter(option => option.kind === "method");
+  const paymentCents = payments.map(payment => Math.round(Number(payment.amount) * 100));
+  const paid = paymentCents.reduce((sum, cents) => sum + cents, 0);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const result = await supabase.from("luxury_folio_options").select("id,name,kind,active")
+        .eq("store_id", picker.storeId).order("name").returns<FolioOption[]>();
+      if (!active) return;
+      setOptions(result.data ?? []);
+      setOptionsError(result.error ? "No se pudieron cargar proveedores y formas de pago." : "");
+    })();
+    return () => { active = false; };
+  }, [picker.storeId]);
+
+  function editPayment(id: string, values: Partial<Omit<PaymentDraft, "id">>) {
+    setPayments(current => current.map(payment => payment.id === id ? { ...payment, ...values } : payment));
+  }
+
   async function saveFolio() {
     if (!customer || !lines.length || savingRef.current) return;
+    if (payments.some((payment, index) => !payment.methodId || !/^\d+(?:\.\d{1,2})?$/.test(payment.amount)
+      || !Number.isSafeInteger(paymentCents[index]) || paymentCents[index] <= 0) || paid > total) {
+      setError("Completa cada pago con una forma y un importe válido. La suma no puede superar el total.");
+      return;
+    }
     savingRef.current = true;
     setSaving(true);
     setError("");
     request.current ??= crypto.randomUUID();
     try {
-      const { data, error: cause } = await supabase.rpc("save_luxury_service_folio", {
+      const { data, error: cause } = await supabase.rpc("save_luxury_service_folio_with_payments", {
         p_id: request.current, p_store: picker.storeId, p_customer: customer.id,
         p_trip: lines.some(line => line.kind === "shipment") ? tripId || null : null,
         p_lines: lines, p_total_cents: total,
+        p_payments: payments.map((payment, index) => ({ methodId: payment.methodId, cents: paymentCents[index], reference: payment.reference })),
       }).single<Folio>();
       if (cause || !data) throw new Error(cause?.message || "No se pudo guardar la factura.");
       request.current = null;
       setSaved(data);
       setHistory(null);
       setLines([]);
+      setPayments([]);
       setCustomer(null);
       setLineType("");
     } catch (cause) {
@@ -138,7 +176,7 @@ export default function LuxuryInvoicePreview({
     setError("");
     try {
       const start = nextPage * historyPageSize;
-      let query = supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines,sender_contact,recipient_contacts")
+      let query = supabase.from("luxury_service_folios").select("id,folio,customer_name,created_at,total_cents,lines,sender_contact,recipient_contacts,payments,paid_cents,payment_control")
         .eq("store_id", picker.storeId);
       const search = criteria.search.trim();
       if (search) {
@@ -147,6 +185,8 @@ export default function LuxuryInvoicePreview({
           ? query.eq("folio", folio)
           : query.ilike("customer_name", "%" + search.replace(/[\\%_]/g, "\\$&") + "%");
       }
+      if (criteria.providerId) query = query.contains("lines", JSON.stringify([{ providerId: criteria.providerId }]));
+      if (criteria.methodId) query = query.contains("payments", JSON.stringify([{ methodId: criteria.methodId }]));
       if (criteria.from) query = query.gte("created_at", easternMidnight(criteria.from));
       if (criteria.to) query = query.lt("created_at", easternMidnight(criteria.to, true));
       const { data, error: cause } = await query.order("folio", { ascending: false })
@@ -227,7 +267,15 @@ export default function LuxuryInvoicePreview({
       </div>
     </header>
     {error && (saved || history) && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
-    {saved ? <CompactInvoice invoice={saved} /> : history ? <section className="space-y-5" aria-label="Historial de folios">
+    {saved ? <>
+      {saved.lines.some(line => line.providerName) && <section className={card + " print:hidden"} aria-label="Proveedores registrados">
+        <h2 className="font-black">Proveedores registrados</h2>
+        <ul className="space-y-1 text-sm">
+          {saved.lines.map((line, index) => line.providerName && <li key={index}>{line.description} · <strong>{line.providerName}</strong></li>)}
+        </ul>
+      </section>}
+      <CompactInvoice invoice={saved} />
+    </> : history ? <section className="space-y-5" aria-label="Historial de folios">
       <form className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4"
         onSubmit={event => { event.preventDefault(); void loadHistory(0, filters); }}>
         <label className="min-w-0 flex-[1_1_16rem] text-sm font-bold text-slate-700">
@@ -247,8 +295,18 @@ export default function LuxuryInvoicePreview({
           <input type="date" className={field} value={filters.to} min={filters.from || undefined}
             onChange={event => setFilters(current => ({ ...current, to: event.target.value }))} />
         </label>
+        <label className="text-sm font-bold text-slate-700">Proveedor
+          <select className={field} value={filters.providerId || ""} onChange={event => setFilters(current => ({ ...current, providerId: event.target.value }))}>
+            <option value="">Todos</option>{providers.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
+          </select>
+        </label>
+        <label className="text-sm font-bold text-slate-700">Forma de pago
+          <select className={field} value={filters.methodId || ""} onChange={event => setFilters(current => ({ ...current, methodId: event.target.value }))}>
+            <option value="">Todas</option>{methods.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
+          </select>
+        </label>
         <button type="submit" disabled={loadingHistory} className="rounded-xl bg-amber-800 px-4 py-2.5 font-bold text-white disabled:opacity-50">Filtrar</button>
-        {(filters.search || filters.from || filters.to || appliedFilters.search || appliedFilters.from || appliedFilters.to) &&
+        {(Object.values(filters).some(Boolean) || Object.values(appliedFilters).some(Boolean)) &&
           <button type="button" disabled={loadingHistory} className="rounded-xl px-3 py-2.5 font-bold text-slate-700 underline"
             onClick={() => { setFilters(emptyFilters); void loadHistory(0); }}>Limpiar</button>}
       </form>
@@ -261,6 +319,8 @@ export default function LuxuryInvoicePreview({
               <th scope="col" className="px-5 py-3.5">Cliente</th>
               <th scope="col" className="px-5 py-3.5">Fecha</th>
               <th scope="col" className="px-5 py-3.5 text-right">Total (USD)</th>
+              <th scope="col" className="px-5 py-3.5 text-right">Pagado</th>
+              <th scope="col" className="px-5 py-3.5 text-right">Saldo registrado</th>
               <th scope="col" className="px-5 py-3.5"><span className="sr-only">Acciones</span></th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
@@ -269,6 +329,8 @@ export default function LuxuryInvoicePreview({
                 <td className="px-5 py-4 font-medium text-slate-900">{invoice.customer_name}</td>
                 <td className="whitespace-nowrap px-5 py-4 text-slate-600">{dateFormat.format(new Date(invoice.created_at))}</td>
                 <td className="whitespace-nowrap px-5 py-4 text-right font-black tabular-nums text-[#061b3a]">{currency.format(invoice.total_cents / 100)}</td>
+                <td className="whitespace-nowrap px-5 py-4 text-right">{invoice.payment_control ? currency.format((invoice.paid_cents ?? 0) / 100) : "—"}</td>
+                <td className="whitespace-nowrap px-5 py-4 text-right">{invoice.payment_control ? currency.format((invoice.total_cents - (invoice.paid_cents ?? 0)) / 100) : "—"}</td>
                 <td className="px-5 py-4 text-right">
                   <button type="button" className="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-amber-700 px-3 py-2 font-bold text-slate-900 hover:bg-amber-50"
                     aria-label={"Ver factura " + folioLabel(invoice.folio)} onClick={() => setSaved(invoice)}>
@@ -281,7 +343,7 @@ export default function LuxuryInvoicePreview({
         </div>
         {loadingHistory && <p role="status" className="p-5 text-sm text-slate-600">Cargando historial…</p>}
         {!loadingHistory && !error && !history.length && <p className="p-5 text-sm text-slate-600">
-          {appliedFilters.search || appliedFilters.from || appliedFilters.to ? "No hay facturas que coincidan con los filtros." : "Todavía no hay facturas guardadas."}
+          {Object.values(appliedFilters).some(Boolean) ? "No hay facturas que coincidan con los filtros." : "Todavía no hay facturas guardadas."}
         </p>}
         {(page > 0 || hasMore) && <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-5 py-3">
           <span className="text-sm text-slate-600">Página {page + 1}</span>
@@ -415,6 +477,14 @@ export default function LuxuryInvoicePreview({
         {lines.map(line => <li key={line.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
           <div className="min-w-0 break-words">
             <p className="font-bold">{line.description}</p>
+            <label className="mt-1 block text-sm text-slate-600">Proveedor (opcional)
+              <select className={field} value={line.providerId || ""} onChange={event => {
+                const providerId = event.target.value;
+                setLines(current => current.map(item => item.id === line.id ? { ...item, providerId } : item));
+              }}>
+                <option value="">Sin proveedor</option>{providers.filter(option => option.active).map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
+              </select>
+            </label>
             {line.destination && <p className="text-sm text-slate-600">{line.destination}</p>}
             <p className="text-sm text-slate-600">{line.units} {line.unit} × {currency.format(line.unitPrice)}</p>
           </div>
@@ -429,6 +499,28 @@ export default function LuxuryInvoicePreview({
         </li>)}
       </ul>
       <p aria-live="polite" className="border-t pt-4 text-right text-xl font-black">Total {currency.format(total / 100)}</p>
+      {optionsError && <p role="alert" className="text-sm text-red-700">{optionsError}</p>}
+      <div className="space-y-3 border-t pt-4">
+        <h3 className="font-black">Pagos registrados</h3>
+        {payments.map(payment => <div key={payment.id} className="grid gap-2 sm:grid-cols-4 sm:items-end">
+          <label className="text-sm font-bold">Forma de pago
+            <select className={field} value={payment.methodId} onChange={event => editPayment(payment.id, { methodId: event.target.value })}>
+              <option value="">Seleccionar</option>{methods.filter(option => option.active).map(option => <option key={option.id} value={option.id}>{option.name}</option>)}
+            </select>
+          </label>
+          <label className="text-sm font-bold">Importe (USD)
+            <input className={field} type="number" min="0.01" step="0.01" value={payment.amount} onChange={event => editPayment(payment.id, { amount: event.target.value })} />
+          </label>
+          <label className="text-sm font-bold">Referencia (opcional)
+            <input className={field} maxLength={120} value={payment.reference} onChange={event => editPayment(payment.id, { reference: event.target.value })} />
+          </label>
+          <button type="button" className="rounded-lg border px-3 py-2" onClick={() => setPayments(current => current.filter(item => item.id !== payment.id))}>Quitar pago</button>
+        </div>)}
+        <button type="button" disabled={!methods.some(option => option.active) || payments.length >= 30} className="rounded-lg border px-3 py-2 font-bold disabled:opacity-50"
+          onClick={() => setPayments(current => [...current, { id: crypto.randomUUID(), methodId: "", amount: "", reference: "" }])}>Agregar pago</button>
+        {!methods.some(option => option.active) && !optionsError && <p className="text-sm text-slate-600">Agrega una opción en Folios → Formas de pago.</p>}
+        {payments.length > 0 && <p className="text-sm font-bold">Pagado {currency.format(paid / 100)} · Saldo {currency.format((total - paid) / 100)}</p>}
+      </div>
       {error && <p role="alert" className="text-sm font-bold text-red-700">{error}</p>}
       <button type="button" className={button} disabled={saving || !lines.length || Boolean(lineType)} onClick={() => void saveFolio()}>
         {saving ? "Guardando…" : "Guardar factura"}
@@ -506,7 +598,13 @@ function CompactInvoice({ invoice }: { invoice: Folio }) {
         </tr>)}
       </tbody>
     </table>
-    <p className="folio-total mt-3 text-right text-base font-black">Total USD {currency.format(invoice.total_cents / 100)}</p>
+    <div className="folio-total mt-3 text-right">
+      <p className="text-base font-black">Total USD {currency.format(invoice.total_cents / 100)}</p>
+      {invoice.payment_control ? <>
+        {(invoice.payments ?? []).map((payment, index) => <p key={index}>{payment.methodName} · {currency.format(payment.cents / 100)}</p>)}
+        <p className="font-bold">Pagado {currency.format((invoice.paid_cents ?? 0) / 100)} · Saldo {currency.format((invoice.total_cents - (invoice.paid_cents ?? 0)) / 100)}</p>
+      </> : null}
+    </div>
   </article>;
 }
 
