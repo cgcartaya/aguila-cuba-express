@@ -1,5 +1,6 @@
 "use client";
 
+import XpressMarketPurchases from "@/components/admin/orders/XpressMarketPurchases";
 import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
@@ -226,6 +227,7 @@ export default function OrdersManager({
 
   const [orders, setOrders] = useState(initialOrders);
   const [deletedOrders, setDeletedOrders] = useState(initialDeletedOrders);
+  const [marketOrderId, setMarketOrderId] = useState<string | null>(null);
   const [view, setView] = useState<"active" | "trash">("active");
   const [filter, setFilter] = useState("Todas");
   const [search, setSearch] = useState("");
@@ -254,6 +256,16 @@ export default function OrdersManager({
     normalizedStoreIdentity.includes("cuba express");
 
   const currentOrders = view === "active" ? orders : deletedOrders;
+
+  async function refreshMarketOrder(orderId: string) {
+    const { data, error } = await supabase.from("orders")
+      .select("status,total,subtotal,delivery_fee,discount_amount,platform_fee_amount,platform_fixed_fee_amount,notes,stock_restored,xpress_market_revision,order_items(id,item_type,product_id,combo_id,product_name,quantity,price,base_price,platform_fee_amount,subtotal,xpress_fruit_unit_lb)")
+      .eq("store_id", storeId)
+      .eq("id", orderId)
+      .single();
+    if (error) throw new Error("El ajuste se guardó. Recarga las órdenes para ver el resumen actualizado.");
+    setOrders((previous) => previous.map((order) => order.id === orderId ? { ...order, ...data } : order));
+  }
 
   function toggleItems(orderId: string) {
     setExpandedOrders((prev) => ({
@@ -348,9 +360,10 @@ export default function OrdersManager({
       setActionLoadingId(order.id);
       assertOrderBelongsToActiveStore(order);
 
-      const { data: updated, error } = await supabase
-        .from("orders")
-        .update({ status })
+      const update = supabase.from("orders").update({ status });
+      const { data: updated, error } = await (storeSlug === "xpress"
+        ? update.eq("xpress_market_revision", order.xpress_market_revision ?? 0)
+        : update)
         .eq("id", order.id)
         .eq("store_id", storeId)
         .is("deleted_at", null)
@@ -394,6 +407,11 @@ export default function OrdersManager({
     }
   }
 
+  function isXpressMarketOrder(order: any) {
+    return storeSlug === "xpress" && (order.xpress_market_revision > 0 ||
+      order.order_items?.some((item: { xpress_fruit_unit_lb?: number }) => Number(item.xpress_fruit_unit_lb) > 0));
+  }
+
   async function sendOrderToTrash(order: any) {
     if (order.checkout_payment_provider === "square" && order.payment_status === "pending" && order.payment_method === "card") {
       alert("Espera la confirmación o el vencimiento del cobro Square antes de devolver el inventario.");
@@ -410,35 +428,36 @@ export default function OrdersManager({
       setActionLoadingId(order.id);
       assertOrderBelongsToActiveStore(order);
 
-      // Si el pago con tarjeta venció solo (checkout.session.expired), el
-      // webhook ya devolvió el stock automáticamente — no volver a
-      // hacerlo aquí, o se duplicaría.
-      if (!order.stock_restored) {
-        const orderItems = normalizeOrderItems(order);
-        await restoreOrderInventory(orderItems, storeId);
-      }
+      let deletedAt = new Date().toISOString();
 
-      const deletedAt = new Date().toISOString();
+      if (isXpressMarketOrder(order)) {
+        const { data, error } = await supabase.rpc("archive_xpress_market_order", {
+          p_store: storeId, p_order: order.id,
+        });
+        if (error) throw error;
+        deletedAt = data;
+      } else {
+        // Los cobros vencidos ya devolvieron el inventario.
+        if (!order.stock_restored) {
+          await restoreOrderInventory(normalizeOrderItems(order), storeId);
+        }
+        const { data: updated, error } = await supabase
+          .from("orders")
+          .update({ deleted_at: deletedAt, stock_restored: true })
+          .eq("id", order.id)
+          .eq("store_id", storeId)
+          .is("deleted_at", null)
+          .select("id")
+          .maybeSingle();
 
-      const { data: updated, error } = await supabase
-        .from("orders")
-        .update({ deleted_at: deletedAt, stock_restored: true })
-        .eq("id", order.id)
-        .eq("store_id", storeId)
-        .is("deleted_at", null)
-        .select("id")
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!updated) {
-        throw new Error(
-          "No se pudo enviar la orden a la papelera: no tienes permiso sobre esta tienda, o la orden ya no existe."
-        );
+        if (error) throw error;
+        if (!updated) throw new Error("No se pudo enviar la orden a la papelera.");
       }
 
       const deletedOrder = {
         ...order,
         deleted_at: deletedAt,
+        stock_restored: true,
       };
 
       setOrders((prev) => prev.filter((item) => item.id !== order.id));
@@ -487,6 +506,7 @@ export default function OrdersManager({
       const restoredOrder = {
         ...order,
         deleted_at: null,
+        stock_restored: false,
       };
 
       setDeletedOrders((prev) => prev.filter((item) => item.id !== order.id));
@@ -659,6 +679,11 @@ export default function OrdersManager({
           color="bg-green-100 text-green-700"
         />
       </section>
+
+      {storeSlug === "xpress" && (
+        <XpressMarketPurchases key={storeId} storeId={storeId} selectedId={marketOrderId}
+          onSelect={setMarketOrderId} onSaved={refreshMarketOrder} orderRevision={orders} />
+      )}
 
       <section className="mb-5 flex flex-wrap gap-2 rounded-3xl bg-white p-3 shadow-sm">
         <button
@@ -1026,6 +1051,15 @@ export default function OrdersManager({
                 </div>
 
                 <div className="px-5 pb-5">
+                  {view === "active" && isXpressMarketOrder(order) && (
+                    <button type="button" className="mb-3 min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold hover:bg-slate-100"
+                      onClick={() => {
+                        setMarketOrderId(order.id);
+                        document.getElementById("compras-frutas")?.scrollIntoView({ block: "start" });
+                      }}>
+                      Gestionar compra de frutas
+                    </button>
+                  )}
                   <section className="overflow-hidden rounded-2xl bg-slate-50">
                     <button
                       type="button"

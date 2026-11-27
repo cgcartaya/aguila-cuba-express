@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
   const { data: lymStore, error: lymStoreError } = await supabaseAdmin.from("stores").select("slug").eq("id", storeId).maybeSingle();
   if (lymStoreError || !lymStore) return fail("No se pudo verificar la tienda.", 500);
   if (lymStore.slug === "lym") return fail("LYM recibe solicitudes sin pago en línea. La tienda confirmará tu venta.", 409);
+  if (lymStore.slug === "xpress" && (order.status === "cancelled" || order.status === "canceled" || order.payment_method !== "card")) {
+    return fail("El pago de este pedido se gestiona con Xpress.", 409);
+  }
   if (order.source_shipment_id) return fail("Estos productos están incluidos en la factura del envío. El pago se gestiona desde Envíos.", 409);
   if (order.payment_status === "paid") return fail("Esta orden ya está pagada.");
 

@@ -218,6 +218,16 @@ export async function quoteCartShipping(
       : 0;
   return {
     ...pricing,
+    ...(store.slug === "xpress" && service.code === XPRESS_FRESH_SERVICE ? {
+      xpress_market_rate: {
+        rate_per_lb: rate.rate_per_lb,
+        minimum_weight_lb: rate.minimum_weight_lb,
+        minimum_charge: rate.minimum_charge,
+        fixed_fee: rate.fixed_fee,
+        weight_threshold_lb: rate.weight_threshold_lb,
+        rate_at_or_above_threshold: rate.rate_at_or_above_threshold,
+      },
+    } : {}),
     amount: Number((pricing.amount + airportFee).toFixed(2)),
     airport_fee_amount: airportFee,
     weight_lb: Number(weight.toFixed(6)),
