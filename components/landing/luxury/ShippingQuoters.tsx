@@ -3,23 +3,19 @@
 import { useEffect, useState } from 'react';
 import { Calculator, MessageCircle } from 'lucide-react';
 import { weightRate } from '@/lib/shipping/weight-rate';
-import type { ShippingEntry } from '@/lib/luxury/shipping';
+import { thanksgivingRates, thanksgivingTotal, type ShippingEntry } from '@/lib/luxury/shipping';
 import { external, useCommercialCopy, type ShippingCatalog } from './commercial-copy';
 import s from './luxury.module.css';
 
-type RateOption = {
-  id: string; group: string; service: string; transport: string; destination: string; priority: number;
+export type RateOption = {
+  id: string; group: string; service: string; serviceCode: string; countryCode: string; transport: string; destination: string; priority: number;
   rate_per_lb: number; weight_threshold_lb: number | null; rate_at_or_above_threshold: number | null;
   minimum: number; maximum: number | null; fee: number; minimumCharge: number;
 };
 
-export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog; offers: ShippingEntry[] }) {
-  const [mode, setMode] = useState<'rates' | 'offers'>('offers');
+export function useLuxuryRates() {
   const [rates, setRates] = useState<RateOption[]>();
   const [failed, setFailed] = useState(false);
-  const [choice, setChoice] = useState('');
-  const [pounds, setPounds] = useState('');
-  const { language, tr, whatsapp } = useCommercialCopy(catalog);
   useEffect(() => {
     const controller = new AbortController();
     async function load() {
@@ -34,8 +30,24 @@ export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog
     }
     void load();
     const timer = window.setInterval(load, 60000);
-    return () => { controller.abort(); window.clearInterval(timer); };
+    window.addEventListener('focus', load);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      window.removeEventListener('focus', load);
+    };
   }, []);
+
+  return { rates, failed };
+}
+
+export function ShippingQuoters({ catalog, offers, rates, failed, thanksgiving }: {
+  catalog?: ShippingCatalog; offers: ShippingEntry[]; rates?: RateOption[]; failed: boolean; thanksgiving: boolean;
+}) {
+  const [mode, setMode] = useState<'rates' | 'offers'>('rates');
+  const [choice, setChoice] = useState('');
+  const [pounds, setPounds] = useState('');
+  const { language, tr, whatsapp } = useCommercialCopy(catalog);
 
   const groups = [...new Map((rates ?? []).map(rate => [rate.group, rate])).values()].sort((a,b) =>
     a.service.localeCompare(b.service) || a.destination.localeCompare(b.destination) || a.transport.localeCompare(b.transport));
@@ -44,6 +56,9 @@ export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog
   const weight = Number(pounds);
   const validWeight = Number.isFinite(weight) && weight > 0;
   const selected = groups.find(rate => rate.group === choice);
+  const promotion = thanksgiving && selected?.countryCode === 'CU'
+    ? Object.values(thanksgivingRates).find(tariff => tariff.serviceCode === selected.serviceCode && tariff.transport === selected.transport)
+    : undefined;
   const rate = rates?.filter(row => row.group === choice && (row.maximum === null || weight <= row.maximum))
     .sort((a,b) => b.priority - a.priority || a.id.localeCompare(b.id))[0];
   // Existing offers store translated display prices. Only recognize the configured, unambiguous price formats.
@@ -55,7 +70,7 @@ export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog
     offer.copy.es.description === 'Envío aéreo de más de 50 lb en una misma caja.' &&
     offerPrice?.match(/^\$(\d+(?:\.\d{1,2})?)\/lb$/);
   const total = !validWeight ? null : mode === 'rates'
-    ? rate && Math.max(Math.max(weight, rate.minimum) * weightRate(rate, weight) + rate.fee, rate.minimumCharge)
+    ? promotion ? thanksgivingTotal(promotion, weight) : rate && Math.max(Math.max(weight, rate.minimum) * weightRate(rate, weight) + rate.fee, rate.minimumCharge)
     : parcelOffer && weight <= 70 ? weight * Number(parcelOffer[1]) + Number(parcelOffer[2])
     : volumeOffer && weight > 50 ? weight * Number(volumeOffer[1]) : null;
   const money = typeof total === 'number' && Number.isFinite(total)
@@ -65,7 +80,7 @@ export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog
     air: tr('Aéreo','Air','Aérien'), express: 'Express',
   };
   function switchMode(next: typeof mode) { setChoice(''); setPounds(''); setMode(next); }
-  const title = mode === 'offers' ? copy?.title : selected && `${selected.service} · ${selected.destination}`;
+  const title = mode === 'offers' ? copy?.title : selected && `${selected.service} · ${methods[selected.transport] ?? selected.transport} · ${selected.destination}`;
   const subject = title || tr('envíos a Cuba','shipping to Cuba','les envois vers Cuba');
   const message = validWeight && title ? tr(
     `Hola, quisiera confirmar un envío con Luxury Travel Point: ${title}. Peso por caja: ${weight} lb.${money ? ` Estimado: ${money}.` : ''}`,
@@ -103,7 +118,7 @@ export function ShippingQuoters({ catalog, offers }: { catalog?: ShippingCatalog
         : rates ? tr('Aún no hay tarifas en línea.','Online rates are not available yet.','Les tarifs en ligne ne sont pas encore disponibles.')
         : tr('Cargando tarifas…','Loading rates…','Chargement des tarifs…')}</p>}
       {copy && <div className={s.quoteDetails}>{copy.price && <strong>{copy.price}</strong>}{copy.description && <p>{copy.description}</p>}{copy.terms && <p>{copy.terms}</p>}</div>}
-      {mode === 'rates' && selected && validWeight && !rate && <p>{tr('El peso supera el máximo de esta tarifa.','This weight exceeds the rate limit.','Ce poids dépasse la limite du tarif.')}</p>}
+      {mode === 'rates' && selected && validWeight && (promotion ? weight > 100 : !rate) && <p>{tr('El peso supera el máximo de esta tarifa.','This weight exceeds the rate limit.','Ce poids dépasse la limite du tarif.')}</p>}
       {money && <p className={s.quoteTotal}>{tr('Estimado por caja','Estimate per box','Estimation par boîte')} <strong>{money}</strong></p>}
     </div>
     <a className={s.textButton} href={whatsapp(subject,message)} {...external}>{tr('Confirmar por WhatsApp','Confirm on WhatsApp','Confirmer sur WhatsApp')} <MessageCircle size={17}/></a>

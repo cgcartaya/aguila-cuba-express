@@ -52,3 +52,17 @@ export function shippingStatus(row: ShippingEntry, now = new Date()) {
   if (row.weekdays.length && !row.weekdays.includes(weekdays.indexOf(agencyWeekday.format(now)))) return 'weekday';
   return 'active';
 }
+
+// Midnight in Florida at the beginning of Nov 27 and Nov 30, 2026.
+export const thanksgivingStarts = Date.parse('2026-11-27T00:00:00-05:00');
+export const thanksgivingEnds = Date.parse('2026-11-30T00:00:00-05:00');
+
+export const thanksgivingRates = {
+  sea: { serviceCode: 'luxury-sea', transport: 'sea', offer: 1, regular: 1.99 },
+  air: { serviceCode: 'luxury-air', transport: 'air', offer: 2.99, regular: 3.49 },
+};
+
+export function thanksgivingTotal(tariff: (typeof thanksgivingRates)[keyof typeof thanksgivingRates], weight: number) {
+  if (weight <= 0 || weight > 100 || !Number.isFinite(weight)) return null;
+  return Math.min(weight, 70) * tariff.offer + Math.max(0, weight - 70) * tariff.regular + 20;
+}

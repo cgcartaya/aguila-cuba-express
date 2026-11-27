@@ -10,8 +10,8 @@ export async function GET() {
   const storeId = store.id;
   const [rates, services, countries, provinces, municipalities, locations] = await Promise.all([
     supabaseAdmin.from('shipping_rates').select('id,service_type_id,transport_mode,scope_type,country_id,province_id,municipality_id,location_id,rate_per_lb,weight_threshold_lb,rate_at_or_above_threshold,minimum_weight_lb,maximum_weight_lb,fixed_fee,minimum_charge,priority').eq('store_id', storeId).eq('is_active', true),
-    supabaseAdmin.from('shipping_service_types').select('id,name,billing_mode').eq('store_id', storeId).eq('is_active', true),
-    supabaseAdmin.from('shipping_countries').select('id,name').eq('store_id', storeId).eq('is_active', true),
+    supabaseAdmin.from('shipping_service_types').select('id,code,name,billing_mode').eq('store_id', storeId).eq('is_active', true),
+    supabaseAdmin.from('shipping_countries').select('id,code,name').eq('store_id', storeId).eq('is_active', true),
     supabaseAdmin.from('shipping_provinces').select('id,name,country_id').eq('store_id', storeId).eq('is_active', true),
     supabaseAdmin.from('shipping_municipalities').select('id,name,province_id').eq('store_id', storeId).eq('is_active', true),
     supabaseAdmin.from('shipping_locations').select('id,name,municipality_id').eq('store_id', storeId).eq('is_active', true),
@@ -41,6 +41,8 @@ export async function GET() {
       id: rate.id,
       group: [service.id, rate.transport_mode, country.id, province?.id, municipality?.id, location?.id].join('/'),
       service: service.name,
+      serviceCode: service.code,
+      countryCode: country.code,
       transport: rate.transport_mode,
       destination: [country.name, province?.name, municipality?.name, location?.name].filter(Boolean).join(' / '),
       priority: Number(rate.priority ?? 0),
