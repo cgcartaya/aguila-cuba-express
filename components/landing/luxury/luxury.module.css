@@ -204,3 +204,51 @@
   .root .brand { gap: 6px; }
   .root .brand .brandSlogan { font-size: .62rem; }
 }
+
+.thanksgivingDialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: max-content;
+  max-width: min(94vw, 560px);
+  max-height: 94dvh;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: #07182b;
+  overflow: hidden;
+}
+
+.thanksgivingDialog::backdrop {
+  background: rgb(7 24 43 / 78%);
+}
+
+.thanksgivingDialog img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 94dvh;
+  object-fit: contain;
+}
+
+.thanksgivingClose {
+  position: absolute;
+  z-index: 1;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid white;
+  border-radius: 50%;
+  background: #07182b;
+  color: white;
+  cursor: pointer;
+}
+
+.thanksgivingClose:focus-visible {
+  outline: 3px solid #ffc64d;
+  outline-offset: 2px;
+}
