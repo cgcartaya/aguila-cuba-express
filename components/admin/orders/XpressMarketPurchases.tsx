@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, CircleHelp, RefreshCw, ShoppingBasket } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { openWhatsAppMessage } from "@/lib/utils/whatsapp";
 
@@ -67,6 +68,14 @@ export default function XpressMarketPurchases({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [feedback, setFeedback] = useState("");
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (selectedId && !dialog.open) dialog.showModal();
+    if (!selectedId && dialog.open) dialog.close();
+  }, [selectedId]);
 
   useEffect(() => {
     let active = true;
@@ -104,7 +113,7 @@ export default function XpressMarketPurchases({
     return () => { active = false; };
   }, [storeId, selectedId, load]);
 
-  const totals = new Map<string, { name: string; units: number; pounds: number; orders: MarketOrder[] }>();
+  const totals = new Map<string, { name: string; units: number; pounds: number; orders: { order: MarketOrder; pending: number }[] }>();
   for (const order of orders.filter((order) => order.editable)) {
     for (const item of order.items) {
       const pending = item.quantity - item.purchased;
@@ -113,7 +122,9 @@ export default function XpressMarketPurchases({
       const group = totals.get(key) || { name: item.name, units: 0, pounds: 0, orders: [] };
       group.units += pending;
       group.pounds += pending * item.unit_lb;
-      if (!group.orders.some(({ id }) => id === order.id)) group.orders.push(order);
+      const pendingOrder = group.orders.find((entry) => entry.order.id === order.id);
+      if (pendingOrder) pendingOrder.pending += pending;
+      else group.orders.push({ order, pending });
       totals.set(key, group);
     }
   }
@@ -198,112 +209,161 @@ export default function XpressMarketPurchases({
   }
 
   return (
-    <section id="compras-frutas" className="mb-6 scroll-mt-4 rounded-3xl bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black">Compras de frutas</h2>
-        <button className={button} type="button" disabled={busy} onClick={() => {
+    <section className="mb-6 rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <header className="flex flex-wrap items-start justify-between gap-3 p-4 sm:p-6">
+        <div className="flex min-w-0 items-start gap-3">
+          <ShoppingBasket aria-hidden size={22} className="mt-1 shrink-0 text-emerald-700" />
+          <div>
+            <h2 className="text-xl font-black">Compras de frutas</h2>
+            <p className="mt-1 text-sm text-slate-600">Lista para el mercado con lo que falta por comprar para los pedidos de Xpress.</p>
+          </div>
+        </div>
+        <button className={`${button} inline-flex items-center gap-2`} type="button" disabled={busy || !loaded} onClick={() => {
           setError("");
           setLoaded(false);
           setLoad((value) => value + 1);
-        }}>Actualizar lista</button>
-      </div>
-      {error && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-      {!loaded && <p className="mt-3 text-sm text-slate-600">Cargando compras…</p>}
-      {loaded && totals.size === 0 && !error && <p className="mt-3 text-sm text-slate-600">No hay frutas pendientes de comprar.</p>}
+        }}><RefreshCw aria-hidden size={15} /> Actualizar lista</button>
+      </header>
+
+      <details className="group mx-4 mb-4 rounded-2xl bg-emerald-50 text-emerald-950 sm:mx-6">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-bold [&::-webkit-details-marker]:hidden">
+          <CircleHelp aria-hidden size={17} className="shrink-0" />
+          ¿Cómo se usa esta lista?
+          <ChevronDown aria-hidden size={17} className="ml-auto shrink-0 group-open:rotate-180" />
+        </summary>
+        <ol className="list-decimal space-y-2 pb-4 pl-9 pr-4 text-sm leading-relaxed">
+          <li><strong>Antes de ir al mercado.</strong> Usa las libras pendientes para saber cuánto comprar. Una unidad es una presentación del catálogo. Por ejemplo, 3 unidades de fresas de 2.5 lb suman 7.5 lb.</li>
+          <li><strong>Al regresar.</strong> Abre el producto y elige un pedido. En <strong>Unidades compradas</strong>, registra el total que conseguiste para ese pedido. Los cambios guardados se descuentan de la lista.</li>
+          <li><strong>Si faltó producto.</strong> Reduce las <strong>Unidades del pedido</strong> o pulsa <strong>Retirar del pedido</strong>. Revisa el nuevo envío y total antes de confirmar. Luego puedes avisar al cliente por WhatsApp desde el historial.</li>
+        </ol>
+      </details>
+
+      {!selectedId && error && <p role="alert" className="mx-4 mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-800 sm:mx-6">{error}</p>}
+      {!loaded && <p role="status" className="px-4 pb-5 text-sm text-slate-600 sm:px-6">Cargando compras…</p>}
+      {loaded && totals.size === 0 && !error && <p className="px-4 pb-5 text-sm text-slate-600 sm:px-6">No hay frutas pendientes de comprar.</p>}
       {totals.size > 0 && (
-        <div className="mt-3 divide-y divide-slate-200">
-          {[...totals.entries()].sort(([, a], [, b]) => a.name.localeCompare(b.name, "es")).map(([key, group]) => (
-            <div key={key} className="grid gap-2 py-3 sm:grid-cols-[1fr_9rem_1fr] sm:items-center">
-              <span className="font-bold">{group.name}</span>
-              <span className="text-sm">{amount(group.units)} ud. · {amount(group.pounds)} lb</span>
-              <div className="flex flex-wrap gap-2">
-                {group.orders.map((order) => <button key={order.id} type="button" disabled={busy} className={button} onClick={() => select(order.id)}>{order.number}</button>)}
-              </div>
-            </div>
-          ))}
+        <div className="mx-4 mb-5 overflow-hidden rounded-2xl border border-slate-200 sm:mx-6">
+          <div aria-hidden className="hidden grid-cols-[minmax(0,1fr)_9rem_8rem_9rem] gap-4 bg-slate-50 px-4 py-3 text-xs font-bold text-slate-600 md:grid">
+            <span>Producto</span><span>Peso pendiente</span><span>Unidades</span><span>Pedidos</span>
+          </div>
+          <div className="divide-y divide-slate-200">
+            {[...totals.entries()].sort(([, a], [, b]) => a.name.localeCompare(b.name, "es")).map(([key, group]) => (
+              <details key={key} className="group border-t border-slate-100 first:border-t-0">
+                <summary className="grid min-h-14 cursor-pointer list-none grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-3 text-sm hover:bg-slate-50 md:grid-cols-[minmax(0,1fr)_8rem_6rem_7rem] sm:gap-x-4 [&::-webkit-details-marker]:hidden">
+                  <span className="col-span-2 min-w-0 break-words font-bold md:col-span-1">{group.name}</span>
+                  <span className="flex flex-wrap items-baseline gap-x-2">
+                    <strong className="text-emerald-800">{amount(group.pounds)} lb</strong>
+                    <span className="sr-only">pendientes</span>
+                    <span className="text-slate-600 md:hidden">· {amount(group.units)} ud.</span>
+                  </span>
+                  <span className="hidden text-slate-600 md:inline">{amount(group.units)} ud.</span>
+                  <span className="flex items-center justify-between gap-2 font-semibold text-slate-700">
+                    {group.orders.length} {group.orders.length === 1 ? "pedido" : "pedidos"}
+                    <ChevronDown aria-hidden size={16} className="shrink-0 group-open:rotate-180" />
+                  </span>
+                </summary>
+                <ul className="space-y-2 border-t border-slate-100 bg-slate-50 p-3 sm:px-4">
+                  {group.orders.map(({ order, pending }) => (
+                    <li key={order.id}>
+                      <button type="button" disabled={busy} onClick={() => select(order.id)}
+                        className={`${button} flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 bg-white text-left`}>
+                        <span className="break-all">{order.number}</span>
+                        <span className="font-medium text-slate-600">{amount(pending)} ud. pendientes <span className="ml-2 font-bold text-emerald-800">Abrir pedido</span></span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </div>
         </div>
       )}
       {refunds.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mx-4 mb-4 flex flex-wrap items-center gap-2 sm:mx-6">
           <span className="text-sm font-bold text-amber-900">Reembolsos pendientes</span>
           {refunds.map((order) => <button key={order.id} type="button" disabled={busy} className={button} onClick={() => select(order.id)}>{order.number}</button>)}
         </div>
       )}
-      {selectedId && (
-        <section className="mt-4 rounded-2xl border border-slate-200 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-black">{current ? `Pedido ${current.number}` : error ? "Pedido de frutas" : "Cargando pedido…"}</h3>
-            <button type="button" className={button} disabled={busy} onClick={() => select(null)}>Cerrar</button>
-          </div>
-          {feedback && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">{feedback}</p>}
-          {current?.editable && current.items.length > 0 && (
-            <p className="mt-2 text-sm font-bold text-slate-700">{purchaseStatus}</p>
-          )}
-          {current?.editable && current.items.length > 0 && (
-            <fieldset disabled={busy} className="mt-3 space-y-3">
-              <legend className="text-sm text-slate-600">Reduce la cantidad del pedido si falta fruta. En Compradas, registra cuántas unidades de esa presentación ya conseguiste.</legend>
-              {current.items.map((item, index) => (
-                <div key={item.id} className="grid items-end gap-2 rounded-xl bg-slate-50 p-3 sm:grid-cols-[1fr_8rem_8rem_auto]">
-                  <div className="self-center text-sm font-bold">{item.name}<p className="text-xs font-normal text-slate-600">{amount(item.unit_lb)} lb por unidad</p></div>
-                  <label className="text-xs font-bold">
-                    Cantidad del pedido
-                    <input type="number" min={item.purchased} max={item.quantity} step={1} className={`${button} mt-1 w-full bg-white`} value={Number.isFinite(draft[index]?.quantity) ? draft[index].quantity : ""} onChange={(event) => {
-                      const quantity = event.target.valueAsNumber;
-                      updateLine(index, { quantity, purchased: Math.min(draft[index].purchased, quantity) });
-                    }} />
-                  </label>
-                  <label className="text-xs font-bold">
-                    Compradas
-                    <input type="number" min={item.purchased} max={draft[index]?.quantity} step={1} className={`${button} mt-1 w-full bg-white`} value={Number.isFinite(draft[index]?.purchased) ? draft[index].purchased : ""} onChange={(event) => updateLine(index, { purchased: event.target.valueAsNumber })} />
-                  </label>
-                  <button type="button" className={button} disabled={item.purchased > 0 || draft[index]?.quantity === 0} onClick={() => updateLine(index, { quantity: 0, purchased: 0 })}>Retirar</button>
-                </div>
-              ))}
-              <div className="flex flex-wrap gap-2">
-                <button type="button" className={button} onClick={() => {
-                  setDraft((lines) => lines.map((line) => ({ ...line, purchased: line.quantity })));
-                  setEstimate(null);
-                }}>Marcar todas compradas</button>
-                <button type="button" className={button} disabled={!changed || draft.some((line, index) =>
-                  !Number.isInteger(line.quantity) || !Number.isInteger(line.purchased) || line.quantity > current.items[index].quantity ||
-                  line.purchased < current.items[index].purchased || line.purchased > line.quantity
-                )} onClick={() => calculate(false)}>Revisar cambios</button>
-              </div>
-              {estimate && (
-                <div className="rounded-xl border border-slate-200 p-3 text-sm">
-                  {estimate.removed.length > 0 ? (
-                    <>
-                      <p>Productos {money(estimate.subtotal)} · Envío {money(estimate.delivery)} · Gestión {money(estimate.management)}</p>
-                      {estimate.discount > 0 && <p>Descuento {money(estimate.discount)}</p>}
-                      <p className="mt-1 font-bold">{money(estimate.before_total)} → {money(estimate.after_total)} · {amount(estimate.weight_lb ?? 0)} lb</p>
-                      {estimate.cancelled && <p>Se cancelará el pedido.</p>}
-                      {estimate.refund_due > 0 && <p>Reembolso pendiente {money(estimate.refund_due)}</p>}
-                    </>
-                  ) : <p>Se actualizarán las cantidades compradas.</p>}
-                  <button type="button" className={`${button} mt-2 bg-slate-900 text-white hover:bg-slate-700`} onClick={() => calculate(true)}>{busy ? "Guardando…" : "Confirmar cambios"}</button>
-                </div>
-              )}
-            </fieldset>
-          )}
-          {current && !current.editable && current.items.length > 0 && <p className="mt-2 text-sm text-slate-600">El estado de la orden o del pago impide ajustar la compra.</p>}
-          {!!current?.adjustments.length && (
-            <div className="mt-4 space-y-2">
-              <h4 className="font-bold">Historial de ajustes</h4>
-              {current.adjustments.map((entry) => (
-                <div key={entry.id} className="rounded-xl bg-slate-50 p-3 text-sm">
-                  <p>{new Date(entry.created_at).toLocaleString("es-US")} · {money(entry.before_total)} → {money(entry.after_total)}</p>
-                  <p>{entry.removed.map((line) => `${line.quantity} × ${line.name}`).join(", ")}</p>
-                  {entry.refund_due > 0 && <p className="font-bold">{entry.refunded_at ? "Reembolso registrado" : "Reembolso pendiente"} · {money(entry.refund_due)}</p>}
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {current.customer_phone ? <button type="button" className={button} onClick={() => notify(current, entry)}>Avisar por WhatsApp</button> : <span>El pedido no tiene teléfono del comprador.</span>}
-                    {entry.refund_due > 0 && !entry.refunded_at && <button type="button" className={button} disabled={busy} onClick={() => markRefund(entry)}>Registrar devolución</button>}
-                  </div>
-                </div>
-              ))}
+      <dialog ref={dialogRef} aria-labelledby="xpress-market-dialog-title"
+        onCancel={(event) => { event.preventDefault(); if (!busy) select(null); }}
+        className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%_-_1rem)] max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-950/50">
+        {selectedId && (
+          <section className="p-4 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 id="xpress-market-dialog-title" className="break-all text-lg font-black">{current ? `Pedido ${current.number}` : error ? "Pedido de frutas" : "Cargando pedido…"}</h3>
+              <button type="button" className={button} disabled={busy} onClick={() => select(null)}>Cerrar</button>
             </div>
-          )}
-        </section>
-      )}
+            {error && <p role="alert" className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+            {feedback && <p role="status" className="mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">{feedback}</p>}
+            {current?.editable && current.items.length > 0 && (
+              <p className="mt-2 text-sm font-bold text-slate-700">{purchaseStatus}</p>
+            )}
+            {current?.editable && current.items.length > 0 && (
+              <fieldset disabled={busy} className="mt-3 space-y-3">
+                <legend className="text-sm text-slate-600">Registra cuántas unidades conseguiste para este pedido. Si faltó producto, ajusta la cantidad que vas a entregar.</legend>
+                {current.items.map((item, index) => (
+                  <div key={item.id} className="grid items-end gap-2 rounded-xl bg-slate-50 p-3 md:grid-cols-[minmax(0,1fr)_8rem_8rem_auto]">
+                    <div className="self-center text-sm font-bold">{item.name}<p className="text-xs font-normal text-slate-600">{amount(item.unit_lb)} lb por unidad</p></div>
+                    <label className="text-xs font-bold">
+                      Unidades del pedido
+                      <input type="number" min={item.purchased} max={item.quantity} step={1} className={`${button} mt-1 w-full bg-white`} value={Number.isFinite(draft[index]?.quantity) ? draft[index].quantity : ""} onChange={(event) => {
+                        const quantity = event.target.valueAsNumber;
+                        updateLine(index, { quantity, purchased: Math.min(draft[index].purchased, quantity) });
+                      }} />
+                    </label>
+                    <label className="text-xs font-bold">
+                      Unidades compradas
+                      <input type="number" min={item.purchased} max={draft[index]?.quantity} step={1} className={`${button} mt-1 w-full bg-white`} value={Number.isFinite(draft[index]?.purchased) ? draft[index].purchased : ""} onChange={(event) => updateLine(index, { purchased: event.target.valueAsNumber })} />
+                    </label>
+                    <button type="button" className={button} disabled={item.purchased > 0 || draft[index]?.quantity === 0} onClick={() => updateLine(index, { quantity: 0, purchased: 0 })}>Retirar del pedido</button>
+                  </div>
+                ))}
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className={button} onClick={() => {
+                    setDraft((lines) => lines.map((line) => ({ ...line, purchased: line.quantity })));
+                    setEstimate(null);
+                  }}>Marcar todas compradas</button>
+                  <button type="button" className={button} disabled={!changed || draft.some((line, index) =>
+                    !Number.isInteger(line.quantity) || !Number.isInteger(line.purchased) || line.quantity > current.items[index].quantity ||
+                    line.purchased < current.items[index].purchased || line.purchased > line.quantity
+                  )} onClick={() => calculate(false)}>Revisar cambios</button>
+                </div>
+                {estimate && (
+                  <div className="rounded-xl border border-slate-200 p-3 text-sm">
+                    {estimate.removed.length > 0 ? (
+                      <>
+                        <p>Productos {money(estimate.subtotal)} · Envío {money(estimate.delivery)} · Gestión {money(estimate.management)}</p>
+                        {estimate.discount > 0 && <p>Descuento {money(estimate.discount)}</p>}
+                        <p className="mt-1 font-bold">{money(estimate.before_total)} → {money(estimate.after_total)} · {amount(estimate.weight_lb ?? 0)} lb</p>
+                        {estimate.cancelled && <p>Se cancelará el pedido.</p>}
+                        {estimate.refund_due > 0 && <p>Reembolso pendiente {money(estimate.refund_due)}</p>}
+                      </>
+                    ) : <p>Se actualizarán las cantidades compradas.</p>}
+                    <button type="button" className={`${button} mt-2 bg-slate-900 text-white hover:bg-slate-700`} onClick={() => calculate(true)}>{busy ? "Guardando…" : "Confirmar cambios"}</button>
+                  </div>
+                )}
+              </fieldset>
+            )}
+            {current && !current.editable && current.items.length > 0 && <p className="mt-2 text-sm text-slate-600">El estado de la orden o del pago impide ajustar la compra.</p>}
+            {!!current?.adjustments.length && (
+              <div className="mt-4 space-y-2">
+                <h4 className="font-bold">Historial de ajustes</h4>
+                {current.adjustments.map((entry) => (
+                  <div key={entry.id} className="rounded-xl bg-slate-50 p-3 text-sm">
+                    <p>{new Date(entry.created_at).toLocaleString("es-US")} · {money(entry.before_total)} → {money(entry.after_total)}</p>
+                    <p>{entry.removed.map((line) => `${line.quantity} × ${line.name}`).join(", ")}</p>
+                    {entry.refund_due > 0 && <p className="font-bold">{entry.refunded_at ? "Reembolso registrado" : "Reembolso pendiente"} · {money(entry.refund_due)}</p>}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {current.customer_phone ? <button type="button" className={button} onClick={() => notify(current, entry)}>Avisar por WhatsApp</button> : <span>El pedido no tiene teléfono del comprador.</span>}
+                      {entry.refund_due > 0 && !entry.refunded_at && <button type="button" className={button} disabled={busy} onClick={() => markRefund(entry)}>Registrar devolución</button>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+      </dialog>
     </section>
   );
 }

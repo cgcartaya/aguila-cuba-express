@@ -1053,10 +1053,7 @@ export default function OrdersManager({
                 <div className="px-5 pb-5">
                   {view === "active" && isXpressMarketOrder(order) && (
                     <button type="button" className="mb-3 min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold hover:bg-slate-100"
-                      onClick={() => {
-                        setMarketOrderId(order.id);
-                        document.getElementById("compras-frutas")?.scrollIntoView({ block: "start" });
-                      }}>
+                      onClick={() => setMarketOrderId(order.id)}>
                       Gestionar compra de frutas
                     </button>
                   )}
