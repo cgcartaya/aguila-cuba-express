@@ -50,6 +50,7 @@ import { attributeOrder } from "@/lib/shareapp/server";
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { saveCheckoutCustomer } from "@/lib/checkout/customer";
 import { quoteCartShipping, type CartShippingSelection } from "@/lib/shipping/cart-shipping";
+import { weightInPounds } from "@/lib/shipping/product-weight";
 import { customerManagementFee, isXpressFreshProduct } from "@/lib/shipping/xpress-checkout";
 import { applyPlatformFee } from "@/lib/storefront/product-quantity-pricing";
 import { sendNewOrderNotification } from "@/lib/notifications/order-notification";
@@ -409,7 +410,7 @@ export async function POST(request: Request) {
         ? await supabaseAdmin
             .from("products")
             .select(
-              "id, name, price, category, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, platform_fee_exempt, is_active, deleted_at, combo_only, delivery_provinces"
+              "id, name, price, category, weight, weight_unit, store_id, stock, max_quantity_per_order, minimum_order_exempt, delivery_included, platform_fee_exempt, is_active, deleted_at, combo_only, delivery_provinces"
             )
             .eq("store_id", storeId)
             .eq("is_active", true)
@@ -610,6 +611,7 @@ export async function POST(request: Request) {
     const isDistanceDelivery =
       !isWfCargo && !body.productShipping && body.method === "delivery" && checkoutDeliverySettings?.delivery_address_mode === "distance";
 
+    const fruitWeights = new Map<string, number>();
     let productShippingQuote: Awaited<ReturnType<typeof quoteCartShipping>> | null = null;
     if (wfComboDelivery) {
       deliveryFee = getWfCargoComboDeliveryFee(preparedItems, clean(form.province, 120));
@@ -618,7 +620,16 @@ export async function POST(request: Request) {
       zoneName = "Productos para completar caja";
     } else if (body.productShipping) {
       if (!clean(form.recipient_name, 150) || !clean(form.recipient_phone, 40) || !clean(form.exact_address, 300)) return fail("Completa destinatario, teléfono y dirección para el envío.");
-      try { productShippingQuote = await quoteCartShipping(storeId, requestedItems.map(item => ({ ...item, item_type: item.item_type || "product", quantity: Number(item.quantity) })), body.productShipping); }
+      try {
+        productShippingQuote = await quoteCartShipping(storeId, requestedItems.map(item => ({ ...item, item_type: item.item_type || "product", quantity: Number(item.quantity) })), body.productShipping);
+        if (store.slug === "xpress") {
+          for (const product of productRows || []) {
+            if (isXpressFreshProduct(product.category)) {
+              fruitWeights.set(product.id, weightInPounds(product.weight, product.weight_unit));
+            }
+          }
+        }
+      }
       catch (error) { return fail(error instanceof Error ? error.message : "No se pudo calcular el envío.", 422); }
       deliveryFee = productShippingQuote.amount;
       zoneName = productShippingQuote.destination;
@@ -936,6 +947,9 @@ export async function POST(request: Request) {
         base_price: item.base_price,
         platform_fee_amount: item.platform_fee_amount,
         subtotal: item.subtotal,
+        ...(item.product_id && fruitWeights.has(item.product_id)
+          ? { xpress_fruit_unit_lb: fruitWeights.get(item.product_id) }
+          : {}),
       }))
     );
 

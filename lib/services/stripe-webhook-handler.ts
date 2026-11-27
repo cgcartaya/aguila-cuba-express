@@ -64,6 +64,7 @@ export async function handleStripeWebhookEvent(
         })
         .eq("id", orderId)
         .eq("store_id", metadataStoreId)
+        .neq("payment_status", "paid")
         .or("checkout_payment_provider.is.null,checkout_payment_provider.eq.stripe")
         .is("deleted_at", null);
     }

@@ -382,7 +382,7 @@ export function PublicOrderClient({
           </div>
 
           {order.source_shipment_id && <p className="my-4 rounded-xl bg-blue-50 p-4 text-sm text-blue-900">Productos incluidos en la factura de tu envío: no es un cobro adicional. Gestiona el pago con la agencia desde Envíos.</p>}
-          {!isLym && !order.source_shipment_id && order.payment_method === "card" && order.payment_status !== "paid" && (
+          {!isLym && !(store?.slug === "xpress" && ["cancelled", "canceled"].includes(order.status)) && !order.source_shipment_id && order.payment_method === "card" && order.payment_status !== "paid" && (
             <>
               <p className="mt-4 text-sm text-white/70">
                 {order.payment_status === "expired"
